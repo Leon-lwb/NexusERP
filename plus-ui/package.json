@@ -11,13 +11,14 @@
     "build:prod": "node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build --mode production",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "test:unit": "esbuild src/utils/safeExpression.ts --bundle --format=esm --outfile=node_modules/.tmp/safe-expression.mjs && node scripts/test-safe-expression.mjs && npm run test:decision-config && esbuild src/views/ai/decision/decisionViewModel.ts --bundle --format=esm --outfile=node_modules/.tmp/decision-view-model.mjs && node scripts/test-decision-view-model.mjs && node scripts/test-decision-ui-entries.mjs && esbuild src/views/ai/flow/designer/useFlowStore.ts --bundle --format=esm --platform=node --packages=external --outfile=node_modules/.tmp/system-flow-store.mjs && node scripts/test-system-flow-layout.mjs",
+    "test:unit": "esbuild src/utils/safeExpression.ts --bundle --format=esm --outfile=node_modules/.tmp/safe-expression.mjs && node scripts/test-safe-expression.mjs && npm run test:decision-config && esbuild src/views/ai/decision/decisionViewModel.ts --bundle --format=esm --outfile=node_modules/.tmp/decision-view-model.mjs && node scripts/test-decision-view-model.mjs && node scripts/test-decision-ui-entries.mjs && esbuild src/views/ai/flow/designer/useFlowStore.ts --bundle --format=esm --platform=node --packages=external --outfile=node_modules/.tmp/system-flow-store.mjs && node scripts/test-system-flow-layout.mjs && npm run test:full-flow-ui",
     "test:decision-config": "esbuild src/views/ai/config/decisionValidation.ts --bundle --format=esm --outfile=node_modules/.tmp/decision-config.mjs && node scripts/test-decision-config.mjs",
     "lint:eslint": "eslint",
     "lint:eslint:fix": "eslint --fix",
     "prettier": "prettier --write .",
     "type-check": "vue-tsc --noEmit",
-    "type-check:changed": "vue-tsc --noEmit > vue-tsc-out.txt 2>&1 || node scripts/check-tsc-diff.mjs vue-tsc-out.txt"
+    "type-check:changed": "vue-tsc --noEmit > vue-tsc-out.txt 2>&1 || node scripts/check-tsc-diff.mjs vue-tsc-out.txt",
+    "test:full-flow-ui": "node --test --test-concurrency=1 scripts/test-ui-task7.mjs scripts/test-production-issue-warehouse.mjs scripts/test-decision-display.mjs scripts/test-decision-shortage-unit.mjs scripts/test-decision-approval-guard.mjs scripts/test-workflow-explicit-imports.mjs scripts/test-build-setup-extend-memory.mjs scripts/test-build-auto-components-memory.mjs scripts/test-schedule-publish.mjs scripts/test-mes-spare-purchase-closed.mjs scripts/test-requisition-source-closed.mjs scripts/test-purchase-order-requisition-entry.mjs scripts/test-full-flow-test-wiring.mjs && node src/views/erp/wm/receive/form-status.test.mjs"
   },
   "repository": {
     "type": "git",

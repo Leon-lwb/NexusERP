@@ -75,7 +75,7 @@
         </el-card>
       </el-col>
 
-      <!-- 右侧: 活跃维修 + 低库存 -->
+      <!-- 右侧：活跃维修与低库存；低库存请购入口保持禁用，保留权限限制，能否开放仍以后端门禁为准。 -->
       <el-col :span="12">
         <el-card shadow="hover" class="mb-2">
           <template #header>
@@ -113,21 +113,20 @@
             <div class="card-header">
               <span>低库存告警</span>
               <div>
-                <el-button
-                  link
-                  type="primary"
-                  icon="ShoppingCart"
-                  :loading="purchaseSubmitting"
-                  @click="handlePurchaseRequest()"
-                  v-hasPermi="['mes:eq:spare:purchase']"
-                  >一键生成采购申请</el-button
-                >
+                <el-button link type="primary" icon="ShoppingCart" disabled v-hasPermi="['mes:eq:spare:purchase']">一键生成采购申请</el-button>
                 <el-button link type="warning" icon="Box" @click="router.push('/mes/eq-spare/spare-part')" v-hasPermi="['mes:eq:spare:list']"
                   >备件管理</el-button
                 >
               </div>
             </div>
           </template>
+          <el-alert
+            title="低库存一键请购已暂停：来源占用、同物料防重校验尚未接入，暂不可生成采购申请；以后端门禁为准。"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="mb-2"
+          />
           <el-table :data="lowStockList" size="small" max-height="160" show-overflow-tooltip>
             <el-table-column label="备件编码" prop="spareCode" width="110" />
             <el-table-column label="备件名称" prop="spareName" min-width="120" show-overflow-tooltip />
@@ -158,7 +157,7 @@ import { listEquipment, batchIotStatus, getEquipmentSummary } from '@/api/mes/eq
 import type { EqEquipmentVO } from '@/api/mes/eq/equipment';
 import { listRepair, getRepairSummary } from '@/api/mes/eq/repair';
 import type { EqRepairVO } from '@/api/mes/eq/repair';
-import { listLowStock, purchaseRequest } from '@/api/mes/eq/spare-part';
+import { listLowStock } from '@/api/mes/eq/spare-part';
 import type { EqSparePartVO } from '@/api/mes/eq/spare-part';
 
 const router = useRouter();
@@ -179,7 +178,7 @@ const activeRepairCount = ref(0);
 const loadAll = async () => {
   refreshing.value = true;
   try {
-    // 统计计数走 summary(全量 COUNT, 不受 pageSize 限制); 明细列表仍按状态分页拉取用于展示
+    /** 统计计数走 summary(全量 COUNT, 不受 pageSize 限制); 明细列表仍按状态分页拉取用于展示 */
     const [eqRes, reportedRes, repairingRes, lowRes, eqSummaryRes, repairSummaryRes] = await Promise.all([
       listEquipment({ pageNum: 1, pageSize: 500 } as any),
       listRepair({ pageNum: 1, pageSize: 100, status: 'REPORTED' } as any),
@@ -192,7 +191,7 @@ const loadAll = async () => {
     activeRepairs.value = [...(reportedRes.rows || []), ...(repairingRes.rows || [])];
     lowStockList.value = lowRes.data || [];
 
-    // IoT 批量状态
+    /** IoT 批量状态 */
     const ids = equipmentList.value.filter((r) => r.iotDeviceId).map((r) => r.equipmentId);
     equipmentList.value.forEach((r) => {
       if (!r.iotDeviceId) r.iotStatus = 'UNBOUND';
@@ -211,7 +210,7 @@ const loadAll = async () => {
       }
     }
 
-    // 设备/维修状态计数用 summary(全量 COUNT, 不受列表 pageSize 限制, 避免 >500 台漏算)
+    /** 设备/维修状态计数用 summary(全量 COUNT, 不受列表 pageSize 限制, 避免 >500 台漏算) */
     const es = eqSummaryRes.data || {};
     statusSummary.total = es.total || 0;
     statusSummary.normal = es.normal || 0;
@@ -221,49 +220,15 @@ const loadAll = async () => {
     activeRepairCount.value = (repairSummaryRes.data?.active as number) || 0;
     statusSummary.iotOnline = equipmentList.value.filter((r) => r.iotStatus === 'ONLINE').length;
   } catch {
-    // 请求拦截器已弹出错误提示, 此处吞掉异常避免 30s 轮询产生未处理 rejection 并保证 interval 存活
-    // 保留上一次成功加载的数据(refreshing 复位, 列表不清空)
+    /** 请求拦截器已弹出错误提示，此处捕获异常，避免 30 秒轮询产生未处理的 Promise 拒绝错误，并保持定时器运行。 */
+    /** 保留上一次成功加载的数据(refreshing 复位, 列表不清空) */
   } finally {
     refreshing.value = false;
   }
 };
 
-// 定时刷新(30秒)
+/** 定时刷新(30秒) */
 let timer: ReturnType<typeof setInterval> | null = null;
-
-/** 低库存一键生成 ERP 采购申请（MES-EQ-04，权限 mes:eq:spare:purchase） */
-const purchaseSubmitting = ref(false);
-const handlePurchaseRequest = async () => {
-  if (lowStockList.value.length === 0) {
-    proxy?.$modal.msgWarning('当前没有低库存备件');
-    return;
-  }
-  // 未映射备件先在前端拦截并列出编码（后端仍是权威，会再次拒绝并返回编码列表）
-  const unmapped = lowStockList.value.filter((r) => !r.materialId);
-  if (unmapped.length > 0) {
-    proxy?.$modal.msgWarning(`以下备件未映射 ERP 物料，无法生成采购申请：${unmapped.map((r) => r.spareCode).join('、')}`);
-    return;
-  }
-  try {
-    await proxy?.$modal.confirm(`将为 ${lowStockList.value.length} 个低库存备件提交 ERP 采购申请生成请求，是否继续？`);
-  } catch {
-    return;
-  }
-  purchaseSubmitting.value = true;
-  try {
-    const res: any = await purchaseRequest({ spareIds: lowStockList.value.map((r) => r.spareId), remark: 'MES 低库存备件预警' });
-    proxy?.$modal.msgSuccess(`已提交 ERP 采购申请生成请求（${res?.data ?? 0} 行）`);
-    proxy?.$modal
-      .confirm('请到 ERP 采购申请列表查看生成的草稿请购单，是否现在前往？')
-      .then(() => router.push('/erp/pu/requisition'))
-      .catch(() => {});
-  } catch (e: any) {
-    // 接口已关闭统一错误 toast，这里原样展示后端拒绝原因（含未映射编码列表）
-    proxy?.$modal.msgError(e?.message || '采购申请提交失败');
-  } finally {
-    purchaseSubmitting.value = false;
-  }
-};
 
 onMounted(() => {
   loadAll();

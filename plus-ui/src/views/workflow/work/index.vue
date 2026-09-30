@@ -66,16 +66,17 @@
 </template>
 
 <script setup name="WorkProcess" lang="ts">
+import type { FormInstance } from 'element-plus';
 import { listProcess, getBpmnXml } from '@/api/workflow/process/index';
 import { listAllCategory } from '@/api/workflow/category/index';
 import ProcessViewer from '@/components/ProcessViewer/index.vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const queryForm = ref(ElForm);
-// 遮罩层
+const queryForm = ref<FormInstance>();
+/** 遮罩层 */
 const loading = ref(true);
-// 查询参数
+/** 查询参数 */
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -83,9 +84,9 @@ const queryParams = ref({
   processName: undefined,
   category: undefined
 });
-// 显示搜索条件
+/** 显示搜索条件 */
 const showSearch = ref(true);
-// 总条数
+/** 总条数 */
 const total = ref(0);
 const filterCategoryText = ref('');
 const categoryOptions = ref<any>([]);
@@ -93,7 +94,7 @@ const categoryProps = ref({
   label: 'categoryName',
   value: 'code'
 });
-// 流程定义表格数据
+/** 流程定义表格数据 */
 const processList = ref([]);
 const processView = ref({
   title: '',
@@ -115,22 +116,22 @@ const getList = () => {
     loading.value = false;
   });
 };
-// 搜索按钮操作
+/** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value['pageNum'] = 1;
   getList();
 };
-// 重置按钮操作
+/** 重置按钮操作 */
 const resetQuery = () => {
-  //resetForm("queryForm");
-  queryForm.value.resetFields();
+  /** 保留未启用的表单重置调用：resetForm("queryForm"); */
+  queryForm.value?.resetFields();
   handleQuery();
 };
 /** 查看流程图 */
 const handleProcessView = (row) => {
   const definitionId = row.definitionId;
   processView.value['title'] = '流程图';
-  // 发送请求，获取xml；数据就绪后再更新 key 并打开弹窗，避免重建时读到上一个流程的旧图
+  /** 发送请求，获取 XML；数据就绪后再更新 key 并打开弹窗，避免重建时读到上一个流程的旧图。 */
   getBpmnXml(definitionId).then((res) => {
     processView.value['xmlData'] = res.data;
     processView.value['index'] = definitionId;

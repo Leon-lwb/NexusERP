@@ -3,13 +3,14 @@
     <template #header>KPI 对比（预测与实际分开）</template>
     <el-table :data="rows" stripe>
       <el-table-column prop="label" label="指标" min-width="170" />
-      <el-table-column prop="before" label="当前基线" min-width="110" />
-      <el-table-column prop="projected" label="推荐方案预测" min-width="120" />
+      <el-table-column prop="before" label="当前基线" min-width="110" show-overflow-tooltip />
+      <el-table-column prop="projected" label="推荐方案预测" min-width="120" show-overflow-tooltip />
       <el-table-column label="变化" min-width="140"
         ><template #default="scope">{{ scope.row.delta }}</template></el-table-column
       >
-      <el-table-column prop="actual" label="执行后实测" min-width="120" />
+      <el-table-column prop="actual" label="执行后实测" min-width="120" show-overflow-tooltip />
     </el-table>
+    <small class="block text-gray-500">缺口原值如有返回，因单位待核不能确认可合计；请核对物料主档与来源。</small>
     <small class="text-gray-500">草稿创建不等于业务收益。无独立复测结果时，实测值显示为“—”。</small>
   </el-card>
 </template>
@@ -22,15 +23,32 @@ const metrics = [
   ['delayedWorkOrderCount', '拖期工单', '个'],
   ['totalTardinessDays', '总拖期', '天'],
   ['shortageMaterialCount', '缺料物料', '项'],
-  ['totalShortageGap', '缺料缺口', '件'],
+  ['totalShortageGap', '缺料缺口', ''],
   ['maxResourceUtilization', '资源最高利用率', '%'],
   ['changedWorkOrderCount', '变更工单', '个']
 ] as const;
+const displayShortageGap = (kpis?: DecisionKpis | null): string => {
+  const gap: unknown = kpis?.totalShortageGap;
+  if (gap == null) return '—';
+  if (kpis?.shortageMaterialCount === 0 && (gap === 0 || (typeof gap === 'string' && /^0+(?:\.0+)?(?:[eE][+-]?\d+)?$/.test(gap)))) {
+    return '0（无缺料）';
+  }
+  return '—（单位待核）';
+};
 const rows = computed(() =>
   metrics.map(([key, label, unit]) => {
     const before = props.baseline?.[key];
     const projected = props.projected?.[key];
     const actual = props.actual?.[key];
+    if (key === 'totalShortageGap') {
+      return {
+        label,
+        before: displayShortageGap(props.baseline),
+        projected: displayShortageGap(props.projected),
+        actual: displayShortageGap(props.actual),
+        delta: '—'
+      };
+    }
     const a = before == null ? null : Number(before);
     const b = projected == null ? null : Number(projected);
     return {

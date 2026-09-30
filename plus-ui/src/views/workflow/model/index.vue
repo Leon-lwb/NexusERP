@@ -156,6 +156,7 @@
 </template>
 
 <script setup name="Model" lang="ts">
+import type { FormInstance } from 'element-plus';
 import {
   getBpmnXml,
   listModel,
@@ -187,7 +188,7 @@ const total = ref(0);
 const categoryOptions = ref<CategoryVO[]>([]);
 const designerLoading = ref(true);
 const bpmnXml = ref<string>('');
-// 设计器/查看器各自独立的重建计数器：递增即强制重建组件，丢弃上一次残留的画布状态
+/** 设计器/查看器各自独立的重建计数器：递增即强制重建组件，丢弃上一次残留的画布状态 */
 const designerReloadIndex = ref(0);
 const viewerReloadIndex = ref(0);
 const processXml = ref<any>('');
@@ -196,8 +197,8 @@ const historyList = ref<ModelVO[]>([]);
 const historyLoading = ref(true);
 const historyTotal = ref(0);
 
-const modelFormRef = ref(ElForm);
-const queryFormRef = ref(ElForm);
+const modelFormRef = ref<FormInstance>();
+const queryFormRef = ref<FormInstance>();
 const modelDesignerRef = ref(null);
 
 const dialog = reactive<DialogOption>({
@@ -246,7 +247,7 @@ const data = reactive<PageData<ModelForm, ModelQuery>>({
   }
 });
 
-// 历史版本弹窗独立分页参数（原实现误绑主列表 total/pageNum 导致翻页错乱、污染主查询条件）
+/** 历史版本弹窗独立分页参数（原实现误绑主列表 total/pageNum 导致翻页错乱、污染主查询条件） */
 const historyQueryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -282,7 +283,7 @@ const cancel = () => {
 /** 表单重置 */
 const reset = () => {
   form.value = { ...initFormData };
-  modelFormRef.value.resetFields();
+  modelFormRef.value?.resetFields();
 };
 /** 搜索按钮操作 */
 const handleQuery = () => {
@@ -291,7 +292,7 @@ const handleQuery = () => {
 };
 /** 重置按钮操作 */
 const resetQuery = () => {
-  queryFormRef.value.resetFields();
+  queryFormRef.value?.resetFields();
   handleQuery();
 };
 /** 多选框选中数据 */
@@ -342,17 +343,17 @@ const handleExport = () => {
 };
 /** 查看流程图 */
 const handleProcessView = async (row: ModelVO) => {
-  // 发送请求，获取xml
+  /** 发送请求，获取 XML。 */
   const res = await getBpmnXml(row.modelId);
   processXml.value = res.data;
-  // 数据就绪后再递增 key 触发重建，否则重建时读到的是上一个模型的旧图
+  /** 数据就绪后再递增 key 触发重建，否则重建时读到的是上一个模型的旧图 */
   viewerReloadIndex.value += 1;
   processDialog.visible = true;
 };
 /** 设计按钮操作 */
 const handleDesigner = async (row: ModelVO) => {
   designerLoading.value = true;
-  // 发送请求，获取流程App类型与xml
+  /** 发送请求，获取流程 App 类型与 XML。 */
   const resApp = await getAppType(row.category);
   const res = await getBpmnXml(row.modelId);
   designerForm.form = {
@@ -362,7 +363,7 @@ const handleDesigner = async (row: ModelVO) => {
   };
   designerForm.modelId = row.modelId;
   bpmnXml.value = res.data || '';
-  // 数据就绪后再递增 key 触发重建，否则重建时读到的是上一个模型的旧图
+  /** 数据就绪后再递增 key 触发重建，否则重建时读到的是上一个模型的旧图 */
   designerReloadIndex.value += 1;
   designerLoading.value = false;
   designer.title = '流程设计 - ' + row.modelName;
@@ -399,14 +400,14 @@ const getHistoryList = async () => {
 const handleHistory = (row?: ModelVO) => {
   history.visible = true;
   history.title = '模型历史';
-  // 使用独立的历史查询参数，不污染主列表的搜索条件
+  /** 使用独立的历史查询参数，不污染主列表的搜索条件 */
   historyQueryParams.value.modelKey = row?.modelKey || '';
   historyQueryParams.value.pageNum = 1;
   getHistoryList();
 };
 /** 提交表单操作 */
 const submitForm = () => {
-  modelFormRef.value.validate(async (valid: boolean) => {
+  modelFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       form.value.modelId ? await updateModel(form.value) : await addModel(form.value);
       proxy?.$modal.msgSuccess('操作成功');

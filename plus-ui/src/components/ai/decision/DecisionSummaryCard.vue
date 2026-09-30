@@ -10,7 +10,8 @@
       </div>
     </template>
     <div class="flex gap-4 items-center mb-3">
-      <span>{{ result?.businessRef?.code || run.run.bizCode || run.run.bizType }} · {{ String(run.run.bizId ?? '全局时段') }}</span>
+      <span>{{ businessObject.label }}</span>
+      <span v-if="businessObject.internalIdText">{{ businessObject.internalIdText }}</span>
       <el-tag :type="riskTagType(run.run.riskLevel)">{{ decisionRiskLabel(run.run.riskLevel) }}</el-tag>
       <strong>风险分数 {{ run.run.riskScore ?? '—' }}</strong>
       <span>置信度 {{ run.run.confidenceLevel || '—' }}</span>
@@ -24,6 +25,7 @@
 import { computed } from 'vue';
 import type { DecisionRunDetail, DecisionResult } from '@/api/ai/decision';
 import { decisionRiskLabel, decisionSummaryText, riskTagType } from '@/views/ai/decision/decisionViewModel';
+import { decisionBusinessObjectDisplay } from '@/views/ai/decision/decisionDisplay';
 const props = defineProps<{ run: DecisionRunDetail }>();
 const emit = defineEmits<{ (event: 'open-evidence'): void; (event: 'recalculate'): void }>();
 const result = computed<DecisionResult | null>(() => {
@@ -33,4 +35,5 @@ const result = computed<DecisionResult | null>(() => {
     return null;
   }
 });
+const businessObject = computed(() => decisionBusinessObjectDisplay(props.run.run, result.value?.businessRef?.code));
 </script>

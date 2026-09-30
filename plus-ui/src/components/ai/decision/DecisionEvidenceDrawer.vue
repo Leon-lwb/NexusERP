@@ -1,6 +1,14 @@
 <template>
   <el-drawer :model-value="modelValue" title="可追溯证据" size="60%" @update:model-value="emit('update:modelValue', $event)">
-    <el-empty v-if="!evidence.length" description="分析尚未归档证据，请等待完成后刷新" :image-size="70" />
+    <el-alert
+      v-if="hasUnverifiedShortageAggregate"
+      title="缺料合计量纲待核"
+      type="warning"
+      :closable="false"
+      description="原始总缺口未核验单位一致性，可能跨不同物料计量单位累加；下方原值仅供溯源，不可当作同单位采购量或方案排名依据。"
+      class="mb-3"
+    />
+    <el-empty v-if="!evidence.length" :description="decisionEvidenceEmptyDescription(props.status)" :image-size="70" />
     <el-collapse v-else>
       <el-collapse-item v-for="group in groups" :key="group.name" :title="`${group.name}（${group.items.length}）`" :name="group.name">
         <el-table :data="group.items" size="small">
@@ -17,7 +25,11 @@
               }}</el-tag></template
             ></el-table-column
           >
-          <el-table-column prop="metricValue" label="数值/摘要" min-width="140" show-overflow-tooltip />
+          <el-table-column label="数值/摘要" min-width="180" show-overflow-tooltip
+            ><template #default="scope"
+              >{{ scope.row.metricValue }}<span v-if="scope.row.metricCode === 'total_shortage_gap'">（单位未核；不可合计）</span></template
+            ></el-table-column
+          >
           <el-table-column prop="unit" label="单位" width="70" />
           <el-table-column prop="dataVersion" label="数据版本" min-width="160" show-overflow-tooltip />
           <el-table-column label="跳转" width="76"
@@ -35,8 +47,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DecisionEvidence } from '@/api/ai/decision';
-const props = defineProps<{ modelValue: boolean; evidence: DecisionEvidence[] }>();
+import { decisionEvidenceEmptyDescription } from '@/views/ai/decision/decisionDisplay';
+const props = defineProps<{ modelValue: boolean; evidence: DecisionEvidence[]; status?: string | null }>();
 const emit = defineEmits<{ (event: 'update:modelValue', open: boolean): void; (event: 'navigate', path: string): void }>();
+const hasUnverifiedShortageAggregate = computed(() => props.evidence.some((item) => item.metricCode === 'total_shortage_gap'));
 const groups = computed(() =>
   Object.entries(
     props.evidence.reduce<Record<string, DecisionEvidence[]>>((result, item) => {

@@ -45,7 +45,7 @@
           <el-col :span="8">
             <el-form-item label="来源类型" prop="sourceType">
               <el-select v-model="form.sourceType" placeholder="请选择来源类型">
-                <el-option v-for="dict in prd_source_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                <el-option v-for="dict in workOrderSourceTypeOptions" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
@@ -53,7 +53,7 @@
 
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="销售订单编号" prop="sourceNo">
+            <el-form-item :label="workOrderSourceNoLabel(form.sourceType)" prop="sourceNo">
               <el-input v-model="form.sourceNo" placeholder="选计划后自动带出" readonly />
             </el-form-item>
           </el-col>
@@ -76,17 +76,17 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="计划数量" prop="plannedQty">
-              <el-input-number v-model="form.plannedQty" :min="0" :precision="2" :step="1" placeholder="请输入计划数量" style="width: 100%" />
+              <el-input-number v-model="form.plannedQty" :min="0" :precision="4" :step="1" placeholder="请输入计划数量" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="已完成数量" prop="completedQty">
-              <el-input-number v-model="form.completedQty" :min="0" :precision="2" :step="1" placeholder="报工回写" disabled style="width: 100%" />
+              <el-input-number v-model="form.completedQty" :min="0" :precision="4" :step="1" placeholder="报工回写" disabled style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="报废数量" prop="scrapQty">
-              <el-input-number v-model="form.scrapQty" :min="0" :precision="2" :step="1" placeholder="报工回写" disabled style="width: 100%" />
+              <el-input-number v-model="form.scrapQty" :min="0" :precision="4" :step="1" placeholder="报工回写" disabled style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -656,11 +656,18 @@ import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE } from '@/api/erp/prd/work-order-resource';
 import { getProcesss } from '@/api/workflow/process/index';
 import type { WorkForm } from '@/api/erp/prd/work/types';
+import {
+  normalizeWorkOrderQuantity,
+  normalizeWorkOrderQuantityFields,
+  withMaterialRequirementSource,
+  workOrderSourceNoLabel
+} from './workOrderDisplay';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status, prd_backflush_flag } = toRefs<any>(
   proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status', 'prd_backflush_flag')
 );
+const workOrderSourceTypeOptions = computed(() => withMaterialRequirementSource(prd_source_type.value ?? []));
 const route = useRoute();
 const router = useRouter();
 
@@ -693,7 +700,7 @@ const autoGenFlag = ref(false);
 const loadingFlow = ref(false);
 const flowOptions = ref([]);
 
-// 表单禁用状态（考虑 workflow 嵌入和查看模式）
+/** 表单禁用状态（考虑流程嵌入和查看模式）。 */
 const formDisabled = computed(() => isViewMode.value || props.disabled);
 
 const rules = ref({
@@ -715,13 +722,13 @@ const planQueryParams = ref({
   status: 'CONFIRMED'
 });
 
-// 物料选择
+/** 物料选择 */
 const materialSelectDialogRef = ref<any>(null);
 
-// 计量单位下拉
+/** 计量单位下拉 */
 const uomOptions = ref<any[]>([]);
 
-// BOM 选择
+/** BOM 选择 */
 const bomSelectOpen = ref(false);
 const bomList = ref([]);
 const bomLoading = ref(false);
@@ -838,7 +845,7 @@ function initPage(id) {
 
 function getInfo(id) {
   getWork(id).then((response) => {
-    form.value = response.data;
+    form.value = normalizeWorkOrderQuantityFields(response.data);
     if (!form.value.workshopList) {
       form.value.workshopList = [];
     }
@@ -890,7 +897,7 @@ function loadWorkOrderResources(woId) {
       form.value.teamList.sort((a, b) => a.seq - b.seq);
     })
     .catch((error) => {
-      // 资源接口失败（权限/网络/异常）此前被静默吞掉，导致车间/工作站/班组列表空白
+      /** 资源接口失败（权限/网络/异常）此前被静默吞掉，导致车间/工作站/班组列表空白 */
       console.error('加载工单资源分配失败 woId=' + woId, error);
       proxy.$modal.msgWarning('加载车间/工作站/班组分配失败，请检查接口权限或网络');
     });
@@ -964,7 +971,7 @@ function reset() {
 function submitForm() {
   (proxy.$refs['workRef'] as any).validate((valid) => {
     if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
       if (autoGenFlag.value) {
         form.value.woNo = undefined;
       }
@@ -978,7 +985,7 @@ function submitForm() {
               router.push('/erp/prdExec/work');
             })
             .catch((error) => {
-              // 资源分配保存失败此前被静默吞掉（工单已更新但资源未落库）
+              /** 资源分配保存失败此前被静默吞掉（工单已更新但资源未落库） */
               console.error('保存资源分配失败:', error);
               proxy.$modal.msgWarning('工单已保存，但资源分配保存失败，请编辑后重新保存');
               router.push('/erp/prdExec/work');
@@ -1393,7 +1400,7 @@ async function selectPlan(row) {
   form.value.sourceType = 'PLAN';
   form.value.sourceId = row.planId;
   form.value.sourceNo = row.referenceNo;
-  form.value.plannedQty = row.totalQuantity;
+  form.value.plannedQty = normalizeWorkOrderQuantity(row.totalQuantity);
   form.value.planStartDate = row.startDate;
   form.value.planEndDate = row.endDate;
   form.value.priority = row.priority;
@@ -1418,7 +1425,7 @@ async function selectPlan(row) {
         form.value.materialCode = orderLine.materialCode;
         form.value.materialName = orderLine.materialName;
         form.value.materialSpec = orderLine.materialSpec;
-        // 订单明细仅有单位名称 unit, 无 unitId/unitName
+        /** 订单明细仅有单位名称 unit, 无 unitId/unitName */
         form.value.unitName = orderLine.unit;
         proxy.$modal.msgSuccess('已自动填充物料信息');
       } else {

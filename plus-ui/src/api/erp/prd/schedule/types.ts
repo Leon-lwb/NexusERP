@@ -15,6 +15,7 @@ export interface SchedulePlanVO {
   makespanDate: string;
   utilizationJson: string;
   status: string;
+  capacityCalcVersion?: number | null;
   remark: string;
   createTime: string;
 }

@@ -53,7 +53,8 @@
 </template>
 
 <script setup name="Copy" lang="ts">
-//import { listCopyProcess, updateCcReaded  } from "@/api/workflow/work/process"
+import type { FormInstance } from 'element-plus';
+/** 保留未启用的接口导入：import { listCopyProcess, updateCcReaded  } from "@/api/workflow/work/process" */
 import { listCopyProcess, updateCcReaded } from '@/api/workflow/work/process';
 import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
 
@@ -70,7 +71,7 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 
-const queryFormRef = ref(ElForm);
+const queryFormRef = ref<FormInstance>();
 
 const queryParams = ref<ProcessQuery>({
   pageNum: 1,
@@ -98,10 +99,10 @@ const handleQuery = () => {
 };
 /** 重置按钮操作 */
 const resetQuery = () => {
-  queryFormRef.value.resetFields();
+  queryFormRef.value?.resetFields();
   handleQuery();
 };
-// 多选框选中数据
+/** 多选框选中数据 */
 const handleSelectionChange = (selection) => {
   ids.value = selection.map((item) => item.copyId);
   single.value = selection.length !== 1;

@@ -5,12 +5,28 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="success" @click="handleExecute" v-if="!isViewMode && canExecute" :loading="executeLoading">执行领料</el-button>
+            <el-button
+              type="success"
+              @click="handleExecute"
+              v-if="!isViewMode && canExecute"
+              :disabled="!executionWarehouseReady"
+              :loading="executeLoading"
+              >执行领料</el-button
+            >
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
       </template>
+
+      <el-alert
+        v-if="!isViewMode && canExecute && !executionWarehouseReady"
+        title="请先选择实际领料仓库：可选择单头仓库，或为本次领料的每行选择库存仓库；选工单不会自动指定仓库"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="mb8"
+      />
 
       <el-form ref="issueRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-divider content-position="left">基本信息</el-divider>
@@ -131,10 +147,22 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
+          <el-table-column prop="warehouseName" label="本行仓库" min-width="175">
+            <template #default="{ row, $index }">
+              <span>{{
+                row.warehouseId
+                  ? row.warehouseName || row.warehouseCode || row.warehouseId
+                  : form.warehouseId
+                    ? (form.warehouseName || form.warehouseId) + '（单头）'
+                    : '未选仓库'
+              }}</span>
+              <el-button v-if="canSelectStock(row)" type="primary" link @click="openStockSelect($index)">选库存/换仓</el-button>
+            </template>
+          </el-table-column>
           <el-table-column prop="displayLocationBatch" label="批次/库位" min-width="190">
             <template #default="{ row, $index }">
               <el-input v-model="row.displayLocationBatch" placeholder="选择库存" readonly>
-                <template #append><el-button icon="Search" @click="openStockSelect($index)" :disabled="isViewMode || !row.materialId" /></template>
+                <template #append><el-button icon="Search" @click="openStockSelect($index)" :disabled="!canSelectStock(row)" /></template>
               </el-input>
             </template>
           </el-table-column>
@@ -284,25 +312,25 @@ const title = ref('');
 const lineList = ref<any[]>([]);
 const executeLoading = ref(false);
 
-// 物料选择
+/** 物料选择 */
 const materialSelectDialogRef = ref<any>(null);
 const currentRowIndex = ref(-1);
 
-// 仓库选择
+/** 仓库选择 */
 const warehouseSelectOpen = ref(false);
 const warehouseList = ref([]);
 const warehouseLoading = ref(false);
 const warehouseTotal = ref(0);
-const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null });
+const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null, status: 1 });
 
-// 工单选择
+/** 工单选择 */
 const workOrderSelectOpen = ref(false);
 const workOrderList = ref([]);
 const workOrderLoading = ref(false);
 const workOrderTotal = ref(0);
 const workOrderQueryParams = ref({ pageNum: 1, pageSize: 10, woNo: null });
 
-// 可用库存选择
+/** 可用库存选择 */
 const stockSelectOpen = ref(false);
 const stockList = ref([]);
 const stockLoading = ref(false);
@@ -311,7 +339,7 @@ const rules = {
   issueCode: [{ required: true, message: '领料单编号不能为空', trigger: 'blur' }]
 };
 
-// 已完成（COMPLETED/EXECUTED）后行不可编辑、不可执行
+/** 已完成（COMPLETED/EXECUTED）后行不可编辑、不可执行 */
 const canEditLine = computed(() => {
   const s = form.value.status;
   return !s || s === 'CREATED' || s === 'PARTIAL' || s === 'DRAFT';
@@ -319,6 +347,12 @@ const canEditLine = computed(() => {
 const canExecute = computed(() => {
   const s = form.value.status;
   return !s || s === 'CREATED' || s === 'PARTIAL' || s === 'DRAFT';
+});
+/** 行仓优先于单头仓库；只检查本次确实领料的行，未领料草稿仍可保存。 */
+const executionWarehouseReady = computed(() => {
+  const headerReady = !!form.value.warehouseId;
+  const pickedLines = lineList.value.filter((line: any) => Number(line.currentQty) > 0);
+  return pickedLines.length > 0 ? pickedLines.every((line: any) => !!line.warehouseId || headerReady) : headerReady;
 });
 
 onMounted(() => {
@@ -341,7 +375,7 @@ function getInfo(id: any) {
   getProductionIssue(id).then((response: any) => {
     form.value = response.data;
     const lines = response.data.wmProductionIssueLineList || [];
-    // 已领/欠领兜底，便于旧数据显示
+    /** 已领/欠领兜底，便于旧数据显示 */
     lineList.value = lines.map((l: any) => ({
       ...l,
       issuedQty: l.issuedQty ?? 0,
@@ -349,7 +383,7 @@ function getInfo(id: any) {
       lineStatus: l.lineStatus || 'PENDING',
       displayLocationBatch: (l.locationCode ? l.locationCode + '/' : '') + (l.batchCode || '')
     }));
-    // 加载各行物料的总可用库存供参考
+    /** 加载各行物料的总可用库存供参考 */
     loadAvailableStocks();
   });
 }
@@ -380,7 +414,7 @@ function reset() {
 function submitForm() {
   (proxy.$refs['issueRef'] as any).validate((valid: boolean) => {
     if (!valid) return;
-    // 行校验
+    /** 行校验 */
     for (const l of lineList.value) {
       if (!l.materialId) {
         proxy.$modal.msgError('存在未选择物料的行');
@@ -407,6 +441,10 @@ function submitForm() {
 function handleExecute() {
   if (!form.value.issueId) {
     proxy.$modal.msgWarning('请先保存领料单再执行');
+    return;
+  }
+  if (!executionWarehouseReady.value) {
+    proxy.$modal.msgWarning('请先选择实际领料仓库：单头选仓或为本次领料的每行选库存仓库');
     return;
   }
   let hasPick = false;
@@ -464,7 +502,7 @@ async function handleAutoFillFromWorkOrder() {
     }
     lineList.value = lines;
     proxy.$modal.msgSuccess('已根据工单BOM带出领料明细');
-    // 加载各行物料的总可用库存供参考
+    /** 加载各行物料的总可用库存供参考 */
     loadAvailableStocks();
   } catch (e) {
     proxy.$modal.msgError('带出BOM失败，请检查工单信息');
@@ -525,6 +563,26 @@ function canCheckLine(row: any) {
   return row.lineStatus !== 'ISSUED' && !(Number(row.issuedQty) > 0);
 }
 
+/** 下一次选料与删除守卫分离：PARTIAL 行可换批次，已领数量和原行ID保持不变。 */
+function canSelectStock(row: any) {
+  if (isViewMode.value || !canEditLine.value || !row?.materialId || ['ISSUED', 'COMPLETED', 'EXECUTED'].includes(row.lineStatus)) {
+    return false;
+  }
+  const currentQty = Number(row.currentQty);
+  if (!Number.isFinite(currentQty) || currentQty <= 0) return false;
+  const issuedQty = Number(row.issuedQty ?? 0);
+  const requiredQty = Number(row.requiredQty);
+  if (requiredQty > 0) {
+    return Number.isFinite(requiredQty) && Number.isFinite(issuedQty) && requiredQty > issuedQty;
+  }
+  /** 旧行无应领定额时可按欠领量判断；未领料手工行则允许指定首次库存。 */
+  if (row.shortQty != null) {
+    const shortQty = Number(row.shortQty);
+    return Number.isFinite(shortQty) && shortQty > 0;
+  }
+  return row.lineStatus !== 'PARTIAL' && issuedQty === 0;
+}
+
 /** 重算行金额，并在应领已定时同步欠领 */
 function recalcRow(row: any) {
   if (row.currentQty != null && row.unitPrice != null) {
@@ -547,7 +605,7 @@ function handleMaterialSelected(row: any) {
     if (row.baseUomName) lineList.value[idx].baseUomName = row.baseUomName;
   }
   currentRowIndex.value = -1;
-  // 选完物料后刷新该行可用库存
+  /** 选完物料后刷新该行可用库存 */
   refreshLineAvailableStock(row.materialId, idx);
 }
 
@@ -588,19 +646,23 @@ function getWarehouseList() {
 }
 
 function resetWarehouseQuery() {
-  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null };
+  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null, status: 1 };
   getWarehouseList();
 }
 
 function handleWarehouseSelect(row: any) {
   if (!row) return;
+  if (!row.warehouseId || Number(row.status) !== 1) {
+    proxy.$modal.msgWarning('请选择已启用的真实仓库');
+    return;
+  }
   form.value.warehouseId = row.warehouseId;
   form.value.warehouseCode = row.warehouseCode;
   form.value.warehouseName = row.warehouseName;
   warehouseSelectOpen.value = false;
 }
 
-// 工单选择
+/** 工单选择 */
 function getWorkOrderList() {
   workOrderLoading.value = true;
   listWork(workOrderQueryParams.value).then((response: any) => {
@@ -616,28 +678,29 @@ function resetWorkOrderQuery() {
 }
 
 function selectWorkOrder(row: any) {
+  /** 已保存的同一工单再次被选中时保留原领料行（包括已选择的行仓/批次）。 */
+  const preserveLines = form.value.issueId && form.value.woId != null && String(form.value.woId) === String(row.woId) && lineList.value.length > 0;
   form.value.woId = row.woId;
   form.value.woNo = row.woNo;
-  // 默认取工单车间作为领料仓库兜底
-  if (row.workshopId && !form.value.warehouseId) {
-    form.value.warehouseId = row.workshopId;
-    form.value.warehouseName = row.workshopName;
-  }
   workOrderSelectOpen.value = false;
-  handleAutoFillFromWorkOrder();
+  if (!preserveLines) handleAutoFillFromWorkOrder();
 }
 
-// 可用库存选择（批次/库位）
+/** 可用库存选择（批次/库位） */
 function openStockSelect(rowIndex: number) {
-  currentRowIndex.value = rowIndex;
   const row = lineList.value[rowIndex];
   if (!row || !row.materialId) {
     proxy.$modal.msgWarning('请先选择物料');
     return;
   }
+  if (!canSelectStock(row)) {
+    proxy.$modal.msgWarning('仅未完成且有待领数量的明细可选择库存，请填写正数本次领料数量');
+    return;
+  }
+  currentRowIndex.value = rowIndex;
   stockSelectOpen.value = true;
   stockLoading.value = true;
-  // 不按头部仓库过滤：物料可能存放在其他仓库，弹窗已展示仓库列供用户选择具体批次/库位
+  /** 不按头部仓库过滤：物料可能存放在其他仓库，弹窗已展示仓库列供用户选择具体批次/库位 */
   getAvailableStock(row.materialId)
     .then((response: any) => {
       stockList.value = response.data || [];
@@ -649,15 +712,28 @@ function openStockSelect(rowIndex: number) {
 }
 
 function selectStock(row: any) {
+  if (!row?.warehouseId) {
+    proxy.$modal.msgWarning('库存记录没有真实仓库，请重新选择');
+    return;
+  }
   const idx = currentRowIndex.value;
   if (idx >= 0 && lineList.value[idx]) {
     const line = lineList.value[idx];
+    /** 弹窗期间可能切换只读状态或清零本次领料量，选中时再次校验。 */
+    if (!canSelectStock(line)) {
+      proxy.$modal.msgWarning('当前明细已不可选料，请关闭弹窗并核对状态和本次领料数量');
+      return;
+    }
+    /** 选定库存时一并绑定该行所属仓库，不能把其他仓库的批次隐式记在单头仓下。 */
+    line.warehouseId = row.warehouseId;
+    line.warehouseCode = row.warehouseCode;
+    line.warehouseName = row.warehouseName;
     line.batchId = row.batchId;
     line.batchCode = row.batchCode;
     line.locationId = row.locationId;
     line.locationCode = row.locationCode;
     line.locationName = row.locationName;
-    // 拼接库位+批次号用于展示，如 L016/B202606050002
+    /** 拼接库位+批次号用于展示，如 L016/B202606050002 */
     line.displayLocationBatch = (row.locationCode ? row.locationCode + '/' : '') + (row.batchCode || '');
     if (row.unitCost && line.unitPrice == null) line.unitPrice = row.unitCost;
     recalcRow(line);

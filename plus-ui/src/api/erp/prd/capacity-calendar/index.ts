@@ -41,11 +41,3 @@ export function generateFromSchedule(
 export function queryAvailableCapacity(objectType: string, objectId: number, startDate: string, endDate: string): AxiosPromise<CapacityCalendarVO[]> {
   return request({ url: '/erp/prd/capacityCalendar/available', method: 'get', params: { objectType, objectId, startDate, endDate } });
 }
-
-export function occupyCapacity(calendarId: number, hours: number) {
-  return request({ url: '/erp/prd/capacityCalendar/occupy', method: 'put', params: { calendarId, hours } });
-}
-
-export function releaseCapacity(calendarId: number, hours: number) {
-  return request({ url: '/erp/prd/capacityCalendar/release', method: 'put', params: { calendarId, hours } });
-}

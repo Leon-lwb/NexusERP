@@ -73,6 +73,7 @@
 </template>
 
 <script setup name="WorkProcess" lang="ts">
+import type { FormInstance } from 'element-plus';
 import { listProcess, getBpmnXml } from '@/api/workflow/work/process';
 import { listAllCategory } from '@/api/workflow/category/index';
 import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
@@ -90,7 +91,7 @@ const reloadIndex = ref(0);
 const processXml = ref('');
 const categoryOptions = ref<CategoryVO[]>([]);
 
-const queryFormRef = ref(ElForm);
+const queryFormRef = ref<FormInstance>();
 
 const processDialog = reactive<DialogOption>({
   visible: false,
@@ -125,13 +126,13 @@ const handleQuery = () => {
 };
 /** 重置按钮操作 */
 const resetQuery = () => {
-  queryFormRef.value.resetFields();
+  queryFormRef.value?.resetFields();
   handleQuery();
 };
 /** 查看流程图 */
 const handleProcessView = async (row: any) => {
   reloadIndex.value++;
-  // 发送请求，获取xml
+  /** 发送请求，获取 XML。 */
   const res = await getBpmnXml(row.definitionId);
   processXml.value = res.data;
   processDialog.visible = true;

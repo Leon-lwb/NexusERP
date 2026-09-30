@@ -24,14 +24,22 @@
       <el-col :xs="24" :lg="8"
         ><el-card shadow="never"
           ><template #header>风险分布（当前页）</template>
-          <div ref="chartEl" style="height: 300px" /></el-card
+          <div ref="chartEl" v-show="rows.length > 0" style="height: 300px" />
+          <el-empty v-if="rows.length === 0 && !loading" description="暂无决策运行数据" :image-size="96" /></el-card
       ></el-col>
       <el-col :xs="24" :lg="16"
         ><el-card shadow="never"
           ><template #header>高风险运行（当前页）</template>
           <el-table :data="highRisk" height="300px" v-loading="loading" @row-click="openDetail">
             <el-table-column label="业务编号" min-width="180"
-              ><template #default="scope">{{ scope.row.bizCode || scope.row.bizId || '—' }}</template></el-table-column
+              ><template #default="scope">
+                <el-tooltip
+                  :content="decisionBusinessObjectDisplay(scope.row).internalIdText"
+                  :disabled="!decisionBusinessObjectDisplay(scope.row).internalIdText"
+                >
+                  <span>{{ decisionBusinessObjectDisplay(scope.row).label }}</span>
+                </el-tooltip>
+              </template></el-table-column
             >
             <el-table-column prop="bizType" label="业务类型" min-width="120" />
             <el-table-column label="等级" width="90"
@@ -65,7 +73,14 @@
       <el-table :data="rows" v-loading="loading" @row-click="openDetail">
         <el-table-column prop="id" label="运行 ID" min-width="175" />
         <el-table-column label="业务对象" min-width="180"
-          ><template #default="scope">{{ scope.row.bizCode || scope.row.bizId || '—' }}</template></el-table-column
+          ><template #default="scope">
+            <el-tooltip
+              :content="decisionBusinessObjectDisplay(scope.row).internalIdText"
+              :disabled="!decisionBusinessObjectDisplay(scope.row).internalIdText"
+            >
+              <span>{{ decisionBusinessObjectDisplay(scope.row).label }}</span>
+            </el-tooltip>
+          </template></el-table-column
         >
         <el-table-column prop="bizType" label="场景" min-width="135" />
         <el-table-column label="风险" min-width="100"
@@ -105,6 +120,8 @@ import { useRouter } from 'vue-router';
 import * as echarts from 'echarts';
 import { listDecisionRuns, type DecisionPageQuery, type DecisionRunSummary } from '@/api/ai/decision';
 import { decisionRiskLabel, decisionRunStatusLabel, riskTagType } from './decisionViewModel';
+import { decisionBusinessObjectDisplay } from './decisionDisplay';
+import { decisionRiskSeriesData } from './riskChartData';
 const router = useRouter();
 const filters = reactive<DecisionPageQuery>({ pageNum: 1, pageSize: 20, status: '', riskLevel: '' });
 const rows = ref<DecisionRunSummary[]>([]);
@@ -121,6 +138,10 @@ const cards = computed(() => [
 const highRisk = computed(() => rows.value.filter((r) => r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL'));
 function updateChart() {
   if (!chartEl.value) return;
+  if (rows.value.length === 0) {
+    chart?.clear();
+    return;
+  }
   chart ||= echarts.init(chartEl.value);
   chart.setOption({
     tooltip: { trigger: 'item' },
@@ -129,10 +150,7 @@ function updateChart() {
       {
         type: 'pie',
         radius: ['36%', '67%'],
-        data: (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map((name) => ({
-          name: decisionRiskLabel(name),
-          value: rows.value.filter((row) => row.riskLevel === name).length
-        }))
+        data: decisionRiskSeriesData(rows.value)
       }
     ]
   });

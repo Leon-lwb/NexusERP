@@ -72,8 +72,18 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="来源类型" prop="sourceType">
-              <el-select v-model="form.sourceType" :disabled="form.sourceType === 'AI_DECISION'" placeholder="请选择来源类型">
-                <el-option v-for="dict in sourceTypeOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
+              <el-select
+                v-model="form.sourceType"
+                :disabled="form.sourceType === 'AI_DECISION' || isSourceLedgerPending(form.sourceType)"
+                placeholder="请选择来源类型"
+              >
+                <el-option
+                  v-for="dict in sourceTypeOptions"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                  :disabled="isSourceLedgerPending(dict.value)"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -86,6 +96,14 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-alert
+          v-if="!form.requisitionId && !isViewMode && !props.disabled"
+          title="来源占用未接入：需求转入、MRP、低库存等自动来源暂不可新建；请选择手工或其他可用来源，以后端校验为准。"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="mb8"
+        />
 
         <!-- 审批信息 -->
         <el-divider content-position="left">审批信息</el-divider>
@@ -195,7 +213,7 @@
 </template>
 
 <script setup lang="ts" name="PurchaseRequisitionForm">
-// 导入请购单相关的API方法
+/** 导入请购单相关的API方法 */
 import {
   addPurchaseRequisition,
   getPurchaseRequisition,
@@ -204,11 +222,11 @@ import {
   submitRequisitionFlow,
   getRequisitionProcId
 } from '@/api/erp/pu/requisition';
-// 导入物料管理API
+/** 导入物料管理API */
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
-// 导入审批流API
+/** 导入审批流API */
 import { getProcesss } from '@/api/workflow/process/index';
-// 导入路由相关功能
+/** 导入路由相关功能 */
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 
@@ -220,18 +238,18 @@ const props = defineProps({
   isNew: { type: Boolean, default: false }
 });
 
-// 获取当前实例的代理对象和字典数据
+/** 获取当前实例的代理对象和字典数据 */
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_requisition_status, pu_source_type } = toRefs<any>(proxy.useDict('pu_purchase_requisition_status', 'pu_source_type'));
-// 路由和导航
+/** 路由和导航 */
 const route = useRoute();
 const router = useRouter();
 
-// 页面状态变量
-const title = ref(''); // 页面标题
-const isViewMode = ref(false); // 是否为查看模式
-const autoGenFlag = ref(false); // 自动生成编号开关
-// 初始化表单数据，包含 requisitionId 字段
+/** 页面状态变量 */
+const title = ref(''); /** 页面标题 */
+const isViewMode = ref(false); /** 是否为查看模式 */
+const autoGenFlag = ref(false); /** 自动生成编号开关 */
+/** 初始化表单数据，包含 requisitionId 字段 */
 const form = ref<any>({
   requisitionId: null,
   requisitionNo: null,
@@ -243,26 +261,42 @@ const form = ref<any>({
   selectFlowId: null,
   remark: null,
   puPurchaseRequisitionLineList: []
-}); // 表单数据
-// AI 来源仅供展示，普通表单不得冒充工业决策流程。
-const sourceTypeOptions = computed(() =>
-  (pu_source_type.value || []).filter((dict: any) => dict.value !== 'AI_DECISION' || form.value.sourceType === 'AI_DECISION')
-);
-const lineList = ref<any[]>([]); // 请购明细列表
-const checkedLines = ref<any[]>([]); // 已选中的明细行
-const currentMaterialIndex = ref(-1); // 当前选择的物料索引
+}); /** 表单数据 */
+/** 仅限制前端手工选择；能否新增仍以后端来源占用校验为准。 */
+const pendingSourceLabels: Record<string, string> = {
+  REQ_CONVERT: '需求转入',
+  MRP: 'MRP 需求',
+  PRD_MRP: '生产 MRP 需求',
+  MATERIAL_REQUIREMENT: '物料需求',
+  LOW_STOCK: '低库存',
+  MES_SPARE_LOW_STOCK: 'MES 备件低库存'
+};
+const isSourceLedgerPending = (source?: string) =>
+  typeof source === 'string' && Object.prototype.hasOwnProperty.call(pendingSourceLabels, source.trim().toUpperCase());
+/** AI 来源仅供历史展示；受限来源保留禁用选项，未入字典的历史来源补只读标签。 */
+const sourceTypeOptions = computed(() => {
+  const options = (pu_source_type.value || []).filter((dict: any) => dict.value !== 'AI_DECISION' || form.value.sourceType === 'AI_DECISION');
+  const sourceType = form.value.sourceType;
+  if (isSourceLedgerPending(sourceType) && !options.some((dict: any) => dict.value === sourceType)) {
+    return [...options, { value: sourceType, label: pendingSourceLabels[sourceType.trim().toUpperCase()] }];
+  }
+  return options;
+});
+const lineList = ref<any[]>([]); /** 请购明细列表 */
+const checkedLines = ref<any[]>([]); /** 已选中的明细行 */
+const currentMaterialIndex = ref(-1); /** 当前选择的物料索引 */
 
-// 流程相关状态
+/** 流程相关状态 */
 const loadingFlow = ref(false);
 const flowOptions = ref([]);
 
-// 表单禁用状态（考虑 workflow 嵌入和查看模式）
+/** 表单禁用状态（考虑流程嵌入和查看模式）。 */
 const formDisabled = computed(() => isViewMode.value || props.disabled);
 
-// 物料选择对话框
+/** 物料选择对话框 */
 const materialSelectDialogRef = ref<any>(null);
 
-// 表单验证规则
+/** 表单验证规则 */
 const rules = {
   requisitionNo: [{ required: true, message: '申请单号不能为空', trigger: 'blur' }]
 };
@@ -288,22 +322,22 @@ watch(
   { deep: true, immediate: true }
 );
 
-// 组件挂载后的初始化逻辑
+/** 组件挂载后的初始化逻辑 */
 onMounted(() => {
-  // 获取路由参数
+  /** 获取路由参数 */
   const id = route.query.id as any;
   const action = route.query.action as string;
 
-  // 设置页面模式和标题
+  /** 设置页面模式和标题 */
   isViewMode.value = action === 'view';
   title.value = action === 'add' ? '新增采购申请' : action === 'edit' ? '修改采购申请' : '查看采购申请';
 
-  // 根据操作类型初始化页面
+  /** 根据操作类型初始化页面 */
   if (action === 'add') {
-    reset(); // 新增操作：重置表单
+    reset(); /** 新增操作：重置表单 */
     loadFlows();
   } else if (id) {
-    getInfo(id); // 编辑/查看操作：获取详情数据
+    getInfo(id); /** 编辑/查看操作：获取详情数据 */
     loadFlows();
   }
 });
@@ -378,9 +412,9 @@ function handleSubmitFlow() {
       }
       form.value.puPurchaseRequisitionLineList = lineList.value;
       if (form.value.requisitionId != null) {
-        // 先保存数据
+        /** 先保存数据 */
         updatePurchaseRequisition(form.value).then(() => {
-          // 再提交审批流
+          /** 再提交审批流 */
           submitRequisitionFlow(String(form.value.requisitionId), String(form.value.selectFlowId))
             .then((res: any) => {
               if (res.code === 200) {
@@ -476,7 +510,7 @@ function handleMaterialSelected(row: any) {
  */
 function submitForm() {
   form.value.puPurchaseRequisitionLineList = lineList.value;
-  // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+  /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
   if (autoGenFlag.value) {
     form.value.requisitionNo = undefined;
   }
@@ -504,7 +538,7 @@ function handleConvert() {
 /**
  * 取消并返回列表页
  */
-//自动生成编号
+/** 自动生成编号 */
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
     previewCode('PU_REQUISITION_CODE').then((response) => {

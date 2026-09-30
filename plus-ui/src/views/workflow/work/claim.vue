@@ -60,6 +60,7 @@
 </template>
 
 <script setup name="Claim" lang="ts">
+import type { FormInstance } from 'element-plus';
 import { listClaimProcess } from '@/api/workflow/work/process';
 import { claimTask } from '@/api/workflow/work/task';
 
@@ -78,7 +79,7 @@ const multiple = ref(true);
 const total = ref(0);
 const dateRange = ref<[string, string]>(['', '']);
 
-const queryFormRef = ref(ElForm);
+const queryFormRef = ref<FormInstance>();
 
 const queryParams = ref<ProcessQuery>({
   pageNum: 1,
@@ -101,7 +102,7 @@ const handleQuery = () => {
 };
 /** 重置按钮操作 */
 const resetQuery = () => {
-  queryFormRef.value.resetFields();
+  queryFormRef.value?.resetFields();
   handleQuery();
 };
 /** 签收按钮操作 */

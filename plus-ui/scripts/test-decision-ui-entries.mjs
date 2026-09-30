@@ -49,12 +49,18 @@ const actions = readFileSync('src/components/ai/decision/DecisionActionApproval.
 const timeline = readFileSync('src/components/ai/decision/DecisionRunTimeline.vue', 'utf8');
 assert.match(actions, /el-descriptions/, 'actions should expose approved fields in a structured summary');
 assert.match(timeline, /decisionNodeLabel/, 'timeline must show human-readable node names');
-assert.match(summaryCard, /result\?\.businessRef\?\.code/, 'work order code must be displayed before generic business type');
+assert.match(
+  summaryCard,
+  /decisionBusinessObjectDisplay\(props\.run\.run,\s*result\.value\?\.businessRef\?\.code\)/,
+  'summary must retain the trusted result business reference before generic fallback'
+);
 const listView = readFileSync('src/views/ai/decision/index.vue', 'utf8');
 assert.match(listView, /decisionRunStatusLabel\(/, 'run list should display status in a human language');
 assert.match(listView, /scope\.row\.status === 'SUCCEEDED'\s*\?\s*'success'/, 'completed runs should be clearly marked as successful');
 
-assert.match(listView, /scope\.row\.bizCode\s*\|\|\s*scope\.row\.bizId/, 'run list should show exact ID when business code is absent');
+assert.match(listView, /decisionBusinessObjectDisplay\(scope\.row\)\.label/, 'run list should use the honest business object display');
+assert.match(listView, /decisionBusinessObjectDisplay\(scope\.row\)\.internalIdText/, 'exact internal IDs must remain explicitly labeled');
+assert.doesNotMatch(listView, /scope\.row\.bizCode\s*\|\|\s*scope\.row\.bizId/, 'internal ID must not masquerade as a business code');
 
 assert.doesNotMatch(detail, /<pre[^>]*>\{\{\s*JSON\.stringify/, 'raw JSON must not be the primary schedule preview');
 

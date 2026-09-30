@@ -34,7 +34,7 @@
       <el-col :xs="24" :lg="12" class="mb-2">
         <el-card shadow="hover">
           <template #header>
-            <span>实时数据 ({{ realtimePoints }} points, {{ updateInterval / 1000 }}s interval)</span>
+            <span>实时数据（最多 {{ realtimePoints }} 个采样点）</span>
           </template>
           <div ref="realtimeChartRef" style="height: 320px" />
         </el-card>
@@ -68,17 +68,16 @@ const deviceInfo = reactive<any>({});
 const connectionStatus = ref('OFFLINE');
 const latestProps = ref<Record<string, string>>({});
 
-// 实时图表状态
+/** 实时图表状态 */
 const realtimeChartRef = ref();
 const historyChartRef = ref();
-const updateInterval = 3000;
 const realtimePoints = 60;
 let realtimeChart: echarts.ECharts | null = null;
 let historyChart: echarts.ECharts | null = null;
 let eventSource: EventSource | null = null;
 let resizeHandler: (() => void) | null = null;
 
-// 实时图表滚动窗口：propertyCode -> { times: [], values: [] }
+/** 实时图表滚动窗口：propertyCode -> { times: [], values: [] } */
 const realtimeData = reactive<Record<string, { times: string[]; values: number[] }>>({});
 
 /** 加载设备信息 */
@@ -137,7 +136,7 @@ function updateRealtimeChartOption() {
   if (!realtimeChart) return;
   const propertyCodes = Object.keys(realtimeData);
   if (propertyCodes.length === 0) return;
-  // 使用第一个属性的时间作为 X 轴（所有属性共享相同的时间戳）
+  /** 使用第一个属性的时间作为 X 轴（所有属性共享相同的时间戳） */
   const xTimes = realtimeData[propertyCodes[0]]?.times || [];
   realtimeChart.setOption({
     xAxis: { data: xTimes },
@@ -189,7 +188,7 @@ function renderHistoryChart(rows: DeviceDataVO[]) {
   if (!historyChart) {
     historyChart = echarts.init(historyChartRef.value);
   }
-  // 清除之前的标题/错误状态，防止过期信息残留
+  /** 清除之前的标题/错误状态，防止过期信息残留 */
   historyChart.clear();
   if (rows.length === 0) {
     historyChart.setOption({
@@ -197,7 +196,7 @@ function renderHistoryChart(rows: DeviceDataVO[]) {
     });
     return;
   }
-  // 按 propertyCode 分组（后端按 collect_time 降序返回，需反转为升序以便图表展示）
+  /** 按 propertyCode 分组（后端按 collect_time 降序返回，需反转为升序以便图表展示） */
   const grouped: Record<string, { times: string[]; values: number[] }> = {};
   rows
     .slice()
@@ -234,22 +233,22 @@ function subscribeSSE() {
   eventSource.addEventListener('realtime', (e: MessageEvent) => {
     try {
       const frame: RealtimeFrame = JSON.parse(e.data);
-      // 更新连接状态
+      /** 更新连接状态 */
       connectionStatus.value = frame.connectionStatus || 'OFFLINE';
-      // 更新最新数值卡片
+      /** 更新最新数值卡片 */
       latestProps.value = frame.properties || {};
-      // 追加到滚动窗口
+      /** 追加到滚动窗口 */
       const time = new Date(frame.timestamp).toLocaleTimeString();
       const props = frame.properties || {};
       Object.entries(props).forEach(([code, val]) => {
         const numVal = Number(val);
-        if (isNaN(numVal)) return; // 仅绘制数值类型的数据
+        if (isNaN(numVal)) return; /** 仅绘制数值类型的数据 */
         if (!realtimeData[code]) {
           realtimeData[code] = { times: [], values: [] };
         }
         realtimeData[code].times.push(time);
         realtimeData[code].values.push(numVal);
-        // 仅保留最近 N 个数据点
+        /** 仅保留最近 N 个数据点 */
         if (realtimeData[code].times.length > realtimePoints) {
           realtimeData[code].times.shift();
           realtimeData[code].values.shift();
@@ -257,21 +256,21 @@ function subscribeSSE() {
       });
       updateRealtimeChartOption();
     } catch {
-      // 忽略解析错误
+      /** 忽略解析错误 */
     }
   });
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
   eventSource.onerror = () => {
     if (eventSource?.readyState === EventSource.CLOSED) {
-      // 连接已永久关闭（如 401/403），停止重连
+      /** 连接已永久关闭（如 401/403），停止重连 */
       eventSource?.close();
       eventSource = null;
       connectionStatus.value = 'OFFLINE';
       proxy?.$modal.msgError('实时数据连接已断开，请刷新页面重试');
       return;
     }
-    // 连接异常但未关闭，EventSource 会自动重连
+    /** 连接异常但未关闭，EventSource 会自动重连 */
     reconnectAttempts++;
     if (reconnectAttempts > maxReconnectAttempts) {
       eventSource?.close();
@@ -283,9 +282,10 @@ function subscribeSSE() {
 }
 
 onMounted(async () => {
-  // 每个加载器相互独立，任一失败不应阻塞其他加载器
-  // （之前 loadLatest/loadStatus 抛出异常会导致 loadHistory 被完全跳过，
-  // 使历史卡片一片空白且无任何诊断输出）
+  /**
+   * 每个加载器相互独立，任一失败不应阻塞其他加载器。
+   * 此前 loadLatest/loadStatus 抛出异常会导致 loadHistory 被完全跳过，使历史卡片一片空白且无任何诊断输出。
+   */
   await Promise.allSettled([loadDeviceInfo(), loadLatest(), loadStatus()]);
   await nextTick();
   initRealtimeChart();

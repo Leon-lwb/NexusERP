@@ -41,12 +41,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="采购申请号" prop="requisitionNo">
-              <el-input v-model="form.requisitionNo" readonly>
-                <template #append>
-                  <!-- 选择请购单按钮 -->
-                  <el-button icon="Search" @click="handleSelectRequisition" />
-                </template>
-              </el-input>
+              <el-input v-model="form.requisitionNo" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -55,6 +50,15 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-alert
+          v-if="!form.orderId && !isViewMode && !props.disabled"
+          title="带申请来源的订单请在采购申请列表转单后编辑"
+          description="本页仅支持无申请来源的手工新增，转单与来源校验仍由服务端负责。"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="mb8"
+        />
 
         <!-- 供应商信息 -->
         <el-divider content-position="left">供应商信息</el-divider>
@@ -346,25 +350,18 @@
 </template>
 
 <script setup lang="ts" name="PurchaseOrderForm">
-// 导入采购订单相关的API方法
-import {
-  addPurchaseOrder,
-  getPurchaseOrder,
-  updatePurchaseOrder,
-  generateFromRequisition,
-  submitOrderFlow,
-  getOrderProcId
-} from '@/api/erp/pu/order';
-// 导入供应商管理API
+/** 导入采购订单相关的API方法 */
+import { addPurchaseOrder, getPurchaseOrder, updatePurchaseOrder, submitOrderFlow, getOrderProcId } from '@/api/erp/pu/order';
+/** 导入供应商管理API */
 import { listVendor } from '@/api/erp/bd/vendor';
 import { listUser } from '@/api/system/user';
-// 导入物料-供应商关系API
+/** 导入物料-供应商关系API */
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor';
-// 导入审批流API
+/** 导入审批流API */
 import { getProcesss } from '@/api/workflow/process/index';
-// 导入采购合同API
+/** 导入采购合同API */
 import { listApprovedContract } from '@/api/erp/pu/contract';
-// 导入路由相关功能
+/** 导入路由相关功能 */
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
@@ -377,38 +374,38 @@ const props = defineProps({
   isNew: { type: Boolean, default: false }
 });
 
-// 获取当前实例的代理对象和字典数据
+/** 获取当前实例的代理对象和字典数据 */
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_order_status, so_currency_type } = toRefs<any>(proxy.useDict('pu_purchase_order_status', 'so_currency_type'));
 
-// 路由和导航
+/** 路由和导航 */
 const route = useRoute();
 const router = useRouter();
 
-// 页面状态变量
-const title = ref(''); // 页面标题
-const isViewMode = ref(false); // 是否为查看模式
-const form = ref<any>({}); // 表单数据
-const autoGenFlag = ref(false); // 自动生成编号开关
-const lineList = ref<any[]>([]); // 订单明细列表
-const checkedLines = ref<any[]>([]); // 已选中的明细行
-const currentMaterialIndex = ref(-1); // 当前选择的物料索引
+/** 页面状态变量 */
+const title = ref(''); /** 页面标题 */
+const isViewMode = ref(false); /** 是否为查看模式 */
+const form = ref<any>({}); /** 表单数据 */
+const autoGenFlag = ref(false); /** 自动生成编号开关 */
+const lineList = ref<any[]>([]); /** 订单明细列表 */
+const checkedLines = ref<any[]>([]); /** 已选中的明细行 */
+const currentMaterialIndex = ref(-1); /** 当前选择的物料索引 */
 
-// 流程相关状态
+/** 流程相关状态 */
 const loadingFlow = ref(false);
 const flowOptions = ref([]);
 
-// 表单禁用状态
+/** 表单禁用状态 */
 const formDisabled = computed(() => isViewMode.value || props.disabled);
 
-// 供应商选择对话框数据
+/** 供应商选择对话框数据 */
 const vendorDialog = reactive({
-  visible: false, // 对话框是否可见
-  list: [] as any[], // 供应商列表
-  filterByMaterial: false, // 是否按物料筛选供应商
-  currentMaterialId: null as number | null, // 当前选中行的物料ID
+  visible: false /** 对话框是否可见 */,
+  list: [] as any[] /** 供应商列表 */,
+  filterByMaterial: false /** 是否按物料筛选供应商 */,
+  currentMaterialId: null as number | null /** 当前选中行的物料ID */,
   query: {
-    // 查询条件
+    /** 查询条件 */
     pageNum: 1,
     pageSize: 10,
     vendorCode: null,
@@ -416,15 +413,15 @@ const vendorDialog = reactive({
   }
 });
 
-// 物料选择对话框
+/** 物料选择对话框 */
 const materialSelectDialogRef = ref<any>(null);
 
-// 合同选择对话框数据
+/** 合同选择对话框数据 */
 const contractDialog = reactive({
-  visible: false, // 对话框是否可见
-  list: [] as any[], // 合同列表
+  visible: false /** 对话框是否可见 */,
+  list: [] as any[] /** 合同列表 */,
   query: {
-    // 查询条件
+    /** 查询条件 */
     pageNum: 1,
     pageSize: 10,
     contractNo: null,
@@ -432,7 +429,7 @@ const contractDialog = reactive({
   }
 });
 
-// 表单验证规则
+/** 表单验证规则 */
 const rules = {
   orderNo: [{ required: true, message: '订单号不能为空', trigger: 'blur' }]
 };
@@ -458,22 +455,22 @@ watch(
   { deep: true, immediate: true }
 );
 
-// 组件挂载后的初始化逻辑
+/** 组件挂载后的初始化逻辑 */
 onMounted(() => {
-  // 获取路由参数
+  /** 获取路由参数 */
   const id = route.query.id as any;
   const action = route.query.action as string;
 
-  // 设置页面模式和标题
+  /** 设置页面模式和标题 */
   isViewMode.value = action === 'view';
   title.value = action === 'add' ? '新增采购订单' : action === 'edit' ? '修改采购订单' : '查看采购订单';
 
-  // 根据操作类型初始化页面
+  /** 根据操作类型初始化页面 */
   if (action === 'add') {
-    reset(); // 新增操作：重置表单
+    reset(); /** 新增操作：重置表单 */
     loadFlows();
   } else if (id) {
-    getInfo(id); // 编辑/查看操作：获取详情数据
+    getInfo(id); /** 编辑/查看操作：获取详情数据 */
     loadFlows();
   }
 });
@@ -664,7 +661,7 @@ function openVendor(materialId?: number) {
  */
 function queryVendors() {
   if (vendorDialog.filterByMaterial && vendorDialog.currentMaterialId) {
-    // 按物料筛选供应商
+    /** 按物料筛选供应商 */
     listMaterialVendor({
       materialId: vendorDialog.currentMaterialId,
       status: 1,
@@ -703,7 +700,7 @@ function selectVendor(row: any) {
   form.value.vendorId = row.vendorId;
   form.value.vendorCode = row.vendorCode;
   form.value.vendorName = row.vendorName;
-  // 如果是从物料供应商列表选择的，自动填充价格到当前行
+  /** 如果是从物料供应商列表选择的，自动填充价格到当前行 */
   if (vendorDialog.filterByMaterial && row.price && currentMaterialIndex.value >= 0) {
     const target = lineList.value[currentMaterialIndex.value];
     if (target) {
@@ -714,7 +711,7 @@ function selectVendor(row: any) {
   vendorDialog.visible = false;
 }
 
-// ============ 采购部门 / 采购员选择 ============
+/** 采购部门与采购员选择。 */
 const userDialog = reactive({
   visible: false,
   loading: false,
@@ -769,24 +766,6 @@ function resetUserQuery() {
 }
 
 /**
- * 根据请购单生成采购订单
- */
-function handleSelectRequisition() {
-  if (!form.value.requisitionId) {
-    proxy.$modal.msgWarning('请先选择采购申请ID后生成');
-    return;
-  }
-  generateFromRequisition(form.value.requisitionId).then((res: any) => {
-    const data = res.data || res;
-    if (data) {
-      form.value = { ...form.value, ...data };
-      lineList.value = data.lineList || data.puPurchaseOrderLineList || lineList.value;
-    }
-    proxy.$modal.msgSuccess('已根据申请单生成采购订单');
-  });
-}
-
-/**
  * 金额重算（FE-ERP-06）
  * <p>口径与后端采购侧既有实现保持一致：{@code PuContractServiceImpl} 的
  * {@code lineAmount = 含税单价 × 数量}、{@code taxAmount = lineAmount × taxRate}、
@@ -834,7 +813,7 @@ function recalcHeader() {
 function submitForm() {
   recalcLines();
   form.value.lineList = lineList.value;
-  // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+  /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
   if (autoGenFlag.value) {
     form.value.orderNo = undefined;
   }
@@ -847,7 +826,7 @@ function submitForm() {
 /**
  * 取消并返回列表页
  */
-//自动生成编号
+/** 自动生成编号 */
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
     previewCode('PU_ORDER_CODE').then((response) => {
@@ -900,7 +879,7 @@ function resetContractQuery() {
 function selectContract(row: any) {
   form.value.contractId = row.contractId;
   form.value.contractNo = row.contractNo;
-  // 如果供应商为空，自动填充合同中的供应商信息
+  /** 如果供应商为空，自动填充合同中的供应商信息 */
   if (!form.value.vendorId && row.vendorId) {
     form.value.vendorId = row.vendorId;
     form.value.vendorCode = row.vendorCode;

@@ -134,7 +134,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
-              <el-radio-group v-model="form.status">
+              <el-radio-group v-model="form.status" :disabled="formDisabled || form.receiveId != null">
                 <el-radio v-for="dict in wm_material_receive_status" :key="dict.value" :label="dict.value">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
@@ -464,11 +464,11 @@ const router = useRouter();
 const wmMaterialReceiveLineList = ref<ReceiveLineVO[]>([]);
 const checkedWmMaterialReceiveLine = ref<any[]>([]);
 
-// 流程相关状态
+/** 流程相关状态 */
 const loadingFlow = ref(false);
 const flowOptions = ref<any[]>([]);
 
-// 上架弹窗相关变量
+/** 上架弹窗相关变量 */
 const shelfOpen = ref(false);
 /** 上架表单（物料入库单明细的前端可编辑形态） */
 type ShelfForm = Partial<ReceiveDetailVO> & { snCode?: string };
@@ -487,7 +487,7 @@ function onLabelRecognized(payload: any) {
     if (payload.materialName) {
       shelfForm.value.materialName = payload.materialName;
     } else {
-      // 主数据未命中时尝试按料号查物料(兜底)
+      /** 主数据未命中时尝试按料号查物料(兜底) */
       listMaterial({ materialCode: payload.materialCode, pageNum: 1, pageSize: 5 } as any)
         .then((res: any) => {
           const rows = res?.rows || [];
@@ -507,14 +507,14 @@ function onLabelRecognized(payload: any) {
   }
 }
 
-// 仓库树相关数据
+/** 仓库树相关数据 */
 const warehouseTree = ref([]);
 const warehouseTreeLoading = ref(false);
 const selectedWarehouse = ref('');
 const selectedArea = ref('');
 const selectedLocation = ref('');
 
-// 级联选择器配置
+/** 级联选择器配置 */
 const cascaderProps = computed(() => ({
   label: 'label',
   value: 'value',
@@ -524,13 +524,13 @@ const cascaderProps = computed(() => ({
   checkStrictly: true
 }));
 
-// 标准化仓库树数据，添加统一的 label 和 value 字段
+/** 标准化仓库树数据，添加统一的 label 和 value 字段 */
 const normalizedWarehouseTree = computed(() => {
   const convert = (nodes: any[]) => {
     if (!nodes || !Array.isArray(nodes)) return [];
     return nodes.map((node: any) => {
       const newNode: any = { ...node };
-      // 确定标签
+      /** 确定标签 */
       if (node.warehouseName !== undefined) {
         newNode.label = node.warehouseName;
         newNode.value = node.warehouseId;
@@ -544,7 +544,7 @@ const normalizedWarehouseTree = computed(() => {
         newNode.label = node.name || node.label || node.warehouseCode || node.areaCode || node.locationCode || '未知节点';
         newNode.value = node.id || null;
       }
-      // 递归处理子节点
+      /** 递归处理子节点 */
       if (node.children && node.children.length > 0) {
         newNode.children = convert(node.children);
       }
@@ -554,10 +554,10 @@ const normalizedWarehouseTree = computed(() => {
   return convert(warehouseTree.value);
 });
 
-// 明细数据显示相关
+/** 明细数据显示相关 */
 const expandedRows = ref([]);
 
-// 到货通知单选择相关变量
+/** 到货通知单选择相关变量 */
 const arrivalNoticeSelectOpen = ref(false);
 const arrivalNoticeLineList = ref([]);
 const arrivalNoticeLoading = ref(false);
@@ -610,8 +610,8 @@ const data = reactive({
 
 const { queryParams, form, shelfRules } = toRefs(data);
 const autoGenFlag = ref(false);
-// 仓库必选：ERP-PU-06 —— 采购收货联动自动生成的收货草稿 warehouseId 为空，
-// 若不强制指定仓库，后续上架/库存归集会落到空仓库。故主表单加必填校验。
+/** 仓库必选：ERP-PU-06 —— 采购收货联动自动生成的收货草稿 warehouseId 为空， */
+/** 若不强制指定仓库，后续上架/库存归集会落到空仓库。故主表单加必填校验。 */
 const warehouseOptions = ref<any[]>([]);
 const rules = {
   warehouseId: [{ required: true, message: '请选择入库仓库', trigger: 'change' }]
@@ -661,7 +661,7 @@ function applyWorkflowFormPayload(payload: Record<string, any>) {
   wmMaterialReceiveLineList.value = Array.isArray(merged.wmMaterialReceiveLineList)
     ? merged.wmMaterialReceiveLineList.map((line: any) => ({
         ...line,
-        // 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则使用前端维护的 detailList
+        /** 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则使用前端维护的 detailList */
         detailList: line.wmMaterialReceiveLineDetailList || line.detailList || []
       }))
     : [];
@@ -720,12 +720,12 @@ function initPage(id: any) {
     reset();
     loadFlows();
   } else if (id) {
-    // 已由流程父组件注入 customFormData 时不再重复请求
+    /** 已由流程父组件注入 customFormData 时不再重复请求 */
     const injectedId = (props.customFormData as any)?.receiveId;
     if (injectedId != null && String(injectedId) === String(id)) {
       return;
     }
-    // 仅有 id/dataId、无 action 时从接口拉全量（含子表明细）
+    /** 仅有 id/dataId、无 action 时从接口拉全量（含子表明细） */
     const inWorkflowDetail = (route.path || '').includes('/workflow/process/detail');
     isViewMode.value = true;
     title.value = inWorkflowDetail ? '物料入库单（流程）' : '查看物料入库单';
@@ -734,42 +734,42 @@ function initPage(id: any) {
   }
 }
 
-// 获取详细信息
+/** 获取详细信息 */
 function getInfo(id: any) {
   getReceive(id).then((response: any) => {
     form.value = response.data;
     wmMaterialReceiveLineList.value = response.data.wmMaterialReceiveLineList;
 
-    // 获取每个行项目的明细数据
+    /** 获取每个行项目的明细数据 */
     wmMaterialReceiveLineList.value.forEach((line: any, index: number) => {
-      // 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则初始化为空数组
-      // 后端 selectById 会查询明细数据并填充到此字段
+      /** 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则初始化为空数组 */
+      /** 后端 selectById 会查询明细数据并填充到此字段 */
       line.detailList = line.wmMaterialReceiveLineDetailList || [];
 
-      // 如果后端未返回明细数据但行ID存在，则通过独立接口加载
+      /** 如果后端未返回明细数据但行ID存在，则通过独立接口加载 */
       if (line.detailList.length === 0 && line.lineId) {
         loadDetailList(line.lineId, index);
       }
     });
 
-    // 状态校验：审批中状态强制设为只读
+    /** 状态校验：审批中状态强制设为只读 */
     if (form.value.status === 'APPROVING') {
       isViewMode.value = true;
       proxy.$modal.msgWarning('当前单据正在审批中，不可修改');
     }
 
-    // 表单数据加载完成后，重新尝试自动选择流程（解决与 loadFlows 的竞态问题）
+    /** 表单数据加载完成后，重新尝试自动选择流程（解决与 loadFlows 的竞态问题） */
     tryAutoSelect();
   });
 }
 
-// 加载明细数据
+/** 加载明细数据 */
 function loadDetailList(lineId: any, index: number): Promise<any> {
   const queryParams = { pageNum: 1, pageSize: 9999, lineId: lineId };
   return listDetail(queryParams)
     .then((response: any) => {
-      // 将获取到的明细数据赋值给对应的行
-      // 兼容两种响应结构：TableDataInfo 直接返回（response.rows）或被 R 包装（response.data.rows）
+      /** 将获取到的明细数据赋值给对应的行 */
+      /** 兼容两种响应结构：TableDataInfo 直接返回（response.rows）或被 R 包装（response.data.rows） */
       wmMaterialReceiveLineList.value[index].detailList = response.rows || response.data?.rows || [];
     })
     .catch((error: any) => {
@@ -778,7 +778,7 @@ function loadDetailList(lineId: any, index: number): Promise<any> {
     });
 }
 
-// 表单重置
+/** 表单重置 */
 function reset() {
   autoGenFlag.value = false;
   form.value = {
@@ -821,7 +821,7 @@ function reset() {
   proxy.resetForm('receiveRef');
 }
 
-// 加载流程列表
+/** 加载流程列表 */
 function loadFlows() {
   loadingFlow.value = true;
   getProcesss({ serviceName: 'wmMaterialReceiveService' })
@@ -835,14 +835,14 @@ function loadFlows() {
     });
 }
 
-// 尝试自动选择流程（仅当未选择且只有一个可用流程时）
+/** 尝试自动选择流程（仅当未选择且只有一个可用流程时） */
 function tryAutoSelect() {
   if (!form.value.selectFlowId && flowOptions.value.length === 1) {
     form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
 
-// 提交审批
+/** 提交审批 */
 function handleSubmitFlow() {
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
@@ -873,13 +873,13 @@ function handleSubmitFlow() {
   });
 }
 
-// 确认上架
+/** 确认上架 */
 function handleConfirmShelf() {
   if (form.value.status !== 'APPROVED') {
     proxy.$modal.msgWarning('当前状态不允许确认上架，只有待上架状态才能执行确认上架操作！');
     return;
   }
-  // 校验是否已有上架明细
+  /** 校验是否已有上架明细 */
   let hasDetail = false;
   for (const line of wmMaterialReceiveLineList.value) {
     if (line.detailList && line.detailList.length > 0) {
@@ -894,17 +894,21 @@ function handleConfirmShelf() {
   proxy.$modal
     .confirm('是否确认上架？确认后单据状态将变为"待入库"。')
     .then(function () {
-      return confirmShelf(form.value.receiveId);
+      /** 上架弹窗只修改内存中的明细；先通过业务 PUT 持久化，再让 confirmShelf 从数据库校验。 */
+      form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
+      return updateReceive(form.value).then(() => {
+        return confirmShelf(form.value.receiveId);
+      });
     })
     .then(() => {
       proxy.$modal.msgSuccess('确认上架成功');
-      // 刷新页面数据
+      /** 刷新页面数据 */
       getInfo(form.value.receiveId);
     })
     .catch(() => {});
 }
 
-// 查看流程
+/** 查看流程 */
 function onViewFlow() {
   getReceiveProcId(String(form.value.receiveId))
     .then((res: any) => {
@@ -922,8 +926,8 @@ function onViewFlow() {
 /** 同步入库行明细字段 */
 function normalizeReceiveLineDetails() {
   return wmMaterialReceiveLineList.value.map((line: any) => {
-    // 优先使用前端维护的 detailList（包含用户新增/编辑的明细）
-    // 后端返回的 wmMaterialReceiveLineDetailList 可能是空数组 []（truthy），不能用 || 短路
+    /** 优先使用前端维护的 detailList（包含用户新增/编辑的明细） */
+    /** 后端返回的 wmMaterialReceiveLineDetailList 可能是空数组 []（仍为真值），不能用 || 短路。 */
     const details =
       line.detailList && line.detailList.length > 0
         ? line.detailList
@@ -941,7 +945,7 @@ function normalizeReceiveLineDetails() {
 function submitForm() {
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
       if (autoGenFlag.value) {
         form.value.receiveCode = undefined;
       }
@@ -961,11 +965,11 @@ function submitForm() {
   });
 }
 
-// 审核按钮提交表单
+/** 审核按钮提交表单 */
 function submitApprovingForm() {
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
-      // 设置状态为审核中
+      /** 设置状态为审核中 */
       form.value.status = 'APPROVING';
       form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
       if (form.value.receiveId != null) {
@@ -983,7 +987,7 @@ function submitApprovingForm() {
   });
 }
 
-// 取消按钮
+/** 取消按钮 */
 function cancel() {
   const obj = { path: '/erp/inbound/receive' };
   proxy.$tab.closeOpenPage(obj);
@@ -1017,7 +1021,7 @@ function handleAddWmMaterialReceiveLine() {
   obj.locationId = '';
   obj.locationCode = '';
   obj.locationName = '';
-  obj.detailList = []; // 初始化明细列表
+  obj.detailList = []; /** 初始化明细列表 */
   wmMaterialReceiveLineList.value.push(obj);
 }
 
@@ -1049,19 +1053,19 @@ function getDictLabel(dictOptions: any, value: any) {
  * 打开到货通知单物料选择对话框
  */
 function openMaterialSelect(rowIndex: number) {
-  // 记录当前行索引
+  /** 记录当前行索引 */
   currentMaterialRowIndex.value = rowIndex;
 
-  // 检查是否有到货通知单ID
+  /** 检查是否有到货通知单ID */
   if (!form.value.noticeId) {
     proxy.$modal.msgWarning('请先选择到货通知单');
     return;
   }
 
-  // 加载到货通知单的子表信息
+  /** 加载到货通知单的子表信息 */
   loadArrivalNoticeLines(form.value.noticeId);
 
-  // 打开对话框
+  /** 打开对话框 */
   arrivalNoticeSelectOpen.value = true;
 }
 
@@ -1086,13 +1090,13 @@ function loadArrivalNoticeLines(noticeId: any) {
  * 选择到货通知单行信息
  */
 function selectArrivalNoticeLine(row: any) {
-  // 检查行索引是否有效
+  /** 检查行索引是否有效 */
   if (currentMaterialRowIndex.value < 0 || currentMaterialRowIndex.value >= wmMaterialReceiveLineList.value.length) {
     proxy.$modal.msgError('选择行索引无效');
     return;
   }
 
-  // 将选中的到货通知单行信息赋值给当前入库单行
+  /** 将选中的到货通知单行信息赋值给当前入库单行 */
   const currentRow = wmMaterialReceiveLineList.value[currentMaterialRowIndex.value];
   currentRow.materialId = row.materialId;
   currentRow.materialCode = row.materialCode;
@@ -1103,28 +1107,28 @@ function selectArrivalNoticeLine(row: any) {
   currentRow.quantityReceived = row.quantityArrival;
   currentRow.sourceDocLineId = row.lineId;
 
-  // 关闭对话框
+  /** 关闭对话框 */
   arrivalNoticeSelectOpen.value = false;
   currentMaterialRowIndex.value = -1;
 }
 
 /** 上架按钮操作 */
 function handleShelf(row: any) {
-  // 校验行ID：若行未保存到数据库（lineId为空），不允许上架
-  // 否则 addDetail 保存的明细 line_id 为 null，会成为孤儿记录，重新打开后无法查询
+  /** 校验行ID：若行未保存到数据库（lineId为空），不允许上架 */
+  /** 否则 addDetail 保存的明细 line_id 为 null，会成为孤儿记录，重新打开后无法查询 */
   if (!row.lineId) {
     proxy.$modal.msgWarning('当前入库单行未保存，请先保存入库单主表后再进行上架操作');
     return;
   }
 
-  // 打开上架弹窗
+  /** 打开上架弹窗 */
   resetShelfForm();
   isShelfViewMode.value = false;
 
-  // 加载仓库树数据
+  /** 加载仓库树数据 */
   loadWarehouseTree();
 
-  // 填充从主表传递过来的数据
+  /** 填充从主表传递过来的数据 */
   shelfForm.value.lineId = row.lineId;
   shelfForm.value.materialId = row.materialId;
   shelfForm.value.materialCode = row.materialCode;
@@ -1134,7 +1138,7 @@ function handleShelf(row: any) {
   shelfForm.value.quantity = row.quantityReceived;
   shelfForm.value.receiveId = form.value.receiveId;
 
-  // 自动生成批次号：调用后端 createBatch 接口，自动生成批次编码并回填
+  /** 自动生成批次号：调用后端 createBatch 接口，自动生成批次编码并回填 */
   autoGenerateBatch(row);
 
   shelfOpen.value = true;
@@ -1162,13 +1166,13 @@ function autoGenerateBatch(row: any) {
   createBatch(batchData)
     .then((response: any) => {
       if (response.code === 200 && response.data) {
-        // 自动回填批次ID和批次号到上架表单
+        /** 自动回填批次ID和批次号到上架表单 */
         shelfForm.value.batchId = response.data.batchId;
         shelfForm.value.batchCode = response.data.batchCode;
       }
     })
     .catch((error: any) => {
-      // 批次号生成失败不阻塞上架流程，用户可手动输入
+      /** 批次号生成失败不阻塞上架流程，用户可手动输入 */
       console.warn('自动生成批次号失败，用户可手动输入:', error);
     });
 }
@@ -1191,7 +1195,7 @@ function loadWarehouseTree() {
 /** 仓库选择变更处理 */
 function handleWarehouseChange(value: any) {
   if (!value) {
-    // 清空所有相关字段
+    /** 清空所有相关字段 */
     shelfForm.value.warehouseId = null;
     shelfForm.value.warehouseCode = '';
     shelfForm.value.warehouseName = '';
@@ -1204,11 +1208,11 @@ function handleWarehouseChange(value: any) {
     return;
   }
 
-  // 解析选中的值
+  /** 解析选中的值 */
   const selectedPath = value;
   const pathNodes = findPathNodes(normalizedWarehouseTree.value, selectedPath);
 
-  // 根据选中路径提取相关信息
+  /** 根据选中路径提取相关信息 */
   if (pathNodes.length >= 1) {
     const warehouseNode = pathNodes[0];
     shelfForm.value.warehouseId = warehouseNode.warehouseId;
@@ -1251,13 +1255,13 @@ function findNodeById(nodes: any[], id: any, idField: string): any {
 function findPathNodes(nodes: any[], selectedValue: any): any[] {
   if (!nodes || !selectedValue) return [];
 
-  // 使用 value 字段查找节点（标准化后的树中每个节点都有 value 字段）
+  /** 使用 value 字段查找节点（标准化后的树中每个节点都有 value 字段） */
   let path: any[] = [];
   const currentNode = findNodeById(nodes, selectedValue, 'value');
 
   if (currentNode) {
     path.push(currentNode);
-    // 查找父节点
+    /** 查找父节点 */
     const parentPath = findParentPath(nodes, currentNode);
     path = [...parentPath, ...path];
   }
@@ -1269,14 +1273,14 @@ function findPathNodes(nodes: any[], selectedValue: any): any[] {
 function findParentPath(nodes: any[], node: any): any[] {
   if (!nodes || !node) return [];
 
-  // 深度优先搜索查找父节点
+  /** 深度优先搜索查找父节点 */
   function dfs(currentNodes: any[], targetNode: any, path: any[]): any[] {
     for (const n of currentNodes) {
-      // 如果当前节点是目标节点的父节点
+      /** 如果当前节点是目标节点的父节点 */
       if (n.children && n.children.some((child: any) => child.value === targetNode.value)) {
         return [n, ...path];
       }
-      // 递归搜索子节点
+      /** 递归搜索子节点 */
       if (n.children && n.children.length > 0) {
         const found = dfs(n.children, targetNode, [n, ...path]);
         if (found.length > 0) {
@@ -1288,7 +1292,7 @@ function findParentPath(nodes: any[], node: any): any[] {
   }
 
   const result = dfs(nodes, node, []);
-  // 反转路径，使其从根节点到父节点
+  /** 反转路径，使其从根节点到父节点 */
   return result.reverse();
 }
 
@@ -1342,7 +1346,7 @@ function cancelShelf() {
 function submitShelfForm() {
   (proxy.$refs['shelfRef'] as any).validate((valid: boolean) => {
     if (valid) {
-      // 校验 lineId：若为空则不允许保存，防止生成孤儿明细记录
+      /** 校验 lineId：若为空则不允许保存，防止生成孤儿明细记录 */
       if (!shelfForm.value.lineId) {
         proxy.$modal.msgWarning('当前入库单行未保存，请先保存入库单主表后再进行上架操作');
         return;
@@ -1357,16 +1361,16 @@ function submitShelfForm() {
       const detailList = wmMaterialReceiveLineList.value[rowIndex].detailList;
 
       if (shelfForm.value.detailId != null) {
-        // 编辑模式：只更新前端内存中的明细数据
-        // 不调用独立 updateDetail API，避免 lineId 变化导致数据不一致
+        /** 编辑模式：只更新前端内存中的明细数据 */
+        /** 不调用独立 updateDetail API，避免 lineId 变化导致数据不一致 */
         const detailIndex = detailList.findIndex((d: any) => d.detailId === shelfForm.value.detailId);
         if (detailIndex >= 0) {
           detailList[detailIndex] = { ...shelfForm.value } as ReceiveDetailVO;
         }
         proxy.$modal.msgSuccess('修改成功');
       } else {
-        // 新增模式：生成临时 detailId（负数，避免与数据库正数 ID 冲突），添加到前端内存
-        // 真正的数据库保存由主表单 save 时通过 updateByBo 一并完成
+        /** 新增模式：生成临时 detailId（负数，避免与数据库正数 ID 冲突），添加到前端内存 */
+        /** 真正的数据库保存由主表单 save 时通过 updateByBo 一并完成 */
         shelfForm.value.detailId = -Date.now();
         detailList.push({ ...shelfForm.value } as ReceiveDetailVO);
         proxy.$modal.msgSuccess('新增成功');
@@ -1381,21 +1385,21 @@ function submitShelfForm() {
  * 修改明细数据
  */
 function handleEditDetail(detailRow: any, parentRow: any) {
-  // 打开上架弹窗进行编辑
+  /** 打开上架弹窗进行编辑 */
   resetShelfForm();
   isShelfViewMode.value = false;
 
-  // 加载仓库树数据
+  /** 加载仓库树数据 */
   loadWarehouseTree();
 
-  // 填充选中的明细数据到表单
+  /** 填充选中的明细数据到表单 */
   Object.keys(shelfForm.value).forEach((key) => {
     if (detailRow[key] !== undefined) {
       shelfForm.value[key] = detailRow[key];
     }
   });
 
-  // 设置级联选择器的值（emitPath: false 时取最深层级节点的值）
+  /** 设置级联选择器的值（emitPath: false 时取最深层级节点的值） */
   if (detailRow.warehouseId) {
     selectedWarehouse.value = detailRow.locationId ?? detailRow.areaId ?? detailRow.warehouseId;
   }
@@ -1411,8 +1415,8 @@ function handleDeleteDetail(detailRow: any, parentRow: any) {
   proxy.$modal
     .confirm('确定要删除该条明细数据吗？')
     .then(() => {
-      // 只删除前端内存中的明细，不调用独立 delDetail API
-      // 真正的数据库删除由主表单 save 时通过 updateByBo 全删全插完成
+      /** 只删除前端内存中的明细，不调用独立 delDetail API */
+      /** 真正的数据库删除由主表单 save 时通过 updateByBo 全删全插完成 */
       const lineId = parentRow.lineId;
       const rowIndex = wmMaterialReceiveLineList.value.findIndex((line: any) => line.lineId === lineId);
       if (rowIndex >= 0) {
@@ -1434,7 +1438,7 @@ function handleDeleteDetail(detailRow: any, parentRow: any) {
 /** 监听仓库树数据变化，更新 cascader 选项 */
 watch(warehouseTree, (newVal: any) => {
   if (newVal && newVal.length > 0) {
-    // 可以在这里处理数据转换
+    /** 可以在这里处理数据转换 */
   }
 });
 
@@ -1443,7 +1447,7 @@ watch(
   shelfForm,
   (newVal: any) => {
     if (newVal.warehouseId && !selectedWarehouse.value) {
-      // 如果表单中有仓库ID但没有选中项，则尝试设置选中项
+      /** 如果表单中有仓库ID但没有选中项，则尝试设置选中项 */
       const path = [];
       if (newVal.warehouseId) path.push(newVal.warehouseId.toString());
       if (newVal.areaId) path.push(newVal.areaId.toString());
@@ -1456,7 +1460,7 @@ watch(
   { deep: true }
 );
 
-//自动生成编号
+/** 自动生成编号 */
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
     previewCode('WM_MATERIAL_RECEIVE_CODE').then((response: any) => {

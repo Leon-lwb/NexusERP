@@ -20,10 +20,11 @@
       />
       <el-descriptions :column="2" border class="mb-4">
         <el-descriptions-item label="预测拖期">{{ scenario.kpis?.totalTardinessDays ?? '—' }} 天</el-descriptions-item>
-        <el-descriptions-item label="预测缺料">{{ scenario.kpis?.totalShortageGap ?? '—' }} 件</el-descriptions-item>
+        <el-descriptions-item label="预测缺料">{{ displayShortageGap(scenario.kpis) }}</el-descriptions-item>
         <el-descriptions-item label="最高资源利用率">{{ scenario.kpis?.maxResourceUtilization ?? '—' }}%</el-descriptions-item>
         <el-descriptions-item label="动作成本">{{ scenario.kpis?.actionCost ?? '—' }}</el-descriptions-item>
       </el-descriptions>
+      <small class="block text-gray-500 mb-4">缺口原值如有返回，因单位待核不能确认可合计；请核对物料主档与来源。</small>
       <div class="flex items-center justify-between mb-2">
         <strong>排程任务预览</strong>
         <span class="text-xs text-gray-500">{{ scenario.schedulePreview?.length || 0 }} 条；最多展示前 20 条</span>
@@ -50,10 +51,18 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { DecisionScenario } from '@/api/ai/decision';
+import type { DecisionKpis, DecisionScenario } from '@/api/ai/decision';
 import { previewScheduleRows } from '@/views/ai/decision/decisionViewModel';
 const props = defineProps<{ modelValue: boolean; scenario: DecisionScenario | null }>();
 const emit = defineEmits<{ (event: 'update:modelValue', open: boolean): void }>();
 const rows = computed(() => previewScheduleRows(props.scenario?.schedulePreview));
 const auditJson = computed(() => JSON.stringify(props.scenario?.schedulePreview?.slice(0, 20) || [], null, 2));
+const displayShortageGap = (kpis?: DecisionKpis | null): string => {
+  const gap: unknown = kpis?.totalShortageGap;
+  if (gap == null) return '—';
+  if (kpis?.shortageMaterialCount === 0 && (gap === 0 || (typeof gap === 'string' && /^0+(?:\.0+)?(?:[eE][+-]?\d+)?$/.test(gap)))) {
+    return '0（无缺料）';
+  }
+  return '—（单位待核）';
+};
 </script>

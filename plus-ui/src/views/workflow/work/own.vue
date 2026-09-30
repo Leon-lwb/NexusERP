@@ -88,6 +88,7 @@
 </template>
 
 <script setup name="Own" lang="ts">
+import type { FormInstance } from 'element-plus';
 import { listOwnProcess, stopProcess, delProcess } from '@/api/workflow/work/process';
 import { listAllCategory } from '@/api/workflow/category/index';
 import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
@@ -110,7 +111,7 @@ const multiple = ref(true);
 const total = ref(0);
 const dateRange = ref<[string, string]>(['', '']);
 
-const queryFormRef = ref(ElForm);
+const queryFormRef = ref<FormInstance>();
 
 const queryParams = ref<ProcessQuery>({
   pageNum: 1,
@@ -140,7 +141,7 @@ const handleQuery = () => {
 };
 /** 重置按钮操作 */
 const resetQuery = () => {
-  queryFormRef.value.resetFields();
+  queryFormRef.value?.resetFields();
   handleQuery();
 };
 /** 多选框选中数据 */
@@ -161,7 +162,7 @@ const handleDetails = (row: ProcessVO) => {
 };
 /** 取消流程申请 */
 const handleStop = async (row: ProcessVO) => {
-  // 终止流程不可恢复，需二次确认
+  /** 终止流程不可恢复，需二次确认 */
   await proxy?.$modal.confirm('是否取消该流程申请？取消后流程将终止且无法恢复');
   await stopProcess({ procInsId: row.procInsId });
   proxy?.$modal.msgSuccess('操作成功');
@@ -169,13 +170,16 @@ const handleStop = async (row: ProcessVO) => {
 };
 /** 再次发起流程 */
 const handleAgain = (row: ProcessVO) => {
-  // router.push({
-  //   path: '/workflow/process/start/' + row.deployId,
-  //   query: {
-  //     definitionId: row.procDefId,
-  //     procInsId: row.procInsId
-  //   }
-  // })
+  /**
+   * 保留未启用的再次发起流程路由示例。
+   * router.push({
+   *   path: '/workflow/process/start/' + row.deployId,
+   *   query: {
+   *     definitionId: row.procDefId,
+   *     procInsId: row.procInsId
+   *   }
+   * })
+   */
 };
 /** 删除按钮操作 */
 const handleDelete = async (row?: ProcessVO) => {

@@ -38,7 +38,7 @@
         <el-button type="primary" plain icon="MagicStick" @click="handleRun" v-hasPermi="['prd:schedule:run']">执行排产</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="View" :disabled="!selectedPlanId" @click="showGanttDrawer = true">甘特图</el-button>
+        <el-button type="success" plain icon="View" :disabled="!toolbarPlan" @click="handleOpenSelectedGantt">甘特图</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Promotion" :disabled="!canPublish" @click="handlePublish" v-hasPermi="['prd:schedule:publish']"
@@ -50,10 +50,21 @@
           >删除</el-button
         >
       </el-col>
+      <el-col v-if="toolbarPlan" :span="4" class="schedule-toolbar-target">
+        <el-text truncated :title="toolbarPlan.planNo">当前工具栏方案：{{ toolbarPlan.planNo }}</el-text>
+      </el-col>
+      <el-col v-if="checkedPlans.length > 1" :span="4"><el-text type="warning">请仅勾选一条方案查看或发布</el-text></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange" @row-click="handleRowClick" show-overflow-tooltip>
+    <el-table
+      ref="planTableRef"
+      v-loading="loading"
+      :data="planList"
+      @selection-change="handleSelectionChange"
+      @row-click="handleRowClick"
+      show-overflow-tooltip
+    >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="方案编号" align="center" prop="planNo" width="150" />
       <el-table-column label="方案名称" align="center" prop="planName" min-width="140" />
@@ -89,18 +100,22 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="产能口径" align="center" min-width="240">
+        <template #default="scope">
+          <el-tag :type="scope.row.capacityCalcVersion === 2 ? 'info' : 'warning'">{{ scheduleCapacityLabel(scope.row) }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
-      <el-table-column label="操作" align="center" width="150" fixed="right">
+      <el-table-column label="操作" align="center" width="210" fixed="right">
         <template #default="scope">
           <el-button link type="primary" @click.stop="handleViewGantt(scope.row)">甘特图</el-button>
-          <el-button
-            link
-            type="warning"
-            v-if="scope.row.status === 'COMPLETED'"
-            v-hasPermi="['prd:schedule:publish']"
-            @click.stop="handlePublishRow(scope.row)"
-            >发布</el-button
+          <el-tooltip
+            v-if="isPublishableSchedulePlan(scope.row)"
+            content="生成时无产能日历按 8h/日估算不代表可发布；发布需对应资源同日期真实 ACTIVE 班次产能日历及足额剩余产能，最终由后端发布事务校验。"
+            placement="top"
           >
+            <el-button link type="warning" v-hasPermi="['prd:schedule:publish']" @click.stop="handlePublishRow(scope.row)">发布（需核验）</el-button>
+          </el-tooltip>
         </template>
       </el-table-column>
     </el-table>
@@ -128,8 +143,14 @@
         </el-form-item>
         <el-alert type="info" :closable="false" show-icon>
           <template #title>
-            参与排产: CREATED/APPROVED/RELEASED/IN_PROGRESS 状态工单; 委外工序不占产能; 无产能日历日期默认 8h/日; 假期产能为 0。
+            参与排产: CREATED/APPROVED/RELEASED/IN_PROGRESS 状态工单; 委外工序不占产能; 假期产能为 0。无产能日历日期在生成时暂按 8h/日估算。
           </template>
+        </el-alert>
+        <el-alert type="warning" :closable="false" show-icon class="mt-2">
+          <template #title>生成方案不等于可发布</template>
+          非委外逐日负荷必须有对应资源、日期和班次的 ACTIVE
+          产能日历及足够剩余产能；无对应日历时即使生成成功也不能发布，实际以服务端发布校验为准。生成的排程版本 2
+          不等于可发布；服务端发布成功后才能用于可信 AI 交付风险分析。
         </el-alert>
       </el-form>
       <template #footer>
@@ -148,16 +169,26 @@
             plain
             icon="MagicStick"
             size="small"
-            :disabled="!selectedPlanId"
+            :disabled="!ganttPlan || !gantt || !isDecisionReadySchedulePlan(ganttPlan)"
             @click="handleDeliveryDecision"
             v-hasPermi="['ai:decision:run']"
             >交付风险分析</el-button
           >
-          <el-button link type="info" size="small" @click="handleAiInterpret">AI 文字解读</el-button>
+          <el-button link type="info" size="small" disabled>AI 文字解读（不支持按当前方案）</el-button>
         </div>
       </template>
       <div v-loading="ganttLoading" class="gantt-body">
         <template v-if="gantt">
+          <el-alert
+            v-if="isLegacySchedulePlan(ganttPlan)"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="mb-3"
+            title="历史口径，非新版可信产能：旧方案保留原状态和甘特数据，不可作为新版发布"
+          />
+          <el-tag v-else-if="ganttPlan?.capacityCalcVersion === 2" type="info" class="mb-3">排程版本 2</el-tag>
+          <el-alert v-else type="warning" :closable="false" show-icon class="mb-3" title="版本未识别，非新版可信产能：不可作为新排程版本 2 发布" />
           <el-row :gutter="12" class="gantt-summary">
             <el-col :span="4"
               ><div class="stat-card">
@@ -219,18 +250,21 @@
         </template>
       </div>
     </el-drawer>
-
-    <!-- AI 助手抽屉(排产解读入口) -->
-    <AiChatDrawer ref="aiChatRef" />
   </div>
 </template>
 
 <script setup name="PrdSchedule" lang="ts">
 import { listSchedule, runSchedule, publishSchedule, delSchedule, getScheduleGantt } from '@/api/erp/prd/schedule';
 import { SchedulePlanVO, SchedulePlanQuery, ScheduleRunForm, ScheduleGanttVO } from '@/api/erp/prd/schedule/types';
+import {
+  formatScheduleGanttTooltip,
+  isLegacySchedulePlan,
+  isPublishableSchedulePlan,
+  isDecisionReadySchedulePlan,
+  scheduleCapacityLabel
+} from './schedulePolicy';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
-import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
 import { runDeliveryRisk } from '@/api/ai/decision';
 import { useRouter } from 'vue-router';
 
@@ -240,6 +274,8 @@ const router = useRouter();
 const loading = ref(false);
 const running = ref(false);
 const planList = ref<SchedulePlanVO[]>([]);
+const planTableRef = ref<{ clearSelection: () => void } | null>(null);
+let listRequestSeq = 0;
 const total = ref(0);
 const ids = ref<Array<string>>([]);
 const single = ref(true);
@@ -249,11 +285,14 @@ const showRunDialog = ref(false);
 const showGanttDrawer = ref(false);
 const selectedPlanId = ref<string>('');
 const selectedPlan = ref<SchedulePlanVO | null>(null);
+const checkedPlans = ref<SchedulePlanVO[]>([]);
+let selectionRevision = 0;
 const ganttLoading = ref(false);
 const gantt = ref<ScheduleGanttVO | null>(null);
+const ganttPlan = ref<SchedulePlanVO | null>(null);
+let ganttRequestSeq = 0;
 const ganttChartRef = ref<HTMLElement | null>(null);
 let ganttChart: echarts.ECharts | null = null;
-const aiChatRef = ref<InstanceType<typeof AiChatDrawer>>();
 
 const initQuery: SchedulePlanQuery = { pageNum: 1, pageSize: 10 };
 const queryParams = ref<SchedulePlanQuery>({ ...initQuery });
@@ -264,8 +303,13 @@ const runRules = ref({
   horizonDays: [{ required: true, message: '跨度不能为空', trigger: 'blur' }]
 });
 
-const ganttTitle = computed(() => (selectedPlan.value ? `排程甘特图 - ${selectedPlan.value.planNo}` : '排程甘特图'));
-const canPublish = computed(() => selectedPlan.value?.status === 'COMPLETED');
+const ganttTitle = computed(() => (ganttPlan.value ? `排程甘特图 - ${ganttPlan.value.planNo}` : '排程甘特图'));
+const toolbarPlan = computed(() => {
+  if (loading.value || checkedPlans.value.length > 1) return null;
+  const planId = checkedPlans.value.length === 1 ? checkedPlans.value[0].planId : selectedPlanId.value;
+  return planList.value.find((plan) => plan.planId === planId) ?? null;
+});
+const canPublish = computed(() => isPublishableSchedulePlan(toolbarPlan.value));
 
 const strategyLabel = (code: string) => {
   const map: Record<string, string> = { EDD: '最早交期', CR: '临界比', PRIORITY: '优先级' };
@@ -280,14 +324,41 @@ const rateColor = (rate: number) => {
   return '#67c23a';
 };
 
+const clearListSelection = () => {
+  selectedPlanId.value = '';
+  selectedPlan.value = null;
+  checkedPlans.value = [];
+  ids.value = [];
+  single.value = true;
+  multiple.value = true;
+};
+
 const getList = async () => {
+  const requestSeq = ++listRequestSeq;
   loading.value = true;
+  clearListSelection();
+  planTableRef.value?.clearSelection();
+  if (showGanttDrawer.value) {
+    showGanttDrawer.value = false;
+    ganttRequestSeq++;
+    clearGantt();
+    ganttLoading.value = false;
+  }
   try {
-    const res = await listSchedule(queryParams.value);
+    const res = await listSchedule({ ...queryParams.value });
+    if (requestSeq !== listRequestSeq) return;
     planList.value = res.rows;
     total.value = res.total;
+    clearListSelection();
+  } catch (error) {
+    if (requestSeq === listRequestSeq) {
+      planList.value = [];
+      total.value = 0;
+      clearListSelection();
+    }
+    throw error;
   } finally {
-    loading.value = false;
+    if (requestSeq === listRequestSeq) loading.value = false;
   }
 };
 
@@ -302,14 +373,18 @@ const resetQuery = () => {
 };
 
 const handleSelectionChange = (selection: SchedulePlanVO[]) => {
-  ids.value = selection.map((item) => item.planId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
+  selectionRevision++;
+  const selectedRows = new Set(selection);
+  checkedPlans.value = planList.value.filter((plan) => selectedRows.has(plan));
+  ids.value = checkedPlans.value.map((plan) => plan.planId);
+  single.value = checkedPlans.value.length !== 1;
+  multiple.value = !checkedPlans.value.length;
 };
 
 const handleRowClick = (row: SchedulePlanVO) => {
   selectedPlanId.value = row.planId;
   selectedPlan.value = row;
+  if (showGanttDrawer.value) return handleViewGantt(row);
 };
 
 const handleRun = () => {
@@ -331,21 +406,40 @@ const submitRun = async () => {
 };
 
 const handlePublishRow = async (row: SchedulePlanVO) => {
+  if (!isPublishableSchedulePlan(row)) {
+    proxy?.$modal.msgWarning('仅已生成的排程版本 2 可发布；历史口径或已发布方案不能作为新版发布');
+    return;
+  }
   await proxy?.$modal.confirm(`确认发布方案 ${row.planNo}？末序完工日期将回写工单计划起止日期。`);
   await publishSchedule(row.planId);
+  row.status = 'PUBLISHED';
+  if (selectedPlan.value?.planId === row.planId) selectedPlan.value.status = 'PUBLISHED';
   proxy?.$modal.msgSuccess('发布成功');
   getList();
 };
 
 const handlePublish = async () => {
-  if (selectedPlan.value) {
-    await handlePublishRow(selectedPlan.value);
-  }
+  if (toolbarPlan.value) await handlePublishRow(toolbarPlan.value);
 };
 
 const handleDelete = async () => {
-  await proxy?.$modal.confirm(`确认删除选中的 ${ids.value.length} 个排程方案？`);
-  await delSchedule(ids.value);
+  if (loading.value || !ids.value.length) return;
+  const confirmedIds = [...ids.value];
+  const confirmedSelectionRevision = selectionRevision;
+  const confirmedListRequestSeq = listRequestSeq;
+  const confirmedQuery = JSON.stringify(queryParams.value);
+  await proxy?.$modal.confirm(`确认删除选中的 ${confirmedIds.length} 个排程方案？`);
+  if (
+    selectionRevision !== confirmedSelectionRevision ||
+    listRequestSeq !== confirmedListRequestSeq ||
+    JSON.stringify(queryParams.value) !== confirmedQuery ||
+    ids.value.length !== confirmedIds.length ||
+    confirmedIds.some((id) => !ids.value.includes(id))
+  ) {
+    proxy?.$modal.msgWarning('勾选或筛选条件已变化，请重新确认删除');
+    return;
+  }
+  await delSchedule(confirmedIds);
   proxy?.$modal.msgSuccess('删除成功');
   getList();
 };
@@ -354,12 +448,12 @@ const handleDelete = async () => {
  * 先执行确定性分析，不将计划的雪花标识转换为 Number。
  */
 const handleDeliveryDecision = async () => {
-  if (!selectedPlanId.value) return;
+  if (!showGanttDrawer.value || !isDecisionReadySchedulePlan(ganttPlan.value) || !gantt.value) return;
   try {
     const res = await runDeliveryRisk({
       bizType: 'SCHEDULE_PLAN',
-      bizId: String(selectedPlanId.value),
-      horizonDays: gantt.value?.horizonDays || 30,
+      bizId: String(ganttPlan.value.planId),
+      horizonDays: gantt.value.horizonDays || 30,
       triggerType: 'MANUAL'
     });
     await router.push({ path: '/ai/decision/detail', query: { runId: String(res.data.runId) } });
@@ -368,29 +462,37 @@ const handleDeliveryDecision = async () => {
   }
 };
 
-/** AI 解读: 唤起全局 AI 助手并预填分析指令(Agent 调排产工具作答) */
-const handleAiInterpret = () => {
-  if (!gantt.value) return;
-  const prompt =
-    `请基于智能排产工具(aps_schedule)分析最新排产方案 ${gantt.value.planNo}：` +
-    `1) 哪些工单预计拖期、拖期多少天；2) 瓶颈资源是哪个、利用率多少；` +
-    `3) 结合拖期工单交期与瓶颈资源，给出缓解建议（如调整优先级、加班、委外）。`;
-  aiChatRef.value?.open(prompt);
+const clearGantt = () => {
+  gantt.value = null;
+  ganttPlan.value = null;
+  ganttChart?.dispose();
+  ganttChart = null;
+};
+
+const handleOpenSelectedGantt = () => {
+  if (toolbarPlan.value) return handleViewGantt(toolbarPlan.value);
 };
 
 const handleViewGantt = async (row: SchedulePlanVO) => {
-  selectedPlanId.value = row.planId;
-  selectedPlan.value = row;
+  const requestSeq = ++ganttRequestSeq;
+  clearGantt();
   showGanttDrawer.value = true;
   ganttLoading.value = true;
-  gantt.value = null;
   try {
     const res = await getScheduleGantt(row.planId);
+    if (requestSeq !== ganttRequestSeq || !showGanttDrawer.value) return;
+    if (String(res.data?.planId) !== String(row.planId)) {
+      proxy?.$modal.msgError('甘特数据与所选方案不匹配，请重试');
+      return;
+    }
+    ganttPlan.value = row;
     gantt.value = res.data;
     await nextTick();
-    renderGantt();
+    if (requestSeq === ganttRequestSeq && showGanttDrawer.value) renderGantt();
+  } catch {
+    if (requestSeq === ganttRequestSeq && showGanttDrawer.value) proxy?.$modal.msgError('甘特图加载失败，请重试');
   } finally {
-    ganttLoading.value = false;
+    if (requestSeq === ganttRequestSeq) ganttLoading.value = false;
   }
 };
 
@@ -406,16 +508,16 @@ const renderGantt = () => {
   const rows = gantt.value.rows;
   const dayStart = dayjs(gantt.value.startDate).startOf('day');
   const categories = rows.map((r) => `${r.woNo}${r.materialName ? ' · ' + r.materialName : ''}${r.delay ? ' ⚠拖期' : ''}`);
-  type BarData = { value: (number | string)[]; itemStyle: any; label?: any };
+  type BarData = { value: (number | string)[]; itemStyle: any };
   const seriesData: Record<string, BarData[]> = {};
   rows.forEach((row, rowIndex) => {
-    row.bars.forEach((bar) => {
+    row.bars.forEach((bar, barIndex) => {
       const startOffset = dayjs(bar.startTime).diff(dayStart, 'day');
       const days = Math.max(bar.durationDays || 1, 1);
       const key = bar.resourceType;
       if (!seriesData[key]) seriesData[key] = [];
       seriesData[key].push({
-        value: [rowIndex, startOffset, startOffset + days, bar.processName || ''],
+        value: [rowIndex, startOffset, startOffset + days, bar.processName || '', barIndex],
         itemStyle: { color: row.delay ? '#f56c6c' : RESOURCE_COLORS[key] || '#909399' }
       });
     });
@@ -424,11 +526,8 @@ const renderGantt = () => {
   ganttChart.setOption({
     tooltip: {
       formatter: (params: any) => {
-        const bar = rows[params.value[0]]?.bars.find((b) => (b.seqNum ?? 0) >= 0) as any;
         const row = rows[params.value[0]];
-        const startDay = dayStart.add(params.value[1], 'day').format('YYYY-MM-DD');
-        const endDay = dayStart.add(params.value[2] - 1, 'day').format('YYYY-MM-DD');
-        return `<b>${row?.woNo}</b><br/>工单: ${row?.materialName || '-'}<br/>起: ${startDay}<br/>止: ${endDay}`;
+        return formatScheduleGanttTooltip(row, row?.bars[params.value[4]]);
       }
     },
     grid: { left: 220, right: 40, top: 40, bottom: 40 },
@@ -476,19 +575,30 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  ganttChart?.dispose();
-  ganttChart = null;
+  listRequestSeq++;
+  ganttRequestSeq++;
+  clearGantt();
+  ganttLoading.value = false;
 });
 
 watch(showGanttDrawer, (v) => {
   if (!v) {
-    ganttChart?.dispose();
-    ganttChart = null;
+    ganttRequestSeq++;
+    clearGantt();
+    ganttLoading.value = false;
   }
 });
 </script>
 
 <style scoped lang="scss">
+.schedule-toolbar-target {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  :deep(.el-text) {
+    width: 100%;
+  }
+}
 .gantt-drawer-header {
   display: flex;
   align-items: center;

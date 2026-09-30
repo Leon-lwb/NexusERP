@@ -158,6 +158,7 @@ export interface DecisionRunDetail {
   run: DecisionRunSummary;
   actions: DecisionAction[];
   evidence: DecisionEvidence[];
+  actionBlockReasons?: Record<DecisionId, string>;
 }
 export interface DecisionTimelineItem {
   type: 'RUN' | 'ANALYSIS' | 'NODE' | 'ACTION';

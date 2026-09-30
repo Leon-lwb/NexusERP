@@ -82,10 +82,10 @@
       <el-table-column label="计划名称" align="center" prop="planName" min-width="120" show-overflow-tooltip />
       <el-table-column label="来源类型" align="center" prop="sourceType">
         <template #default="scope">
-          <dict-tag :options="prd_source_type" :value="scope.row.sourceType" />
+          <dict-tag :options="workOrderSourceTypeOptions" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="销售订单编号" align="center" prop="sourceNo" />
+      <el-table-column label="来源单号" align="center" prop="sourceNo" />
       <el-table-column label="产品编码" align="center" prop="materialCode" />
       <el-table-column label="产品名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
       <el-table-column label="产品规格" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
@@ -210,6 +210,7 @@ import {
   getWorkProcId
 } from '@/api/erp/prd/work';
 import { useRouter } from 'vue-router';
+import { withMaterialRequirementSource } from './workOrderDisplay';
 import { runDeliveryRisk } from '@/api/ai/decision';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
@@ -229,6 +230,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_source_type, so_order_priority, prd_wo_status, prd_backflush_flag, bd_quality_status } = toRefs<any>(
   proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_backflush_flag', 'bd_quality_status')
 );
+const workOrderSourceTypeOptions = computed(() => withMaterialRequirementSource(prd_source_type.value ?? []));
 
 const queryParams = ref({
   pageNum: 1,
@@ -240,7 +242,7 @@ const queryParams = ref({
   woStatus: null
 });
 
-// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+/** 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑） */
 const {
   loading,
   list: workList,

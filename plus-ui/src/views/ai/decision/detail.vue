@@ -25,6 +25,7 @@
         v-if="canApproveRun({ status: detail.run.status, stale: isStale })"
         :run="detail.run"
         :actions="detail.actions"
+        :action-block-reasons="detail.actionBlockReasons"
         :loading="submitting"
         class="mb-4"
         @approve="approve"
@@ -40,7 +41,7 @@
         无可执行动作：驳回并重新分析
       </el-button>
       <DecisionRunTimeline :items="timeline" />
-      <DecisionEvidenceDrawer v-model="evidenceOpen" :evidence="evidence" @navigate="navigateEvidence" />
+      <DecisionEvidenceDrawer v-model="evidenceOpen" :evidence="evidence" :status="detail.run.status" @navigate="navigateEvidence" />
       <DecisionScenarioPreview v-model="previewOpen" :scenario="preview" />
     </template>
     <el-empty v-else-if="!loading" description="暂无可查看的决策运行" />
@@ -118,7 +119,7 @@ async function load() {
     if (runId.value !== id) return;
     detail.value = runRes.data;
     timeline.value = timelineRes.data ?? [];
-    // 每五秒状态核对时不重复下载完整证据列表。
+    /** 每五秒状态核对时不重复下载完整证据列表。 */
     if (runRes.data.run.status !== 'CREATED' && runRes.data.run.status !== 'RUNNING' && evidenceLoadedFor.value !== id) {
       const evidenceRes = await listDecisionEvidence(id);
       if (runId.value !== id) return;
@@ -224,7 +225,7 @@ async function rejectWithoutActions() {
     });
     await reject(value.trim());
   } catch {
-    /* 用户取消操作。 */
+    /** 用户取消操作。 */
   }
 }
 async function recalculate() {
