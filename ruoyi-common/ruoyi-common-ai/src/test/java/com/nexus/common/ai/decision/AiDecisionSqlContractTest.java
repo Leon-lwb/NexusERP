@@ -60,12 +60,12 @@ class AiDecisionSqlContractTest {
                     "execution_flow_instance_id", "error_code", "error_message", "started_at", "analysis_finished_at",
                     "finished_at", "version");
                 assertColumnDefinition(run, "version", "int NOT NULL DEFAULT 0");
-                assertTrue(run.contains("KEY `idx_decision_tenant_scene_status` (`tenant_id`,`scene_code`,`status`)"));
-                assertTrue(run.contains("KEY `idx_decision_biz` (`tenant_id`,`biz_type`,`biz_id`)"));
-                assertTrue(run.contains("KEY `idx_decision_create_time` (`tenant_id`,`create_time`)"));
-                assertTrue(run.contains("KEY `idx_decision_parent` (`parent_run_id`)"));
-                assertTrue(run.contains("KEY `idx_decision_analysis_flow` (`analysis_flow_instance_id`)"));
-                assertTrue(run.contains("KEY `idx_decision_execution_flow` (`execution_flow_instance_id`)"));
+                assertIndex(run, false, "idx_decision_tenant_scene_status", "tenant_id", "scene_code", "status");
+                assertIndex(run, false, "idx_decision_biz", "tenant_id", "biz_type", "biz_id");
+                assertIndex(run, false, "idx_decision_create_time", "tenant_id", "create_time");
+                assertIndex(run, false, "idx_decision_parent", "parent_run_id");
+                assertIndex(run, false, "idx_decision_analysis_flow", "analysis_flow_instance_id");
+                assertIndex(run, false, "idx_decision_execution_flow", "execution_flow_instance_id");
             },
             () -> {
                 String evidence = tableDefinition("ai_decision_evidence");
@@ -73,9 +73,9 @@ class AiDecisionSqlContractTest {
                     "source_id", "source_code", "source_name", "metric_code", "metric_name", "value_type",
                     "metric_value", "unit", "observed_at", "data_version", "confidence", "verifiable", "normative",
                     "derived_from_json", "display_path");
-                assertTrue(evidence.contains("UNIQUE KEY `uk_decision_evidence` (`run_id`,`evidence_key`)"));
-                assertTrue(evidence.contains("KEY `idx_decision_evidence_source` (`tenant_id`,`source_type`,`source_id`)"));
-                assertTrue(evidence.contains("KEY `idx_decision_evidence_run` (`run_id`)"));
+                assertIndex(evidence, true, "uk_decision_evidence", "run_id", "evidence_key");
+                assertIndex(evidence, false, "idx_decision_evidence_source", "tenant_id", "source_type", "source_id");
+                assertIndex(evidence, false, "idx_decision_evidence_run", "run_id");
             },
             () -> {
                 String action = tableDefinition("ai_decision_action");
@@ -86,10 +86,10 @@ class AiDecisionSqlContractTest {
                     "approval_comment", "result_biz_type", "result_biz_id", "result_biz_code", "result_json",
                     "retry_count", "last_error_code", "last_error_message", "started_at", "finished_at", "version");
                 assertColumnDefinition(action, "version", "int NOT NULL DEFAULT 0");
-                assertTrue(action.contains("UNIQUE KEY `uk_decision_action_idempotency` (`tenant_id`,`idempotency_key`)"));
-                assertTrue(action.contains("KEY `idx_decision_action_run` (`run_id`,`sequence_no`)"));
-                assertTrue(action.contains("KEY `idx_decision_action_approval` (`tenant_id`,`approval_status`)"));
-                assertTrue(action.contains("KEY `idx_decision_action_execution` (`tenant_id`,`execution_status`)"));
+                assertIndex(action, true, "uk_decision_action_idempotency", "tenant_id", "idempotency_key");
+                assertIndex(action, false, "idx_decision_action_run", "run_id", "sequence_no");
+                assertIndex(action, false, "idx_decision_action_approval", "tenant_id", "approval_status");
+                assertIndex(action, false, "idx_decision_action_execution", "tenant_id", "execution_status");
             });
     }
 
@@ -124,11 +124,49 @@ class AiDecisionSqlContractTest {
 
     @Test
     void wrongRunVersionTypeMustBeRejected() {
-        String original = "`version` int NOT NULL DEFAULT 0";
-        String mutated = sql.replaceFirst(Pattern.quote(original), "`version` varchar(20) NULL DEFAULT NULL");
-        assertFalse(sql.equals(mutated), "测试输入未找到 ai_decision_run.version");
+        String run = tableDefinition("ai_decision_run");
+        String changed = run.replaceFirst("(?m)^  `version` int(?:\\(11\\))? NOT NULL DEFAULT 0",
+            "  `version` varchar(20) NULL DEFAULT NULL");
+        assertFalse(run.equals(changed), "测试输入未找到 ai_decision_run.version");
+        String mutated = sql.replace(run, changed);
         assertThrows(AssertionError.class, () -> assertVersionColumns(mutated),
             "version 仍存在但类型和默认值错误时不应通过 SQL 契约");
+    }
+
+    @Test
+    void wrongIndexOrderOrUniquenessMustBeRejected() {
+        String action = tableDefinition("ai_decision_action");
+        String reordered = action.replaceFirst("(`idx_decision_action_run`\\s*\\()\\s*`run_id`\\s*,\\s*`sequence_no`",
+            "$1`sequence_no`, `run_id`");
+        assertFalse(action.equals(reordered));
+        assertThrows(AssertionError.class, () -> assertIndex(reordered, false, "idx_decision_action_run", "run_id", "sequence_no"));
+
+        String nonUnique = action.replaceFirst("UNIQUE\\s+(?:KEY|INDEX)(\\s+`uk_decision_action_idempotency`)", "INDEX$1");
+        assertFalse(action.equals(nonUnique));
+        assertThrows(AssertionError.class, () -> assertIndex(nonUnique, true, "uk_decision_action_idempotency", "tenant_id", "idempotency_key"));
+    }
+
+    @Test
+    void oldStyleDdlStillEnforcesColumnsAndIndexes() {
+        String definition = tableDefinition("ai_decision_action")
+            .replaceAll("(?i)\\s+CHARACTER SET utf8mb4\\s+COLLATE utf8mb4_[a-z0-9_]+", "")
+            .replaceAll("(?i)\\bint\\(11\\)", "int")
+            .replaceAll("(?m)^(\\s*)(UNIQUE )?INDEX (`[^`]+`)\\(", "$1$2KEY $3 (")
+            .replaceAll("[ \t]*,[ \t]*(?=`)", ",");
+        String oldStyle = "CREATE TABLE `ai_decision_action` (" + definition
+            + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+        String parsed = tableDefinition(oldStyle, "ai_decision_action");
+        assertColumnDefinition(parsed, "version", "int NOT NULL DEFAULT 0");
+        assertIndex(parsed, true, "uk_decision_action_idempotency", "tenant_id", "idempotency_key");
+        assertIndex(parsed, false, "idx_decision_action_run", "run_id", "sequence_no");
+    }
+
+    @Test
+    void wrongTenantDefaultMustBeRejected() {
+        String run = tableDefinition("ai_decision_run");
+        String changed = run.replaceFirst("(`tenant_id`[^\\r\\n]*?DEFAULT )'000000'", "$1'000001'");
+        assertFalse(run.equals(changed));
+        assertThrows(AssertionError.class, () -> assertColumnDefinition(changed, "tenant_id", "varchar(20) NOT NULL DEFAULT '000000'"));
     }
 
     private static void assertMenuPermissions(String source) {
@@ -209,7 +247,9 @@ class AiDecisionSqlContractTest {
     }
 
     private static String tableDefinition(String source, String name) {
-        Matcher matcher = Pattern.compile("(?s)CREATE TABLE `" + name + "`\\s*\\((.*?)\\) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").matcher(source);
+        Matcher matcher = Pattern.compile("(?ms)^CREATE TABLE `" + Pattern.quote(name)
+            + "`\\s*\\(((?:(?!^CREATE TABLE\\b).)*?)^\\)\\s*ENGINE\\s*=\\s*InnoDB\\b[^;\\r\\n]*\\b(?:DEFAULT\\s+CHARSET|CHARACTER\\s+SET)\\s*=\\s*utf8mb4\\b")
+            .matcher(source);
         if (!matcher.find()) {
             return fail("缺少 CREATE TABLE `" + name + "` (InnoDB utf8mb4)");
         }
@@ -217,13 +257,30 @@ class AiDecisionSqlContractTest {
         assertColumns(definition, "create_dept", "create_by", "create_time", "update_by", "update_time",
             "del_flag", "attr1", "attr2", "attr3", "attr4");
         assertColumnDefinition(definition, "tenant_id", "varchar(20) NOT NULL DEFAULT '000000'");
-        assertTrue(definition.contains("PRIMARY KEY (`id`)"), name + " 缺主键");
+        assertTrue(Pattern.compile("(?m)^\\s*PRIMARY KEY\\s*\\(\\s*`id`\\s*\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$")
+            .matcher(definition).find(), name + " 缺主键");
         return definition;
     }
 
     private static void assertColumnDefinition(String table, String name, String expected) {
-        assertTrue(Pattern.compile("(?m)^  `" + name + "` " + Pattern.quote(expected) + "(?:\\s|,)")
-            .matcher(table).find(), name + " 应为 " + expected);
+        Matcher column = Pattern.compile("(?m)^\\s*`" + Pattern.quote(name) + "`\\s+([^\\r\\n]+)$").matcher(table);
+        assertTrue(column.find(), "缺少列 `" + name + "`");
+        String normalized = column.group(1).replaceFirst(",\\s*$", "")
+            .replaceAll("(?i)\\s+COMMENT\\s+'(?:''|[^'])*'$", "")
+            .replaceAll("(?i)\\s+CHARACTER SET utf8mb4\\s+COLLATE utf8mb4_[a-z0-9_]+", "")
+            .replaceAll("(?i)\\bint\\(11\\)", "int");
+        assertEquals(expected, normalized, name + " 应为 " + expected);
+    }
+
+    private static void assertIndex(String table, boolean unique, String name, String... columns) {
+        Matcher index = Pattern.compile("(?m)^\\s*(UNIQUE\\s+)?(?:KEY|INDEX)\\s+`" + Pattern.quote(name)
+            + "`\\s*\\(([^)]*)\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$").matcher(table);
+        assertTrue(index.find(), "缺少索引 `" + name + "`");
+        assertEquals(unique, index.group(1) != null, name + " 唯一性错误");
+        assertEquals(java.util.Arrays.stream(columns).map(column -> "`" + column + "`").toList(),
+            java.util.Arrays.stream(index.group(2).split(",")).map(String::trim).toList(),
+            name + " 索引列或顺序错误");
+        assertFalse(index.find(), name + " 索引名称重复");
     }
 
     private static void assertColumns(String definition, String... columns) {

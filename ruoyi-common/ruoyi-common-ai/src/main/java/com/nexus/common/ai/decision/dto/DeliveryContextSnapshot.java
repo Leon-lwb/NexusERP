@@ -67,7 +67,7 @@ public record DeliveryContextSnapshot(
     }
 
     private static List<WorkOrderSalesLinkFact> copyWorkOrderSalesLinks(List<WorkOrderSalesLinkFact> source) {
-        if (source == null) return List.of(); // 兼容旧 JSON 载荷中缺失的字段。
+        if (source == null) return List.of(); /** 兼容旧 JSON 载荷中缺失的字段。 */
         List<WorkOrderSalesLinkFact> copy = new ArrayList<>(source);
         if (copy.contains(null)) throw new IllegalArgumentException("工单销售订单关系不能为空");
         copy.sort(Comparator.comparing(WorkOrderSalesLinkFact::workOrderId)
@@ -238,9 +238,16 @@ public record DeliveryContextSnapshot(
         }
     }
 
-    public record RequirementFact(Long materialId, String materialCode, String materialName,
+    /** 工单、物料和日期相同的两行必须使用不同的 MRP 明细来源 ID。 */
+    public record RequirementFact(Long detailId, Long materialId, String materialCode, String materialName,
                                   LocalDate requiredDate, BigDecimal requiredQty,
                                   Long workOrderId, String workOrderNo) implements Serializable {
+        /** 旧 Java/JSON 快照未携带明细行 ID；发生冲突时仍应拒绝放行。 */
+        public RequirementFact(Long materialId, String materialCode, String materialName,
+                               LocalDate requiredDate, BigDecimal requiredQty,
+                               Long workOrderId, String workOrderNo) {
+            this(null, materialId, materialCode, materialName, requiredDate, requiredQty, workOrderId, workOrderNo);
+        }
     }
 
     public record StockFact(Long materialId, BigDecimal stockQty, BigDecimal reservedQty,

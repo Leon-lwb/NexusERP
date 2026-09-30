@@ -1,25 +1,26 @@
-/*
- Navicat Premium Data Transfer
-
- Source Server         : 本地5.7
- Source Server Type    : MySQL
- Source Server Version : 50714 (5.7.14)
- Source Host           : localhost:3306
- Source Schema         : ry-erp
-
- Target Server Type    : MySQL
- Target Server Version : 50714 (5.7.14)
- File Encoding         : 65001
-
- Date: 28/09/2026 08:33:40
-*/
+/**
+ *
+ * 数据库结构与基础种子数据导出记录
+ *
+ * 来源服务器         : 本地5.7
+ * 来源服务器类型    : MySQL
+ * 来源服务器版本 : 50714 (5.7.14)
+ * 来源地址           : localhost:3306
+ * 来源数据库         : ry-erp
+ *
+ * 目标服务器类型    : MySQL
+ * 目标服务器版本 : 50714 (5.7.14)
+ * 文件编码         : 65001
+ *
+ * 导出日期: 28/09/2026 08:33:40
+ */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ----------------------------
--- Table structure for bd_bom
--- ----------------------------
+/** ---------------------------- */
+/** bd_bom 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_bom`;
 CREATE TABLE `bd_bom`  (
   `bom_id` bigint(20) NOT NULL COMMENT 'BOM主表ID',
@@ -52,9 +53,9 @@ CREATE TABLE `bd_bom`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_bom
--- ----------------------------
+/** ---------------------------- */
+/** bd_bom 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_bom` VALUES (1, '000000', 1, '1.0', '高强度螺栓组套 M12标准版BOM', 'PROCESS', 'MBOM', 1, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07', '0');
 INSERT INTO `bd_bom` VALUES (2, '000000', 38, '1.0', '冷镦坯 M12组件BOM', 'PROCESS', 'MBOM', NULL, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_bom` VALUES (3, '000000', 39, '1.0', '螺母 M12 8级组件BOM', 'PROCESS', 'MBOM', NULL, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -193,9 +194,9 @@ INSERT INTO `bd_bom` VALUES (135, '000000', 37, '1.0', '无线蓝牙音箱 SPK-2
 INSERT INTO `bd_bom` VALUES (136, '000000', 137, '1.0', '功放板 PCBA-SPK20组件BOM', 'PROCESS', 'MBOM', NULL, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_bom` VALUES (137, '000000', 138, '1.0', '音箱上下壳 注塑件组件BOM', 'PROCESS', 'MBOM', NULL, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_bom_alternative
--- ----------------------------
+/** ---------------------------- */
+/** bd_bom_alternative 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_bom_alternative`;
 CREATE TABLE `bd_bom_alternative`  (
   `alternative_id` bigint(20) NOT NULL COMMENT '替代料ID',
@@ -225,9 +226,9 @@ CREATE TABLE `bd_bom_alternative`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM替代料表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_bom_alternative
--- ----------------------------
+/** ---------------------------- */
+/** bd_bom_alternative 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_bom_alternative` VALUES (1, '000000', 4, 1, 261, 'IF20260914261', '包装纸盒 小号 加强', 1.000000, 1, 'INTERCHANGEABLE', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_bom_alternative` VALUES (2, '000000', 5, 2, 188, 'IF20260914188', '冷轧钢板 DC01', 1.100000, 2, 'FULL', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_bom_alternative` VALUES (3, '000000', 5, 2, 236, 'IF20260914236', '冷轧钢板 DC03', 1.100000, 3, 'INTERCHANGEABLE', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -387,9 +388,9 @@ INSERT INTO `bd_bom_alternative` VALUES (203, '000000', 444, 136, 239, 'IF202609
 INSERT INTO `bd_bom_alternative` VALUES (204, '000000', 445, 137, 239, 'IF20260914239', 'PC/ABS 合金', 1.100000, 3, 'PARTIAL', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_bom_alternative` VALUES (205, '000000', 447, 137, 254, 'IF20260914254', '锂聚合物电池 高容量版', 1.000000, 1, 'PARTIAL', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_bom_detail
--- ----------------------------
+/** ---------------------------- */
+/** bd_bom_detail 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_bom_detail`;
 CREATE TABLE `bd_bom_detail`  (
   `detail_id` bigint(20) NOT NULL COMMENT 'BOM明细ID',
@@ -424,9 +425,9 @@ CREATE TABLE `bd_bom_detail`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_bom_detail
--- ----------------------------
+/** ---------------------------- */
+/** bd_bom_detail 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_bom_detail` VALUES (1, '000000', 1, 38, 1.000000, 'PROCESS', 0.0000, 1, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', 'SELF_PROVIDED');
 INSERT INTO `bd_bom_detail` VALUES (2, '000000', 1, 39, 1.000000, 'PROCESS', 0.0000, 2, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', 'SELF_PROVIDED');
 INSERT INTO `bd_bom_detail` VALUES (3, '000000', 1, 40, 2.000000, 'PROCESS', 0.0000, 3, 0, NULL, NULL, 3, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', 'SELF_PROVIDED');
@@ -887,9 +888,9 @@ INSERT INTO `bd_bom_detail` VALUES (510, '000000', 120, 265, 0.016004, 'PROCUREM
 INSERT INTO `bd_bom_detail` VALUES (511, '000000', 122, 145, 0.960252, 'PROCUREMENT', 0.0000, NULL, NULL, NULL, NULL, 10, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:07', '0', 'SELF_PROVIDED');
 INSERT INTO `bd_bom_detail` VALUES (512, '000000', 122, 263, 0.040011, 'PROCUREMENT', 0.0000, NULL, NULL, NULL, NULL, 20, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:07', '0', 'SELF_PROVIDED');
 
--- ----------------------------
--- Table structure for bd_category_attribute
--- ----------------------------
+/** ---------------------------- */
+/** bd_category_attribute 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_category_attribute`;
 CREATE TABLE `bd_category_attribute`  (
   `attr_id` bigint(20) NOT NULL COMMENT '属性ID',
@@ -918,13 +919,13 @@ CREATE TABLE `bd_category_attribute`  (
   INDEX `idx_category_id`(`category_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料分类属性模板' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_category_attribute
--- ----------------------------
+/** ---------------------------- */
+/** bd_category_attribute 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for bd_client
--- ----------------------------
+/** ---------------------------- */
+/** bd_client 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_client`;
 CREATE TABLE `bd_client`  (
   `client_id` bigint(20) NOT NULL COMMENT '客户ID',
@@ -981,9 +982,9 @@ CREATE TABLE `bd_client`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_client
--- ----------------------------
+/** ---------------------------- */
+/** bd_client 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_client` VALUES (1, '000000', 'C00001', '北京北方机械制造有限公司', NULL, NULL, '北京北方机械制造有限公司', '企业客户', NULL, '北京市', NULL, 'bfjx@163.com', '0571-66660001', '联系人1', '13800000001', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 110000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:42:27', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_client` VALUES (2, '000000', 'C00002', '上海精工自动化设备有限公司', NULL, NULL, '上海精工自动化设备有限公司', '企业客户', NULL, '上海市华东区产业大道 2 号', NULL, 'shjg@163.com', '0571-66660002', '联系人2', '13800000002', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 310000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:47:48', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_client` VALUES (3, '000000', 'C00003', '广州华南电子科技有限公司', NULL, NULL, '广州华南电子科技有限公司', '企业客户', NULL, '广东省', NULL, 'hndz@163.com', '0571-66660003', '联系人3', '13800000003', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 440000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:44:02', '0', NULL, NULL, NULL, NULL);
@@ -993,9 +994,9 @@ INSERT INTO `bd_client` VALUES (6, '000000', 'C00006', '武汉医疗器械供应
 INSERT INTO `bd_client` VALUES (7, '000000', 'C00007', '西安新能源设备有限公司', NULL, NULL, '西安新能源设备有限公司', '企业客户', NULL, '陕西省西北区产业大道 7 号', NULL, 'xaxny@163.com', '0571-66660007', '联系人7', '13800000007', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 610000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:47:22', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_client` VALUES (8, '000000', 'C00008', '沈阳汽车零部件有限公司', NULL, NULL, '沈阳汽车零部件有限公司', '企业客户', NULL, '吉林省', NULL, 'jlqc@163.com', '0571-66660008', '联系人8', '13800000008', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 220000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:48:31', '0', NULL, NULL, NULL, NULL);
 
--- ----------------------------
--- Table structure for bd_client_credit
--- ----------------------------
+/** ---------------------------- */
+/** bd_client_credit 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_client_credit`;
 CREATE TABLE `bd_client_credit`  (
   `credit_id` bigint(20) NOT NULL COMMENT '客户信用ID',
@@ -1025,9 +1026,9 @@ CREATE TABLE `bd_client_credit`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户信用表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_client_credit
--- ----------------------------
+/** ---------------------------- */
+/** bd_client_credit 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_client_credit` VALUES (1, '000000', 1, 'C00001', '北京北方机械制造有限公司', NULL, 500000, 30, 'B', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_client_credit` VALUES (2, '000000', 2, 'C00002', '上海精工自动化设备有限公司', NULL, 800000, 30, 'A', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_client_credit` VALUES (3, '000000', 3, 'C00003', '广州华南电子科技有限公司', NULL, 600000, 30, 'B', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -1037,9 +1038,9 @@ INSERT INTO `bd_client_credit` VALUES (6, '000000', 6, 'C00006', '武汉医疗�
 INSERT INTO `bd_client_credit` VALUES (7, '000000', 7, 'C00007', '西安新能源设备有限公司', NULL, 700000, 30, 'A', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_client_credit` VALUES (8, '000000', 8, 'C00008', '沈阳汽车零部件有限公司', NULL, 900000, 30, 'A', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_material
--- ----------------------------
+/** ---------------------------- */
+/** bd_material 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_material`;
 CREATE TABLE `bd_material`  (
   `material_id` bigint(20) NOT NULL COMMENT '物料ID',
@@ -1090,9 +1091,9 @@ CREATE TABLE `bd_material`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_material
--- ----------------------------
+/** ---------------------------- */
+/** bd_material 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_material` VALUES (1, '000000', 'IF20260914001', '高强度螺栓组套 M12', 'M12×60 8.8级 含螺母平垫', NULL, 50, 27, 27, 27, 27, 3, 'PROCESS', 0, 1, 0.0000, 0.0000, 0.0000, 32.4000, 45.0000, 1, NULL, 0, 3.3091, 0.000932742, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:06', '0', 0, 1);
 INSERT INTO `bd_material` VALUES (2, '000000', 'IF20260914002', '精密齿轮箱总成', '速比 1:10 额定扭矩 120N·m', NULL, 51, 55, 55, 55, 55, 3, 'PROCESS', 0, 1, 0.0000, 0.0000, 0.0000, 2059.2000, 2860.0000, 1, NULL, 0, 185.5201, 0.030169825, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:06', '0', 0, 1);
 INSERT INTO `bd_material` VALUES (3, '000000', 'IF20260914003', '压缩弹簧组', '线径 2.0mm 自由长 50mm 一套10只', NULL, 52, 27, 27, 27, 27, 3, 'PROCESS', 0, 1, 0.0000, 0.0000, 0.0000, 48.9599, 68.0000, 1, NULL, 0, 4.1042, 0.000797695, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:06', '0', 0, 1);
@@ -1381,9 +1382,9 @@ INSERT INTO `bd_material` VALUES (285, '000000', 'IF20260914285', '变频器 22k
 INSERT INTO `bd_material` VALUES (286, '000000', 'IF20260914286', '板式冷却器', '换热面积 3m²', NULL, 147, 55, 55, 55, 55, 1, 'PROCUREMENT', 0, 0, 0.0000, 0.0000, 0.0000, 1200.0000, 1296.0000, 1, NULL, 0, 38.0000, 0.035000000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:06', '0', 0, 1);
 INSERT INTO `bd_material` VALUES (287, '000000', 'IF20260914287', 'PLC 控制器', '含 7 寸触摸屏', NULL, 144, 27, 27, 27, 27, 1, 'PROCUREMENT', 0, 0, 0.0000, 0.0000, 0.0000, 1000.0000, 1080.0000, 1, NULL, 0, 3.5000, 0.004000000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:06', '0', 0, 1);
 
--- ----------------------------
--- Table structure for bd_material_attribute_value
--- ----------------------------
+/** ---------------------------- */
+/** bd_material_attribute_value 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_material_attribute_value`;
 CREATE TABLE `bd_material_attribute_value`  (
   `value_id` bigint(20) NOT NULL COMMENT '值ID',
@@ -1408,13 +1409,13 @@ CREATE TABLE `bd_material_attribute_value`  (
   INDEX `idx_attr_id`(`attr_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料扩展属性值' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_material_attribute_value
--- ----------------------------
+/** ---------------------------- */
+/** bd_material_attribute_value 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for bd_material_category
--- ----------------------------
+/** ---------------------------- */
+/** bd_material_category 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_material_category`;
 CREATE TABLE `bd_material_category`  (
   `category_id` bigint(20) NOT NULL COMMENT '分类ID',
@@ -1447,9 +1448,9 @@ CREATE TABLE `bd_material_category`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_material_category
--- ----------------------------
+/** ---------------------------- */
+/** bd_material_category 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_material_category` VALUES (1, '000000', 0, 'RAW', '原材料', NULL, 1, '1', '原材料', 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_material_category` VALUES (2, '000000', 0, 'SEMI', '半成品', NULL, 1, '2', '半成品', 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_material_category` VALUES (3, '000000', 0, 'FINISH', '产成品', NULL, 1, '3', '产成品', 3, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -1602,9 +1603,9 @@ INSERT INTO `bd_material_category` VALUES (149, '000000', 117, 'ML_STD', '模具
 INSERT INTO `bd_material_category` VALUES (150, '000000', 2, 'SM_RUBBER', '橡胶成型件', NULL, 2, '2,150', '半成品,橡胶成型件', 234, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:06', '0');
 INSERT INTO `bd_material_category` VALUES (151, '000000', 2, 'SM_SOFTWARE', '软件与固件', NULL, 2, '2,151', '半成品,软件与固件', 235, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:06', '0');
 
--- ----------------------------
--- Table structure for bd_material_vendor
--- ----------------------------
+/** ---------------------------- */
+/** bd_material_vendor 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_material_vendor`;
 CREATE TABLE `bd_material_vendor`  (
   `relation_id` bigint(20) NOT NULL COMMENT '关系ID',
@@ -1633,6 +1634,16 @@ CREATE TABLE `bd_material_vendor`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `order_uom_id` bigint(20) NULL DEFAULT NULL COMMENT '业务确认的订购计量单位ID',
+  `verified_moq_qty` decimal(18, 4) NULL DEFAULT NULL COMMENT '已核实MOQ数值；不得从旧min_order_qty回填',
+  `moq_uom_id` bigint(20) NULL DEFAULT NULL COMMENT '已核实MOQ所属计量单位ID',
+  `order_multiple` decimal(18, 4) NULL DEFAULT NULL COMMENT '业务确认的订购倍数（订购单位）',
+  `allow_split` tinyint(1) NULL DEFAULT NULL COMMENT '是否允许拆零；NULL为未知',
+  `units_per_pack` decimal(18, 4) NULL DEFAULT NULL COMMENT '每包装实物基本单位量；NULL为未知',
+  `terms_version` varchar(64) NULL DEFAULT NULL COMMENT '供应商条款确认版本；NULL为历史未核验',
+  `terms_effective_at` datetime NULL DEFAULT NULL COMMENT '核验条款生效时间；不得套用旧关系生效日期',
+  `terms_expires_at` datetime NULL DEFAULT NULL COMMENT '核验条款失效时间；不得套用旧关系失效日期',
+  `terms_verified_at` datetime NULL DEFAULT NULL COMMENT '采购业务确认时间；NULL为未核验',
   PRIMARY KEY (`relation_id`) USING BTREE,
   UNIQUE INDEX `uk_material_supplier`(`material_id`, `vendor_id`, `tenant_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
@@ -1641,277 +1652,277 @@ CREATE TABLE `bd_material_vendor`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_material_vendor
--- ----------------------------
-INSERT INTO `bd_material_vendor` VALUES (1, '000000', 139, 1, 'V00001', '华东钢材供应链有限公司', 20, 500.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (2, '000000', 139, 2, 'V00002', '江苏精密紧固件制造厂', 20, 500.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (3, '000000', 140, 10, 'V00010', '武汉包装制品有限公司', 7, 510.0000, 20.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (4, '000000', 140, 11, 'V00011', '常州铸造材料有限公司', 7, 510.0000, 20.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (5, '000000', 141, 1, 'V00001', '华东钢材供应链有限公司', 8, 520.0000, 21.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (6, '000000', 141, 2, 'V00002', '江苏精密紧固件制造厂', 8, 520.0000, 21.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (7, '000000', 142, 8, 'V00008', '广州表面处理材料有限公司', 9, 530.0000, 22.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (8, '000000', 142, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 530.0000, 22.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (9, '000000', 143, 2, 'V00002', '江苏精密紧固件制造厂', 10, 540.0000, 23.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (10, '000000', 143, 3, 'V00003', '宁波工程塑料有限公司', 10, 540.0000, 23.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (11, '000000', 144, 1, 'V00001', '华东钢材供应链有限公司', 11, 550.0000, 23.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (12, '000000', 144, 2, 'V00002', '江苏精密紧固件制造厂', 11, 550.0000, 23.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (13, '000000', 145, 1, 'V00001', '华东钢材供应链有限公司', 12, 560.0000, 24.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (14, '000000', 145, 2, 'V00002', '江苏精密紧固件制造厂', 12, 560.0000, 24.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (15, '000000', 146, 8, 'V00008', '广州表面处理材料有限公司', 13, 570.0000, 25.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (16, '000000', 146, 9, 'V00009', '青岛橡胶密封件有限公司', 13, 570.0000, 25.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (17, '000000', 147, 8, 'V00008', '广州表面处理材料有限公司', 14, 580.0000, 26.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (18, '000000', 147, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 580.0000, 26.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (19, '000000', 148, 1, 'V00001', '华东钢材供应链有限公司', 15, 590.0000, 27.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (20, '000000', 148, 2, 'V00002', '江苏精密紧固件制造厂', 15, 590.0000, 27.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (21, '000000', 149, 8, 'V00008', '广州表面处理材料有限公司', 16, 600.0000, 28.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (22, '000000', 149, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 600.0000, 28.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (23, '000000', 150, 1, 'V00001', '华东钢材供应链有限公司', 17, 610.0000, 29.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (24, '000000', 150, 2, 'V00002', '江苏精密紧固件制造厂', 17, 610.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (25, '000000', 151, 8, 'V00008', '广州表面处理材料有限公司', 18, 620.0000, 29.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (26, '000000', 151, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 620.0000, 29.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (27, '000000', 152, 8, 'V00008', '广州表面处理材料有限公司', 19, 630.0000, 30.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (28, '000000', 152, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 630.0000, 30.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (29, '000000', 153, 8, 'V00008', '广州表面处理材料有限公司', 20, 640.0000, 31.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (30, '000000', 153, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 640.0000, 31.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (31, '000000', 154, 10, 'V00010', '武汉包装制品有限公司', 7, 650.0000, 32.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (32, '000000', 154, 11, 'V00011', '常州铸造材料有限公司', 7, 650.0000, 32.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (33, '000000', 155, 2, 'V00002', '江苏精密紧固件制造厂', 8, 660.0000, 33.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (34, '000000', 155, 3, 'V00003', '宁波工程塑料有限公司', 8, 660.0000, 33.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (35, '000000', 156, 8, 'V00008', '广州表面处理材料有限公司', 9, 670.0000, 34.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (36, '000000', 156, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 670.0000, 34.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (37, '000000', 157, 1, 'V00001', '华东钢材供应链有限公司', 10, 680.0000, 34.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (38, '000000', 157, 2, 'V00002', '江苏精密紧固件制造厂', 10, 680.0000, 34.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (39, '000000', 158, 8, 'V00008', '广州表面处理材料有限公司', 11, 690.0000, 35.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (40, '000000', 158, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 690.0000, 35.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (41, '000000', 159, 2, 'V00002', '江苏精密紧固件制造厂', 12, 700.0000, 36.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (42, '000000', 159, 3, 'V00003', '宁波工程塑料有限公司', 12, 700.0000, 36.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (43, '000000', 160, 1, 'V00001', '华东钢材供应链有限公司', 13, 710.0000, 37.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (44, '000000', 160, 2, 'V00002', '江苏精密紧固件制造厂', 13, 710.0000, 37.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (45, '000000', 161, 8, 'V00008', '广州表面处理材料有限公司', 14, 720.0000, 38.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (46, '000000', 161, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 720.0000, 38.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (47, '000000', 162, 1, 'V00001', '华东钢材供应链有限公司', 15, 730.0000, 39.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (48, '000000', 162, 2, 'V00002', '江苏精密紧固件制造厂', 15, 730.0000, 39.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (49, '000000', 163, 8, 'V00008', '广州表面处理材料有限公司', 16, 740.0000, 40.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (50, '000000', 163, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 740.0000, 40.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (51, '000000', 164, 8, 'V00008', '广州表面处理材料有限公司', 17, 750.0000, 40.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (52, '000000', 164, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 750.0000, 40.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (53, '000000', 165, 4, 'V00004', '深圳华芯电子科技有限公司', 18, 760.0000, 41.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (54, '000000', 165, 5, 'V00005', '东莞连接器制造有限公司', 18, 760.0000, 41.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (55, '000000', 166, 8, 'V00008', '广州表面处理材料有限公司', 19, 770.0000, 42.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (56, '000000', 166, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 770.0000, 42.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (57, '000000', 167, 8, 'V00008', '广州表面处理材料有限公司', 20, 780.0000, 43.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (58, '000000', 167, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 780.0000, 43.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (59, '000000', 168, 3, 'V00003', '宁波工程塑料有限公司', 7, 790.0000, 44.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (60, '000000', 168, 4, 'V00004', '深圳华芯电子科技有限公司', 7, 790.0000, 44.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (61, '000000', 169, 8, 'V00008', '广州表面处理材料有限公司', 8, 800.0000, 45.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (62, '000000', 169, 9, 'V00009', '青岛橡胶密封件有限公司', 8, 800.0000, 45.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (63, '000000', 170, 8, 'V00008', '广州表面处理材料有限公司', 9, 810.0000, 46.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (64, '000000', 170, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 810.0000, 46.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (65, '000000', 171, 10, 'V00010', '武汉包装制品有限公司', 10, 820.0000, 46.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (66, '000000', 171, 11, 'V00011', '常州铸造材料有限公司', 10, 820.0000, 46.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (67, '000000', 172, 8, 'V00008', '广州表面处理材料有限公司', 11, 830.0000, 47.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (68, '000000', 172, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 830.0000, 47.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (69, '000000', 173, 10, 'V00010', '武汉包装制品有限公司', 12, 840.0000, 48.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (70, '000000', 173, 11, 'V00011', '常州铸造材料有限公司', 12, 840.0000, 48.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (71, '000000', 174, 4, 'V00004', '深圳华芯电子科技有限公司', 13, 850.0000, 49.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (72, '000000', 174, 5, 'V00005', '东莞连接器制造有限公司', 13, 850.0000, 49.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (73, '000000', 175, 4, 'V00004', '深圳华芯电子科技有限公司', 14, 860.0000, 50.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (74, '000000', 175, 5, 'V00005', '东莞连接器制造有限公司', 14, 860.0000, 50.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (75, '000000', 176, 4, 'V00004', '深圳华芯电子科技有限公司', 15, 870.0000, 51.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (76, '000000', 176, 5, 'V00005', '东莞连接器制造有限公司', 15, 870.0000, 51.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (77, '000000', 177, 8, 'V00008', '广州表面处理材料有限公司', 16, 880.0000, 51.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (78, '000000', 177, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 880.0000, 51.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (79, '000000', 178, 1, 'V00001', '华东钢材供应链有限公司', 17, 890.0000, 52.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (80, '000000', 178, 2, 'V00002', '江苏精密紧固件制造厂', 17, 890.0000, 52.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (81, '000000', 179, 1, 'V00001', '华东钢材供应链有限公司', 18, 900.0000, 53.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (82, '000000', 179, 2, 'V00002', '江苏精密紧固件制造厂', 18, 900.0000, 53.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (83, '000000', 180, 4, 'V00004', '深圳华芯电子科技有限公司', 19, 10.0000, 3.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (84, '000000', 180, 5, 'V00005', '东莞连接器制造有限公司', 19, 10.0000, 3.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (85, '000000', 181, 2, 'V00002', '江苏精密紧固件制造厂', 20, 20.0000, 4.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (86, '000000', 181, 3, 'V00003', '宁波工程塑料有限公司', 20, 20.0000, 4.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (87, '000000', 182, 8, 'V00008', '广州表面处理材料有限公司', 7, 30.0000, 5.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (88, '000000', 182, 9, 'V00009', '青岛橡胶密封件有限公司', 7, 30.0000, 5.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (89, '000000', 183, 1, 'V00001', '华东钢材供应链有限公司', 8, 40.0000, 6.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (90, '000000', 183, 2, 'V00002', '江苏精密紧固件制造厂', 8, 40.0000, 6.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (91, '000000', 184, 8, 'V00008', '广州表面处理材料有限公司', 9, 50.0000, 6.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (92, '000000', 184, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 50.0000, 6.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (93, '000000', 185, 4, 'V00004', '深圳华芯电子科技有限公司', 10, 60.0000, 7.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (94, '000000', 185, 5, 'V00005', '东莞连接器制造有限公司', 10, 60.0000, 7.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (95, '000000', 186, 8, 'V00008', '广州表面处理材料有限公司', 11, 70.0000, 8.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (96, '000000', 186, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 70.0000, 8.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (97, '000000', 187, 3, 'V00003', '宁波工程塑料有限公司', 12, 80.0000, 9.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (98, '000000', 187, 4, 'V00004', '深圳华芯电子科技有限公司', 12, 80.0000, 9.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (99, '000000', 188, 1, 'V00001', '华东钢材供应链有限公司', 13, 90.0000, 10.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (100, '000000', 188, 2, 'V00002', '江苏精密紧固件制造厂', 13, 90.0000, 10.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (101, '000000', 189, 3, 'V00003', '宁波工程塑料有限公司', 14, 100.0000, 11.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (102, '000000', 189, 4, 'V00004', '深圳华芯电子科技有限公司', 14, 100.0000, 11.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (103, '000000', 190, 8, 'V00008', '广州表面处理材料有限公司', 15, 110.0000, 12.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (104, '000000', 190, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 110.0000, 12.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (105, '000000', 191, 1, 'V00001', '华东钢材供应链有限公司', 16, 120.0000, 12.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (106, '000000', 191, 2, 'V00002', '江苏精密紧固件制造厂', 16, 120.0000, 12.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (107, '000000', 192, 8, 'V00008', '广州表面处理材料有限公司', 17, 130.0000, 13.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (108, '000000', 192, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 130.0000, 13.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (109, '000000', 193, 8, 'V00008', '广州表面处理材料有限公司', 18, 140.0000, 14.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (110, '000000', 193, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 140.0000, 14.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (111, '000000', 194, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 150.0000, 15.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (112, '000000', 194, 10, 'V00010', '武汉包装制品有限公司', 19, 150.0000, 15.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (113, '000000', 195, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 160.0000, 16.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (114, '000000', 195, 10, 'V00010', '武汉包装制品有限公司', 20, 160.0000, 16.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (115, '000000', 196, 8, 'V00008', '广州表面处理材料有限公司', 7, 170.0000, 17.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (116, '000000', 196, 9, 'V00009', '青岛橡胶密封件有限公司', 7, 170.0000, 17.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (117, '000000', 197, 8, 'V00008', '广州表面处理材料有限公司', 8, 180.0000, 17.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (118, '000000', 197, 9, 'V00009', '青岛橡胶密封件有限公司', 8, 180.0000, 17.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (119, '000000', 198, 10, 'V00010', '武汉包装制品有限公司', 9, 190.0000, 18.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (120, '000000', 198, 11, 'V00011', '常州铸造材料有限公司', 9, 190.0000, 18.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (121, '000000', 199, 1, 'V00001', '华东钢材供应链有限公司', 10, 200.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (122, '000000', 199, 2, 'V00002', '江苏精密紧固件制造厂', 10, 200.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (123, '000000', 200, 2, 'V00002', '江苏精密紧固件制造厂', 11, 210.0000, 20.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (124, '000000', 200, 3, 'V00003', '宁波工程塑料有限公司', 11, 210.0000, 20.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (125, '000000', 201, 8, 'V00008', '广州表面处理材料有限公司', 12, 220.0000, 21.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (126, '000000', 201, 9, 'V00009', '青岛橡胶密封件有限公司', 12, 220.0000, 21.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (127, '000000', 202, 4, 'V00004', '深圳华芯电子科技有限公司', 13, 230.0000, 22.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (128, '000000', 202, 5, 'V00005', '东莞连接器制造有限公司', 13, 230.0000, 22.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (129, '000000', 203, 1, 'V00001', '华东钢材供应链有限公司', 14, 240.0000, 23.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (130, '000000', 203, 2, 'V00002', '江苏精密紧固件制造厂', 14, 240.0000, 23.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (131, '000000', 204, 4, 'V00004', '深圳华芯电子科技有限公司', 15, 250.0000, 23.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (132, '000000', 204, 5, 'V00005', '东莞连接器制造有限公司', 15, 250.0000, 23.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (133, '000000', 205, 3, 'V00003', '宁波工程塑料有限公司', 16, 260.0000, 24.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (134, '000000', 205, 4, 'V00004', '深圳华芯电子科技有限公司', 16, 260.0000, 24.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (135, '000000', 206, 3, 'V00003', '宁波工程塑料有限公司', 17, 270.0000, 25.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (136, '000000', 206, 4, 'V00004', '深圳华芯电子科技有限公司', 17, 270.0000, 25.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (137, '000000', 207, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 280.0000, 26.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (138, '000000', 207, 10, 'V00010', '武汉包装制品有限公司', 18, 280.0000, 26.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (139, '000000', 208, 8, 'V00008', '广州表面处理材料有限公司', 19, 290.0000, 27.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (140, '000000', 208, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 290.0000, 27.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (141, '000000', 209, 6, 'V00006', '惠州新能源电池有限公司', 20, 300.0000, 28.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (142, '000000', 209, 7, 'V00007', '苏州精密轴承有限公司', 20, 300.0000, 28.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (143, '000000', 210, 6, 'V00006', '惠州新能源电池有限公司', 7, 310.0000, 29.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (144, '000000', 210, 7, 'V00007', '苏州精密轴承有限公司', 7, 310.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (145, '000000', 211, 8, 'V00008', '广州表面处理材料有限公司', 8, 320.0000, 29.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (146, '000000', 211, 9, 'V00009', '青岛橡胶密封件有限公司', 8, 320.0000, 29.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (147, '000000', 212, 8, 'V00008', '广州表面处理材料有限公司', 9, 330.0000, 30.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (148, '000000', 212, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 330.0000, 30.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (149, '000000', 213, 8, 'V00008', '广州表面处理材料有限公司', 10, 340.0000, 31.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (150, '000000', 213, 9, 'V00009', '青岛橡胶密封件有限公司', 10, 340.0000, 31.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (151, '000000', 214, 8, 'V00008', '广州表面处理材料有限公司', 11, 350.0000, 32.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (152, '000000', 214, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 350.0000, 32.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (153, '000000', 215, 8, 'V00008', '广州表面处理材料有限公司', 12, 360.0000, 33.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (154, '000000', 215, 9, 'V00009', '青岛橡胶密封件有限公司', 12, 360.0000, 33.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (155, '000000', 216, 9, 'V00009', '青岛橡胶密封件有限公司', 13, 370.0000, 34.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (156, '000000', 216, 10, 'V00010', '武汉包装制品有限公司', 13, 370.0000, 34.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (157, '000000', 217, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 380.0000, 34.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (158, '000000', 217, 10, 'V00010', '武汉包装制品有限公司', 14, 380.0000, 34.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (159, '000000', 218, 8, 'V00008', '广州表面处理材料有限公司', 15, 390.0000, 35.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (160, '000000', 218, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 390.0000, 35.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (161, '000000', 219, 8, 'V00008', '广州表面处理材料有限公司', 16, 400.0000, 36.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (162, '000000', 219, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 400.0000, 36.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (163, '000000', 220, 8, 'V00008', '广州表面处理材料有限公司', 17, 410.0000, 37.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (164, '000000', 220, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 410.0000, 37.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (165, '000000', 221, 8, 'V00008', '广州表面处理材料有限公司', 18, 420.0000, 38.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (166, '000000', 221, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 420.0000, 38.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (167, '000000', 222, 4, 'V00004', '深圳华芯电子科技有限公司', 19, 430.0000, 39.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (168, '000000', 222, 5, 'V00005', '东莞连接器制造有限公司', 19, 430.0000, 39.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (169, '000000', 223, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 440.0000, 40.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (170, '000000', 223, 10, 'V00010', '武汉包装制品有限公司', 20, 440.0000, 40.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (171, '000000', 224, 8, 'V00008', '广州表面处理材料有限公司', 7, 450.0000, 40.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (172, '000000', 224, 9, 'V00009', '青岛橡胶密封件有限公司', 7, 450.0000, 40.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (173, '000000', 225, 4, 'V00004', '深圳华芯电子科技有限公司', 8, 460.0000, 41.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (174, '000000', 225, 5, 'V00005', '东莞连接器制造有限公司', 8, 460.0000, 41.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (175, '000000', 226, 8, 'V00008', '广州表面处理材料有限公司', 9, 470.0000, 42.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (176, '000000', 226, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 470.0000, 42.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (177, '000000', 227, 3, 'V00003', '宁波工程塑料有限公司', 10, 480.0000, 43.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (178, '000000', 227, 4, 'V00004', '深圳华芯电子科技有限公司', 10, 480.0000, 43.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (179, '000000', 228, 4, 'V00004', '深圳华芯电子科技有限公司', 11, 490.0000, 44.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (180, '000000', 228, 5, 'V00005', '东莞连接器制造有限公司', 11, 490.0000, 44.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (181, '000000', 229, 8, 'V00008', '广州表面处理材料有限公司', 12, 500.0000, 45.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (182, '000000', 229, 9, 'V00009', '青岛橡胶密封件有限公司', 12, 500.0000, 45.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (183, '000000', 230, 4, 'V00004', '深圳华芯电子科技有限公司', 13, 510.0000, 46.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (184, '000000', 230, 5, 'V00005', '东莞连接器制造有限公司', 13, 510.0000, 46.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (185, '000000', 231, 8, 'V00008', '广州表面处理材料有限公司', 14, 520.0000, 46.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (186, '000000', 231, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 520.0000, 46.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (187, '000000', 232, 8, 'V00008', '广州表面处理材料有限公司', 15, 530.0000, 47.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (188, '000000', 232, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 530.0000, 47.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (189, '000000', 233, 8, 'V00008', '广州表面处理材料有限公司', 16, 540.0000, 48.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (190, '000000', 233, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 540.0000, 48.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (191, '000000', 234, 1, 'V00001', '华东钢材供应链有限公司', 17, 550.0000, 49.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (192, '000000', 234, 2, 'V00002', '江苏精密紧固件制造厂', 17, 550.0000, 49.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (193, '000000', 235, 1, 'V00001', '华东钢材供应链有限公司', 18, 560.0000, 50.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (194, '000000', 235, 2, 'V00002', '江苏精密紧固件制造厂', 18, 560.0000, 50.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (195, '000000', 236, 1, 'V00001', '华东钢材供应链有限公司', 19, 570.0000, 51.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (196, '000000', 236, 2, 'V00002', '江苏精密紧固件制造厂', 19, 570.0000, 51.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (197, '000000', 237, 1, 'V00001', '华东钢材供应链有限公司', 20, 580.0000, 51.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (198, '000000', 237, 2, 'V00002', '江苏精密紧固件制造厂', 20, 580.0000, 51.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (199, '000000', 238, 1, 'V00001', '华东钢材供应链有限公司', 7, 590.0000, 52.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (200, '000000', 238, 2, 'V00002', '江苏精密紧固件制造厂', 7, 590.0000, 52.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (201, '000000', 239, 3, 'V00003', '宁波工程塑料有限公司', 8, 600.0000, 53.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (202, '000000', 239, 4, 'V00004', '深圳华芯电子科技有限公司', 8, 600.0000, 53.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (203, '000000', 240, 3, 'V00003', '宁波工程塑料有限公司', 9, 610.0000, 3.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (204, '000000', 240, 4, 'V00004', '深圳华芯电子科技有限公司', 9, 610.0000, 3.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (205, '000000', 241, 9, 'V00009', '青岛橡胶密封件有限公司', 10, 620.0000, 4.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (206, '000000', 241, 10, 'V00010', '武汉包装制品有限公司', 10, 620.0000, 4.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (207, '000000', 242, 4, 'V00004', '深圳华芯电子科技有限公司', 11, 630.0000, 5.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (208, '000000', 242, 5, 'V00005', '东莞连接器制造有限公司', 11, 630.0000, 5.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (209, '000000', 243, 4, 'V00004', '深圳华芯电子科技有限公司', 12, 640.0000, 6.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (210, '000000', 243, 5, 'V00005', '东莞连接器制造有限公司', 12, 640.0000, 6.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (211, '000000', 244, 8, 'V00008', '广州表面处理材料有限公司', 13, 650.0000, 6.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (212, '000000', 244, 9, 'V00009', '青岛橡胶密封件有限公司', 13, 650.0000, 6.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (213, '000000', 245, 4, 'V00004', '深圳华芯电子科技有限公司', 14, 660.0000, 7.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (214, '000000', 245, 5, 'V00005', '东莞连接器制造有限公司', 14, 660.0000, 7.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (215, '000000', 246, 4, 'V00004', '深圳华芯电子科技有限公司', 15, 670.0000, 8.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (216, '000000', 246, 5, 'V00005', '东莞连接器制造有限公司', 15, 670.0000, 8.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (217, '000000', 247, 4, 'V00004', '深圳华芯电子科技有限公司', 16, 680.0000, 9.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (218, '000000', 247, 5, 'V00005', '东莞连接器制造有限公司', 16, 680.0000, 9.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (219, '000000', 248, 4, 'V00004', '深圳华芯电子科技有限公司', 17, 690.0000, 10.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (220, '000000', 248, 5, 'V00005', '东莞连接器制造有限公司', 17, 690.0000, 10.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (221, '000000', 249, 4, 'V00004', '深圳华芯电子科技有限公司', 18, 700.0000, 11.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (222, '000000', 249, 5, 'V00005', '东莞连接器制造有限公司', 18, 700.0000, 11.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (223, '000000', 250, 2, 'V00002', '江苏精密紧固件制造厂', 19, 710.0000, 12.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (224, '000000', 250, 3, 'V00003', '宁波工程塑料有限公司', 19, 710.0000, 12.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (225, '000000', 251, 2, 'V00002', '江苏精密紧固件制造厂', 20, 720.0000, 12.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (226, '000000', 251, 3, 'V00003', '宁波工程塑料有限公司', 20, 720.0000, 12.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (227, '000000', 252, 2, 'V00002', '江苏精密紧固件制造厂', 7, 730.0000, 13.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (228, '000000', 252, 3, 'V00003', '宁波工程塑料有限公司', 7, 730.0000, 13.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (229, '000000', 253, 6, 'V00006', '惠州新能源电池有限公司', 8, 740.0000, 14.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (230, '000000', 253, 7, 'V00007', '苏州精密轴承有限公司', 8, 740.0000, 14.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (231, '000000', 254, 8, 'V00008', '广州表面处理材料有限公司', 9, 750.0000, 15.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (232, '000000', 254, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 750.0000, 15.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (233, '000000', 255, 8, 'V00008', '广州表面处理材料有限公司', 10, 760.0000, 16.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (234, '000000', 255, 9, 'V00009', '青岛橡胶密封件有限公司', 10, 760.0000, 16.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (235, '000000', 256, 8, 'V00008', '广州表面处理材料有限公司', 11, 770.0000, 17.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (236, '000000', 256, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 770.0000, 17.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (237, '000000', 257, 1, 'V00001', '华东钢材供应链有限公司', 12, 780.0000, 17.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (238, '000000', 257, 2, 'V00002', '江苏精密紧固件制造厂', 12, 780.0000, 17.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (239, '000000', 258, 1, 'V00001', '华东钢材供应链有限公司', 13, 790.0000, 18.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (240, '000000', 258, 2, 'V00002', '江苏精密紧固件制造厂', 13, 790.0000, 18.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (241, '000000', 259, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 800.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (242, '000000', 259, 10, 'V00010', '武汉包装制品有限公司', 14, 800.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (243, '000000', 260, 8, 'V00008', '广州表面处理材料有限公司', 15, 810.0000, 20.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (244, '000000', 260, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 810.0000, 20.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (245, '000000', 261, 10, 'V00010', '武汉包装制品有限公司', 16, 820.0000, 21.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (246, '000000', 261, 11, 'V00011', '常州铸造材料有限公司', 16, 820.0000, 21.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (247, '000000', 262, 8, 'V00008', '广州表面处理材料有限公司', 17, 830.0000, 22.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (248, '000000', 262, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 830.0000, 22.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (249, '000000', 263, 1, 'V00001', '华东钢材供应链有限公司', 18, 840.0000, 23.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (250, '000000', 263, 2, 'V00002', '江苏精密紧固件制造厂', 18, 840.0000, 23.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (251, '000000', 264, 2, 'V00002', '江苏精密紧固件制造厂', 19, 850.0000, 23.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (252, '000000', 264, 3, 'V00003', '宁波工程塑料有限公司', 19, 850.0000, 23.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (253, '000000', 265, 8, 'V00008', '广州表面处理材料有限公司', 20, 860.0000, 24.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (254, '000000', 265, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 860.0000, 24.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (255, '000000', 266, 1, 'V00001', '华东钢材供应链有限公司', 7, 870.0000, 25.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (256, '000000', 266, 2, 'V00002', '江苏精密紧固件制造厂', 7, 870.0000, 25.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (257, '000000', 267, 4, 'V00004', '深圳华芯电子科技有限公司', 8, 880.0000, 26.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (258, '000000', 267, 5, 'V00005', '东莞连接器制造有限公司', 8, 880.0000, 26.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (259, '000000', 268, 4, 'V00004', '深圳华芯电子科技有限公司', 9, 890.0000, 27.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (260, '000000', 268, 5, 'V00005', '东莞连接器制造有限公司', 9, 890.0000, 27.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (261, '000000', 269, 5, 'V00005', '东莞连接器制造有限公司', 10, 900.0000, 28.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (262, '000000', 269, 6, 'V00006', '惠州新能源电池有限公司', 10, 900.0000, 28.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (263, '000000', 270, 8, 'V00008', '广州表面处理材料有限公司', 11, 10.0000, 29.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_material_vendor` VALUES (264, '000000', 270, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 10.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+/** ---------------------------- */
+/** bd_material_vendor 基础种子记录。 */
+/** ---------------------------- */
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (1, '000000', 139, 1, 'V00001', '华东钢材供应链有限公司', 20, 500.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (2, '000000', 139, 2, 'V00002', '江苏精密紧固件制造厂', 20, 500.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (3, '000000', 140, 10, 'V00010', '武汉包装制品有限公司', 7, 510.0000, 20.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (4, '000000', 140, 11, 'V00011', '常州铸造材料有限公司', 7, 510.0000, 20.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (5, '000000', 141, 1, 'V00001', '华东钢材供应链有限公司', 8, 520.0000, 21.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (6, '000000', 141, 2, 'V00002', '江苏精密紧固件制造厂', 8, 520.0000, 21.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (7, '000000', 142, 8, 'V00008', '广州表面处理材料有限公司', 9, 530.0000, 22.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (8, '000000', 142, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 530.0000, 22.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (9, '000000', 143, 2, 'V00002', '江苏精密紧固件制造厂', 10, 540.0000, 23.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (10, '000000', 143, 3, 'V00003', '宁波工程塑料有限公司', 10, 540.0000, 23.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (11, '000000', 144, 1, 'V00001', '华东钢材供应链有限公司', 11, 550.0000, 23.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (12, '000000', 144, 2, 'V00002', '江苏精密紧固件制造厂', 11, 550.0000, 23.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (13, '000000', 145, 1, 'V00001', '华东钢材供应链有限公司', 12, 560.0000, 24.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (14, '000000', 145, 2, 'V00002', '江苏精密紧固件制造厂', 12, 560.0000, 24.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (15, '000000', 146, 8, 'V00008', '广州表面处理材料有限公司', 13, 570.0000, 25.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (16, '000000', 146, 9, 'V00009', '青岛橡胶密封件有限公司', 13, 570.0000, 25.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (17, '000000', 147, 8, 'V00008', '广州表面处理材料有限公司', 14, 580.0000, 26.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (18, '000000', 147, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 580.0000, 26.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (19, '000000', 148, 1, 'V00001', '华东钢材供应链有限公司', 15, 590.0000, 27.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (20, '000000', 148, 2, 'V00002', '江苏精密紧固件制造厂', 15, 590.0000, 27.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (21, '000000', 149, 8, 'V00008', '广州表面处理材料有限公司', 16, 600.0000, 28.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (22, '000000', 149, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 600.0000, 28.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (23, '000000', 150, 1, 'V00001', '华东钢材供应链有限公司', 17, 610.0000, 29.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (24, '000000', 150, 2, 'V00002', '江苏精密紧固件制造厂', 17, 610.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (25, '000000', 151, 8, 'V00008', '广州表面处理材料有限公司', 18, 620.0000, 29.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (26, '000000', 151, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 620.0000, 29.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (27, '000000', 152, 8, 'V00008', '广州表面处理材料有限公司', 19, 630.0000, 30.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (28, '000000', 152, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 630.0000, 30.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (29, '000000', 153, 8, 'V00008', '广州表面处理材料有限公司', 20, 640.0000, 31.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (30, '000000', 153, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 640.0000, 31.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (31, '000000', 154, 10, 'V00010', '武汉包装制品有限公司', 7, 650.0000, 32.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (32, '000000', 154, 11, 'V00011', '常州铸造材料有限公司', 7, 650.0000, 32.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (33, '000000', 155, 2, 'V00002', '江苏精密紧固件制造厂', 8, 660.0000, 33.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (34, '000000', 155, 3, 'V00003', '宁波工程塑料有限公司', 8, 660.0000, 33.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (35, '000000', 156, 8, 'V00008', '广州表面处理材料有限公司', 9, 670.0000, 34.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (36, '000000', 156, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 670.0000, 34.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (37, '000000', 157, 1, 'V00001', '华东钢材供应链有限公司', 10, 680.0000, 34.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (38, '000000', 157, 2, 'V00002', '江苏精密紧固件制造厂', 10, 680.0000, 34.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (39, '000000', 158, 8, 'V00008', '广州表面处理材料有限公司', 11, 690.0000, 35.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (40, '000000', 158, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 690.0000, 35.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (41, '000000', 159, 2, 'V00002', '江苏精密紧固件制造厂', 12, 700.0000, 36.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (42, '000000', 159, 3, 'V00003', '宁波工程塑料有限公司', 12, 700.0000, 36.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (43, '000000', 160, 1, 'V00001', '华东钢材供应链有限公司', 13, 710.0000, 37.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (44, '000000', 160, 2, 'V00002', '江苏精密紧固件制造厂', 13, 710.0000, 37.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (45, '000000', 161, 8, 'V00008', '广州表面处理材料有限公司', 14, 720.0000, 38.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (46, '000000', 161, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 720.0000, 38.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (47, '000000', 162, 1, 'V00001', '华东钢材供应链有限公司', 15, 730.0000, 39.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (48, '000000', 162, 2, 'V00002', '江苏精密紧固件制造厂', 15, 730.0000, 39.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (49, '000000', 163, 8, 'V00008', '广州表面处理材料有限公司', 16, 740.0000, 40.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (50, '000000', 163, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 740.0000, 40.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (51, '000000', 164, 8, 'V00008', '广州表面处理材料有限公司', 17, 750.0000, 40.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (52, '000000', 164, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 750.0000, 40.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (53, '000000', 165, 4, 'V00004', '深圳华芯电子科技有限公司', 18, 760.0000, 41.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (54, '000000', 165, 5, 'V00005', '东莞连接器制造有限公司', 18, 760.0000, 41.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (55, '000000', 166, 8, 'V00008', '广州表面处理材料有限公司', 19, 770.0000, 42.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (56, '000000', 166, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 770.0000, 42.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (57, '000000', 167, 8, 'V00008', '广州表面处理材料有限公司', 20, 780.0000, 43.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (58, '000000', 167, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 780.0000, 43.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (59, '000000', 168, 3, 'V00003', '宁波工程塑料有限公司', 7, 790.0000, 44.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (60, '000000', 168, 4, 'V00004', '深圳华芯电子科技有限公司', 7, 790.0000, 44.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (61, '000000', 169, 8, 'V00008', '广州表面处理材料有限公司', 8, 800.0000, 45.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (62, '000000', 169, 9, 'V00009', '青岛橡胶密封件有限公司', 8, 800.0000, 45.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (63, '000000', 170, 8, 'V00008', '广州表面处理材料有限公司', 9, 810.0000, 46.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (64, '000000', 170, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 810.0000, 46.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (65, '000000', 171, 10, 'V00010', '武汉包装制品有限公司', 10, 820.0000, 46.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (66, '000000', 171, 11, 'V00011', '常州铸造材料有限公司', 10, 820.0000, 46.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (67, '000000', 172, 8, 'V00008', '广州表面处理材料有限公司', 11, 830.0000, 47.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (68, '000000', 172, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 830.0000, 47.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (69, '000000', 173, 10, 'V00010', '武汉包装制品有限公司', 12, 840.0000, 48.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (70, '000000', 173, 11, 'V00011', '常州铸造材料有限公司', 12, 840.0000, 48.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (71, '000000', 174, 4, 'V00004', '深圳华芯电子科技有限公司', 13, 850.0000, 49.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (72, '000000', 174, 5, 'V00005', '东莞连接器制造有限公司', 13, 850.0000, 49.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (73, '000000', 175, 4, 'V00004', '深圳华芯电子科技有限公司', 14, 860.0000, 50.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (74, '000000', 175, 5, 'V00005', '东莞连接器制造有限公司', 14, 860.0000, 50.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (75, '000000', 176, 4, 'V00004', '深圳华芯电子科技有限公司', 15, 870.0000, 51.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (76, '000000', 176, 5, 'V00005', '东莞连接器制造有限公司', 15, 870.0000, 51.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (77, '000000', 177, 8, 'V00008', '广州表面处理材料有限公司', 16, 880.0000, 51.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (78, '000000', 177, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 880.0000, 51.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (79, '000000', 178, 1, 'V00001', '华东钢材供应链有限公司', 17, 890.0000, 52.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (80, '000000', 178, 2, 'V00002', '江苏精密紧固件制造厂', 17, 890.0000, 52.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (81, '000000', 179, 1, 'V00001', '华东钢材供应链有限公司', 18, 900.0000, 53.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (82, '000000', 179, 2, 'V00002', '江苏精密紧固件制造厂', 18, 900.0000, 53.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (83, '000000', 180, 4, 'V00004', '深圳华芯电子科技有限公司', 19, 10.0000, 3.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (84, '000000', 180, 5, 'V00005', '东莞连接器制造有限公司', 19, 10.0000, 3.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (85, '000000', 181, 2, 'V00002', '江苏精密紧固件制造厂', 20, 20.0000, 4.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (86, '000000', 181, 3, 'V00003', '宁波工程塑料有限公司', 20, 20.0000, 4.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (87, '000000', 182, 8, 'V00008', '广州表面处理材料有限公司', 7, 30.0000, 5.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (88, '000000', 182, 9, 'V00009', '青岛橡胶密封件有限公司', 7, 30.0000, 5.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (89, '000000', 183, 1, 'V00001', '华东钢材供应链有限公司', 8, 40.0000, 6.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (90, '000000', 183, 2, 'V00002', '江苏精密紧固件制造厂', 8, 40.0000, 6.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (91, '000000', 184, 8, 'V00008', '广州表面处理材料有限公司', 9, 50.0000, 6.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (92, '000000', 184, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 50.0000, 6.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (93, '000000', 185, 4, 'V00004', '深圳华芯电子科技有限公司', 10, 60.0000, 7.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (94, '000000', 185, 5, 'V00005', '东莞连接器制造有限公司', 10, 60.0000, 7.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (95, '000000', 186, 8, 'V00008', '广州表面处理材料有限公司', 11, 70.0000, 8.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (96, '000000', 186, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 70.0000, 8.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (97, '000000', 187, 3, 'V00003', '宁波工程塑料有限公司', 12, 80.0000, 9.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (98, '000000', 187, 4, 'V00004', '深圳华芯电子科技有限公司', 12, 80.0000, 9.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (99, '000000', 188, 1, 'V00001', '华东钢材供应链有限公司', 13, 90.0000, 10.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (100, '000000', 188, 2, 'V00002', '江苏精密紧固件制造厂', 13, 90.0000, 10.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (101, '000000', 189, 3, 'V00003', '宁波工程塑料有限公司', 14, 100.0000, 11.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (102, '000000', 189, 4, 'V00004', '深圳华芯电子科技有限公司', 14, 100.0000, 11.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (103, '000000', 190, 8, 'V00008', '广州表面处理材料有限公司', 15, 110.0000, 12.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (104, '000000', 190, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 110.0000, 12.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (105, '000000', 191, 1, 'V00001', '华东钢材供应链有限公司', 16, 120.0000, 12.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (106, '000000', 191, 2, 'V00002', '江苏精密紧固件制造厂', 16, 120.0000, 12.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (107, '000000', 192, 8, 'V00008', '广州表面处理材料有限公司', 17, 130.0000, 13.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (108, '000000', 192, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 130.0000, 13.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (109, '000000', 193, 8, 'V00008', '广州表面处理材料有限公司', 18, 140.0000, 14.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (110, '000000', 193, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 140.0000, 14.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (111, '000000', 194, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 150.0000, 15.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (112, '000000', 194, 10, 'V00010', '武汉包装制品有限公司', 19, 150.0000, 15.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (113, '000000', 195, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 160.0000, 16.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (114, '000000', 195, 10, 'V00010', '武汉包装制品有限公司', 20, 160.0000, 16.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (115, '000000', 196, 8, 'V00008', '广州表面处理材料有限公司', 7, 170.0000, 17.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (116, '000000', 196, 9, 'V00009', '青岛橡胶密封件有限公司', 7, 170.0000, 17.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (117, '000000', 197, 8, 'V00008', '广州表面处理材料有限公司', 8, 180.0000, 17.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (118, '000000', 197, 9, 'V00009', '青岛橡胶密封件有限公司', 8, 180.0000, 17.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (119, '000000', 198, 10, 'V00010', '武汉包装制品有限公司', 9, 190.0000, 18.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (120, '000000', 198, 11, 'V00011', '常州铸造材料有限公司', 9, 190.0000, 18.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (121, '000000', 199, 1, 'V00001', '华东钢材供应链有限公司', 10, 200.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (122, '000000', 199, 2, 'V00002', '江苏精密紧固件制造厂', 10, 200.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (123, '000000', 200, 2, 'V00002', '江苏精密紧固件制造厂', 11, 210.0000, 20.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (124, '000000', 200, 3, 'V00003', '宁波工程塑料有限公司', 11, 210.0000, 20.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (125, '000000', 201, 8, 'V00008', '广州表面处理材料有限公司', 12, 220.0000, 21.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (126, '000000', 201, 9, 'V00009', '青岛橡胶密封件有限公司', 12, 220.0000, 21.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (127, '000000', 202, 4, 'V00004', '深圳华芯电子科技有限公司', 13, 230.0000, 22.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (128, '000000', 202, 5, 'V00005', '东莞连接器制造有限公司', 13, 230.0000, 22.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (129, '000000', 203, 1, 'V00001', '华东钢材供应链有限公司', 14, 240.0000, 23.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (130, '000000', 203, 2, 'V00002', '江苏精密紧固件制造厂', 14, 240.0000, 23.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (131, '000000', 204, 4, 'V00004', '深圳华芯电子科技有限公司', 15, 250.0000, 23.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (132, '000000', 204, 5, 'V00005', '东莞连接器制造有限公司', 15, 250.0000, 23.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (133, '000000', 205, 3, 'V00003', '宁波工程塑料有限公司', 16, 260.0000, 24.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (134, '000000', 205, 4, 'V00004', '深圳华芯电子科技有限公司', 16, 260.0000, 24.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (135, '000000', 206, 3, 'V00003', '宁波工程塑料有限公司', 17, 270.0000, 25.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (136, '000000', 206, 4, 'V00004', '深圳华芯电子科技有限公司', 17, 270.0000, 25.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (137, '000000', 207, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 280.0000, 26.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (138, '000000', 207, 10, 'V00010', '武汉包装制品有限公司', 18, 280.0000, 26.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (139, '000000', 208, 8, 'V00008', '广州表面处理材料有限公司', 19, 290.0000, 27.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (140, '000000', 208, 9, 'V00009', '青岛橡胶密封件有限公司', 19, 290.0000, 27.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (141, '000000', 209, 6, 'V00006', '惠州新能源电池有限公司', 20, 300.0000, 28.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (142, '000000', 209, 7, 'V00007', '苏州精密轴承有限公司', 20, 300.0000, 28.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (143, '000000', 210, 6, 'V00006', '惠州新能源电池有限公司', 7, 310.0000, 29.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (144, '000000', 210, 7, 'V00007', '苏州精密轴承有限公司', 7, 310.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (145, '000000', 211, 8, 'V00008', '广州表面处理材料有限公司', 8, 320.0000, 29.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (146, '000000', 211, 9, 'V00009', '青岛橡胶密封件有限公司', 8, 320.0000, 29.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (147, '000000', 212, 8, 'V00008', '广州表面处理材料有限公司', 9, 330.0000, 30.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (148, '000000', 212, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 330.0000, 30.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (149, '000000', 213, 8, 'V00008', '广州表面处理材料有限公司', 10, 340.0000, 31.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (150, '000000', 213, 9, 'V00009', '青岛橡胶密封件有限公司', 10, 340.0000, 31.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (151, '000000', 214, 8, 'V00008', '广州表面处理材料有限公司', 11, 350.0000, 32.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (152, '000000', 214, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 350.0000, 32.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (153, '000000', 215, 8, 'V00008', '广州表面处理材料有限公司', 12, 360.0000, 33.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (154, '000000', 215, 9, 'V00009', '青岛橡胶密封件有限公司', 12, 360.0000, 33.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (155, '000000', 216, 9, 'V00009', '青岛橡胶密封件有限公司', 13, 370.0000, 34.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (156, '000000', 216, 10, 'V00010', '武汉包装制品有限公司', 13, 370.0000, 34.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (157, '000000', 217, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 380.0000, 34.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (158, '000000', 217, 10, 'V00010', '武汉包装制品有限公司', 14, 380.0000, 34.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (159, '000000', 218, 8, 'V00008', '广州表面处理材料有限公司', 15, 390.0000, 35.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (160, '000000', 218, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 390.0000, 35.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (161, '000000', 219, 8, 'V00008', '广州表面处理材料有限公司', 16, 400.0000, 36.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (162, '000000', 219, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 400.0000, 36.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (163, '000000', 220, 8, 'V00008', '广州表面处理材料有限公司', 17, 410.0000, 37.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (164, '000000', 220, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 410.0000, 37.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (165, '000000', 221, 8, 'V00008', '广州表面处理材料有限公司', 18, 420.0000, 38.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (166, '000000', 221, 9, 'V00009', '青岛橡胶密封件有限公司', 18, 420.0000, 38.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (167, '000000', 222, 4, 'V00004', '深圳华芯电子科技有限公司', 19, 430.0000, 39.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (168, '000000', 222, 5, 'V00005', '东莞连接器制造有限公司', 19, 430.0000, 39.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (169, '000000', 223, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 440.0000, 40.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (170, '000000', 223, 10, 'V00010', '武汉包装制品有限公司', 20, 440.0000, 40.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (171, '000000', 224, 8, 'V00008', '广州表面处理材料有限公司', 7, 450.0000, 40.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (172, '000000', 224, 9, 'V00009', '青岛橡胶密封件有限公司', 7, 450.0000, 40.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (173, '000000', 225, 4, 'V00004', '深圳华芯电子科技有限公司', 8, 460.0000, 41.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (174, '000000', 225, 5, 'V00005', '东莞连接器制造有限公司', 8, 460.0000, 41.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (175, '000000', 226, 8, 'V00008', '广州表面处理材料有限公司', 9, 470.0000, 42.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (176, '000000', 226, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 470.0000, 42.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (177, '000000', 227, 3, 'V00003', '宁波工程塑料有限公司', 10, 480.0000, 43.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (178, '000000', 227, 4, 'V00004', '深圳华芯电子科技有限公司', 10, 480.0000, 43.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (179, '000000', 228, 4, 'V00004', '深圳华芯电子科技有限公司', 11, 490.0000, 44.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (180, '000000', 228, 5, 'V00005', '东莞连接器制造有限公司', 11, 490.0000, 44.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (181, '000000', 229, 8, 'V00008', '广州表面处理材料有限公司', 12, 500.0000, 45.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (182, '000000', 229, 9, 'V00009', '青岛橡胶密封件有限公司', 12, 500.0000, 45.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (183, '000000', 230, 4, 'V00004', '深圳华芯电子科技有限公司', 13, 510.0000, 46.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (184, '000000', 230, 5, 'V00005', '东莞连接器制造有限公司', 13, 510.0000, 46.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (185, '000000', 231, 8, 'V00008', '广州表面处理材料有限公司', 14, 520.0000, 46.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (186, '000000', 231, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 520.0000, 46.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (187, '000000', 232, 8, 'V00008', '广州表面处理材料有限公司', 15, 530.0000, 47.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (188, '000000', 232, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 530.0000, 47.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (189, '000000', 233, 8, 'V00008', '广州表面处理材料有限公司', 16, 540.0000, 48.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (190, '000000', 233, 9, 'V00009', '青岛橡胶密封件有限公司', 16, 540.0000, 48.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (191, '000000', 234, 1, 'V00001', '华东钢材供应链有限公司', 17, 550.0000, 49.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (192, '000000', 234, 2, 'V00002', '江苏精密紧固件制造厂', 17, 550.0000, 49.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (193, '000000', 235, 1, 'V00001', '华东钢材供应链有限公司', 18, 560.0000, 50.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (194, '000000', 235, 2, 'V00002', '江苏精密紧固件制造厂', 18, 560.0000, 50.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (195, '000000', 236, 1, 'V00001', '华东钢材供应链有限公司', 19, 570.0000, 51.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (196, '000000', 236, 2, 'V00002', '江苏精密紧固件制造厂', 19, 570.0000, 51.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (197, '000000', 237, 1, 'V00001', '华东钢材供应链有限公司', 20, 580.0000, 51.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (198, '000000', 237, 2, 'V00002', '江苏精密紧固件制造厂', 20, 580.0000, 51.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (199, '000000', 238, 1, 'V00001', '华东钢材供应链有限公司', 7, 590.0000, 52.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (200, '000000', 238, 2, 'V00002', '江苏精密紧固件制造厂', 7, 590.0000, 52.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (201, '000000', 239, 3, 'V00003', '宁波工程塑料有限公司', 8, 600.0000, 53.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (202, '000000', 239, 4, 'V00004', '深圳华芯电子科技有限公司', 8, 600.0000, 53.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (203, '000000', 240, 3, 'V00003', '宁波工程塑料有限公司', 9, 610.0000, 3.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (204, '000000', 240, 4, 'V00004', '深圳华芯电子科技有限公司', 9, 610.0000, 3.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (205, '000000', 241, 9, 'V00009', '青岛橡胶密封件有限公司', 10, 620.0000, 4.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (206, '000000', 241, 10, 'V00010', '武汉包装制品有限公司', 10, 620.0000, 4.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (207, '000000', 242, 4, 'V00004', '深圳华芯电子科技有限公司', 11, 630.0000, 5.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (208, '000000', 242, 5, 'V00005', '东莞连接器制造有限公司', 11, 630.0000, 5.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (209, '000000', 243, 4, 'V00004', '深圳华芯电子科技有限公司', 12, 640.0000, 6.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (210, '000000', 243, 5, 'V00005', '东莞连接器制造有限公司', 12, 640.0000, 6.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (211, '000000', 244, 8, 'V00008', '广州表面处理材料有限公司', 13, 650.0000, 6.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (212, '000000', 244, 9, 'V00009', '青岛橡胶密封件有限公司', 13, 650.0000, 6.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (213, '000000', 245, 4, 'V00004', '深圳华芯电子科技有限公司', 14, 660.0000, 7.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (214, '000000', 245, 5, 'V00005', '东莞连接器制造有限公司', 14, 660.0000, 7.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (215, '000000', 246, 4, 'V00004', '深圳华芯电子科技有限公司', 15, 670.0000, 8.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (216, '000000', 246, 5, 'V00005', '东莞连接器制造有限公司', 15, 670.0000, 8.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (217, '000000', 247, 4, 'V00004', '深圳华芯电子科技有限公司', 16, 680.0000, 9.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (218, '000000', 247, 5, 'V00005', '东莞连接器制造有限公司', 16, 680.0000, 9.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (219, '000000', 248, 4, 'V00004', '深圳华芯电子科技有限公司', 17, 690.0000, 10.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (220, '000000', 248, 5, 'V00005', '东莞连接器制造有限公司', 17, 690.0000, 10.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (221, '000000', 249, 4, 'V00004', '深圳华芯电子科技有限公司', 18, 700.0000, 11.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (222, '000000', 249, 5, 'V00005', '东莞连接器制造有限公司', 18, 700.0000, 11.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (223, '000000', 250, 2, 'V00002', '江苏精密紧固件制造厂', 19, 710.0000, 12.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (224, '000000', 250, 3, 'V00003', '宁波工程塑料有限公司', 19, 710.0000, 12.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (225, '000000', 251, 2, 'V00002', '江苏精密紧固件制造厂', 20, 720.0000, 12.8500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (226, '000000', 251, 3, 'V00003', '宁波工程塑料有限公司', 20, 720.0000, 12.8500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (227, '000000', 252, 2, 'V00002', '江苏精密紧固件制造厂', 7, 730.0000, 13.7000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (228, '000000', 252, 3, 'V00003', '宁波工程塑料有限公司', 7, 730.0000, 13.7000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (229, '000000', 253, 6, 'V00006', '惠州新能源电池有限公司', 8, 740.0000, 14.5500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (230, '000000', 253, 7, 'V00007', '苏州精密轴承有限公司', 8, 740.0000, 14.5500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (231, '000000', 254, 8, 'V00008', '广州表面处理材料有限公司', 9, 750.0000, 15.4000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (232, '000000', 254, 9, 'V00009', '青岛橡胶密封件有限公司', 9, 750.0000, 15.4000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (233, '000000', 255, 8, 'V00008', '广州表面处理材料有限公司', 10, 760.0000, 16.2500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (234, '000000', 255, 9, 'V00009', '青岛橡胶密封件有限公司', 10, 760.0000, 16.2500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (235, '000000', 256, 8, 'V00008', '广州表面处理材料有限公司', 11, 770.0000, 17.1000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (236, '000000', 256, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 770.0000, 17.1000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (237, '000000', 257, 1, 'V00001', '华东钢材供应链有限公司', 12, 780.0000, 17.9500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (238, '000000', 257, 2, 'V00002', '江苏精密紧固件制造厂', 12, 780.0000, 17.9500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (239, '000000', 258, 1, 'V00001', '华东钢材供应链有限公司', 13, 790.0000, 18.8000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (240, '000000', 258, 2, 'V00002', '江苏精密紧固件制造厂', 13, 790.0000, 18.8000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (241, '000000', 259, 9, 'V00009', '青岛橡胶密封件有限公司', 14, 800.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (242, '000000', 259, 10, 'V00010', '武汉包装制品有限公司', 14, 800.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (243, '000000', 260, 8, 'V00008', '广州表面处理材料有限公司', 15, 810.0000, 20.5000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (244, '000000', 260, 9, 'V00009', '青岛橡胶密封件有限公司', 15, 810.0000, 20.5000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (245, '000000', 261, 10, 'V00010', '武汉包装制品有限公司', 16, 820.0000, 21.3500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (246, '000000', 261, 11, 'V00011', '常州铸造材料有限公司', 16, 820.0000, 21.3500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (247, '000000', 262, 8, 'V00008', '广州表面处理材料有限公司', 17, 830.0000, 22.2000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (248, '000000', 262, 9, 'V00009', '青岛橡胶密封件有限公司', 17, 830.0000, 22.2000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (249, '000000', 263, 1, 'V00001', '华东钢材供应链有限公司', 18, 840.0000, 23.0500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (250, '000000', 263, 2, 'V00002', '江苏精密紧固件制造厂', 18, 840.0000, 23.0500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (251, '000000', 264, 2, 'V00002', '江苏精密紧固件制造厂', 19, 850.0000, 23.9000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (252, '000000', 264, 3, 'V00003', '宁波工程塑料有限公司', 19, 850.0000, 23.9000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (253, '000000', 265, 8, 'V00008', '广州表面处理材料有限公司', 20, 860.0000, 24.7500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (254, '000000', 265, 9, 'V00009', '青岛橡胶密封件有限公司', 20, 860.0000, 24.7500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (255, '000000', 266, 1, 'V00001', '华东钢材供应链有限公司', 7, 870.0000, 25.6000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (256, '000000', 266, 2, 'V00002', '江苏精密紧固件制造厂', 7, 870.0000, 25.6000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (257, '000000', 267, 4, 'V00004', '深圳华芯电子科技有限公司', 8, 880.0000, 26.4500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (258, '000000', 267, 5, 'V00005', '东莞连接器制造有限公司', 8, 880.0000, 26.4500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (259, '000000', 268, 4, 'V00004', '深圳华芯电子科技有限公司', 9, 890.0000, 27.3000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (260, '000000', 268, 5, 'V00005', '东莞连接器制造有限公司', 9, 890.0000, 27.3000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (261, '000000', 269, 5, 'V00005', '东莞连接器制造有限公司', 10, 900.0000, 28.1500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (262, '000000', 269, 6, 'V00006', '惠州新能源电池有限公司', 10, 900.0000, 28.1500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (263, '000000', 270, 8, 'V00008', '广州表面处理材料有限公司', 11, 10.0000, 29.0000, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_material_vendor` (`relation_id`, `tenant_id`, `material_id`, `vendor_id`, `vendor_code`, `vendor_name`, `lead_time`, `min_order_qty`, `price`, `currency`, `is_default`, `priority`, `effective_date`, `expiry_date`, `status`, `remark`, `attr1`, `attr2`, `attr3`, `attr4`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (264, '000000', 270, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 10.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_process
--- ----------------------------
+/** ---------------------------- */
+/** bd_process 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_process`;
 CREATE TABLE `bd_process`  (
   `process_id` bigint(20) NOT NULL COMMENT '工序ID',
@@ -1948,9 +1959,9 @@ CREATE TABLE `bd_process`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工序定义表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_process
--- ----------------------------
+/** ---------------------------- */
+/** bd_process 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_process` VALUES (1, '000000', 'LASER', '激光切割', NULL, '下料', NULL, NULL, NULL, 0.3000, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_process` VALUES (2, '000000', 'PLASMA', '等离子切割', NULL, '下料', NULL, NULL, NULL, 0.3500, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_process` VALUES (3, '000000', 'SHEAR', '剪板', NULL, '下料', NULL, NULL, NULL, 0.2000, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2009,9 +2020,9 @@ INSERT INTO `bd_process` VALUES (55, '000000', 'PKG', '包装', NULL, '通用', 
 INSERT INTO `bd_process` VALUES (56, '000000', 'CLEAN', '清洗', NULL, '通用', NULL, NULL, NULL, 0.1000, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_process` VALUES (57, '000000', 'DEBURR', '去毛刺', NULL, '通用', NULL, NULL, NULL, 0.1500, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_routing
--- ----------------------------
+/** ---------------------------- */
+/** bd_routing 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_routing`;
 CREATE TABLE `bd_routing`  (
   `routing_id` bigint(20) NOT NULL COMMENT '工艺路线ID',
@@ -2047,9 +2058,9 @@ CREATE TABLE `bd_routing`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线主表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_routing
--- ----------------------------
+/** ---------------------------- */
+/** bd_routing 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_routing` VALUES (1, '000000', 'RT20260914001', '高强度螺栓组套 M12装配工艺路线V1.0', NULL, 1, 'IF20260914001', '高强度螺栓组套 M12', '1.0', 1, 7, 3.8500, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_routing` VALUES (2, '000000', 'RT20260914002', '精密齿轮箱总成装配工艺路线V1.0', NULL, 2, 'IF20260914002', '精密齿轮箱总成', '1.0', 1, 8, 5.2500, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_routing` VALUES (3, '000000', 'RT20260914003', '压缩弹簧组装配工艺路线V1.0', NULL, 3, 'IF20260914003', '压缩弹簧组', '1.0', 1, 6, 2.2500, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2088,9 +2099,9 @@ INSERT INTO `bd_routing` VALUES (35, '000000', 'RT20260914035', '手持 POS 机 
 INSERT INTO `bd_routing` VALUES (36, '000000', 'RT20260914036', '网络摄像机 IPC-300装配工艺路线V1.0', NULL, 36, 'IF20260914036', '网络摄像机 IPC-300', '1.0', 1, 6, 5.2200, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_routing` VALUES (37, '000000', 'RT20260914037', '无线蓝牙音箱 SPK-20装配工艺路线V1.0', NULL, 37, 'IF20260914037', '无线蓝牙音箱 SPK-20', '1.0', 1, 7, 5.6200, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_routing_step
--- ----------------------------
+/** ---------------------------- */
+/** bd_routing_step 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_routing_step`;
 CREATE TABLE `bd_routing_step`  (
   `step_id` bigint(20) NOT NULL COMMENT '步骤ID',
@@ -2131,9 +2142,9 @@ CREATE TABLE `bd_routing_step`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线步骤表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_routing_step
--- ----------------------------
+/** ---------------------------- */
+/** bd_routing_step 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_routing_step` VALUES (1, '000000', 1, 10, 9, 'FORGE', '锻造', 'FORGE', 16, 'GZZ0016', '锻造机', 0.0070, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
 INSERT INTO `bd_routing_step` VALUES (2, '000000', 1, 20, 10, 'TURN', '车削', 'TURN', 5, 'GZZ0005', '数控车床A', 0.0058, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
 INSERT INTO `bd_routing_step` VALUES (3, '000000', 1, 30, 27, 'QUENCH', '淬火', 'QUENCH', 31, 'GZZ0031', '淬火炉', 0.0117, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
@@ -2383,9 +2394,9 @@ INSERT INTO `bd_routing_step` VALUES (246, '000000', 37, 50, 48, 'AGING', '老�
 INSERT INTO `bd_routing_step` VALUES (247, '000000', 37, 60, 47, 'FUNC_TEST', '功能测试', 'FUNC_TEST', 49, 'GZZ0049', '功能测试工位', 0.0070, 0.1000, 2, 1, 50.000000, 100.000000, 1, NULL, NULL, NULL, 0, 1, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
 INSERT INTO `bd_routing_step` VALUES (248, '000000', 37, 70, 55, 'PKG', '包装', 'PKG', 54, 'GZZ0054', '包装线B', 0.0070, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
 
--- ----------------------------
--- Table structure for bd_serial_number_rule
--- ----------------------------
+/** ---------------------------- */
+/** bd_serial_number_rule 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_serial_number_rule`;
 CREATE TABLE `bd_serial_number_rule`  (
   `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
@@ -2417,16 +2428,16 @@ CREATE TABLE `bd_serial_number_rule`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产品序列号/条码规则表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_serial_number_rule
--- ----------------------------
+/** ---------------------------- */
+/** bd_serial_number_rule 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_serial_number_rule` VALUES (1, '000000', 'SN-FG-001', '成品序列号规则', 'PRODUCT_SN', 'SN', 'yyyyMMdd', 4, 'DAY', 0, 'NONE', 'ACTIVE', '成品序列号，按日重置序号', NULL, NULL, 0, 0, 100, 1, '2026-06-21 20:52:46', NULL, '2026-09-14 13:00:33', '0');
 INSERT INTO `bd_serial_number_rule` VALUES (2, '000000', 'SN-BATCH-001', '批次号规则', 'BATCH_NO', 'B', 'yyyyMM', 6, 'MONTH', 0, 'NONE', 'ACTIVE', '批次号，按月重置序号', NULL, NULL, 0, 0, 100, 1, '2026-06-21 20:52:46', NULL, '2026-09-14 13:00:33', '0');
 INSERT INTO `bd_serial_number_rule` VALUES (3, '000000', 'SN-BC-001', '条码规则', 'BARCODE', 'BC', NULL, 8, 'NONE', 0, 'MOD10', 'ACTIVE', '产品条码，全局递增，含校验位', NULL, NULL, 0, 0, 100, 1, '2026-06-21 20:52:46', NULL, '2026-09-14 13:00:33', '0');
 
--- ----------------------------
--- Table structure for bd_unit_of_measure
--- ----------------------------
+/** ---------------------------- */
+/** bd_unit_of_measure 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_unit_of_measure`;
 CREATE TABLE `bd_unit_of_measure`  (
   `uom_id` bigint(20) NOT NULL COMMENT '单位ID',
@@ -2448,6 +2459,9 @@ CREATE TABLE `bd_unit_of_measure`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `quantity_scale` tinyint(3) unsigned NULL DEFAULT NULL COMMENT '可信订货数量小数精度；未核验为NULL',
+  `conversion_version` varchar(64) NULL DEFAULT NULL COMMENT '经业务确认的单位换算版本；旧换算率不自动可信',
+  `conversion_verified_at` datetime NULL DEFAULT NULL COMMENT '换算核验时间；NULL拒绝自动推断',
   PRIMARY KEY (`uom_id`) USING BTREE,
   UNIQUE INDEX `uk_uom_code`(`uom_code`, `tenant_id`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
@@ -2456,81 +2470,81 @@ CREATE TABLE `bd_unit_of_measure`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_unit_of_measure
--- ----------------------------
-INSERT INTO `bd_unit_of_measure` VALUES (1, '000000', 'GRAM', '克', 'g', '重量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:46', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (2, '000000', 'KILOGRAM', '千克', 'kg', '重量', 0, 1, '克', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:58', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (3, '000000', 'TON', '吨', 't', '重量', 0, 1, '克', 1000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (4, '000000', 'MILLIGRAM', '毫克', 'mg', '重量', 0, 1, '克', 0.001000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (5, '000000', 'POUND', '磅', 'lb', '重量', 0, 1, '克', 453.592000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (6, '000000', 'OUNCE', '盎司', 'oz', '重量', 0, 1, '克', 28.349500, 1, 6, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (7, '000000', 'JIN', '斤', '斤', '重量', 0, 1, '克', 500.000000, 1, 7, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (8, '000000', 'MILLIMETER', '毫米', 'mm', '长度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (9, '000000', 'CENTIMETER', '厘米', 'cm', '长度', 0, 8, '毫米', 10.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (10, '000000', 'METER', '米', 'm', '长度', 0, 8, '毫米', 1000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (11, '000000', 'KILOMETER', '千米', 'km', '长度', 0, 8, '毫米', 1000000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (12, '000000', 'INCH', '英寸', '″', '长度', 0, 8, '毫米', 25.400000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (13, '000000', 'FOOT', '英尺', '′', '长度', 0, 8, '毫米', 304.800000, 1, 6, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (14, '000000', 'YARD', '码', 'yd', '长度', 0, 8, '毫米', 914.400000, 1, 7, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (15, '000000', 'SQUARE_MILLIMETER', '平方毫米', 'mm²', '面积', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (16, '000000', 'SQUARE_CENTIMETER', '平方厘米', 'cm²', '面积', 0, 15, '平方毫米', 100.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (17, '000000', 'SQUARE_METER', '平方米', '㎡', '面积', 0, 15, '平方毫米', 1000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (18, '000000', 'HECTARE', '公顷', 'ha', '面积', 0, 15, '平方毫米', 10000000000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (19, '000000', 'ACRE', '英亩', 'acre', '面积', 0, 15, '平方毫米', 4046860000.000000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (20, '000000', 'CUBIC_MILLIMETER', '立方毫米', 'mm³', '体积', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (21, '000000', 'CUBIC_CENTIMETER', '立方厘米', 'cm³', '体积', 0, 20, '立方毫米', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (22, '000000', 'CUBIC_METER', '立方米', 'm³', '体积', 0, 20, '立方毫米', 1000000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (23, '000000', 'LITER', '升', 'L', '体积', 0, 20, '立方毫米', 1000000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (24, '000000', 'MILLILITER', '毫升', 'ml', '体积', 0, 20, '立方毫米', 1000.000000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (25, '000000', 'GALLON', '加仑', 'gal', '体积', 0, 20, '立方毫米', 3785410.000000, 1, 6, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (26, '000000', 'PIECE', '件', 'pcs', '数量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (27, '000000', 'SET', '套', 'set', '数量', 0, 26, '件', 1.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (28, '000000', 'PAIR', '双', 'pair', '数量', 0, 26, '件', 2.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (29, '000000', 'DOZEN', '打', 'doz', '数量', 0, 26, '件', 12.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (30, '000000', 'BOX', '箱', 'box', '数量', 0, 26, '件', 1.000000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (31, '000000', 'PACKAGE', '包', 'pkg', '数量', 0, 26, '件', 1.000000, 1, 6, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (32, '000000', 'ROLL', '卷', 'roll', '数量', 0, 26, '件', 1.000000, 1, 7, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (33, '000000', 'BAG', '袋', 'bag', '数量', 0, 26, '件', 1.000000, 1, 8, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (34, '000000', 'BOTTLE', '瓶', 'btl', '数量', 0, 26, '件', 1.000000, 1, 9, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (35, '000000', 'HOUR', '小时', 'h', '时间', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (36, '000000', 'MINUTE', '分钟', 'min', '时间', 0, 35, '小时', 0.016667, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (37, '000000', 'SECOND', '秒', 's', '时间', 0, 35, '小时', 0.000278, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (38, '000000', 'DAY', '天', 'day', '时间', 0, 35, '小时', 24.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (39, '000000', 'CELSIUS', '摄氏度', '℃', '温度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (40, '000000', 'FAHRENHEIT', '华氏度', '℉', '温度', 0, 39, '摄氏度', 1.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (41, '000000', 'KELVIN', '开尔文', 'K', '温度', 0, 39, '摄氏度', 1.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (42, '000000', 'PA', '帕斯卡', 'Pa', '压力', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (43, '000000', 'KPA', '千帕', 'kPa', '压力', 0, 42, '帕斯卡', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (44, '000000', 'MPA', '兆帕', 'MPa', '压力', 0, 42, '帕斯卡', 1000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (45, '000000', 'BAR', '巴', 'bar', '压力', 0, 42, '帕斯卡', 100000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (46, '000000', 'PSI', '磅力/平方英寸', 'psi', '压力', 0, 42, '帕斯卡', 6894.760000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (47, '000000', 'VOLT', '伏特', 'V', '电压', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (48, '000000', 'AMPERE', '安培', 'A', '电流', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (49, '000000', 'WATT', '瓦特', 'W', '功率', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (50, '000000', 'KILOWATT', '千瓦', 'kW', '功率', 0, 49, '瓦特', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (51, '000000', 'KWH', '千瓦时', 'kWh', '电能', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (52, '000000', 'PERCENT', '百分比', '%', '浓度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (53, '000000', 'PPM', '百万分比', 'ppm', '浓度', 0, 52, '百分比', 0.000100, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (54, '000000', 'MOLAR', '摩尔浓度', 'mol/L', '浓度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (55, '000000', 'UNIT', '台', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (56, '000000', 'PIECE_ALT', '个', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (57, '000000', 'ROD', '根', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (58, '000000', 'SHEET', '张', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (59, '000000', 'STICK', '支', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (60, '000000', 'FLAT', '片', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (61, '000000', 'BLOCK', '块', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (62, '000000', 'STRIP', '条', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (63, '000000', 'GRAIN', '颗', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (64, '000000', 'PAIR_ALT', '对', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (65, '000000', 'GROUP', '组', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (66, '000000', 'SET_ALT', '副', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (67, '000000', 'REEL', '盘', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `bd_unit_of_measure` VALUES (68, '000000', 'CAN', '罐', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+/** ---------------------------- */
+/** bd_unit_of_measure 基础种子记录。 */
+/** ---------------------------- */
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (1, '000000', 'GRAM', '克', 'g', '重量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:46', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (2, '000000', 'KILOGRAM', '千克', 'kg', '重量', 0, 1, '克', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:58', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (3, '000000', 'TON', '吨', 't', '重量', 0, 1, '克', 1000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (4, '000000', 'MILLIGRAM', '毫克', 'mg', '重量', 0, 1, '克', 0.001000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (5, '000000', 'POUND', '磅', 'lb', '重量', 0, 1, '克', 453.592000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (6, '000000', 'OUNCE', '盎司', 'oz', '重量', 0, 1, '克', 28.349500, 1, 6, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (7, '000000', 'JIN', '斤', '斤', '重量', 0, 1, '克', 500.000000, 1, 7, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (8, '000000', 'MILLIMETER', '毫米', 'mm', '长度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (9, '000000', 'CENTIMETER', '厘米', 'cm', '长度', 0, 8, '毫米', 10.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (10, '000000', 'METER', '米', 'm', '长度', 0, 8, '毫米', 1000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (11, '000000', 'KILOMETER', '千米', 'km', '长度', 0, 8, '毫米', 1000000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (12, '000000', 'INCH', '英寸', '″', '长度', 0, 8, '毫米', 25.400000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (13, '000000', 'FOOT', '英尺', '′', '长度', 0, 8, '毫米', 304.800000, 1, 6, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (14, '000000', 'YARD', '码', 'yd', '长度', 0, 8, '毫米', 914.400000, 1, 7, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (15, '000000', 'SQUARE_MILLIMETER', '平方毫米', 'mm²', '面积', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (16, '000000', 'SQUARE_CENTIMETER', '平方厘米', 'cm²', '面积', 0, 15, '平方毫米', 100.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (17, '000000', 'SQUARE_METER', '平方米', '㎡', '面积', 0, 15, '平方毫米', 1000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (18, '000000', 'HECTARE', '公顷', 'ha', '面积', 0, 15, '平方毫米', 10000000000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (19, '000000', 'ACRE', '英亩', 'acre', '面积', 0, 15, '平方毫米', 4046860000.000000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (20, '000000', 'CUBIC_MILLIMETER', '立方毫米', 'mm³', '体积', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (21, '000000', 'CUBIC_CENTIMETER', '立方厘米', 'cm³', '体积', 0, 20, '立方毫米', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (22, '000000', 'CUBIC_METER', '立方米', 'm³', '体积', 0, 20, '立方毫米', 1000000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (23, '000000', 'LITER', '升', 'L', '体积', 0, 20, '立方毫米', 1000000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (24, '000000', 'MILLILITER', '毫升', 'ml', '体积', 0, 20, '立方毫米', 1000.000000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (25, '000000', 'GALLON', '加仑', 'gal', '体积', 0, 20, '立方毫米', 3785410.000000, 1, 6, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (26, '000000', 'PIECE', '件', 'pcs', '数量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (27, '000000', 'SET', '套', 'set', '数量', 0, 26, '件', 1.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (28, '000000', 'PAIR', '双', 'pair', '数量', 0, 26, '件', 2.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (29, '000000', 'DOZEN', '打', 'doz', '数量', 0, 26, '件', 12.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (30, '000000', 'BOX', '箱', 'box', '数量', 0, 26, '件', 1.000000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (31, '000000', 'PACKAGE', '包', 'pkg', '数量', 0, 26, '件', 1.000000, 1, 6, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (32, '000000', 'ROLL', '卷', 'roll', '数量', 0, 26, '件', 1.000000, 1, 7, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (33, '000000', 'BAG', '袋', 'bag', '数量', 0, 26, '件', 1.000000, 1, 8, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (34, '000000', 'BOTTLE', '瓶', 'btl', '数量', 0, 26, '件', 1.000000, 1, 9, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (35, '000000', 'HOUR', '小时', 'h', '时间', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (36, '000000', 'MINUTE', '分钟', 'min', '时间', 0, 35, '小时', 0.016667, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (37, '000000', 'SECOND', '秒', 's', '时间', 0, 35, '小时', 0.000278, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (38, '000000', 'DAY', '天', 'day', '时间', 0, 35, '小时', 24.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (39, '000000', 'CELSIUS', '摄氏度', '℃', '温度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (40, '000000', 'FAHRENHEIT', '华氏度', '℉', '温度', 0, 39, '摄氏度', 1.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (41, '000000', 'KELVIN', '开尔文', 'K', '温度', 0, 39, '摄氏度', 1.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (42, '000000', 'PA', '帕斯卡', 'Pa', '压力', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (43, '000000', 'KPA', '千帕', 'kPa', '压力', 0, 42, '帕斯卡', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (44, '000000', 'MPA', '兆帕', 'MPa', '压力', 0, 42, '帕斯卡', 1000000.000000, 1, 3, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (45, '000000', 'BAR', '巴', 'bar', '压力', 0, 42, '帕斯卡', 100000.000000, 1, 4, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (46, '000000', 'PSI', '磅力/平方英寸', 'psi', '压力', 0, 42, '帕斯卡', 6894.760000, 1, 5, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (47, '000000', 'VOLT', '伏特', 'V', '电压', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (48, '000000', 'AMPERE', '安培', 'A', '电流', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (49, '000000', 'WATT', '瓦特', 'W', '功率', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (50, '000000', 'KILOWATT', '千瓦', 'kW', '功率', 0, 49, '瓦特', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (51, '000000', 'KWH', '千瓦时', 'kWh', '电能', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (52, '000000', 'PERCENT', '百分比', '%', '浓度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (53, '000000', 'PPM', '百万分比', 'ppm', '浓度', 0, 52, '百分比', 0.000100, 1, 2, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (54, '000000', 'MOLAR', '摩尔浓度', 'mol/L', '浓度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (55, '000000', 'UNIT', '台', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (56, '000000', 'PIECE_ALT', '个', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (57, '000000', 'ROD', '根', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (58, '000000', 'SHEET', '张', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (59, '000000', 'STICK', '支', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (60, '000000', 'FLAT', '片', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (61, '000000', 'BLOCK', '块', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (62, '000000', 'STRIP', '条', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (63, '000000', 'GRAIN', '颗', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (64, '000000', 'PAIR_ALT', '对', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (65, '000000', 'GROUP', '组', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (66, '000000', 'SET_ALT', '副', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (67, '000000', 'REEL', '盘', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `bd_unit_of_measure` (`uom_id`, `tenant_id`, `uom_code`, `uom_name`, `uom_symbol`, `category`, `is_base`, `primary_id`, `primary_name`, `conversion_rate`, `status`, `sort_order`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`) VALUES (68, '000000', 'CAN', '罐', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_vendor
--- ----------------------------
+/** ---------------------------- */
+/** bd_vendor 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_vendor`;
 CREATE TABLE `bd_vendor`  (
   `vendor_id` bigint(20) NOT NULL COMMENT '供应商ID',
@@ -2576,9 +2590,9 @@ CREATE TABLE `bd_vendor`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_vendor
--- ----------------------------
+/** ---------------------------- */
+/** bd_vendor 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_vendor` VALUES (1, '000000', 'V00001', '华东钢材供应链有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880001', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'METAL', '2', '1', 'ACTIVE', '钢铁及有色金属材料供应', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-23 22:15:10', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor` VALUES (2, '000000', 'V00002', '江苏精密紧固件制造厂', NULL, '浙江省杭州市余杭区', NULL, '0571-88880002', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'HARDWARE', '2', '2', 'ACTIVE', '标准紧固件与连接件', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-23 22:15:10', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor` VALUES (3, '000000', 'V00003', '宁波工程塑料有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880003', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'PLASTIC', '2', '1', 'ACTIVE', 'ABS/PC/POM/PA 工程塑料粒子', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-23 22:15:10', '0', NULL, NULL, NULL, NULL);
@@ -2592,9 +2606,9 @@ INSERT INTO `bd_vendor` VALUES (10, '000000', 'V00010', '武汉包装制品有�
 INSERT INTO `bd_vendor` VALUES (11, '000000', 'V00011', '常州铸造材料有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880011', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'METAL', '2', '1', 'ACTIVE', '铸造生铁、铸造辅料', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-23 22:15:10', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor` VALUES (12, '000000', 'V00012', '天津精密铸造厂', NULL, '浙江省杭州市余杭区', NULL, '0571-88880012', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'SM_CAST', '2', '1', 'ACTIVE', '铝合金压铸件与铸钢件', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-23 22:15:10', '0', NULL, NULL, NULL, NULL);
 
--- ----------------------------
--- Table structure for bd_vendor_bak_20260923
--- ----------------------------
+/** ---------------------------- */
+/** bd_vendor_bak_20260923 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_vendor_bak_20260923`;
 CREATE TABLE `bd_vendor_bak_20260923`  (
   `vendor_id` bigint(20) NOT NULL COMMENT '供应商ID',
@@ -2640,9 +2654,9 @@ CREATE TABLE `bd_vendor_bak_20260923`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_vendor_bak_20260923
--- ----------------------------
+/** ---------------------------- */
+/** bd_vendor_bak_20260923 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_vendor_bak_20260923` VALUES (1, '000000', 'V00001', '华东钢材供应链有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880001', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'B', '华东', '1', 'ACTIVE', '钢铁及有色金属材料供应', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:50:13', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor_bak_20260923` VALUES (2, '000000', 'V00002', '江苏精密紧固件制造厂', NULL, '浙江省杭州市余杭区', NULL, '0571-88880002', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'C', '华东', '1', 'ACTIVE', '标准紧固件与连接件', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:49:53', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor_bak_20260923` VALUES (3, '000000', 'V00003', '宁波工程塑料有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880003', NULL, NULL, NULL, NULL, '1', '塑料材料', '华东', '塑料材料', '1', 'ABS/PC/POM/PA 工程塑料粒子', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', NULL, NULL, NULL, NULL);
@@ -2656,9 +2670,9 @@ INSERT INTO `bd_vendor_bak_20260923` VALUES (10, '000000', 'V00010', '武汉包�
 INSERT INTO `bd_vendor_bak_20260923` VALUES (11, '000000', 'V00011', '常州铸造材料有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880011', NULL, NULL, NULL, NULL, '1', '金属材料', '华东', '金属材料', '1', '铸造生铁、铸造辅料', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor_bak_20260923` VALUES (12, '000000', 'V00012', '天津精密铸造厂', NULL, '浙江省杭州市余杭区', NULL, '0571-88880012', NULL, NULL, NULL, NULL, '1', '铸锻件', '华东', '铸锻件', '1', '铝合金压铸件与铸钢件', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', NULL, NULL, NULL, NULL);
 
--- ----------------------------
--- Table structure for bd_workshop
--- ----------------------------
+/** ---------------------------- */
+/** bd_workshop 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_workshop`;
 CREATE TABLE `bd_workshop`  (
   `workshop_id` bigint(20) NOT NULL COMMENT '车间ID',
@@ -2691,9 +2705,9 @@ CREATE TABLE `bd_workshop`  (
   INDEX `idx_dept_id`(`dept_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_workshop
--- ----------------------------
+/** ---------------------------- */
+/** bd_workshop 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_workshop` VALUES (1, '000000', 'CJ001', '下料车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workshop` VALUES (2, '000000', 'CJ002', '机加车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 2, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workshop` VALUES (3, '000000', 'CJ003', '冲压车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 3, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2710,9 +2724,9 @@ INSERT INTO `bd_workshop` VALUES (13, '000000', 'CJ013', '测试车间', NULL, 1
 INSERT INTO `bd_workshop` VALUES (14, '000000', 'CJ014', '包装车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 14, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workshop` VALUES (15, '000000', 'CJ015', '模具车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 15, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for bd_workstation
--- ----------------------------
+/** ---------------------------- */
+/** bd_workstation 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `bd_workstation`;
 CREATE TABLE `bd_workstation`  (
   `workstation_id` bigint(20) NOT NULL COMMENT '工作站ID',
@@ -2745,9 +2759,9 @@ CREATE TABLE `bd_workstation`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工作站表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of bd_workstation
--- ----------------------------
+/** ---------------------------- */
+/** bd_workstation 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `bd_workstation` VALUES (1, '000000', 'GZZ0001', '激光切割机', 1, 'CJ001', '下料车间', NULL, NULL, 2, 120.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workstation` VALUES (2, '000000', 'GZZ0002', '等离子切割机', 1, 'CJ001', '下料车间', NULL, NULL, 2, 100.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workstation` VALUES (3, '000000', 'GZZ0003', '剪板机', 1, 'CJ001', '下料车间', NULL, NULL, 2, 150.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2807,9 +2821,9 @@ INSERT INTO `bd_workstation` VALUES (56, '000000', 'GZZ0056', '电火花机', 15
 INSERT INTO `bd_workstation` VALUES (57, '000000', 'GZZ0057', '线切割机', 15, 'CJ015', '模具车间', NULL, NULL, 2, 60.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workstation` VALUES (58, '000000', 'GZZ0058', '抛光工位', 15, 'CJ015', '模具车间', NULL, NULL, 2, 90.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for erp_subcontract_doc
--- ----------------------------
+/** ---------------------------- */
+/** erp_subcontract_doc 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `erp_subcontract_doc`;
 CREATE TABLE `erp_subcontract_doc`  (
   `doc_id` bigint(20) NOT NULL COMMENT '文件ID',
@@ -2832,13 +2846,13 @@ CREATE TABLE `erp_subcontract_doc`  (
   INDEX `idx_sc_doc_subcontract`(`subcontract_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外工程文件' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of erp_subcontract_doc
--- ----------------------------
+/** ---------------------------- */
+/** erp_subcontract_doc 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for fa_asset
--- ----------------------------
+/** ---------------------------- */
+/** fa_asset 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fa_asset`;
 CREATE TABLE `fa_asset`  (
   `asset_id` bigint(20) NOT NULL COMMENT '资产ID',
@@ -2869,13 +2883,13 @@ CREATE TABLE `fa_asset`  (
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产卡片' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fa_asset
--- ----------------------------
+/** ---------------------------- */
+/** fa_asset 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for fa_asset_category
--- ----------------------------
+/** ---------------------------- */
+/** fa_asset_category 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fa_asset_category`;
 CREATE TABLE `fa_asset_category`  (
   `category_id` bigint(20) NOT NULL COMMENT '类别ID',
@@ -2902,16 +2916,16 @@ CREATE TABLE `fa_asset_category`  (
   UNIQUE INDEX `uk_code`(`category_code`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产类别(折旧政策)' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fa_asset_category
--- ----------------------------
+/** ---------------------------- */
+/** fa_asset_category 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `fa_asset_category` VALUES (6100001, '000000', 'FA_CAT_MACHINE', '机器设备', 'STRAIGHT_LINE', 120, 0.0500, 6005053, 6005010, 6005058, 6005059, '0', 1, 0, NULL, NULL, '2026-07-31 22:31:31', NULL, '2026-07-31 22:31:31', '0');
 INSERT INTO `fa_asset_category` VALUES (6100002, '000000', 'FA_CAT_OFFICE', '办公设备', 'STRAIGHT_LINE', 60, 0.0500, 6005053, 6005010, 6005058, 6005059, '0', 2, 0, NULL, NULL, '2026-07-31 22:31:31', NULL, '2026-07-31 22:31:31', '0');
 INSERT INTO `fa_asset_category` VALUES (6100003, '000000', 'FA_CAT_VEHICLE', '运输工具', 'DOUBLE_DECLINING', 96, 0.0500, 6005053, 6005010, 6005058, 6005059, '0', 3, 0, NULL, NULL, '2026-07-31 22:31:31', NULL, '2026-07-31 22:31:31', '0');
 
--- ----------------------------
--- Table structure for fa_depreciation
--- ----------------------------
+/** ---------------------------- */
+/** fa_depreciation 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fa_depreciation`;
 CREATE TABLE `fa_depreciation`  (
   `depreciation_id` bigint(20) NOT NULL COMMENT '折旧ID',
@@ -2936,13 +2950,13 @@ CREATE TABLE `fa_depreciation`  (
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产折旧记录' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fa_depreciation
--- ----------------------------
+/** ---------------------------- */
+/** fa_depreciation 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for fa_disposal
--- ----------------------------
+/** ---------------------------- */
+/** fa_disposal 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fa_disposal`;
 CREATE TABLE `fa_disposal`  (
   `disposal_id` bigint(20) NOT NULL COMMENT '处置ID',
@@ -2969,13 +2983,13 @@ CREATE TABLE `fa_disposal`  (
   INDEX `idx_date`(`disposal_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产处置记录' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fa_disposal
--- ----------------------------
+/** ---------------------------- */
+/** fa_disposal 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for fin_close_log
--- ----------------------------
+/** ---------------------------- */
+/** fin_close_log 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fin_close_log`;
 CREATE TABLE `fin_close_log`  (
   `log_id` bigint(20) NOT NULL COMMENT '日志ID',
@@ -2996,13 +3010,13 @@ CREATE TABLE `fin_close_log`  (
   INDEX `idx_period`(`period_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '期末关账执行日志' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fin_close_log
--- ----------------------------
+/** ---------------------------- */
+/** fin_close_log 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for fin_receipt
--- ----------------------------
+/** ---------------------------- */
+/** fin_receipt 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fin_receipt`;
 CREATE TABLE `fin_receipt`  (
   `receipt_id` bigint(20) NOT NULL COMMENT '收付款单ID(雪花)',
@@ -3038,13 +3052,13 @@ CREATE TABLE `fin_receipt`  (
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '收付款单(AR收款/AP付款合一)' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fin_receipt
--- ----------------------------
+/** ---------------------------- */
+/** fin_receipt 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for fin_settlement
--- ----------------------------
+/** ---------------------------- */
+/** fin_settlement 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `fin_settlement`;
 CREATE TABLE `fin_settlement`  (
   `settlement_id` bigint(20) NOT NULL COMMENT '核销记录ID(雪花)',
@@ -3071,13 +3085,13 @@ CREATE TABLE `fin_settlement`  (
   INDEX `idx_receipt`(`receipt_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '应收应付核销记录' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of fin_settlement
--- ----------------------------
+/** ---------------------------- */
+/** fin_settlement 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for gl_account
--- ----------------------------
+/** ---------------------------- */
+/** gl_account 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `gl_account`;
 CREATE TABLE `gl_account`  (
   `account_id` bigint(20) NOT NULL COMMENT '科目ID',
@@ -3110,9 +3124,9 @@ CREATE TABLE `gl_account`  (
   INDEX `idx_path_ids`(`path_ids`(64)) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '会计科目表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of gl_account
--- ----------------------------
+/** ---------------------------- */
+/** gl_account 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `gl_account` VALUES (6005001, '000000', '1001', '库存现金', 'ASSET', 'DEBIT', 0, 1, '6005001', '库存现金', '1', '0', NULL, '0', 'CNY', '0', 1, 0, NULL, NULL, '2026-07-30 21:32:29', NULL, '2026-07-30 21:32:29', '0');
 INSERT INTO `gl_account` VALUES (6005002, '000000', '1002', '银行存款', 'ASSET', 'DEBIT', 0, 1, '6005002', '银行存款', '1', '0', NULL, '0', 'CNY', '0', 2, 0, NULL, NULL, '2026-07-30 21:32:29', NULL, '2026-07-30 21:32:29', '0');
 INSERT INTO `gl_account` VALUES (6005003, '000000', '1122', '应收账款', 'ASSET', 'DEBIT', 0, 1, '6005003', '应收账款', '1', '1', 'AR', '1', 'CNY', '0', 3, 0, NULL, NULL, '2026-07-30 21:32:29', NULL, '2026-07-30 21:32:29', '0');
@@ -3145,9 +3159,9 @@ INSERT INTO `gl_account` VALUES (6005057, '000000', '6403', '税金及附加', '
 INSERT INTO `gl_account` VALUES (6005058, '000000', '6711', '营业外支出', 'EXPENSE', 'DEBIT', 0, 1, '6005058', '营业外支出', '1', '0', NULL, '0', 'CNY', '0', 58, 0, NULL, NULL, '2026-07-31 21:25:39', NULL, '2026-07-31 21:25:39', '0');
 INSERT INTO `gl_account` VALUES (6005059, '000000', '6301', '营业外收入', 'INCOME', 'CREDIT', 0, 1, '6005059', '营业外收入', '1', '0', NULL, '0', 'CNY', '0', 59, 0, NULL, NULL, '2026-07-31 21:25:39', NULL, '2026-07-31 21:25:39', '0');
 
--- ----------------------------
--- Table structure for gl_account_balance
--- ----------------------------
+/** ---------------------------- */
+/** gl_account_balance 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `gl_account_balance`;
 CREATE TABLE `gl_account_balance`  (
   `balance_id` bigint(20) NOT NULL,
@@ -3174,13 +3188,13 @@ CREATE TABLE `gl_account_balance`  (
   INDEX `idx_account_id`(`account_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '科目余额表(试算/报表基座)' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of gl_account_balance
--- ----------------------------
+/** ---------------------------- */
+/** gl_account_balance 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for gl_currency_rate
--- ----------------------------
+/** ---------------------------- */
+/** gl_currency_rate 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `gl_currency_rate`;
 CREATE TABLE `gl_currency_rate`  (
   `rate_id` bigint(20) NOT NULL,
@@ -3202,13 +3216,13 @@ CREATE TABLE `gl_currency_rate`  (
   INDEX `idx_rate_date`(`rate_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '币种汇率' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of gl_currency_rate
--- ----------------------------
+/** ---------------------------- */
+/** gl_currency_rate 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for gl_period
--- ----------------------------
+/** ---------------------------- */
+/** gl_period 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `gl_period`;
 CREATE TABLE `gl_period`  (
   `period_id` bigint(20) NOT NULL,
@@ -3237,9 +3251,9 @@ CREATE TABLE `gl_period`  (
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '会计期间' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of gl_period
--- ----------------------------
+/** ---------------------------- */
+/** gl_period 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `gl_period` VALUES (1, '000000', 2026, 1, '2026年01期', '2026-01-01', '2026-01-31', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `gl_period` VALUES (2, '000000', 2026, 2, '2026年02期', '2026-02-01', '2026-02-28', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `gl_period` VALUES (3, '000000', 2026, 3, '2026年03期', '2026-03-01', '2026-03-31', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -3253,9 +3267,9 @@ INSERT INTO `gl_period` VALUES (10, '000000', 2026, 10, '2026年10期', '2026-10
 INSERT INTO `gl_period` VALUES (11, '000000', 2026, 11, '2026年11期', '2026-11-01', '2026-11-30', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `gl_period` VALUES (12, '000000', 2026, 12, '2026年12期', '2026-12-01', '2026-12-31', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for gl_voucher
--- ----------------------------
+/** ---------------------------- */
+/** gl_voucher 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `gl_voucher`;
 CREATE TABLE `gl_voucher`  (
   `voucher_id` bigint(20) NOT NULL COMMENT '凭证ID',
@@ -3290,13 +3304,13 @@ CREATE TABLE `gl_voucher`  (
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '记账凭证头' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of gl_voucher
--- ----------------------------
+/** ---------------------------- */
+/** gl_voucher 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for gl_voucher_line
--- ----------------------------
+/** ---------------------------- */
+/** gl_voucher_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `gl_voucher_line`;
 CREATE TABLE `gl_voucher_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -3331,13 +3345,13 @@ CREATE TABLE `gl_voucher_line`  (
   INDEX `idx_partner`(`partner_type`, `partner_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '记账凭证明细行' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of gl_voucher_line
--- ----------------------------
+/** ---------------------------- */
+/** gl_voucher_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for po_requisition
--- ----------------------------
+/** ---------------------------- */
+/** po_requisition 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `po_requisition`;
 CREATE TABLE `po_requisition`  (
   `requisition_id` bigint(20) NOT NULL COMMENT '请购单ID',
@@ -3364,13 +3378,13 @@ CREATE TABLE `po_requisition`  (
   INDEX `idx_po_requisition_applicant_id`(`applicant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单主表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of po_requisition
--- ----------------------------
+/** ---------------------------- */
+/** po_requisition 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for po_requisition_detail
--- ----------------------------
+/** ---------------------------- */
+/** po_requisition_detail 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `po_requisition_detail`;
 CREATE TABLE `po_requisition_detail`  (
   `detail_id` bigint(20) NOT NULL COMMENT '明细ID',
@@ -3400,13 +3414,13 @@ CREATE TABLE `po_requisition_detail`  (
   INDEX `idx_po_requisition_detail_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of po_requisition_detail
--- ----------------------------
+/** ---------------------------- */
+/** po_requisition_detail 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_capacity_calendar
--- ----------------------------
+/** ---------------------------- */
+/** prd_capacity_calendar 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_capacity_calendar`;
 CREATE TABLE `prd_capacity_calendar`  (
   `calendar_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '日历ID',
@@ -3439,13 +3453,13 @@ CREATE TABLE `prd_capacity_calendar`  (
   INDEX `idx_object`(`object_type`, `object_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产能日历表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_capacity_calendar
--- ----------------------------
+/** ---------------------------- */
+/** prd_capacity_calendar 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_material_requirement
--- ----------------------------
+/** ---------------------------- */
+/** prd_material_requirement 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_material_requirement`;
 CREATE TABLE `prd_material_requirement`  (
   `requirement_id` bigint(20) NOT NULL COMMENT '物料需求单ID',
@@ -3485,13 +3499,13 @@ CREATE TABLE `prd_material_requirement`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_material_requirement
--- ----------------------------
+/** ---------------------------- */
+/** prd_material_requirement 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_material_requirement_detail
--- ----------------------------
+/** ---------------------------- */
+/** prd_material_requirement_detail 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_material_requirement_detail`;
 CREATE TABLE `prd_material_requirement_detail`  (
   `detail_id` bigint(20) NOT NULL COMMENT '需求明细ID',
@@ -3530,13 +3544,13 @@ CREATE TABLE `prd_material_requirement_detail`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_material_requirement_detail
--- ----------------------------
+/** ---------------------------- */
+/** prd_material_requirement_detail 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_production_plan
--- ----------------------------
+/** ---------------------------- */
+/** prd_production_plan 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_production_plan`;
 CREATE TABLE `prd_production_plan`  (
   `plan_id` bigint(20) NOT NULL COMMENT '生产计划ID',
@@ -3583,13 +3597,13 @@ CREATE TABLE `prd_production_plan`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_production_plan
--- ----------------------------
+/** ---------------------------- */
+/** prd_production_plan 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_rework_order
--- ----------------------------
+/** ---------------------------- */
+/** prd_rework_order 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_rework_order`;
 CREATE TABLE `prd_rework_order`  (
   `rework_id` bigint(20) NOT NULL COMMENT '返工单ID',
@@ -3622,13 +3636,36 @@ CREATE TABLE `prd_rework_order`  (
   INDEX `idx_rework_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '返工订单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_rework_order
--- ----------------------------
+/** ---------------------------- */
+/** prd_rework_order 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_schedule_plan
--- ----------------------------
+/** ---------------------------- */
+/** prd_schedule_capacity_booking 表结构定义。 */
+/** ---------------------------- */
+DROP TABLE IF EXISTS `prd_schedule_capacity_booking`;
+CREATE TABLE `prd_schedule_capacity_booking`  (
+  `booking_id` bigint(20) NOT NULL COMMENT '雪花ID，产能预约记录',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `plan_id` bigint(20) NOT NULL COMMENT '排程方案ID',
+  `task_id` bigint(20) NOT NULL COMMENT '排程工序任务ID',
+  `calendar_id` bigint(20) NOT NULL COMMENT '产能日历ID',
+  `load_date` date NOT NULL COMMENT '预约日期（日历日期快照）',
+  `booked_hours` decimal(12, 2) NOT NULL COMMENT '预约工时',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`booking_id`) USING BTREE,
+  UNIQUE INDEX `uk_pscb_tenant_plan_task_calendar`(`tenant_id`, `plan_id`, `task_id`, `calendar_id`) USING BTREE,
+  INDEX `idx_pscb_tenant_plan`(`tenant_id`, `plan_id`) USING BTREE,
+  INDEX `idx_pscb_tenant_calendar`(`tenant_id`, `calendar_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS产能日历预约溯源表' ROW_FORMAT = DYNAMIC;
+
+/** ---------------------------- */
+/** prd_schedule_capacity_booking 基础种子记录。 */
+/** ---------------------------- */
+
+/** ---------------------------- */
+/** prd_schedule_plan 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_schedule_plan`;
 CREATE TABLE `prd_schedule_plan`  (
   `plan_id` bigint(20) NOT NULL COMMENT '排程方案ID',
@@ -3647,7 +3684,7 @@ CREATE TABLE `prd_schedule_plan`  (
   `makespan_date` date NULL DEFAULT NULL COMMENT '总完工日期',
   `utilization_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '资源利用率快照JSON[{resourceName,bookedHours,availableHours,rate}]',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'COMPLETED' COMMENT '状态: COMPLETED-已生成, PUBLISHED-已发布',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
@@ -3660,21 +3697,34 @@ CREATE TABLE `prd_schedule_plan`  (
   `decision_idempotency_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '租户内AI决策幂等键',
   `decision_scenario_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'AI决策场景编码',
   `decision_work_order_ids_json` varchar(4000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '显式工单ID十进制字符串JSON',
+  `capacity_calc_version` tinyint(4) NOT NULL DEFAULT 0 COMMENT '产能计算版本: 0-旧口径, 2-按日产能预约',
   `version` int(11) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   PRIMARY KEY (`plan_id`) USING BTREE,
   UNIQUE INDEX `uk_psp_decision_idem`(`tenant_id`, `decision_idempotency_key`) USING BTREE,
   INDEX `idx_psp_tenant`(`tenant_id`) USING BTREE,
+  UNIQUE INDEX `uk_psp_tenant_plan_no`(`tenant_id`, `plan_no`) USING BTREE,
   INDEX `idx_psp_no`(`plan_no`) USING BTREE,
   INDEX `idx_psp_decision_run`(`tenant_id`, `decision_run_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程方案表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_schedule_plan
--- ----------------------------
+/** ---------------------------- */
+/** prd_schedule_plan 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_schedule_task
--- ----------------------------
+/** ---------------------------- */
+/** prd_schedule_no_sequence 表结构定义。 */
+/** ---------------------------- */
+DROP TABLE IF EXISTS `prd_schedule_no_sequence`;
+CREATE TABLE `prd_schedule_no_sequence`  (
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `plan_date` date NOT NULL COMMENT '排程起始日（编号日期段）',
+  `last_seq` int(11) NOT NULL DEFAULT 0 COMMENT '该租户该日起始日已保留的最大流水号',
+  PRIMARY KEY (`tenant_id`, `plan_date`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS方案编号保留序列（含软删除）' ROW_FORMAT = DYNAMIC;
+
+/** ---------------------------- */
+/** prd_schedule_task 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_schedule_task`;
 CREATE TABLE `prd_schedule_task`  (
   `task_id` bigint(20) NOT NULL COMMENT '任务ID',
@@ -3709,13 +3759,36 @@ CREATE TABLE `prd_schedule_task`  (
   INDEX `idx_pst_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程工序任务表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_schedule_task
--- ----------------------------
+/** ---------------------------- */
+/** prd_schedule_task 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_subcontract
--- ----------------------------
+/** ---------------------------- */
+/** prd_schedule_task_day_load 表结构定义。 */
+/** ---------------------------- */
+DROP TABLE IF EXISTS `prd_schedule_task_day_load`;
+CREATE TABLE `prd_schedule_task_day_load`  (
+  `load_id` bigint(20) NOT NULL COMMENT '雪花ID，工序按日负荷记录',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `plan_id` bigint(20) NOT NULL COMMENT '排程方案ID',
+  `task_id` bigint(20) NOT NULL COMMENT '排程工序任务ID',
+  `resource_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '资源类型: WORKSTATION/WORKSHOP/OUTSOURCE',
+  `resource_id` bigint(20) NOT NULL COMMENT '资源ID',
+  `load_date` date NOT NULL COMMENT '负荷日期',
+  `planned_hours` decimal(12, 2) NOT NULL COMMENT '当日计划占用工时',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`load_id`) USING BTREE,
+  UNIQUE INDEX `uk_psdl_tenant_plan_task_date`(`tenant_id`, `plan_id`, `task_id`, `load_date`) USING BTREE,
+  INDEX `idx_psdl_tenant_plan`(`tenant_id`, `plan_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS工序按日负荷溯源表' ROW_FORMAT = DYNAMIC;
+
+/** ---------------------------- */
+/** prd_schedule_task_day_load 基础种子记录。 */
+/** ---------------------------- */
+
+/** ---------------------------- */
+/** prd_subcontract 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_subcontract`;
 CREATE TABLE `prd_subcontract`  (
   `subcontract_id` bigint(20) NOT NULL COMMENT '委外单ID',
@@ -3761,13 +3834,13 @@ CREATE TABLE `prd_subcontract`  (
   INDEX `idx_subcontract_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_subcontract
--- ----------------------------
+/** ---------------------------- */
+/** prd_subcontract 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_subcontract_bom_line
--- ----------------------------
+/** ---------------------------- */
+/** prd_subcontract_bom_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_subcontract_bom_line`;
 CREATE TABLE `prd_subcontract_bom_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '快照行ID',
@@ -3796,13 +3869,13 @@ CREATE TABLE `prd_subcontract_bom_line`  (
   INDEX `idx_sc_bom_line_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单BOM快照行' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_subcontract_bom_line
--- ----------------------------
+/** ---------------------------- */
+/** prd_subcontract_bom_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_subcontract_quote
--- ----------------------------
+/** ---------------------------- */
+/** prd_subcontract_quote 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_subcontract_quote`;
 CREATE TABLE `prd_subcontract_quote`  (
   `quote_id` bigint(20) NOT NULL COMMENT '报价ID',
@@ -3830,13 +3903,13 @@ CREATE TABLE `prd_subcontract_quote`  (
   INDEX `idx_sc_quote_vendor`(`vendor_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单报价记录' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_subcontract_quote
--- ----------------------------
+/** ---------------------------- */
+/** prd_subcontract_quote 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_work_order
--- ----------------------------
+/** ---------------------------- */
+/** prd_work_order 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_work_order`;
 CREATE TABLE `prd_work_order`  (
   `wo_id` bigint(20) NOT NULL COMMENT '工单ID',
@@ -3906,13 +3979,13 @@ CREATE TABLE `prd_work_order`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_work_order
--- ----------------------------
+/** ---------------------------- */
+/** prd_work_order 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_work_order_resource
--- ----------------------------
+/** ---------------------------- */
+/** prd_work_order_resource 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_work_order_resource`;
 CREATE TABLE `prd_work_order_resource`  (
   `id` bigint(20) NOT NULL COMMENT '资源分配ID',
@@ -3945,13 +4018,13 @@ CREATE TABLE `prd_work_order_resource`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单资源分配表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_work_order_resource
--- ----------------------------
+/** ---------------------------- */
+/** prd_work_order_resource 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for prd_work_report
--- ----------------------------
+/** ---------------------------- */
+/** prd_work_report 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `prd_work_report`;
 CREATE TABLE `prd_work_report`  (
   `report_id` bigint(20) NOT NULL COMMENT '报工记录ID',
@@ -4060,13 +4133,13 @@ CREATE TABLE `prd_work_report`  (
   INDEX `idx_prd_work_report_batch_id`(`batch_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产报工表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of prd_work_report
--- ----------------------------
+/** ---------------------------- */
+/** prd_work_report 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_contract
--- ----------------------------
+/** ---------------------------- */
+/** pu_contract 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_contract`;
 CREATE TABLE `pu_contract`  (
   `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
@@ -4101,14 +4174,14 @@ CREATE TABLE `pu_contract`  (
   PRIMARY KEY (`contract_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同头表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_contract
--- ----------------------------
+/** ---------------------------- */
+/** pu_contract 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `pu_contract` VALUES (2100790232863444993, '123', '测试', 1, 'V00001', '华东钢材供应链有限公司', 'FRAMEWORK', '2026-09-18 00:00:00', '2026-09-18 00:00:00', '2026-09-25 00:00:00', 30000.0000, 3900.00, 26100.00, 'CNY', '333', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-09-18 11:33:17', 1, '2026-09-18 11:33:17', '0');
 
--- ----------------------------
--- Table structure for pu_contract_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_contract_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_contract_line`;
 CREATE TABLE `pu_contract_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -4142,14 +4215,14 @@ CREATE TABLE `pu_contract_line`  (
   INDEX `idx_contract_id`(`contract_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_contract_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_contract_line 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `pu_contract_line` VALUES (2100790232926359553, 2100790232863444993, 10, 'IF20260914010', '数控铣床 XK714', '行程 700×400×500mm 主轴 8000rpm', '台', 30000.0000, 13.00, 1.0000, 30000.0000, 3900.00, 26100.00, '2026-09-23 00:00:00', 1, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-09-18 11:33:17', 1, '2026-09-18 11:33:17', '0');
 
--- ----------------------------
--- Table structure for pu_invoice
--- ----------------------------
+/** ---------------------------- */
+/** pu_invoice 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_invoice`;
 CREATE TABLE `pu_invoice`  (
   `invoice_id` bigint(20) NOT NULL COMMENT '发票ID',
@@ -4204,13 +4277,13 @@ CREATE TABLE `pu_invoice`  (
   INDEX `idx_cert_status`(`cert_status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_invoice
--- ----------------------------
+/** ---------------------------- */
+/** pu_invoice 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_invoice_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_invoice_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_invoice_line`;
 CREATE TABLE `pu_invoice_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '发票行ID',
@@ -4249,13 +4322,13 @@ CREATE TABLE `pu_invoice_line`  (
   INDEX `idx_po_line_id`(`po_line_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票明细行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_invoice_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_invoice_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_purchase_order
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_order 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_purchase_order`;
 CREATE TABLE `pu_purchase_order`  (
   `order_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '采购订单ID',
@@ -4301,13 +4374,13 @@ CREATE TABLE `pu_purchase_order`  (
   UNIQUE INDEX `uk_order_no`(`order_no`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_purchase_order
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_order 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_purchase_order_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_order_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_purchase_order_line`;
 CREATE TABLE `pu_purchase_order_line`  (
   `line_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '明细行ID',
@@ -4344,13 +4417,98 @@ CREATE TABLE `pu_purchase_order_line`  (
   INDEX `idx_pu_order_line_material`(`order_id`, `material_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_purchase_order_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_order_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_purchase_requisition
--- ----------------------------
+/** ---------------------------- */
+/** pu_requirement_material_guard 表结构定义。 */
+/** ---------------------------- */
+DROP TABLE IF EXISTS `pu_requirement_material_guard`;
+CREATE TABLE `pu_requirement_material_guard` (
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `version` int(11) NOT NULL DEFAULT 0 COMMENT '竞争池版本，由ERP事务内锁定后核验',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '最近一次事务变更时间',
+  PRIMARY KEY (`tenant_id`, `material_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购同租户物料竞争池行锁（由业务事务创建并锁定）' ROW_FORMAT = DYNAMIC;
+
+/** ---------------------------- */
+/** pu_requirement_material_guard 基础种子记录。 */
+/** ---------------------------- */
+
+/** ---------------------------- */
+/** pu_requirement_allocation_ledger 表结构定义。 */
+/** ---------------------------- */
+DROP TABLE IF EXISTS `pu_requirement_allocation_ledger`;
+CREATE TABLE `pu_requirement_allocation_ledger` (
+  `allocation_id` bigint(20) NOT NULL COMMENT '雪花ID，逐来源占用ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '显式来源类型，MRP_DETAIL；不可推断旧source_id',
+  `detail_id` bigint(20) NOT NULL COMMENT '已核验的MRP需求明细ID',
+  `requisition_line_id` bigint(20) NOT NULL COMMENT '采购申请行ID（ERP事务内写入）',
+  `allocation_no` int(11) NOT NULL COMMENT '同来源与申请行的拆分序号，幂等不可复用',
+  `order_line_id` bigint(20) NULL DEFAULT NULL COMMENT '继承来源的采购订单行ID，未转单为NULL',
+  `base_uom_id` bigint(20) NOT NULL COMMENT '物料已核验基本单位ID',
+  `covered_demand_base_qty` decimal(18, 4) NOT NULL COMMENT '本条来源分配的基本单位量，不含MOQ超额',
+  `occupied_base_qty` decimal(18, 4) NOT NULL COMMENT '当前申请意图/晚到订单阻断量（基本单位）',
+  `fulfilled_base_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已核验入账履约量（基本单位）',
+  `released_base_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已核验释放量（基本单位）',
+  `allocation_status` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'REQUEST_INTENT/ORDER_COMMITTED_NOT_TIMELY_SUPPLY/ORDER_TIMELY_SUPPLY/RELEASED',
+  `allocation_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户内确定性的来源占用幂等键（含人工）',
+  `decision_idempotency_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'AI动作幂等键；人工来源为NULL',
+  `version` int(11) NOT NULL DEFAULT 0 COMMENT '行乐观锁版本；改写/释放需CAS',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建留痕',
+  `transfer_time` datetime NULL DEFAULT NULL COMMENT '最近一次订单承接时间',
+  `released_at` datetime NULL DEFAULT NULL COMMENT '最终释放时间；不能仅因申请关闭释放订单承接',
+  `release_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '业务释放原因',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '最后一次业务状态变更时间',
+  PRIMARY KEY (`allocation_id`) USING BTREE,
+  UNIQUE INDEX `uk_pral_tenant_key`(`tenant_id`, `allocation_key`) USING BTREE,
+  UNIQUE INDEX `uk_pral_tenant_req_detail_no`(`tenant_id`, `requisition_line_id`, `detail_id`, `allocation_no`) USING BTREE,
+  INDEX `idx_pral_tenant_material`(`tenant_id`, `material_id`, `allocation_status`) USING BTREE,
+  INDEX `idx_pral_tenant_detail`(`tenant_id`, `detail_id`) USING BTREE,
+  INDEX `idx_pral_tenant_req_line`(`tenant_id`, `requisition_line_id`) USING BTREE,
+  INDEX `idx_pral_tenant_order_line`(`tenant_id`, `order_line_id`) USING BTREE,
+  INDEX `idx_pral_tenant_decision_key`(`tenant_id`, `decision_idempotency_key`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '逐MRP明细到申请行/订单行的基本单位占用账本' ROW_FORMAT = DYNAMIC;
+
+/** ---------------------------- */
+/** pu_requirement_allocation_ledger 基础种子记录。 */
+/** ---------------------------- */
+
+/** ---------------------------- */
+/** pu_requirement_allocation_event 表结构定义。 */
+/** ---------------------------- */
+DROP TABLE IF EXISTS `pu_requirement_allocation_event`;
+CREATE TABLE `pu_requirement_allocation_event` (
+  `event_id` bigint(20) NOT NULL COMMENT '雪花ID，占用事件ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `allocation_id` bigint(20) NOT NULL COMMENT '对应来源占用账本ID',
+  `event_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '事务内幂等事件键，不可复用',
+  `event_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '创建/承接/部分入账/释放/补偿',
+  `from_status` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原状态',
+  `to_status` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '新状态',
+  `occupied_base_before` decimal(18, 4) NOT NULL COMMENT '原基本单位阻断量',
+  `occupied_base_after` decimal(18, 4) NOT NULL COMMENT '新基本单位阻断量',
+  `requisition_line_id` bigint(20) NOT NULL COMMENT '申请行ID快照',
+  `order_line_id` bigint(20) NULL DEFAULT NULL COMMENT '订单行ID快照',
+  `actor_id` bigint(20) NULL DEFAULT NULL COMMENT '业务操作人ID；自动任务另行审计',
+  `occurred_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '事件发生时间',
+  PRIMARY KEY (`event_id`) USING BTREE,
+  UNIQUE INDEX `uk_prae_tenant_event_key`(`tenant_id`, `event_key`) USING BTREE,
+  INDEX `idx_prae_tenant_allocation`(`tenant_id`, `allocation_id`, `occurred_at`) USING BTREE,
+  INDEX `idx_prae_tenant_order_line`(`tenant_id`, `order_line_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '逐来源占用状态变更与释放不可覆盖审计' ROW_FORMAT = DYNAMIC;
+
+/** ---------------------------- */
+/** pu_requirement_allocation_event 基础种子记录。 */
+/** ---------------------------- */
+
+/** ---------------------------- */
+/** pu_purchase_requisition 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_purchase_requisition`;
 CREATE TABLE `pu_purchase_requisition`  (
   `requisition_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '采购申请ID',
@@ -4387,13 +4545,13 @@ CREATE TABLE `pu_purchase_requisition`  (
   INDEX `idx_pur_decision_run`(`tenant_id`, `decision_run_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_purchase_requisition
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_requisition 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_purchase_requisition_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_requisition_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_purchase_requisition_line`;
 CREATE TABLE `pu_purchase_requisition_line`  (
   `line_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '明细行ID',
@@ -4426,13 +4584,13 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   INDEX `idx_material_id`(`material_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_purchase_requisition_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_requisition_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_purchase_return
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_return 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_purchase_return`;
 CREATE TABLE `pu_purchase_return`  (
   `return_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '采购退货ID',
@@ -4465,13 +4623,13 @@ CREATE TABLE `pu_purchase_return`  (
   UNIQUE INDEX `uk_return_no`(`return_no`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_purchase_return
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_return 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_purchase_return_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_return_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_purchase_return_line`;
 CREATE TABLE `pu_purchase_return_line`  (
   `line_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '退货行ID',
@@ -4506,13 +4664,13 @@ CREATE TABLE `pu_purchase_return_line`  (
   INDEX `idx_return_id`(`return_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_purchase_return_line
--- ----------------------------
+/** ---------------------------- */
+/** pu_purchase_return_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for pu_vendor_evaluation
--- ----------------------------
+/** ---------------------------- */
+/** pu_vendor_evaluation 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `pu_vendor_evaluation`;
 CREATE TABLE `pu_vendor_evaluation`  (
   `evaluation_id` bigint(20) NOT NULL COMMENT '评估ID',
@@ -4548,16 +4706,16 @@ CREATE TABLE `pu_vendor_evaluation`  (
   INDEX `idx_period`(`eval_period`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商评估记录表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of pu_vendor_evaluation
--- ----------------------------
+/** ---------------------------- */
+/** pu_vendor_evaluation 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `pu_vendor_evaluation` VALUES (2101172146381262849, '000000', 1, 'V00001', '华东钢材供应链有限公司', '2026-09', 0.00, 0.00, 80.00, 20.00, 'D', 0, 0, 0.0000, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-19 12:50:52', 1, '2026-09-19 12:51:11', '1');
 INSERT INTO `pu_vendor_evaluation` VALUES (2101172146381262850, '000000', 2, 'V00002', '江苏精密紧固件制造厂', '2026-09', 0.00, 0.00, 80.00, 20.00, 'D', 0, 0, 0.0000, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-19 12:50:52', 1, '2026-09-19 12:51:11', '1');
 INSERT INTO `pu_vendor_evaluation` VALUES (2101172380549255169, '000000', 1, 'V00001', '华东钢材供应链有限公司', '2026-08', NULL, NULL, NULL, NULL, NULL, 1, 1, 1.0000, NULL, 0.0000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-19 12:51:48', 1, '2026-09-19 12:52:04', '1');
 
--- ----------------------------
--- Table structure for report_item
--- ----------------------------
+/** ---------------------------- */
+/** report_item 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `report_item`;
 CREATE TABLE `report_item`  (
   `item_id` bigint(20) NOT NULL COMMENT '项目ID',
@@ -4583,9 +4741,9 @@ CREATE TABLE `report_item`  (
   INDEX `idx_report_type`(`report_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '报表项目-科目映射' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of report_item
--- ----------------------------
+/** ---------------------------- */
+/** report_item 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `report_item` VALUES (7000001, '000000', 'BALANCE', 'BS_MONETARY', '货币资金', 10, 0, '0', '1001,1002', '1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
 INSERT INTO `report_item` VALUES (7000002, '000000', 'BALANCE', 'BS_AR', '应收账款', 20, 0, '0', '1122', '1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
 INSERT INTO `report_item` VALUES (7000003, '000000', 'BALANCE', 'BS_PREPAY', '预付账款', 30, 0, '0', '1123', '1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
@@ -4613,9 +4771,9 @@ INSERT INTO `report_item` VALUES (7000203, '000000', 'CASH', 'CF_TAX_PAY', '支�
 INSERT INTO `report_item` VALUES (7000204, '000000', 'CASH', 'CF_SALARY_PAY', '支付给职工的现金', 40, 0, '0', '2211', '-1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
 INSERT INTO `report_item` VALUES (7000205, '000000', 'CASH', 'CF_FA_PAY', '购建固定资产支付的现金', 50, 0, '0', '1601', '-1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
 
--- ----------------------------
--- Table structure for sch_attendance
--- ----------------------------
+/** ---------------------------- */
+/** sch_attendance 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_attendance`;
 CREATE TABLE `sch_attendance`  (
   `attendance_id` bigint(20) NOT NULL COMMENT '考勤记录ID',
@@ -4663,13 +4821,13 @@ CREATE TABLE `sch_attendance`  (
   INDEX `idx_face_verify_backfill`(`face_verify_status`, `face_verify_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤记录表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_attendance
--- ----------------------------
+/** ---------------------------- */
+/** sch_attendance 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_employee_schedule
--- ----------------------------
+/** ---------------------------- */
+/** sch_employee_schedule 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_employee_schedule`;
 CREATE TABLE `sch_employee_schedule`  (
   `schedule_id` bigint(20) NOT NULL COMMENT '员工排班ID',
@@ -4705,13 +4863,13 @@ CREATE TABLE `sch_employee_schedule`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '员工排班明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_employee_schedule
--- ----------------------------
+/** ---------------------------- */
+/** sch_employee_schedule 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_holiday
--- ----------------------------
+/** ---------------------------- */
+/** sch_holiday 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_holiday`;
 CREATE TABLE `sch_holiday`  (
   `holiday_id` bigint(20) NOT NULL COMMENT '节假日ID',
@@ -4734,16 +4892,16 @@ CREATE TABLE `sch_holiday`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '节假日设置表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_holiday
--- ----------------------------
+/** ---------------------------- */
+/** sch_holiday 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `sch_holiday` VALUES (1, '000000', '2026-01-01 00:00:00', '元旦', 'LEGAL', 2026, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_holiday` VALUES (2, '000000', '2026-05-01 00:00:00', '劳动节', 'LEGAL', 2026, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_holiday` VALUES (3, '000000', '2026-10-01 00:00:00', '国庆节', 'LEGAL', 2026, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for sch_leave_apply
--- ----------------------------
+/** ---------------------------- */
+/** sch_leave_apply 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_leave_apply`;
 CREATE TABLE `sch_leave_apply`  (
   `leave_id` bigint(20) NOT NULL COMMENT '请假申请ID',
@@ -4774,13 +4932,13 @@ CREATE TABLE `sch_leave_apply`  (
   INDEX `idx_worker_date`(`worker_id`, `start_date`, `end_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤请假申请表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_leave_apply
--- ----------------------------
+/** ---------------------------- */
+/** sch_leave_apply 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_outdoor_punch
--- ----------------------------
+/** ---------------------------- */
+/** sch_outdoor_punch 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_outdoor_punch`;
 CREATE TABLE `sch_outdoor_punch`  (
   `punch_id` bigint(20) NOT NULL COMMENT '外勤打卡ID',
@@ -4805,13 +4963,13 @@ CREATE TABLE `sch_outdoor_punch`  (
   INDEX `idx_worker_time`(`worker_id`, `punch_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '外勤打卡记录表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_outdoor_punch
--- ----------------------------
+/** ---------------------------- */
+/** sch_outdoor_punch 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_plan
--- ----------------------------
+/** ---------------------------- */
+/** sch_plan 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_plan`;
 CREATE TABLE `sch_plan`  (
   `plan_id` bigint(20) NOT NULL COMMENT '计划ID',
@@ -4838,13 +4996,13 @@ CREATE TABLE `sch_plan`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '排班计划表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_plan
--- ----------------------------
+/** ---------------------------- */
+/** sch_plan 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_plan_team
--- ----------------------------
+/** ---------------------------- */
+/** sch_plan_team 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_plan_team`;
 CREATE TABLE `sch_plan_team`  (
   `record_id` bigint(20) NOT NULL COMMENT '记录ID',
@@ -4865,13 +5023,13 @@ CREATE TABLE `sch_plan_team`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计划班组关联表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_plan_team
--- ----------------------------
+/** ---------------------------- */
+/** sch_plan_team 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_punch_rule
--- ----------------------------
+/** ---------------------------- */
+/** sch_punch_rule 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_punch_rule`;
 CREATE TABLE `sch_punch_rule`  (
   `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
@@ -4912,13 +5070,13 @@ CREATE TABLE `sch_punch_rule`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '打卡规则表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_punch_rule
--- ----------------------------
+/** ---------------------------- */
+/** sch_punch_rule 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_shift
--- ----------------------------
+/** ---------------------------- */
+/** sch_shift 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_shift`;
 CREATE TABLE `sch_shift`  (
   `shift_id` bigint(20) NOT NULL COMMENT '班次ID',
@@ -4950,13 +5108,13 @@ CREATE TABLE `sch_shift`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班次定义表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_shift
--- ----------------------------
+/** ---------------------------- */
+/** sch_shift 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_supplement_apply
--- ----------------------------
+/** ---------------------------- */
+/** sch_supplement_apply 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_supplement_apply`;
 CREATE TABLE `sch_supplement_apply`  (
   `apply_id` bigint(20) NOT NULL COMMENT '补卡申请ID',
@@ -4985,13 +5143,13 @@ CREATE TABLE `sch_supplement_apply`  (
   INDEX `idx_worker_date`(`worker_id`, `apply_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤补卡申请表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_supplement_apply
--- ----------------------------
+/** ---------------------------- */
+/** sch_supplement_apply 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_team
--- ----------------------------
+/** ---------------------------- */
+/** sch_team 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_team`;
 CREATE TABLE `sch_team`  (
   `team_id` bigint(20) NOT NULL COMMENT '班组ID',
@@ -5019,13 +5177,13 @@ CREATE TABLE `sch_team`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组设置表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_team
--- ----------------------------
+/** ---------------------------- */
+/** sch_team 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_team_member
--- ----------------------------
+/** ---------------------------- */
+/** sch_team_member 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_team_member`;
 CREATE TABLE `sch_team_member`  (
   `member_id` bigint(20) NOT NULL COMMENT '成员ID',
@@ -5052,13 +5210,13 @@ CREATE TABLE `sch_team_member`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组成员表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_team_member
--- ----------------------------
+/** ---------------------------- */
+/** sch_team_member 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_team_schedule
--- ----------------------------
+/** ---------------------------- */
+/** sch_team_schedule 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_team_schedule`;
 CREATE TABLE `sch_team_schedule`  (
   `team_schedule_id` bigint(20) NOT NULL COMMENT '班组排班ID',
@@ -5084,13 +5242,13 @@ CREATE TABLE `sch_team_schedule`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组排班（模板）表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_team_schedule
--- ----------------------------
+/** ---------------------------- */
+/** sch_team_schedule 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for sch_worker
--- ----------------------------
+/** ---------------------------- */
+/** sch_worker 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_worker`;
 CREATE TABLE `sch_worker`  (
   `worker_id` bigint(20) NOT NULL COMMENT '工人档案ID',
@@ -5129,9 +5287,9 @@ CREATE TABLE `sch_worker`  (
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工人档案表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_worker
--- ----------------------------
+/** ---------------------------- */
+/** sch_worker 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `sch_worker` VALUES (12, '000000', 105, 13, '测试车间', '张明', 'SCZX20251222017', '13812345678', '0', '焊工', 'JUNIOR', 'ON_DUTY', '2025-12-01 00:00:00', '2025-12-08 00:00:00', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2026-09-14 13:19:51', '0', 36.00, 'SCZX20260914012', NULL, '1992-09-14', '中专', '家属12', '13900000012');
 INSERT INTO `sch_worker` VALUES (13, '000000', 106, 14, '包装车间', '李芳华', 'SCZX20251222018', '15687654321', '1', NULL, 'INTERMEDIATE', 'ON_DUTY', '2026-05-24 13:19:31', '2026-08-22 13:19:31', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2026-09-14 13:19:51', '0', 48.00, 'SCZX20260914013', NULL, '1991-09-14', '中专', '家属13', '13900000013');
 INSERT INTO `sch_worker` VALUES (14, '000000', 107, 15, '模具车间', '王思远', 'SCZX20251222019', '18855551234', '0', NULL, 'INTERMEDIATE', 'ON_DUTY', '2026-05-23 13:19:31', '2026-08-21 13:19:31', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2026-09-14 13:19:51', '0', 48.00, 'SCZX20260914014', NULL, '1990-09-14', '中专', '家属14', '13900000014');
@@ -5170,9 +5328,9 @@ INSERT INTO `sch_worker` VALUES (2091200581526925314, '000000', NULL, 15, '模�
 INSERT INTO `sch_worker` VALUES (2091200581782777858, '000000', NULL, 4, '钣金车间', '李四光', 'SCZX20260823004', '13882777858', '1', '质检员', 'SENIOR', 'ON_DUTY', '2026-01-01 00:00:00', '2026-04-01 00:00:00', NULL, 103, 1, '2026-08-23 00:27:26', 1, '2026-09-14 13:19:51', '0', 62.00, 'SCZX20260914209', NULL, '1996-09-14', '中专', '家属58', '13982777858');
 INSERT INTO `sch_worker` VALUES (2091200581975715841, '000000', NULL, 7, '铸造车间', '王五常', 'SCZX20260823005', '13875715841', '0', '包装工', 'INTERMEDIATE', 'ON_DUTY', '2026-01-01 00:00:00', '2026-04-01 00:00:00', NULL, 103, 1, '2026-08-23 00:27:26', 1, '2026-09-14 13:19:51', '0', 48.00, 'SCZX20260914209', NULL, '1988-09-14', '中专', '家属41', '13975715841');
 
--- ----------------------------
--- Table structure for sch_worker_certificate
--- ----------------------------
+/** ---------------------------- */
+/** sch_worker_certificate 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_worker_certificate`;
 CREATE TABLE `sch_worker_certificate`  (
   `cert_id` bigint(20) NOT NULL COMMENT '证书ID',
@@ -5199,9 +5357,9 @@ CREATE TABLE `sch_worker_certificate`  (
   INDEX `idx_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工人资质证书' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_worker_certificate
--- ----------------------------
+/** ---------------------------- */
+/** sch_worker_certificate 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `sch_worker_certificate` VALUES (1, '000000', 1, '工人01', 'CERT20260914001', '焊接作业资格证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_certificate` VALUES (2, '000000', 2, '工人02', 'CERT20260914002', '起重机械操作证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_certificate` VALUES (3, '000000', 3, '工人03', 'CERT20260914003', '叉车司机证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -5215,9 +5373,9 @@ INSERT INTO `sch_worker_certificate` VALUES (10, '000000', 10, '工人10', 'CERT
 INSERT INTO `sch_worker_certificate` VALUES (11, '000000', 11, '工人11', 'CERT20260914011', '叉车司机证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_certificate` VALUES (12, '000000', 12, '工人12', 'CERT20260914012', '熔化焊接与热切割作业证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for sch_worker_skill
--- ----------------------------
+/** ---------------------------- */
+/** sch_worker_skill 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `sch_worker_skill`;
 CREATE TABLE `sch_worker_skill`  (
   `skill_id` bigint(20) NOT NULL COMMENT '技能记录ID',
@@ -5244,9 +5402,9 @@ CREATE TABLE `sch_worker_skill`  (
   INDEX `idx_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工人技能矩阵' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of sch_worker_skill
--- ----------------------------
+/** ---------------------------- */
+/** sch_worker_skill 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `sch_worker_skill` VALUES (1, '000000', 1, '工人01', 1, 'LASER', '激光切割', 'QUALIFIED', 60, 1, 1.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_skill` VALUES (2, '000000', 1, '工人01', 2, 'PLASMA', '等离子切割', 'SKILLED', 71, 1, 2.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_skill` VALUES (3, '000000', 1, '工人01', 3, 'SHEAR', '剪板', 'EXPERT', 82, 1, 3.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -5359,9 +5517,9 @@ INSERT INTO `sch_worker_skill` VALUES (109, '000000', 37, '工人37', 52, 'ICT',
 INSERT INTO `sch_worker_skill` VALUES (110, '000000', 37, '工人37', 53, 'WATER_PROOF', '防水测试', 'SKILLED', 83, 1, 2.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_skill` VALUES (111, '000000', 37, '工人37', 54, 'QC', '质检', 'EXPERT', 94, 1, 3.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
--- ----------------------------
--- Table structure for so_contract
--- ----------------------------
+/** ---------------------------- */
+/** so_contract 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_contract`;
 CREATE TABLE `so_contract`  (
   `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
@@ -5399,14 +5557,14 @@ CREATE TABLE `so_contract`  (
   INDEX `idx_contract_type`(`contract_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_contract
--- ----------------------------
+/** ---------------------------- */
+/** so_contract 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `so_contract` VALUES (2100477528151883778, '000000', '测试', '测试', 'SALES', 1, '北京北方机械制造有限公司', '2026-09-17', '2026-09-18', '2026-09-25', 2.00, 'CNY', '1', NULL, '测试', 'DRAFT', NULL, '', NULL, NULL, NULL, NULL, 103, 1, '2026-09-17 14:50:42', 1, '2026-09-17 14:50:42', '0');
 
--- ----------------------------
--- Table structure for so_contract_line
--- ----------------------------
+/** ---------------------------- */
+/** so_contract_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_contract_line`;
 CREATE TABLE `so_contract_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '合同行ID',
@@ -5444,14 +5602,14 @@ CREATE TABLE `so_contract_line`  (
   INDEX `idx_material_id`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同明细行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_contract_line
--- ----------------------------
+/** ---------------------------- */
+/** so_contract_line 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `so_contract_line` VALUES (2100477528189632513, '000000', 2100477528151883778, '1', 1, 'IF20260914001', '高强度螺栓组套 M12', 'M12×60 8.8级 含螺母平垫', 1.0000, '套', 2.0000, 2.00, 0.00, 0.00, '2026-09-19', 0.0000, 0.0000, 'DRAFT', 0, '', NULL, NULL, NULL, NULL, 103, 1, '2026-09-17 14:50:42', 1, '2026-09-17 14:50:42', '0');
 
--- ----------------------------
--- Table structure for so_credit_usage
--- ----------------------------
+/** ---------------------------- */
+/** so_credit_usage 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_credit_usage`;
 CREATE TABLE `so_credit_usage`  (
   `usage_id` bigint(20) NOT NULL,
@@ -5476,13 +5634,13 @@ CREATE TABLE `so_credit_usage`  (
   INDEX `idx_cu_so_status`(`so_id`, `status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '信用占用记录' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_credit_usage
--- ----------------------------
+/** ---------------------------- */
+/** so_credit_usage 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_customer_order
--- ----------------------------
+/** ---------------------------- */
+/** so_customer_order 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_customer_order`;
 CREATE TABLE `so_customer_order`  (
   `co_id` bigint(20) NOT NULL COMMENT '客户订单ID',
@@ -5522,14 +5680,14 @@ CREATE TABLE `so_customer_order`  (
   INDEX `idx_co_source_channel`(`source_channel`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_customer_order
--- ----------------------------
+/** ---------------------------- */
+/** so_customer_order 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `so_customer_order` VALUES (2101168396673486850, '000000', 'CO20260919001', 1, '北京北方机械制造有限公司', '联系人1', '0571-66660001', '2026-09-19 00:00:00', '2026-09-26 00:00:00', 'CNY', NULL, NULL, 0, NULL, 'SALES', 'C00001', NULL, 101, '麦得朶', NULL, 103, 1, '2026-09-19 12:35:58', 1, '2026-09-19 12:35:58', '0');
 
--- ----------------------------
--- Table structure for so_invoice
--- ----------------------------
+/** ---------------------------- */
+/** so_invoice 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_invoice`;
 CREATE TABLE `so_invoice`  (
   `invoice_id` bigint(20) NOT NULL COMMENT '发票ID',
@@ -5583,13 +5741,13 @@ CREATE TABLE `so_invoice`  (
   INDEX `idx_issue_channel`(`issue_channel`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_invoice
--- ----------------------------
+/** ---------------------------- */
+/** so_invoice 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_invoice_line
--- ----------------------------
+/** ---------------------------- */
+/** so_invoice_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_invoice_line`;
 CREATE TABLE `so_invoice_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '发票行ID',
@@ -5628,13 +5786,13 @@ CREATE TABLE `so_invoice_line`  (
   INDEX `idx_contract_line_id`(`contract_line_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票明细行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_invoice_line
--- ----------------------------
+/** ---------------------------- */
+/** so_invoice_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_price_list
--- ----------------------------
+/** ---------------------------- */
+/** so_price_list 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_price_list`;
 CREATE TABLE `so_price_list`  (
   `price_list_id` bigint(20) NOT NULL,
@@ -5661,14 +5819,14 @@ CREATE TABLE `so_price_list`  (
   INDEX `idx_pl_list_type`(`list_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表头' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_price_list
--- ----------------------------
+/** ---------------------------- */
+/** so_price_list 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `so_price_list` VALUES (1, '000000', 'PL20260914001', '2026 年度标准零售价目表', 'BASE', NULL, 'CNY', 10, '2026-01-01', '2027-12-31', 'ACTIVE', '0', 1, 103, '2026-09-14 15:07:27', NULL, NULL);
 
--- ----------------------------
--- Table structure for so_price_list_line
--- ----------------------------
+/** ---------------------------- */
+/** so_price_list_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_price_list_line`;
 CREATE TABLE `so_price_list_line`  (
   `line_id` bigint(20) NOT NULL,
@@ -5691,9 +5849,9 @@ CREATE TABLE `so_price_list_line`  (
   INDEX `idx_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_price_list_line
--- ----------------------------
+/** ---------------------------- */
+/** so_price_list_line 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `so_price_list_line` VALUES (1, '000000', 1, 1, 45.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
 INSERT INTO `so_price_list_line` VALUES (2, '000000', 1, 2, 2860.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
 INSERT INTO `so_price_list_line` VALUES (3, '000000', 1, 3, 68.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
@@ -5732,9 +5890,9 @@ INSERT INTO `so_price_list_line` VALUES (35, '000000', 1, 35, 1980.0000, 1.0000,
 INSERT INTO `so_price_list_line` VALUES (36, '000000', 1, 36, 386.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
 INSERT INTO `so_price_list_line` VALUES (37, '000000', 1, 37, 328.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
 
--- ----------------------------
--- Table structure for so_quotation
--- ----------------------------
+/** ---------------------------- */
+/** so_quotation 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_quotation`;
 CREATE TABLE `so_quotation`  (
   `quotation_id` bigint(20) NOT NULL COMMENT '报价单ID',
@@ -5774,13 +5932,13 @@ CREATE TABLE `so_quotation`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_quotation
--- ----------------------------
+/** ---------------------------- */
+/** so_quotation 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_quotation_line
--- ----------------------------
+/** ---------------------------- */
+/** so_quotation_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_quotation_line`;
 CREATE TABLE `so_quotation_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -5815,13 +5973,13 @@ CREATE TABLE `so_quotation_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_quotation_line
--- ----------------------------
+/** ---------------------------- */
+/** so_quotation_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_return
--- ----------------------------
+/** ---------------------------- */
+/** so_return 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_return`;
 CREATE TABLE `so_return`  (
   `return_id` bigint(20) NOT NULL COMMENT '退货单ID',
@@ -5864,13 +6022,13 @@ CREATE TABLE `so_return`  (
   INDEX `idx_return_client`(`client_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_return
--- ----------------------------
+/** ---------------------------- */
+/** so_return 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_return_line
--- ----------------------------
+/** ---------------------------- */
+/** so_return_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_return_line`;
 CREATE TABLE `so_return_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -5907,13 +6065,13 @@ CREATE TABLE `so_return_line`  (
   INDEX `idx_return_line_so_line`(`so_line_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_return_line
--- ----------------------------
+/** ---------------------------- */
+/** so_return_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_sales_order_header
--- ----------------------------
+/** ---------------------------- */
+/** so_sales_order_header 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_sales_order_header`;
 CREATE TABLE `so_sales_order_header`  (
   `so_id` bigint(20) NOT NULL COMMENT '销售订单ID',
@@ -5973,13 +6131,13 @@ CREATE TABLE `so_sales_order_header`  (
   INDEX `idx_tenant_create_time`(`tenant_id`, `create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单主表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_sales_order_header
--- ----------------------------
+/** ---------------------------- */
+/** so_sales_order_header 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for so_sales_order_line
--- ----------------------------
+/** ---------------------------- */
+/** so_sales_order_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `so_sales_order_line`;
 CREATE TABLE `so_sales_order_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '销售订单行表id',
@@ -6038,13 +6196,13 @@ CREATE TABLE `so_sales_order_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of so_sales_order_line
--- ----------------------------
+/** ---------------------------- */
+/** so_sales_order_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_arrival_notice
--- ----------------------------
+/** ---------------------------- */
+/** wm_arrival_notice 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_arrival_notice`;
 CREATE TABLE `wm_arrival_notice`  (
   `notice_id` bigint(20) NOT NULL COMMENT '通知单ID',
@@ -6076,13 +6234,13 @@ CREATE TABLE `wm_arrival_notice`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_arrival_notice
--- ----------------------------
+/** ---------------------------- */
+/** wm_arrival_notice 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_arrival_notice_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_arrival_notice_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_arrival_notice_line`;
 CREATE TABLE `wm_arrival_notice_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -6116,13 +6274,13 @@ CREATE TABLE `wm_arrival_notice_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_arrival_notice_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_arrival_notice_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_barcode
--- ----------------------------
+/** ---------------------------- */
+/** wm_barcode 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_barcode`;
 CREATE TABLE `wm_barcode`  (
   `barcode_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '条码ID',
@@ -6163,13 +6321,13 @@ CREATE TABLE `wm_barcode`  (
   INDEX `idx_barcode_status`(`status`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码实例表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_barcode
--- ----------------------------
+/** ---------------------------- */
+/** wm_barcode 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_barcode_config
--- ----------------------------
+/** ---------------------------- */
+/** wm_barcode_config 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_barcode_config`;
 CREATE TABLE `wm_barcode_config`  (
   `config_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '条码配置ID',
@@ -6202,15 +6360,15 @@ CREATE TABLE `wm_barcode_config`  (
   INDEX `idx_barcode_config_enable_flag`(`enable_flag`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2062021060516102147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码配置表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_barcode_config
--- ----------------------------
+/** ---------------------------- */
+/** wm_barcode_config 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `wm_barcode_config` VALUES (900001, 'WM_RECEIVE_DEFAULT', '收货入库默认条码规则', 'RC', 'yyyyMMdd', 6, 0, 'RECEIVE_IN', NULL, 1, '默认收货入库条码配置，入库后自动生成条码实例.', NULL, NULL, NULL, NULL, '000000', NULL, NULL, '2026-05-23 17:46:58', 1, '2026-09-14 13:00:33', '0', 0);
 INSERT INTO `wm_barcode_config` VALUES (2062021060516102146, 'SO_SALESOUT_DEFAULT', '销售订单出库配置', 'SO', 'yyyyMMdd', 6, 0, 'SALES_OUT', NULL, 1, '', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 11:58:26', 1, '2026-06-03 11:59:25', '0', 0);
 
--- ----------------------------
--- Table structure for wm_batch
--- ----------------------------
+/** ---------------------------- */
+/** wm_batch 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_batch`;
 CREATE TABLE `wm_batch`  (
   `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
@@ -6261,13 +6419,13 @@ CREATE TABLE `wm_batch`  (
   INDEX `idx_wm_batch_vendor_batch_code`(`vendor_batch_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '批次管理表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_batch
--- ----------------------------
+/** ---------------------------- */
+/** wm_batch 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_handover
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_handover 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_handover`;
 CREATE TABLE `wm_material_handover`  (
   `handover_id` bigint(20) NOT NULL COMMENT '交接单ID',
@@ -6296,13 +6454,13 @@ CREATE TABLE `wm_material_handover`  (
   INDEX `idx_handover_wo_no`(`wo_no`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上料交接单' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_handover
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_handover 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_handover_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_handover_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_handover_line`;
 CREATE TABLE `wm_material_handover_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -6336,13 +6494,13 @@ CREATE TABLE `wm_material_handover_line`  (
   INDEX `idx_handover_line_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上料交接单行' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_handover_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_handover_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_receive
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_receive 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_receive`;
 CREATE TABLE `wm_material_receive`  (
   `receive_id` bigint(20) NOT NULL COMMENT '入库单ID',
@@ -6391,13 +6549,13 @@ CREATE TABLE `wm_material_receive`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_receive
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_receive 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_receive_detail
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_receive_detail 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_receive_detail`;
 CREATE TABLE `wm_material_receive_detail`  (
   `detail_id` bigint(20) NOT NULL COMMENT '明细ID',
@@ -6440,13 +6598,13 @@ CREATE TABLE `wm_material_receive_detail`  (
   INDEX `idx_wm_receive_detail_sn_id`(`sn_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_receive_detail
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_receive_detail 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_receive_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_receive_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_receive_line`;
 CREATE TABLE `wm_material_receive_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '物料入库单行ID',
@@ -6488,13 +6646,13 @@ CREATE TABLE `wm_material_receive_line`  (
   INDEX `idx_wm_receive_line_po_line`(`purchase_line_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_receive_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_receive_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_return
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_return 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_return`;
 CREATE TABLE `wm_material_return`  (
   `return_id` bigint(20) NOT NULL COMMENT 'é€€æ–™å•ID',
@@ -6516,13 +6674,13 @@ CREATE TABLE `wm_material_return`  (
   PRIMARY KEY (`return_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产退料单' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_return
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_return 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_return_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_return_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_return_line`;
 CREATE TABLE `wm_material_return_line`  (
   `line_id` bigint(20) NOT NULL COMMENT 'è¡ŒID',
@@ -6551,13 +6709,13 @@ CREATE TABLE `wm_material_return_line`  (
   INDEX `idx_return_id`(`return_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产退料单行' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_return_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_return_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_material_stock
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_stock 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_stock`;
 CREATE TABLE `wm_material_stock`  (
   `stock_id` bigint(20) NOT NULL COMMENT '库存ID',
@@ -6618,9 +6776,9 @@ CREATE TABLE `wm_material_stock`  (
   INDEX `idx_wm_material_stock_location`(`location_id`, `del_flag`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存物料记录表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_stock
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_stock 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `wm_material_stock` VALUES (9900003001, NULL, 9900000001, 1, 'DEMO-M001', '粗铜线', '2.5mm', NULL, '千克', NULL, 'B20260801', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000011, 'A3D01', '原料货架区', 9900000101, 'A1-L1C1', 'A1排1层1列', NULL, NULL, NULL, NULL, 480.00, 0.00, NULL, NULL, NULL, '2026-08-01 08:30:00', NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 45.000000, 21600.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (9900003002, NULL, 9900000001, 1, 'DEMO-M001', '粗铜线', '2.5mm', NULL, '千克', NULL, 'B20260808', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000011, 'A3D01', '原料货架区', 9900000102, 'A1-L1C2', 'A1排1层2列', NULL, NULL, NULL, NULL, 260.00, 0.00, NULL, NULL, NULL, '2026-08-08 09:10:00', NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 45.000000, 11700.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (9900003003, NULL, 9900000001, 1, 'DEMO-M001', '粗铜线', '2.5mm', NULL, '千克', NULL, 'B20260815', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000011, 'A3D01', '原料货架区', 9900000103, 'A1-L1C3', 'A1排1层3列', NULL, NULL, NULL, NULL, 200.00, 165.00, NULL, NULL, NULL, '2026-08-15 14:40:00', NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 45.000000, 9000.0000, NULL, NULL);
@@ -6677,9 +6835,9 @@ INSERT INTO `wm_material_stock` VALUES (9900003053, NULL, 9900000006, 4, 'DEMO-F
 INSERT INTO `wm_material_stock` VALUES (9900003054, NULL, 9900000006, 4, 'DEMO-F001', '防静电包装箱', '600×400mm', NULL, '个', NULL, 'B20260808', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000014, 'D3D04', '散货堆放区', 9900000401, 'D-P1', '散货堆位1', NULL, NULL, NULL, NULL, 800.00, 0.00, NULL, NULL, NULL, '2026-08-08 09:10:00', NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 15.000000, 12000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (9900003055, NULL, 9900000006, 4, 'DEMO-F001', '防静电包装箱', '600×400mm', NULL, '个', NULL, 'B20260801', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000014, 'D3D04', '散货堆放区', 9900000403, 'D-P3', '散货堆位3', NULL, NULL, NULL, NULL, 350.00, 0.00, NULL, NULL, NULL, '2026-08-01 08:30:00', NULL, 1, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 15.000000, 5250.0000, NULL, NULL);
 
--- ----------------------------
--- Table structure for wm_material_stock_tx
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_stock_tx 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_material_stock_tx`;
 CREATE TABLE `wm_material_stock_tx`  (
   `tx_id` bigint(20) NOT NULL COMMENT '事务ID',
@@ -6740,13 +6898,13 @@ CREATE TABLE `wm_material_stock_tx`  (
   INDEX `idx_wm_stock_tx_sn_id`(`sn_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存事务表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_material_stock_tx
--- ----------------------------
+/** ---------------------------- */
+/** wm_material_stock_tx 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_misc_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_issue 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_misc_issue`;
 CREATE TABLE `wm_misc_issue`  (
   `issue_id` bigint(20) NOT NULL COMMENT '杂项出库ID',
@@ -6774,13 +6932,13 @@ CREATE TABLE `wm_misc_issue`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_misc_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_issue 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_misc_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_issue_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_misc_issue_line`;
 CREATE TABLE `wm_misc_issue_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -6816,13 +6974,13 @@ CREATE TABLE `wm_misc_issue_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_misc_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_issue_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_misc_recpt
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_recpt 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_misc_recpt`;
 CREATE TABLE `wm_misc_recpt`  (
   `recpt_id` bigint(20) NOT NULL COMMENT '杂项入库ID',
@@ -6853,13 +7011,13 @@ CREATE TABLE `wm_misc_recpt`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_misc_recpt
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_recpt 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_misc_recpt_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_recpt_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_misc_recpt_line`;
 CREATE TABLE `wm_misc_recpt_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -6895,13 +7053,13 @@ CREATE TABLE `wm_misc_recpt_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_misc_recpt_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_misc_recpt_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_picking_rule
--- ----------------------------
+/** ---------------------------- */
+/** wm_picking_rule 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_picking_rule`;
 CREATE TABLE `wm_picking_rule`  (
   `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
@@ -6925,13 +7083,13 @@ CREATE TABLE `wm_picking_rule`  (
   INDEX `idx_warehouse`(`warehouse_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '拣货规则配置表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_picking_rule
--- ----------------------------
+/** ---------------------------- */
+/** wm_picking_rule 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_production_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_production_issue 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_production_issue`;
 CREATE TABLE `wm_production_issue`  (
   `issue_id` bigint(20) NOT NULL COMMENT '生产领料ID',
@@ -6966,13 +7124,13 @@ CREATE TABLE `wm_production_issue`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_production_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_production_issue 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_production_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_production_issue_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_production_issue_line`;
 CREATE TABLE `wm_production_issue_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -7020,13 +7178,13 @@ CREATE TABLE `wm_production_issue_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_production_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_production_issue_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_production_recpt
--- ----------------------------
+/** ---------------------------- */
+/** wm_production_recpt 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_production_recpt`;
 CREATE TABLE `wm_production_recpt`  (
   `recpt_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '入库ID',
@@ -7064,13 +7222,13 @@ CREATE TABLE `wm_production_recpt`  (
   INDEX `idx_wm_production_recpt_batch_id`(`batch_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_production_recpt
--- ----------------------------
+/** ---------------------------- */
+/** wm_production_recpt 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_putaway_rule
--- ----------------------------
+/** ---------------------------- */
+/** wm_putaway_rule 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_putaway_rule`;
 CREATE TABLE `wm_putaway_rule`  (
   `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
@@ -7095,13 +7253,13 @@ CREATE TABLE `wm_putaway_rule`  (
   INDEX `idx_category`(`material_category_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上架规则配置表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_putaway_rule
--- ----------------------------
+/** ---------------------------- */
+/** wm_putaway_rule 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_sales_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_sales_issue 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_sales_issue`;
 CREATE TABLE `wm_sales_issue`  (
   `issue_id` bigint(20) NOT NULL COMMENT '出库单ID',
@@ -7141,13 +7299,13 @@ CREATE TABLE `wm_sales_issue`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库主表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_sales_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_sales_issue 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_sales_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_sales_issue_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_sales_issue_line`;
 CREATE TABLE `wm_sales_issue_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '出库单行ID',
@@ -7186,13 +7344,13 @@ CREATE TABLE `wm_sales_issue_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库明细表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_sales_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_sales_issue_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_sn
--- ----------------------------
+/** ---------------------------- */
+/** wm_sn 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_sn`;
 CREATE TABLE `wm_sn`  (
   `sn_id` bigint(20) NOT NULL COMMENT '序列号ID',
@@ -7239,13 +7397,13 @@ CREATE TABLE `wm_sn`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '序列号管理表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_sn
--- ----------------------------
+/** ---------------------------- */
+/** wm_sn 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_stock_alert
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_alert 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_stock_alert`;
 CREATE TABLE `wm_stock_alert`  (
   `alert_id` bigint(20) NOT NULL COMMENT '预警ID',
@@ -7281,13 +7439,13 @@ CREATE TABLE `wm_stock_alert`  (
   INDEX `idx_tenant_handled`(`tenant_id`, `handled_flag`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '安全库存预警表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_stock_alert
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_alert 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_stock_reconciliation
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_reconciliation 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_stock_reconciliation`;
 CREATE TABLE `wm_stock_reconciliation`  (
   `recon_id` bigint(20) NOT NULL COMMENT '校验ID',
@@ -7314,13 +7472,13 @@ CREATE TABLE `wm_stock_reconciliation`  (
   INDEX `idx_recon_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存台账校验表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_stock_reconciliation
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_reconciliation 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_stock_taking_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_taking_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_stock_taking_line`;
 CREATE TABLE `wm_stock_taking_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '盘点行ID',
@@ -7358,13 +7516,13 @@ CREATE TABLE `wm_stock_taking_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_stock_taking_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_taking_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_stock_taking_plan
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_taking_plan 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_stock_taking_plan`;
 CREATE TABLE `wm_stock_taking_plan`  (
   `plan_id` bigint(20) NOT NULL COMMENT '盘点计划ID',
@@ -7394,13 +7552,13 @@ CREATE TABLE `wm_stock_taking_plan`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点计划表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_stock_taking_plan
--- ----------------------------
+/** ---------------------------- */
+/** wm_stock_taking_plan 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_storage_area
--- ----------------------------
+/** ---------------------------- */
+/** wm_storage_area 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_storage_area`;
 CREATE TABLE `wm_storage_area`  (
   `area_id` bigint(20) NOT NULL COMMENT '库区ID',
@@ -7445,9 +7603,9 @@ CREATE TABLE `wm_storage_area`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库区表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_storage_area
--- ----------------------------
+/** ---------------------------- */
+/** wm_storage_area 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `wm_storage_area` VALUES (1, 'A0001', '金属库区', 1, 200.00, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'GRID', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
 INSERT INTO `wm_storage_area` VALUES (2, 'A0002', '塑料库区', 1, 200.00, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'GRID', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
 INSERT INTO `wm_storage_area` VALUES (3, 'A0003', '电子料库区', 1, 200.00, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'GRID', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
@@ -7470,9 +7628,9 @@ INSERT INTO `wm_storage_area` VALUES (9900000012, 'B3D02', '成品货架区', 99
 INSERT INTO `wm_storage_area` VALUES (9900000013, 'C3D03', '拣选网格区', 9900000001, 60.00, 1, 1, 0, '3D示例·拣选位（5列×2行）', NULL, NULL, 0, 0, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 'GRID', 0.00, 0.00, -8.00, 10.00, 6.00, 2.00, 0.00, 0.00, 0.00, '#e6a23c', 0.12, 'CUBE', NULL, 1, 1, 1, NULL);
 INSERT INTO `wm_storage_area` VALUES (9900000014, 'D3D04', '散货堆放区', 9900000001, 60.00, 1, 1, 0, '3D示例·地堆位（2×2）', NULL, NULL, 0, 0, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 'BULK', 0.00, 0.00, 8.00, 10.00, 6.00, 3.00, 0.00, 0.00, 0.00, '#909399', 0.12, 'CUBE', NULL, 1, 1, 1, NULL);
 
--- ----------------------------
--- Table structure for wm_storage_location
--- ----------------------------
+/** ---------------------------- */
+/** wm_storage_location 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_storage_location`;
 CREATE TABLE `wm_storage_location`  (
   `location_id` bigint(20) NOT NULL COMMENT '库位ID',
@@ -7536,9 +7694,9 @@ CREATE TABLE `wm_storage_location`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库位表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_storage_location
--- ----------------------------
+/** ---------------------------- */
+/** wm_storage_location 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `wm_storage_location` VALUES (1, 'L001', '钢板库位', 1, 1, NULL, 6.00, 1000.00, NULL, NULL, NULL, 1, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
 INSERT INTO `wm_storage_location` VALUES (2, 'L002', '型材库位', 1, 1, NULL, 6.00, 1000.00, NULL, NULL, NULL, 1, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
 INSERT INTO `wm_storage_location` VALUES (3, 'L003', '管材库位', 1, 1, NULL, 6.00, 1000.00, NULL, NULL, NULL, 1, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
@@ -7689,9 +7847,9 @@ INSERT INTO `wm_storage_location` VALUES (9900000402, 'D-P2', '散货堆位2', 9
 INSERT INTO `wm_storage_location` VALUES (9900000403, 'D-P3', '散货堆位3', 9900000001, 9900000014, NULL, 6.00, 2000.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 'STORAGE', NULL, 1, 1, 2, -1.50, 0.00, 9.00, 3.00, 1.50, 2.00, 0.00, 0.00, 0.00, '#909399', '#409eff', '#f56c6c', '#e6a23c', 0.85, 1, '#9aa5b1', 0.02, 0, 'TOP', 0.50, 2, 35.00, NULL, NULL, NULL);
 INSERT INTO `wm_storage_location` VALUES (9900000404, 'D-P4', '散货堆位4', 9900000001, 9900000014, NULL, 6.00, 2000.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 'STORAGE', NULL, 1, 2, 2, 1.50, 0.00, 9.00, 3.00, 1.50, 2.00, 0.00, 0.00, 0.00, '#909399', '#409eff', '#f56c6c', '#e6a23c', 0.85, 1, '#9aa5b1', 0.02, 0, 'TOP', 0.50, 0, 0.00, NULL, NULL, NULL);
 
--- ----------------------------
--- Table structure for wm_subcontract_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_subcontract_issue 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_subcontract_issue`;
 CREATE TABLE `wm_subcontract_issue`  (
   `issue_id` bigint(20) NOT NULL COMMENT '发料单ID',
@@ -7715,13 +7873,13 @@ CREATE TABLE `wm_subcontract_issue`  (
   INDEX `idx_sc_issue_subcontract`(`subcontract_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外发料单' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_subcontract_issue
--- ----------------------------
+/** ---------------------------- */
+/** wm_subcontract_issue 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_subcontract_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_subcontract_issue_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_subcontract_issue_line`;
 CREATE TABLE `wm_subcontract_issue_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -7749,13 +7907,13 @@ CREATE TABLE `wm_subcontract_issue_line`  (
   INDEX `idx_sc_issue_line_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外发料单行' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_subcontract_issue_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_subcontract_issue_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_subcontract_receive
--- ----------------------------
+/** ---------------------------- */
+/** wm_subcontract_receive 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_subcontract_receive`;
 CREATE TABLE `wm_subcontract_receive`  (
   `receive_id` bigint(20) NOT NULL COMMENT '收货单ID',
@@ -7793,13 +7951,13 @@ CREATE TABLE `wm_subcontract_receive`  (
   INDEX `idx_sc_receive_subcontract`(`subcontract_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外收货单' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_subcontract_receive
--- ----------------------------
+/** ---------------------------- */
+/** wm_subcontract_receive 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_transfer
--- ----------------------------
+/** ---------------------------- */
+/** wm_transfer 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_transfer`;
 CREATE TABLE `wm_transfer`  (
   `transfer_id` bigint(20) NOT NULL COMMENT '调拨单ID',
@@ -7838,13 +7996,13 @@ CREATE TABLE `wm_transfer`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨单表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_transfer
--- ----------------------------
+/** ---------------------------- */
+/** wm_transfer 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_transfer_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_transfer_line 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_transfer_line`;
 CREATE TABLE `wm_transfer_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
@@ -7878,13 +8036,13 @@ CREATE TABLE `wm_transfer_line`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨行表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_transfer_line
--- ----------------------------
+/** ---------------------------- */
+/** wm_transfer_line 基础种子记录。 */
+/** ---------------------------- */
 
--- ----------------------------
--- Table structure for wm_warehouse
--- ----------------------------
+/** ---------------------------- */
+/** wm_warehouse 表结构定义。 */
+/** ---------------------------- */
 DROP TABLE IF EXISTS `wm_warehouse`;
 CREATE TABLE `wm_warehouse`  (
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
@@ -7920,9 +8078,9 @@ CREATE TABLE `wm_warehouse`  (
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '仓库表' ROW_FORMAT = DYNAMIC;
 
--- ----------------------------
--- Records of wm_warehouse
--- ----------------------------
+/** ---------------------------- */
+/** wm_warehouse 基础种子记录。 */
+/** ---------------------------- */
 INSERT INTO `wm_warehouse` VALUES (1, 'WH001', '原料仓库', '浙江省杭州市余杭区智造园区', 2000.00, 'admin', 1, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `wm_warehouse` VALUES (2, 'WH002', '半成品仓库', '浙江省杭州市余杭区智造园区', 2000.00, 'admin', 1, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `wm_warehouse` VALUES (3, 'WH003', '成品仓库', '浙江省杭州市余杭区智造园区', 2000.00, 'admin', 1, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -7931,9 +8089,9 @@ INSERT INTO `wm_warehouse` VALUES (5, 'WH005', '待检仓库', '浙江省杭州�
 INSERT INTO `wm_warehouse` VALUES (6, 'WH006', '危化品仓', '浙江省杭州市余杭区智造园区', 2000.00, 'admin', 1, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `wm_warehouse` VALUES (9900000001, 'WH-3D-DEMO', '3D示例仓库', '厂区一号库·3D可视化示例', 800.00, 'admin', 1, '3D 仓库可视化示例数据（PLAN-2026-006）', 1, NULL, NULL, NULL, NULL, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
--- ----------------------------
--- Procedure structure for _nexus_add_uk
--- ----------------------------
+/** ---------------------------- */
+/** 存储过程结构定义：_nexus_add_uk */
+/** ---------------------------- */
 DROP PROCEDURE IF EXISTS `_nexus_add_uk`;
 delimiter ;;
 CREATE PROCEDURE `_nexus_add_uk`(IN p_table VARCHAR(64),
@@ -7964,9 +8122,9 @@ END
 ;;
 delimiter ;
 
--- ----------------------------
--- Procedure structure for _nexus_fix_tenant_varchar20
--- ----------------------------
+/** ---------------------------- */
+/** 存储过程结构定义：_nexus_fix_tenant_varchar20 */
+/** ---------------------------- */
 DROP PROCEDURE IF EXISTS `_nexus_fix_tenant_varchar20`;
 delimiter ;;
 CREATE PROCEDURE `_nexus_fix_tenant_varchar20`(IN p_table VARCHAR(64))
@@ -7993,9 +8151,9 @@ END
 ;;
 delimiter ;
 
--- ----------------------------
--- Procedure structure for _nexus_fix_uk_tenant
--- ----------------------------
+/** ---------------------------- */
+/** 存储过程结构定义：_nexus_fix_uk_tenant */
+/** ---------------------------- */
 DROP PROCEDURE IF EXISTS `_nexus_fix_uk_tenant`;
 delimiter ;;
 CREATE PROCEDURE `_nexus_fix_uk_tenant`(IN p_table VARCHAR(64),
@@ -8028,9 +8186,9 @@ END
 ;;
 delimiter ;
 
--- ----------------------------
--- Procedure structure for _nexus_restore_uk
--- ----------------------------
+/** ---------------------------- */
+/** 存储过程结构定义：_nexus_restore_uk */
+/** ---------------------------- */
 DROP PROCEDURE IF EXISTS `_nexus_restore_uk`;
 delimiter ;;
 CREATE PROCEDURE `_nexus_restore_uk`(IN p_table VARCHAR(64),

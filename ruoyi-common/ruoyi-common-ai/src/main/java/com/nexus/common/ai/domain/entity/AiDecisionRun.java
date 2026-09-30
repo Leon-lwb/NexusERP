@@ -1,5 +1,6 @@
 package com.nexus.common.ai.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -41,6 +42,10 @@ public class AiDecisionRun extends BaseEntity {
     private String triggerType;
 
     private String status;
+
+    /** NULL 为旧合同，只有可信新版路径可显式写入 2。 */
+    @TableField("decision_contract_version")
+    private Integer decisionContractVersion;
 
     private BigDecimal riskScore;
 

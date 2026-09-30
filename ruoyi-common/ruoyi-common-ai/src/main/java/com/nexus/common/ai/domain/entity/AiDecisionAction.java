@@ -1,5 +1,6 @@
 package com.nexus.common.ai.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -41,6 +42,10 @@ public class AiDecisionAction extends BaseEntity {
     private String targetBizCode;
 
     private String payloadJson;
+
+    /** NULL 为旧采购载荷；不得用旧 JSON 或客户端版本自动补值。 */
+    @TableField("purchase_payload_version")
+    private Integer purchasePayloadVersion;
 
     private String riskLevel;
 

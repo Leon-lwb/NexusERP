@@ -44,6 +44,7 @@ import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("local")
@@ -119,9 +121,7 @@ class DecisionEntityContractTest {
         String sql = Files.readString(directory.resolve("script/sql/ry-vue.sql"));
         for (Class<?> entity : ENTITIES) {
             String table = entity.getAnnotation(TableName.class).value();
-            Matcher createTable = Pattern.compile("CREATE TABLE `" + table + "` \\((.*?)\\) ENGINE=", Pattern.DOTALL)
-                .matcher(sql);
-            assertTrue(createTable.find(), table);
+            Matcher createTable = decisionTableDdl(sql, table);
             Matcher columns = Pattern.compile("(?m)^  `([a-z0-9_]+)` ").matcher(createTable.group(1));
             List<String> expected = new ArrayList<>();
             while (columns.find()) {
@@ -218,6 +218,49 @@ class DecisionEntityContractTest {
     }
 
     @Test
+    void evidenceKeyMustBeUniqueWithinRunInH2() throws Exception {
+        var datasource = new DriverManagerDataSource(
+            "jdbc:h2:mem:decision_evidence_unique_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        try {
+            createDecisionTables(datasource);
+            try (Connection connection = datasource.getConnection(); Statement statement = connection.createStatement()) {
+                String insert = "INSERT INTO ai_decision_evidence "
+                    + "(id, run_id, evidence_key, source_domain, source_type, metric_code, metric_name, value_type) "
+                    + "VALUES (%d, %d, 'same-key', 'ERP', 'ORDER', 'score', 'Score', 'NUMBER')";
+                assertEquals(1, statement.executeUpdate(insert.formatted(1, 100)));
+                assertEquals(1, statement.executeUpdate(insert.formatted(2, 101)));
+                SQLException duplicate = assertThrows(SQLException.class,
+                    () -> statement.executeUpdate(insert.formatted(3, 100)));
+                assertEquals("23505", duplicate.getSQLState());
+            }
+        } finally {
+            shutdownDecisionDatabase(datasource);
+        }
+    }
+
+    @Test
+    void actionIdempotencyKeyMustBeUniqueWithinTenantInH2() throws Exception {
+        var datasource = new DriverManagerDataSource(
+            "jdbc:h2:mem:decision_action_unique_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        try {
+            createDecisionTables(datasource);
+            try (Connection connection = datasource.getConnection(); Statement statement = connection.createStatement()) {
+                String insert = "INSERT INTO ai_decision_action "
+                    + "(id, tenant_id, run_id, action_type, title, payload_json, risk_level, "
+                    + "approval_status, execution_status, executor_code, idempotency_key) "
+                    + "VALUES (%d, '%s', 100, 'NOTIFY', 'notify', '{}', 'LOW', 'PENDING', 'PENDING', 'TEST', 'same-key')";
+                assertEquals(1, statement.executeUpdate(insert.formatted(1, "000000")));
+                assertEquals(1, statement.executeUpdate(insert.formatted(2, "000001")));
+                SQLException duplicate = assertThrows(SQLException.class,
+                    () -> statement.executeUpdate(insert.formatted(3, "000000")));
+                assertEquals("23505", duplicate.getSQLState());
+            }
+        } finally {
+            shutdownDecisionDatabase(datasource);
+        }
+    }
+
+    @Test
     void uninitializedVersionsMustStillGuardStaleUpdates() throws Exception {
         var datasource = new DriverManagerDataSource(
             "jdbc:h2:mem:decision_version_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
@@ -251,10 +294,10 @@ class DecisionEntityContractTest {
             run.setBizType("ORDER");
             run.setTriggerType("MANUAL");
             run.setStatus("INITIAL");
-            assertEquals(1, runs.insert(run)); // 刻意不调用 setVersion。
+            assertEquals(1, runs.insert(run)); /** 刻意不调用 setVersion。 */
             Integer insertedRunVersion = run.getVersion();
             var runWinner = runs.selectById(run.getId());
-            assertEquals(0, runWinner.getVersion()); // 读取时应能观察到数据库默认版本。
+            assertEquals(0, runWinner.getVersion()); /** 读取时应能观察到数据库默认版本。 */
             runWinner.setStatus("WINNER");
             assertEquals(1, runs.updateById(runWinner));
             assertEquals(1, runWinner.getVersion());
@@ -273,7 +316,7 @@ class DecisionEntityContractTest {
             action.setExecutionStatus("INITIAL");
             action.setExecutorCode("TEST");
             action.setIdempotencyKey("action-320");
-            assertEquals(1, actions.insert(action)); // 刻意不调用 setVersion。
+            assertEquals(1, actions.insert(action)); /** 刻意不调用 setVersion。 */
             Integer insertedActionVersion = action.getVersion();
             var actionWinner = actions.selectById(action.getId());
             assertEquals(0, actionWinner.getVersion());
@@ -295,7 +338,7 @@ class DecisionEntityContractTest {
 
     @Test
     void mapperInsertSelectUpdateAndSummaryProjectionRoundTrip() throws Exception {
-        // H2 在 MySQL 兼容模式下验证映射 SQL 和类型；真实 MySQL 方言仍需 Task 19 验收。
+        /** H2 在 MySQL 兼容模式下验证映射 SQL 和类型；真实 MySQL 方言仍需任务 19 验收。 */
         var datasource = new DriverManagerDataSource(
             "jdbc:h2:mem:decision_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
         try {
@@ -440,7 +483,7 @@ class DecisionEntityContractTest {
                 assertEquals(action.getPayloadJson(), readAction.getPayloadJson());
                 assertEquals(action.getResultJson(), readAction.getResultJson());
                 readAction.setExecutionStatus("DONE");
-                readAction.setResultJson(null); // 选择性更新必须保留已有非空 JSON。
+                readAction.setResultJson(null); /** 选择性更新必须保留已有非空 JSON。 */
                 assertEquals(1, actions.updateById(readAction));
                 assertEquals(1, readAction.getVersion());
                 assertEquals(action.getResultJson(), actions.selectById(300L).getResultJson());
@@ -456,7 +499,7 @@ class DecisionEntityContractTest {
                 nullableAction.setRunId(100L);
                 nullableAction.setActionType("NOTIFY");
                 nullableAction.setTitle("notify-2");
-                nullableAction.setPayloadJson("{}"); // 数据库定义中该字段禁止为空。
+                nullableAction.setPayloadJson("{}"); /** 数据库定义中该字段禁止为空。 */
                 nullableAction.setRiskLevel("LOW");
                 nullableAction.setApprovalStatus("PENDING");
                 nullableAction.setExecutionStatus("PENDING");
@@ -491,21 +534,39 @@ class DecisionEntityContractTest {
         String sql = Files.readString(directory.resolve("script/sql/ry-vue.sql"));
         try (Connection connection = datasource.getConnection(); Statement statement = connection.createStatement()) {
             for (String table : List.of("ai_decision_run", "ai_decision_evidence", "ai_decision_action")) {
-                Matcher ddl = Pattern.compile("CREATE TABLE `" + table + "` \\((.*?)\\) ENGINE=", Pattern.DOTALL)
-                    .matcher(sql);
-                assertTrue(ddl.find(), table);
-                // 保留生产列、类型、空值约束及默认值；去除 MySQL 专用索引、注释和存储引擎。
+                Matcher ddl = decisionTableDdl(sql, table);
+                /** 仅转换 MySQL 方言写法；保留生产列、类型、空值约束和默认值供 H2 验证。 */
                 List<String> columns = Arrays.stream(ddl.group(1).split("\\R"))
                     .map(String::trim)
                     .filter(line -> line.startsWith("`"))
                     .map(line -> line.replaceFirst(",?$", "")
-                        .replaceAll("(?i)bigint\\(\\d+\\)", "bigint")
+                        .replaceAll("(?i)\\b(bigint|int)\\(\\d+\\)", "$1")
+                        .replaceAll("(?i)\\s+CHARACTER SET\\s+\\w+(?:\\s+COLLATE\\s+\\w+)?", "")
                         .replaceAll("(?i)\\s+COMMENT\\s+'(?:''|[^'])*'", ""))
                     .toList();
-                statement.execute("CREATE TABLE `" + table + "` (" + String.join(",", columns)
-                    + ", PRIMARY KEY (`id`))");
+                List<String> uniqueConstraints = Arrays.stream(ddl.group(1).split("\\R"))
+                    .map(String::trim)
+                    .filter(line -> Pattern.compile("(?i)^UNIQUE\\s+(?:KEY|INDEX)\\b").matcher(line).find())
+                    .map(line -> {
+                        Matcher index = Pattern.compile("(?i)^UNIQUE\\s+(?:KEY|INDEX)\\s+(`[^`]+`)\\s*\\(([^)]+)\\)(?:\\s+USING\\s+BTREE)?\\s*,?$")
+                            .matcher(line);
+                        assertTrue(index.matches(), "无法解析唯一索引: " + line);
+                        return "CONSTRAINT " + index.group(1) + " UNIQUE (" + index.group(2) + ")";
+                    })
+                    .toList();
+                List<String> definitions = new ArrayList<>(columns);
+                definitions.add("PRIMARY KEY (`id`)");
+                definitions.addAll(uniqueConstraints);
+                statement.execute("CREATE TABLE `" + table + "` (" + String.join(",", definitions) + ")");
             }
         }
+    }
+
+    private static Matcher decisionTableDdl(String sql, String table) {
+        Matcher ddl = Pattern.compile("(?ms)^CREATE TABLE `" + Pattern.quote(table)
+            + "`\\s*\\(((?:(?!^CREATE TABLE\\b).)*?)^\\)\\s*ENGINE\\s*=").matcher(sql);
+        assertTrue(ddl.find(), table);
+        return ddl;
     }
 
     private static void assertSameColumns(List<String> expected, List<String> actual, String table) {
