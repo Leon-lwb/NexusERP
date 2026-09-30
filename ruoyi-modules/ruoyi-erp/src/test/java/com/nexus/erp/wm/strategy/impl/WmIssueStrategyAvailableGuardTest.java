@@ -69,7 +69,7 @@ class WmIssueStrategyAvailableGuardTest {
 
     @BeforeAll
     static void initTableInfo() {
-        // 真实 TableInfo/列缓存：让 MyBatis-Plus lambda 在纯单测（无 Spring 上下文）中能解析列名
+        /** 真实 TableInfo/列缓存：让 MyBatis-Plus lambda 在纯单测（无 Spring 上下文）中能解析列名 */
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, WmMaterialStock.class);
         TableInfoHelper.initTableInfo(assistant, WmMaterialStockTx.class);
@@ -94,7 +94,7 @@ class WmIssueStrategyAvailableGuardTest {
 
         ProductionIssueStrategy strategy =
             new ProductionIssueStrategy(stockTxMapper, stockMapper, valuationService);
-        // 需求 70 = 第一行可用量 20 + 第二行可用量 50
+        /** 需求 70 = 第一行可用量 20 + 第二行可用量 50 */
         strategy.execute(productionLine(new BigDecimal("70")), new Date());
 
         ArgumentCaptor<BigDecimal> firstQty = ArgumentCaptor.forClass(BigDecimal.class);
@@ -107,7 +107,7 @@ class WmIssueStrategyAvailableGuardTest {
         assertEquals(0, new BigDecimal("50").compareTo(secondQty.getValue()),
             "ERP-WM-02: 缺口应继续由第二行的可用量补齐");
 
-        // 修复前走的是账面量守卫的 deductStock，修复后必须全部走可用量守卫入口
+        /** 修复前走的是账面量守卫的 deductStock，修复后必须全部走可用量守卫入口 */
         verify(stockMapper, never()).deductStock(anyLong(), any(), any());
     }
 
@@ -181,6 +181,7 @@ class WmIssueStrategyAvailableGuardTest {
         line.setLineId(2L);
         line.setMaterialId(100L);
         line.setMaterialName("测试物料");
+        line.setWarehouseId(5L);
         line.setQuantity(qty);
         return line;
     }

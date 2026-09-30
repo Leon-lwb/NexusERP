@@ -20,6 +20,7 @@ import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
+import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaIssueShortageBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
@@ -27,6 +28,7 @@ import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
+import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -42,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 /**
  * 生产发料服务实现
@@ -62,7 +65,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     private static final String STATUS_PARTIAL = "PARTIAL";
     /** 常量：STATUSCOMPLETED */
     private static final String STATUS_COMPLETED = "COMPLETED";
-    private static final String STATUS_EXECUTED = "EXECUTED";   // 历史值，等价于已完成
+    private static final String STATUS_EXECUTED = "EXECUTED";   /** 历史值，等价于已完成 */
     /** 常量：行PENDING */
     private static final String LINE_PENDING = "PENDING";
     /** 常量：行PARTIAL */
@@ -79,6 +82,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     private final WmProductionIssueLineMapper lineMapper;
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    private final WmWarehouseMapper warehouseMapper;
     /** 解耦：注入库存操作接口而非实现 */
     private final IWmStockOperationService stockOperationService;
     /** 自动编码工具类 */
@@ -141,7 +145,18 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmProductionIssueBo bo) {
+        if (bo == null || bo.getIssueId() != null) {
+            throw new ServiceException("新建领料单不得指定已有ID");
+        }
+        if (StringUtils.isNotBlank(bo.getStatus()) && !STATUS_CREATED.equals(bo.getStatus()) && !"DRAFT".equals(bo.getStatus())) {
+            throw new ServiceException("新建领料单只能是未领料状态");
+        }
+        if (bo.getWmProductionIssueLineList() != null && bo.getWmProductionIssueLineList().stream()
+            .anyMatch(line -> line == null || zeroIfNull(line.getIssuedQty()).signum() != 0)) {
+            throw new ServiceException("新建领料单不得填写已领数量");
+        }
         WmProductionIssue entity = MapstructUtils.convert(bo, WmProductionIssue.class);
+        entity.setStatus(STATUS_CREATED);
         if (StringUtils.isBlank(entity.getIssueCode())) {
             entity.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
         }
@@ -151,7 +166,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         if (StringUtils.isBlank(entity.getIssueType())) {
             entity.setIssueType("NORMAL");
         }
-        // 未指定领料人时默认取当前操作人
+        /** 未指定领料人时默认取当前操作人 */
         if (entity.getIssuerId() == null) {
             entity.setIssuerId(entity.getCreateBy());
         }
@@ -170,11 +185,38 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmProductionIssueBo bo) {
+        if (bo == null || bo.getIssueId() == null) {
+            throw new ServiceException("领料单ID不能为空");
+        }
+        WmProductionIssue current = baseMapper.selectById(bo.getIssueId());
+        if (current == null || (!STATUS_CREATED.equals(current.getStatus()) && !STATUS_PARTIAL.equals(current.getStatus()))) {
+            throw new ServiceException("仅未完成的领料单可编辑，已过账完成的单据不可重开");
+        }
+        if (StringUtils.isNotBlank(bo.getStatus()) && !current.getStatus().equals(bo.getStatus())) {
+            throw new ServiceException("领料状态由执行流程维护，不可通过编辑修改");
+        }
+        if ((bo.getWoId() != null && !Objects.equals(bo.getWoId(), current.getWoId()))
+            || (StringUtils.isNotBlank(bo.getIssueCode()) && !Objects.equals(bo.getIssueCode(), current.getIssueCode()))) {
+            throw new ServiceException("领料单号及来源工单不可改绑");
+        }
         WmProductionIssue entity = MapstructUtils.convert(bo, WmProductionIssue.class);
-        // 增量同步行：保留 line_id，避免全删全插导致库存流水 source_doc_line_id 失联
+        entity.setStatus(current.getStatus());
+        entity.setWoId(current.getWoId());
+        entity.setWoNo(current.getWoNo());
+        entity.setIssueCode(current.getIssueCode());
+        entity.setTotalQty(null);
+        entity.setTotalAmount(null);
+        /** 条件更新锁定父单，阻止读后并发执行完成的单据被编辑重开。 */
+        int rows = baseMapper.update(entity, Wrappers.<WmProductionIssue>lambdaUpdate()
+            .eq(WmProductionIssue::getIssueId, current.getIssueId())
+            .eq(WmProductionIssue::getStatus, current.getStatus()));
+        if (rows != 1) {
+            throw new ServiceException("领料状态已变化，请刷新后重试");
+        }
+        /** 增量同步行保留原ID；总额最后由后端重算，不接受页面回传总额。 */
         syncLines(entity.getIssueId(), bo.getWmProductionIssueLineList());
         recalcHeaderTotals(entity.getIssueId());
-        return baseMapper.updateById(entity);
+        return rows;
     }
 
     /**
@@ -187,6 +229,24 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long id : ids) {
+            WmProductionIssue current = baseMapper.selectById(id);
+            if (current == null || !STATUS_CREATED.equals(current.getStatus())) {
+                throw new ServiceException("仅未领料的新建单据可删除，已领料单据须保留库存追溯");
+            }
+        }
+        for (Long id : ids) {
+            List<WmProductionIssueLine> lines = lineMapper.selectList(Wrappers.<WmProductionIssueLine>lambdaQuery()
+                .eq(WmProductionIssueLine::getIssueId, id));
+            if (lines.stream().anyMatch(line -> zeroIfNull(line.getIssuedQty()).signum() > 0)) {
+                throw new ServiceException("已有领料流水的单据不可删除");
+            }
+            int claimed = baseMapper.update(null, Wrappers.<WmProductionIssue>lambdaUpdate()
+                .set(WmProductionIssue::getStatus, "DELETING")
+                .eq(WmProductionIssue::getIssueId, id)
+                .eq(WmProductionIssue::getStatus, STATUS_CREATED));
+            if (claimed != 1) {
+                throw new ServiceException("领料状态已变化，请刷新后重试");
+            }
             deleteLinesByIssueId(id);
         }
         return baseMapper.deleteBatchIds(List.of(ids));
@@ -217,8 +277,10 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         if (!STATUS_CREATED.equals(status) && !STATUS_PARTIAL.equals(status)) {
             throw new RuntimeException("当前状态不允许执行领料：" + status);
         }
-        // ERP-WM-05: 单据级 CAS 抢占（CREATED/PARTIAL → EXECUTING）。
-        // 修复前只做读判断，双击或 PC+PDA 并发时两次请求都读到 CREATED，各自按同一 current_qty 扣一次库存。
+        /**
+         * ERP-WM-05: 单据级 CAS 抢占（CREATED/PARTIAL → EXECUTING）。
+         * 修复前只做读判断，双击或 PC+PDA 并发时两次请求都读到 CREATED，各自按同一 current_qty 扣一次库存。
+         */
         int claimed = baseMapper.update(null, Wrappers.<WmProductionIssue>lambdaUpdate()
             .set(WmProductionIssue::getStatus, "EXECUTING")
             .eq(WmProductionIssue::getIssueId, issueId)
@@ -234,13 +296,64 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             throw new RuntimeException("生产领料单无明细行");
         }
 
+        Map<Long, Map<Long, List<WmProductionIssueLine>>> groupedPicks = new HashMap<>();
+        /**
+         * 任何库存过账前，先预检每个正数领料量；发现仓库无效或缺货时，事务也会回滚
+         * CAS 抢占。
+         */
+        for (WmProductionIssueLine line : lines) {
+            BigDecimal currentQty = line.getCurrentQty();
+            if (currentQty == null || currentQty.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            Long warehouseId = line.getWarehouseId() != null ? line.getWarehouseId() : issue.getWarehouseId();
+            if (warehouseId == null) {
+                throw new ServiceException("物料【" + line.getMaterialName() + "】请选择领料仓库");
+            }
+            WmWarehouse warehouse = warehouseMapper.selectById(warehouseId);
+            if (warehouse == null || !Long.valueOf(1L).equals(warehouse.getStatus())) {
+                throw new ServiceException("物料【" + line.getMaterialName() + "】领料仓库不存在或未启用：" + warehouseId);
+            }
+            line.setWarehouseId(warehouseId);
+            line.setWarehouseCode(warehouse.getWarehouseCode());
+            line.setWarehouseName(warehouse.getWarehouseName());
+            groupedPicks.computeIfAbsent(line.getMaterialId(), ignored -> new HashMap<>())
+                .computeIfAbsent(warehouseId, ignored -> new ArrayList<>()).add(line);
+            BigDecimal available = sumAvailable(line.getMaterialId(), warehouseId,
+                line.getBatchId(), line.getLocationId());
+            if (available.compareTo(currentQty) < 0) {
+                throw new ServiceException("物料【" + line.getMaterialName() + "】仓库【" + warehouse.getWarehouseName()
+                    + "】库存不足，可用量：" + available);
+            }
+        }
+
+        /** 逐行独立检查无法发现两次领料正在竞争同一仓库的库存。 */
+        for (Map.Entry<Long, Map<Long, List<WmProductionIssueLine>>> material : groupedPicks.entrySet()) {
+            for (Map.Entry<Long, List<WmProductionIssueLine>> warehouse : material.getValue().entrySet()) {
+                List<WmProductionIssueLine> picks = warehouse.getValue();
+                if (picks.size() <= 1) {
+                    continue;
+                }
+                BigDecimal demand = BigDecimal.ZERO;
+                for (WmProductionIssueLine pick : picks) {
+                    demand = demand.add(pick.getCurrentQty());
+                }
+                BigDecimal available = sumAvailable(material.getKey(), warehouse.getKey(), null, null);
+                if (available.compareTo(demand) < 0) {
+                    WmProductionIssueLine first = picks.get(0);
+                    throw new ServiceException("物料【" + first.getMaterialName() + "】仓库【" + first.getWarehouseName()
+                        + "】库存不足，可用量：" + available);
+                }
+            }
+        }
         Date now = new Date();
         boolean hasPick = false;
+
         boolean allIssued = true;
 
         for (WmProductionIssueLine line : lines) {
             BigDecimal currentQty = line.getCurrentQty();
-            // 本次不领料的行：仅判断是否已领满以决定单头状态
+            /** 本次不领料的行：仅判断是否已领满以决定单头状态 */
             if (currentQty == null || currentQty.compareTo(BigDecimal.ZERO) <= 0) {
                 if (!isLineFullyIssued(line)) {
                     allIssued = false;
@@ -251,16 +364,18 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
 
             BigDecimal requiredQty = zeroIfNull(line.getRequiredQty());
             BigDecimal issuedQty = zeroIfNull(line.getIssuedQty());
-            // 欠领 = 应领 - 已领；应领为空（手工行）时不设上限，以可用量为准
+            /** 欠领 = 应领 - 已领；应领为空（手工行）时不设上限，以可用量为准 */
             BigDecimal shortQty = requiredQty.compareTo(BigDecimal.ZERO) > 0
                 ? requiredQty.subtract(issuedQty) : null;
             if (line.getShortQty() != null) {
                 shortQty = line.getShortQty();
             }
 
-            // ERP-WM-04: 超领守卫。修复前写成 `shortQty > 0 && currentQty > shortQty`，
-            // 该行已领满时 shortQty == 0 → 整个校验被短路，仍可继续领料（只受可用库存限制）。
-            // 改为上限 = max(shortQty, 0)：已领满时任何正数本次领料量都必须拒绝。
+            /**
+             * ERP-WM-04：超领守卫。修复前写成 {@code shortQty > 0 && currentQty > shortQty}，
+             * 该行已领满时 {@code shortQty == 0} 导致整个校验被短路，仍可继续领料，仅受可用库存限制。
+             * 改为上限 {@code max(shortQty, 0)}：已领满时任何正数本次领料量都必须拒绝。
+             */
             if (shortQty != null) {
                 BigDecimal allowed = shortQty.max(BigDecimal.ZERO);
                 if (currentQty.compareTo(allowed) > 0) {
@@ -269,23 +384,16 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 }
             }
 
-            // 可用量(ATP)校验：按行指定的批次/库位（为空则不限）汇总。
-            // 不按头部仓库过滤——物料可能存放在其他仓库，行的批次/库位已唯一指向具体库存，
-            // 与 ProductionIssueStrategy 的扣减范围保持一致。
-            BigDecimal available = sumAvailable(line.getMaterialId(), null,
-                line.getBatchId(), line.getLocationId());
-            if (available.compareTo(currentQty) < 0) {
-                throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足，可用量：" + available);
-            }
-
-            // 策略读取 line.getQuantity() 扣减；为不污染 quantity 的应领语义，
-            // 备份原值，临时令 quantity=本次领料量，扣减后恢复。
+            /**
+             * 策略读取 line.getQuantity() 扣减；为不污染 quantity 的应领语义，
+             * 备份原值，临时令 quantity=本次领料量，扣减后恢复。
+             */
             BigDecimal originQuantity = line.getQuantity();
             line.setQuantity(currentQty);
             stockOperationService.postProductionIssue(line, now);
             line.setQuantity(originQuantity);
 
-            // 累计已领、重算欠领、本次清零
+            /** 累计已领、重算欠领、本次清零 */
             BigDecimal newIssued = issuedQty.add(currentQty);
             BigDecimal newShort = requiredQty.compareTo(BigDecimal.ZERO) > 0
                 ? requiredQty.subtract(newIssued) : BigDecimal.ZERO;
@@ -303,7 +411,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             }
             lineMapper.updateById(line);
 
-            // 回写工单物料需求明细的已发量/欠料量
+            /** 回写工单物料需求明细的已发量/欠料量 */
             updateRequirementDetail(line.getRequirementDetailId(), currentQty);
         }
 
@@ -312,8 +420,11 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         }
 
         issue.setStatus(allIssued ? STATUS_COMPLETED : STATUS_PARTIAL);
+        WmProductionIssue statusUpdate = new WmProductionIssue();
+        statusUpdate.setIssueId(issueId);
+        statusUpdate.setStatus(issue.getStatus());
+        baseMapper.updateById(statusUpdate);
         recalcHeaderTotals(issueId);
-        baseMapper.updateById(issue);
         log.info("生产领料单执行完成, issueId={}, status={}", issueId, issue.getStatus());
     }
 
@@ -326,7 +437,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         }
         String status = issue.getStatus();
         if (STATUS_COMPLETED.equals(status) || STATUS_EXECUTED.equals(status)) {
-            return; // 幂等: 已完成直接返回
+            return; /** 幂等: 已完成直接返回 */
         }
         if (!STATUS_CREATED.equals(status) && !STATUS_PARTIAL.equals(status)) {
             throw new ServiceException("当前状态不允许缺货完成：" + status);
@@ -370,9 +481,11 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             throw new ServiceException("缺货声明包含不存在或已领满的行");
         }
 
-        issue.setStatus(STATUS_COMPLETED);
+        WmProductionIssue statusUpdate = new WmProductionIssue();
+        statusUpdate.setIssueId(issueId);
+        statusUpdate.setStatus(STATUS_COMPLETED);
+        baseMapper.updateById(statusUpdate);
         recalcHeaderTotals(issueId);
-        baseMapper.updateById(issue);
         log.info("生产领料单缺货关闭完成, issueId={}", issueId);
     }
 
@@ -388,7 +501,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, materialId);
         lqw.eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId);
-        // 仅查未冻结库存：frozen_flag 字典 sys_true_or_false，0=否(未冻结/可用)，1=是(已冻结)
+        /** 仅查未冻结库存：frozen_flag 字典 sys_true_or_false，0=否(未冻结/可用)，1=是(已冻结) */
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
@@ -417,9 +530,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     }
 
     /**
-     * 构建生产发料相关对象
+     * 构建生产发料相关对象。
      *
-     * @param woId wo ID
+     * @param woId 工单 ID
      * @return 结果对象
      */
     @Override
@@ -440,7 +553,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
                     .eq(PrdMaterialRequirementDetail::getRequirementId, req.getRequirementId()));
             for (PrdMaterialRequirementDetail detail : details) {
-                // 倒冲物料不进领料单（完工时自动倒冲）
+                /** 倒冲物料不进领料单（完工时自动倒冲） */
                 if (detail.getBackflushFlag() != null && detail.getBackflushFlag() == 1) {
                     continue;
                 }
@@ -465,14 +578,14 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return lines;
     }
 
-    // ===================== 私有辅助 =====================
+    /** 私有辅助方法。 */
 
     private void insertOrUpdateLines(Long issueId, List<WmProductionIssueLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (WmProductionIssueLine line : lineList) {
                 line.setLineId(null);
                 line.setIssueId(issueId);
-                // 兜底初始化新列，避免旧数据/手工新增行出现 null
+                /** 兜底初始化新列，避免旧数据/手工新增行出现 null */
                 if (line.getIssuedQty() == null) {
                     line.setIssuedQty(BigDecimal.ZERO);
                 }
@@ -493,14 +606,14 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
      *   <li>前端传来且有 lineId 的行 → 更新可编辑字段，<b>保留后端维护的</b>
      *       issued_qty/short_qty/line_status/required_qty/bom_qty/loss_rate/requirement_detail_id</li>
      *   <li>前端传来但无 lineId 的行 → 新增</li>
-     *   <li>后端已有但前端未传的行 → 删除（仅当未领料 issued_qty<=0 时才删，避免误删已领料行）</li>
+     *   <li>后端已有但前端未传的行 → 删除（仅当未领料 {@code issued_qty<=0} 时才删，避免误删已领料行）</li>
      * </ul>
      */
     private void syncLines(Long issueId, List<WmProductionIssueLine> lineList) {
         if (issueId == null) {
             return;
         }
-        // 后端现有行
+        /** 后端现有行 */
         List<WmProductionIssueLine> existLines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmProductionIssueLine.class)
                 .eq(WmProductionIssueLine::getIssueId, issueId));
@@ -510,32 +623,54 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         }
 
         Set<Long> keepIds = new HashSet<>();
+        /** 核对所有来源行后再更新，不能把其他单据行 ID 当作新增并删掉本单原行。 */
+        Set<Long> requestedIds = new HashSet<>();
+        if (lineList != null) {
+            for (WmProductionIssueLine line : lineList) {
+                if (line == null) {
+                    throw new ServiceException("领料行不能为空");
+                }
+                if (line.getLineId() != null) {
+                    WmProductionIssueLine original = existMap.get(line.getLineId());
+                    if (original == null || !requestedIds.add(line.getLineId())) {
+                        throw new ServiceException("领料行不属于当前单据或重复提交");
+                    }
+                    if (!Objects.equals(line.getMaterialId(), original.getMaterialId())
+                        || !Objects.equals(line.getBaseUomId(), original.getBaseUomId())
+                        || (line.getRequirementDetailId() != null && !Objects.equals(line.getRequirementDetailId(), original.getRequirementDetailId()))) {
+                        throw new ServiceException("领料行的物料、单位及需求来源不可改绑");
+                    }
+                } else if (zeroIfNull(line.getIssuedQty()).signum() != 0) {
+                    throw new ServiceException("新增领料行不得填写已领数量");
+                }
+            }
+        }
+        for (WmProductionIssueLine existing : existLines) {
+            if (zeroIfNull(existing.getIssuedQty()).signum() > 0 && !requestedIds.contains(existing.getLineId())) {
+                throw new ServiceException("已领料行不可通过编辑删除");
+            }
+        }
         if (lineList != null) {
             for (WmProductionIssueLine line : lineList) {
                 if (line.getLineId() != null && existMap.containsKey(line.getLineId())) {
-                    // 更新：以后端现值为准保留领料执行结果字段，以前端为准更新可编辑字段
+                    /** 更新：以后端现值为准保留领料执行结果字段，以前端为准更新可编辑字段 */
                     WmProductionIssueLine db = existMap.get(line.getLineId());
                     line.setIssueId(issueId);
                     line.setIssuedQty(db.getIssuedQty());
                     line.setShortQty(db.getShortQty());
                     line.setLineStatus(db.getLineStatus());
-                    line.setRequiredQty(line.getRequiredQty() != null ? line.getRequiredQty() : db.getRequiredQty());
-                    line.setBomQty(line.getBomQty() != null ? line.getBomQty() : db.getBomQty());
-                    line.setLossRate(line.getLossRate() != null ? line.getLossRate() : db.getLossRate());
-                    line.setRequirementDetailId(line.getRequirementDetailId() != null
-                        ? line.getRequirementDetailId() : db.getRequirementDetailId());
+                    line.setRequiredQty(db.getRequiredQty());
+                    line.setBomQty(db.getBomQty());
+                    line.setLossRate(db.getLossRate());
+                    line.setRequirementDetailId(db.getRequirementDetailId());
                     lineMapper.updateById(line);
                     keepIds.add(line.getLineId());
                 } else {
-                    // 新增行
+                    /** 新增行 */
                     line.setLineId(null);
                     line.setIssueId(issueId);
-                    if (line.getIssuedQty() == null) {
-                        line.setIssuedQty(BigDecimal.ZERO);
-                    }
-                    if (StringUtils.isBlank(line.getLineStatus())) {
-                        line.setLineStatus(LINE_PENDING);
-                    }
+                    line.setIssuedQty(BigDecimal.ZERO);
+                    line.setLineStatus(LINE_PENDING);
                     if (line.getRequiredQty() != null && line.getShortQty() == null) {
                         line.setShortQty(line.getRequiredQty().subtract(line.getIssuedQty()));
                     }
@@ -543,7 +678,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 }
             }
         }
-        // 删除前端未保留且未领料的旧行（已领料的行不允许删，防止流水孤立）
+        /** 删除前端未保留且未领料的旧行（已领料的行不允许删，防止流水孤立） */
         for (WmProductionIssueLine db : existLines) {
             if (!keepIds.contains(db.getLineId())
                 && zeroIfNull(db.getIssuedQty()).compareTo(BigDecimal.ZERO) <= 0) {
@@ -560,8 +695,13 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         }
     }
 
-    /** 汇总单头总数量/总金额：按"本次领料数量"汇总（未执行/待执行时反映本次计划量，
-     *  执行后 current_qty 已清零，此时按"已领数量 issued_qty"反映累计已发量），金额同理取 amount 与单价×已领的较大者 */
+    /**
+     * 汇总单头总数量与总金额：按本次领料数量汇总，未执行或待执行时反映本次计划量。
+     * 执行后 current_qty 已清零，此时按已领数量 issued_qty 反映累计已发量。
+     * 金额同理，取 amount 与单价乘已领数量的较大者。
+     *
+     * @param issueId 待汇总的生产发料单头 ID
+     */
     private void recalcHeaderTotals(Long issueId) {
         List<WmProductionIssueLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmProductionIssueLine.class)
@@ -569,7 +709,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         BigDecimal totalQty = BigDecimal.ZERO;
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (WmProductionIssueLine line : lines) {
-            // 优先取本次领料量；执行后为空则取已领量
+            /** 优先取本次领料量；执行后为空则取已领量 */
             BigDecimal qty = line.getCurrentQty() != null ? line.getCurrentQty() : zeroIfNull(line.getIssuedQty());
             BigDecimal price = zeroIfNull(line.getUnitPrice());
             BigDecimal amt = line.getAmount() != null ? line.getAmount() : qty.multiply(price);
@@ -589,7 +729,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             return true;
         }
         BigDecimal required = zeroIfNull(line.getRequiredQty());
-        // 无应领定额的手工行：只要未处于 ISSUED，视为未完成（避免误判单头已完成）
+        /** 无应领定额的手工行：只要未处于 ISSUED，视为未完成（避免误判单头已完成） */
         if (required.compareTo(BigDecimal.ZERO) <= 0) {
             return false;
         }
@@ -597,20 +737,21 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return required.compareTo(issued) <= 0;
     }
 
-    /** 按物料+仓库(可空)+批次(可空)+库位(可空)汇总可用库存，与策略扣减范围一致 */
+    /** 按物料+仓库(必选)+批次(可空)+库位(可空)汇总可用库存，与策略扣减范围一致 */
     private BigDecimal sumAvailable(Long materialId, Long warehouseId, Long batchId, Long locationId) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, materialId);
-        lqw.eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId);
+        lqw.eq(WmMaterialStock::getWarehouseId, warehouseId);
         lqw.eq(batchId != null, WmMaterialStock::getBatchId, batchId);
         lqw.eq(locationId != null, WmMaterialStock::getLocationId, locationId);
-        // 仅查未冻结库存：frozen_flag 0=未冻结/可用，1=已冻结
+        /** 仅查未冻结库存：frozen_flag 0=未冻结/可用，1=已冻结 */
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
-        lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+        lqw.apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0");
+        lqw.apply("(expire_date IS NULL OR expire_date >= CURDATE())");
         List<WmMaterialStock> list = stockMapper.selectList(lqw);
         BigDecimal sum = BigDecimal.ZERO;
         for (WmMaterialStock s : list) {
-            sum = sum.add(zeroIfNull(s.getStockQuantity()));
+            sum = sum.add(zeroIfNull(s.getStockQuantity()).subtract(zeroIfNull(s.getReservedQuantity())).max(BigDecimal.ZERO));
         }
         return sum;
     }

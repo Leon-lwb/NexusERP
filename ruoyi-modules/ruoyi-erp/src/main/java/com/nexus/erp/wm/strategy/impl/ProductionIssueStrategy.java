@@ -84,16 +84,22 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("生产领料数量必须大于0");
         }
 
+        if (line.getWarehouseId() == null) {
+            throw new ServiceException("生产领料必须选择仓库");
+        }
+
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
+        lqw.eq(WmMaterialStock::getWarehouseId, line.getWarehouseId());
         lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
-        // 仅扣减未冻结且未预留库存：frozen_flag 0=未冻结/可用，1=已冻结；排除已预留量防止绕穿销售预留承诺
+        /** 仅扣减未冻结且未预留库存：frozen_flag 0=未冻结/可用，1=已冻结；排除已预留量防止绕穿销售预留承诺 */
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
-        lqw.apply("(stock_quantity - reserved_quantity) > 0");
-        // ERP-WM-06: 效期拦截 —— 已过期批次不得参与生产领料
+        lqw.apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0");
+        /** ERP-WM-06: 效期拦截 —— 已过期批次不得参与生产领料 */
         lqw.apply(NOT_EXPIRED_SQL);
-        lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
+        /** MySQL 升序会把 NULL 排在前面；先领近期到期批次，未设置效期的库存最后。 */
+        lqw.last("ORDER BY expire_date IS NULL ASC, expire_date ASC, recpt_date ASC, stock_id ASC");
 
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);
         if (stockList == null || stockList.isEmpty()) {
@@ -103,7 +109,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         BigDecimal remaining = line.getQuantity();
         for (WmMaterialStock stock : stockList) {
             if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-            // ERP-WM-02: 扣减上限按可用量(在库-已预留)而非账面量, 否则可扣穿其他单据的预留
+            /** ERP-WM-02: 扣减上限按可用量(在库-已预留)而非账面量, 否则可扣穿其他单据的预留 */
             BigDecimal available = availableOf(stock);
             if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
 
@@ -137,7 +143,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
                 throw new ServiceException("库存记录不存在: " + a.getStockId());
             }
             BigDecimal stockQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-            // ERP-WM-02: 倒冲路径同样按可用量校验, 不得越过他人预留
+            /** ERP-WM-02: 倒冲路径同样按可用量校验, 不得越过他人预留 */
             BigDecimal available = availableOf(stock);
             if (available.compareTo(a.getDeductQty()) < 0) {
                 throw new ServiceException("物料【" + stock.getMaterialName() + "】可用库存不足(现有"
@@ -160,12 +166,12 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
     private void deductAndLog(WmMaterialStock stock, BigDecimal deductQty, Long issueId, Long lineId, Date now) {
         BigDecimal beforeQuantity = stock.getStockQuantity();
         BigDecimal afterQuantity = beforeQuantity.subtract(deductQty);
-        // ERP-WM-02/WM-09: 原子扣减按可用量守卫(且 frozen_flag=0), 不再按账面量扣减
+        /** ERP-WM-02/WM-09: 原子扣减按可用量守卫(且 frozen_flag=0), 不再按账面量扣减 */
         int affected = stockMapper.deductStockAvailable(stock.getStockId(), deductQty, stock.getVersion());
         if (affected == 0) {
             throw new ServiceException("可用库存不足或已被并发占用，请重试: 物料【" + stock.getMaterialName() + "】");
         }
-        // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
+        /** F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本) */
         BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_ISSUE, TX_FLAG_OUT, deductQty,
             beforeQuantity, afterQuantity, now);

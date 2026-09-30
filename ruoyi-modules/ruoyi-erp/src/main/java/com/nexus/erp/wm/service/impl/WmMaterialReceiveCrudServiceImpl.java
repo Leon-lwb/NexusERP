@@ -1,6 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +58,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,7 +66,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 物料入库单CRUD Service实现类，负责基础CRUD、校验和工作流回调
+ * 物料入库单 CRUD 服务实现类，负责基础 CRUD、校验和工作流回调。
  *
  * @author nexus
  */
@@ -182,15 +186,168 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialReceiveBo bo) {
-        WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
-        // 校验状态：只有草稿和已驳回状态才能修改
-        WmMaterialReceive existing = baseMapper.selectById(entity.getReceiveId());
-        if (existing != null && !STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+        WmMaterialReceive existing = baseMapper.selectById(bo.getReceiveId());
+        if (existing == null) {
+            throw new ServiceException("入库单不存在或无权限访问");
+        }
+        if (StringUtils.isNotBlank(bo.getStatus()) && !existing.getStatus().equals(bo.getStatus())) {
+            throw new ServiceException("不得通过编辑收货单修改审批状态");
+        }
+        if (STATUS_APPROVED.equals(existing.getStatus())) {
+            return updateApprovedShelfDetails(existing, bo);
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
             throw new ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
         }
-        deleteLinesAndDetailsByReceiveId(entity.getReceiveId());
-        insertLinesAndDetails(entity.getReceiveId(), bo.getWmMaterialReceiveLineList());
-        return baseMapper.updateById(entity);
+        validateStorageChange(existing, bo);
+        /** 采购/通知关联由审批通过的来源单据确定，不能从编辑表单改绑或新添。 */
+        if (!Objects.equals(existing.getPurId(), bo.getPurId())
+            || !Objects.equals(existing.getNoticeId(), bo.getNoticeId())) {
+            throw new ServiceException("收货单来源不可通过编辑修改");
+        }
+        if ((existing.getPurId() != null || existing.getNoticeId() != null)
+            && (!Objects.equals(existing.getPurCode(), bo.getPurCode())
+                || !Objects.equals(existing.getNoticeCode(), bo.getNoticeCode())
+                || !Objects.equals(existing.getVendorId(), bo.getVendorId()))) {
+            throw new ServiceException("收货单采购、到货或供应商来源不可通过编辑修改");
+        }
+        List<WmMaterialReceiveLineBo> requested = bo.getWmMaterialReceiveLineList() != null
+            ? bo.getWmMaterialReceiveLineList() : List.of();
+        List<WmMaterialReceiveLine> current = receiveLineMapper.selectList(
+            new LambdaQueryWrapper<WmMaterialReceiveLine>()
+                .eq(WmMaterialReceiveLine::getReceiveId, existing.getReceiveId()));
+        Map<Long, WmMaterialReceiveLine> currentById = new HashMap<>();
+        if (current != null) {
+            for (WmMaterialReceiveLine line : current) {
+                currentById.put(line.getLineId(), line);
+            }
+        }
+        /** 在任何写入前核对 ID、物料及源行；不从页面信任 purchaseLineId（编辑 BO 不含该字段）。 */
+        Set<Long> submittedIds = new HashSet<>();
+        Map<Long, List<WmMaterialReceiveDetail>> detailsByLine = new HashMap<>();
+        for (WmMaterialReceiveLineBo lineBo : requested) {
+            if (lineBo == null) {
+                throw new ServiceException("入库行不能为空");
+            }
+            Long lineId = lineBo.getLineId();
+            WmMaterialReceiveLine original = lineId != null ? currentById.get(lineId) : null;
+            if (lineId != null && (original == null || !submittedIds.add(lineId))) {
+                throw new ServiceException("收货行不属于当前单据或重复提交");
+            }
+            if (original != null) {
+                validateStorageChange(original, lineBo);
+            }
+            if (existing.getPurId() != null) {
+                if (original == null) {
+                    throw new ServiceException("采购收货单不得通过编辑新增无采购订单行关联的收货行");
+                }
+                if (!Objects.equals(original.getMaterialId(), lineBo.getMaterialId())
+                    || !Objects.equals(original.getSourceDocLineId(), lineBo.getSourceDocLineId())) {
+                    throw new ServiceException("采购收货行的物料或来源行不可改绑");
+                }
+            }
+            List<WmMaterialReceiveDetailBo> requestedDetails = lineBo.getWmMaterialReceiveLineDetailList();
+            List<WmMaterialReceiveDetail> storedDetails = original != null
+                ? receiveDetailMapper.selectList(new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                    .eq(WmMaterialReceiveDetail::getReceiveId, existing.getReceiveId())
+                    .eq(WmMaterialReceiveDetail::getLineId, original.getLineId())) : List.of();
+            if (storedDetails == null) {
+                storedDetails = List.of();
+            }
+            if (lineId != null) {
+                detailsByLine.put(lineId, storedDetails);
+            }
+            if (requestedDetails != null) {
+                Set<Long> availableDetails = new HashSet<>();
+                for (WmMaterialReceiveDetail detail : storedDetails) {
+                    availableDetails.add(detail.getDetailId());
+                }
+                Set<Long> submittedDetails = new HashSet<>();
+                for (WmMaterialReceiveDetailBo detailBo : requestedDetails) {
+                    if (detailBo == null) {
+                        throw new ServiceException("上架明细不能为空");
+                    }
+                    Long detailId = detailBo.getDetailId();
+                    if (detailId != null && detailId > 0
+                        && (!availableDetails.contains(detailId) || !submittedDetails.add(detailId))) {
+                        throw new ServiceException("上架明细不属于当前收货行或重复提交");
+                    }
+                    if (detailId != null && detailId > 0) {
+                        WmMaterialReceiveDetail originalDetail = storedDetails.stream()
+                            .filter(detail -> detailId.equals(detail.getDetailId())).findFirst().orElseThrow();
+                        validateStorageChange(originalDetail, detailBo);
+                    }
+                    if (detailBo.getMaterialId() != null
+                        && !Objects.equals(detailBo.getMaterialId(), lineBo.getMaterialId())) {
+                        throw new ServiceException("上架明细物料与收货行不一致");
+                    }
+                }
+            }
+            BigDecimal received = lineBo.getQuantityReceived() != null ? lineBo.getQuantityReceived()
+                : original != null ? original.getQuantityReceived() : null;
+            validateShelfQuantity(received, requestedDetails != null
+                ? requestedDetails.stream().map(WmMaterialReceiveDetailBo::getQuantity).toList()
+                : storedDetails.stream().map(WmMaterialReceiveDetail::getQuantity).toList());
+        }
+        if (existing.getPurId() != null && submittedIds.size() != currentById.size()) {
+            throw new ServiceException("采购收货行不可通过编辑删除，需核对原始采购订单");
+        }
+        WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
+        entity.setReceiveId(existing.getReceiveId());
+        entity.setStatus(existing.getStatus());
+        if (existing.getPurId() != null || existing.getNoticeId() != null) {
+            entity.setPurId(existing.getPurId());
+            entity.setPurCode(existing.getPurCode());
+            entity.setNoticeId(existing.getNoticeId());
+            entity.setNoticeCode(existing.getNoticeCode());
+            entity.setReceiveCode(existing.getReceiveCode());
+            entity.setVendorId(existing.getVendorId());
+            entity.setVendorCode(existing.getVendorCode());
+            entity.setVendorName(existing.getVendorName());
+            entity.setVendorNick(existing.getVendorNick());
+        }
+        /** 条件更新 + 事务：审批状态如在读后改变则整单拒绝，避免并发编辑越过状态机。 */
+        LambdaUpdateWrapper<WmMaterialReceive> headerUpdate = Wrappers.<WmMaterialReceive>lambdaUpdate()
+            .eq(WmMaterialReceive::getReceiveId, existing.getReceiveId())
+            .eq(WmMaterialReceive::getStatus, existing.getStatus());
+        clearNullStorageFields(headerUpdate, existing, entity);
+        int rows = baseMapper.update(entity, headerUpdate);
+        if (rows == 0) {
+            throw new ServiceException("入库单状态已变更，请刷新后重试");
+        }
+        for (WmMaterialReceiveLineBo lineBo : requested) {
+            WmMaterialReceiveLine oldLine = currentById.get(lineBo.getLineId());
+            WmMaterialReceiveLine line = MapstructUtils.convert(lineBo, WmMaterialReceiveLine.class);
+            line.setReceiveId(existing.getReceiveId());
+            line.setPurchaseLineId(oldLine != null ? oldLine.getPurchaseLineId() : null);
+            if (oldLine != null) {
+                line.setLineId(oldLine.getLineId());
+                LambdaUpdateWrapper<WmMaterialReceiveLine> lineUpdate = Wrappers.<WmMaterialReceiveLine>lambdaUpdate()
+                    .eq(WmMaterialReceiveLine::getReceiveId, existing.getReceiveId())
+                    .eq(WmMaterialReceiveLine::getLineId, line.getLineId());
+                if (clearNullStorageFields(lineUpdate, oldLine, line)) {
+                    receiveLineMapper.update(line, lineUpdate);
+                } else {
+                    receiveLineMapper.updateById(line);
+                }
+            } else {
+                line.setLineId(null);
+                receiveLineMapper.insert(line);
+            }
+            if (lineBo.getWmMaterialReceiveLineDetailList() != null) {
+                syncReceiveDetails(existing.getReceiveId(), line, lineBo.getWmMaterialReceiveLineDetailList(),
+                    detailsByLine.getOrDefault(lineBo.getLineId(), List.of()));
+            }
+        }
+        for (WmMaterialReceiveLine line : currentById.values()) {
+            if (!submittedIds.contains(line.getLineId())) {
+                receiveDetailMapper.delete(new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                    .eq(WmMaterialReceiveDetail::getReceiveId, existing.getReceiveId())
+                    .eq(WmMaterialReceiveDetail::getLineId, line.getLineId()));
+                receiveLineMapper.deleteById(line.getLineId());
+            }
+        }
+        return rows;
     }
 
     /**
@@ -203,7 +360,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long receiveId : ids) {
-            // 校验状态：只有草稿状态才能删除
+            /** 校验状态：只有草稿状态才能删除 */
             WmMaterialReceive existing = baseMapper.selectById(receiveId);
             if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
                 throw new ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
@@ -248,10 +405,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             validateDetailsForApproval(bo);
         }
 
-        WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
-        deleteLinesAndDetailsByReceiveId(entity.getReceiveId());
-        insertLinesAndDetails(entity.getReceiveId(), bo.getWmMaterialReceiveLineList());
-        return baseMapper.updateById(entity) > 0;
+        return updateByBo(bo) > 0;
     }
 
     /**
@@ -270,7 +424,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             throw new ServiceException("入库单不存在");
         }
 
-        // 校验状态：只有草稿和已驳回状态才能提交审批
+        /** 校验状态：只有草稿和已驳回状态才能提交审批 */
         if (!STATUS_DRAFT.equals(receive.getStatus()) && !STATUS_REJECTED.equals(receive.getStatus())) {
             throw new ServiceException("当前状态不允许提交审批，只有草稿和已驳回状态才能提交！");
         }
@@ -330,7 +484,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             throw new ServiceException("当前状态不允许上架确认，只有待上架状态才能执行上架确认操作！");
         }
 
-        // 校验必须有上架明细且库位信息完整
+        /** 校验必须有上架明细且库位信息完整 */
         List<WmMaterialReceiveLine> lines = receiveLineMapper.selectList(
             new LambdaQueryWrapper<WmMaterialReceiveLine>()
                 .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
@@ -344,6 +498,8 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                 new LambdaQueryWrapper<WmMaterialReceiveDetail>()
                     .eq(WmMaterialReceiveDetail::getLineId, line.getLineId()));
             if (details != null && !details.isEmpty()) {
+                validateShelfQuantity(line.getQuantityReceived(),
+                    details.stream().map(WmMaterialReceiveDetail::getQuantity).toList());
                 hasDetail = true;
                 for (WmMaterialReceiveDetail detail : details) {
                     if (detail.getLocationId() == null) {
@@ -356,10 +512,12 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             throw new ServiceException("请先添加上架明细并分配库位");
         }
 
-        // IQC 门禁：需检物料(iqc_check=1)必须IQC合格才允许上架(待上架->待入库)
-        // 有到货通知: 按到货通知行 iqc_status 校验;
-        // 无到货通知: 按收货单头 iqc_status 校验(iqc_id 已回写但结论未回写/结论非合格同样拦截)——
-        // 不再因为"没有到货通知行"就整体跳过校验(审计 MES-X-01: 无到货通知/收货行无批次号时不得放行)。
+        /**
+         * IQC 门禁：需检物料(iqc_check=1)必须IQC合格才允许上架(待上架->待入库)
+         * 有到货通知: 按到货通知行 iqc_status 校验;
+         * 无到货通知: 按收货单头 iqc_status 校验(iqc_id 已回写但结论未回写/结论非合格同样拦截)——
+         * 不再因为"没有到货通知行"就整体跳过校验(审计 MES-X-01: 无到货通知/收货行无批次号时不得放行)。
+         */
         if (receive.getNoticeId() != null) {
             List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
                 new LambdaQueryWrapper<WmArrivalNoticeLine>()
@@ -375,7 +533,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                         }
                         unqualified.append(nl.getMaterialCode());
                     } else if (!"QUALIFIED".equals(nl.getIqcStatus())) {
-                        // null 或其他值 -> 尚未完成检验
+                        /** null 或其他值 -> 尚未完成检验 */
                         if (pending.length() > 0) {
                             pending.append("、");
                         }
@@ -391,7 +549,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             }
         } else if (receive.getIqcId() != null
             || (receive.getIqcStatus() != null && !receive.getIqcStatus().isEmpty())) {
-            // 无到货通知但已产生/回写 IQC: 单据级门禁, 非 QUALIFIED(含未回写)一律拦截
+            /** 无到货通知但已产生/回写 IQC: 单据级门禁, 非 QUALIFIED(含未回写)一律拦截 */
             if (!"QUALIFIED".equals(receive.getIqcStatus())) {
                 String status = (receive.getIqcStatus() == null || receive.getIqcStatus().isEmpty())
                     ? "尚未完成来料检验(IQC)" : receive.getIqcStatus();
@@ -400,9 +558,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             }
         }
 
-        // ERP-WM-17: 改条件更新 CAS（APPROVED → SHELVED）。
-        // 修复前是"读校验 + updateById"的读-改-写，PDA 与 PC 并发双击/网络重试时两次都能通过状态校验，
-        // shelf_by/shelf_time 被后写覆盖；与 executeReceive 的 SHELVED→EXECUTING CAS 交错时状态判断会不一致。
+        /**
+         * ERP-WM-17: 改条件更新 CAS（APPROVED → SHELVED）。
+         * 修复前是"读校验 + updateById"的读-改-写，PDA 与 PC 并发双击/网络重试时两次都能通过状态校验，
+         * shelf_by/shelf_time 被后写覆盖；与 executeReceive 的 SHELVED→EXECUTING CAS 交错时状态判断会不一致。
+         */
         int rows = baseMapper.update(null, Wrappers.<WmMaterialReceive>lambdaUpdate()
             .set(WmMaterialReceive::getStatus, STATUS_SHELVED)
             .set(WmMaterialReceive::getShelfBy, LoginHelper.getUserId())
@@ -439,22 +599,24 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         }
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
-            // 审批中：审批流程进行中，不可修改和操作
+            /** 审批中：审批流程进行中，不可修改和操作 */
             receive.setStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
-            // 审批通过：状态变更为"待上架"，等待仓库人员执行上架操作
-            // 注意：不再发送StockInMessage，入库过账统一由用户手动触发（executeReceive），
-            // 避免审批通过时库位尚未分配导致MQ异步过账失败或重复入库
+            /**
+             * 审批通过：状态变更为"待上架"，等待仓库人员执行上架操作
+             * 注意：不再发送StockInMessage，入库过账统一由用户手动触发（executeReceive），
+             * 避免审批通过时库位尚未分配导致MQ异步过账失败或重复入库
+             */
             receive.setStatus(STATUS_APPROVED);
             baseMapper.updateById(receive);
-            // 审批通过后，事务提交后再发送 ReceiveApprovedMessage 给 MES 自动创建 IQC（确保 ERP 状态已持久化）
+            /** 审批通过后，事务提交后再发送 ReceiveApprovedMessage 给 MES 自动创建 IQC（确保 ERP 状态已持久化） */
             registerReceiveApprovedMessage(receive);
             return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            // 审批驳回：已驳回状态，可修改后重新提交
+            /** 审批驳回：已驳回状态，可修改后重新提交 */
             receive.setStatus(STATUS_REJECTED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            // 撤回/终止：回到草稿状态
+            /** 撤回/终止：回到草稿状态 */
             receive.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(receive);
@@ -523,6 +685,203 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
 
         if (!isValid) {
             throw new ServiceException(errorMsg.toString());
+        }
+    }
+
+    /** 换仓/换库区时禁止保留旧下级 ID；新选定的下级 ID 或显式清空可继续保存。 */
+    private void validateStorageChange(Object stored, Object requested) {
+        Map<String, Object> before = BeanUtil.beanToMap(stored);
+        Map<String, Object> after = BeanUtil.beanToMap(requested);
+        boolean warehouseChanged = !Objects.equals(before.get("warehouseId"), after.get("warehouseId"));
+        boolean areaChanged = !Objects.equals(before.get("areaId"), after.get("areaId"));
+        boolean staleArea = after.get("areaId") != null && Objects.equals(before.get("areaId"), after.get("areaId"));
+        boolean staleLocation = after.get("locationId") != null
+            && Objects.equals(before.get("locationId"), after.get("locationId"));
+        if ((warehouseChanged && (staleArea || staleLocation)) || (areaChanged && staleLocation)) {
+            throw new ServiceException("仓库或库区已变更，请重新选择下级库区/库位或显式清空旧库位");
+        }
+    }
+
+    /** 仅对白名单储位列显式绑定 NULL，避免实体 NOT_NULL 策略遗留旧位置。 */
+    private boolean clearNullStorageFields(LambdaUpdateWrapper<?> update, Object stored, Object requested) {
+        Map<String, Object> before = BeanUtil.beanToMap(stored);
+        Map<String, Object> after = BeanUtil.beanToMap(requested);
+        Map<String, String> columns = Map.of(
+            "warehouseId", "warehouse_id", "warehouseCode", "warehouse_code", "warehouseName", "warehouse_name",
+            "areaId", "area_id", "areaCode", "area_code", "areaName", "area_name",
+            "locationId", "location_id", "locationCode", "location_code", "locationName", "location_name");
+        boolean clearing = false;
+        for (Map.Entry<String, String> column : columns.entrySet()) {
+            if (before.get(column.getKey()) != null && after.get(column.getKey()) == null) {
+                /** 列名全部来自上面的固定白名单，值使用 MyBatis 参数绑定，未拼接表单内容。 */
+                update.setSql(column.getValue() + " = {0}", (Object) null);
+                clearing = true;
+            }
+        }
+        return clearing;
+    }
+
+    /** 明细缺省表示保留原明细；显式空列表表示清空，非空明细的总数必须等于实收数。 */
+    private void validateShelfQuantity(BigDecimal received, List<BigDecimal> detailQuantities) {
+        if (detailQuantities.isEmpty()) {
+            return;
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (BigDecimal quantity : detailQuantities) {
+            if (quantity == null || quantity.signum() <= 0) {
+                throw new ServiceException("上架明细数量必须为正数");
+            }
+            total = total.add(quantity);
+        }
+        if (received == null || total.compareTo(received) != 0) {
+            throw new ServiceException("上架明细数量合计必须等于实收数量，请同步明细或显式清空旧明细");
+        }
+    }
+
+    /** 已审批单据只允许持久化所属收货行的上架明细，禁止写回已审批的单头和行。 */
+    private int updateApprovedShelfDetails(WmMaterialReceive existing, WmMaterialReceiveBo bo) {
+        validateApprovedSnapshot(bo, existing);
+        List<WmMaterialReceiveLine> storedLines = receiveLineMapper.selectList(
+            new LambdaQueryWrapper<WmMaterialReceiveLine>()
+                .eq(WmMaterialReceiveLine::getReceiveId, existing.getReceiveId()));
+        Map<Long, WmMaterialReceiveLine> byId = new HashMap<>();
+        for (WmMaterialReceiveLine line : storedLines) {
+            byId.put(line.getLineId(), line);
+        }
+        List<WmMaterialReceiveLineBo> requested = bo.getWmMaterialReceiveLineList();
+        if (requested == null || requested.size() != byId.size() || requested.isEmpty()) {
+            throw new ServiceException("已审批收货单不允许增删收货行");
+        }
+        Set<Long> submitted = new HashSet<>();
+        Map<Long, List<WmMaterialReceiveDetail>> storedDetails = new HashMap<>();
+        for (WmMaterialReceiveLineBo lineBo : requested) {
+            WmMaterialReceiveLine line = lineBo == null ? null : byId.get(lineBo.getLineId());
+            if (line == null || !submitted.add(line.getLineId())) {
+                throw new ServiceException("上架行不属于当前收货单或重复提交");
+            }
+            validateApprovedSnapshot(lineBo, line);
+            List<WmMaterialReceiveDetail> details = receiveDetailMapper.selectList(
+                new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                    .eq(WmMaterialReceiveDetail::getReceiveId, existing.getReceiveId())
+                    .eq(WmMaterialReceiveDetail::getLineId, line.getLineId()));
+            if (details == null) {
+                details = List.of();
+            }
+            storedDetails.put(line.getLineId(), details);
+            Map<Long, WmMaterialReceiveDetail> detailById = new HashMap<>();
+            for (WmMaterialReceiveDetail detail : details) {
+                detailById.put(detail.getDetailId(), detail);
+            }
+            List<WmMaterialReceiveDetailBo> incoming = lineBo.getWmMaterialReceiveLineDetailList();
+            if (incoming == null) {
+                validateShelfQuantity(line.getQuantityReceived(),
+                    details.stream().map(WmMaterialReceiveDetail::getQuantity).toList());
+                continue;
+            }
+            Set<Long> detailIds = new HashSet<>();
+            Long warehouseId = line.getWarehouseId() != null ? line.getWarehouseId() : existing.getWarehouseId();
+            for (WmMaterialReceiveDetailBo detailBo : incoming) {
+                if (detailBo == null
+                    || (detailBo.getReceiveId() != null && !existing.getReceiveId().equals(detailBo.getReceiveId()))
+                    || (detailBo.getLineId() != null && !line.getLineId().equals(detailBo.getLineId()))
+                    || (detailBo.getMaterialId() != null && !Objects.equals(line.getMaterialId(), detailBo.getMaterialId()))) {
+                    throw new ServiceException("上架明细不属于当前收货行或物料不一致");
+                }
+                Long id = detailBo.getDetailId();
+                if (id != null && id > 0 && (!detailById.containsKey(id) || !detailIds.add(id))) {
+                    throw new ServiceException("上架明细不属于当前收货行或重复提交");
+                }
+                if (id != null && id > 0) {
+                    validateStorageChange(detailById.get(id), detailBo);
+                }
+                if (detailBo.getQuantity() == null || detailBo.getQuantity().signum() <= 0
+                    || warehouseId == null || !warehouseId.equals(detailBo.getWarehouseId())
+                    || detailBo.getLocationId() == null) {
+                    throw new ServiceException("上架明细需填写正数数量及已审批仓库内的库位");
+                }
+            }
+            validateShelfQuantity(line.getQuantityReceived(),
+                incoming.stream().map(WmMaterialReceiveDetailBo::getQuantity).toList());
+        }
+        /** 用 APPROVED 条件更新锁住单头；不携带表单实体，绝不改写已审批的业务字段。 */
+        int rows = baseMapper.update(null, Wrappers.<WmMaterialReceive>lambdaUpdate()
+            .set(WmMaterialReceive::getUpdateTime, new Date())
+            .eq(WmMaterialReceive::getReceiveId, existing.getReceiveId())
+            .eq(WmMaterialReceive::getStatus, STATUS_APPROVED));
+        if (rows == 0) {
+            throw new ServiceException("入库单状态已变更，请刷新后重试");
+        }
+        for (WmMaterialReceiveLineBo lineBo : requested) {
+            if (lineBo.getWmMaterialReceiveLineDetailList() != null) {
+                syncReceiveDetails(existing.getReceiveId(), byId.get(lineBo.getLineId()),
+                    lineBo.getWmMaterialReceiveLineDetailList(), storedDetails.get(lineBo.getLineId()));
+            }
+        }
+        return rows;
+    }
+
+    /** 表单未提供的属性不写入；提供的业务属性必须与已审批快照一致。 */
+    private void validateApprovedSnapshot(Object requested, Object stored) {
+        Map<String, Object> before = BeanUtil.beanToMap(stored);
+        Map<String, Object> submitted = BeanUtil.beanToMap(requested, false, true);
+        for (Map.Entry<String, Object> entry : submitted.entrySet()) {
+            String field = entry.getKey();
+            if (!before.containsKey(field) || field.startsWith("wmMaterialReceive")
+                || Set.of("createBy", "createTime", "updateBy", "updateTime", "params").contains(field)) {
+                continue;
+            }
+            Object value = entry.getValue();
+            Object previous = before.get(field);
+            if (value instanceof BigDecimal number && previous instanceof BigDecimal oldNumber
+                && number.compareTo(oldNumber) == 0) {
+                continue;
+            }
+            /** PC 日期控件只提交业务日期；不因去掉时间部分而拒绝合法上架，但也不改写原日期。 */
+            if ("receiveDate".equals(field) && value instanceof Date date && previous instanceof Date oldDate
+                && DateUtil.isSameDay(date, oldDate)) {
+                continue;
+            }
+            if (!Objects.equals(value, previous)) {
+                throw new ServiceException("已审批收货单只能修改上架明细，不可修改字段：" + field);
+            }
+        }
+    }
+
+    private void syncReceiveDetails(Long receiveId, WmMaterialReceiveLine line,
+                                    List<WmMaterialReceiveDetailBo> requested,
+                                    List<WmMaterialReceiveDetail> stored) {
+        Map<Long, WmMaterialReceiveDetail> storedById = new HashMap<>();
+        for (WmMaterialReceiveDetail detail : stored) {
+            storedById.put(detail.getDetailId(), detail);
+        }
+        Set<Long> submitted = new HashSet<>();
+        for (WmMaterialReceiveDetailBo detailBo : requested) {
+            WmMaterialReceiveDetail detail = MapstructUtils.convert(detailBo, WmMaterialReceiveDetail.class);
+            detail.setReceiveId(receiveId);
+            detail.setLineId(line.getLineId());
+            if (detail.getMaterialId() == null) {
+                detail.setMaterialId(line.getMaterialId());
+            }
+            if (detailBo.getDetailId() != null && detailBo.getDetailId() > 0) {
+                submitted.add(detailBo.getDetailId());
+                LambdaUpdateWrapper<WmMaterialReceiveDetail> detailUpdate = Wrappers.<WmMaterialReceiveDetail>lambdaUpdate()
+                    .eq(WmMaterialReceiveDetail::getReceiveId, receiveId)
+                    .eq(WmMaterialReceiveDetail::getLineId, line.getLineId())
+                    .eq(WmMaterialReceiveDetail::getDetailId, detail.getDetailId());
+                if (clearNullStorageFields(detailUpdate, storedById.get(detail.getDetailId()), detail)) {
+                    receiveDetailMapper.update(detail, detailUpdate);
+                } else {
+                    receiveDetailMapper.updateById(detail);
+                }
+            } else {
+                detail.setDetailId(null);
+                receiveDetailMapper.insert(detail);
+            }
+        }
+        for (WmMaterialReceiveDetail oldDetail : stored) {
+            if (!submitted.contains(oldDetail.getDetailId())) {
+                receiveDetailMapper.deleteById(oldDetail.getDetailId());
+            }
         }
     }
 
@@ -620,7 +979,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             .like(StringUtils.isNotBlank(bo.getLocationName()), WmMaterialReceive::getLocationName, bo.getLocationName())
             .eq(bo.getReceiveDate() != null, WmMaterialReceive::getReceiveDate, bo.getReceiveDate())
             .eq(StringUtils.isNotBlank(bo.getStatus()), WmMaterialReceive::getStatus, bo.getStatus())
-            // 移动端单输入框搜索：OR 模糊匹配 单号 / 名称 / 采购单号 / 供应商
+            /** 移动端单输入框搜索：OR 模糊匹配 单号 / 名称 / 采购单号 / 供应商 */
             .and(StringUtils.isNotBlank(bo.getKeyword()), w -> w
                 .like(WmMaterialReceive::getReceiveCode, bo.getKeyword())
                 .or().like(WmMaterialReceive::getReceiveName, bo.getKeyword())
@@ -643,13 +1002,13 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      */
     private void registerReceiveApprovedMessage(WmMaterialReceive receive) {
         try {
-            // 无到货通知关联：跳过（无到货通知的收货单由 MES 端手动建 IQC）
+            /** 无到货通知关联：跳过（无到货通知的收货单由 MES 端手动建 IQC） */
             if (receive.getNoticeId() == null) {
                 log.warn("收货单 {} 无到货通知关联，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
                 return;
             }
 
-            // 收集到货通知行中需检（iqcCheck="1"）的物料ID
+            /** 收集到货通知行中需检（iqcCheck="1"）的物料ID */
             List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
                 new LambdaQueryWrapper<WmArrivalNoticeLine>()
                     .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId()));
@@ -668,7 +1027,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                 return;
             }
 
-            // 收货行：按需检物料聚合数量（同物料多行求和），首行用于取物料编码/名称
+            /** 收货行：按需检物料聚合数量（同物料多行求和），首行用于取物料编码/名称 */
             List<WmMaterialReceiveLine> receiveLines = receiveLineMapper.selectList(
                 new LambdaQueryWrapper<WmMaterialReceiveLine>()
                     .eq(WmMaterialReceiveLine::getReceiveId, receive.getReceiveId()));
@@ -691,8 +1050,10 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                 return;
             }
 
-            // 显式设置 tenantId，避免消费端退化为 000000(消费端已 fail-closed, 缺失即重试/死信)
-            // 优先取单据自身 tenant_id(权威值), 回退当前线程租户上下文; 均缺失时不投递(避免产生必然死信)
+            /**
+             * 显式设置 tenantId，避免消费端退化为 000000（消费端已采用校验失败即拒绝策略，缺失即重试或死信）。
+             * 优先取单据自身 tenant_id(权威值), 回退当前线程租户上下文; 均缺失时不投递(避免产生必然死信)
+             */
             String receiveTenantId = StringUtils.isNotBlank(receive.getTenantId())
                 ? receive.getTenantId() : TenantHelper.getTenantId();
             if (StringUtils.isBlank(receiveTenantId)) {
@@ -709,7 +1070,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             }
             final Long tenantId = tenantIdVal;
 
-            // 逐个需检物料构建消息（一物料一条 -> MES 建一条 IQC）
+            /** 逐个需检物料构建消息（一物料一条 -> MES 建一条 IQC） */
             List<ReceiveApprovedMessage> messages = new ArrayList<>();
             for (Map.Entry<Long, WmMaterialReceiveLine> entry : firstLineByMaterial.entrySet()) {
                 Long materialId = entry.getKey();
@@ -744,7 +1105,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                             } catch (Exception e) {
                                 log.error("收货单审批通过 MQ 发送失败: receiveId={}, materialId={}",
                                     receive.getReceiveId(), message.getMaterialId(), e);
-                                // 单条失败由 MQ 补偿任务兜底，不影响其他物料
+                                /** 单条失败由 MQ 补偿任务兜底，不影响其他物料 */
                             }
                         }
                     }
