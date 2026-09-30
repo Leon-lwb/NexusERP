@@ -3,6 +3,8 @@ package com.nexus.erp.prd.domain.bo;
 import com.nexus.common.core.validate.AddGroup;
 import com.nexus.common.core.validate.EditGroup;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.erp.prd.domain.PrdCapacityCalendar;
+import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -18,6 +20,7 @@ import java.util.Date;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@AutoMapper(target = PrdCapacityCalendar.class, reverseConvertGenerate = false)
 public class PrdCapacityCalendarBo extends BaseEntity {
 
     private static final long serialVersionUID = 1L;

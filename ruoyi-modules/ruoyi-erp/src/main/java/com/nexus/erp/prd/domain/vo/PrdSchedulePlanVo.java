@@ -114,6 +114,9 @@ public class PrdSchedulePlanVo extends BaseEntity {
      */
     private String status;
 
+    /** 排程工时口径版本：0=旧版，2=可信逐日来源。 */
+    private Integer capacityCalcVersion;
+
     /** 乐观锁版本 */
     private Integer version = 0;
 

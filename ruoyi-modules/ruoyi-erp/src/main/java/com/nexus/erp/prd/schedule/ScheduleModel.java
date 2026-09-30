@@ -28,12 +28,12 @@ public final class ScheduleModel {
     public enum Strategy {
 
         /**
-         * 最早交期优先(EDD, Earliest Due Date)
+         * 最早交期优先（EDD）
          */
         EDD,
 
         /**
-         * 临界比优先(CR, Critical Ratio = 剩余工期/剩余工时, 小者先排)
+         * 临界比优先（CR = 剩余工期/剩余工时，小者先排）
          */
         CR,
 
@@ -141,6 +141,8 @@ public final class ScheduleModel {
          * 加工工时 = 标准工时 × 剩余数量
          */
         private BigDecimal processHours;
+        /** 逐日内部资源占用工时（含准备工时）；假期/无负荷日及委外不占。 */
+        private Map<LocalDate, BigDecimal> dayLoads = Map.of();
         /**
          * 开始日(含)
          */

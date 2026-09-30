@@ -3,6 +3,7 @@ package com.nexus.erp.bd;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.bd.domain.BdRouting;
@@ -31,6 +32,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +44,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 工艺路线Service单元测试。
+ * 工艺路线服务单元测试。
  * <p>覆盖本次改动：编码留空时按 ROUTING_CODE 规则生成、(编码+版本号) 唯一性校验、
  * 版本号缺省兜底、以及更新时版本号沿用库中现值（不被回退成 1.0）。</p>
  */
@@ -66,7 +68,7 @@ class BdRoutingServiceImplTest {
     @InjectMocks
     private BdRoutingServiceImpl routingService;
 
-    /** 静态 mock：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器实现 */
+    /** 静态模拟：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器实现 */
     private static MockedStatic<SpringUtil> springUtilMock;
 
     @BeforeAll
@@ -80,7 +82,7 @@ class BdRoutingServiceImplTest {
         };
         lenient().when(SpringUtil.getBean(Converter.class)).thenReturn(converter);
 
-        // 预热 MyBatis-Plus Lambda 缓存：查重与步骤保存都会解析 BdRouting/BdRoutingStep 的 lambda 列名
+        /** 预热 MyBatis-Plus Lambda 缓存：查重与步骤保存都会解析 BdRouting/BdRoutingStep 的 Lambda 表达式列名 */
         MybatisConfiguration configuration = new MybatisConfiguration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, BdRouting.class);
@@ -170,7 +172,7 @@ class BdRoutingServiceImplTest {
         ArgumentCaptor<BdRouting> captor = ArgumentCaptor.forClass(BdRouting.class);
         verify(baseMapper).updateById(captor.capture());
         assertEquals(GENERATED_CODE, captor.getValue().getRoutingCode());
-        // 版本号留空时沿用库中现值，不能被回退成 1.0
+        /** 版本号留空时沿用库中现值，不能被回退成 1.0 */
         assertEquals("2.0", captor.getValue().getRoutingVersion());
     }
 
@@ -186,6 +188,69 @@ class BdRoutingServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> routingService.updateByBo(bo));
         assertEquals("工艺路线不存在", ex.getMessage());
         verify(baseMapper, never()).updateById(any(BdRouting.class));
+    }
+
+    @Test
+    void verifyRouting_legacyTenBasedSteps_sortedByQuery() {
+        stubVerificationSteps(routingStep(30, 1003L), routingStep(10, 1001L), routingStep(20, 1002L));
+
+        assertEquals("OK", routingService.verifyRouting(9L));
+        assertStepsQueriedInSequenceOrder();
+    }
+
+    @Test
+    void verifyRouting_oneBasedSteps_sortedByQuery() {
+        stubVerificationSteps(routingStep(3, 1003L), routingStep(1, 1001L), routingStep(2, 1002L));
+
+        assertEquals("OK", routingService.verifyRouting(9L));
+        assertStepsQueriedInSequenceOrder();
+    }
+
+    @Test
+    void verifyRouting_tenBasedGap_rejected() {
+        stubVerificationSteps(routingStep(10, 1001L), routingStep(30, 1002L));
+
+        assertNotEquals("OK", routingService.verifyRouting(9L));
+    }
+
+    @Test
+    void verifyRouting_duplicateSequence_rejected() {
+        stubVerificationSteps(routingStep(10, 1001L), routingStep(10, 1002L));
+
+        assertNotEquals("OK", routingService.verifyRouting(9L));
+    }
+
+    @Test
+    void verifyRouting_nullSequence_rejected() {
+        stubVerificationSteps(routingStep(null, 1001L), routingStep(10, 1002L));
+
+        assertNotEquals("OK", routingService.verifyRouting(9L));
+    }
+
+    @Test
+    void verifyRouting_missingProcess_rejected() {
+        stubVerificationSteps(routingStep(10, 1001L), routingStep(20, null));
+
+        assertNotEquals("OK", routingService.verifyRouting(9L));
+    }
+
+    private void stubVerificationSteps(BdRoutingStep... steps) {
+        when(baseMapper.selectById(9L)).thenReturn(existingRouting(9L, "RT-BIKE-001", "1.0"));
+        when(stepMapper.selectList(any())).thenReturn(List.of(steps));
+    }
+
+    private BdRoutingStep routingStep(Integer sequenceNum, Long processId) {
+        BdRoutingStep step = new BdRoutingStep();
+        step.setSequenceNum(sequenceNum);
+        step.setProcessId(processId);
+        return step;
+    }
+
+    private void assertStepsQueriedInSequenceOrder() {
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<BdRoutingStep>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(stepMapper).selectList(captor.capture());
+        assertTrue(captor.getValue().getSqlSegment().toUpperCase().contains("ORDER BY SEQUENCE_NUM ASC"));
     }
 
     private BdRouting existingRouting(Long routingId, String routingCode, String routingVersion) {

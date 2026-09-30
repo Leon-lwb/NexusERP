@@ -60,9 +60,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * 生产工单 Service 业务层实现
+ * 生产工单服务业务层实现
  * <p>
  * 实现生产工单相关的业务逻辑，包括工单的查询、新增、修改、删除、状态流转及工作流审批等。
  *
@@ -190,7 +191,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdWorkOrderBo bo) {
-        // 虚拟件校验：虚拟件不生成工单
+        /** 虚拟件校验：虚拟件不生成工单 */
         if (bo.getMaterialId() != null) {
             BdMaterial material = bdMaterialMapper.selectById(bo.getMaterialId());
             if (material != null && Integer.valueOf(1).equals(material.getIsPhantom())) {
@@ -203,7 +204,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
         entity.setWoStatus(STATUS_CREATED);
         int rows = baseMapper.insert(entity);
-        // 回填主键，供控制器 selectById(bo.getWoId()) 取回保存结果
+        /** 回填主键，供控制器 selectById(bo.getWoId()) 取回保存结果 */
         bo.setWoId(entity.getWoId());
         return rows;
     }
@@ -288,16 +289,25 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (!STATUS_CREATED.equals(wo.getWoStatus()) && !STATUS_APPROVED.equals(wo.getWoStatus())) {
             throw new RuntimeException("仅新建或已批准状态工单可下达,当前状态:" + wo.getWoStatus());
         }
+        PrdMaterialRequirement sourceRequirement = resolveSourceRequirementOnRelease(wo);
+        /** 认领下达状态；并发请求即使都读到旧状态，也只有一方能继续生成领料单和 MES 消息。 */
+        LambdaUpdateWrapper<PrdWorkOrder> claim = Wrappers.<PrdWorkOrder>lambdaUpdate()
+            .eq(PrdWorkOrder::getWoId, woId)
+            .eq(PrdWorkOrder::getWoStatus, wo.getWoStatus())
+            .eq(StringUtils.isNotBlank(wo.getTenantId()), PrdWorkOrder::getTenantId, wo.getTenantId())
+            .set(PrdWorkOrder::getWoStatus, STATUS_RELEASED);
+        if (baseMapper.update(null, claim) != 1) {
+            throw new RuntimeException("工单状态已变更，下达失败，请刷新后重试");
+        }
         wo.setWoStatus(STATUS_RELEASED);
-        baseMapper.updateById(wo);
 
-        // 检查工单所需物料的库存可用性 (BOM 展开 + 库存检查, 仅告警不阻断)
+        /** 检查工单所需物料的库存可用性 (BOM 展开 + 库存检查, 仅告警不阻断) */
         checkMaterialAvailabilityOnRelease(wo);
 
-        // ★ 新增：工单下达时自动生成生产领料单（排除倒冲物料）
-        createProductionIssueOnRelease(wo);
+        /** 只生成本工单来源需求的领料单（排除倒冲物料），不借用同计划其他工单的需求。 */
+        createProductionIssueOnRelease(wo, sourceRequirement);
 
-        // 事务提交后发送工单下达消息到MES队列
+        /** 事务提交后发送工单下达消息到MES队列 */
         final PrdWorkOrder msgEntity = wo;
         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
             new TransactionSynchronization() {
@@ -332,75 +342,83 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
     }
 
+    /** 下达前核实 MRP 来源；PLAN、销售等来源的 sourceId 不能当作物料需求 ID。 */
+    private PrdMaterialRequirement resolveSourceRequirementOnRelease(PrdWorkOrder wo) {
+        if (!"MATERIAL_REQUIREMENT".equals(wo.getSourceType())) {
+            return null;
+        }
+        if (wo.getSourceId() == null || wo.getPlanId() == null || StringUtils.isBlank(wo.getTenantId())) {
+            throw new RuntimeException("工单来源物料需求关联不完整，请人工核查后再下达");
+        }
+        PrdMaterialRequirement requirement = requirementMapper.selectById(wo.getSourceId());
+        if (requirement == null || !Objects.equals(wo.getPlanId(), requirement.getPlanId())
+            || !Objects.equals(wo.getTenantId(), requirement.getTenantId())) {
+            throw new RuntimeException("工单来源物料需求不存在或与工单计划、租户不匹配，请人工核查");
+        }
+        return requirement;
+    }
+
     /**
-     * 工单下达时创建生产领料单
+     * 工单下达时仅按已核验的来源需求创建生产领料单
      */
-    private void createProductionIssueOnRelease(PrdWorkOrder wo) {
-        if (wo.getPlanId() == null) {
+    private void createProductionIssueOnRelease(PrdWorkOrder wo, PrdMaterialRequirement requirement) {
+        if (requirement == null) {
             return;
         }
-        // 倒冲工单不在下达时生成预领料单（完工时按BOM倒冲扣料），避免与完工倒冲重复扣料
+        /** 倒冲工单不在下达时生成预领料单（完工时按BOM倒冲扣料），避免与完工倒冲重复扣料 */
         if (Integer.valueOf(1).equals(wo.getBackflushFlag())) {
             log.info("工单[{}]为倒冲工单，下达时不生成预领料单，完工时倒冲扣料", wo.getWoNo());
             return;
         }
-        LambdaQueryWrapper<PrdMaterialRequirement> reqLqw = Wrappers.lambdaQuery();
-        reqLqw.eq(PrdMaterialRequirement::getPlanId, wo.getPlanId());
-        List<PrdMaterialRequirement> reqs = requirementMapper.selectList(reqLqw);
-        if (reqs.isEmpty()) {
-            return;
-        }
-
-        // 创建领料单头
+        /** 创建领料单头 */
         WmProductionIssue issue = new WmProductionIssue();
         issue.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
+        issue.setTenantId(wo.getTenantId());
         issue.setWoId(wo.getWoId());
         issue.setWoNo(wo.getWoNo());
         issue.setIssueDate(new Date());
         issue.setStatus("CREATED");
         issue.setIssueType("NORMAL");
-        issue.setWarehouseId(wo.getWorkshopId());
-        issue.setRemark("工单下达自动生成");
+        issue.setRemark("工单下达自动生成；原料领料仓库待人工选择");
         productionIssueMapper.insert(issue);
 
-        // 创建领料单行（排除倒冲物料）
+        /** 创建领料单行（排除倒冲物料） */
         boolean hasLines = false;
-        for (PrdMaterialRequirement req : reqs) {
-            LambdaQueryWrapper<PrdMaterialRequirementDetail> detailLqw = Wrappers.lambdaQuery();
-            detailLqw.eq(PrdMaterialRequirementDetail::getRequirementId, req.getRequirementId());
-            List<PrdMaterialRequirementDetail> details = detailMapper.selectList(detailLqw);
+        LambdaQueryWrapper<PrdMaterialRequirementDetail> detailLqw = Wrappers.lambdaQuery();
+        detailLqw.eq(PrdMaterialRequirementDetail::getRequirementId, requirement.getRequirementId())
+            .eq(PrdMaterialRequirementDetail::getTenantId, wo.getTenantId());
+        List<PrdMaterialRequirementDetail> details = detailMapper.selectList(detailLqw);
 
-            for (PrdMaterialRequirementDetail detail : details) {
-                // 倒冲物料不生成领料单行（完工时自动倒冲）
-                if (detail.getBackflushFlag() != null && detail.getBackflushFlag() == 1) {
-                    continue;
-                }
-                WmProductionIssueLine line = new WmProductionIssueLine();
-                line.setIssueId(issue.getIssueId());
-                line.setMaterialId(detail.getMaterialId());
-                line.setMaterialCode(detail.getMaterialCode());
-                line.setMaterialName(detail.getMaterialName());
-                line.setMaterialSpec(detail.getMaterialSpec());
-                line.setBaseUomId(detail.getUnit());
-                line.setQuantity(detail.getRequiredQuantity());
-                // BOM 驱动的应领/已领/本次/欠领语义，支持后续多次部分领料
-                line.setBomQty(detail.getBomQuantity());
-                line.setLossRate(detail.getLossRate());
-                line.setRequiredQty(detail.getRequiredQuantity());
-                line.setIssuedQty(BigDecimal.ZERO);
-                line.setCurrentQty(detail.getRequiredQuantity());
-                line.setShortQty(detail.getRequiredQuantity());
-                line.setRequirementDetailId(detail.getDetailId());
-                line.setLineStatus("PENDING");
-                productionIssueLineMapper.insert(line);
-                hasLines = true;
+        for (PrdMaterialRequirementDetail detail : details) {
+            /** 倒冲物料不生成领料单行（完工时自动倒冲） */
+            if (detail.getBackflushFlag() != null && detail.getBackflushFlag() == 1) {
+                continue;
             }
+            WmProductionIssueLine line = new WmProductionIssueLine();
+            line.setIssueId(issue.getIssueId());
+            line.setMaterialId(detail.getMaterialId());
+            line.setMaterialCode(detail.getMaterialCode());
+            line.setMaterialName(detail.getMaterialName());
+            line.setMaterialSpec(detail.getMaterialSpec());
+            line.setBaseUomId(detail.getUnit());
+            line.setQuantity(detail.getRequiredQuantity());
+            /** BOM 驱动的应领/已领/本次/欠领语义，支持后续多次部分领料 */
+            line.setBomQty(detail.getBomQuantity());
+            line.setLossRate(detail.getLossRate());
+            line.setRequiredQty(detail.getRequiredQuantity());
+            line.setIssuedQty(BigDecimal.ZERO);
+            line.setCurrentQty(detail.getRequiredQuantity());
+            line.setShortQty(detail.getRequiredQuantity());
+            line.setRequirementDetailId(detail.getDetailId());
+            line.setLineStatus("PENDING");
+            productionIssueLineMapper.insert(line);
+            hasLines = true;
         }
 
         if (hasLines) {
             log.info("工单[{}]下达后自动生成领料单[{}]", wo.getWoNo(), issue.getIssueCode());
         } else {
-            // 无领料行则删除空领料单
+            /** 无领料行则删除空领料单 */
             productionIssueMapper.deleteById(issue.getIssueId());
         }
     }
@@ -423,7 +441,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             throw new RuntimeException("仅已下达状态工单可开始生产,当前状态:" + wo.getWoStatus());
         }
 
-        // ★ 新增：校验非倒冲工单是否已生成领料单
+        /** ★ 新增：校验非倒冲工单是否已生成领料单 */
         if (wo.getBackflushFlag() == null || wo.getBackflushFlag() != 1) {
             LambdaQueryWrapper<WmProductionIssue> issueLqw = Wrappers.lambdaQuery();
             issueLqw.eq(WmProductionIssue::getWoId, wo.getWoId());
@@ -479,7 +497,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (wo == null) {
             throw new RuntimeException("工单不存在: " + woId);
         }
-        // 保留原行为: 默认取计划数量作为完工数量
+        /** 保留原行为: 默认取计划数量作为完工数量 */
         BigDecimal planned = wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
         complete(woId, planned, BigDecimal.ZERO);
     }
@@ -511,9 +529,11 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (!currentStatus.canTransitionTo(WoStatusEnum.COMPLETED)) {
             throw new RuntimeException("工单状态[" + currentStatus.getLabel() + "]不可完工");
         }
-        // 原子更新: 状态 + 累加完工数量 + 累加报废数量 + 完工时间
-        // 使用 toPlainString() 避免 BigDecimal 科学计数法导致 SQL 语法错误
-        // 并发防重: WHERE 带状态条件(仅非 COMPLETED/CLOSED 可更新), 与预读校验配合杜绝 MQ 重投+手动完工的双完工
+        /**
+         * 原子更新: 状态 + 累加完工数量 + 累加报废数量 + 完工时间
+         * 使用 toPlainString() 避免 BigDecimal 科学计数法导致 SQL 语法错误
+         * 并发防重: WHERE 带状态条件(仅非 COMPLETED/CLOSED 可更新), 与预读校验配合杜绝 MQ 重投+手动完工的双完工
+         */
         String completeSetSql = completeQty != null && completeQty.compareTo(BigDecimal.ZERO) != 0
             ? "completed_qty = completed_qty + " + completeQty.toPlainString() : null;
         String scrapSetSql = scrapQty != null && scrapQty.compareTo(BigDecimal.ZERO) != 0
@@ -530,14 +550,16 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             throw new RuntimeException("工单已完工或已关闭, 不可重复完工");
         }
 
-        // 回写销售订单行已投产数量：wo.planId → plan.orderLineId → SO 行
-        // 仅当工单关联生产计划、且计划关联销售订单行时回写（覆盖 MQ 完工与手动完工两条路径）
+        /**
+         * 回写销售订单行已投产数量：wo.planId → plan.orderLineId → SO 行
+         * 仅当工单关联生产计划、且计划关联销售订单行时回写（覆盖 MQ 完工与手动完工两条路径）
+         */
         if (wo.getPlanId() != null && completeQty != null && completeQty.compareTo(BigDecimal.ZERO) > 0) {
             PrdProductionPlan plan = prdProductionPlanMapper.selectById(wo.getPlanId());
             if (plan != null && plan.getOrderLineId() != null) {
                 fulfillmentWritebackService.addProducedQty(plan.getOrderLineId(), completeQty);
             }
-            // 计划下所有工单完工时，自动更新计划状态为 COMPLETED
+            /** 计划下所有工单完工时，自动更新计划状态为 COMPLETED */
             if (plan != null && PLAN_STATUS_RELEASED.equals(plan.getStatus())) {
                 Long unfinishedCount = baseMapper.selectCount(
                     Wrappers.<PrdWorkOrder>lambdaQuery()
@@ -554,7 +576,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             }
         }
 
-        // 触发完工倒冲入库链路(保留原 complete 副作用)
+        /** 触发完工倒冲入库链路(保留原 complete 副作用) */
         BigDecimal done = completeQty != null ? completeQty : BigDecimal.ZERO;
         ProductionCompleteMessage completeMsg = new ProductionCompleteMessage();
         completeMsg.setWoId(woId);
@@ -565,7 +587,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         completeMsg.setMaterialName(wo.getMaterialName());
         completeMsg.setWorkshopId(wo.getWorkshopId());
         completeMsg.setSourceModule("prd");
-        // 携带租户ID，供MQ消费者恢复租户上下文
+        /** 携带租户ID，供MQ消费者恢复租户上下文 */
         String tid = TenantHelper.getTenantId();
         if (tid != null) {
             completeMsg.setTenantId(Long.parseLong(tid));
@@ -598,7 +620,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         baseMapper.updateById(wo);
     }
 
-    // ==================== Flowable 工作流集成 ====================
+    /** Flowable 工作流集成。 */
 
     /**
      * 发起审批流程
@@ -668,31 +690,34 @@ public boolean submit(String woIdStr, String selectFlowId) {
         Long woId = Long.parseLong(business.getDataId());
         PrdWorkOrder entity = baseMapper.selectById(woId);
         if (entity == null) return;
+        String previousStatus = entity.getWoStatus();
+        /** 已下达及后续状态不能被迟到或重复的审批回调重新打开。 */
+        if (!STATUS_CREATED.equals(previousStatus) && !STATUS_APPROVING.equals(previousStatus)
+            && !STATUS_APPROVED.equals(previousStatus)) {
+            return;
+        }
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVED);
-            // 审批通过后自动下达来源生产计划（CONFIRMED → RELEASED，幂等）
-            autoReleaseProductionPlan(entity.getPlanId());
-            // 审批通过后，事务提交后再发送工单下达消息到MES（确保ERP状态已持久化）
-            final PrdWorkOrder msgEntity = entity;
-            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    /**
-                     * 事务提交后回调：发送工单下达消息到 MES 队列
-                     */
-                    @Override
-                    public void afterCommit() {
-                        sendWorkOrderReleaseMessage(msgEntity);
-                    }
-                });
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setWoStatus(STATUS_CREATED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
             entity.setWoStatus(STATUS_CREATED);
+        } else {
+            return;
         }
-        baseMapper.updateById(entity);
+        /** 只更新状态且校验读到的旧状态，避免与正式下达并发时用旧快照覆盖 RELEASED。 */
+        LambdaUpdateWrapper<PrdWorkOrder> update = Wrappers.<PrdWorkOrder>lambdaUpdate()
+            .eq(PrdWorkOrder::getWoId, woId)
+            .eq(PrdWorkOrder::getWoStatus, previousStatus)
+            .eq(StringUtils.isNotBlank(entity.getTenantId()), PrdWorkOrder::getTenantId, entity.getTenantId())
+            .set(PrdWorkOrder::getWoStatus, entity.getWoStatus());
+        if (baseMapper.update(null, update) == 1 && ActStatus.pass.equals(actStatus)) {
+            /** 保留审批通过后的计划自动下达；工单 MES 快照只由 release() 在正式下达后发送。 */
+            autoReleaseProductionPlan(entity.getPlanId());
+        }
     }
 
     /**
@@ -734,27 +759,32 @@ public boolean submit(String woIdStr, String selectFlowId) {
             message.setPlannedEndDate(entity.getPlanEndDate());
             message.setWorkshopId(entity.getWorkshopId());
             message.setBomId(entity.getBomId());
-            // 客户信息透传: MES 按客户+物料(+客户产品代号)匹配客户定制化发布包(mes_release_package)
+            /** 客户信息透传: MES 按客户+物料(+客户产品代号)匹配客户定制化发布包(mes_release_package) */
             message.setClientId(entity.getClientId());
             message.setClientName(entity.getClientName());
             message.setCustomerProductCode(entity.getCustomerProductCode());
-            // 租户必须随消息传递(MES-MQ-01): 消费端 BaseMessageConsumer 缺失 tenantId 时 fail-closed,
-            // 修复前不携带 tenantId 会使 MES 工单落到系统租户 000000, 且桥接查 ERP 主数据(bd_material/
-            // bd_workshop/bd_routing)全空 -> 工单无单位、不创建任何工序
+            /**
+             * 租户必须随消息传递(MES-MQ-01): 消费端 BaseMessageConsumer 缺失 tenantId 时直接拒绝处理，
+             * 修复前不携带 tenantId 会使 MES 工单落到系统租户 000000, 且桥接查 ERP 主数据(bd_material/
+             * bd_workshop/bd_routing)全空 -> 工单无单位、不创建任何工序
+             */
             message.setTenantId(resolveMessageTenantId(entity.getTenantId()));
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_WORKORDER_RELEASE, message);
             log.info("工单下达消息已发送: woId={}, woNo={}, tenantId={}",
                 entity.getWoId(), entity.getWoNo(), message.getTenantId());
         } catch (Exception e) {
             log.error("工单下达消息发送失败: woId={}", entity.getWoId(), e);
-            // 消息发送失败不影响审批状态更新，补偿任务会重新投递
+            /**
+             * ERP 已提交；仅成功落库的消息记录可补偿。提交后回调前宕机或记录落库失败
+             * 仍需 ERP 同库事务发件箱兜底，本方法不能保证该窗口内的消息可恢复。
+             */
         }
     }
 
     /**
      * 解析工单所属租户 ID(供 MQ 消息携带)
      * <p>优先取工单自身 tenant_id(权威值), 回退当前线程租户上下文；均无法解析时返回 {@code null}，
-     * 由消费端 fail-closed 显式失败进入重试/死信，绝不静默落到系统租户 000000。</p>
+     * 由消费端直接拒绝处理并显式失败，进入重试/死信，绝不静默落到系统租户 000000。</p>
      *
      * @param woTenantId 工单行上的 tenant_id
      * @return 租户 ID，无法解析时返回 {@code null}
@@ -842,7 +872,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
         if (vos == null || vos.isEmpty()) {
             return;
         }
-        // 收集所有唯一的 workshopId
+        /** 收集所有唯一的 workshopId */
         Map<Long, Long> workshopToDept = new HashMap<>();
         Map<Long, String> workshopToDeptName = new HashMap<>();
         for (PrdWorkOrderVo vo : vos) {
@@ -853,7 +883,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
         if (workshopToDept.isEmpty()) {
             return;
         }
-        // 批量查询 bd_workshop 的 dept_id/dept_name
+        /** 批量查询 bd_workshop 的 dept_id/dept_name */
         List<BdWorkshop> workshops = bdWorkshopMapper.selectBatchIds(workshopToDept.keySet());
         for (BdWorkshop ws : workshops) {
             if (ws.getDeptId() != null) {
@@ -861,7 +891,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
                 workshopToDeptName.put(ws.getWorkshopId(), ws.getDeptName());
             }
         }
-        // 回填 VO
+        /** 回填 VO */
         for (PrdWorkOrderVo vo : vos) {
             if (vo.getWorkshopId() != null) {
                 vo.setDeptId(workshopToDept.get(vo.getWorkshopId()));

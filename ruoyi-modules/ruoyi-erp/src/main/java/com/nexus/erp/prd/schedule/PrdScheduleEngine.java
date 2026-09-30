@@ -15,14 +15,16 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
- * APS 排程引擎（纯算法，无 Spring/DB 依赖）
+ * APS 排程引擎（纯算法，无 Spring 或数据库依赖）
  * <p>
  * 天粒度前向有限产能排程：
  * <ol>
@@ -49,6 +51,13 @@ public class PrdScheduleEngine {
      */
     private static final BigDecimal OUTSOURCE_HOURS_PER_DAY = BigDecimal.valueOf(24);
 
+    /** 请求的排程跨度内，经核验的产能不足。 */
+    public static final class CapacityHorizonExceededException extends IllegalArgumentException {
+        public CapacityHorizonExceededException() {
+            super("排程跨度内无足够可信产能，不能使用跨度外的默认日期");
+        }
+    }
+
     private PrdScheduleEngine() {
     }
 
@@ -63,7 +72,7 @@ public class PrdScheduleEngine {
         int horizonDays = Math.max(1, input.getHorizonDays());
         LocalDate horizonEnd = startDate.plusDays(horizonDays - 1L);
 
-        // 产能记账: 剩余产能(可变副本) 与 可用产能(利用率分母, 固定快照)
+        /** 产能记账: 剩余产能(可变副本) 与 可用产能(利用率分母, 固定快照) */
         Map<LocalDate, Map<String, BigDecimal>> remaining = copyCapacity(input.getCapacityByDate());
         Map<LocalDate, Map<String, BigDecimal>> availableSnap = copyCapacity(input.getCapacityByDate());
         Set<LocalDate> holidays = input.getHolidays() == null ? Set.of() : input.getHolidays();
@@ -109,7 +118,7 @@ public class PrdScheduleEngine {
             }
             for (ScheduledTask task : woTasks) {
                 task.setDelay(delay);
-                totalHours = totalHours.add(nvl(task.getProcessHours()));
+                totalHours = totalHours.add(nvl(task.getProcessHours())).add(nvl(task.getSetupHours()));
                 if (makespan == null || task.getEndDay().isAfter(makespan)) {
                     makespan = task.getEndDay();
                 }
@@ -153,7 +162,7 @@ public class PrdScheduleEngine {
             return BigDecimal.valueOf(Long.MAX_VALUE);
         }
         long daysToDue = ChronoUnit.DAYS.between(startDate, wo.getDueDate());
-        // 工时在排序阶段未逐单展开工艺路线, 用剩余数量近似工时量级(同一物料间可比; 跨物料 EDD 为默认策略)
+        /** 工时在排序阶段未逐单展开工艺路线, 用剩余数量近似工时量级(同一物料间可比; 跨物料 EDD 为默认策略) */
         BigDecimal qty = wo.getRemainingQty() == null ? BigDecimal.ONE : wo.getRemainingQty();
         BigDecimal workDays = qty.divide(DEFAULT_DAILY_HOURS, 2, RoundingMode.HALF_UP);
         if (workDays.compareTo(BigDecimal.ZERO) <= 0) {
@@ -173,14 +182,16 @@ public class PrdScheduleEngine {
                                               Map<String, String> resourceNames) {
         BigDecimal qty = wo.getRemainingQty();
         BigDecimal standard = step.getStandardHours() == null ? BigDecimal.ZERO : step.getStandardHours();
-        BigDecimal setup = step.getSetupHours() == null ? BigDecimal.ZERO : step.getSetupHours();
+        /** 工艺源可有四位小数；工序、日负荷和日历均以 0.01h 入账，只在排程入口舍入一次。 */
+        BigDecimal setup = (step.getSetupHours() == null ? BigDecimal.ZERO : step.getSetupHours())
+            .setScale(2, RoundingMode.HALF_UP);
         BigDecimal processHours = standard.multiply(qty, MathContext.DECIMAL64).setScale(2, RoundingMode.HALF_UP);
 
         ScheduledTask task = new ScheduledTask();
         task.setWo(wo);
         task.setStep(step);
         task.setSetupHours(setup);
-        task.setProcessHours(processHours.add(setup).setScale(2, RoundingMode.HALF_UP));
+        task.setProcessHours(processHours);
 
         boolean outsource = step.getIsOutsource() != null && step.getIsOutsource() == 1;
         if (outsource) {
@@ -192,7 +203,16 @@ public class PrdScheduleEngine {
             task.setStartDay(earliest);
             task.setEndDay(earliest.plusDays(days - 1L));
             task.setDurationDays(days);
+            if (task.getEndDay().isAfter(horizonEnd)) {
+                throw new IllegalArgumentException("委外工序超过已加载排程跨度");
+            }
             return task;
+        }
+
+        /** 内部工序必须有可入账的正负荷；工艺允许 0/null，但发布需要正的逐日负荷凭据。 */
+        if (processHours.add(setup).signum() <= 0) {
+            throw new IllegalArgumentException("内部工序加工/准备工时量化后必须大于0: 工单" + wo.getWoId()
+                + ", 工序" + step.getSeqNum());
         }
 
         String resourceType;
@@ -201,7 +221,7 @@ public class PrdScheduleEngine {
         if (step.getWorkstationId() != null) {
             resourceType = "WORKSTATION";
             resourceId = step.getWorkstationId();
-            // 名称空串视为缺失(基础数据存在空串), 回退: 名称 → 编码 → ID
+            /** 名称空串视为缺失(基础数据存在空串), 回退: 名称 → 编码 → ID */
             resourceName = !isBlank(step.getWorkstationName()) ? step.getWorkstationName()
                 : (!isBlank(step.getWorkstationCode()) ? step.getWorkstationCode() : "工作站" + step.getWorkstationId());
         } else if (wo.getWorkshopId() != null) {
@@ -209,7 +229,7 @@ public class PrdScheduleEngine {
             resourceId = wo.getWorkshopId();
             resourceName = !isBlank(wo.getWorkshopName()) ? wo.getWorkshopName() : "车间" + wo.getWorkshopId();
         } else {
-            // 无任何资源归属: 仅按默认产能挂空资源, 保证任务仍有时序
+            /** 无任何资源归属: 仅按默认产能挂空资源, 保证任务仍有时序 */
             resourceType = "WORKSHOP";
             resourceId = null;
             resourceName = "未指定车间";
@@ -224,8 +244,13 @@ public class PrdScheduleEngine {
         LocalDate day = earliest;
         LocalDate startDay = null;
         LocalDate endDay = earliest;
-        BigDecimal need = task.getProcessHours();
+        BigDecimal need = task.getProcessHours().add(task.getSetupHours());
+        Map<LocalDate, BigDecimal> dayLoads = new TreeMap<>();
         while (need.compareTo(BigDecimal.ZERO) > 0) {
+            /** 装配器只读取跨度内的产能及假期，越界不能再回退到假定8小时。 */
+            if (day.isAfter(horizonEnd)) {
+                throw new CapacityHorizonExceededException();
+            }
             BigDecimal avail = dailyCapacity(availableSnap, remaining, holidays, day, key);
             if (avail.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal take = avail.min(need);
@@ -235,17 +260,19 @@ public class PrdScheduleEngine {
                     startDay = day;
                 }
                 endDay = day;
+                dayLoads.merge(day, take, BigDecimal::add);
                 need = need.subtract(take);
             }
             if (need.compareTo(BigDecimal.ZERO) > 0) {
                 day = day.plusDays(1);
             }
         }
-        // 工时为 0 的工序(纯准备或未维护标准工时)至少占 1 天
+        /** 总负荷为 0 的工序至少占 1 天 */
         if (startDay == null) {
             startDay = earliest;
             endDay = earliest;
         }
+        task.setDayLoads(Collections.unmodifiableMap(dayLoads));
         task.setStartDay(startDay);
         task.setEndDay(endDay);
         task.setDurationDays((int) ChronoUnit.DAYS.between(startDay, endDay) + 1);
@@ -267,14 +294,14 @@ public class PrdScheduleEngine {
         }
         Map<String, BigDecimal> daySnap = availableSnap.get(day);
         if (daySnap != null && daySnap.containsKey(key)) {
-            // 快照已耗尽(被本引擎占用) → 0
+            /** 快照已耗尽(被本引擎占用) → 0 */
             return BigDecimal.ZERO;
         }
         return DEFAULT_DAILY_HOURS;
     }
 
     /**
-     * 资源负荷统计: horizon 内 booked(剩余扣减量) / available(初始快照+无日历日默认 8h)
+     * 排程跨度内的资源负荷统计：{@code booked}（剩余产能扣减量）/ {@code available}（初始快照产能，无日历日默认 8 小时）
      */
     private static List<ResourceLoad> buildLoads(Set<String> touchedKeys, Map<String, String> resourceNames,
                                                  Map<LocalDate, Map<String, BigDecimal>> remaining,
@@ -291,7 +318,7 @@ public class PrdScheduleEngine {
                 Map<String, BigDecimal> dayRemaining = remaining.get(d);
                 Map<String, BigDecimal> daySnap = availableSnap.get(d);
                 BigDecimal snapValue = daySnap == null ? null : daySnap.get(key);
-                // 产能基准: 有日历行用快照值, 否则默认 8h
+                /** 产能基准: 有日历行用快照值, 否则默认 8h */
                 BigDecimal capValue = snapValue != null ? snapValue.max(BigDecimal.ZERO) : DEFAULT_DAILY_HOURS;
                 available = available.add(capValue);
                 if (dayRemaining != null && dayRemaining.containsKey(key)) {

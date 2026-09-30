@@ -1,6 +1,8 @@
 package com.nexus.erp.prd.domain.vo;
 
 import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.erp.prd.domain.PrdCapacityCalendar;
+import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -14,6 +16,7 @@ import java.util.Date;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@AutoMapper(target = PrdCapacityCalendar.class)
 public class PrdCapacityCalendarVo extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
@@ -26,7 +29,7 @@ public class PrdCapacityCalendarVo extends BaseEntity {
     /**
      * 租户ID
      */
-    private Long tenantId;
+    private String tenantId;
 
     /**
      * 日期

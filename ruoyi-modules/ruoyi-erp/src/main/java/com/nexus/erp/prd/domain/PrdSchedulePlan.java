@@ -121,6 +121,9 @@ public class PrdSchedulePlan extends TenantEntity {
      */
     private String status;
 
+    /** 按日负荷计算口径：0=旧版未知，2=新生成并持久化逐日事实。 */
+    private Integer capacityCalcVersion;
+
     /** 乐观锁版本 */
     @Version
     private Integer version = 0;

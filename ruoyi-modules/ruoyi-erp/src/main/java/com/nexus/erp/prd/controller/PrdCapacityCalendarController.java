@@ -21,14 +21,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
 /**
- * 产能日历 Controller
+ * 产能日历控制器
  * <p>
- * 提供产能日历的 RESTful API 接口，支持产能日历的查询、导出、生成、占用与释放等操作。
+ * 提供产能日历的 REST 风格的接口，支持产能日历的查询、导出与生成；计划工时只能通过带预约凭据的排程发布流程变更。
  * 产能日历用于管理车间、工位或生产线在特定日期和班次下的可用产能。
  *
  * @author nexus
@@ -184,41 +183,4 @@ public class PrdCapacityCalendarController extends BaseController {
         return R.ok(capacityCalendarService.queryAvailableCapacity(objectType, objectId, startDate, endDate));
     }
 
-    /**
-     * 占用产能
-     * <p>
-     * 将指定产能日历的剩余产能中占用指定工时数。
-     * 权限标识：{@code prd:capacityCalendar:edit}</p>
-     * <p>日志记录：title="产能日历-占用"，businessType=UPDATE</p>
-     *
-     * @param calendarId 产能日历 ID
-     * @param hours      占用工时数
-     * @return 操作结果
-     */
-    @SaCheckPermission("prd:capacityCalendar:edit")
-    @Log(title = "产能日历-占用", businessType = BusinessType.UPDATE)
-    @PutMapping("/occupy")
-    public R<Void> occupy(@RequestParam Long calendarId, @RequestParam BigDecimal hours) {
-        capacityCalendarService.occupyCapacity(calendarId, hours);
-        return R.ok();
-    }
-
-    /**
-     * 释放产能
-     * <p>
-     * 将指定产能日历中已占用的工时释放回剩余产能。
-     * 权限标识：{@code prd:capacityCalendar:edit}</p>
-     * <p>日志记录：title="产能日历-释放"，businessType=UPDATE</p>
-     *
-     * @param calendarId 产能日历 ID
-     * @param hours      释放工时数
-     * @return 操作结果
-     */
-    @SaCheckPermission("prd:capacityCalendar:edit")
-    @Log(title = "产能日历-释放", businessType = BusinessType.UPDATE)
-    @PutMapping("/release")
-    public R<Void> release(@RequestParam Long calendarId, @RequestParam BigDecimal hours) {
-        capacityCalendarService.releaseCapacity(calendarId, hours);
-        return R.ok();
-    }
 }

@@ -2,17 +2,20 @@ package com.nexus.erp.prd.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
+import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.bo.PrdCapacityCalendarBo;
 import com.nexus.erp.prd.domain.vo.PrdCapacityCalendarVo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
 import com.nexus.erp.prd.service.IPrdCapacityCalendarService;
 import com.nexus.erp.sch.domain.SchPlan;
 import com.nexus.erp.sch.domain.SchShift;
@@ -20,17 +23,24 @@ import com.nexus.erp.sch.mapper.SchPlanMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Objects;
 
 /**
- * 产能日历 Service 业务层实现
+ * 产能日历服务业务层实现
  * <p>
  * 实现产能日历相关的业务逻辑，包括产能日历的查询、生成、占用与释放等操作。
  *
@@ -43,6 +53,7 @@ import java.util.List;
 public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarService {
 
     private final PrdCapacityCalendarMapper baseMapper;
+    private final PrdScheduleCapacityBookingMapper bookingMapper;
     private final SchPlanMapper schPlanMapper;
     private final SchShiftMapper schShiftMapper;
 
@@ -95,7 +106,7 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(PrdCapacityCalendarBo bo) {
         PrdCapacityCalendar entity = MapstructUtils.convert(bo, PrdCapacityCalendar.class);
-        // 计算有效产能和剩余产能
+        /** 计算有效产能和剩余产能 */
         calculateEffectiveHours(entity);
         entity.setRemainingHours(entity.getEffectiveHours());
         validEntityBeforeSave(entity);
@@ -113,9 +124,32 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(PrdCapacityCalendarBo bo) {
+        if (bo == null || bo.getCalendarId() == null || bo.getCalendarId() <= 0)
+            throw new ServiceException("产能日历ID无效");
+        /**
+         * 班次删除先锁班次再查日历。先只读取得未修改字段，然后按相同顺序锁班次、锁日历，
+         * 防止编辑与班次删除形成反向锁顺序，锁定日历后复核快照。
+         */
+        PrdCapacityCalendar snapshot = baseMapper.selectOne(Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getCalendarId, bo.getCalendarId()));
+        String tenant = currentTenantId();
+        if (snapshot == null || !bo.getCalendarId().equals(snapshot.getCalendarId())
+            || !tenant.equals(snapshot.getTenantId())) throw new ServiceException("产能日历不存在或租户不一致");
         PrdCapacityCalendar entity = MapstructUtils.convert(bo, PrdCapacityCalendar.class);
+        if (entity.getStatus() == null) entity.setStatus(snapshot.getStatus());
+        if (entity.getShiftId() == null) entity.setShiftId(snapshot.getShiftId());
+        if (entity.getAvailableHours() == null) entity.setAvailableHours(snapshot.getAvailableHours());
+        if (entity.getEfficiency() == null) entity.setEfficiency(snapshot.getEfficiency());
         calculateEffectiveHours(entity);
         validEntityBeforeSave(entity);
+        PrdCapacityCalendar existing = baseMapper.selectOne(Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getCalendarId, bo.getCalendarId()).last("FOR UPDATE"));
+        ensureCalendarEditable(existing, tenant);
+        if (!Objects.equals(snapshot.getShiftId(), existing.getShiftId())
+            || !Objects.equals(snapshot.getStatus(), existing.getStatus())
+            || (bo.getAvailableHours() == null && !Objects.equals(snapshot.getAvailableHours(), existing.getAvailableHours()))
+            || (bo.getEfficiency() == null && !Objects.equals(snapshot.getEfficiency(), existing.getEfficiency())))
+            throw new ServiceException("产能日历并发变更，请重试");
         return baseMapper.updateById(entity) > 0;
     }
 
@@ -129,10 +163,42 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if (isValid) {
-            // 可添加业务校验
+        if (ids == null || ids.isEmpty() || ids.stream().anyMatch(id -> id == null || id <= 0))
+            throw new ServiceException("产能日历ID无效");
+        /** 业务安全校验不可由 isValid=false 绕开。与排程发布按相同日历行加锁。 */
+        List<Long> orderedIds = ids.stream().distinct().sorted().toList();
+        String tenantId = currentTenantId();
+        /** 与发布相同：逐 PK 升序锁行，而不是依赖 IN + ORDER BY 的实际索引扫描顺序。 */
+        List<PrdCapacityCalendar> locked = new ArrayList<>();
+        for (Long id : orderedIds) {
+            PrdCapacityCalendar calendar = baseMapper.selectOne(Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+                .eq(PrdCapacityCalendar::getCalendarId, id).last("FOR UPDATE"));
+            if (calendar == null || !id.equals(calendar.getCalendarId()))
+                throw new ServiceException("产能日历不存在或不可访问");
+            locked.add(calendar);
         }
-        return baseMapper.deleteByIds(ids) > 0;
+        for (PrdCapacityCalendar calendar : locked) ensureCalendarEditable(calendar, tenantId);
+        return baseMapper.deleteByIds(orderedIds) > 0;
+    }
+
+    private String currentTenantId() {
+        String tenant = TenantHelper.isEnable() ? TenantHelper.getTenantId() : "000000";
+        if (StringUtils.isBlank(tenant)) throw new ServiceException("产能日历租户上下文缺失");
+        return tenant;
+    }
+
+    private void ensureCalendarEditable(PrdCapacityCalendar calendar, String tenantId) {
+        if (calendar == null || calendar.getCalendarId() == null
+            || !tenantId.equals(calendar.getTenantId()))
+            throw new ServiceException("产能日历不存在或租户不一致");
+        if (calendar.getPlannedHours() == null || calendar.getPlannedHours().signum() < 0
+            || calendar.getPlannedHours().signum() > 0)
+            throw new ServiceException("产能日历已有计划工时或数据无效，不能修改/删除");
+        Long bookings = bookingMapper.selectCount(Wrappers.lambdaQuery(PrdScheduleCapacityBooking.class)
+            .eq(PrdScheduleCapacityBooking::getTenantId, tenantId)
+            .eq(PrdScheduleCapacityBooking::getCalendarId, calendar.getCalendarId()));
+        if (bookings == null || bookings > 0)
+            throw new ServiceException("产能日历已有预约凭据，不能修改/删除");
     }
 
     /**
@@ -157,7 +223,8 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         }
 
         LambdaQueryWrapper<SchShift> shiftLqw = Wrappers.lambdaQuery();
-        shiftLqw.eq(SchShift::getPlanId, planId);
+        shiftLqw.eq(SchShift::getPlanId, planId)
+            .orderByAsc(SchShift::getShiftId).last("FOR UPDATE");
         List<SchShift> shifts = schShiftMapper.selectList(shiftLqw);
         if (shifts.isEmpty()) {
             throw new ServiceException("排班计划下无班次定义");
@@ -181,7 +248,7 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         while (!cal.after(endCal)) {
             Date currentDate = cal.getTime();
             for (SchShift shift : shifts) {
-                // 计算可用工时 = 班次总工时 - 休息工时
+                /** 计算可用工时 = 班次总工时 - 休息工时 */
                 BigDecimal availableHours = calculateShiftAvailableHours(shift);
 
                 PrdCapacityCalendar calendar = new PrdCapacityCalendar();
@@ -204,7 +271,8 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
                 try {
                     baseMapper.insert(calendar);
                     generatedCount++;
-                } catch (Exception e) {
+                } catch (DuplicateKeyException duplicate) {
+                    /** 只忽略唯一键冲突；死锁/连接失败必须抛出，交给事务整体回滚和调用方重试。 */
                     log.warn("产能日历重复，日期:{}，班次:{}", currentDate, shift.getShiftCode());
                 }
             }
@@ -249,46 +317,66 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void occupyCapacity(Long calendarId, BigDecimal hours) {
-        if (calendarId == null || hours == null || hours.compareTo(BigDecimal.ZERO) <= 0) {
-            return;
+        if (calendarId == null || calendarId <= 0 || hours == null || hours.signum() <= 0) {
+            throw new ServiceException("产能占用ID或工时无效");
         }
-        PrdCapacityCalendar calendar = baseMapper.selectById(calendarId);
-        if (calendar == null) {
-            throw new ServiceException("产能日历记录不存在");
+        String tenant = currentTenantId();
+        PrdCapacityCalendar calendar = baseMapper.selectOne(Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getCalendarId, calendarId).last("FOR UPDATE"));
+        if (calendar == null || !tenant.equals(calendar.getTenantId()) || !"ACTIVE".equals(calendar.getStatus())
+            || calendar.getPlannedHours() == null || calendar.getRemainingHours() == null
+            || calendar.getRemainingHours().compareTo(hours) < 0) {
+            throw new ServiceException("产能日历不存在、租户不符或剩余产能不足");
         }
-        if (calendar.getRemainingHours() == null || calendar.getRemainingHours().compareTo(hours) < 0) {
-            throw new ServiceException("产能不足，剩余" + calendar.getRemainingHours() + "小时，需要" + hours + "小时");
-        }
-
-        calendar.setPlannedHours(
-            (calendar.getPlannedHours() != null ? calendar.getPlannedHours() : BigDecimal.ZERO).add(hours));
-        calendar.setRemainingHours(calendar.getEffectiveHours().subtract(calendar.getPlannedHours()));
-        baseMapper.updateById(calendar);
+        BigDecimal planned = calendar.getPlannedHours();
+        BigDecimal remaining = calendar.getRemainingHours();
+        /** 只更新两列，绝不把读出的 actual_hours/班次/日期/状态整实体回写。 */
+        int rows = baseMapper.update(null, Wrappers.lambdaUpdate(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getCalendarId, calendarId)
+            .eq(PrdCapacityCalendar::getTenantId, tenant)
+            .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
+            .eq(PrdCapacityCalendar::getPlannedHours, planned)
+            .eq(PrdCapacityCalendar::getRemainingHours, remaining)
+            .set(PrdCapacityCalendar::getPlannedHours, planned.add(hours))
+            .set(PrdCapacityCalendar::getRemainingHours, remaining.subtract(hours)));
+        if (rows != 1) throw new ServiceException("产能日历占用竞争或写入失败");
     }
 
-    /**
-     * 释放产能
-     * <p>
-     * 将已占用的工时释放回剩余产能，已计划工时不会小于零。
-     *
-     * @param calendarId 产能日历 ID
-     * @param hours      释放工时数
-     */
+    /** 已生成预约凭据的计划负荷不允许经此通用接口释放；只接受将来的凭据撤销事务。 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void releaseCapacity(Long calendarId, BigDecimal hours) {
-        if (calendarId == null || hours == null || hours.compareTo(BigDecimal.ZERO) <= 0) {
-            return;
+        if (calendarId == null || calendarId <= 0 || hours == null || hours.signum() <= 0) {
+            throw new ServiceException("产能释放ID或工时无效");
         }
-        PrdCapacityCalendar calendar = baseMapper.selectById(calendarId);
-        if (calendar == null) {
-            return;
+        String tenant = currentTenantId();
+        PrdCapacityCalendar calendar = baseMapper.selectOne(Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getCalendarId, calendarId).last("FOR UPDATE"));
+        if (calendar == null || !tenant.equals(calendar.getTenantId())
+            || calendar.getPlannedHours() == null || calendar.getRemainingHours() == null
+            || calendar.getEffectiveHours() == null) {
+            throw new ServiceException("产能日历不存在或来源无效");
         }
-        calendar.setPlannedHours(
-            (calendar.getPlannedHours() != null ? calendar.getPlannedHours() : BigDecimal.ZERO)
-                .subtract(hours).max(BigDecimal.ZERO));
-        calendar.setRemainingHours(calendar.getEffectiveHours().subtract(calendar.getPlannedHours()));
-        baseMapper.updateById(calendar);
+        List<PrdScheduleCapacityBooking> bookings = bookingMapper.selectList(
+            Wrappers.lambdaQuery(PrdScheduleCapacityBooking.class)
+                .eq(PrdScheduleCapacityBooking::getTenantId, tenant)
+                .eq(PrdScheduleCapacityBooking::getCalendarId, calendarId).last("FOR UPDATE"));
+        if (bookings == null || !bookings.isEmpty()) {
+            throw new ServiceException("产能日历已有预约凭据，不允许直接释放");
+        }
+        BigDecimal planned = calendar.getPlannedHours();
+        BigDecimal remaining = calendar.getRemainingHours();
+        if (planned.compareTo(hours) < 0 || remaining.add(hours).compareTo(calendar.getEffectiveHours()) > 0) {
+            throw new ServiceException("可释放的未预约计划工时不足");
+        }
+        int rows = baseMapper.update(null, Wrappers.lambdaUpdate(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getCalendarId, calendarId)
+            .eq(PrdCapacityCalendar::getTenantId, tenant)
+            .eq(PrdCapacityCalendar::getPlannedHours, planned)
+            .eq(PrdCapacityCalendar::getRemainingHours, remaining)
+            .set(PrdCapacityCalendar::getPlannedHours, planned.subtract(hours))
+            .set(PrdCapacityCalendar::getRemainingHours, remaining.add(hours)));
+        if (rows != 1) throw new ServiceException("产能日历释放竞争或写入失败");
     }
 
     private LambdaQueryWrapper<PrdCapacityCalendar> buildQueryWrapper(PrdCapacityCalendarBo bo) {
@@ -312,29 +400,54 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     }
 
     private void validEntityBeforeSave(PrdCapacityCalendar entity) {
-        // 可扩展校验逻辑
+        boolean bookable = (entity.getStatus() == null || "ACTIVE".equals(entity.getStatus()))
+            && entity.getEffectiveHours() != null && entity.getEffectiveHours().signum() > 0;
+        Long shiftId = entity.getShiftId();
+        if (shiftId == null) {
+            if (bookable) throw new ServiceException("有效产能日历必须关联班次");
+            return;
+        }
+        if (shiftId <= 0) throw new ServiceException("产能日历班次ID无效");
+        /** 与 SchShiftServiceImpl.lockUnboundShift 的锁序一致；只有持有班次锁才能防止写入后悬挂引用。 */
+        SchShift shift = schShiftMapper.selectOne(Wrappers.lambdaQuery(SchShift.class)
+            .eq(SchShift::getShiftId, shiftId).last("FOR UPDATE"));
+        if (shift == null || !shiftId.equals(shift.getShiftId())
+            || !currentTenantId().equals(shift.getTenantId()))
+            throw new ServiceException("产能日历关联班次不存在或租户不一致");
+        if (bookable && (shift.getStartTime() == null || shift.getEndTime() == null
+            || shift.getIsCrossDay() == null || (shift.getIsCrossDay() != 0 && shift.getIsCrossDay() != 1)
+            || (shift.getIsCrossDay() == 0 && !shiftTime(shift.getEndTime()).isAfter(shiftTime(shift.getStartTime())))
+            || (shift.getIsCrossDay() == 1 && !shiftTime(shift.getEndTime()).isBefore(shiftTime(shift.getStartTime())))))
+            throw new ServiceException("产能日历班次起止时间或跨天标记无效");
+    }
+
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final long DAY_SECONDS = 24L * 60 * 60;
+
+    private LocalTime shiftTime(Date time) {
+        return time instanceof java.sql.Time sqlTime ? sqlTime.toLocalTime()
+            : Instant.ofEpochMilli(time.getTime()).atZone(BUSINESS_ZONE).toLocalTime();
     }
 
     private BigDecimal calculateShiftAvailableHours(SchShift shift) {
-        if (shift.getStartTime() == null || shift.getEndTime() == null) {
-            return BigDecimal.ZERO;
-        }
-        long diffMillis = shift.getEndTime().getTime() - shift.getStartTime().getTime();
-        if (diffMillis < 0) {
-            diffMillis += 24 * 60 * 60 * 1000; // 跨天
-        }
-        BigDecimal totalHours = BigDecimal.valueOf(diffMillis)
-            .divide(BigDecimal.valueOf(1000 * 60 * 60), 2, BigDecimal.ROUND_HALF_UP);
-
-        // 扣除休息时间
+        if (shift.getStartTime() == null || shift.getEndTime() == null) return BigDecimal.ZERO;
+        long start = shiftTime(shift.getStartTime()).toSecondOfDay();
+        long end = shiftTime(shift.getEndTime()).toSecondOfDay();
+        long duration = end - start;
+        if (duration < 0) duration += DAY_SECONDS;
+        long restSeconds = 0;
         if (shift.getRestStartTime() != null && shift.getRestEndTime() != null) {
-            long restMillis = shift.getRestEndTime().getTime() - shift.getRestStartTime().getTime();
-            if (restMillis > 0) {
-                BigDecimal restHours = BigDecimal.valueOf(restMillis)
-                    .divide(BigDecimal.valueOf(1000 * 60 * 60), 2, BigDecimal.ROUND_HALF_UP);
-                totalHours = totalHours.subtract(restHours);
+            long restStart = shiftTime(shift.getRestStartTime()).toSecondOfDay();
+            long restEnd = shiftTime(shift.getRestEndTime()).toSecondOfDay();
+            long restDuration = restEnd - restStart;
+            if (restDuration < 0) restDuration += DAY_SECONDS;
+            /** 时段按实际时间轴相交，23:30—00:30 要扣满一小时；不回填/修改已生成日历。 */
+            for (int dayOffset = -1; dayOffset <= 1; dayOffset++) {
+                long offset = restStart - start + dayOffset * DAY_SECONDS;
+                restSeconds += Math.max(0, Math.min(duration, offset + restDuration) - Math.max(0, offset));
             }
         }
-        return totalHours.max(BigDecimal.ZERO);
+        return BigDecimal.valueOf(Math.max(0, duration - restSeconds))
+            .divide(BigDecimal.valueOf(3600), 2, RoundingMode.HALF_UP);
     }
 }

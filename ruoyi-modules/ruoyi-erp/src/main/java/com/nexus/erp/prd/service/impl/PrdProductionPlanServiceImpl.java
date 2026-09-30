@@ -56,7 +56,7 @@ import java.time.ZoneId;
 import java.util.*;
 
 /**
- * 生产计划Service业务层处理
+ * 生产计划服务业务层处理
  *
  * @author nexus
  */
@@ -73,19 +73,20 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private final BdBomDetailMapper bdBomDetailMapper;
     private final IPrdMaterialRequirementService prdMaterialRequirementService;
     private final ISoSalesOrderLineService soSalesOrderLineService;
-    /** SO行/头 Mapper: 工单生成时解析客户信息(直调 Mapper 避免 Service 循环依赖) */
+    /** 销售订单行/头映射接口：生成工单时解析客户信息（直接调用映射接口，避免服务层循环依赖） */
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
     private final SoSalesOrderHeaderMapper soSalesOrderHeaderMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final PrdWorkOrderMapper prdWorkOrderMapper;
     private final IPrdWorkOrderService prdWorkOrderService;
 
-    // 状态常量（从 NexusConstants 迁移）
+    /** 状态常量（从 NexusConstants 迁移） */
     private static final String STATUS_DRAFT = "DRAFT";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_RELEASED = "RELEASED";
     private static final Long VERSION_INIT = 1L;
     private static final Long VERSION_NOT_CURRENT = 0L;
+    private static final ZoneId BOM_BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
     /**
      * 分页查询生产计划列表
@@ -253,18 +254,18 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePrdProductionPlanVersion(PrdProductionPlan prdProductionPlan) {
-        // 查询原生产计划
+        /** 查询原生产计划 */
         PrdProductionPlan originalPlan = baseMapper.selectById(prdProductionPlan.getPlanId());
         if (originalPlan == null) {
             throw new RuntimeException("生产计划不存在");
         }
 
-        // 检查状态是否为草稿(DRAFT)
+        /** 检查状态是否为草稿(DRAFT) */
         if (!STATUS_DRAFT.equals(originalPlan.getStatus())) {
             throw new RuntimeException("该生产计划不为草稿，无法保存！");
         }
 
-        // 直接在原记录上更新全部表单字段，不新增记录
+        /** 直接在原记录上更新全部表单字段，不新增记录 */
         Long userId = LoginHelper.getUserId();
         BeanUtil.copyProperties(prdProductionPlan, originalPlan);
         originalPlan.setPlanId(prdProductionPlan.getPlanId());
@@ -336,13 +337,13 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("生产计划ID不能为空");
         }
 
-        // 查询生产计划
+        /** 查询生产计划 */
         PrdProductionPlan plan = baseMapper.selectById(planId);
         if (plan == null) {
             throw new RuntimeException("生产计划不存在");
         }
 
-        // 检查是否关联订单行
+        /** 检查是否关联订单行 */
         if (plan.getOrderLineId() == null) {
             throw new RuntimeException("该生产计划未关联订单行信息");
         }
@@ -355,7 +356,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("订单行未指定物料信息");
         }
 
-        // 查询该物料的当前有效BOM
+        /** 查询该物料的当前有效BOM */
         LambdaQueryWrapper<BdBom> bomQuery = Wrappers.lambdaQuery();
         bomQuery.eq(BdBom::getBomId, plan.getBomId());
         bomQuery.eq(BdBom::getIsCurrent, 1L);
@@ -366,10 +367,10 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("未找到该物料的有效BOM信息");
         }
 
-        // 获取第一个BOM（当前版本）
+        /** 获取第一个BOM（当前版本） */
         BdBom bom = bomList.get(0);
 
-        // 查询BOM明细
+        /** 查询BOM明细 */
         List<BdBomDetailVo> bomDetails = selectBomDetailVoList(bom.getBomId());
 
         if (bomDetails == null || bomDetails.isEmpty()) {
@@ -395,41 +396,94 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<PrdMaterialRequirement> generateMaterialRequirementsWithDetails(Long planId) {
-        // 1. 查询生产计划
+        /** 1. 查询生产计划 */
         PrdProductionPlan plan = baseMapper.selectById(planId);
         if (plan == null) {
             throw new RuntimeException("生产计划不存在");
         }
 
-        // 2. 物料需求生成依赖生产计划上选定的 BOM（plan.getBomId），与订单行无直接关系
+        /** 2. 物料需求生成使用生产计划选定的 BOM；销售订单驱动的计划还须核对成品物料。 */
         if (plan.getBomId() == null) {
             throw new RuntimeException("该生产计划未选择BOM，请先在表单选择BOM后再计算");
         }
 
-        // 2.5 幂等防重: 该计划已生成过物料需求时直接返回既有记录, 防重复点击成倍生成
+        /** 仅使用计划明确选中的 BOM，不能把 BOM 主键当作成品物料 ID，也不能回退到其他版本。 */
+        BdBom rootBom = bdBomMapper.selectById(plan.getBomId());
+        /** BOM 日期为 SQL DATE，以 Asia/Shanghai 业务日为准，失效日当天仍有效。 */
+        LocalDate today = LocalDate.now(BOM_BUSINESS_ZONE);
+        if (rootBom == null || !Objects.equals(rootBom.getBomId(), plan.getBomId())
+            || !Long.valueOf(1L).equals(rootBom.getIsCurrent()) || !Long.valueOf(1L).equals(rootBom.getStatus())
+            || (rootBom.getEffectiveDate() != null && bomBusinessDate(rootBom.getEffectiveDate()).isAfter(today))
+            || (rootBom.getExpiryDate() != null && bomBusinessDate(rootBom.getExpiryDate()).isBefore(today))) {
+            throw new RuntimeException("所选BOM无效或不在有效期");
+        }
+        if (rootBom.getParentMaterialId() == null || rootBom.getParentMaterialId() <= 0) {
+            throw new RuntimeException("所选BOM缺少有效的父项物料");
+        }
+        if (StringUtils.isBlank(plan.getTenantId()) || !Objects.equals(plan.getTenantId(), rootBom.getTenantId())) {
+            throw new RuntimeException("生产计划与所选BOM租户不一致");
+        }
+        if (StringUtils.isNotBlank(plan.getBomVersion()) && !Objects.equals(plan.getBomVersion(), rootBom.getBomVersion())) {
+            throw new RuntimeException("所选BOM版本与生产计划不一致");
+        }
+        if (plan.getOrderLineId() != null) {
+            SoSalesOrderLine orderLine = soSalesOrderLineMapper.selectById(plan.getOrderLineId());
+            if (orderLine == null) {
+                throw new RuntimeException("生产计划关联的销售订单行不存在");
+            }
+            if (!Objects.equals(plan.getTenantId(), orderLine.getTenantId())) {
+                throw new RuntimeException("生产计划与销售订单行租户不一致");
+            }
+            if (!Objects.equals(rootBom.getParentMaterialId(), orderLine.getMaterialId())) {
+                throw new RuntimeException("所选BOM父项物料与销售订单行物料不一致");
+            }
+        }
+
+        /** 幂等返回前也必须核验历史根需求，避免错误物料被继续用于生成工单。 */
         PrdMaterialRequirement existingProbe = new PrdMaterialRequirement();
         existingProbe.setPlanId(planId);
         List<PrdMaterialRequirement> existing = prdMaterialRequirementService.selectPrdMaterialRequirementList(existingProbe);
         if (existing != null && !existing.isEmpty()) {
-            log.info("该生产计划已生成过物料需求, 直接返回既有记录: planId={}, count={}", planId, existing.size());
+            List<PrdMaterialRequirement> roots = existing.stream()
+                .filter(requirement -> Objects.equals(requirement.getPlanId(), planId)
+                    && requirement.getParentRequirementId() == null
+                    && Objects.equals(requirement.getBomId(), rootBom.getBomId()))
+                .toList();
+            if (roots.size() != 1) {
+                throw new RuntimeException("既有物料需求缺少唯一可信根（可能为虚拟件跳层），请人工审计，不得自动覆盖");
+            }
+            if (!Objects.equals(roots.get(0).getMaterialId(), rootBom.getParentMaterialId())
+                || !Objects.equals(roots.get(0).getTenantId(), plan.getTenantId())) {
+                throw new RuntimeException("既有物料需求根物料或租户与所选BOM不一致，请人工审计，不得自动覆盖");
+            }
+            log.info("该生产计划已生成过物料需求, 核验根需求后返回既有记录: planId={}, count={}", planId, existing.size());
             return existing;
         }
 
-        // 3. 按节点拆分生成：顶层与每个子节点BOM分别生成主表与底层物料子表
+        /** 3. 按节点拆分生成：顶层与每个子节点BOM分别生成主表与底层物料子表 */
         List<PrdMaterialRequirement> createdMainRequirements = processBomNode(
-                plan.getBomId(),
-                plan.getBomId(),
+                rootBom.getParentMaterialId(),
+                rootBom.getBomId(),
                 plan.getTotalQuantity(),
                 plan,
                 null,
-                // 根节点需求日期 = 计划完成日期, 子层按各物料提前期倒排
-                plan.getEndDate()
+                /** 根节点需求日期 = 计划完成日期, 子层按各物料提前期倒排 */
+                plan.getEndDate(),
+                rootBom
         );
 
         log.info("成功生成物料需求，共生成 {} 条主表记录", createdMainRequirements.size());
 
-        // 4. 返回所有生成的主表记录
+        /** 4. 返回所有生成的主表记录 */
         return createdMainRequirements;
+    }
+
+    /** SQL DATE 保留库里的日历日；其他 Date 按业务时区解释，不按当前时分秒判断。 */
+    private static LocalDate bomBusinessDate(Date date) {
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        return date.toInstant().atZone(BOM_BUSINESS_ZONE).toLocalDate();
     }
 
     /**
@@ -443,59 +497,61 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private List<PrdMaterialRequirement> processBomNode(Long materialId, Long specifiedBomId,
                                                          BigDecimal parentQuantity, PrdProductionPlan plan,
                                                          Long parentRequirementId,
-                                                         Date parentRequiredDate) {
+                                                         Date parentRequiredDate, BdBom selectedRootBom) {
         List<PrdMaterialRequirement> result = new ArrayList<>();
 
-        // 获取当前节点的BOM（顶层使用指定bomId，子节点优先查当前有效BOM）
-        BdBom currentBom = getCurrentBom(materialId, specifiedBomId);
+        /** 获取当前节点的BOM（顶层使用指定bomId，子节点优先查当前有效BOM） */
+        BdBom currentBom = selectedRootBom != null ? selectedRootBom : getCurrentBom(materialId, specifiedBomId);
         if (currentBom == null) {
-            // 当前为底层物料（无BOM），不在此处生成主表，交由父节点主表收集
+            /** 当前为底层物料（无BOM），不在此处生成主表，交由父节点主表收集 */
             return result;
         }
 
-        // 查询当前BOM的明细
+        /** 查询当前BOM的明细 */
         List<BdBomDetailVo> bomDetails = selectBomDetailVoList(currentBom.getBomId());
         if (bomDetails == null || bomDetails.isEmpty()) {
-            // 无明细则不生成主表
+            /** 无明细则不生成主表 */
             return result;
         }
 
-        // 判断当前节点物料是否虚拟件：虚拟件跳层，本身不产生主表
+        /** 判断当前节点物料是否虚拟件：虚拟件跳层，本身不产生主表 */
         BdMaterial currentMaterial = getMaterialInfo(materialId);
         boolean isCurrentPhantom = currentMaterial != null
             && Integer.valueOf(1).equals(currentMaterial.getIsPhantom());
 
-        // 获取BOM的来源类型：PROCUREMENT-采购（不递归），PROCESS-加工（递归展开子BOM）
+        /** 获取BOM的来源类型：PROCUREMENT-采购（不递归），PROCESS-加工（递归展开子BOM） */
         String sourceType = currentBom.getSourceType();
         boolean isProcurement = "PROCUREMENT".equals(sourceType);
 
-        // 当前节点用于主表的底层物料清单
+        /** 当前节点用于主表的底层物料清单 */
         List<MaterialRequirementCalcDTO> leafRequirements = new ArrayList<>();
-        // 需要递归处理的子节点（具备BOM，且非采购类型）
+        /** 需要递归处理的子节点（具备BOM，且非采购类型） */
         List<BomCalculationNode> childAssemblyNodes = new ArrayList<>();
 
         for (BdBomDetailVo detail : bomDetails) {
-            // 计算该子项在当前节点需求数量（含损耗率）
+            /** 计算该子项在当前节点需求数量（含损耗率） */
             BigDecimal childRequiredQuantity = calculateChildQuantity(
                     parentQuantity,
                     detail.getQuantityPerParent(),
                     detail.getLossRate()
             );
 
-            // 提前获取子项物料信息：用于虚拟件判断与 sourceType 分流
+            /** 提前获取子项物料信息：用于虚拟件判断与 sourceType 分流 */
             BdMaterial childMaterial = getMaterialInfo(detail.getChildMaterialId());
             boolean isChildPhantom = childMaterial != null
                 && Integer.valueOf(1).equals(childMaterial.getIsPhantom());
-            // 子项物料的 sourceType（优先），未配置时回退父BOM
+            /** 子项物料的 sourceType（优先），未配置时回退父BOM */
             String childSourceType = (childMaterial != null && childMaterial.getSourceType() != null)
                 ? childMaterial.getSourceType() : sourceType;
 
-            // 采购类型BOM：所有明细均作为底层物料，不递归展开子BOM
-            // 加工类型BOM：判断子项是否有子BOM来决定是否递归
-            // 虚拟件子项：本身不计入 leafRequirements（跳层），但其子BOM仍需递归展开
+            /**
+             * 采购类型BOM：所有明细均作为底层物料，不递归展开子BOM
+             * 加工类型BOM：判断子项是否有子BOM来决定是否递归
+             * 虚拟件子项：本身不计入 leafRequirements（跳层），但其子BOM仍需递归展开
+             */
             BdBom childBom = isProcurement ? null : getCurrentBom(detail.getChildMaterialId(), null);
             if (childBom != null) {
-                // 子项有子BOM：作为子节点递归（含虚拟件，虚拟件主表会在其入口处被跳过）
+                /** 子项有子BOM：作为子节点递归（含虚拟件，虚拟件主表会在其入口处被跳过） */
                 BomCalculationNode childNode = new BomCalculationNode();
                 childNode.setMaterialId(detail.getChildMaterialId());
                 childNode.setQuantity(childRequiredQuantity);
@@ -503,7 +559,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 childNode.setParentDetail(detail);
                 childAssemblyNodes.add(childNode);
             } else if (!isChildPhantom) {
-                // 非虚拟件底层物料：进入当前主表的子表
+                /** 非虚拟件底层物料：进入当前主表的子表 */
                 MaterialRequirementCalcDTO dto = new MaterialRequirementCalcDTO();
                 dto.setMaterialId(detail.getChildMaterialId());
                 dto.setTotalRequiredQuantity(childRequiredQuantity);
@@ -512,9 +568,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 dto.setOperationStep(detail.getOperationStep() != null ?
                         Long.valueOf(detail.getOperationStep()) : null);
                 dto.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
-                // sourceType 优先取子项物料的，物料未配置时回退父BOM
+                /** sourceType 优先取子项物料的，物料未配置时回退父BOM */
                 dto.setSourceType(childSourceType);
-                // 补充物料基础信息
+                /** 补充物料基础信息 */
                 if (childMaterial != null) {
                     dto.setMaterialCode(childMaterial.getMaterialCode());
                     dto.setMaterialName(childMaterial.getMaterialName());
@@ -525,20 +581,22 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                         dto.setCategoryPath(category.getPathNames());
                     }
                 } else {
-                    // 如果获取不到物料信息，至少设置从BOM明细中可以获得的基本信息
+                    /** 如果获取不到物料信息，至少设置从BOM明细中可以获得的基本信息 */
                     dto.setMaterialCode(detail.getChildMaterialCode());
                     dto.setMaterialName(detail.getChildMaterialName());
                 }
                 leafRequirements.add(dto);
             }
-            // 虚拟件且无子BOM：跳过（虚拟件不应进入需求，正常情况下虚拟件必有子BOM）
+            /** 虚拟件且无子BOM：跳过（虚拟件不应进入需求，正常情况下虚拟件必有子BOM） */
         }
 
-        // 合并相同底层物料用量，仅对当前节点的底层物料合并
+        /** 合并相同底层物料用量，仅对当前节点的底层物料合并 */
         List<MaterialRequirementCalcDTO> mergedLeaves = mergeMaterialRequirements(leafRequirements);
 
-        // 当前节点主表与子表生成（若存在底层物料，且当前节点非虚拟件）
-        // 虚拟件本身不生成主表（跳层），其下层需求通过递归子BOM生成并挂到祖父
+        /**
+         * 当前节点主表与子表生成（若存在底层物料，且当前节点非虚拟件）
+         * 虚拟件本身不生成主表（跳层），其下层需求通过递归子BOM生成并挂到祖父
+         */
         PrdMaterialRequirement mainRequirement = null;
         if (!isCurrentPhantom && !mergedLeaves.isEmpty()) {
             mainRequirement = createMaterialRequirement(plan, currentBom.getBomId(), mergedLeaves, parentRequirementId);
@@ -546,7 +604,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
             List<PrdMaterialRequirementDetail> detailList = new ArrayList<>();
             for (MaterialRequirementCalcDTO calcDto : mergedLeaves) {
-                // 底层物料需求日期按当前节点需求日期与物料提前期倒排(见 createMaterialRequirementDetail)
+                /** 底层物料需求日期按当前节点需求日期与物料提前期倒排(见 createMaterialRequirementDetail) */
                 PrdMaterialRequirementDetail detailRecord = createMaterialRequirementDetail(
                         mainRequirement.getRequirementId(),
                         calcDto,
@@ -564,12 +622,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             result.add(mainRequirement);
         }
 
-        // 递归处理具备BOM的子节点：每个子节点生成独立的主表与其底层物料子表
-        // 虚拟件节点：mainRequirement 为 null，子节点 parentRequirementId 沿用传入值（跳层挂到祖父）
+        /**
+         * 递归处理具备BOM的子节点：每个子节点生成独立的主表与其底层物料子表
+         * 虚拟件节点：mainRequirement 为 null，子节点 parentRequirementId 沿用传入值（跳层挂到祖父）
+         */
         Long nextParentRequirementId = mainRequirement != null
             ? mainRequirement.getRequirementId() : parentRequirementId;
         for (BomCalculationNode childNode : childAssemblyNodes) {
-            // 子节点需求日期倒排: 父节点需求日期 - 子项提前期(小时), 保证子项产出不晚于父项需求
+            /** 子节点需求日期倒排: 父节点需求日期 - 子项提前期(小时), 保证子项产出不晚于父项需求 */
             Date childRequiredDate = parentRequiredDate;
             if (parentRequiredDate != null && childNode.getParentDetail() != null
                 && childNode.getParentDetail().getLeadTime() != null
@@ -583,7 +643,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                     childNode.getQuantity(),
                     plan,
                     nextParentRequirementId,
-                    childRequiredDate
+                    childRequiredDate,
+                    null
             ));
         }
 
@@ -617,8 +678,10 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("生产计划不存在");
         }
 
-        // 解析销售订单客户信息(计划来源行 -> SO行 -> SO头), 落到工单并经MQ透传给MES匹配客户定制化发布包;
-        // 非销售订单驱动的计划 orderLineId 为空, 客户信息保持空(MES走标准工艺路线不覆写)
+        /**
+         * 解析销售订单客户信息(计划来源行 -> SO行 -> SO头), 落到工单并经MQ透传给MES匹配客户定制化发布包;
+         * 非销售订单驱动的计划 orderLineId 为空, 客户信息保持空(MES走标准工艺路线不覆写)
+         */
         Long soClientId = null;
         String soClientName = null;
         String soCustomerProductCode = null;
@@ -636,7 +699,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             }
         }
 
-        int count = 0;
+        /** 先校验整批来源再消耗编号/写工单，避免后项被拒绝时前项已生成或编号已提交。 */
+        Map<Long, PrdMaterialRequirement> validatedRequirements = new LinkedHashMap<>();
+        BdBom rootBom = null;
         for (Long requirementId : requirementIds) {
             PrdMaterialRequirement requirement = prdMaterialRequirementService
                     .selectPrdMaterialRequirementByRequirementId(requirementId);
@@ -644,12 +709,43 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 log.warn("物料需求单不存在, requirementId={}", requirementId);
                 continue;
             }
+            if (!Objects.equals(plan.getPlanId(), requirement.getPlanId())) {
+                throw new RuntimeException("所选物料需求单不属于当前生产计划，禁止跨计划生成工单");
+            }
+            if (StringUtils.isBlank(plan.getTenantId()) || !Objects.equals(plan.getTenantId(), requirement.getTenantId())) {
+                throw new RuntimeException("所选物料需求单与生产计划租户不一致，禁止生成工单");
+            }
             if (requirement.getMaterialId() == null) {
                 log.warn("物料需求单未关联物料, requirementId={}", requirementId);
                 continue;
             }
+            if (requirement.getParentRequirementId() != null || plan.getBomId() == null
+                || !Objects.equals(plan.getBomId(), requirement.getBomId())) {
+                throw new RuntimeException("非根子装配缺少可信的父项需求数量，禁止使用子物料合计生成工单，请人工核验");
+            }
+            if (rootBom == null) {
+                rootBom = bdBomMapper.selectById(plan.getBomId());
+            }
+            if (rootBom == null || !Objects.equals(rootBom.getBomId(), plan.getBomId())) {
+                throw new RuntimeException("生产计划所选BOM不存在，无法核验根需求物料，请人工核验");
+            }
+            if (!Objects.equals(plan.getTenantId(), rootBom.getTenantId())) {
+                throw new RuntimeException("生产计划与所选BOM租户不一致，禁止生成工单");
+            }
+            if (!Objects.equals(requirement.getMaterialId(), rootBom.getParentMaterialId())) {
+                throw new RuntimeException("物料需求根物料与所选BOM父项物料不一致，请人工审计");
+            }
+            if (plan.getTotalQuantity() == null || plan.getTotalQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("生产计划成品数量必须大于零，不能使用子物料合计替代");
+            }
+            validatedRequirements.put(requirementId, requirement);
+        }
 
-            // 已生成过工单的跳过
+        int count = 0;
+        for (Map.Entry<Long, PrdMaterialRequirement> entry : validatedRequirements.entrySet()) {
+            Long requirementId = entry.getKey();
+            PrdMaterialRequirement requirement = entry.getValue();
+            /** 已生成过工单的跳过（既有工单不更新、不重建）。 */
             LambdaQueryWrapper<PrdWorkOrder> checkLqw = Wrappers.lambdaQuery();
             checkLqw.eq(PrdWorkOrder::getSourceId, requirementId);
             checkLqw.eq(PrdWorkOrder::getSourceType, "MATERIAL_REQUIREMENT");
@@ -659,10 +755,10 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 continue;
             }
 
-            // 生成工单号
+            /** 生成工单号 */
             String woNo = autoCodeUtil.genSerialCode("PRD_WORK_ORDER_CODE", null);
 
-            // 创建工单
+            /** 创建工单 */
             PrdWorkOrder wo = new PrdWorkOrder();
             wo.setWoNo(woNo);
             wo.setPlanId(planId);
@@ -674,7 +770,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             wo.setMaterialCode(requirement.getMaterialCode());
             wo.setMaterialName(requirement.getMaterialName());
             wo.setMaterialSpec(requirement.getMaterialSpec());
-            wo.setPlannedQty(requirement.getTotalRequiredQuantity());
+            /** 仅允许已核验的计划根成品，组件合计不能代表根/子装配的应产数量。 */
+            wo.setPlannedQty(plan.getTotalQuantity());
             wo.setCompletedQty(BigDecimal.ZERO);
             wo.setScrapQty(BigDecimal.ZERO);
             wo.setBomId(requirement.getBomId());
@@ -693,7 +790,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     }
 
     private BdBom getCurrentBom(Long materialId, Long specifiedBomId) {
-        // 如果指定了BOM ID，优先使用指定的BOM
+        /** 如果指定了BOM ID，优先使用指定的BOM */
         if (specifiedBomId != null) {
             BdBom specifiedBom = bdBomMapper.selectById(specifiedBomId);
             if (specifiedBom != null && specifiedBom.getIsCurrent() == 1L && specifiedBom.getStatus() == 1L) {
@@ -701,7 +798,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             }
         }
 
-        // 否则查询该物料的当前有效BOM
+        /** 否则查询该物料的当前有效BOM */
         LambdaQueryWrapper<BdBom> bomQuery = Wrappers.lambdaQuery();
         bomQuery.eq(BdBom::getParentMaterialId, materialId);
         bomQuery.eq(BdBom::getIsCurrent, 1L);
@@ -728,12 +825,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
         for (MaterialRequirementCalcDTO item : requirements) {
             if (mergedMap.containsKey(item.getMaterialId())) {
-                // 合并相同物料的用量
+                /** 合并相同物料的用量 */
                 MaterialRequirementCalcDTO existing = mergedMap.get(item.getMaterialId());
                 existing.setTotalRequiredQuantity(
                         existing.getTotalRequiredQuantity().add(item.getTotalRequiredQuantity())
                 );
-                // 更新物料路径，显示多路径
+                /** 更新物料路径，显示多路径 */
                 existing.setMaterialPath(existing.getMaterialPath() + "; " + item.getMaterialPath());
             } else {
                 mergedMap.put(item.getMaterialId(), item);
@@ -790,7 +887,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                                                              Long parentRequirementId) {
         PrdMaterialRequirement mainRequirement = new PrdMaterialRequirement();
 
-        // 设置基本信息
+        /** 设置基本信息 */
         mainRequirement.setPlanId(plan.getPlanId());
         mainRequirement.setPlanNo(plan.getPlanNo());
         mainRequirement.setParentRequirementId(parentRequirementId);
@@ -798,13 +895,13 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         mainRequirement.setRequirementDate(new Date());
         mainRequirement.setStatus("DRAFT");
 
-        // 设置相关人员信息
+        /** 设置相关人员信息 */
         mainRequirement.setPlannerId(plan.getPlannerId());
         mainRequirement.setPlannerName(plan.getPlannerName());
         mainRequirement.setDeptId(plan.getDeptId());
         mainRequirement.setDeptName(plan.getDeptName());
 
-        // 设置物料信息
+        /** 设置物料信息 */
         BdBom bom = bdBomMapper.selectById(bomId);
         if (bom != null) {
             mainRequirement.setMaterialId(bom.getParentMaterialId());
@@ -820,7 +917,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         String requirementNo = autoCodeUtil.genSerialCode("PRD_MATERIAL_MBOM", null);
         mainRequirement.setRequirementNo(requirementNo);
 
-        // 计算统计信息
+        /** 计算统计信息 */
         mainRequirement.setTotalMaterialTypes((long) requirements.size());
 
         BigDecimal totalRequiredQuantity = requirements.stream()
@@ -845,7 +942,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         detail.setMaterialName(calcDto.getMaterialName());
         detail.setMaterialSpec(calcDto.getMaterialSpec());
 
-        // 设置单位信息 - 从物料主数据获取
+        /** 设置单位信息 - 从物料主数据获取 */
         String unit = "";
         BdMaterial material = getMaterialInfo(calcDto.getMaterialId());
         if (material != null && material.getBaseUomId() != null) {
@@ -860,16 +957,16 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         detail.setRequiredQuantity(calcDto.getTotalRequiredQuantity());
         detail.setIssuedQuantity(BigDecimal.ZERO);
 
-        // 设置工艺信息
+        /** 设置工艺信息 */
         detail.setOperationStep(calcDto.getOperationStep());
         detail.setWorkstationId(calcDto.getWorkstationId());
         detail.setWorkstationName(calcDto.getWorkstationName());
         detail.setLeadTime(calcDto.getLeadTime());
 
-        // 净需求计算: 毛需求 - 现有库存 - 安全库存 = 净需求
+        /** 净需求计算: 毛需求 - 现有库存 - 安全库存 = 净需求 */
         prdMaterialRequirementService.calculateNetRequirements(detail);
 
-        // 提前期偏移: 需求日期 = 父层需求日期 - 提前期(小时)，口径统一到 BomExplosionCalculator(ERP-PRD-01)
+        /** 提前期偏移: 需求日期 = 父层需求日期 - 提前期(小时)，口径统一到 BomExplosionCalculator(ERP-PRD-01) */
         Date requiredDate = BomExplosionCalculator.resolveRequiredDate(parentRequiredDate, calcDto.getLeadTime());
         detail.setRequiredDate(requiredDate);
 

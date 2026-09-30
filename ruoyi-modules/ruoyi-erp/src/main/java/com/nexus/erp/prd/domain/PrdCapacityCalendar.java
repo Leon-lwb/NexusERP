@@ -29,7 +29,7 @@ public class PrdCapacityCalendar extends BaseEntity {
     /**
      * 租户ID
      */
-    private Long tenantId;
+    private String tenantId;
 
     /**
      * 日期

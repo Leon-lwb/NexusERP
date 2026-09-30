@@ -27,11 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
- * 工艺路线Service业务层处理
+ * 工艺路线服务业务层处理
  *
  * @author nexus
  */
@@ -110,7 +112,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         try {
             rows = baseMapper.insert(entity);
         } catch (DuplicateKeyException e) {
-            // 兜底：编码+版本已被逻辑删除的历史记录占用时查询看不到，唯一索引仍会拦下
+            /** 兜底：编码+版本已被逻辑删除的历史记录占用时查询看不到，唯一索引仍会拦下 */
             throw duplicateCodeException(entity.getRoutingCode(), entity.getRoutingVersion());
         }
         saveSteps(entity.getRoutingId(), bo.getSteps());
@@ -137,7 +139,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
             entity.setRoutingCode(autoCodeUtil.genSerialCode(ROUTING_CODE_RULE, null));
         }
         if (StringUtils.isBlank(entity.getRoutingVersion())) {
-            // 沿用库中现值而非常量，避免把 2.0 之类的版本回退成 1.0
+            /** 沿用库中现值而非常量，避免把 2.0 之类的版本回退成 1.0 */
             entity.setRoutingVersion(StringUtils.defaultIfBlank(existing.getRoutingVersion(), DEFAULT_ROUTING_VERSION));
         }
         assertCodeVersionUnique(entity.getRoutingCode(), entity.getRoutingVersion(), entity.getRoutingId());
@@ -154,7 +156,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
 
     /**
      * 校验（工艺路线编码 + 版本号）在同一租户下唯一。
-     * <p>对应 DB 唯一索引 uk_routing_code_version(routing_code, routing_version, tenant_id)。
+     * <p>对应数据库唯一索引 uk_routing_code_version(routing_code, routing_version, tenant_id)。
      * 提前拦截是为了给出可读的中文提示，而不是把 SQL 约束冲突暴露成 500。</p>
      *
      * @param routingCode    工艺路线编码
@@ -230,14 +232,14 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        // 校验是否有BOM引用这些工艺路线
+        /** 校验是否有BOM引用这些工艺路线 */
         Long ref = bomMapper.selectCount(
             Wrappers.lambdaQuery(BdBom.class)
                 .in(BdBom::getRoutingId, List.of(ids)));
         if (ref != null && ref > 0) {
             throw new ServiceException("所选工艺路线已被" + ref + "个BOM引用，无法删除");
         }
-        // 级联删除步骤
+        /** 级联删除步骤 */
         for (Long routingId : ids) {
             stepMapper.delete(Wrappers.lambdaQuery(BdRoutingStep.class)
                 .eq(BdRoutingStep::getRoutingId, routingId));
@@ -260,7 +262,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         if (routing.getMaterialId() == null) {
             throw new ServiceException("工艺路线未关联物料，无法激活");
         }
-        // 将该物料所有工艺路线版本设为非当前
+        /** 将该物料所有工艺路线版本设为非当前 */
         List<BdRouting> sameMaterialRoutings = baseMapper.selectList(
             Wrappers.lambdaQuery(BdRouting.class)
                 .eq(BdRouting::getMaterialId, routing.getMaterialId()));
@@ -268,7 +270,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
             r.setIsCurrent(0L);
             baseMapper.updateById(r);
         }
-        // 激活当前版本
+        /** 激活当前版本 */
         routing.setIsCurrent(1L);
         routing.setStatus(1L);
         baseMapper.updateById(routing);
@@ -291,7 +293,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
                 .eq(BdRouting::getIsCurrent, 1L)
                 .eq(BdRouting::getStatus, 1L));
         if (routing == null) {
-            // 如果没有物料专属的工艺路线，尝试获取通用工艺路线
+            /** 如果没有物料专属的工艺路线，尝试获取通用工艺路线 */
             routing = baseMapper.selectOne(
                 Wrappers.lambdaQuery(BdRouting.class)
                     .isNull(BdRouting::getMaterialId)
@@ -327,19 +329,27 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         if (routing == null) {
             return "工艺路线不存在";
         }
-        // 检查是否有步骤
+        /** 检查是否有步骤 */
         List<BdRoutingStep> steps = stepMapper.selectList(
             Wrappers.lambdaQuery(BdRoutingStep.class)
-                .eq(BdRoutingStep::getRoutingId, routingId));
+                .eq(BdRoutingStep::getRoutingId, routingId)
+                .orderByAsc(BdRoutingStep::getSequenceNum));
         if (steps == null || steps.isEmpty()) {
             return "工艺路线步骤为空，请添加工序步骤";
         }
-        // 检查步骤序号连续性
-        for (int i = 0; i < steps.size(); i++) {
-            if (steps.get(i).getSequenceNum() == null || steps.get(i).getSequenceNum() != i + 1) {
-                return "工艺路线步骤序号不连续，期望序号 " + (i + 1) + "，实际 " + steps.get(i).getSequenceNum();
+        /** 即使查询实现返回乱序记录，也按序号校验；不修改持久化的步骤。 */
+        List<BdRoutingStep> orderedSteps = new ArrayList<>(steps);
+        orderedSteps.sort(Comparator.comparing(BdRoutingStep::getSequenceNum,
+            Comparator.nullsFirst(Comparator.naturalOrder())));
+        Integer firstSequence = orderedSteps.get(0).getSequenceNum();
+        int interval = firstSequence != null && firstSequence == 10 ? 10 : 1;
+        for (int i = 0; i < orderedSteps.size(); i++) {
+            BdRoutingStep step = orderedSteps.get(i);
+            int expected = (i + 1) * interval;
+            if (step.getSequenceNum() == null || step.getSequenceNum() != expected) {
+                return "工艺路线步骤序号不连续，期望序号 " + expected + "，实际 " + step.getSequenceNum();
             }
-            if (steps.get(i).getProcessId() == null) {
+            if (step.getProcessId() == null) {
                 return "第 " + (i + 1) + " 步工序为空";
             }
         }
