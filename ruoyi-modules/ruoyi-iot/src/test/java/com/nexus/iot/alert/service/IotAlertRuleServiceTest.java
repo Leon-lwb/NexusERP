@@ -46,7 +46,7 @@ class IotAlertRuleServiceTest {
 
     @BeforeEach
     void setUp() {
-        // LambdaQueryWrapper 需要实体的列缓存（否则 LambdaUtils.extract 抛 can not find lambda cache）
+        /** LambdaQueryWrapper 需要实体的列缓存（否则 LambdaUtils.extract 抛 “找不到 Lambda 缓存”） */
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), IotAlertRule.class);
         baseMapper = mock(IotAlertRuleMapper.class);
         service = new IotAlertRuleServiceImpl(baseMapper);
@@ -96,6 +96,18 @@ class IotAlertRuleServiceTest {
             .thenReturn(List.of(rule(1L, 999L, 0L), rule(2L, 0L, 888L)));
 
         assertTrue(service.selectEnabledRules(TENANT, 1L, 9L, "temperature").isEmpty());
+    }
+
+    /** 设备/产品没有专属规则时，全局规则仍是唯一适用的库内兜底。 */
+    @Test
+    void selectEnabledRules_noSpecificRule_globalStillMatches() {
+        when(baseMapper.selectList(any()))
+            .thenReturn(List.of(rule(7001L, 0L, 0L), rule(8701L, 9L, 0L), rule(8702L, 0L, 99L)));
+
+        List<IotAlertRule> matched = service.selectEnabledRules(TENANT, 1L, 1L, "temperature");
+
+        assertEquals(1, matched.size());
+        assertEquals(7001L, matched.get(0).getRuleId());
     }
 
     /** 属性编码为空时不返回任何规则（避免全表误匹配）。 */

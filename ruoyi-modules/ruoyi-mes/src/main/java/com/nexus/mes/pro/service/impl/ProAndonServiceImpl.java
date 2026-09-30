@@ -11,12 +11,14 @@ import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.core.event.UserNotificationEvent;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.iot.dto.IotAlert;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.pro.domain.ProAndon;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProWorkOrder;
@@ -43,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * MES安灯 Service 业务层实现
+ * MES 安灯业务层服务实现
  * <p>
  * 状态机: CALLED -> RESPONDED -> RESOLVED / CANCELLED
  * 每次状态变更: ① 站内通知落库(sys_user_notification, 经 UserNotificationEvent 由 ruoyi-im 监听)
@@ -66,8 +68,8 @@ public class ProAndonServiceImpl implements IProAndonService {
     @Override
     /**
      * 查询
-     * @param bo bo
-     * @param pageQuery pageQuery
+     * @param bo 安灯查询条件
+     * @param pageQuery 分页参数
      * @return 分页结果
      */
     public TableDataInfo<ProAndonVo> selectPageList(ProAndonBo bo, PageQuery pageQuery) {
@@ -93,14 +95,14 @@ public class ProAndonServiceImpl implements IProAndonService {
      */
     public Map<String, Object> dashboardStats() {
         Map<String, Object> stats = new HashMap<>();
-        // 活跃呼叫数(CALLED + RESPONDED)
+        /** 活跃呼叫数(CALLED + RESPONDED) */
         Long activeCount = baseMapper.selectCount(Wrappers.<ProAndon>lambdaQuery()
             .eq(ProAndon::getAndonStatus, STATUS_CALLED)
             .or()
             .eq(ProAndon::getAndonStatus, STATUS_RESPONDED));
         stats.put("activeCount", activeCount);
 
-        // 按状态分组计数
+        /** 按状态分组计数 */
         Map<String, Long> statusCount = new HashMap<>();
         for (String status : new String[]{STATUS_CALLED, STATUS_RESPONDED, STATUS_RESOLVED, STATUS_CANCELLED}) {
             statusCount.put(status, baseMapper.selectCount(Wrappers.<ProAndon>lambdaQuery()
@@ -108,7 +110,7 @@ public class ProAndonServiceImpl implements IProAndonService {
         }
         stats.put("statusCount", statusCount);
 
-        // 按呼叫类型分组计数(活跃)
+        /** 按呼叫类型分组计数(活跃) */
         Map<String, Long> typeCount = new HashMap<>();
         for (String type : new String[]{TYPE_QUALITY, TYPE_MATERIAL, TYPE_EQUIPMENT, TYPE_OTHER}) {
             typeCount.put(type, baseMapper.selectCount(Wrappers.<ProAndon>lambdaQuery()
@@ -134,18 +136,51 @@ public class ProAndonServiceImpl implements IProAndonService {
     }
 
     /**
+     * IoT 内部入口：验证可信身份后切换到告警租户，来源和呼叫人不受请求或登录态控制。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProAndonVo callIotAndon(IotAlert alert) {
+        if (alert == null || !isValidTenantId(alert.getTenantId())) {
+            throw new IllegalArgumentException("IoT告警租户无效");
+        }
+        if (alert.getDeviceId() == null || alert.getDeviceId() <= 0
+            || StringUtils.isBlank(alert.getDeviceCode()) || alert.getDeviceCode().length() > 64
+            || (alert.getMesEquipmentId() != null && alert.getMesEquipmentId() <= 0)) {
+            throw new IllegalArgumentException("IoT告警设备身份无效");
+        }
+        String identity = "deviceCode=" + alert.getDeviceCode() + ", deviceId=" + alert.getDeviceId();
+        if (alert.getMesEquipmentId() != null) {
+            identity += ", mesEquipmentId=" + alert.getMesEquipmentId();
+        }
+        /** 真实身份置前，长告警描述仍适配既有 call_reason varchar(500)，不截掉设备关联信息。 */
+        String reason = StringUtils.substring(String.format("IoT设备告警[%s] (%s): %s (值=%s, 阈值=%s)",
+            alert.getAlertType(), identity, alert.getAlertMessage(), alert.getValue(), alert.getThreshold()), 0, 500);
+        return TenantHelper.dynamic(alert.getTenantId(), () -> createAndon(null, null, null,
+            TYPE_EQUIPMENT, reason, null, null, SOURCE_IOT, alert.getTenantId()));
+    }
+
+    /**
      * 呼叫安灯(完整参数版): 旧签名内部转调, 行为不变; 设备通道额外携带 stationCode/operatorCode。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProAndonVo callAndon(Long mesWoId, Long cardId, Long stepRecordId,
                                  String callType, String callReason, String stationCode, String operatorCode) {
-        // 1. 校验呼叫类型合法
+        return createAndon(mesWoId, cardId, stepRecordId, callType, callReason,
+            stationCode, operatorCode, SOURCE_MANUAL, currentNotificationTenant());
+    }
+
+    /** 来源只由内部入口固定，不能由 控制器/Station 请求任意指定。 */
+    private ProAndonVo createAndon(Long mesWoId, Long cardId, Long stepRecordId,
+                                   String callType, String callReason, String stationCode, String operatorCode,
+                                   String source, String tenantId) {
+        /** 1. 校验呼叫类型合法 */
         if (!isValidCallType(callType)) {
             throw new RuntimeException("非法呼叫类型: " + callType);
         }
 
-        // 2. 冗余关联字段(工单号/流转卡号)
+        /** 2. 冗余关联字段(工单号/流转卡号) */
         String woNo = null;
         String cardNo = null;
         if (mesWoId != null) {
@@ -167,7 +202,7 @@ public class ProAndonServiceImpl implements IProAndonService {
             }
         }
 
-        // 3. 构造安灯记录
+        /** 3. 构造安灯记录 */
         ProAndon andon = new ProAndon();
         andon.setAndonNo(generateAndonNo());
         andon.setMesWoId(mesWoId);
@@ -180,23 +215,29 @@ public class ProAndonServiceImpl implements IProAndonService {
         andon.setCallReason(callReason);
         andon.setAndonStatus(STATUS_CALLED);
         andon.setCallTime(new Date());
-        andon.setSource(SOURCE_MANUAL);
-        // 手动路径填写呼叫人身份(IoT 路径由 MesAndonServiceImpl 在租户上下文内调用, callerId 可能为 null);
-        // 设备通道(operatorCode 优先)与登录态同时存在时, 以登录态为准
-        Long callerId = LoginHelper.getUserId();
-        if (callerId != null) {
-            andon.setCallerId(callerId);
-            andon.setCallerName(LoginHelper.getUsername());
-        } else if (StringUtils.isNotBlank(operatorCode)) {
-            andon.setCallerName(operatorCode);
+        andon.setSource(source);
+        if (SOURCE_IOT.equals(source)) {
+            /** IoT 无登录上下文，显式保留 DTO 的真实租户；启用租户插件时也与动态上下文一致。 */
+            andon.setTenantId(tenantId);
+        }
+        Long callerId = null;
+        if (SOURCE_MANUAL.equals(source)) {
+            /** 手工/Station 保持登录身份优先、无登录时记录实际 operatorCode 的既有行为。 */
+            callerId = LoginHelper.getUserId();
+            if (callerId != null) {
+                andon.setCallerId(callerId);
+                andon.setCallerName(LoginHelper.getUsername());
+            } else if (StringUtils.isNotBlank(operatorCode)) {
+                andon.setCallerName(operatorCode);
+            }
         }
         baseMapper.insert(andon);
 
         ProAndonVo vo = baseMapper.selectVoById(andon.getAndonId());
         log.info("安灯呼叫成功: andonNo={}, callType={}, callerId={}", andon.getAndonNo(), callType, callerId);
 
-        // 4. 通知: 站内通知落库 + SSE 实时推送
-        notifyAndon(vo, STATUS_CALLED);
+        /** 4. 通知: 站内通知落库 + SSE 实时推送 */
+        notifyAndon(vo, STATUS_CALLED, tenantId);
         return vo;
     }
 
@@ -268,7 +309,7 @@ public class ProAndonServiceImpl implements IProAndonService {
         notifyAndon(baseMapper.selectVoById(andonId), STATUS_CANCELLED);
     }
 
-    // ==================== 私有辅助方法 ====================
+    /** ==================== 私有辅助方法 ==================== */
 
     private boolean isValidCallType(String callType) {
         return TYPE_QUALITY.equals(callType) || TYPE_MATERIAL.equals(callType)
@@ -294,22 +335,38 @@ public class ProAndonServiceImpl implements IProAndonService {
      * </p>
      */
     private void notifyAndon(ProAndonVo vo, String action) {
+        notifyAndon(vo, action, currentNotificationTenant());
+    }
+
+    private String currentNotificationTenant() {
+        return TenantHelper.isEnable() ? TenantHelper.getTenantId() : LoginHelper.getTenantId();
+    }
+
+    private boolean isValidTenantId(String tenantId) {
+        return tenantId != null && tenantId.matches("[A-Za-z0-9_-]{1,20}");
+    }
+
+    private void notifyAndon(ProAndonVo vo, String action, String tenantId) {
         if (vo == null) {
             return;
         }
-        String tenantId = LoginHelper.getTenantId();
+        /** 无有效租户时拒绝广播，也不消耗 notify_time CAS，避免遗漏上下文被当成全部租户。 */
+        if (!isValidTenantId(tenantId)) {
+            log.warn("安灯通知租户无效, 跳过通知: andonId={}, action={}", vo.getAndonId(), action);
+            return;
+        }
         Set<Long> onlineUsers = collectOnlineUsersByTenant(tenantId);
         if (CollUtil.isEmpty(onlineUsers)) {
-            // 离线不再"静默": 明确告警 + 仍走站内通知落库
+            /** 离线不再"静默": 明确告警 + 仍走站内通知落库 */
             log.warn("安灯通知无同租户在线用户, SSE 不可达, 已转为站内通知落库: andonId={}, tenantId={}, action={}",
                 vo.getAndonId(), tenantId, action);
         }
-        // 被通知人: 同租户在线用户; 全员离线时兜底通知呼叫人, 保证至少有一条可追溯的站内通知
+        /** 被通知人: 同租户在线用户; 全员离线时兜底通知呼叫人, 保证至少有一条可追溯的站内通知 */
         Set<Long> targets = new LinkedHashSet<>(onlineUsers);
         if (targets.isEmpty() && vo.getCallerId() != null) {
             targets.add(vo.getCallerId());
         }
-        // 呼叫通知幂等: 仅首次(notify_time 为空)通知; 响应/解决/取消由状态 CAS 保证仅一次
+        /** 呼叫通知幂等: 仅首次(notify_time 为空)通知; 响应/解决/取消由状态 CAS 保证仅一次 */
         if (STATUS_CALLED.equals(action) && !markCallNotified(vo, targets)) {
             log.info("安灯呼叫通知已发出过, 跳过重复通知: andonId={}", vo.getAndonId());
             return;
@@ -437,7 +494,7 @@ public class ProAndonServiceImpl implements IProAndonService {
      * 无在线用户时 SSE 不可达, 由 {@link #notifyAndon} 的站内通知落库兜底(不丢事件)。
      */
     private void pushAndonSse(ProAndonVo vo, String action, Set<Long> onlineUsers) {
-        // 先判空在线用户: 无人在线时无需触碰 SSE 组件(离线场景由 notifyAndon 的站内通知落库兜底)
+        /** 先判空在线用户: 无人在线时无需触碰 SSE 组件(离线场景由 notifyAndon 的站内通知落库兜底) */
         if (CollUtil.isEmpty(onlineUsers) || !SseMessageUtils.isEnable()) {
             return;
         }
@@ -458,6 +515,9 @@ public class ProAndonServiceImpl implements IProAndonService {
      */
     private Set<Long> collectOnlineUsersByTenant(String tenantId) {
         Set<Long> userIds = new LinkedHashSet<>();
+        if (!isValidTenantId(tenantId)) {
+            return userIds;
+        }
         List<String> keys;
         try {
             keys = StpUtil.searchTokenValue("", 0, -1, false);
@@ -476,11 +536,11 @@ public class ProAndonServiceImpl implements IProAndonService {
                 if (loginUser == null || loginUser.getUserId() == null) {
                     continue;
                 }
-                if (tenantId == null || tenantId.equals(loginUser.getTenantId())) {
+                if (tenantId.equals(loginUser.getTenantId())) {
                     userIds.add(loginUser.getUserId());
                 }
             } catch (Exception ignore) {
-                // 单个 token 解析失败不影响整体
+                /** 单个 token 解析失败不影响整体 */
             }
         }
         return userIds;

@@ -1,5 +1,6 @@
 package com.nexus.mes.pro.service;
 
+import com.nexus.common.iot.dto.IotAlert;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.pro.domain.bo.ProAndonBo;
@@ -8,7 +9,7 @@ import com.nexus.mes.pro.domain.vo.ProAndonVo;
 import java.util.Map;
 
 /**
- * MES安灯 Service 业务层接口
+ * MES 安灯业务层服务接口
  * <p>
  * 状态机: CALLED -> RESPONDED -> RESOLVED / CANCELLED
  * 呼叫类型: QUALITY(质量异常) / MATERIAL(物料短缺) / EQUIPMENT(设备故障) / OTHER(其他)
@@ -67,6 +68,17 @@ public interface IProAndonService {
      */
     ProAndonVo callAndon(Long mesWoId, Long cardId, Long stepRecordId,
                          String callType, String callReason);
+
+    /**
+     * 可信内部 IoT 告警入口，不供 控制器请求选择来源。
+     * 首次插入即为 SOURCE_IOT，在告警租户内处理，不借用登录态呼叫人。
+     * 设备身份保留在 callReason；不增加设备/告警关联列。
+     *
+     * @param alert 来自 IoT 的真实告警，须有有效租户、设备ID/编码；MES设备ID可空
+     * @return 安灯视图对象
+     * @throws IllegalArgumentException 租户或设备身份无效
+     */
+    ProAndonVo callIotAndon(IotAlert alert);
 
     /**
      * 呼叫安灯(完整参数版, 工位终端设备通道使用)

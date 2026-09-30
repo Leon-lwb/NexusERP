@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.event.UserNotificationEvent;
@@ -57,9 +58,9 @@ class ProAndonServiceImplTest {
 
     @BeforeAll
     static void initAll() {
-        // JsonUtils 静态初始化依赖 SpringUtils, 先激活静态桩(站内通知 extJson 走真实 Jackson)
+        /** JsonUtils 静态初始化依赖 SpringUtils, 先激活静态桩(站内通知 extJson 走真实 Jackson) */
         SpringStaticBootstrap.ensureActive();
-        // lambdaUpdate.set(...) 立即解析实体列缓存, 单测环境须手动初始化表元数据
+        /** lambdaUpdate.set(...) 立即解析实体列缓存, 单测环境须手动初始化表元数据 */
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, ProAndon.class);
         andonLogger = (Logger) LoggerFactory.getLogger(ProAndonServiceImpl.class);
@@ -87,15 +88,18 @@ class ProAndonServiceImplTest {
     @InjectMocks
     private ProAndonServiceImpl service;
 
+    private MockedStatic<SpringUtil> propertyMock;
     private MockedStatic<SpringUtils> aopProxyMock;
     private MockedStatic<LoginHelper> loginHelperMock;
 
     @BeforeEach
     void setUp() {
-        // publishNotificationsAfterCommit 经 SpringUtils.getAopProxy 调用事务方法, 纯单测无容器
+        propertyMock = mockStatic(SpringUtil.class);
+        propertyMock.when(() -> SpringUtils.getProperty("tenant.enable")).thenReturn("true");
+        /** publishNotificationsAfterCommit 经 SpringUtils.getAopProxy 调用事务方法, 纯单测无容器 */
         aopProxyMock = mockStatic(SpringUtils.class, withSettings().lenient());
         aopProxyMock.when(() -> SpringUtils.getAopProxy(any())).thenReturn(service);
-        // 无 Sa-Token 请求上下文, 登录态相关静态方法必须打桩
+        /** 无 Sa-Token 请求上下文, 登录态相关静态方法必须打桩 */
         loginHelperMock = mockStatic(LoginHelper.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(7L);
         loginHelperMock.when(LoginHelper::getUsername).thenReturn("operator");
@@ -110,6 +114,9 @@ class ProAndonServiceImplTest {
         }
         if (loginHelperMock != null) {
             loginHelperMock.close();
+        }
+        if (propertyMock != null) {
+            propertyMock.close();
         }
     }
 
@@ -142,15 +149,15 @@ class ProAndonServiceImplTest {
     @Test
     void callAndon_withoutOnlineUsers_stillPersistsNotificationAndWarns() {
         stubCallAndon();
-        // 呼叫通知落库 CAS 命中(首次通知)
+        /** 呼叫通知落库 CAS 命中(首次通知) */
         when(baseMapper.update(any(), any())).thenReturn(1);
 
         ProAndonVo result = service.callAndon(1L, null, null, "QUALITY", "物料短缺");
         assertNotNull(result);
 
-        // ① 呼叫通知落库(notify_time/notify_user_ids CAS)
+        /** ① 呼叫通知落库(notify_time/notify_user_ids CAS) */
         verify(baseMapper).update(any(), any());
-        // ② 站内通知事件仍产生(离线兜底通知呼叫人 7), 经 ruoyi-im 落 sys_user_notification
+        /** ② 站内通知事件仍产生(离线兜底通知呼叫人 7), 经 ruoyi-im 落 sys_user_notification */
         ArgumentCaptor<UserNotificationEvent> captor = ArgumentCaptor.forClass(UserNotificationEvent.class);
         verify(eventPublisher).publishEvent(captor.capture());
         UserNotificationEvent event = captor.getValue();
@@ -160,7 +167,7 @@ class ProAndonServiceImplTest {
         assertEquals("555", event.getRefId());
         assertEquals("000000", event.getTenantId());
         assertTrue(event.getTitle().contains("呼叫"));
-        // ③ warn 日志(原实现为 debug 且直接 return)
+        /** ③ warn 日志(原实现为 debug 且直接 return) */
         assertTrue(hasWarn("无同租户在线用户"), "无在线用户时必须记录 warn 日志");
         assertTrue(hasWarn("andonId=555"), "warn 日志须带 andonId 上下文");
     }
@@ -171,7 +178,7 @@ class ProAndonServiceImplTest {
     @Test
     void callAndon_duplicateCallNotification_isIdempotent() {
         stubCallAndon();
-        // notify_time 已非空 -> CAS 未命中
+        /** notify_time 已非空 -> CAS 未命中 */
         when(baseMapper.update(any(), any())).thenReturn(0);
 
         service.callAndon(1L, null, null, "QUALITY", "物料短缺");

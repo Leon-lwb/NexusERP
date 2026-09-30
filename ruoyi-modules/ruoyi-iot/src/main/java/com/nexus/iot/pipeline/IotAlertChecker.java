@@ -60,7 +60,7 @@ public class IotAlertChecker {
     private final IIotAlertRuleService alertRuleService;
     /** 告警记录服务（落库 + 去抖通知 + 投递留痕）。 */
     private final IIotAlertRecordService alertRecordService;
-    /** 设备服务，仅用于按 deviceCode 解析 productId（带 10 分钟缓存）。 */
+    /** 在同租户内查询 IoT 设备，用于产品规则匹配和 MES 关联。 */
     private final IIotDeviceService deviceService;
     /** 告警运行态存储（持续时长计时 / 设备→产品缓存）。 */
     private final IotAlertStateStore alertStateStore;
@@ -102,18 +102,19 @@ public class IotAlertChecker {
         Long productId = resolveProductId(data);
         List<IotAlertRule> rules = alertRuleService.selectEnabledRules(
             data.getTenantId(), data.getDeviceId(), productId, data.getPropertyCode());
-        for (IotAlertRule rule : rules) {
+        if (!rules.isEmpty()) {
+            /** 规则已按具体度排序；只判定最具体的一条，正常值不得下探低优先级规则或 YAML。 */
+            IotAlertRule rule = rules.get(0);
             if (!IotAlertCondition.breached(rule.getOperator(), value, rule.getThreshold())) {
-                continue;
+                return false;
             }
-            // 已命中最具体的规则：以其为准，不再降级匹配更低优先级规则或 YAML 默认
             if (!durationSatisfied(rule, data)) {
                 return false;
             }
             alertRecordService.trigger(rule, data, buildAlert(rule, data), IotAlertConstants.SOURCE_RULE);
             return true;
         }
-        // 库内无匹配规则 → YAML 兜底默认
+        /** 库内无匹配规则 → YAML 兜底默认 */
         BigDecimal threshold = resolveDefaultThreshold(data.getPropertyCode());
         if (threshold == null || value.compareTo(threshold) <= 0) {
             clearDurationKey(data, DEFAULT_RULE_KEY);
@@ -178,26 +179,53 @@ public class IotAlertChecker {
      * @return 产品ID，无法解析返回 null（此时仅设备级/全局规则参与匹配）
      */
     private Long resolveProductId(IotDeviceData data) {
-        if (StringUtils.isBlank(data.getDeviceCode())) {
+        if (data.getDeviceId() == null || StringUtils.isBlank(data.getTenantId())
+            || StringUtils.isBlank(data.getDeviceCode())) {
             return null;
         }
-        String key = IotAlertStateStore.deviceProductKey(data.getTenantId(), data.getDeviceCode());
+        /** 纳入可信数据记录的设备 ID：复用设备编码时，不得继承其他设备的产品关联。 */
+        String key = IotAlertStateStore.deviceProductKey(data.getTenantId(), data.getDeviceCode())
+            + ":" + data.getDeviceId();
         Long cached = alertStateStore.readDeviceProduct(key);
         if (cached != null) {
             return cached;
         }
-        Long productId;
-        try {
-            productId = TenantHelper.dynamic(data.getTenantId(), () -> {
-                IotDevice device = deviceService.selectEntityByCode(data.getDeviceCode());
-                return device == null || device.getProductId() == null ? 0L : device.getProductId();
-            });
-        } catch (Exception e) {
-            log.debug("查询设备产品失败：device={}, err={}", data.getDeviceCode(), e.getMessage());
+        IotDevice device = resolveTrustedDevice(data);
+        if (device == null) {
             return null;
         }
+        Long productId = device.getProductId() == null ? 0L : device.getProductId();
         alertStateStore.writeDeviceProduct(key, productId, DEVICE_PRODUCT_TTL);
         return productId;
+    }
+
+    /** 当前 MES 关联只可取自同租户内身份匹配的设备记录，绝不取自 MQTT 字段或缓存。 */
+    private Long resolveMesEquipmentId(IotDeviceData data) {
+        IotDevice device = resolveTrustedDevice(data);
+        if (device == null || device.getMesEquipmentId() == null || device.getMesEquipmentId() <= 0) {
+            return null;
+        }
+        return device.getMesEquipmentId();
+    }
+
+    private IotDevice resolveTrustedDevice(IotDeviceData data) {
+        if (data.getDeviceId() == null || StringUtils.isBlank(data.getTenantId())
+            || StringUtils.isBlank(data.getDeviceCode())) {
+            return null;
+        }
+        try {
+            IotDevice device = TenantHelper.dynamic(data.getTenantId(),
+                () -> deviceService.selectEntityByCode(data.getDeviceCode()));
+            if (device == null || !data.getDeviceId().equals(device.getDeviceId())
+                || !data.getTenantId().equals(device.getTenantId())
+                || !data.getDeviceCode().equals(device.getDeviceCode())) {
+                return null;
+            }
+            return device;
+        } catch (Exception e) {
+            log.debug("Device lookup failed for alert: device={}", data.getDeviceCode(), e);
+            return null;
+        }
     }
 
     /**
@@ -230,6 +258,7 @@ public class IotAlertChecker {
         IotAlert alert = new IotAlert();
         alert.setDeviceId(data.getDeviceId());
         alert.setDeviceCode(data.getDeviceCode());
+        alert.setMesEquipmentId(resolveMesEquipmentId(data));
         alert.setAlertType(StringUtils.isNotBlank(rule.getAlertType())
             ? rule.getAlertType() : resolveAlertType(data.getPropertyCode()));
         alert.setAlertLevel(StringUtils.isNotBlank(rule.getAlertLevel()) ? rule.getAlertLevel() : "MEDIUM");
@@ -249,6 +278,7 @@ public class IotAlertChecker {
         IotAlert alert = new IotAlert();
         alert.setDeviceId(data.getDeviceId());
         alert.setDeviceCode(data.getDeviceCode());
+        alert.setMesEquipmentId(resolveMesEquipmentId(data));
         alert.setAlertType(resolveAlertType(data.getPropertyCode()));
         alert.setAlertLevel("HIGH");
         alert.setAlertMessage(String.format("设备 %s 属性 %s 超阈值：当前 %s > 阈值 %s（来源：YAML 兜底默认）",

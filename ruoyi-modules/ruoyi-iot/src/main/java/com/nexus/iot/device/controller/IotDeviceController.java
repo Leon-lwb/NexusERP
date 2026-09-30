@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.iot.service.IotDeviceDataQueryService;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -39,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * IoT设备 Controller
+ * IoT 设备控制器
  * <p>
  * 管理设备实例，含在线状态、密钥、关联产品等。新增时自动生成 device_secret。
  *
@@ -54,6 +55,7 @@ public class IotDeviceController extends BaseController {
     private final IIotDeviceService iotDeviceService;
     private final IIotDeviceDataService iotDeviceDataService;
     private final IotDeviceLatestCache latestCache;
+    private final IotDeviceDataQueryService dataQueryService;
     private final IotDeviceStatusCache statusCache;
     private final IotRealtimeSseManager realtimeSseManager;
 
@@ -125,7 +127,8 @@ public class IotDeviceController extends BaseController {
         if (iotDeviceService.selectById(deviceId) == null) {
             return R.fail("设备不存在或无权限访问");
         }
-        return R.ok(latestCache.getAll(deviceId));
+        Map<String, String> cached = latestCache.getAll(deviceId);
+        return R.ok(cached.isEmpty() ? dataQueryService.getLatestData(deviceId) : cached);
     }
 
     /**
@@ -143,7 +146,7 @@ public class IotDeviceController extends BaseController {
     /**
      * 查询设备历史数据（采集时间区间，默认近 24 小时，最多 limit 条）
      * <p>
-     * IOT-DATA-01：LIMIT 下推到 DB，不再全量载入内存后 subList 截断。
+     * IOT-DATA-01：LIMIT 下推到数据库，不再全量载入内存后 subList 截断。
      */
     @SaCheckPermission("iot:device:query")
     @GetMapping("/{deviceId}/data")
@@ -154,7 +157,7 @@ public class IotDeviceController extends BaseController {
         if (iotDeviceService.selectById(deviceId) == null) {
             return TableDataInfo.build(List.of());
         }
-        // 默认窗口：近 24 小时
+        /** 默认窗口：近 24 小时 */
         Date actualEnd = end != null ? end : new Date();
         Date actualStart = start != null ? start : new Date(System.currentTimeMillis() - 24L * 60 * 60 * 1000);
         int max = IIotDeviceDataService.normalizeLimit(limit);
@@ -165,7 +168,7 @@ public class IotDeviceController extends BaseController {
     /**
      * 订阅设备实时数据 SSE 流（每 3 秒推送 iot:latest + iot:status 缓存快照）。
      * <p>
-     * 浏览器 EventSource 无法设置请求头，token 走 query 参数，与全局 /resource/sse 同模式。
+     * 浏览器 EventSource 无法设置请求头，token 通过查询参数传递，与全局 /resource/sse 同模式。
      */
     @SaIgnore
     @GetMapping(value = "/{deviceId}/realtime", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -179,7 +182,7 @@ public class IotDeviceController extends BaseController {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "设备不存在");
             return null;
         }
-        // 关闭 nginx/代理缓冲，保证实时性
+        /** 关闭 nginx/代理缓冲，保证实时性 */
         response.setHeader("X-Accel-Buffering", "no");
         String sessionKey = LoginHelper.getUserId() + ":" + IdUtil.fastSimpleUUID();
         return realtimeSseManager.connect(deviceId, sessionKey);

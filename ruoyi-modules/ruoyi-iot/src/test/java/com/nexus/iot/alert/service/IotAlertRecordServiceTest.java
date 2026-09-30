@@ -76,7 +76,7 @@ class IotAlertRecordServiceTest {
 
     @BeforeEach
     void setUp() {
-        // LambdaWrapper 需要实体的列缓存（否则 LambdaUtils.extract 抛 can not find lambda cache）
+        /** LambdaWrapper 需要实体的列缓存（否则 LambdaUtils.extract 抛 “找不到 Lambda 缓存”） */
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), IotAlertRecord.class);
         baseMapper = mock(IotAlertRecordMapper.class);
         notifyLogMapper = mock(IotAlertNotifyLogMapper.class);
@@ -84,7 +84,7 @@ class IotAlertRecordServiceTest {
         alertStateStore = mock(IotAlertStateStore.class);
         service = new IotAlertRecordServiceImpl(baseMapper, notifyLogMapper, notifier, alertStateStore);
 
-        // 消费线程无登录上下文：dynamic 直接执行回调体
+        /** 消费线程无登录上下文：dynamic 直接执行回调体 */
         tenantMock = mockStatic(TenantHelper.class);
         tenantMock.when(() -> TenantHelper.dynamic(anyString(), any(Supplier.class)))
             .thenAnswer(inv -> ((Supplier<?>) inv.getArgument(1)).get());
@@ -95,7 +95,7 @@ class IotAlertRecordServiceTest {
             });
         loginMock = mockStatic(LoginHelper.class);
         loginMock.when(LoginHelper::getUserId).thenReturn(9L);
-        // 去抖窗口默认放行
+        /** 去抖窗口默认放行 */
         when(alertStateStore.acquireDebounce(anyString(), any(Duration.class))).thenReturn(true);
     }
 
@@ -277,6 +277,27 @@ class IotAlertRecordServiceTest {
         assertTrue(sqlSet.contains("status"), "恢复必须写入 status: " + sqlSet);
         assertTrue(sqlSet.contains("active_flag = NULL"), "恢复必须清 active_flag: " + sqlSet);
         assertTrue(sqlSet.contains("resolve_value"), "恢复必须写恢复值: " + sqlSet);
+    }
+
+    /** 旧全局规则误报仍超其阈值时，只能经人工审计恢复 ACTIVE，不能伪称自动恢复。 */
+    @Test
+    @SuppressWarnings("unchecked")
+    void resolve_activeFalsePositive_usesAuditedBusinessTransition() {
+        IotAlertRecord active = activeRecord(7L, IotAlertStatus.ACTIVE);
+        active.setRuleId(7001L);
+        when(baseMapper.selectById(7L)).thenReturn(active);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        BigDecimal verifiedValue = new BigDecimal("187.3");
+        String remark = "已核实产品规则温度上限220℃，全局规则80℃误用，人工恢复";
+        assertTrue(service.resolve(7L, verifiedValue, remark));
+
+        ArgumentCaptor<Wrapper<IotAlertRecord>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        LambdaUpdateWrapper<IotAlertRecord> transition = (LambdaUpdateWrapper<IotAlertRecord>) captor.getValue();
+        assertTrue(transition.getSqlSet().contains("active_flag = NULL"));
+        assertTrue(transition.getParamNameValuePairs().containsValue(verifiedValue));
+        assertTrue(transition.getParamNameValuePairs().containsValue(remark));
     }
 
     /** 属性恢复正常 → 自动 RESOLVED。 */
