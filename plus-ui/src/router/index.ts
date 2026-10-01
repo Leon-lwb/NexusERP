@@ -1,9 +1,9 @@
 import { createWebHistory, createRouter, RouteRecordRaw } from 'vue-router';
-/* Layout */
+/** 页面布局容器。 */
 import Layout from '@/layout/index.vue';
 
 /**
- * Note: 路由配置项
+ * 路由配置项说明
  *
  * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者如一些编辑页面/edit/1
  * alwaysShow: true                 // 当你一个路由下面的 children 声明的路由大于1个时，自动会变成嵌套的模式--如组件页面
@@ -752,6 +752,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/mes/pro/flow-card/detail.vue'),
         name: 'MesFlowCardDetail',
         meta: { title: '流转卡详情', activeMenu: '/mes/wo/flow-card' }
+      }
+    ]
+  },
+  {
+    path: '/mes/pro/sn/trace/:snId',
+    component: Layout,
+    hidden: true,
+    permissions: ['mes:pro:sn:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/mes/pro/sn/trace.vue'),
+        name: 'MesSnTrace',
+        meta: { title: 'SN追溯', activeMenu: '/mes/pro/sn' }
       }
     ]
   },

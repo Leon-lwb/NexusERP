@@ -39,7 +39,8 @@
 <script setup lang="ts">
 interface Props {
   options: Array<DictDataOption>;
-  value: number | string | Array<number | string>;
+  /** 缺失或空状态保持原有空白显示，不代表已检验或正常；编号字符串不转为数值。 */
+  value?: number | string | Array<number | string> | null;
   showValue?: boolean;
   separator?: string;
 }
@@ -56,18 +57,18 @@ const values = computed(() => {
 
 const unmatch = computed(() => {
   if (props.options?.length == 0 || props.value === '' || props.value === null || typeof props.value === 'undefined') return false;
-  // 传入值为非数组
-  let unmatch = false; // 添加一个标志来判断是否有未匹配项
+  /** 传入值为非数组 */
+  let unmatch = false; /** 判断是否存在未匹配项。 */
   values.value.forEach((item) => {
     if (!props.options.some((v) => v.value == item)) {
-      unmatch = true; // 如果有未匹配项，将标志设置为true
+      unmatch = true; /** 发现未匹配项时设置标志。 */
     }
   });
-  return unmatch; // 返回标志的值
+  return unmatch; /** 返回未匹配标志。 */
 });
 
 const unmatchArray = computed(() => {
-  // 记录未匹配的项
+  /** 记录未匹配的项 */
   const itemUnmatchArray: Array<string | number> = [];
   if (props.value !== '' && props.value !== null && typeof props.value !== 'undefined') {
     values.value.forEach((item) => {
@@ -76,7 +77,7 @@ const unmatchArray = computed(() => {
       }
     });
   }
-  // 没有value不显示
+  /** 缺少字典值时不显示。 */
   return handleArray(itemUnmatchArray);
 });
 
