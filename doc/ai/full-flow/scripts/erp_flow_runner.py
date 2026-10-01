@@ -158,6 +158,36 @@ class Manifest:
         self.records.append(record)
         return record
 
+    def record_verified(self, domain, table, entity_id, business_code, parent_refs, *, tenant_id):
+        """记录调用方已独立读回的事实，不授予任何业务写入权限。
+
+        调用方须先完成 API 详情及归属核验；本方法只校验清单白名单字段，
+        不验证业务事实真伪。完全匹配时复用原记录，未入清单时才补记证据，
+        不改写历史时间戳或文件比较交换基线。
+        """
+        tenant_id = _id(tenant_id)
+        if tenant_id != self.tenant_id:
+            raise ValueError('Verified record tenant does not match manifest')
+        if not all(isinstance(v, str) and _KEY.fullmatch(v) for v in (domain, table)):
+            raise ValueError('Invalid domain/table')
+        entity_id = _id(entity_id)
+        if not isinstance(business_code, str) or not _CODE.fullmatch(business_code):
+            raise ValueError('Invalid business code')
+        if not isinstance(parent_refs, dict) or not all(isinstance(k, str) and _KEY.fullmatch(k) for k in parent_refs):
+            raise ValueError('Invalid parent references')
+        parents = {k: _id(v) for k, v in parent_refs.items()}
+        matches = [r for r in self.records if r['domain'] == domain and r['table'] == table and
+                   (r['entityId'] == entity_id or r['businessCode'] == business_code)]
+        if not matches:
+            return self.add(domain, table, entity_id, business_code, parents)
+        if len(matches) != 1:
+            raise ValueError('Conflicting manifest entities or business codes')
+        record = matches[0]
+        if (record['tenantId'] != tenant_id or record['entityId'] != entity_id or
+                record['businessCode'] != business_code or record['parentRefs'] != parents):
+            raise ValueError('Verified record conflicts with manifest evidence')
+        return record
+
     def save(self, path):
         path = _manifest_path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -191,6 +221,8 @@ class Manifest:
     def load(cls, path):
         raw = _manifest_path(path).read_bytes()
         data = json.loads(raw)
+        if not isinstance(data, dict) or not isinstance(data.get('records'), list):
+            raise ValueError('清单根须为对象且 records 须为列表')
         manifest = cls(data['tenantId'])
         for record in data['records']:
             if set(record) != {'tenantId', 'domain', 'table', 'entityId', 'businessCode', 'parentRefs', 'createdAt', 'updatedAt'} or record['tenantId'] != manifest.tenant_id:

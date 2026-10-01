@@ -1,8 +1,10 @@
 import re
 import io
 import json
+import hashlib
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -230,6 +232,378 @@ class ManifestTests(unittest.TestCase):
             with patch.object(erp_flow_runner, "MANIFEST_DIR", path.parent):
                 with self.assertRaises(ValueError): Manifest.load(path)
 
+    def test_load_rejects_invalid_root_or_records_container_without_mutation(self):
+        """拒绝非法根和清单容器，保留原文与内存；合法空列表保留原始摘要。"""
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / '.codex' / 'full-flow-20260928' / 'manifest.json'
+            path.parent.mkdir(parents=True)
+            with patch.object(erp_flow_runner, 'MANIFEST_DIR', path.parent):
+                valid_raw = b'{\n  "tenantId": "000001",\n  "records": []\n}\n'
+                path.write_bytes(valid_raw)
+                held = Manifest.load(path)
+                self.assertEqual(held.tenant_id, '000001')
+                self.assertEqual(held.records, [])
+                self.assertEqual(held._source_digest, hashlib.sha256(valid_raw).digest())
+                self.assertEqual(path.read_bytes(), valid_raw)
+                retained = held.add('so', 'so_customer_order', '9007199254740993', 'CO-KEEP', {})
+                before, records, digest = deepcopy(held.records), held.records, held._source_digest
+                invalid_documents = (
+                    ('root_empty_list', []),
+                    ('root_nonempty_list', [{'tenantId': '000001', 'records': []}]),
+                    ('root_empty_string', ''), ('root_nonempty_string', 'manifest'),
+                    ('root_null', None), ('root_integer', 0), ('root_float', 1.5),
+                    ('root_false', False), ('root_true', True),
+                    ('records_missing', {'tenantId': '000001'}),
+                ) + tuple(
+                    (label, {'tenantId': '000001', 'records': container})
+                    for label, container in (
+                        ('records_empty_object', {}), ('records_nonempty_object', {'unexpected': 'value'}),
+                        ('records_empty_string', ''), ('records_nonempty_string', 'not-a-list'),
+                        ('records_null', None), ('records_integer', 0), ('records_float', 1.5),
+                        ('records_false', False), ('records_true', True),
+                    )
+                )
+                for label, document in invalid_documents:
+                    with self.subTest(document=label):
+                        raw = (json.dumps(document, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+                        path.write_bytes(raw)
+                        load_error = None
+                        try:
+                            Manifest.load(path)
+                        except Exception as error:
+                            load_error = error
+                        self.assertEqual(path.read_bytes(), raw)
+                        self.assertIs(held.records, records)
+                        self.assertEqual(held.records, before)
+                        self.assertIs(held.records[0], retained)
+                        self.assertEqual(held.tenant_id, '000001')
+                        self.assertEqual(held._source_digest, digest)
+                        self.assertEqual([entry.name for entry in path.parent.iterdir()], ['manifest.json'])
+                        self.assertIsInstance(load_error, ValueError, '非法 JSON 根或 records 容器必须明确抛出 ValueError')
+
+
+class ManifestVerifiedTests(unittest.TestCase):
+    """约束独立读回后的清单恢复，不替代业务校验或签发写权限。"""
+
+    @staticmethod
+    def _verified_work_order():
+        """构造字符串主键与完整父引用的离线已核验事实。"""
+        return {
+            'tenantId': '000001', 'domain': 'mes', 'table': 'pro_work_order',
+            'entityId': '9007199254740993', 'businessCode': 'WO-VERIFIED-1',
+            'parentRefs': {'erpWoId': '9007199254740901', 'materialId': '9007199254740902'},
+        }
+
+    def _record_verified(self, manifest, verified):
+        """先断言恢复入口存在，再显式传递读回字段，不补全租户或猜主键。"""
+        self.assertTrue(callable(getattr(manifest, 'record_verified', None)), '缺少可调用的 record_verified 恢复入口')
+        return manifest.record_verified(
+            verified['domain'], verified['table'], verified['entityId'],
+            verified['businessCode'], verified['parentRefs'], tenant_id=verified['tenantId'],
+        )
+
+    def _existing_work_order(self):
+        """保留两个不同的历史时间戳，便于发现恢复时的静默覆盖。"""
+        verified = self._verified_work_order()
+        manifest = Manifest(verified['tenantId'])
+        record = manifest.add(
+            verified['domain'], verified['table'], verified['entityId'],
+            verified['businessCode'], verified['parentRefs'],
+        )
+        record['createdAt'] = '2026-09-28T00:00:00Z'
+        record['updatedAt'] = '2026-09-29T01:02:03Z'
+        return manifest, verified, record
+
+    def test_record_verified_backfills_unlisted_identity_once_without_parent_alias(self):
+        """未入清单的已核验事实仅新增一条证据，外部父引用不能回改清单。"""
+        verified = self._verified_work_order()
+        manifest = Manifest(verified['tenantId'])
+        record = self._record_verified(manifest, verified)
+        self.assertIs(record, manifest.records[0])
+        for field, value in verified.items():
+            self.assertEqual(record[field], value)
+        self.assertEqual(record['createdAt'], record['updatedAt'])
+        self.assertTrue(record['createdAt'])
+        self.assertIsNot(record['parentRefs'], verified['parentRefs'])
+        before = deepcopy(manifest.records)
+        self.assertIs(self._record_verified(manifest, deepcopy(verified)), record)
+        self.assertEqual(manifest.records, before)
+        verified['parentRefs']['erpWoId'] = '9007199254740903'
+        self.assertEqual(manifest.records, before)
+
+    def test_record_verified_reuses_exact_record_without_refreshing_timestamps(self):
+        """键值相同的父引用不依赖键顺序，复用同一对象且保留原始时间戳。"""
+        manifest, verified, original = self._existing_work_order()
+        before = deepcopy(manifest.records)
+        verified['parentRefs'] = dict(reversed(list(verified['parentRefs'].items())))
+        self.assertIs(self._record_verified(manifest, verified), original)
+        self.assertEqual(manifest.records, before)
+        self.assertIsNone(manifest._source_digest)
+
+    def test_record_verified_reuses_after_save_reload_without_changing_file_or_digest(self):
+        """保存重载后的完全匹配仍复用原记录，保留文件内容及其比较交换基线。"""
+        manifest, verified, _ = self._existing_work_order()
+        expected = deepcopy(manifest.records)
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'manifest.json'
+            with patch.object(erp_flow_runner, 'MANIFEST_DIR', path.parent):
+                manifest.save(path)
+                before = path.read_bytes()
+                loaded = Manifest.load(path)
+                digest = loaded._source_digest
+                self.assertIs(self._record_verified(loaded, verified), loaded.records[0])
+                self.assertEqual(loaded.records, expected)
+                self.assertEqual(loaded._source_digest, digest)
+                self.assertEqual(path.read_bytes(), before)
+                loaded.save(path)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(Manifest.load(path).records, expected)
+                self.assertFalse(path.with_suffix('.json.lock').exists())
+                self.assertEqual(list(path.parent.glob('.manifest-*.tmp')), [])
+
+    def test_record_verified_rejects_id_code_conflicts_without_mutating_saved_evidence(self):
+        """同编码不同主键或同主键不同编码均失败，内存与持久化证据都不覆盖。"""
+        manifest, verified, _ = self._existing_work_order()
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'manifest.json'
+            with patch.object(erp_flow_runner, 'MANIFEST_DIR', path.parent):
+                manifest.save(path)
+                loaded = Manifest.load(path)
+                before, digest, content = deepcopy(loaded.records), loaded._source_digest, path.read_bytes()
+                for field, value in (
+                    ('entityId', '9007199254740994'), ('businessCode', 'WO-VERIFIED-2'),
+                ):
+                    with self.subTest(field=field):
+                        conflict = deepcopy(verified)
+                        conflict[field] = value
+                        with self.assertRaises(ValueError):
+                            self._record_verified(loaded, conflict)
+                        self.assertEqual(loaded.records, before)
+                        self.assertEqual(loaded._source_digest, digest)
+                        self.assertEqual(path.read_bytes(), content)
+                loaded.save(path)
+                self.assertEqual(path.read_bytes(), content)
+
+    def test_record_verified_rejects_any_parent_reference_change_without_overwrite(self):
+        """父引用的值、键、增删均须完全匹配，不允许覆盖旧归属。"""
+        manifest, verified, _ = self._existing_work_order()
+        before = deepcopy(manifest.records)
+        for parents in (
+            {'erpWoId': '9007199254740903', 'materialId': '9007199254740902'},
+            {**verified['parentRefs'], 'planId': '9007199254740904'},
+            {'erpWoId': '9007199254740901'},
+            {'sourceWoId': '9007199254740901', 'materialId': '9007199254740902'},
+            {},
+        ):
+            with self.subTest(parents=parents):
+                conflict = {**verified, 'parentRefs': parents}
+                with self.assertRaises(ValueError):
+                    self._record_verified(manifest, conflict)
+                self.assertEqual(manifest.records, before)
+                self.assertIsNone(manifest._source_digest)
+
+    def test_record_verified_rejects_other_tenant_for_new_and_existing_identity(self):
+        """跨租户事实无论是否已入清单都拒绝，不按清单租户重新归属。"""
+        for existing in (False, True):
+            with self.subTest(existing=existing):
+                manifest, verified, _ = self._existing_work_order()
+                if not existing:
+                    manifest = Manifest(verified['tenantId'])
+                before = deepcopy(manifest.records)
+                foreign = {**verified, 'tenantId': '000002'}
+                with self.assertRaises(ValueError):
+                    self._record_verified(manifest, foreign)
+                self.assertEqual(manifest.tenant_id, '000001')
+                self.assertEqual(manifest.records, before)
+                self.assertIsNone(manifest._source_digest)
+
+    def test_record_verified_rejects_foreign_tenant_record_in_memory(self):
+        """旧记录租户与清单不一致时也不能被专用恢复入口复用或修正。"""
+        manifest, verified, original = self._existing_work_order()
+        original['tenantId'] = '000002'
+        before = deepcopy(manifest.records)
+        with self.assertRaises(ValueError):
+            self._record_verified(manifest, verified)
+        self.assertEqual(manifest.records, before)
+
+    def test_record_verified_requires_explicit_verified_tenant(self):
+        """缺少读回租户参数必须失败，不使用清单租户作为默认核验结果。"""
+        manifest, verified, _ = self._existing_work_order()
+        before = deepcopy(manifest.records)
+        self.assertTrue(callable(getattr(manifest, 'record_verified', None)), '缺少可调用的 record_verified 恢复入口')
+        with self.assertRaises(TypeError):
+            manifest.record_verified(
+                verified['domain'], verified['table'], verified['entityId'],
+                verified['businessCode'], verified['parentRefs'],
+            )
+        self.assertEqual(manifest.records, before)
+
+    def test_record_verified_validates_fields_before_new_or_duplicate_lookup(self):
+        """新增与重复恢复都执行原有格式校验，数字主键不能被自动转为字符串。"""
+        invalid_fields = (
+            ('domain', ''), ('domain', 'mes/other'), ('domain', 1),
+            ('table', 'pro/work/order'), ('table', False),
+            ('entityId', 1), ('entityId', 9007199254740993), ('entityId', True),
+            ('entityId', ''), ('entityId', '-1'),
+            ('businessCode', ''), ('businessCode', 'WO INVALID'), ('businessCode', None),
+            ('parentRefs', None), ('parentRefs', []), ('parentRefs', {'bad-key': '1'}),
+            ('parentRefs', {'erpWoId': 1}), ('parentRefs', {'erpWoId': 9007199254740993}),
+            ('parentRefs', {'erpWoId': True}), ('parentRefs', {'erpWoId': 'not-an-id'}),
+            ('tenantId', 1), ('tenantId', True), ('tenantId', ''), ('tenantId', 'not-a-tenant'),
+        )
+        for existing in (False, True):
+            for field, value in invalid_fields:
+                with self.subTest(existing=existing, field=field, value=value):
+                    manifest, verified, _ = self._existing_work_order()
+                    if not existing:
+                        manifest = Manifest(verified['tenantId'])
+                    before = deepcopy(manifest.records)
+                    invalid = deepcopy(verified)
+                    invalid[field] = value
+                    with self.assertRaises(ValueError):
+                        self._record_verified(manifest, invalid)
+                    self.assertEqual(manifest.records, before)
+                    self.assertIsNone(manifest._source_digest)
+
+    def test_record_verified_matches_domain_and_table_without_migrating_records(self):
+        """相同主键和编码仍按领域及表归属匹配，不复用或迁移其他表的记录。"""
+        verified = self._verified_work_order()
+        manifest = Manifest(verified['tenantId'])
+        originals = []
+        for domain, table in (
+            ('erp', 'pro_work_order'), ('mes', 'pro_flow_card'), ('mes', 'pro_work_order'),
+        ):
+            originals.append(manifest.add(
+                domain, table, verified['entityId'], verified['businessCode'], verified['parentRefs'],
+            ))
+        before = deepcopy(manifest.records)
+        for original in originals:
+            fact = {**verified, 'domain': original['domain'], 'table': original['table']}
+            self.assertIs(self._record_verified(manifest, fact), original)
+        self.assertEqual(manifest.records, before)
+
+    def test_add_still_rejects_exact_duplicate_before_and_after_verified_recovery(self):
+        """严格新增接口在恢复前后都拒绝完全重复，幂等语义仅属于专用入口。"""
+        manifest, verified, original = self._existing_work_order()
+        before = deepcopy(manifest.records)
+        with self.assertRaises(ValueError):
+            manifest.add(
+                verified['domain'], verified['table'], verified['entityId'],
+                verified['businessCode'], verified['parentRefs'],
+            )
+        self.assertIs(self._record_verified(manifest, verified), original)
+        with self.assertRaises(ValueError):
+            manifest.add(
+                verified['domain'], verified['table'], verified['entityId'],
+                verified['businessCode'], verified['parentRefs'],
+            )
+        self.assertEqual(manifest.records, before)
+
+    def test_record_verified_does_not_refresh_stale_file_cas_baseline(self):
+        """旧实例即使重新核验并复用记录，也不能覆盖另一个实例已保存的新证据。"""
+        manifest, verified, _ = self._existing_work_order()
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'manifest.json'
+            with patch.object(erp_flow_runner, 'MANIFEST_DIR', path.parent):
+                manifest.save(path)
+                first, stale = Manifest.load(path), Manifest.load(path)
+                digest = stale._source_digest
+                another = {**verified, 'entityId': '9007199254740994', 'businessCode': 'WO-VERIFIED-2'}
+                self._record_verified(first, another)
+                first.save(path)
+                content = path.read_bytes()
+                self.assertIs(self._record_verified(stale, verified), stale.records[0])
+                self.assertEqual(stale._source_digest, digest)
+                with self.assertRaises(PreflightError):
+                    stale.save(path)
+                self.assertEqual(path.read_bytes(), content)
+                self.assertEqual(Manifest.load(path).records, first.records)
+                self.assertEqual(len(first.records), 2)
+                self.assertFalse(path.with_suffix('.json.lock').exists())
+                self.assertEqual(list(path.parent.glob('.manifest-*.tmp')), [])
+
+    def test_independent_mes_readback_backfills_only_manifest_without_new_business_rows(self):
+        """四类正式记录独立读回后仅回填清单；完整、部分及空清单恢复均无业务写入。"""
+        specs = (
+            ('pro_work_order', '/mes/pro/work', 'mesWoId', 'woNo',
+             '9007199254740993', 'WO-VERIFIED-1', {'erpWoId': '9007199254740901'}),
+            ('pro_flow_card', '/mes/pro/flow-card', 'cardId', 'cardNo',
+             '9007199254740994', 'CARD-VERIFIED-1', {'mesWoId': '9007199254740993'}),
+            ('pro_dispatch', '/mes/pro/dispatch', 'dispatchId', 'dispatchNo',
+             '9007199254740995', 'DISPATCH-VERIFIED-1',
+             {'mesWoId': '9007199254740993', 'cardId': '9007199254740994', 'stepRecordId': '9007199254740905'}),
+            ('pro_sn', '/mes/pro/sn', 'snId', 'snCode',
+             '9007199254740996', 'SN-VERIFIED-1',
+             {'mesWoId': '9007199254740993', 'cardId': '9007199254740994'}),
+        )
+        rows = {
+            base + '/' + entity_id: {
+                'tenantId': '000001', id_field: entity_id, code_field: code, **parents,
+            }
+            for _, base, id_field, code_field, entity_id, code, parents in specs
+        }
+
+        class ReadBackApi:
+            """独立保存离线详情，读取不引用清单，任何业务写请求立即失败。"""
+
+            def __init__(self):
+                """单独复制业务事实并记录全部请求，不连接真实服务。"""
+                self.rows, self.calls, self.write_calls = deepcopy(rows), [], []
+
+            def get(self, path):
+                """返回详情副本，避免清单变更通过共享字典污染读回证据。"""
+                self.calls.append(('GET', path))
+                return {'code': 200, 'data': deepcopy(self.rows[path])}
+
+            def post(self, *args, **kwargs):
+                """恢复流程若尝试重新创建业务行则立即失败。"""
+                self.write_calls.append('POST')
+                raise AssertionError('恢复不得创建业务行')
+
+            def put(self, *args, **kwargs):
+                """恢复流程若尝试改写正式业务事实则立即失败。"""
+                self.write_calls.append('PUT')
+                raise AssertionError('恢复不得改写业务行')
+
+        for initial_count in (4, 2, 0):
+            with self.subTest(initial_count=initial_count), tempfile.TemporaryDirectory() as root:
+                api = ReadBackApi()
+                business_before = deepcopy(api.rows)
+                manifest = Manifest('000001')
+                for table, _, _, _, entity_id, code, parents in specs[:initial_count]:
+                    record = manifest.add('mes', table, entity_id, code, parents)
+                    record['createdAt'] = '2026-09-28T00:00:00Z'
+                    record['updatedAt'] = '2026-09-29T01:02:03Z'
+                existing_before = deepcopy(manifest.records)
+                path = Path(root) / 'manifest.json'
+                with patch.object(erp_flow_runner, 'MANIFEST_DIR', path.parent):
+                    manifest.save(path)
+                    manifest = Manifest.load(path)
+                    recovered = None
+                    for _ in range(2):
+                        for table, base, id_field, code_field, entity_id, _, parents in specs:
+                            data = api.get(base + '/' + entity_id)['data']
+                            self.assertEqual(data['tenantId'], manifest.tenant_id)
+                            self.assertEqual(data[id_field], entity_id)
+                            self._record_verified(manifest, {
+                                'tenantId': data['tenantId'], 'domain': 'mes', 'table': table,
+                                'entityId': data[id_field], 'businessCode': data[code_field],
+                                'parentRefs': {key: data[key] for key in parents},
+                            })
+                        self.assertEqual(len(manifest.records), 4)
+                        self.assertEqual(manifest.records[:initial_count], existing_before)
+                        if recovered is None:
+                            recovered = deepcopy(manifest.records)
+                        else:
+                            self.assertEqual(manifest.records, recovered)
+                        manifest.save(path)
+                        manifest = Manifest.load(path)
+                    self.assertEqual(manifest.records, recovered)
+                self.assertEqual(api.rows, business_before)
+                self.assertEqual(len(api.rows), 4)
+                self.assertEqual(api.write_calls, [])
+                self.assertEqual(api.calls, [('GET', base + '/' + entity_id)
+                                            for _ in range(2) for _, base, _, _, entity_id, _, _ in specs])
 
 class ApiIdTests(unittest.TestCase):
     def test_accepts_safe_positive_numeric_api_ids_and_canonicalizes(self):
