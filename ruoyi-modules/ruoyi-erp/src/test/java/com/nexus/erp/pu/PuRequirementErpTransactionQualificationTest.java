@@ -16,6 +16,7 @@ import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
 import com.nexus.erp.pu.service.PuRequirementCompetitionPoolReader;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ExecutorType;
@@ -547,7 +548,7 @@ class PuRequirementErpTransactionQualificationTest {
         }
 
         private static DataSource source(Connection connection) throws SQLException {
-            DataSource source = mock(DataSource.class);
+            DataSource source = mock(HikariDataSource.class);
             when(source.getConnection()).thenReturn(connection);
             return source;
         }
