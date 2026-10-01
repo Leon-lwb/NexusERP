@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
-import { parse } from '@vue/compiler-sfc';
+import { compileScript, parse } from '@vue/compiler-sfc';
+import { createRenderer, h, nextTick, shallowRef } from 'vue';
 
 const uiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const helperPath = resolve(uiRoot, 'src/views/ai/decision/decisionDisplay.ts');
@@ -389,4 +391,416 @@ test('decision detail reuses exactly one shared SummaryCard, not duplicated inli
   );
   assert.ok(elements(detail.template, 'DecisionKpiCompare').length, 'other detail results remain rendered');
   assert.ok(elements(detail.template, 'DecisionEvidenceDrawer').length, 'evidence drawer remains');
+});
+
+const summaryRequire = createRequire(import.meta.url);
+const summaryRunId = '9007199254753012346';
+const noWorkOrderCode = 'NO_ANALYZABLE_WORK_ORDER';
+const genericFailureTitle = '本次分析失败，可点击重新分析';
+const originalFailedSummary = '分析失败，请重新分析；如持续失败，请提供运行 ID 联系管理员。';
+const noWorkOrderReason = '当前决策范围没有可分析工单，不能发布风险结论。';
+const noWorkOrderNextStep = '请选择包含未完工工单的新排程再分析。';
+const safeNoWorkOrderFailure = noWorkOrderReason + noWorkOrderNextStep;
+/** 全部敏感标记均为合成数据，不读取登录令牌、配置或真实业务数据。 */
+const unsafeFailureText =
+  'Bearer SYNTHETIC_ERROR_CANARY; SELECT SYNTHETIC_PRIVATE_COLUMN FROM SYNTHETIC_PRIVATE_TABLE; ' +
+  '<script>__synthetic_decision_script__()</script>; MODEL_RAW_FAILURE_CANARY';
+let summaryComponentPromise;
+
+/** 编译仓库中的真实摘要卡片，保留 Vue 运行时；不写构建文件，也不替换业务逻辑。 */
+function compiledSummaryCard() {
+  summaryComponentPromise ??= (async () => {
+    const componentPath = resolve(uiRoot, summaryPath);
+    const { descriptor, errors } = parse(readFileSync(componentPath, 'utf8'), { filename: componentPath });
+    assert.deepEqual(errors, [], 'the real SummaryCard SFC must parse');
+    const compiled = compileScript(descriptor, { id: 'decision-summary-failure-reason', inlineTemplate: true });
+    const output = await build({
+      stdin: { contents: compiled.content, resolveDir: dirname(componentPath), sourcefile: componentPath, loader: 'ts' },
+      alias: { '@': resolve(uiRoot, 'src') },
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+      external: ['vue'],
+      write: false,
+      logLevel: 'silent'
+    });
+    const mod = { exports: {} };
+    new Function('require', 'module', 'exports', output.outputFiles[0].text)(summaryRequire, mod, mod.exports);
+    return mod.exports.default;
+  })();
+  return summaryComponentPromise;
+}
+
+function summaryHost(tag, text = '') {
+  return { tag, text, props: {}, children: [], parent: null };
+}
+
+/** 使用真实 Vue renderer 的离线宿主树，沿用审批门禁测试的组件桩与事件落地方式。 */
+function summaryRenderer() {
+  return createRenderer({
+    createElement: (tag) => summaryHost(tag),
+    createText: (text) => summaryHost('#text', text),
+    createComment: (text) => summaryHost('#comment', text),
+    setText: (node, text) => {
+      node.text = text;
+    },
+    setElementText: (node, text) => {
+      node.text = text;
+      node.children = [];
+    },
+    patchProp: (node, key, _previous, value) => {
+      node.props[key] = value;
+    },
+    insert: (child, parent, anchor) => {
+      if (child.parent) {
+        const previous = child.parent.children.indexOf(child);
+        if (previous !== -1) child.parent.children.splice(previous, 1);
+      }
+      child.parent = parent;
+      const position = anchor ? parent.children.indexOf(anchor) : -1;
+      parent.children.splice(position < 0 ? parent.children.length : position, 0, child);
+    },
+    remove: (child) => {
+      const index = child.parent?.children.indexOf(child) ?? -1;
+      if (index !== -1) child.parent.children.splice(index, 1);
+      child.parent = null;
+    },
+    parentNode: (node) => node.parent,
+    nextSibling: (node) => node.parent?.children[node.parent.children.indexOf(node) + 1] ?? null
+  });
+}
+
+function summaryNodes(root, predicate) {
+  const nodes = [];
+  function visit(node) {
+    if (predicate(node)) nodes.push(node);
+    for (const child of node.children) visit(child);
+  }
+  visit(root);
+  return nodes;
+}
+
+function summaryText(node) {
+  return node.tag === '#comment' ? '' : node.text + node.children.map(summaryText).join('');
+}
+
+function summaryDetail(overrides = {}) {
+  return Object.freeze({
+    run: Object.freeze({
+      id: summaryRunId,
+      bizId: snowflakeId,
+      bizCode: 'SCHEDULE-FIXTURE-001',
+      bizType: 'SCHEDULE_PLAN',
+      sceneCode: 'DELIVERY_RISK',
+      status: 'FAILED',
+      version: 1,
+      riskScore: 64,
+      riskLevel: 'HIGH',
+      confidenceLevel: 'HIGH',
+      ...overrides
+    }),
+    evidence: Object.freeze([]),
+    actions: Object.freeze([])
+  });
+}
+
+async function mountSummary(detail) {
+  const SummaryCard = await compiledSummaryCard();
+  const root = summaryHost('root');
+  const events = [];
+  const currentDetail = shallowRef(detail);
+  const app = summaryRenderer().createApp({
+    setup() {
+      return () =>
+        h(SummaryCard, {
+          run: currentDetail.value,
+          onOpenEvidence: () => events.push('open-evidence'),
+          onRecalculate: () => events.push('recalculate')
+        });
+    }
+  });
+  app.component('el-card', {
+    setup(_props, { slots }) {
+      return () => h('section', [slots.header?.(), slots.default?.()]);
+    }
+  });
+  app.component('el-button', {
+    props: ['disabled', 'link', 'type'],
+    setup(props, { slots }) {
+      return () => h('button', { disabled: props.disabled, 'data-button-type': props.type }, slots.default?.());
+    }
+  });
+  app.component('el-tag', {
+    props: ['type'],
+    setup(props, { slots }) {
+      return () => h('span', { 'data-risk-type': props.type }, slots.default?.());
+    }
+  });
+  app.component('el-alert', {
+    props: ['title', 'description', 'type', 'closable'],
+    setup(props) {
+      return () =>
+        h('aside', { 'data-severity': props.type, 'data-closable': props.closable }, [h('strong', props.title), h('span', props.description)]);
+    }
+  });
+  app.mount(root);
+  await nextTick();
+  return {
+    root,
+    events,
+    failures: () => summaryNodes(root, (node) => node.tag === 'aside' && node.props['data-severity'] === 'error'),
+    button: (label) => summaryNodes(root, (node) => node.tag === 'button' && summaryText(node) === label)[0],
+    async click(node) {
+      assert.ok(node, 'the existing summary button must render');
+      assert.notEqual(node.props.disabled, true, 'the failure display must not disable existing summary controls');
+      assert.equal(typeof node.props.onClick, 'function', 'the actual rendered button must retain its click listener');
+      node.props.onClick({ type: 'click' });
+      await nextTick();
+    },
+    async update(nextDetail) {
+      currentDetail.value = nextDetail;
+      await nextTick();
+    },
+    unmount: () => app.unmount()
+  };
+}
+
+/** 无论断言成功或失败都卸载卡片，避免离线用例之间残留组件状态。 */
+async function withSummary(detail, assertions) {
+  const ui = await mountSummary(detail);
+  try {
+    await assertions(ui);
+  } finally {
+    ui.unmount();
+  }
+}
+
+function assertFailureTitle(ui, expected, message) {
+  const alerts = ui.failures();
+  assert.equal(alerts.length, 1, 'FAILED renders exactly one error alert');
+  assert.equal(summaryText(alerts[0]), expected, message);
+  assert.equal(alerts[0].props['data-closable'], false, 'preserve the non-closable failure alert');
+}
+
+/** 同时检查文本、宿主属性与节点类型；转义后的敏感字符串也不能作为错误详情泄露。 */
+function assertNoRawFailure(ui) {
+  const nodes = summaryNodes(ui.root, () => true);
+  const snapshot = JSON.stringify(nodes.map(({ tag, text, props }) => ({ tag, text, props })));
+  for (const marker of [
+    'Bearer',
+    'SYNTHETIC_ERROR_CANARY',
+    'SELECT',
+    'SYNTHETIC_PRIVATE_TABLE',
+    '__synthetic_decision_script__',
+    'MODEL_RAW_FAILURE_CANARY',
+    'FORGED_CODE_CANARY',
+    noWorkOrderCode
+  ]) {
+    assert.ok(!snapshot.includes(marker), `${marker} must not appear in rendered text or host attributes`);
+  }
+  assert.equal(
+    nodes.some((node) => node.tag === 'script'),
+    false,
+    'no error payload may create a script element'
+  );
+}
+
+test('rendered FAILED with exact NO_ANALYZABLE_WORK_ORDER shows the fixed safe reason and next step', async () => {
+  await withSummary(summaryDetail({ errorCode: noWorkOrderCode }), (ui) => {
+    assertFailureTitle(ui, safeNoWorkOrderFailure, 'show the fixed reason and ask for a new schedule containing unfinished work orders');
+    assert.ok(summaryText(ui.root).includes(noWorkOrderReason));
+    assert.ok(summaryText(ui.root).includes(noWorkOrderNextStep));
+    assert.equal(
+      summaryNodes(ui.root, (node) => node.tag === 'p')
+        .map(summaryText)
+        .join(''),
+      originalFailedSummary
+    );
+  });
+});
+
+test('rendered FAILED with unknown, historical or absent errorCode retains the existing generic failure', async () => {
+  for (const fields of [
+    {},
+    { errorCode: undefined },
+    { errorCode: null },
+    { errorCode: '' },
+    { errorCode: '   ' },
+    { errorCode: 'FUTURE_FAILURE_CODE' },
+    { errorCode: 'LEGACY_NO_ANALYZABLE_WORK_ORDER' }
+  ]) {
+    await withSummary(summaryDetail(fields), (ui) => {
+      assertFailureTitle(ui, genericFailureTitle, 'unrecognized or missing codes must keep the existing fallback');
+      assert.ok(!summaryText(ui.root).includes(noWorkOrderReason));
+      assert.ok(!summaryText(ui.root).includes(noWorkOrderNextStep));
+      assert.equal(
+        summaryNodes(ui.root, (node) => node.tag === 'p')
+          .map(summaryText)
+          .join(''),
+        originalFailedSummary
+      );
+    });
+  }
+});
+
+test('rendered FAILED requires exact primitive code equality, never normalization, prefixes or coercion', async () => {
+  for (const errorCode of [
+    'no_analyzable_work_order',
+    ` ${noWorkOrderCode}`,
+    `${noWorkOrderCode} `,
+    `${noWorkOrderCode}\n`,
+    `${noWorkOrderCode}_LEGACY`,
+    `PREFIX_${noWorkOrderCode}`,
+    `${noWorkOrderCode}<script>FORGED_CODE_CANARY()</script>`,
+    `${noWorkOrderCode}; ${unsafeFailureText}`,
+    [noWorkOrderCode],
+    { code: noWorkOrderCode },
+    { toString: () => noWorkOrderCode }
+  ]) {
+    await withSummary(summaryDetail({ errorCode, errorMessage: unsafeFailureText }), (ui) => {
+      assertFailureTitle(ui, genericFailureTitle, 'forged or normalized codes must not select the trusted reason');
+      assert.ok(!summaryText(ui.root).includes(noWorkOrderReason));
+      assertNoRawFailure(ui);
+    });
+  }
+});
+
+test('rendered non-FAILED states never show a failure reason even with a leftover recognized code', async () => {
+  for (const status of [
+    'CREATED',
+    'RUNNING',
+    'WAITING_APPROVAL',
+    'APPROVED',
+    'EXECUTING',
+    'SUCCEEDED',
+    'PARTIAL_SUCCESS',
+    'STALE',
+    'SUPERSEDED',
+    'REJECTED',
+    'ROLLING_BACK',
+    'ROLLED_BACK',
+    'CANCELLED',
+    'FUTURE_STATE',
+    undefined,
+    null,
+    ''
+  ]) {
+    await withSummary(summaryDetail({ status, errorCode: noWorkOrderCode, errorMessage: unsafeFailureText }), (ui) => {
+      assert.equal(ui.failures().length, 0, `${String(status)} must not have a FAILED alert`);
+      const text = summaryText(ui.root);
+      for (const failureText of [genericFailureTitle, noWorkOrderReason, noWorkOrderNextStep]) {
+        assert.ok(!text.includes(failureText), `${String(status)} must not inherit failure text`);
+      }
+      assertNoRawFailure(ui);
+    });
+  }
+});
+
+test('rendered FAILED never leaks backend errorMessage, SQL, bearer tokens or raw model failure text', async () => {
+  for (const errorCode of [undefined, 'UNKNOWN_FAILURE', `${noWorkOrderCode}<script>FORGED_CODE_CANARY()</script>`, noWorkOrderCode]) {
+    await withSummary(
+      summaryDetail({
+        errorCode,
+        errorMessage: unsafeFailureText,
+        resultJson: JSON.stringify({ narrative: { executiveSummary: unsafeFailureText }, warnings: [] })
+      }),
+      (ui) => {
+        assertNoRawFailure(ui);
+        assertFailureTitle(ui, errorCode === noWorkOrderCode ? safeNoWorkOrderFailure : genericFailureTitle, 'only fixed local copy is allowed');
+      }
+    );
+  }
+});
+
+test('rendered failure controls still emit evidence and recalculate without changing snowflake IDs or input', async () => {
+  for (const errorCode of [undefined, 'LEGACY_FAILURE', noWorkOrderCode]) {
+    const detail = summaryDetail({ errorCode });
+    const before = JSON.stringify(detail);
+    await withSummary(detail, async (ui) => {
+      assert.deepEqual(ui.events, [], 'rendering a failure must not trigger analysis or evidence events automatically');
+      assert.ok(summaryText(ui.root).includes(`内部 ID：${snowflakeId}`), 'the full 19-digit business ID remains a labeled string');
+      assert.equal(summaryNodes(ui.root, (node) => node.tag === 'button').length, 2, 'retain both existing summary controls');
+      await ui.click(ui.button('查看证据'));
+      await ui.click(ui.button('重新分析'));
+      assert.deepEqual(ui.events, ['open-evidence', 'recalculate'], 'real button listeners preserve the existing event contract');
+    });
+    assert.equal(typeof detail.run.id, 'string');
+    assert.equal(typeof detail.run.bizId, 'string');
+    assert.equal(detail.run.id, summaryRunId);
+    assert.equal(detail.run.bizId, snowflakeId);
+    assert.equal(JSON.stringify(detail), before, 'display and clicks never mutate or numerically coerce the supplied run');
+  }
+});
+
+test('rendered successful summary keeps business reference, narrative, risk, confidence and warning content', async () => {
+  const executiveSummary = '原交付风险摘要：请核对资源负荷。';
+  const warning = '原始警告：数据版本需复核。';
+  /**
+   * 风险分数空值保持未知占位，不补为零；真实零分必须原样显示，不能被吞掉。
+   */
+  for (const [riskScore, scoreText] of [
+    [64, '风险分数 64'],
+    [null, '风险分数 —'],
+    [undefined, '风险分数 —'],
+    [0, '风险分数 0']
+  ]) {
+    await withSummary(
+      summaryDetail({
+        status: 'SUCCEEDED',
+        riskScore,
+        resultJson: JSON.stringify({ businessRef: { code: 'SCHEDULE-RESULT-007' }, narrative: { executiveSummary }, warnings: [warning] })
+      }),
+      (ui) => {
+        const text = summaryText(ui.root);
+        for (const original of [
+          '交付风险摘要',
+          'SCHEDULE-RESULT-007',
+          `内部 ID：${snowflakeId}`,
+          '高风险',
+          scoreText,
+          '置信度 HIGH',
+          executiveSummary
+        ]) {
+          assert.ok(text.includes(original), `preserve rendered summary content: ${original}`);
+        }
+        const renderedScores = summaryNodes(ui.root, (node) => node.tag === 'strong' && summaryText(node).startsWith('风险分数')).map(summaryText);
+        assert.deepEqual(renderedScores, [scoreText], `riskScore ${String(riskScore)} must retain its exact rendered text without zero substitution`);
+        assert.ok(!text.includes('SCHEDULE-FIXTURE-001'), 'parsed businessRef.code still takes precedence over run.bizCode');
+        assert.equal(summaryNodes(ui.root, (node) => node.props['data-risk-type'] === 'danger').length, 1);
+        const warnings = summaryNodes(ui.root, (node) => node.tag === 'aside' && node.props['data-severity'] === 'warning');
+        assert.equal(warnings.length, 1);
+        assert.equal(summaryText(warnings[0]), warning);
+        assert.equal(ui.failures().length, 0);
+      }
+    );
+  }
+});
+
+test('recognized FAILED reason does not depend on valid resultJson or expose its raw contents', async () => {
+  for (const resultJson of [undefined, null, '', '{invalid-json: SYNTHETIC_ERROR_CANARY']) {
+    await withSummary(summaryDetail({ errorCode: noWorkOrderCode, resultJson, errorMessage: unsafeFailureText }), (ui) => {
+      assertNoRawFailure(ui);
+      assertFailureTitle(ui, safeNoWorkOrderFailure, 'trusted failure copy works for failed runs with no result archive');
+      assert.equal(
+        summaryNodes(ui.root, (node) => node.tag === 'p')
+          .map(summaryText)
+          .join(''),
+        originalFailedSummary
+      );
+    });
+  }
+});
+
+test('real renderer updates remove stale known failure copy on error-code and status changes', async () => {
+  await withSummary(summaryDetail({ errorCode: noWorkOrderCode, errorMessage: unsafeFailureText }), async (ui) => {
+    assertFailureTitle(ui, safeNoWorkOrderFailure, 'start with the known deterministic failure');
+    await ui.update(summaryDetail({ errorCode: 'UNKNOWN_FAILURE', errorMessage: unsafeFailureText }));
+    assertFailureTitle(ui, genericFailureTitle, 'changing to an unknown code restores the existing generic failure');
+    assert.ok(!summaryText(ui.root).includes(noWorkOrderReason));
+    await ui.update(summaryDetail({ status: 'SUCCEEDED', errorCode: noWorkOrderCode, errorMessage: unsafeFailureText }));
+    assert.equal(ui.failures().length, 0, 'a leftover code cannot preserve a FAILED alert after a successful update');
+    assert.ok(!summaryText(ui.root).includes(noWorkOrderReason));
+    assert.ok(!summaryText(ui.root).includes(noWorkOrderNextStep));
+    assertNoRawFailure(ui);
+  });
 });

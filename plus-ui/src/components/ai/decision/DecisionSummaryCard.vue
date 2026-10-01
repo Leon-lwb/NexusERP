@@ -16,7 +16,13 @@
       <strong>风险分数 {{ run.run.riskScore ?? '—' }}</strong>
       <span>置信度 {{ run.run.confidenceLevel || '—' }}</span>
     </div>
-    <el-alert v-if="run.run.status === 'FAILED'" title="本次分析失败，可点击重新分析" type="error" :closable="false" class="mb-3" />
+    <el-alert
+      v-if="run.run.status === 'FAILED'"
+      :title="decisionFailureTitle(run.run.status, run.run.errorCode)"
+      type="error"
+      :closable="false"
+      class="mb-3"
+    />
     <p>{{ decisionSummaryText(run.run.status, result?.narrative?.executiveSummary) }}</p>
     <el-alert v-for="warning in result?.warnings || []" :key="warning" :title="warning" type="warning" :closable="false" class="mb-1" />
   </el-card>
@@ -25,7 +31,7 @@
 import { computed } from 'vue';
 import type { DecisionRunDetail, DecisionResult } from '@/api/ai/decision';
 import { decisionRiskLabel, decisionSummaryText, riskTagType } from '@/views/ai/decision/decisionViewModel';
-import { decisionBusinessObjectDisplay } from '@/views/ai/decision/decisionDisplay';
+import { decisionBusinessObjectDisplay, decisionFailureTitle } from '@/views/ai/decision/decisionDisplay';
 const props = defineProps<{ run: DecisionRunDetail }>();
 const emit = defineEmits<{ (event: 'open-evidence'): void; (event: 'recalculate'): void }>();
 const result = computed<DecisionResult | null>(() => {

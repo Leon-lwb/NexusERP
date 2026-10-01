@@ -128,6 +128,8 @@ export interface DecisionRunSummary {
   bizType: DecisionBusinessType;
   sceneCode: string;
   status: DecisionRunStatus;
+  /** 失败分类码仅用于固定白名单提示，不承载原始异常详情。 */
+  errorCode?: string | null;
   version: number;
   riskScore?: number | null;
   riskLevel?: DecisionRiskLevel;

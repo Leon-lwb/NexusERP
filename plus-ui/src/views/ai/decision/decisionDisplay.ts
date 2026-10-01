@@ -51,3 +51,13 @@ export function decisionBusinessObjectDisplay(
     internalIdText: run.bizId?.trim() ? `内部 ID：${run.bizId}` : ''
   };
 }
+
+/**
+ * 失败提示仅使用精确匹配的错误码映射为固定文案，不读取后端原始异常或动态错误内容。
+ */
+export function decisionFailureTitle(status?: string | null, errorCode?: string | null): string {
+  if (status !== 'FAILED') return '';
+  return errorCode === 'NO_ANALYZABLE_WORK_ORDER'
+    ? '当前决策范围没有可分析工单，不能发布风险结论。请选择包含未完工工单的新排程再分析。'
+    : '本次分析失败，可点击重新分析';
+}
