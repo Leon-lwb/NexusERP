@@ -296,6 +296,100 @@ class DecisionAnalysisAssemblyServiceTest {
         }
     }
 
+    /**
+     * 复现已发布方案的终态工单被上游过滤后的快照，不把空分析范围误报为缺少产能。
+     * 运行行的业务类型缺失时，仍以快照根类型作为门禁事实。
+     */
+    @Test void publishedPlanWithoutAnalyzableWorkOrdersDoesNotReportMissingCapacity() {
+        var input = evidenceFixture();
+        var source = input.snapshot();
+        var schedule = new HashMap<>(source.currentSchedule());
+        schedule.put("capacityPlanTasks", source.currentSchedule().get("tasks"));
+        schedule.put("capacityPlanDayLoads", source.currentSchedule().get("taskDayLoads"));
+        schedule.put("capacityLedgerBookings", source.currentSchedule().get("capacityBookings"));
+        for (String field : List.of("workOrderIds", "tasks", "taskDayLoads", "capacityBookings")) {
+            schedule.put(field, List.of());
+        }
+        var snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 1L, "APS-1"),
+            List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
+            source.holidays(), schedule, List.of(), source.snapshotHash(), source.snapshotAt(),
+            List.of("NO_WORK_ORDER: 当前决策范围没有生产工单"));
+        input.run().setBizType(null);
+        input.run().setBizId(1L);
+        var unavailable = new DecisionScenario("BASELINE_CURRENT", "基线", "BASELINE_CURRENT", false,
+            List.of("NO_SAVED_SCHEDULE"), null, null, 1, Map.of(), List.of("snapshot:hash"),
+            List.of(), "hash", List.of(), List.of());
+        var summaries = mock(DecisionSummaryService.class);
+        var policy = mock(DecisionPolicyGuardService.class);
+        var checked = new DecisionAnalysisAssemblyService(new DeliveryRiskScoringService(new AiProperties()),
+            new DecisionEvidenceService(), new DecisionSourceFactVerifier(), summaries, policy);
+
+        assertNotNull(SavedScheduleCapacity.measure(source.currentSchedule()));
+        assertFalse(snapshot.currentSchedule().isEmpty());
+        assertFalse(((List<?>) snapshot.currentSchedule().get("capacityCalendars")).isEmpty());
+        assertFalse(((List<?>) snapshot.currentSchedule().get("capacityPlanTasks")).isEmpty());
+        assertFalse(((List<?>) snapshot.currentSchedule().get("capacityLedgerBookings")).isEmpty());
+        assertTrue(snapshot.capacityByDate().isEmpty());
+        assertNull(SavedScheduleCapacity.measure(snapshot.currentSchedule()));
+        var error = assertThrows(DecisionEvidenceException.class, () -> checked.prepare(input.run(), snapshot,
+            input.shortage(), List.of(unavailable), List.of(), null));
+        assertEquals("NO_ANALYZABLE_WORK_ORDER", error.reason().code());
+        assertEquals("当前决策范围没有可分析工单，不能发布风险结论。", error.getMessage());
+        verifyNoInteractions(summaries, policy);
+    }
+
+    /**
+     * 即使历史排程的产能可核验，也不能为没有可分析工单的范围发布风险结论。
+     */
+    @Test void trustedHistoricalCapacityCannotReplaceAnalyzableWorkOrders() {
+        var input = evidenceFixture();
+        var source = input.snapshot();
+        var snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 1L, "APS-1"),
+            source.salesOrders(), List.of(), source.routingByMaterial(), source.requirements(),
+            source.stocks(), source.arrivals(), source.capacityByDate(), source.holidays(),
+            source.currentSchedule(), source.supplierMetrics(), source.snapshotHash(), source.snapshotAt(),
+            List.of());
+        input.run().setBizType("SCHEDULE_PLAN");
+        input.run().setBizId(1L);
+
+        assertNotNull(SavedScheduleCapacity.measure(snapshot.currentSchedule()));
+        assertFalse(snapshot.capacityByDate().isEmpty());
+        var error = assertThrows(DecisionEvidenceException.class, () -> service.prepare(input.run(), snapshot,
+            input.shortage(), List.of(input.scenario()), List.of(), null));
+        assertEquals("NO_ANALYZABLE_WORK_ORDER", error.reason().code());
+    }
+
+    /**
+     * 缺料窗口空范围继续遵循原有排程、产能证据门禁，不普遍引入空工单错误。
+     * 即使运行行记录为排程方案，也必须以快照根类型为准，不能扩大拒绝语义。
+     */
+    @Test void emptyShortageHorizonRetainsOriginalScheduleAndCapacityEvidenceReasons() {
+        var input = evidenceFixture();
+        var source = input.snapshot();
+        input.run().setBizType("SCHEDULE_PLAN");
+        var summaries = mock(DecisionSummaryService.class);
+        var policy = mock(DecisionPolicyGuardService.class);
+        var checked = new DecisionAnalysisAssemblyService(new DeliveryRiskScoringService(new AiProperties()),
+            new DecisionEvidenceService(), new DecisionSourceFactVerifier(), summaries, policy);
+
+        for (var reason : List.of(DecisionEvidenceException.Reason.SCHEDULE_EVIDENCE_MISSING,
+            DecisionEvidenceException.Reason.CAPACITY_EVIDENCE_MISSING)) {
+            var snapshot = new DeliveryContextSnapshot(
+                new DecisionBusinessRef(DecisionBusinessType.SHORTAGE_HORIZON, null, null),
+                List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
+                source.holidays(), reason == DecisionEvidenceException.Reason.SCHEDULE_EVIDENCE_MISSING
+                    ? Map.of() : source.currentSchedule(),
+                List.of(), source.snapshotHash(), source.snapshotAt(), List.of());
+            var error = assertThrows(DecisionEvidenceException.class, () -> checked.prepare(input.run(), snapshot,
+                input.shortage(), List.of(input.scenario()), List.of(), null));
+            assertEquals(reason, error.reason());
+            assertEquals(reason.publicMessage(), error.getMessage());
+        }
+        verifyNoInteractions(summaries, policy);
+    }
+
     @Test void realUnavailableSavedPlanShapeStillExposesScheduleEvidenceCode() {
         var input = evidenceFixture(); var source = input.snapshot();
         var snapshot = new DeliveryContextSnapshot(source.rootBusinessRef(), source.salesOrders(), source.workOrders(),

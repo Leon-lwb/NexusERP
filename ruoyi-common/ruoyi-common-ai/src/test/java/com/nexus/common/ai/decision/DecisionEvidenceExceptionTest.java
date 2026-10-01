@@ -13,7 +13,7 @@ class DecisionEvidenceExceptionTest {
         assertTrue(Modifier.isFinal(type.getModifiers()));
         var reasonType = Class.forName(type.getName() + "$Reason");
         var expected = Set.of("ROUTING_EVIDENCE_MISSING", "SCHEDULE_EVIDENCE_MISSING",
-            "SHORTAGE_SIMULATION_INCOMPLETE", "CAPACITY_EVIDENCE_MISSING");
+            "SHORTAGE_SIMULATION_INCOMPLETE", "CAPACITY_EVIDENCE_MISSING", "NO_ANALYZABLE_WORK_ORDER");
         var codes = new java.util.HashSet<String>();
         for (Object reason : reasonType.getEnumConstants()) {
             var rejected = (RuntimeException) type.getConstructor(reasonType).newInstance(reason);

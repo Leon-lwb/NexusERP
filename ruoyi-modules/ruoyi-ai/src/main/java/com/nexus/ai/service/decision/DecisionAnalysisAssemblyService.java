@@ -1,6 +1,7 @@
 package com.nexus.ai.service.decision;
 
 import com.nexus.common.ai.decision.dto.*;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.core.exception.ServiceException;
@@ -44,6 +45,14 @@ public class DecisionAnalysisAssemblyService {
             || ranked.stream().anyMatch(s -> s == null || s.inputHash() == null || s.inputHash().isBlank()
                 || s.evidenceKeys() == null || !s.evidenceKeys().contains("snapshot:" + snapshot.snapshotHash())))
             throw new ServiceException("基础业务数据或推演方案缺失，不能发布风险结论");
+        /**
+         * 仅排程方案在终态过滤后没有工单时使用专用错误，不能用历史排程替代当前分析对象。
+         * 门禁以快照根类型为事实，不依赖运行行可能缺失的业务类型；其他根保持原有证据门禁。
+         */
+        if (snapshot.rootBusinessRef() != null
+            && snapshot.rootBusinessRef().type() == DecisionBusinessType.SCHEDULE_PLAN
+            && snapshot.workOrders().isEmpty())
+            throw new DecisionEvidenceException(DecisionEvidenceException.Reason.NO_ANALYZABLE_WORK_ORDER);
         // 仅对明确缺失的来源证据公开领域原因；已存在但无效的值、篡改指标、
         // SQL 或模型失败及未知异常均保持通用拒绝。
         if (snapshot.currentSchedule().isEmpty())
