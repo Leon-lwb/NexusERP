@@ -486,7 +486,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     /**
      * 完工
      * <p>
-     * 将工单状态从 IN_PROGRESS 更新为 COMPLETED，执行完工倒冲领料并生成成品入库记录。
+     * 将工单状态从 IN_PROGRESS 更新为 COMPLETED，并异步触发完工入库；生产完工不代表正常领料已过账。
      *
      * @param woId 工单 ID
      */
@@ -507,6 +507,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
      * <p>
      * 使用原子更新避免并发覆盖: 状态置 COMPLETED + 累加完工/报废数量 + 完工时间,
      * 并发送 ProductionCompleteMessage 触发倒冲领料 + 成品入库。
+     * 非倒冲工单存在未完成领料单时记录告警，保留真实完工事实，不代填仓库、BOM 单位或数量。
      *
      * @param woId        工单 ID
      * @param completeQty 本次完工数量
@@ -576,6 +577,8 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             }
         }
 
+        warnIncompleteNormalIssues(wo);
+
         /** 触发完工倒冲入库链路(保留原 complete 副作用) */
         BigDecimal done = completeQty != null ? completeQty : BigDecimal.ZERO;
         ProductionCompleteMessage completeMsg = new ProductionCompleteMessage();
@@ -594,6 +597,65 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
         messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
             RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH, completeMsg);
+    }
+
+    /**
+     * 对非倒冲工单的未完成领料单记录明确告警，不改写生产或库存事实。
+     * <p>
+     * MES 完工是生产完成的权威信号，但 CREATED/PARTIAL 领料单仍需人工核验并执行。
+     * 本检查只读现有单据，不补仓库、BOM 单位或领料数量，也不把单据标记为已过账。
+     * 查询必须绑定当前租户上下文；租户缺失或与工单不一致时拒绝辅助查询并记录固定告警。
+     * 辅助核验的运行时异常仅记录无法核验，不阻断可信完工主写及后续消息发送；
+     * 完工主写、消息发送异常及严重系统错误仍按原语义传播，不由本方法吞掉。
+     *
+     * @param wo 已完工的生产工单
+     */
+    private void warnIncompleteNormalIssues(PrdWorkOrder wo) {
+        if (Integer.valueOf(1).equals(wo.getBackflushFlag())) {
+            return;
+        }
+        String tenantId = null;
+        List<WmProductionIssue> pendingIssues;
+        try {
+            tenantId = TenantHelper.getTenantId();
+            if (StringUtils.isBlank(tenantId)) {
+                warnNormalIssueCheckUnavailable(wo, tenantId, "TENANT_CONTEXT_MISSING", null);
+                return;
+            }
+            if (StringUtils.isNotBlank(wo.getTenantId()) && !Objects.equals(wo.getTenantId(), tenantId)) {
+                warnNormalIssueCheckUnavailable(wo, tenantId, "TENANT_MISMATCH", null);
+                return;
+            }
+            pendingIssues = productionIssueMapper.selectList(
+                Wrappers.<WmProductionIssue>lambdaQuery()
+                    .eq(WmProductionIssue::getWoId, wo.getWoId())
+                    .eq(WmProductionIssue::getTenantId, tenantId)
+                    .in(WmProductionIssue::getStatus, "CREATED", "PARTIAL"));
+        } catch (RuntimeException failure) {
+            warnNormalIssueCheckUnavailable(wo, tenantId, "READ_CHECK_FAILED", failure.getClass().getSimpleName());
+            return;
+        }
+        for (WmProductionIssue issue : pendingIssues) {
+            log.warn("PRODUCTION_MATERIAL_UNPOSTED: 生产已完工但领料尚未完成过账: "
+                    + "woId={}, woNo={}, issueId={}, issueCode={}, issueStatus={}, issueType={}, warehouseId={}；"
+                    + "正常领料不会自动倒冲，请人工核验BOM单位、数量及领料仓库后处理，禁止自动补齐或把生产完工视为物料过账完成",
+                wo.getWoId(), wo.getWoNo(), issue.getIssueId(), issue.getIssueCode(), issue.getStatus(),
+                issue.getIssueType(), issue.getWarehouseId());
+        }
+    }
+
+    /**
+     * 记录辅助领料核验无法完成的固定告警，避免原始异常正文泄露 SQL 或连接信息。
+     *
+     * @param wo 当前工单
+     * @param tenantId 当前租户上下文，可为空但不得据此执行无范围查询
+     * @param reason 固定原因码
+     * @param errorType 异常类型，可为空，不记录原始异常正文或堆栈
+     */
+    private void warnNormalIssueCheckUnavailable(PrdWorkOrder wo, String tenantId, String reason, String errorType) {
+        log.warn("PRODUCTION_MATERIAL_CHECK_UNAVAILABLE: 无法核验正常领料过账状态，不阻断生产完工及后续消息处理: "
+                + "woId={}, woNo={}, tenantId={}, reason={}, errorType={}",
+            wo.getWoId(), wo.getWoNo(), tenantId, reason, errorType);
     }
 
     /**
