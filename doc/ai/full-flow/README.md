@@ -9,7 +9,7 @@
 - 本机数据库已获得用户明确读写授权。密码和 Token 只存在执行进程内存，不要求把凭据另存为 `.mysql-readonly.env`，不得写入报告或提交。
 - 管理员只读盘点的 `writeEligible=false` 表示该快照不是写事务授权；它不否定用户另行授权的、经过业务权限/来源/数量守卫的 API 执行。禁止把只读 transport 的拒绝写操作改成无限制写入。
 - 有编号规则的对象使用服务端编号；没有正式编号的采集、告警、AI/Flow、产能日历用真实内部 ID 留痕，不编造 `DEMO/TEST/MOCK` 业务名称或编号。
-- 最新进展及未完成门禁见 `reports/2026-09-29-local-acceptance-progress.md`；敏感的本地意向、只读快照、ID 清单、截图和日志仅留在被忽略的 `.codex/full-flow-20260928/`。
+- 最新进展及未完成门禁见 `reports/2026-10-01-全模块正式数据与功能修复进展.md`，历史基线见 `reports/2026-09-29-local-acceptance-progress.md`；敏感的本地意向、只读快照、ID 清单、截图和日志仅留在被忽略的 `.codex/full-flow-20260928/`。
 
 ## 前置条件
 
