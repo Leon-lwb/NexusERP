@@ -15,7 +15,6 @@ import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawStock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -27,9 +26,11 @@ import java.util.function.Function;
 /**
  * 内部单物料当前读基础，仅返回原始锁定事实，不授予任何采购、额度或来源可信资格。
  *
- * MANDATORY 及实际事务检查仅要求存在当前实际事务；@DS("erp") 不证明该事务
- * 已绑定 ERP 连接。尤其已有 master 事务不能因方法标注 @DS 就自动获得同库 ACID。
- * 将来已获授权的调用方必须另证 ERP 事务入口、数据源绑定与事务边界；本服务不接业务门禁。
+ * MANDATORY 与 @DS("erp") 本身不证明已有事务属于 ERP；必须由事务资格校验同时核对
+ * MyBatis 真实工厂配置、明确 ERP 物理资源及同一已同步连接持有者。已有 master、只读、
+ * 未绑定或普通 router-only 事务均在 guard 及来源 Mapper 之前拒绝，不补绑或另借连接。
+ * 当前仓库尚未证明存在可靠的统一 ERP 绑定入口，本服务不提供该入口、不接业务门禁，
+ * 更不因新增校验而启用正向采购；AI master 与 ERP 不可声称跨库本地事务。
  *
  * guard 仅序列化参与该 guard 的路径；实际来源行锁不证明新插入来源、未接 guard 的
  * 库存或订单写路径以及跨库状态安全。后续仍需完整来源、单位、状态、日期、额度、新鲜度、
@@ -43,17 +44,20 @@ public class PuRequirementCompetitionPoolReader {
 
     private final PuRequirementCompetitionPoolMapper mapper;
     private final PuRequirementMaterialLockService materialLockService;
+    private final PuRequirementErpTransactionQualification transactionQualification;
 
     public PuRequirementCompetitionPoolReader(PuRequirementCompetitionPoolMapper mapper,
-                                              PuRequirementMaterialLockService materialLockService) {
+                                              PuRequirementMaterialLockService materialLockService,
+                                              PuRequirementErpTransactionQualification transactionQualification) {
         this.mapper = mapper;
         this.materialLockService = materialLockService;
+        this.transactionQualification = transactionQualification;
     }
 
     /**
      * 先校验上下文，再锁单物料 guard，最后按固定表序和各表主键升序取得原始行当前读。
      * windowEnd 是数据库业务日期的包含式上界；无窗口下界、run 或工单范围过滤。
-     * guard 可能确保 guard 行存在，只能由将来已获授权且另证 ERP 绑定的事务内调用。
+     * guard 可能确保 guard 行存在，必须先通过严格 ERP 绑定资格；不自行开启或修补事务。
      * 缺失、跨租户或无法辨识的关联头整池拒绝；状态、日期、单位和数量未知则原样保留。
      * 返回值的行锁仅在调用方事务结束前持有；返回不是持久有效的快照或额度证明。
      *
@@ -69,9 +73,8 @@ public class PuRequirementCompetitionPoolReader {
             || !tenantId.equals(TenantHelper.getTenantId())) {
             throw new ServiceException("物料竞争池租户未启用或与当前租户不匹配");
         }
-        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
-            throw new ServiceException("物料竞争池当前读必须加入已有实际事务");
-        }
+        transactionQualification.requireWritableErpTransaction();
+
         if (!positive(materialId)) {
             throw new ServiceException("物料竞争池材料ID必须为正数");
         }

@@ -3,6 +3,7 @@ package com.nexus.erp.pu;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
@@ -35,9 +36,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,7 +62,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  * 离线 reader 契约，不是数据库并发或完整性证明。
  * 反射仅用于契约最初拟新增的两个类，使 RED 阶段可以编译，
  * 并让实现缺失表现为普通断言失败，而非 javac 错误。
- * 测试使用模拟的物料 guard 和当前读 Mapper 来调用真实 reader。
+ * 测试使用模拟的物料 guard 和当前读 Mapper 来调用真实 reader 及资格校验。
+ * 正例由真实 Spring ERP 本地事务与同持有者资源映射取得资格；不以活跃标记自证。
+ * 该离线夹具不证明当前生产应用已有可靠的统一事务绑定入口。
  */
 @Tag("dev")
 class PuRequirementCompetitionPoolReaderTest {
@@ -98,6 +103,8 @@ class PuRequirementCompetitionPoolReaderTest {
     @AfterEach
     void clearActualTransactionFlag() {
         TransactionSynchronizationManager.setActualTransactionActive(false);
+        assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty(), "reader 测试不得泄漏连接资源");
+        assertFalse(TransactionSynchronizationManager.isSynchronizationActive(), "reader 测试不得泄漏事务同步");
     }
 
     @Test
@@ -109,7 +116,8 @@ class PuRequirementCompetitionPoolReaderTest {
         Set<Class<?>> dependencies = Arrays.stream(reader.getDeclaredFields())
             .filter(field -> !Modifier.isStatic(field.getModifiers()))
             .map(field -> field.getType()).collect(Collectors.toSet());
-        assertEquals(Set.of(requiredClass(MAPPER), PuRequirementMaterialLockService.class), dependencies);
+        assertEquals(Set.of(requiredClass(MAPPER), PuRequirementMaterialLockService.class,
+            PuRequirementErpTransactionQualification.class), dependencies);
         assertEquals(List.of("materialPool"), Arrays.stream(reader.getDeclaredMethods())
             .filter(method -> Modifier.isPublic(method.getModifiers()))
             .map(Method::getName).sorted().toList());
@@ -130,6 +138,19 @@ class PuRequirementCompetitionPoolReaderTest {
     @Test
     void noActualTransactionRejectsBeforeGuardOrAnyCurrentRead() {
         assertDenied(TENANT, MATERIAL, WINDOW_END, false, true, TENANT);
+    }
+
+    @Test
+    void actualTransactionFlagWithoutConnectionBindingRejectsBeforeGuardOrAnyCurrentRead() {
+        Fixture fixture = new Fixture();
+        /** 仅伪造旧实现信任的标记；没有实际连接绑定，不能获得事务资格。 */
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
+            assertAll("未绑定连接必须先于依赖调用拒绝",
+                () -> assertThrows(ServiceException.class, () -> fixture.read(TENANT, MATERIAL, WINDOW_END)),
+                fixture::assertUntouched);
+        }
     }
 
     @Test
@@ -165,9 +186,8 @@ class PuRequirementCompetitionPoolReaderTest {
         Object extraDetail = row(DETAILS, "detailId", 12L, "requirementId", 20L);
         fixture.rows.put(DETAILS, List.of(fixture.rows.get(DETAILS).get(0), extraDetail));
         fixture.rows.put(REQUIREMENTS, List.of(earlierHead, fixture.rows.get(REQUIREMENTS).get(0)));
-        TransactionSynchronizationManager.setActualTransactionActive(true);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            fixture.read(TENANT, MATERIAL, WINDOW_END);
+            fixture.readInErpTransaction(TENANT, MATERIAL, WINDOW_END);
             List<String> expected = new ArrayList<>(List.of("guard"));
             expected.addAll(READ_ORDER);
             assertEquals(expected, fixture.trace);
@@ -188,9 +208,9 @@ class PuRequirementCompetitionPoolReaderTest {
     void failedGuardPreventsAllSourceReads() {
         Fixture fixture = new Fixture();
         doThrow(new ServiceException("guard unavailable")).when(fixture.guard).lock(TENANT, List.of(MATERIAL));
-        TransactionSynchronizationManager.setActualTransactionActive(true);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(ServiceException.class, () -> fixture.read(TENANT, MATERIAL, WINDOW_END));
+            assertThrows(ServiceException.class, () -> fixture.readInErpTransaction(TENANT, MATERIAL, WINDOW_END));
+            verify(fixture.guard).lock(TENANT, List.of(MATERIAL));
             verifyNoInteractions(fixture.mapper);
         }
     }
@@ -304,9 +324,9 @@ class PuRequirementCompetitionPoolReaderTest {
                 } else {
                     set(fixture.rows.get(query).get(0), "tenantId", problem.equals("foreign") ? "other" : null);
                 }
-                TransactionSynchronizationManager.setActualTransactionActive(true);
                 try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-                    assertThrows(ServiceException.class, () -> fixture.read(TENANT, MATERIAL, WINDOW_END), query + problem);
+                    assertThrows(ServiceException.class, () -> fixture.readInErpTransaction(TENANT, MATERIAL, WINDOW_END), query + problem);
+                    assertTrue(fixture.trace.contains(query), "关联头身份拒绝必须确实到达该来源当前读");
                 }
             }
         }
@@ -368,9 +388,14 @@ class PuRequirementCompetitionPoolReaderTest {
     private static void assertDenied(String request, Long material, LocalDate date,
                                      boolean active, boolean enabled, String current) {
         Fixture fixture = new Fixture();
-        TransactionSynchronizationManager.setActualTransactionActive(active);
         try (MockedStatic<TenantHelper> ignored = tenant(enabled, current)) {
-            assertThrows(ServiceException.class, () -> fixture.read(request, material, date));
+            assertThrows(ServiceException.class, () -> {
+                if (active) {
+                    fixture.readInErpTransaction(request, material, date);
+                } else {
+                    fixture.read(request, material, date);
+                }
+            });
             fixture.assertUntouched();
         }
     }
@@ -398,9 +423,8 @@ class PuRequirementCompetitionPoolReaderTest {
     }
 
     private static Object readValid(Fixture fixture) {
-        TransactionSynchronizationManager.setActualTransactionActive(true);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            return fixture.read(TENANT, MATERIAL, WINDOW_END);
+            return fixture.readInErpTransaction(TENANT, MATERIAL, WINDOW_END);
         }
     }
 
@@ -478,6 +502,8 @@ class PuRequirementCompetitionPoolReaderTest {
         private final Map<String, List<?>> rows = new HashMap<>();
         private final List<String> trace = new ArrayList<>();
         private final PuRequirementMaterialLockService guard = mock(PuRequirementMaterialLockService.class);
+        private final PuRequirementErpTransactionQualificationTest.Fixture transaction =
+            assertDoesNotThrow(PuRequirementErpTransactionQualificationTest.Fixture::new);
         private final Object mapper;
         private final Object reader;
 
@@ -496,7 +522,13 @@ class PuRequirementCompetitionPoolReaderTest {
                 return Map.of(MATERIAL, 0);
             }).when(guard).lock(anyString(), anyCollection());
             reader = assertDoesNotThrow(() -> requiredClass(READER)
-                .getConstructor(mapperType, PuRequirementMaterialLockService.class).newInstance(mapper, guard));
+                .getConstructor(mapperType, PuRequirementMaterialLockService.class, PuRequirementErpTransactionQualification.class)
+                .newInstance(mapper, guard, new PuRequirementErpTransactionQualification(transaction.sqlSessionFactory())));
+        }
+
+        private Object readInErpTransaction(String tenant, Long material, LocalDate windowEnd) {
+            Supplier<Object> body = () -> read(tenant, material, windowEnd);
+            return transaction.inBoundErpTransactionWithoutTenant(false, body);
         }
 
         private Object read(String tenant, Long material, LocalDate windowEnd) {
