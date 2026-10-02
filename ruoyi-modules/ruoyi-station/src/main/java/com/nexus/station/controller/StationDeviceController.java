@@ -23,6 +23,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.RecoverableDataAccessException;
+import org.springframework.transaction.TransactionException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -146,12 +150,17 @@ public class StationDeviceController {
                                              @RequestBody StationPassReportDto dto,
                                              HttpServletRequest request) {
         checkApiKey(headerKey, request);
-        Map<String, Object> data = TenantHelper.dynamic("000000", () -> {
-            StationPassService.OperatorInfo operator = stationPassService.resolveOperator(
-                dto.getOperatorId(), dto.getOperatorCode());
-            return stationPassService.reportSingle(dto, operator);
-        });
-        return R.ok(data);
+        try {
+            Map<String, Object> data = TenantHelper.dynamic("000000", () -> {
+                StationPassService.OperatorInfo operator = stationPassService.resolveOperator(
+                    dto.getOperatorId(), dto.getOperatorCode());
+                return stationPassService.reportSingle(dto, operator);
+            });
+            return R.ok(data);
+        } catch (TransientDataAccessException | DataAccessResourceFailureException | RecoverableDataAccessException | TransactionException retryable) {
+            // 已退出服务事务代理；回滚或提交结果不确定时只保持原载荷重试，不在失败事务内部重跑。
+            return R.fail(503, "过站事务暂不可用或结果待确认，请保持原上报内容稍后重试");
+        }
     }
 
     /**
@@ -309,7 +318,7 @@ public class StationDeviceController {
             throw new ServiceException("工位服务未配置访问密钥，请联系管理员");
         }
         if (StringUtils.isBlank(headerKey) || !apiKey.equals(headerKey.trim())) {
-            log.warn("工位设备通道密钥校验失败: ip={}, uri={}, key={}", request.getRemoteAddr(), request.getRequestURI(), headerKey);
+            log.warn("工位设备通道密钥校验失败: ip={}, uri={}", request.getRemoteAddr(), request.getRequestURI());
             throw new ServiceException("无效的API密钥");
         }
     }

@@ -1884,6 +1884,7 @@ CREATE TABLE `mes_station_report`  (
   `defect_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '不良数量',
   `client_ts` bigint(20) NOT NULL COMMENT '客户端时间戳(毫秒)',
   `client_key` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '幂等键: SINGLE|sn|station|ts 或 BATCH|station|ts',
+  `request_fingerprint` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单件规范化原始请求SHA256指纹;旧记录不得猜测回填',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,

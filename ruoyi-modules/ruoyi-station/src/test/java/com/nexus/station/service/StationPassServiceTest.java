@@ -17,6 +17,9 @@ import com.nexus.mes.pro.service.IProSnService;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.mapper.StationDeviceMapper;
+import com.nexus.station.mapper.StationPassGuardMapper;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.nexus.station.mapper.StationReportMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -68,6 +71,8 @@ class StationPassServiceTest {
     private IProSnService proSnService;
     @Mock
     private NcrOrderMapper ncrOrderMapper;
+    @Mock
+    private StationPassGuardMapper guard;
     @InjectMocks
     private StationPassService service;
 
@@ -77,12 +82,18 @@ class StationPassServiceTest {
     @BeforeEach
     void setUp() {
         tenantHelperMock = mockStatic(TenantHelper.class);
+        tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("000000");
+        tenantHelperMock.when(TenantHelper::isEnable).thenReturn(true);
+        DynamicDataSourceContextHolder.push("mes");
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(java.sql.Connection.TRANSACTION_REPEATABLE_READ);
         // TenantHelper.dynamic 直接执行调用体(不依赖真实租户上下文)
         tenantHelperMock.when(() -> TenantHelper.dynamic(anyString(), any(java.util.function.Supplier.class)))
             .thenAnswer(invocation -> invocation.getArgument(1, java.util.function.Supplier.class).get());
         // CALLS_REAL_METHODS: extract() 走真实方法(反序列化 lambda 拿属性名), 仅 getColumnMap 打桩
         lambdaUtilsMock = mockStatic(LambdaUtils.class, CALLS_REAL_METHODS);
         Map<String, ColumnCache> snColumns = new HashMap<>();
+        snColumns.put("TENANTID", new ColumnCache("tenant_id", "tenant_id"));
         snColumns.put("SNID", new ColumnCache("sn_id", "sn_id"));
         snColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         snColumns.put("CARDID", new ColumnCache("card_id", "card_id"));
@@ -92,6 +103,7 @@ class StationPassServiceTest {
         snColumns.put("PARENTSNCODE", new ColumnCache("parent_sn_code", "parent_sn_code"));
         Map<String, ColumnCache> stepColumns = new HashMap<>();
         stepColumns.put("STEPRECORDID", new ColumnCache("step_record_id", "step_record_id"));
+        stepColumns.put("TENANTID", new ColumnCache("tenant_id", "tenant_id"));
         stepColumns.put("CARDID", new ColumnCache("card_id", "card_id"));
         stepColumns.put("SEQUENCENUM", new ColumnCache("sequence_num", "sequence_num"));
         stepColumns.put("PROCESSCODE", new ColumnCache("process_code", "process_code"));
@@ -106,6 +118,7 @@ class StationPassServiceTest {
         stepColumns.put("ACTUALENDTIME", new ColumnCache("actual_end_time", "actual_end_time"));
         Map<String, ColumnCache> reportColumns = new HashMap<>();
         reportColumns.put("REPORTID", new ColumnCache("report_id", "report_id"));
+        reportColumns.put("STEPRECORDID", new ColumnCache("step_record_id", "step_record_id"));
         reportColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         reportColumns.put("STATIONCODE", new ColumnCache("station_code", "station_code"));
         reportColumns.put("RESULT", new ColumnCache("result", "result"));
@@ -135,6 +148,7 @@ class StationPassServiceTest {
 
     @AfterEach
     void tearDown() {
+        DynamicDataSourceContextHolder.clear(); TransactionSynchronizationManager.clear();
         if (tenantHelperMock != null) tenantHelperMock.close();
         if (lambdaUtilsMock != null) lambdaUtilsMock.close();
     }
@@ -145,9 +159,9 @@ class StationPassServiceTest {
     void f5_currentStepSeqNull_stillLocatesStepByFirstUnfinished() {
         // 新 SN 的 current_step_seq 为 NULL(库中无维护逻辑), 应按「卡上第一条未完成工序」定位
         ProSn sn = new ProSn();
-        sn.setSnId(1L);
+        sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
         sn.setSnCode("SN-1");
-        sn.setCardId(1L);
+        sn.setCardId(1L); sn.setMesWoId(20L);
         sn.setCurrentStepSeq(null);
         sn.setSnStatus("IN_PRODUCTION");
         when(proSnMapper.selectOne(any())).thenReturn(sn);
@@ -170,9 +184,9 @@ class StationPassServiceTest {
     void f5_staleCurrentStepSeq_resolvesActualFirstUnfinished() {
         // 老数据 current_step_seq=3 与工序序号 10/20/30 不符, 仍应定位实际第一条未完成工序
         ProSn sn = new ProSn();
-        sn.setSnId(1L);
+        sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
         sn.setSnCode("SN-1");
-        sn.setCardId(1L);
+        sn.setCardId(1L); sn.setMesWoId(20L);
         sn.setCurrentStepSeq(3);
         sn.setSnStatus("IN_PRODUCTION");
         when(proSnMapper.selectOne(any())).thenReturn(sn);
@@ -279,7 +293,14 @@ class StationPassServiceTest {
 
     @Test
     void reportSingle_idempotentReplay_returnsWithoutInsert() {
-        when(reportMapper.selectByClientKey(any())).thenReturn(new MesStationReport()); // 幂等命中
+        var stored=new StationPassGuardMapper.StoredReport();
+        stored.setDelFlag("0"); stored.setTenantId("000000"); stored.setSnCode("SN-1"); stored.setReportType("SINGLE");
+        stored.setStationCode("STN|JZ|L1|ASM|GENERAL"); stored.setClientKey("SINGLE|SN-1|STN|JZ|L1|ASM|GENERAL|1787295823000");
+        stored.setClientTs(1787295823000L); stored.setResult("PASS"); stored.setOperatorId(105L); stored.setOperatorCode("SCZX-1");
+        stored.setRequestFingerprint(StationSinglePassFingerprint.of("000000","SN-1","STN|JZ|L1|ASM|GENERAL",1787295823000L,"PASS",null,null,null));
+        stored.setGoodQty(java.math.BigDecimal.ONE); stored.setDefectQty(java.math.BigDecimal.ZERO);
+        when(guard.lockSn(anyString(),anyString())).thenReturn(List.of(inProductionSn()));
+        when(guard.lockReports(anyString(),anyString())).thenReturn(List.of(stored));
 
         StationPassReportDto dto = new StationPassReportDto();
         dto.setSnCode("SN-1");
@@ -298,16 +319,23 @@ class StationPassServiceTest {
     @Test
     void reportSingle_passAccumulatesAndAdvancesToActualNextSeq() {
         ProSn sn = inProductionSn();
-        when(proSnMapper.selectOne(any())).thenReturn(sn);
+        when(guard.lockSn(anyString(),anyString())).thenReturn(List.of(sn));
         // 卡上工序 30(ASM, IN_PROGRESS) 与 40(PKG, PENDING)
         ProFlowCardStep asm = step(3L, 30, "ASM", "IN_PROGRESS");
         ProFlowCardStep pkg = step(4L, 40, "PKG", "PENDING");
-        when(stepMapper.selectOne(any())).thenReturn(asm);
-        when(stepMapper.selectList(any())).thenReturn(List.of(asm, pkg));
+        when(guard.lockSteps(anyString(),anyLong())).thenReturn(List.of(asm,pkg));
         ProFlowCard card = new ProFlowCard();
-        card.setCardId(1L);
-        when(flowCardMapper.selectById(1L)).thenReturn(card);
-        when(reportMapper.selectByClientKey(any())).thenReturn(null);
+        card.setCardId(1L); card.setMesWoId(20L); card.setTenantId("000000"); card.setDelFlag("0"); card.setCardStatus("IN_PROGRESS");
+        when(guard.lockCard(anyString(),anyLong())).thenReturn(card);
+        when(guard.lockReports(anyString(),anyString())).thenReturn(List.of());
+        var device=new com.nexus.station.domain.MesStationDevice(); device.setTenantId("000000"); device.setDelFlag("0");
+        device.setStationCode("STN|JZ|L1|ASM|GENERAL"); device.setProcessCode("ASM");
+        when(guard.lockDevices(anyString(),anyString())).thenReturn(List.of(device));
+        when(guard.lockTests(anyString(),anyString())).thenReturn(List.of());
+        when(guard.lockNcrs(anyString(),anyLong())).thenReturn(List.of());
+        when(reportMapper.insert(any(MesStationReport.class))).thenReturn(1);
+        when(stepMapper.update(any(),any())).thenReturn(1);
+        when(proSnMapper.update(any(),any())).thenReturn(1);
         // 收口重查: planned=50, good=51 → 未到 planned 不收口(good 已含本次前值+1)
         ProFlowCardStep fresh = step(3L, 30, "ASM", "IN_PROGRESS");
         fresh.setPlannedQty(java.math.BigDecimal.valueOf(100));
@@ -418,9 +446,9 @@ class StationPassServiceTest {
 
     private ProSn inProductionSn() {
         ProSn sn = new ProSn();
-        sn.setSnId(1L);
+        sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
         sn.setSnCode("SN-1");
-        sn.setCardId(1L);
+        sn.setCardId(1L); sn.setMesWoId(20L);
         sn.setCardNo("FC-1");
         sn.setWoNo("WO-1");
         sn.setCurrentStepSeq(30);
@@ -431,11 +459,12 @@ class StationPassServiceTest {
     private ProFlowCardStep step(Long id, Integer seq, String processCode, String status) {
         ProFlowCardStep s = new ProFlowCardStep();
         s.setStepRecordId(id);
-        s.setCardId(1L);
+        s.setCardId(1L); s.setMesWoId(20L); s.setTenantId("000000"); s.setDelFlag("0");
         s.setSequenceNum(seq);
         s.setProcessCode(processCode);
         s.setProcessName(processCode);
-        s.setStepStatus(status);
+        s.setStepStatus(status); s.setPlannedQty(java.math.BigDecimal.valueOf(100));
+        s.setGoodQty(java.math.BigDecimal.ZERO); s.setDefectQty(java.math.BigDecimal.ZERO); s.setScrapQty(java.math.BigDecimal.ZERO);
         return s;
     }
 }

@@ -14,7 +14,6 @@ import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProSn;
-import com.nexus.mes.pro.domain.vo.ProAndonVo;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
@@ -26,15 +25,21 @@ import com.nexus.station.domain.dto.StationBatchReportDto;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.mapper.StationDeviceMapper;
 import com.nexus.station.mapper.StationReportMapper;
+import com.nexus.station.mapper.StationPassGuardMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import java.sql.Connection;
+import java.util.Objects;
+import java.util.Set;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -80,6 +85,7 @@ public class StationPassService {
     private final IProFlowCardService flowCardService;
     private final IProSnService proSnService;
     private final NcrOrderMapper ncrOrderMapper;
+    private final StationPassGuardMapper passGuardMapper;
 
     // ==================== C2 过站四重校验 ====================
 
@@ -97,219 +103,204 @@ public class StationPassService {
             throw new ServiceException("snCode 与 stationCode 不能为空");
         }
 
-        Map<String, Object> data = new HashMap<>(4);
-        List<Map<String, Object>> checks = new ArrayList<>(4);
-        Map<String, Object> snInfo = new LinkedHashMap<>(8);
-
         ProSn proSn = proSnMapper.selectOne(Wrappers.<ProSn>lambdaQuery()
             .eq(ProSn::getSnCode, sn).last("LIMIT 1"));
         if (proSn == null) {
-            snInfo.put("currentProcessName", null);
-            checks.add(check(CHECK_STATION_MATCH, false, "SN不存在: " + sn));
-            data.put("pass", false);
-            data.put("snInfo", snInfo);
-            data.put("checks", checks);
-            return data;
+            return StationPassChecks.evaluate(sn, null, null, null, List.of(), 0, null, 0);
         }
-
-        // SN 冗余字段回填 snInfo
-        snInfo.put("woNo", proSn.getWoNo());
-        snInfo.put("cardNo", proSn.getCardNo());
-        snInfo.put("materialName", proSn.getMaterialName());
-
-        // 定位 SN 当前工序(卡上第一条未完成工序按 seq 升序, 对齐 FlashRecordServiceImpl;
-        // pro_sn.current_step_seq 无维护逻辑不可靠, 仅作兜底)
-        ProFlowCardStep currentStep = resolveCurrentStep(proSn.getCardId(), proSn.getCurrentStepSeq());
-        snInfo.put("currentProcessName", currentStep != null ? currentStep.getProcessName() : null);
-
-        // 工位码 → 工序码: ① mes_station_device 心跳绑定 ② 工位码格式 STN|车间|产线|工序|形态
-        String stationProcessCode = resolveProcessCode(station);
-
-        // --- 校验1 PREV_STEP: 当前工序之前所有工序均已完成/跳过 ---
-        boolean prevOk = true;
-        String prevMsg = null;
-        if (currentStep == null) {
-            prevOk = false;
-            prevMsg = "SN 未找到当前工序记录(seq=" + proSn.getCurrentStepSeq() + ")";
-        } else {
-            List<ProFlowCardStep> prevSteps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
-                .eq(ProFlowCardStep::getCardId, proSn.getCardId())
-                .lt(ProFlowCardStep::getSequenceNum, currentStep.getSequenceNum())
-                .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED"));
-            if (!prevSteps.isEmpty()) {
-                prevOk = false;
-                List<String> names = prevSteps.stream()
-                    .map(s -> s.getProcessName() + "(" + s.getStepStatus() + ")")
-                    .toList();
-                prevMsg = "前道工序未完成: " + String.join(", ", names);
-            }
-        }
-        checks.add(check(CHECK_PREV_STEP, prevOk, prevMsg));
-
-        // --- 校验2 STATION_MATCH: SN 当前工序 = 工位工序, 且 SN 在制 ---
-        boolean matchOk;
-        String matchMsg = null;
-        if (stationProcessCode == null) {
-            matchOk = false;
-            matchMsg = "无法解析工位工序编码(工位未心跳注册且工位码格式不符): " + station;
-        } else if (currentStep == null || !stationProcessCode.equals(currentStep.getProcessCode())) {
-            matchOk = false;
-            matchMsg = String.format("工位工序(%s)与SN当前工序(%s)不匹配", stationProcessCode,
-                currentStep != null ? currentStep.getProcessCode() : "无");
-        } else if (!"IN_PRODUCTION".equals(proSn.getSnStatus())) {
-            matchOk = false;
-            matchMsg = "SN 状态为 " + proSn.getSnStatus() + ", 非在制状态";
-        } else {
-            matchOk = true;
-        }
-        checks.add(check(CHECK_STATION_MATCH, matchOk, matchMsg));
-
-        // --- 校验3 DUPLICATE: 该 SN 已在该工位报过 PASS ---
-        Long dupCount = reportMapper.selectCount(Wrappers.<MesStationReport>lambdaQuery()
-            .eq(MesStationReport::getSnCode, sn)
-            .eq(MesStationReport::getStationCode, station)
-            .eq(MesStationReport::getResult, "PASS"));
-        boolean dupOk = dupCount == 0;
-        checks.add(check(CHECK_DUPLICATE, dupOk, dupOk ? null : "该 SN 已在此工位报工过站(PASS), 禁止重复过站"));
-
-        // --- 校验4 QUALITY_HOLD: 最新综测 FAIL / 未关闭 NCR ---
-        // 取最新一条测试记录(不限 result)再判定, 复测 PASS 后放行; 只查 FAIL 会把历史失败误判为永久扣押
-        boolean holdOk = true;
-        String holdMsg = null;
-        TestRecord latestTest = testRecordMapper.selectOne(Wrappers.<TestRecord>lambdaQuery()
-            .eq(TestRecord::getSnCode, sn)
-            .orderByDesc(TestRecord::getTestTime)
-            .orderByDesc(TestRecord::getTestRecordId)
-            .last("LIMIT 1"));
-        if (latestTest != null && "FAIL".equals(latestTest.getResult())) {
-            holdOk = false;
-            holdMsg = "最新综测结果 FAIL(测试单 " + latestTest.getTestNo() + "), 质量扣押";
-        } else if (proSn.getCardId() != null) {
-            Long openNcr = ncrOrderMapper.selectCount(Wrappers.<NcrOrder>lambdaQuery()
-                .eq(NcrOrder::getCardId, proSn.getCardId())
-                .in(NcrOrder::getStatus,
-                    INcrOrderService.STATUS_OPEN,
-                    INcrOrderService.STATUS_REVIEW,
-                    INcrOrderService.STATUS_DISPOSITION,
-                    INcrOrderService.STATUS_IN_REWORK));
-            if (openNcr != null && openNcr > 0) {
-                holdOk = false;
-                holdMsg = "该 SN 所在流转卡存在未关闭 NCR 单(" + openNcr + " 张), 质量扣押";
-            }
-        }
-        checks.add(check(CHECK_QUALITY_HOLD, holdOk, holdMsg));
-
-        boolean pass = checks.stream().allMatch(c -> Boolean.TRUE.equals(c.get("ok")));
-        data.put("pass", pass);
-        data.put("snInfo", snInfo);
-        data.put("checks", checks);
-        return data;
+        ProFlowCardStep step = resolveCurrentStep(proSn.getCardId(), proSn.getCurrentStepSeq());
+        List<ProFlowCardStep> previous = step == null ? List.of() : stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, proSn.getCardId())
+            .lt(ProFlowCardStep::getSequenceNum, step.getSequenceNum())
+            .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED"));
+        Long duplicates = reportMapper.selectCount(Wrappers.<MesStationReport>lambdaQuery()
+            .eq(MesStationReport::getSnCode, sn).eq(MesStationReport::getResult, "PASS")
+            .and(w -> {
+                w.eq(MesStationReport::getStationCode, station);
+                if (step != null && step.getStepRecordId() != null) {
+                    w.or().eq(MesStationReport::getStepRecordId, step.getStepRecordId());
+                }
+            }));
+        TestRecord latest = testRecordMapper.selectOne(Wrappers.<TestRecord>lambdaQuery()
+            .eq(TestRecord::getSnCode, sn).orderByDesc(TestRecord::getTestTime).orderByDesc(TestRecord::getTestRecordId).last("LIMIT 1"));
+        Long open = proSn.getCardId() == null ? 0L : ncrOrderMapper.selectCount(Wrappers.<NcrOrder>lambdaQuery()
+            .eq(NcrOrder::getCardId, proSn.getCardId()).in(NcrOrder::getStatus,
+                INcrOrderService.STATUS_OPEN, INcrOrderService.STATUS_REVIEW,
+                INcrOrderService.STATUS_DISPOSITION, INcrOrderService.STATUS_IN_REWORK));
+        return StationPassChecks.evaluate(sn, proSn, step, resolveProcessCode(station), previous,
+            duplicates == null ? 0 : duplicates, latest, open == null ? 0 : open);
     }
 
     // ==================== C3 单件过站报工 ====================
 
     /**
      * SN 单件过站报工(C3): 幂等键 SINGLE|sn|station|clientTs 落唯一索引,
-     * 重复上报(离线队列重放)直接返回成功。
+     * 已提交且内容一致的离线重放返回成功；新请求必须在锁定重读后通过完整业务检查。
+     * <p>质量全范围锁依赖 MySQL InnoDB RR 的范围锁；无匹配记录也不能改成只锁最新一行。</p>
      * <p>操作员由调用方在事务外解析传入: 本方法 @Transactional 会把连接钉在 ry-mes
      * (动态数据源在同一事务内只持有一个物理连接), 事务内查 sch_worker(ry-erp) 必然失败。</p>
      *
      * @param dto      报工请求
-     * @param operator 事务外解析好的操作员(可空)
+     * @param operator 事务外解析好的操作员(可空，按空操作员记录)
      * @return 空对象(契约 data 为 {})
      */
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> reportSingle(StationPassReportDto dto, OperatorInfo operator) {
+        require(dto != null, "单件过站请求不能为空");
         String sn = trim(dto.getSnCode());
         String station = normalizeStationCode(trim(dto.getStationCode()));
         String result = trim(dto.getResult());
-        Long clientTs = dto.getClientTs();
-        if (StringUtils.isBlank(sn) || StringUtils.isBlank(station)) {
-            throw new ServiceException("snCode 与 stationCode 不能为空");
+        require(StringUtils.isNotBlank(sn) && sn.length() <= 64 && !sn.contains("|"), "SN 编码为空、过长或含幂等分隔符");
+        require(StringUtils.isNotBlank(station) && station.length() <= 64, "工位编码为空或过长");
+        require("PASS".equals(result) || "FAIL".equals(result), "result 仅允许 PASS/FAIL");
+        require(dto.getClientTs() != null && dto.getClientTs() > 0, "clientTs 必须为正数");
+        String clientKey = "SINGLE|" + sn + "|" + station + "|" + dto.getClientTs();
+        require(clientKey.length() <= 160, "幂等键超出存储长度");
+        String defects = canonicalDefects(dto.getDefectCodes());
+        require(!"PASS".equals(result) || defects == null, "PASS 不能携带不良代码");
+        OperatorInfo op = operator == null ? new OperatorInfo(null, null, null) : operator;
+        String tenant = TenantHelper.getTenantId();
+        require(TenantHelper.isEnable() && StringUtils.isNotBlank(tenant), "单件过站必须有启用的可信租户上下文");
+        require("mes".equals(DynamicDataSourceContextHolder.peek())
+            && TransactionSynchronizationManager.isActualTransactionActive()
+            && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+            && Objects.equals(Connection.TRANSACTION_REPEATABLE_READ, TransactionSynchronizationManager.getCurrentTransactionIsolationLevel()),
+            "单件过站必须通过实际 MES RR 写事务代理调用");
+
+        String fingerprint = StationSinglePassFingerprint.of(tenant, sn, station, dto.getClientTs(), result,
+            dto.getOperatorId(), blankToNull(dto.getOperatorCode()), defects);
+        List<ProSn> sns = passGuardMapper.lockSn(tenant, sn);
+        require(sns != null && sns.size() == 1, "SN 不存在或编码归属不唯一");
+        ProSn proSn = sns.get(0);
+        require(tenant.equals(proSn.getTenantId()) && sn.equals(proSn.getSnCode()) && "0".equals(proSn.getDelFlag()), "SN 租户或来源归属不匹配");
+        List<StationPassGuardMapper.StoredReport> history = passGuardMapper.lockReports(tenant, sn);
+        require(history != null, "报工历史来源缺失");
+        for (StationPassGuardMapper.StoredReport prior : history) {
+            require(tenant.equals(prior.getTenantId()) && sn.equals(prior.getSnCode()), "报工历史租户或 SN 归属不匹配");
+            if (clientKey.equals(prior.getClientKey())) {
+                require("0".equals(prior.getDelFlag()) && "SINGLE".equals(prior.getReportType())
+                    && station.equals(prior.getStationCode()) && Objects.equals(dto.getClientTs(), prior.getClientTs())
+                    && fingerprint.equals(prior.getRequestFingerprint())
+                    && result.equals(prior.getResult())
+                    && Objects.equals(defects, canonicalDefects(prior.getDefectCodes() == null ? null : List.of(prior.getDefectCodes().split(",", -1))))
+                    && sameQuantity(prior.getGoodQty(), "PASS".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO)
+                    && sameQuantity(prior.getDefectQty(), "FAIL".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO),
+                    "幂等键已存在但原始请求指纹缺失、内容或承载状态冲突，禁止重放");
+                return new HashMap<>();
+            }
         }
-        if (!"PASS".equals(result) && !"FAIL".equals(result)) {
-            throw new ServiceException("result 仅允许 PASS/FAIL: " + result);
+        require(proSn.getCardId() != null, "SN 未绑定流转卡");
+        ProFlowCard card = passGuardMapper.lockCard(tenant, proSn.getCardId());
+        require(card != null && tenant.equals(card.getTenantId()) && Objects.equals(proSn.getCardId(), card.getCardId())
+            && "0".equals(card.getDelFlag()) && proSn.getMesWoId() != null && proSn.getMesWoId() > 0
+            && Objects.equals(proSn.getMesWoId(), card.getMesWoId())
+            && Set.of("RELEASED", "IN_PROGRESS").contains(Objects.toString(card.getCardStatus(), "")), "流转卡归属或可报工状态未核验");
+        List<ProFlowCardStep> steps = passGuardMapper.lockSteps(tenant, card.getCardId());
+        require(steps != null && !steps.isEmpty(), "流转卡工序来源缺失");
+        Set<Integer> sequences = new java.util.HashSet<>();
+        for (ProFlowCardStep s : steps) {
+            require(tenant.equals(s.getTenantId()) && card.getCardId().equals(s.getCardId()) && "0".equals(s.getDelFlag())
+                && Objects.equals(card.getMesWoId(), s.getMesWoId())
+                && s.getSequenceNum() != null && s.getStepRecordId() != null && sequences.add(s.getSequenceNum())
+                && Set.of("PENDING", "IN_PROGRESS", "COMPLETED", "SKIPPED").contains(Objects.toString(s.getStepStatus(), "")), "工序来源、顺序或状态未核验");
         }
-        if (clientTs == null) {
-            throw new ServiceException("clientTs 不能为空(幂等键组成部分)");
+        ProFlowCardStep step = steps.stream().filter(s -> !Set.of("COMPLETED", "SKIPPED").contains(s.getStepStatus()))
+            .min(java.util.Comparator.comparing(ProFlowCardStep::getSequenceNum)).orElse(null);
+        require(step != null, "流转卡没有可报工工序");
+        require(step.getPlannedQty() != null && step.getPlannedQty().signum() > 0
+            && step.getGoodQty() != null && step.getGoodQty().signum() >= 0
+            && step.getDefectQty() != null && step.getDefectQty().signum() >= 0
+            && step.getScrapQty() != null && step.getScrapQty().signum() >= 0, "当前工序计划量或累计量未核验");
+        List<MesStationDevice> devices = passGuardMapper.lockDevices(tenant, station);
+        require(devices != null && !devices.isEmpty(), "工位未登记，不能仅凭工位码授权报工");
+        String process = devices.get(0).getProcessCode();
+        require(StringUtils.isNotBlank(process), "登记工位缺少工序绑定");
+        for (MesStationDevice d : devices) {
+            require(tenant.equals(d.getTenantId()) && station.equals(d.getStationCode()) && "0".equals(d.getDelFlag())
+                && process.equals(d.getProcessCode()), "登记工位归属或工序绑定冲突");
+        }
+        List<TestRecord> tests = passGuardMapper.lockTests(tenant, sn);
+        List<NcrOrder> ncrs = passGuardMapper.lockNcrs(tenant, card.getCardId());
+        require(tests != null && ncrs != null, "质量来源缺失");
+        for (TestRecord test : tests) {
+            require(tenant.equals(test.getTenantId()) && sn.equals(test.getSnCode())
+                && Set.of("0", "1", "2").contains(Objects.toString(test.getDelFlag(), ""))
+                && test.getResult() != null && Set.of("", "PASS", "FAIL").contains(test.getResult()), "测试来源归属或结果状态未核验");
+        }
+        for (NcrOrder ncr : ncrs) {
+            require(tenant.equals(ncr.getTenantId()) && card.getCardId().equals(ncr.getCardId())
+                && Set.of("0", "1", "2").contains(Objects.toString(ncr.getDelFlag(), ""))
+                && Set.of(INcrOrderService.STATUS_OPEN, INcrOrderService.STATUS_REVIEW, INcrOrderService.STATUS_DISPOSITION,
+                    INcrOrderService.STATUS_IN_REWORK, INcrOrderService.STATUS_CLOSED).contains(Objects.toString(ncr.getStatus(), "")),
+                "NCR 来源归属或状态未核验");
+        }
+        TestRecord latest = tests.stream().filter(t -> "0".equals(t.getDelFlag())).findFirst().orElse(null);
+        long openNcr = ncrs.stream().filter(n -> "0".equals(n.getDelFlag()) && Set.of(
+            INcrOrderService.STATUS_OPEN, INcrOrderService.STATUS_REVIEW,
+            INcrOrderService.STATUS_DISPOSITION, INcrOrderService.STATUS_IN_REWORK).contains(Objects.toString(n.getStatus(), ""))).count();
+        long duplicates = history.stream().filter(r -> "PASS".equals(r.getResult())
+            && (station.equals(r.getStationCode()) || Objects.equals(step.getStepRecordId(), r.getStepRecordId()))).count();
+        List<ProFlowCardStep> previous = steps.stream().filter(s -> s.getSequenceNum() < step.getSequenceNum()
+            && !Set.of("COMPLETED", "SKIPPED").contains(s.getStepStatus())).toList();
+        Map<String,Object> validation = StationPassChecks.evaluate(sn, proSn, step, process, previous, duplicates, latest, openNcr);
+        @SuppressWarnings("unchecked")
+        List<Map<String,Object>> checks = (List<Map<String,Object>>) validation.get("checks");
+        for (Map<String,Object> c : checks) {
+            require(Boolean.TRUE.equals(c.get("ok")), "[" + c.get("code") + "] " + c.get("message"));
         }
 
-        // 1. 幂等预检 + 唯一索引兜底: 重复上报直接成功
-        String clientKey = "SINGLE|" + sn + "|" + station + "|" + clientTs;
-        if (reportMapper.selectByClientKey(clientKey) != null) {
-            log.info("过站报工幂等命中(重放): clientKey={}", clientKey);
-            return new HashMap<>();
-        }
-
-        // 2. 定位 SN 与当前工序
-        ProSn proSn = proSnMapper.selectOne(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getSnCode, sn).last("LIMIT 1"));
-        if (proSn == null) {
-            throw new ServiceException("SN不存在: " + sn);
-        }
-        if (!"IN_PRODUCTION".equals(proSn.getSnStatus())) {
-            throw new ServiceException("SN 状态为 " + proSn.getSnStatus() + ", 非在制状态, 禁止过站报工");
-        }
-        ProFlowCardStep step = resolveCurrentStep(proSn.getCardId(), proSn.getCurrentStepSeq());
-        if (step == null) {
-            throw new ServiceException("SN 未找到当前工序记录(卡上无未完成工序)");
-        }
-        ProFlowCard card = flowCardMapper.selectById(proSn.getCardId());
-        if (card == null) {
-            throw new ServiceException("SN 所属流转卡不存在: " + proSn.getCardNo());
-        }
-
-        // 3. 操作员由调用方在事务外解析传入(本事务连接钉在 ry-mes, 无法再查 ry-erp 的 sch_worker)
-
-        // 4. 幂等行先落库(同事务; 并发重放撞唯一索引整体返回成功)
         MesStationReport report = new MesStationReport();
-        report.setReportType("SINGLE");
-        report.setSnCode(sn);
-        report.setStationCode(station);
-        report.setCardId(proSn.getCardId());
-        report.setStepRecordId(step.getStepRecordId());
-        report.setMesWoId(proSn.getMesWoId());
-        report.setWoNo(proSn.getWoNo());
-        report.setOperatorId(operator.userId());
-        report.setOperatorCode(operator.code());
-        report.setOperatorName(operator.name());
-        report.setResult(result);
-        report.setDefectCodes(joinDefectCodes(dto.getDefectCodes()));
+        report.setTenantId(tenant); report.setReportType("SINGLE"); report.setSnCode(sn); report.setStationCode(station);
+        report.setCardId(card.getCardId()); report.setStepRecordId(step.getStepRecordId()); report.setMesWoId(proSn.getMesWoId()); report.setWoNo(proSn.getWoNo());
+        report.setOperatorId(op.userId()); report.setOperatorCode(blankToNull(op.code())); report.setOperatorName(op.name());
+        report.setResult(result); report.setDefectCodes(defects);
         report.setGoodQty("PASS".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO);
         report.setDefectQty("FAIL".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO);
-        report.setClientTs(clientTs);
-        report.setClientKey(clientKey);
-        try {
-            reportMapper.insert(report);
-        } catch (DuplicateKeyException e) {
-            log.info("过站报工幂等命中(唯一索引): clientKey={}", clientKey);
-            return new HashMap<>();
-        }
-
-        // 5. 工序自动开工(PENDING -> IN_PROGRESS; 已 IN_PROGRESS 则补操作员)
-        autoStartStep(step, operator);
-
-        // 6. 数量增量累加: PASS → good_qty+1; FAIL → defect_qty+1
+        report.setClientTs(dto.getClientTs()); report.setClientKey(clientKey); report.setRequestFingerprint(fingerprint);
+        // 任意唯一键冲突都让整个事务回滚；不可把未知冲突吞成成功。
+        require(reportMapper.insert(report) == 1, "报工记录未写入，事务回滚");
+        autoStartStep(step, op);
         boolean isPass = "PASS".equals(result);
-        stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+        int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
             .setSql(isPass ? "good_qty = good_qty + 1" : "defect_qty = defect_qty + 1")
-            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()));
-
-        // 7. PASS: SN 流转到下一工序/末道完工; FAIL: SN 停留当前工序待处理
+            .eq(ProFlowCardStep::getTenantId, tenant).eq(ProFlowCardStep::getCardId, card.getCardId())
+            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()).eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
+        require(rows == 1, "工序状态已变更或数量未写入，事务回滚");
         if (isPass) {
-            advanceSn(proSn, step, card);
+            advanceSn(proSn, step, card, steps);
         }
-        log.info("过站报工完成: sn={}, station={}, result={}, stepRecordId={}", sn, station, result, step.getStepRecordId());
         return new HashMap<>();
     }
 
+    /** 不良代码按集合规范化；不允许分隔符或超长值改变持久化含义。 */
+    private String canonicalDefects(List<String> codes) {
+        if (codes == null || codes.isEmpty()) return null;
+        for (String code : codes) {
+            require(StringUtils.isNotBlank(code) && !code.contains(","), "不良代码为空或含存储分隔符");
+        }
+        String joined = String.join(",", codes.stream().map(String::trim).distinct().sorted().toList());
+        require(joined.length() <= 512, "不良代码超出存储长度"); return joined;
+    }
+
+    /** 重放数量比较不依赖 DECIMAL 的显示小数位。 */
+    private boolean sameQuantity(BigDecimal stored, BigDecimal expected) {
+        return stored != null && stored.compareTo(expected) == 0;
+    }
+
+    /** 可空文本规范化，保持旧已提交空值的兼容语义。 */
+    private String blankToNull(String value) {
+        return StringUtils.isBlank(value) ? null : value.trim();
+    }
+
+    /** 任何未核验条件都先拒绝，不继续业务写入。 */
+    private void require(boolean condition, String message) {
+        if (!condition) throw new ServiceException(message);
+    }
+
     /**
-     * SN 前移: 末道工序 → SN 完工 + 卡工序收口; 非末道 → current_step_seq+1。
+     * SN 前移使用已锁定的实际工序序号；末道完工，非末道写下一工序序号。
      */
-    private void advanceSn(ProSn proSn, ProFlowCardStep step, ProFlowCard card) {
-        List<ProFlowCardStep> cardSteps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getCardId, proSn.getCardId())
-            .orderByAsc(ProFlowCardStep::getSequenceNum));
+    private void advanceSn(ProSn proSn, ProFlowCardStep step, ProFlowCard card, List<ProFlowCardStep> cardSteps) {
         Integer maxSeq = cardSteps.stream().map(ProFlowCardStep::getSequenceNum)
             .filter(java.util.Objects::nonNull)
             .max(Integer::compareTo)
@@ -329,9 +320,12 @@ public class StationPassService {
                 .min(Integer::compareTo)
                 .orElse(null);
             if (nextSeq != null) {
-                proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
+                int rows = proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
                     .set(ProSn::getCurrentStepSeq, nextSeq)
+                    .eq(ProSn::getTenantId, proSn.getTenantId())
+                    .eq(ProSn::getSnStatus, "IN_PRODUCTION")
                     .eq(ProSn::getSnId, proSn.getSnId()));
+                require(rows == 1, "SN 推进失败，事务回滚");
             }
         }
     }
@@ -395,7 +389,7 @@ public class StationPassService {
      * <p>操作员由调用方在事务外解析传入(事务连接钉在 ry-mes, 无法查 ry-erp 的 sch_worker)。</p>
      *
      * @param dto      批量报工请求
-     * @param operator 事务外解析好的操作员(可空)
+     * @param operator 事务外解析好的操作员(可空，按空操作员记录)
      * @return 空对象(契约 data 为 {})
      */
     @Transactional(rollbackFor = Exception.class)
@@ -595,14 +589,6 @@ public class StationPassService {
             return null;
         }
         return String.join(",", defectCodes.stream().filter(StringUtils::isNotBlank).map(String::trim).toList());
-    }
-
-    private Map<String, Object> check(String code, boolean ok, String message) {
-        Map<String, Object> c = new HashMap<>(4);
-        c.put("code", code);
-        c.put("ok", ok);
-        c.put("message", message);
-        return c;
     }
 
     private BigDecimal nvl(BigDecimal v) {

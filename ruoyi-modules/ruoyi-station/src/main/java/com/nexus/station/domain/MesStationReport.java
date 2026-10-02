@@ -74,4 +74,7 @@ public class MesStationReport extends TenantEntity {
 
     /** 幂等键: SINGLE|sn|station|ts 或 BATCH|station|ts */
     private String clientKey;
+
+    /** 新单件请求的规范化原始输入指纹；NULL 的旧记录不能猜测补齐或升级重放资格。 */
+    private String requestFingerprint;
 }

@@ -74,6 +74,13 @@
             </exclusions>
         </dependency>
 
+        <!-- 私有内存事务/生产锁定 SQL 回归，不连接业务数据库 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <properties>
