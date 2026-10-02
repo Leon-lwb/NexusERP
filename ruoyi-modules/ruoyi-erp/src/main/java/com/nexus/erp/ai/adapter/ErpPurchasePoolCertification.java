@@ -156,13 +156,16 @@ final class ErpPurchasePoolCertification {
                 var orderHead = orderHeads.get(order.getOrderId());
                 require(orderHead.getOrderId().equals(binding.orderHead().orderId())
                     && Objects.equals(orderHead.getStatus(), binding.orderHead().status())
-                    && day(orderHead.getExpectedArrivalDate()).equals(day(binding.orderHead().expectedArrivalDate())), "订单供应日重读不一致");
+                    && (("DRAFT".equals(orderHead.getStatus())&&orderHead.getExpectedArrivalDate()==null
+                        &&binding.orderHead().expectedArrivalDate()==null)
+                        ||(orderHead.getExpectedArrivalDate()!=null&&binding.orderHead().expectedArrivalDate()!=null
+                        &&day(orderHead.getExpectedArrivalDate()).equals(day(binding.orderHead().expectedArrivalDate())))), "订单供应日重读不一致");
                 OrderStatus status;
                 if ("DRAFT".equals(orderHead.getStatus())) status = OrderStatus.DRAFT;
                 else if ("APPROVED".equals(orderHead.getStatus())) status = OrderStatus.APPROVED;
                 else throw failed("订单状态未覆盖完整承接生命周期");
                 orderFacts.add(new OrderLine(order.getLineId().toString(), ledger.allocationKey(), ledger.detailId().toString(), status,
-                    day(orderHead.getExpectedArrivalDate()), order.getOrderQuantity(), order.getReceivedQuantity(), baseId.toString(), true));
+                    (orderHead.getExpectedArrivalDate()==null?null:day(orderHead.getExpectedArrivalDate())), order.getOrderQuantity(), order.getReceivedQuantity(), baseId.toString(), true));
             } else if ("RELEASED".equals(ledger.allocationStatus())) {
                 require(Set.of("CLOSED", "CANCELLED").contains(head.getStatus()) && ledger.occupiedBaseQty().signum() == 0
                     && ledger.fulfilledBaseQty().signum() == 0 && ledger.orderLineId() == null, "释放来源未完整闭合");

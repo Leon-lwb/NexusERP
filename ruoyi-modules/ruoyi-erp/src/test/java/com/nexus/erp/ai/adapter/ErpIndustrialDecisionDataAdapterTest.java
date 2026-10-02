@@ -32,7 +32,8 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class ErpIndustrialDecisionDataAdapterTest {
     private static final DecisionBusinessRef REF = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11");
-    private static final Set<String> PERMISSIONS = Set.of("ai:decision:run", "prd:work:query", "pu:requisition:add");
+    private static final Set<String> PERMISSIONS = Set.of(
+        "ai:decision:run", "ai:decision:execute", "prd:work:query", "pu:requisition:add", "prd:schedule:run");
     private static final DecisionActor ACTOR = new DecisionActor("TENANT-B", 7L, "tester", PERMISSIONS);
     private static final DeliveryContextSnapshot SNAPSHOT = new DeliveryContextSnapshot(
         REF, List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
@@ -43,6 +44,7 @@ class ErpIndustrialDecisionDataAdapterTest {
     @Mock private ErpDecisionApsSimulation aps;
     @Mock private ErpDecisionFreshnessChecker freshness;
     @Mock private ErpDecisionActionExecutor executor;
+    @Mock private ErpCertifiedPurchaseDecisionAdapter purchase;
     @InjectMocks private ErpIndustrialDecisionDataAdapter adapter;
 
     @Test
@@ -88,7 +90,7 @@ class ErpIndustrialDecisionDataAdapterTest {
             when(assembler.exists(REF, approver)).thenReturn(true);
             var current = new DecisionFreshnessResult(true, "old-hash", List.of());
             when(freshness.check(REF, "old-hash", approver)).thenReturn(current);
-            when(executor.execute(purchaseAction(), approver)).thenReturn(success());
+            when(purchase.execute(purchaseAction(), approver)).thenReturn(success());
             assertTrue(adapter.canAccess(REF, approver));
             assertSame(current, adapter.checkFreshness(REF, "old-hash", approver));
             assertEquals(success(), adapter.executeBusinessAction(purchaseAction(), approver));
@@ -205,30 +207,30 @@ class ErpIndustrialDecisionDataAdapterTest {
             assertThrows(ServiceException.class, () -> adapter.executeBusinessAction(action, noPurchasePermission));
             assertThrows(ServiceException.class, () -> adapter.verifyBusinessAction(action, success(), noPurchasePermission));
             assertThrows(ServiceException.class, () -> adapter.compensateBusinessAction(action, success(), noPurchasePermission));
-            verifyNoInteractions(assembler, executor);
+            verifyNoInteractions(assembler, executor, purchase);
 
             when(assembler.exists(REF, ACTOR)).thenReturn(false);
             assertThrows(ServiceException.class, () -> adapter.executeBusinessAction(action, ACTOR));
-            verifyNoInteractions(executor);
+            verifyNoInteractions(executor, purchase);
         });
     }
 
     @Test
-    void threeBusinessActionsDelegateToInjectedExecutorWithinTenant() {
+    void purchaseOperationsDelegateOnlyToCertifiedAdapterWithinTenant() {
         DecisionActionProposal action = purchaseAction();
         DecisionActionExecutionResult result = success();
         withTenant(() -> {
             TenantHelper.setDynamic("TENANT-A");
             when(assembler.exists(REF, ACTOR)).thenReturn(true);
-            when(executor.execute(action, ACTOR)).thenAnswer(call -> {
+            when(purchase.execute(action, ACTOR)).thenAnswer(call -> {
                 assertEquals("TENANT-B", TenantHelper.getDynamic());
                 return result;
             });
-            when(executor.verify(action, result, ACTOR)).thenAnswer(call -> {
+            when(purchase.verify(action, result, ACTOR)).thenAnswer(call -> {
                 assertEquals("TENANT-B", TenantHelper.getDynamic());
                 return result;
             });
-            when(executor.compensate(action, result, ACTOR)).thenAnswer(call -> {
+            when(purchase.compensate(action, result, ACTOR)).thenAnswer(call -> {
                 assertEquals("TENANT-B", TenantHelper.getDynamic());
                 throw new IllegalStateException("rollback");
             });
@@ -236,7 +238,58 @@ class ErpIndustrialDecisionDataAdapterTest {
             assertSame(result, adapter.verifyBusinessAction(action, result, ACTOR));
             assertThrows(IllegalStateException.class, () -> adapter.compensateBusinessAction(action, result, ACTOR));
             assertEquals("TENANT-A", TenantHelper.getDynamic());
+            verifyNoInteractions(executor);
         });
+    }
+
+    @Test
+    void scheduleOperationsStillUseOldExecutorAndNeverCertifiedPurchaseAdapter() {
+        var action = new DecisionActionProposal(102L, DecisionActionType.CREATE_SCHEDULE_PLAN_DRAFT,
+            "schedule", "reason", REF, Map.of("runId", "10"), DecisionRiskLevel.HIGH, true,
+            "prd:schedule:run", "schedule-102", "schedulePlanDraft", 1, List.of());
+        var result = new DecisionActionExecutionResult(true, false, "PRD_SCHEDULE_PLAN", 100L,
+            "APS-100", Map.of("runId", "10"), null, null);
+        withTenant(() -> {
+            when(assembler.exists(REF, ACTOR)).thenReturn(true);
+            when(executor.execute(action, ACTOR)).thenAnswer(call -> {
+                assertEquals("TENANT-B", TenantHelper.getDynamic()); return result;
+            });
+            when(executor.verify(action, result, ACTOR)).thenReturn(result);
+            when(executor.compensate(action, result, ACTOR)).thenReturn(result);
+            assertSame(result, adapter.executeBusinessAction(action, ACTOR));
+            assertSame(result, adapter.verifyBusinessAction(action, result, ACTOR));
+            assertSame(result, adapter.compensateBusinessAction(action, result, ACTOR));
+            assertNull(TenantHelper.getDynamic());
+            verifyNoInteractions(purchase);
+        });
+    }
+
+    @Test
+    void realCertifiedAdapterKeepsOldPayloadRejectedAfterTargetTenantAndPermissionsCheck() {
+        var writer = mock(com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService.class);
+        var realPurchase = new ErpCertifiedPurchaseDecisionAdapter(writer);
+        var boundary = new ErpIndustrialDecisionDataAdapter(assembler, shortage, aps, freshness, executor, realPurchase);
+        var actor = new DecisionActor("000001", 7L, "tester", PERMISSIONS);
+        withTenant(() -> {
+            TenantHelper.setDynamic("000002");
+            when(assembler.exists(REF, actor)).thenAnswer(call -> {
+                assertEquals("000001", TenantHelper.getDynamic()); return true;
+            });
+            var old = purchaseAction();
+            assertThrows(ServiceException.class, () -> boundary.executeBusinessAction(old, actor));
+            assertThrows(ServiceException.class, () -> boundary.verifyBusinessAction(old, success(), actor));
+            assertThrows(ServiceException.class, () -> boundary.compensateBusinessAction(old, success(), actor));
+            assertEquals("000002", TenantHelper.getDynamic());
+            verifyNoInteractions(executor, writer);
+        });
+    }
+
+    @Test
+    void facadeDoesNotIntroduceOuterTransactionAroundPurchaseWriter() {
+        assertNull(ErpIndustrialDecisionDataAdapter.class.getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+        for (var method : ErpIndustrialDecisionDataAdapter.class.getDeclaredMethods()) {
+            assertNull(method.getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+        }
     }
 
     private static DecisionActor actor(Set<String> permissions) {

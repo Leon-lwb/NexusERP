@@ -10,6 +10,8 @@ import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.domain.enums.PurchaseOrderLineReceiveStatus;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import lombok.RequiredArgsConstructor;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +34,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 public class PuPurchaseOrderLineController {
 
     private final PuPurchaseOrderLineMapper orderLineMapper;
+    private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
 
     /**
      * 标记超收行已确认
@@ -47,7 +50,9 @@ public class PuPurchaseOrderLineController {
     @SaCheckPermission("pu:order:edit")
     @Log(title = "采购订单行超收确认", businessType = BusinessType.UPDATE)
     @PutMapping("/{lineId}/confirmOverReceive")
+    @Transactional(rollbackFor = Exception.class)
     public R<Void> confirmOverReceive(@PathVariable Long lineId) {
+        certifiedDocumentGuard.requireLegacyOrderLineMutation(lineId);
         LambdaUpdateWrapper<PuPurchaseOrderLine> wrapper = Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
             .eq(PuPurchaseOrderLine::getLineId, lineId)
             .eq(PuPurchaseOrderLine::getReceiveStatus, PurchaseOrderLineReceiveStatus.OVER_RECEIVED.getCode())
@@ -70,7 +75,9 @@ public class PuPurchaseOrderLineController {
     @SaCheckPermission("pu:order:edit")
     @Log(title = "采购订单行短收关闭", businessType = BusinessType.UPDATE)
     @PutMapping("/{lineId}/closeShortReceive")
+    @Transactional(rollbackFor = Exception.class)
     public R<Void> closeShortReceive(@PathVariable Long lineId) {
+        certifiedDocumentGuard.requireLegacyOrderLineMutation(lineId);
         LambdaUpdateWrapper<PuPurchaseOrderLine> wrapper = Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
             .eq(PuPurchaseOrderLine::getLineId, lineId)
             .eq(PuPurchaseOrderLine::getReceiveStatus, PurchaseOrderLineReceiveStatus.SHORT_RECEIVED.getCode())

@@ -128,6 +128,18 @@ class PuContractServiceImplTest {
 
     /** 新增：客户端伪造 status=APPROVED 仍落库为 DRAFT；明细行被白名单重建并重算行金额/税额/合同总额 */
     @Test
+    void approvedContractCannotBypassSourceCertificationByDirectlyInsertingAnOrder() {
+        PuContract contract = new PuContract(); contract.setContractId(10L); contract.setStatus("APPROVED");
+        PuContractLine line = new PuContractLine(); line.setMaterialId(101L); line.setQuantity(new java.math.BigDecimal("5"));
+        lenient().when(baseMapper.selectById(10L)).thenReturn(contract);
+        lenient().when(lineMapper.selectList(any())).thenReturn(java.util.List.of(line));
+        lenient().when(baseMapper.update(any(),any())).thenReturn(1);
+        ServiceException error=assertThrows(ServiceException.class,()->contractService.createPurchaseOrderFromContract(10L));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"),error.getMessage());
+        org.mockito.Mockito.verifyNoInteractions(baseMapper,lineMapper,purchaseOrderMapper,purchaseOrderLineMapper,autoCodeUtil);
+    }
+
+    @Test
     void insertByBo_forcesDraft_andSanitizesLines() {
         PuContractBo bo = new PuContractBo();
         bo.setContractNo("PU-HT-001");

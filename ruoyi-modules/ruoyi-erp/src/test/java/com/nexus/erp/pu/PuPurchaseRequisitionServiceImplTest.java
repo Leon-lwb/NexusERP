@@ -1,5 +1,7 @@
 package com.nexus.erp.pu;
 
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -23,7 +25,6 @@ import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import com.nexus.erp.pu.service.impl.PuPurchaseRequisitionServiceImpl;
-import com.nexus.erp.pu.service.PuDecisionDraftReadinessGuard;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -43,7 +44,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -83,9 +83,8 @@ class PuPurchaseRequisitionServiceImplTest {
     private static final long ACTION_ID = 501L;
     private static final String IDEM_KEY = "decision-idem-501";
 
-    /** 基础幂等测试模拟未来已核验的边界；此 Mock 绝不是生产启用开关。 */
     @Mock
-    private PuDecisionDraftReadinessGuard decisionDraftReadinessGuard;
+    private PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     @Mock
     private PuPurchaseRequisitionMapper baseMapper;
     @Mock
@@ -120,6 +119,115 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
+    void legacyApprovedRequisitionMustNotCreateAnotherUnattributedOrder() {
+        PuPurchaseRequisition legacy = manualExistingRequisition(); legacy.setStatus("APPROVED");
+        PuPurchaseRequisitionLine line = purchaseBo().getPuPurchaseRequisitionLineList().get(0);
+        line.setUnit(""); line.setApplyQuantity(new BigDecimal("510"));
+        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(legacy);
+        org.mockito.Mockito.lenient().when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(line));
+        org.mockito.Mockito.lenient().when(autoCodeUtil.genSerialCode("PU_ORDER_CODE",null)).thenReturn("PO-RAW");
+        org.mockito.Mockito.lenient().doAnswer(invocation -> {
+            invocation.<PuPurchaseOrder>getArgument(0).setOrderId(9001L); return 1;
+        }).when(purchaseOrderMapper).insert(any(PuPurchaseOrder.class));
+        org.mockito.Mockito.lenient().when(purchaseOrderLineMapper.insert(any(PuPurchaseOrderLine.class))).thenReturn(1);
+        org.mockito.Mockito.lenient().when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.convertToPurchaseOrder(7001L));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"),error.getMessage());
+        verifyNoInteractions(autoCodeUtil,purchaseOrderLineMapper);
+        verify(purchaseOrderMapper,never()).insert(any(PuPurchaseOrder.class));
+        assertEquals("",line.getUnit()); assertEquals(new BigDecimal("510"),line.getApplyQuantity());
+    }
+
+    @Test
+    void historicalEmptyUnitAnd510QuantityRemainExactlyReadableWithoutProtectionUpgrading() {
+        PuPurchaseRequisition legacy = manualExistingRequisition();
+        PuPurchaseRequisitionLine line = purchaseBo().getPuPurchaseRequisitionLineList().get(0);
+        line.setUnit(""); line.setApplyQuantity(new BigDecimal("510"));
+        when(baseMapper.selectById(7001L)).thenReturn(legacy);
+        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(line));
+        var result = requisitionService.selectById(7001L);
+        assertEquals("",result.getPuPurchaseRequisitionLineList().get(0).getUnit());
+        assertEquals(new BigDecimal("510"),result.getPuPurchaseRequisitionLineList().get(0).getApplyQuantity());
+        verifyNoInteractions(certifiedDocumentGuard,autoCodeUtil,purchaseOrderMapper,purchaseOrderLineMapper);
+    }
+
+    @Test
+    void protectedRequisitionMutationsMustNeverReachLegacyMappers() {
+        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(manualExistingRequisition());
+        org.mockito.Mockito.lenient().when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+        ServiceException protectedError = new ServiceException("protected-document");
+        org.mockito.Mockito.lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyRequisitionMutation(7001L);
+        List<Runnable> mutations = List.of(
+            () -> requisitionService.close(7001L),
+            () -> requisitionService.cancel(7001L),
+            () -> requisitionService.deleteByIds(new Long[]{7001L}),
+            () -> requisitionService.submit("7001", "flow"),
+            () -> requisitionService.convertToPurchaseOrder(7001L),
+            () -> requisitionService.deleteDraftIfUnchanged(7001L, "V:4", RUN_ID, ACTION_ID, IDEM_KEY),
+            () -> { WfMyBusiness flow = new WfMyBusiness(); flow.setDataId("7001"); flow.setActStatus(ActStatus.pass); requisitionService.afterFlowHandle(flow); }
+        );
+        for (Runnable mutation : mutations) {
+            assertSame(protectedError, assertThrows(ServiceException.class, mutation::run));
+        }
+        verifyNoInteractions(baseMapper, lineMapper, purchaseOrderMapper, purchaseOrderLineMapper, autoCodeUtil, processService);
+    }
+
+    @Test
+    void protectedRequisitionEditChecksPersistedAndProposedLineIdentityBeforeLegacyReads() {
+        PuPurchaseRequisitionBo bo = purchaseBo(); bo.setRequisitionId(7001L);
+        ServiceException protectedError = new ServiceException("protected-document");
+        org.mockito.Mockito.lenient().doThrow(protectedError).when(certifiedDocumentGuard)
+            .requireLegacyRequisitionEdit(7001L, bo.getPuPurchaseRequisitionLineList());
+        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(manualExistingRequisition());
+        assertSame(protectedError, assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo)));
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
+
+    @Test
+    void mixedLegacyAndProtectedRequisitionDeleteIsPreflightedBeforeFirstWrite() {
+        ServiceException protectedError = new ServiceException("protected-document");
+        org.mockito.Mockito.lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyRequisitionMutation(7002L);
+        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(manualExistingRequisition());
+        org.mockito.Mockito.lenient().when(baseMapper.delete(any(Wrapper.class))).thenReturn(1);
+        assertSame(protectedError, assertThrows(ServiceException.class, () -> requisitionService.deleteByIds(new Long[]{7001L,7002L})));
+        verifyNoInteractions(baseMapper, lineMapper);
+    }
+
+    @Test
+    void rawManualInsertWithoutCertifiedSourceMustRejectBeforeAnyPersistence() {
+        PuPurchaseRequisitionBo bo = purchaseBo();
+        bo.setRequisitionNo("PR-RAW");
+        org.mockito.Mockito.lenient().doAnswer(invocation -> {
+            PuPurchaseRequisition row = invocation.getArgument(0);
+            row.setRequisitionId(7010L);
+            return 1;
+        }).when(baseMapper).insert(any(PuPurchaseRequisition.class));
+        org.mockito.Mockito.lenient().when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
+
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"), error.getMessage());
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
+
+    @Test
+    void rawCreateDraftCannotBecomeTrustedByMockingTheOldReadinessGuard() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        bo.setRequisitionNo("PR-RAW-AI");
+        org.mockito.Mockito.lenient().doAnswer(invocation -> {
+            PuPurchaseRequisition row = invocation.getArgument(0);
+            row.setRequisitionId(7010L);
+            return 1;
+        }).when(baseMapper).insert(any(PuPurchaseRequisition.class));
+        org.mockito.Mockito.lenient().when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"), error.getMessage());
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
+
+    @Test
     void ordinaryFormCannotCreateAnAiDecisionProvenanceDocument() {
         assertThrows(ServiceException.class, () -> requisitionService.insertByBo(decisionPurchaseBo()));
         for (String source : List.of("ai_decision", " AI_DECISION ")) {
@@ -135,23 +243,22 @@ class PuPurchaseRequisitionServiceImplTest {
             PuPurchaseRequisitionBo bo = purchaseBo();
             bo.setSourceType(source);
             ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
-            assertTrue(error.getMessage().contains("来源占用"), source);
+            assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"), source);
         }
         for (String source : List.of("AI_DECISION", "LOW_STOCK", "MRP")) {
             PuPurchaseRequisitionBo bo = purchaseBo();
             bo.getPuPurchaseRequisitionLineList().get(0).setSourceType(source);
             ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
-            assertTrue(error.getMessage().contains("来源占用"), source);
+            assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"), source);
         }
         verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
     }
 
     @Test
     void directDraftMustRejectLegacyAiIdentityBeforeIdempotentLookupOrWrites() {
-        ReflectionTestUtils.setField(requisitionService, "decisionDraftReadinessGuard", new PuDecisionDraftReadinessGuard());
         ServiceException error = assertThrows(ServiceException.class,
             () -> requisitionService.createDraft(decisionPurchaseBo()));
-        assertTrue(error.getMessage().contains("来源占用"));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"));
         verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
     }
     @Test
@@ -159,78 +266,43 @@ class PuPurchaseRequisitionServiceImplTest {
         PuPurchaseRequisitionBo bo = purchaseBo();
         bo.setSourceType("MES_SPARE_LOW_STOCK");
         ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-        assertTrue(error.getMessage().contains("来源占用"));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"));
         verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
     }
     @Test
-    void lineAuditInheritsTrustedHeaderInsteadOfMissingAsyncLoginOrClientValues() {
-        var bo=decisionPurchaseBo();bo.setCreateBy(1L);bo.setUpdateBy(1L);bo.setCreateDept(103L);
-        bo.getPuPurchaseRequisitionLineList().get(0).setCreateBy(-1L);
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null);
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE",null)).thenReturn("PR-AUDIT");
-        stubHeaderInsert(7001L);when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
-        requisitionService.createDraft(bo);
-        var captured=ArgumentCaptor.forClass(PuPurchaseRequisitionLine.class);verify(lineMapper).insert(captured.capture());
-        assertEquals(1L,captured.getValue().getCreateBy());assertEquals(1L,captured.getValue().getUpdateBy());assertEquals(103L,captured.getValue().getCreateDept());
-    }
-
-    @Test
-    void createDraftReturnsGeneratedIdAndWritesBackStructuredVersion() {
+    void rawDraftAuditFieldsCannotSubstituteForSourceCertification() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null);
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-7001");
-        stubHeaderInsert(7001L);
-        when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
-
-        Long id = requisitionService.createDraft(bo);
-
-        assertEquals(7001L, id);
-        assertEquals(7001L, bo.getRequisitionId());
-        assertEquals("PR-7001", bo.getRequisitionNo());
-        assertEquals("DRAFT", bo.getStatus());
-        assertEquals(RUN_ID, bo.getDecisionRunId());
-        assertEquals(ACTION_ID, bo.getDecisionActionId());
-        assertEquals(IDEM_KEY, bo.getDecisionIdempotencyKey());
-        assertEquals(0, bo.getVersion());
-        verify(lineMapper).insert(any(PuPurchaseRequisitionLine.class));
+        bo.setCreateBy(1L); bo.setUpdateBy(1L); bo.setCreateDept(103L);
+        bo.getPuPurchaseRequisitionLineList().get(0).setCreateBy(-1L);
+        assertRawDraftRejected(bo);
+        assertEquals(-1L,bo.getPuPurchaseRequisitionLineList().get(0).getCreateBy());
     }
 
     @Test
-    void insertByBoKeepsOrdinaryUiNullKeyCreationBehavior() {
-        PuPurchaseRequisitionBo bo = purchaseBo();
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-UI-1");
-        stubHeaderInsert(7010L);
-        when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
-
-        assertEquals(1, requisitionService.insertByBo(bo));
-
-        assertEquals(7010L, bo.getRequisitionId());
-        assertEquals("PR-UI-1", bo.getRequisitionNo());
-        assertEquals(0, bo.getVersion());
-        assertEquals(null, bo.getDecisionIdempotencyKey());
-        verify(baseMapper, never()).selectOne(any(Wrapper.class));
+    void rawDraftDoesNotGenerateIdentityOrWriteBackVersion() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        assertRawDraftRejected(bo);
+        assertEquals(null,bo.getRequisitionNo());
+        assertEquals(0,bo.getVersion());
     }
 
     @Test
-    void headerInsertZeroDoesNotWriteLines() {
+    void ordinaryUiNullKeyNoLongerAuthorizesUnattributedCreation() {
         PuPurchaseRequisitionBo bo = purchaseBo();
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-FAIL");
-        when(baseMapper.insert(any(PuPurchaseRequisition.class))).thenReturn(0);
-
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"));
+        assertEquals(null,bo.getRequisitionId());
+        verifyNoInteractions(baseMapper,lineMapper,autoCodeUtil);
     }
 
     @Test
-    void missingGeneratedHeaderIdDoesNotWriteLines() {
-        PuPurchaseRequisitionBo bo = purchaseBo();
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-NO-ID");
-        when(baseMapper.insert(any(PuPurchaseRequisition.class))).thenReturn(1);
+    void rawDraftRejectsBeforeHeaderInsertCanReturnZero() {
+        assertRawDraftRejected(purchaseBo());
+    }
 
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    @Test
+    void rawDraftRejectsBeforeAnyHeaderIdentityCanBeGenerated() {
+        assertRawDraftRejected(purchaseBo());
     }
 
     @Test
@@ -247,136 +319,60 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
-    void sameDecisionKeyReturnsExistingIdWithoutSecondInsertOrLines() {
+    void sameDecisionKeyCannotAuthorizeRawReplayOrLookup() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        PuPurchaseRequisition existing = matchingExistingRequisition();
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(existing);
-        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(matchingLines(7001L));
-
-        Long id = requisitionService.createDraft(bo);
-
-        assertEquals(7001L, id);
-        assertEquals(7001L, bo.getRequisitionId());
-        assertEquals("PR-7001", bo.getRequisitionNo());
-        assertEquals(4, bo.getVersion());
-        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
-        verifyNoInteractions(autoCodeUtil);
+        assertRawDraftRejected(bo);
+        assertEquals(IDEM_KEY,bo.getDecisionIdempotencyKey());
     }
 
     @Test
-    void sameDecisionKeyWithDifferentProvenanceConflictsWithoutWriting() {
-        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        PuPurchaseRequisition existing = matchingExistingRequisition();
-        existing.setDecisionRunId(RUN_ID + 1);
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(existing);
-
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-
-        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
-        verifyNoInteractions(lineMapper, autoCodeUtil);
+    void rawReplayRejectsChangedProvenanceBeforeAnyLookup() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo(); bo.setDecisionRunId(RUN_ID+1);
+        assertRawDraftRejected(bo);
     }
 
     @Test
-    void sameDecisionKeyWithDifferentPayloadScopeConflictsWithoutWriting() {
-        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        PuPurchaseRequisition existing = matchingExistingRequisition();
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(existing);
-        PuPurchaseRequisitionLine changed = matchingLines(7001L).get(0);
-        changed.setApplyQuantity(new BigDecimal("6"));
-        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(changed));
-
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-
-        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    void rawReplayRejectsChangedPayloadScopeBeforeAnyLookup() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo(); bo.setApplicantId(8L);
+        bo.setRequiredDate(java.sql.Date.valueOf("2026-10-01"));
+        assertRawDraftRejected(bo);
     }
 
     @Test
-    void sameDecisionKeyRejectsDelimiterCollisionBetweenMaterialCodeAndName() {
+    void rawReplayCannotTrustDelimiterBasedLineIdentity() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        PuPurchaseRequisitionLine requested = bo.getPuPurchaseRequisitionLineList().get(0);
-        requested.setMaterialCode("A|B");
-        requested.setMaterialName("C");
-        PuPurchaseRequisitionLine persisted = matchingLines(7001L).get(0);
-        persisted.setMaterialCode("A");
-        persisted.setMaterialName("B|C");
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(matchingExistingRequisition());
-        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(persisted));
-
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-
-        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+        bo.getPuPurchaseRequisitionLineList().get(0).setMaterialCode("M|unsafe");
+        bo.getPuPurchaseRequisitionLineList().get(0).setMaterialName("code|name");
+        assertRawDraftRejected(bo);
     }
 
     @Test
-    void sameDecisionKeyKeepsDuplicateLineCountsWhileIgnoringOrderAndDecimalScale() {
+    void rawReplayCannotTrustDuplicateLinesOrderingOrDecimalScale() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        PuPurchaseRequisitionLine requested = bo.getPuPurchaseRequisitionLineList().get(0);
-        PuPurchaseRequisitionLine requestedOther = matchingLines(null).get(0);
-        requestedOther.setMaterialId(202L);
-        bo.setPuPurchaseRequisitionLineList(List.of(requested, requested, requestedOther));
-        PuPurchaseRequisitionLine existing = matchingLines(7001L).get(0);
-        existing.setApplyQuantity(new BigDecimal("5.0"));
-        PuPurchaseRequisitionLine existingOther = matchingLines(7001L).get(0);
-        existingOther.setMaterialId(202L);
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(matchingExistingRequisition());
-        when(lineMapper.selectList(any(Wrapper.class)))
-            .thenReturn(List.of(existingOther, existing, existing));
-
-        assertEquals(7001L, requisitionService.createDraft(bo));
-
-        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+        var lines = new java.util.ArrayList<>(bo.getPuPurchaseRequisitionLineList());
+        lines.get(0).setApplyQuantity(new BigDecimal("5.00")); lines.add(matchingLines(null).get(0));
+        bo.setPuPurchaseRequisitionLineList(lines);
+        assertRawDraftRejected(bo);
+        assertEquals(2,bo.getPuPurchaseRequisitionLineList().size());
     }
 
     @Test
-    void sameDecisionKeyRejectsChangedDuplicateLineCount() {
+    void rawReplayRejectsChangedDuplicateLineCountBeforeAnyLookup() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        PuPurchaseRequisitionLine line = bo.getPuPurchaseRequisitionLineList().get(0);
-        bo.setPuPurchaseRequisitionLineList(List.of(line, line));
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(matchingExistingRequisition());
-        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(matchingLines(7001L));
-
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-
-        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
+        bo.setPuPurchaseRequisitionLineList(List.of());
+        assertRawDraftRejected(bo);
     }
 
     @Test
-    void duplicateDecisionInsertRereadsAndReturnsMatchingExistingRow() {
-        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null, matchingExistingRequisition());
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-RACE");
-        when(baseMapper.insert(any(PuPurchaseRequisition.class)))
-            .thenThrow(new DuplicateKeyException("duplicate decision key"));
-        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(matchingLines(7001L));
-
-        Long id = requisitionService.createDraft(bo);
-
-        assertEquals(7001L, id);
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    void rawReplayNeverAttemptsTheOldDuplicateInsertRecovery() {
+        assertRawDraftRejected(decisionPurchaseBo());
     }
 
     @Test
-    void duplicateKeyReplayReadsLinesWithCurrentReadAfterOldSnapshot() {
+    void rawReplayCannotClaimAnOldSnapshotAsCurrentCertification() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null, matchingExistingRequisition());
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-RACE");
-        when(baseMapper.insert(any(PuPurchaseRequisition.class)))
-            .thenThrow(new DuplicateKeyException("duplicate decision key"));
-        when(lineMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
-            Wrapper<?> query = invocation.getArgument(0);
-            return query.getSqlSegment().toUpperCase(Locale.ROOT).contains("FOR UPDATE")
-                ? matchingLines(7001L) : List.of();
-        });
-
-        assertEquals(7001L, assertDoesNotThrow(() -> requisitionService.createDraft(bo)));
-        ArgumentCaptor<Wrapper<PuPurchaseRequisitionLine>> lines = wrapperCaptor();
-        verify(lineMapper).selectList(lines.capture());
-        assertSqlContains(lines.getValue(), "for update");
-        verify(baseMapper, never()).delete(any(Wrapper.class));
+        bo.setVersion(4); bo.setCreateTime(new Date(CREATE_MILLIS));
+        assertRawDraftRejected(bo);
     }
 
     @Test
@@ -409,63 +405,31 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
-    void compensatedPurchaseKeyCannotBeRecreatedAfterLogicalDelete() {
+    void compensatedPurchaseKeyCannotBeRecreatedThroughRawDraft() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        when(baseMapper.delete(any(Wrapper.class))).thenReturn(1);
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null);
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-NEW");
-        when(baseMapper.insert(any(PuPurchaseRequisition.class)))
-            .thenThrow(new DuplicateKeyException("tenant and decision key still occupied"));
-        when(baseMapper.findCompensatedDecisionId("000000", IDEM_KEY)).thenReturn(7001L);
-
-        assertTrue(requisitionService.deleteDraftIfUnchanged(7001L, "V:4", RUN_ID, ACTION_ID, IDEM_KEY));
-        try (MockedStatic<TenantHelper> tenant = Mockito.mockStatic(TenantHelper.class)) {
-            tenant.when(TenantHelper::getTenantId).thenReturn("000000");
-            ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
-            assertTrue(error.getMessage().contains("已补偿"), error.getMessage());
-        }
-        verify(baseMapper).findCompensatedDecisionId("000000", IDEM_KEY);
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+        assertRawDraftRejected(bo);
+        assertEquals(IDEM_KEY,bo.getDecisionIdempotencyKey());
+        verifyNoInteractions(certifiedDocumentGuard);
     }
 
     @Test
-    void unrelatedPurchaseUniqueKeyCollisionIsNotMisclassifiedAsCompensated() {
-        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null);
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-CODE-COLLISION");
-        DuplicateKeyException duplicate = new DuplicateKeyException("duplicate business code");
-        when(baseMapper.insert(any(PuPurchaseRequisition.class))).thenThrow(duplicate);
-        when(baseMapper.findCompensatedDecisionId("000000", IDEM_KEY)).thenReturn(null);
-
-        try (MockedStatic<TenantHelper> tenant = Mockito.mockStatic(TenantHelper.class)) {
-            tenant.when(TenantHelper::getTenantId).thenReturn("000000");
-            assertSame(duplicate, assertThrows(DuplicateKeyException.class, () -> requisitionService.createDraft(bo)));
-        }
-        verify(baseMapper).findCompensatedDecisionId("000000", IDEM_KEY);
-        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    void rawDraftRejectsBeforeUnrelatedSqlUniquenessOrCompensationLookup() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo(); bo.setRequisitionNo("PR-CODE-COLLISION");
+        assertRawDraftRejected(bo);
     }
 
     @Test
     void createDraftRejectsInvalidInputBeforeWriting() {
-        PuPurchaseRequisitionBo withId = purchaseBo();
-        withId.setRequisitionId(9L);
-        PuPurchaseRequisitionBo withoutLines = new PuPurchaseRequisitionBo();
-
-        assertThrows(IllegalArgumentException.class, () -> requisitionService.createDraft(null));
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(withId));
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(withoutLines));
-
-        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+        PuPurchaseRequisitionBo withId = purchaseBo(); withId.setRequisitionId(9L);
+        assertRawDraftRejected(null);
+        assertRawDraftRejected(withId);
+        assertRawDraftRejected(new PuPurchaseRequisitionBo());
     }
 
     @Test
-    void lineInsertMustAffectExactlyOneRow() {
-        PuPurchaseRequisitionBo bo = purchaseBo();
-        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-LINE-FAIL");
-        stubHeaderInsert(7002L);
-        when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(0);
-
-        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+    void rawDraftRejectsBeforeAnyLineInsertCanRun() {
+        assertRawDraftRejected(purchaseBo());
+        verifyNoInteractions(lineMapper);
     }
 
     @Test
@@ -943,50 +907,33 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
-    void convertThrowsAfterCreatedOrderWhenRequisitionCasMissesForTransactionRollback() throws Exception {
-        PuPurchaseRequisition current = matchingExistingRequisition();
-        current.setStatus("APPROVED");
-        current.setVersion(4);
-        when(baseMapper.selectById(7001L)).thenReturn(current);
-        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(matchingLines(7001L));
-        when(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null)).thenReturn("PO-1");
-        doAnswer(invocation -> {
-            PuPurchaseOrder order = invocation.getArgument(0);
-            order.setOrderId(9001L);
-            return 1;
-        }).when(purchaseOrderMapper).insert(any(PuPurchaseOrder.class));
-        when(purchaseOrderLineMapper.insert(any(PuPurchaseOrderLine.class))).thenReturn(1);
-        when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(0);
-
-        assertThrows(ServiceException.class, () -> requisitionService.convertToPurchaseOrder(7001L));
-
-        verify(purchaseOrderMapper).insert(any(PuPurchaseOrder.class));
-        verify(purchaseOrderLineMapper).insert(any(PuPurchaseOrderLine.class));
-        Transactional transactional = PuPurchaseRequisitionServiceImpl.class
-            .getMethod("convertToPurchaseOrder", Long.class).getAnnotation(Transactional.class);
-        assertNotNull(transactional);
-        assertTrue(List.of(transactional.rollbackFor()).contains(Exception.class));
+    void legacyConversionRejectsBeforeOrderCreationOrRequisitionCas() throws Exception {
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.convertToPurchaseOrder(7001L));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"));
+        verifyNoInteractions(baseMapper,lineMapper,purchaseOrderMapper,purchaseOrderLineMapper,autoCodeUtil);
+        assertNotNull(PuPurchaseRequisitionServiceImpl.class.getMethod("convertToPurchaseOrder",Long.class).getAnnotation(Transactional.class));
     }
 
     /** 没有同租户物料全局锁及逐需求占用时，低库存入口不能绕过 ERP 防重直接生成申请。 */
     @Test
-    void convertToPurchaseOrderMustNotDuplicateLegacyDownstreamCommitment() {
-        PuPurchaseRequisition current = matchingExistingRequisition();
-        current.setStatus("APPROVED");
-        when(baseMapper.selectById(7001L)).thenReturn(current);
-        when(purchaseOrderMapper.selectCount(any())).thenReturn(1L);
-
-        ServiceException error = assertThrows(ServiceException.class,
-            () -> requisitionService.convertToPurchaseOrder(7001L));
-        assertTrue(error.getMessage().contains("下游订单"));
-        verify(purchaseOrderMapper, never()).insert(any(PuPurchaseOrder.class));
-        verifyNoInteractions(lineMapper, purchaseOrderLineMapper, autoCodeUtil);
+    void legacyConversionMustNotDuplicateOrUpgradeAnExistingCommitment() {
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.convertToPurchaseOrder(7001L));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"));
+        verifyNoInteractions(baseMapper,lineMapper,purchaseOrderMapper,purchaseOrderLineMapper,autoCodeUtil);
     }
     @Test
     void generateFromLowStockFailsClosedBeforeReadingOrWritingBusinessData() {
         ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.generateFromLowStock());
         assertTrue(error.getMessage().contains("低库存"));
         verifyNoInteractions(bdMaterialMapper, materialStockMapper, baseMapper, lineMapper, autoCodeUtil);
+    }
+
+    private void assertRawDraftRejected(PuPurchaseRequisitionBo bo) {
+        Long originalId = bo == null ? null : bo.getRequisitionId();
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"),error.getMessage());
+        if (bo != null) assertEquals(originalId,bo.getRequisitionId());
+        verifyNoInteractions(baseMapper,lineMapper,purchaseOrderMapper,purchaseOrderLineMapper,autoCodeUtil);
     }
 
     private PuPurchaseRequisitionBo purchaseBo() {

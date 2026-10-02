@@ -1,4 +1,9 @@
 package com.nexus.erp.pu;
+import java.util.List;
+
+import com.nexus.workflow.domain.WfMyBusiness;
+
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
@@ -51,6 +56,8 @@ import static org.mockito.Mockito.when;
 class PuPurchaseReturnServiceImplTest {
 
     @Mock
+    private PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
+    @Mock
     private PuPurchaseReturnMapper baseMapper;
     @Mock
     private PuPurchaseReturnLineMapper lineMapper;
@@ -102,6 +109,33 @@ class PuPurchaseReturnServiceImplTest {
     }
 
     /** ERP-PU-03：草稿单不可直接执行（否则未确认即扣库存 + 红冲进项） */
+    @Test
+    void returnInputCannotAttachCertifiedOrderOrOrderLine() {
+        PuPurchaseReturnBo bo = new PuPurchaseReturnBo(); bo.setOrderId(100L);
+        PuPurchaseReturnLine line = new PuPurchaseReturnLine(); line.setOrderLineId(11L);
+        bo.setPuPurchaseReturnLineList(List.of(line));
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyReturnInput(100L,bo.getPuPurchaseReturnLineList());
+        lenient().when(baseMapper.insert(any(PuPurchaseReturn.class))).thenReturn(1);
+        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, () -> returnService.insertByBo(bo)));
+        org.mockito.Mockito.verifyNoInteractions(baseMapper,lineMapper,orderLineMapper,stockMapper,stockTxMapper,autoCodeUtil,puInvoiceService);
+    }
+
+    @Test
+    void protectedReturnMutationsCannotWriteStatusStockInvoicesOrOrderQuantities() {
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyReturnMutation(1L);
+        List<Runnable> mutations = List.of(
+            () -> returnService.confirm(1L), () -> returnService.execute(1L),
+            () -> returnService.deleteByIds(new Long[]{1L}), () -> returnService.submit("1","flow"),
+            () -> { WfMyBusiness flow = new WfMyBusiness(); flow.setDataId("1"); flow.setActStatus("pass"); returnService.afterFlowHandle(flow); }
+        );
+        for (Runnable mutation : mutations) {
+            org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class,mutation::run));
+        }
+        org.mockito.Mockito.verifyNoInteractions(baseMapper,lineMapper,orderLineMapper,stockMapper,stockTxMapper,autoCodeUtil,puInvoiceService,processService);
+    }
+
     @Test
     void execute_draftStatus_rejected() {
         PuPurchaseReturn draft = new PuPurchaseReturn();

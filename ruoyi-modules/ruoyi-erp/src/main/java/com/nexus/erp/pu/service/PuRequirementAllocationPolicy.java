@@ -13,8 +13,8 @@ import java.util.Date;
  * 独立核验这些事实，再于同一 ERP 事务中使用现有版本 CAS 持久化账本及其只追加事件。
  * 此类不执行 I/O，也不开放任何业务路径。</p>
  *
- * <p>仅原始且未转单的 REQUEST_INTENT 可被转单或释放。订单有效性、准时供给、
- * 履约、部分收货以及订单取消均明确不在本策略范围内。已转移或已释放的快照不能
+ * <p>仅原始且未转单的 REQUEST_INTENT 可由申请释放。新增订单履约/结案/退货策略
+ * 仅维护局部四量守恒，不认证真实单据、库存入账或准时供给。已转移或已释放的快照不能
  * 重新用作新意向；持久化键的唯一性与重放核对仍由调用方负责。</p>
  */
 public final class PuRequirementAllocationPolicy {
@@ -107,6 +107,105 @@ public final class PuRequirementAllocationPolicy {
         row.setReleaseReason(reason);
         row.setUpdateTime(copyDate(timestamp));
         return new Change(before, row, timestamp);
+    }
+
+    /** 申请审批不增加来源额度；真实审批结果、精确批准量和权限由生命周期服务核验。 */
+    public static Change approveRequestIntent(PuRequirementAllocationLedger ledger, Date now) {
+        Date timestamp = requireNow(now);
+        PuRequirementAllocationLedger before = checkedCopy(ledger);
+        requireRequestIntent(before);
+        PuRequirementAllocationLedger row = copyLedger(before);
+        row.setUpdateTime(copyDate(timestamp));
+        return new Change(before, row, timestamp);
+    }
+
+    /** 仅已核验入账的部分收货可由内部服务调用；参数不构成外部数量授权。 */
+    public static Change receiveOrder(PuRequirementAllocationLedger ledger, BigDecimal quantity, Date now) {
+        Date timestamp = requireNow(now);
+        PuRequirementAllocationLedger before = checkedCopy(ledger);
+        requireOrderBalance(before, false);
+        requirePositiveQuantity(quantity);
+        if (quantity.compareTo(before.getOccupiedBaseQty()) > 0) {
+            throw new IllegalArgumentException("Receipt exceeds the unfulfilled occupied balance");
+        }
+        PuRequirementAllocationLedger row = copyLedger(before);
+        row.setOccupiedBaseQty(before.getOccupiedBaseQty().subtract(quantity));
+        row.setFulfilledBaseQty(before.getFulfilledBaseQty().add(quantity));
+        row.setUpdateTime(copyDate(timestamp));
+        return new Change(before, row, timestamp);
+    }
+
+    /** 订单结案只释放未履约占用，保留订单承接与已入账履约证据。 */
+    public static Change releaseOrder(PuRequirementAllocationLedger ledger, Date now, String reason) {
+        Date timestamp = requireNow(now);
+        requireText(reason, 255, "release_reason");
+        PuRequirementAllocationLedger before = checkedCopy(ledger);
+        requireOrderBalance(before, false);
+        PuRequirementAllocationLedger row = copyLedger(before);
+        row.setAllocationStatus(RELEASED);
+        row.setReleasedBaseQty(before.getReleasedBaseQty().add(before.getOccupiedBaseQty()));
+        row.setOccupiedBaseQty(ZERO);
+        row.setReleasedAt(copyDate(timestamp));
+        row.setReleaseReason(reason);
+        row.setUpdateTime(copyDate(timestamp));
+        return new Change(before, row, timestamp);
+    }
+
+    /**
+     * 已执行退货减少实际履约；开放订单恢复原来源占用，结案订单增加释放而不复活。
+     * 幂等事件与真实退货过账由生命周期服务核验，策略不自行判断退货发生。
+     */
+    public static Change returnOrder(PuRequirementAllocationLedger ledger, BigDecimal quantity, Date now) {
+        Date timestamp = requireNow(now);
+        PuRequirementAllocationLedger before = checkedCopy(ledger);
+        requireOrderBalance(before, true);
+        requirePositiveQuantity(quantity);
+        if (quantity.compareTo(before.getFulfilledBaseQty()) > 0) {
+            throw new IllegalArgumentException("Return exceeds the persisted fulfilled balance");
+        }
+        PuRequirementAllocationLedger row = copyLedger(before);
+        row.setFulfilledBaseQty(before.getFulfilledBaseQty().subtract(quantity));
+        if (RELEASED.equals(before.getAllocationStatus())) {
+            row.setReleasedBaseQty(before.getReleasedBaseQty().add(quantity));
+        } else {
+            row.setOccupiedBaseQty(before.getOccupiedBaseQty().add(quantity));
+        }
+        row.setUpdateTime(copyDate(timestamp));
+        return new Change(before, row, timestamp);
+    }
+
+    private static void requirePositiveQuantity(BigDecimal quantity) {
+        requireQuantity(quantity, "posted_base_qty");
+        if (quantity.signum() <= 0) {
+            throw new IllegalArgumentException("Posted base quantity must be positive");
+        }
+    }
+
+    private static void requireOrderBalance(PuRequirementAllocationLedger row, boolean allowReleased) {
+        requirePositiveId(row.getOrderLineId(), "order_line_id");
+        if (row.getTransferTime() == null || row.getCreateTime() == null
+            || row.getVersion() == null || row.getVersion() < 0 || row.getVersion() == Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Order lifecycle identity, time or CAS version is unknown");
+        }
+        requireQuantity(row.getOccupiedBaseQty(), "occupied_base_qty");
+        requireQuantity(row.getFulfilledBaseQty(), "fulfilled_base_qty");
+        requireQuantity(row.getReleasedBaseQty(), "released_base_qty");
+        if (row.getCoveredDemandBaseQty().compareTo(row.getOccupiedBaseQty()
+            .add(row.getFulfilledBaseQty()).add(row.getReleasedBaseQty())) != 0) {
+            throw new IllegalArgumentException("Covered demand must equal occupied + fulfilled + released");
+        }
+        if (ORDER_COMMITTED.equals(row.getAllocationStatus())) {
+            if (row.getReleasedBaseQty().signum() != 0 || row.getReleasedAt() != null || row.getReleaseReason() != null) {
+                throw new IllegalArgumentException("An active order cannot contain release facts");
+            }
+        } else if (allowReleased && RELEASED.equals(row.getAllocationStatus())) {
+            requireText(row.getReleaseReason(), 255, "release_reason");
+            if (row.getOccupiedBaseQty().signum() != 0 || row.getReleasedAt() == null) {
+                throw new IllegalArgumentException("A closed order must have zero occupancy and release facts");
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported order lifecycle state");
+        }
     }
 
     /** 供事件消费者使用的不可变快照；构造时及每次访问时均对可变值制作独立副本。 */

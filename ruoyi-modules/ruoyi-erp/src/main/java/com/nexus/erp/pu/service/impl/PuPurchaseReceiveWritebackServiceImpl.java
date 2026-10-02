@@ -11,6 +11,7 @@ import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.domain.enums.PurchaseOrderLineReceiveStatus;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.pu.service.IPuPurchaseReceiveWritebackService;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
@@ -24,6 +25,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.function.Supplier;
 
 /**
  * 采购收货回写Service实现类，负责将收货数量回写到采购订单行并更新采购单状态
@@ -36,6 +42,8 @@ import java.util.List;
 @Service
 public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceiveWritebackService {
 
+    /** 旧路径只允许无认证来源的历史回写。 */
+    private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     /** 采购订单Mapper */
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     /** 采购订单行Mapper */
@@ -59,6 +67,13 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
     @Transactional(rollbackFor = Exception.class)
     public void writeBackReceivedQty(Long receiveId, Long purId) {
         log.info("开始回写采购订单已收货数量: receiveId={}, purId={}", receiveId, purId);
+        if (purId == null) {
+            // 不静默 return：静默返回会让 MQ 认为处理成功、且占位键已写，导致 24h 内永久跳过回写。
+            // 抛异常交给 MQ 重投（补齐 pur_id 后重试）。
+            throw new ServiceException("采购订单ID为空，无法回写已收货数量: receiveId=" + receiveId);
+        }
+        // Redis 不是永久生命周期事件，认证来源必须在任何幂等捷径前识别。
+        certifiedDocumentGuard.requireLegacyOrderMutation(purId);
         // 幂等防重：同一收货单只回写一次，防止 MQ 重投/重复发送导致已收数量重复累加。
         // 幂等键只在【事务提交成功后】才真正写入（见 registerIdempotentKeyAfterCommit），
         // 因此回写失败/回滚不会留下占位键，重新投递仍可正常回写（修复 ERP-PU-02）。
@@ -67,38 +82,52 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
             log.info("收货单已回写过，跳过: receiveId={}", receiveId);
             return;
         }
-        if (purId == null) {
-            // 不静默 return：静默返回会让 MQ 认为处理成功、且占位键已写，导致 24h 内永久跳过回写。
-            // 抛异常交给 MQ 重投（补齐 pur_id 后重试）。
-            throw new ServiceException("采购订单ID为空，无法回写已收货数量: receiveId=" + receiveId);
-        }
-        List<WmMaterialReceiveLine> receiveLines = receiveLineMapper.selectList(
-            new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+        List<WmMaterialReceiveLine> receiveLines = io(() -> receiveLineMapper.selectList(
+            new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId)));
         log.info("查询到收货行数量: {}", receiveLines != null ? receiveLines.size() : 0);
         if (receiveLines == null || receiveLines.isEmpty()) {
             log.warn("收货行为空，跳过回写: receiveId={}", receiveId);
             return;
         }
 
-        List<PuPurchaseOrderLine> orderLines = purchaseOrderLineMapper.selectList(
-            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId));
+        List<PuPurchaseOrderLine> orderLines = io(() -> purchaseOrderLineMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId)));
         log.info("查询到采购订单行数量: {}", orderLines != null ? orderLines.size() : 0);
         if (orderLines == null || orderLines.isEmpty()) {
             throw new ServiceException("采购订单没有明细行，无法回写已收货数量: purId=" + purId);
         }
 
+        // 全批来源预检，恶意 purchaseLineId 不得移属，也不能先回写前几行再发现认证行。
+        List<PuPurchaseOrderLine> resolved = new ArrayList<>();
         for (WmMaterialReceiveLine receiveLine : receiveLines) {
+            if (receiveLine == null) throw new ServiceException("收货明细事实未知，禁止回写");
+            if (receiveLine.getPurchaseLineId() != null) {
+                certifiedDocumentGuard.requireLegacyOrderLineMutation(receiveLine.getPurchaseLineId());
+            }
             PuPurchaseOrderLine poLine = resolveOrderLine(purId, receiveLine);
             if (poLine == null) {
                 throw new ServiceException("收货行[" + receiveLine.getLineId() + "]未匹配到采购订单行，无法回写");
             }
+            if (!Objects.equals(purId, poLine.getOrderId()) || receiveLine.getMaterialId() == null
+                || !Objects.equals(receiveLine.getMaterialId(), poLine.getMaterialId())) {
+                throw new ServiceException("收货行采购订单/物料归属不一致，禁止跨单回写");
+            }
+            certifiedDocumentGuard.requireLegacyOrderLineMutation(poLine.getLineId());
+            resolved.add(poLine);
+        }
+        // 预检阶段没有写数量；同一订单行被多个收货行引用时必须累加本批已写数量。
+        Map<Long, BigDecimal> receivedInBatch = new HashMap<>();
+        for (int index = 0; index < receiveLines.size(); index++) {
+            WmMaterialReceiveLine receiveLine = receiveLines.get(index);
+            PuPurchaseOrderLine poLine = resolved.get(index);
             BigDecimal lineReceivedQty = receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO;
             if (lineReceivedQty.compareTo(BigDecimal.ZERO) <= 0) {
                 // 实收为 0（草稿未填写）不产生回写
                 continue;
             }
             BigDecimal orderQty = poLine.getOrderQuantity() != null ? poLine.getOrderQuantity() : BigDecimal.ZERO;
-            BigDecimal currentReceivedQty = poLine.getReceivedQuantity() != null ? poLine.getReceivedQuantity() : BigDecimal.ZERO;
+            BigDecimal currentReceivedQty = receivedInBatch.getOrDefault(poLine.getLineId(),
+                poLine.getReceivedQuantity() != null ? poLine.getReceivedQuantity() : BigDecimal.ZERO);
             BigDecimal newReceivedQty = currentReceivedQty.add(lineReceivedQty);
             // ★ 超收守卫(ERP-PU-01)：已收 + 本次 <= 订单量 × (1 + 超收容差)
             BigDecimal maxAllowedQty = orderQty.multiply(BigDecimal.ONE.add(OVER_RECEIVE_TOLERANCE));
@@ -116,16 +145,17 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
                 .setSql("received_quantity = received_quantity + " + lineReceivedQty.toPlainString())
                 .set(PuPurchaseOrderLine::getReceiveStatus, lineStatus.getCode())
                 .apply("received_quantity + {0} <= order_quantity * (1 + {1})", lineReceivedQty, OVER_RECEIVE_TOLERANCE);
-            int rows = purchaseOrderLineMapper.update(null, updateWrapper);
+            int rows = io(() -> purchaseOrderLineMapper.update(null, updateWrapper));
             if (rows == 0) {
                 throw new ServiceException("收货数量超过采购订单数量，回写被拒绝: lineId=" + poLine.getLineId());
             }
+            receivedInBatch.put(poLine.getLineId(), newReceivedQty);
             log.info("更新采购订单行: lineId={}, receiveStatus={}, 影响行数={}", poLine.getLineId(), lineStatus.getCode(), rows);
         }
 
         // 重新查询订单行以反映最新已收数量,用于订单头状态汇总
-        List<PuPurchaseOrderLine> latestOrderLines = purchaseOrderLineMapper.selectList(
-            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId));
+        List<PuPurchaseOrderLine> latestOrderLines = io(() -> purchaseOrderLineMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId)));
         updatePurchaseOrderStatus(purId, latestOrderLines);
 
         // 业务写库全部成功后，事务提交时才落幂等键
@@ -161,12 +191,15 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
      */
     private PuPurchaseOrderLine resolveOrderLine(Long purId, WmMaterialReceiveLine receiveLine) {
         if (receiveLine.getPurchaseLineId() != null) {
-            return purchaseOrderLineMapper.selectOne(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
-                .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId()));
+            return io(() -> purchaseOrderLineMapper.selectOne(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+                .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId())
+                .eq(PuPurchaseOrderLine::getOrderId, purId)
+                .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId())
+                .last("FOR UPDATE")));
         }
-        List<PuPurchaseOrderLine> matched = purchaseOrderLineMapper.selectList(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+        List<PuPurchaseOrderLine> matched = io(() -> purchaseOrderLineMapper.selectList(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
             .eq(PuPurchaseOrderLine::getOrderId, purId)
-            .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId()));
+            .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId()).last("FOR UPDATE")));
         if (matched == null || matched.isEmpty()) {
             return null;
         }
@@ -228,12 +261,20 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
         String newStatus = allReceived ? "RECEIVED" : "PARTIALLY_RECEIVED";
         // ★ 条件更新(ERP-PU-07): 已关闭/已作废订单不允许被收货回写"复活"，
         // 且不再用整实体 updateById 覆盖其它并发修改的字段。
-        int rows = purchaseOrderMapper.update(null, Wrappers.<PuPurchaseOrder>lambdaUpdate()
+        int rows = io(() -> purchaseOrderMapper.update(null, Wrappers.<PuPurchaseOrder>lambdaUpdate()
             .set(PuPurchaseOrder::getStatus, newStatus)
             .eq(PuPurchaseOrder::getOrderId, orderId)
-            .notIn(PuPurchaseOrder::getStatus, "CLOSED", "CANCELLED"));
+            .notIn(PuPurchaseOrder::getStatus, "CLOSED", "CANCELLED")));
         if (rows == 0) {
             log.warn("采购订单状态未更新(可能已关闭/作废或已被并发修改): orderId={}, expectStatus={}", orderId, newStatus);
+        }
+    }
+    /** Only infrastructure diagnostics are replaced; Java Error is intentionally not caught. */
+    private <T> T io(Supplier<T> query) {
+        try { return query.get(); }
+        catch (RuntimeException failure) {
+            // No original message/cause/suppressed or error logging: MQ logs must not expose SQL/URL/credentials.
+            throw new ServiceException("采购收货回写数据访问失败，操作未完成");
         }
     }
 }

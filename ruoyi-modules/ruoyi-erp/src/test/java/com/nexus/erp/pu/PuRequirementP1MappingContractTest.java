@@ -87,10 +87,11 @@ class PuRequirementP1MappingContractTest {
     void appendOnlyEventHasExactlyTheDdlColumnsAndSnowflakeKey() throws Exception {
         Class<?> entity = Class.forName("com.nexus.erp.pu.domain.PuRequirementAllocationEvent");
         assertTableFields(entity, "pu_requirement_allocation_event",
-            "event_id,tenant_id,allocation_id,event_key,event_type,from_status,to_status,occupied_base_before,"
+            "event_id,tenant_id,allocation_id,event_sequence,event_key,event_type,from_status,to_status,occupied_base_before,"
                 + "occupied_base_after,requisition_line_id,order_line_id,actor_id,occurred_at", "eventId");
         assertField(entity, "tenantId", String.class);
         assertField(entity, "occupiedBaseBefore", BigDecimal.class);
+        assertField(entity, "eventSequence", Integer.class);
         assertField(entity, "occurredAt", Date.class);
         assertTrue(ddlTable("pu_requirement_allocation_event").contains("UNIQUE INDEX `uk_prae_tenant_event_key`"));
     }
@@ -223,7 +224,8 @@ class PuRequirementP1MappingContractTest {
 
     private static String ddlTable(String name) throws IOException {
         Matcher table = Pattern.compile("(?is)CREATE\\s+TABLE\\s+`" + name + "`\\s*\\((.*?)\\)\\s*ENGINE")
-            .matcher(migrationSql());
+            .matcher(name.equals("pu_requirement_allocation_event")
+                ? Files.readString(root().resolve("script/sql/ry-erp.sql")) : migrationSql());
         assertTrue(table.find(), "Missing migration DDL: " + name);
         return table.group(1);
     }

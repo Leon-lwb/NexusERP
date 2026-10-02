@@ -27,10 +27,10 @@ import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.pu.service.IPuPurchaseOrderService;
 import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
 import com.nexus.erp.pu.service.PuPurchaseReceivingService;
-import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -50,10 +50,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -74,13 +70,13 @@ import java.util.stream.Collectors;
 @Service("puPurchaseOrderService")
 public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
 
+    private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     private final PuPurchaseOrderMapper baseMapper;
     private final PuPurchaseOrderLineMapper lineMapper;
     private final PuPurchaseRequisitionMapper requisitionMapper;
     private final PuPurchaseRequisitionLineMapper requisitionLineMapper;
     private final PuPurchaseReceivingService purchaseReceivingService;
     private final BdVendorMapper vendorMapper;
-    private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final FlowableProcInsIdHelper procInsIdHelper;
@@ -155,24 +151,11 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseOrderBo bo) {
-        if (bo.getRequisitionId() != null || (bo.getLineList() != null && bo.getLineList().stream()
-            .anyMatch(line -> line != null && line.getRequisitionLineId() != null))) {
+        if (bo != null && (bo.getRequisitionId() != null || (bo.getLineList() != null && bo.getLineList().stream()
+            .anyMatch(line -> line != null && line.getRequisitionLineId() != null)))) {
             throw new ServiceException("带采购申请来源的采购订单必须通过采购申请转单入口（convertToPurchaseOrder）生成，不能直接新增保存");
         }
-        PuPurchaseOrder entity = new PuPurchaseOrder();
-        BeanUtils.copyProperties(bo, entity);
-        validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
-        if (StringUtils.isBlank(entity.getOrderNo())) {
-            entity.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
-        }
-        /** ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿 */
-        entity.setStatus(STATUS_DRAFT);
-        if (entity.getOrderDate() == null) {
-            entity.setOrderDate(new Date());
-        }
-        int rows = baseMapper.insert(entity);
-        saveLines(entity.getOrderId(), bo.getLineList());
-        return rows;
+        throw new ServiceException("普通BO无法核验全局采购需求来源，禁止直接新增未归属采购订单；请使用 /erp/pu/requisition/certified 来源认证入口，再通过受保护生命周期转单");
     }
 
     /**
@@ -184,6 +167,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseOrderBo bo) {
+        if (bo == null) throw new ServiceException("采购订单不能为空");
+        certifiedDocumentGuard.requireLegacyOrderEdit(bo.getOrderId(), bo.getRequisitionId(), bo.getLineList());
         PuPurchaseOrder entity = new PuPurchaseOrder();
         BeanUtils.copyProperties(bo, entity);
         PuPurchaseOrder current = baseMapper.selectById(entity.getOrderId());
@@ -212,6 +197,12 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) throw new ServiceException("采购订单ID不能为空");
+        Set<Long> unique = new HashSet<>();
+        for (Long id : ids) {
+            if (id == null || id <= 0 || !unique.add(id)) throw new ServiceException("采购订单ID无效或重复");
+        }
+        for (Long id : ids) certifiedDocumentGuard.requireLegacyOrderMutation(id);
         for (Long id : ids) {
             deleteLines(id);
         }
@@ -249,6 +240,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String orderIdStr, String selectFlowId) {
         Long orderId = Long.parseLong(orderIdStr);
+        certifiedDocumentGuard.requireLegacyOrderMutation(orderId);
         PuPurchaseOrder order = baseMapper.selectById(orderId);
         if (order == null) {
             throw new ServiceException("采购订单不存在");
@@ -299,6 +291,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long orderId = Long.parseLong(business.getDataId());
+        certifiedDocumentGuard.requireLegacyOrderMutation(orderId);
         PuPurchaseOrder order = baseMapper.selectById(orderId);
         if (order == null) {
             return;
@@ -376,6 +369,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void close(Long orderId) {
+        certifiedDocumentGuard.requireLegacyOrderMutation(orderId);
         PuPurchaseOrder order = baseMapper.selectById(orderId);
         if (order == null) {
             throw new ServiceException("采购订单不存在");
@@ -400,6 +394,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long orderId) {
+        certifiedDocumentGuard.requireLegacyOrderMutation(orderId);
         PuPurchaseOrder order = baseMapper.selectById(orderId);
         if (order == null) {
             throw new ServiceException("采购订单不存在");
@@ -430,6 +425,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long generateReceivingLink(Long orderId) {
+        certifiedDocumentGuard.requireLegacyOrderMutation(orderId);
         PuPurchaseOrder order = ensureOrder(orderId);
         if (!STATUS_APPROVED.equals(order.getStatus()) && !STATUS_PARTIALLY_RECEIVED.equals(order.getStatus())) {
             throw new ServiceException("只有已批准或部分到货的采购订单才能生成收货联动单据");

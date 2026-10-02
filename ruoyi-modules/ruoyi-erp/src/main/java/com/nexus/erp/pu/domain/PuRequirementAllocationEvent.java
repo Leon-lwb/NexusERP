@@ -26,6 +26,10 @@ public class PuRequirementAllocationEvent implements Serializable {
     @TableField("allocation_id")
     private Long allocationId;
 
+    /** Allocation-local causal version: CREATE=0, transition=the resulting ledger CAS version. NULL legacy evidence is untrusted. */
+    @TableField("event_sequence")
+    private Integer eventSequence;
+
     @TableField("event_key")
     private String eventKey;
 

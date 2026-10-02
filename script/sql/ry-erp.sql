@@ -4486,6 +4486,7 @@ CREATE TABLE `pu_requirement_allocation_event` (
   `event_id` bigint(20) NOT NULL COMMENT '雪花ID，占用事件ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
   `allocation_id` bigint(20) NOT NULL COMMENT '对应来源占用账本ID',
+  `event_sequence` int(11) NOT NULL COMMENT '占用内因果序号：CREATE=0，变更=账本CAS新版本；不可按时间或雪花ID推断',
   `event_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '事务内幂等事件键，不可复用',
   `event_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '创建/承接/部分入账/释放/补偿',
   `from_status` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原状态',
@@ -4498,6 +4499,7 @@ CREATE TABLE `pu_requirement_allocation_event` (
   `occurred_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '事件发生时间',
   PRIMARY KEY (`event_id`) USING BTREE,
   UNIQUE INDEX `uk_prae_tenant_event_key`(`tenant_id`, `event_key`) USING BTREE,
+  UNIQUE INDEX `uk_prae_tenant_allocation_sequence`(`tenant_id`, `allocation_id`, `event_sequence`) USING BTREE,
   INDEX `idx_prae_tenant_allocation`(`tenant_id`, `allocation_id`, `occurred_at`) USING BTREE,
   INDEX `idx_prae_tenant_order_line`(`tenant_id`, `order_line_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '逐来源占用状态变更与释放不可覆盖审计' ROW_FORMAT = DYNAMIC;
@@ -6567,7 +6569,7 @@ CREATE TABLE `wm_material_receive_detail`  (
   `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
   `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
-  `quantity` double(12, 2) NOT NULL COMMENT '入库数量',
+  `quantity` decimal(18, 4) NOT NULL COMMENT '入库数量',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
   `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
@@ -6617,7 +6619,7 @@ CREATE TABLE `wm_material_receive_line`  (
   `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
   `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
-  `quantity_received` double(12, 2) NOT NULL COMMENT '入库数量',
+  `quantity_received` decimal(18, 4) NOT NULL COMMENT '入库数量',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
   `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
@@ -6742,8 +6744,8 @@ CREATE TABLE `wm_material_stock`  (
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编号',
   `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `vendor_nick` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商简称',
-  `stock_quantity` double(12, 2) NULL DEFAULT NULL COMMENT '在库数量',
-  `reserved_quantity` double(12, 2) NOT NULL DEFAULT 0.00 COMMENT '已预留数量(销售订单/工单锁定)',
+  `stock_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '在库数量',
+  `reserved_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '已预留数量(销售订单/工单锁定)',
   `wo_id` bigint(20) NULL DEFAULT NULL COMMENT '生产工单ID',
   `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产工单编号',
   `production_date` datetime NULL DEFAULT NULL COMMENT '生产日期',
@@ -6767,6 +6769,17 @@ CREATE TABLE `wm_material_stock`  (
   `total_cost` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '库存总金额',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID（序列号管理物料的唯一标识）',
   `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '序列号编码（序列号管理物料的唯一编码）',
+  `stock_quantity_exact` decimal(18, 4) NULL DEFAULT NULL COMMENT '精确候选在库数量;不得由旧DOUBLE自动转换',
+  `reserved_quantity_exact` decimal(18, 4) NULL DEFAULT NULL COMMENT '精确候选预留数量;缺失不是零',
+  `quantity_contract_version` int(11) NULL DEFAULT NULL COMMENT '数量来源合同版本;缺失不认证',
+  `quantity_origin` varchar(32) NOT NULL DEFAULT 'UNPROVEN' COMMENT 'UNPROVEN/NATIVE_V1/RECONCILED_V1;状态不是认证证据',
+  `quantity_uom_version` varchar(64) NULL DEFAULT NULL COMMENT '过账时可信基本单位版本;不可用当前版本回填历史',
+  `quantity_evidence_hash` char(64) NULL DEFAULT NULL COMMENT '独立业务来源证据摘要;非调用方verified标志',
+  `quantity_version` bigint(20) NULL DEFAULT NULL COMMENT '精确数量流水连续版本;独立于原乐观锁version',
+  `reservation_version` bigint(20) NULL DEFAULT NULL COMMENT '预留事件连续版本;无事件初始零也须来源证明',
+  `quantity_source_head_tx_id` bigint(20) NULL DEFAULT NULL COMMENT '精确数量链末端库存流水ID',
+  `reservation_head_event_id` bigint(20) NULL DEFAULT NULL COMMENT '预留所有权链末端事件ID',
+  `quantity_source_at` datetime(6) NULL DEFAULT NULL COMMENT '独立来源重建时间;不自动写NOW()升级旧行',
   PRIMARY KEY (`stock_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_material_stock_material`(`material_id`, `frozen_flag`, `recpt_date`) USING BTREE,
@@ -6869,9 +6882,9 @@ CREATE TABLE `wm_material_stock_tx`  (
   `source_doc_line_id` bigint(20) NULL DEFAULT NULL COMMENT '单据行ID',
   `material_stock_id` bigint(20) NOT NULL COMMENT '库存记录ID',
   `tx_flag` int(11) NULL DEFAULT 1 COMMENT '库存方向',
-  `tx_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '事务数量',
-  `before_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '变动前数量',
-  `after_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '变动后数量',
+  `tx_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '事务数量',
+  `before_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '变动前数量',
+  `after_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '变动后数量',
   `tx_date` datetime NULL DEFAULT NULL COMMENT '事务日期',
   `related_tx_id` bigint(20) NULL DEFAULT NULL COMMENT '关联的事务ID',
   `erp_date` datetime NULL DEFAULT NULL COMMENT 'ERP账期',
@@ -6892,11 +6905,61 @@ CREATE TABLE `wm_material_stock_tx`  (
   `tx_amount` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '事务金额',
   `posted` tinyint(1) NULL DEFAULT 0 COMMENT '成本过账标记 0-未过账 1-已过账',
   `posted_voucher_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '成本过账凭证号',
+  `tx_quantity_exact` decimal(18, 4) NULL DEFAULT NULL COMMENT '精确候选发生量;旧流水不自动放大精度',
+  `before_quantity_exact` decimal(18, 4) NULL DEFAULT NULL COMMENT '精确候选变动前数量;无来源保持NULL',
+  `after_quantity_exact` decimal(18, 4) NULL DEFAULT NULL COMMENT '精确候选变动后数量;无来源保持NULL',
+  `quantity_contract_version` int(11) NULL DEFAULT NULL COMMENT '数量来源合同版本;缺失不认证',
+  `quantity_origin` varchar(32) NOT NULL DEFAULT 'UNPROVEN' COMMENT 'UNPROVEN/NATIVE_V1/RECONCILED_V1;状态不是认证证据',
+  `quantity_uom_version` varchar(64) NULL DEFAULT NULL COMMENT '过账时可信基本单位版本;不可用当前版本回填历史',
+  `quantity_evidence_hash` char(64) NULL DEFAULT NULL COMMENT '独立业务来源证据摘要;非调用方verified标志',
+  `quantity_version_before` bigint(20) NULL DEFAULT NULL COMMENT '精确数量链前版本',
+  `quantity_version_after` bigint(20) NULL DEFAULT NULL COMMENT '精确数量链后版本;必须前版本+1',
+  `source_event_key` varchar(64) NULL DEFAULT NULL COMMENT '租户内业务过账原请求幂等键;历史不补键',
+  UNIQUE INDEX `uk_stock_tx_source_event`(`tenant_id`, `source_event_key`) USING BTREE,
+  UNIQUE INDEX `uk_stock_tx_quantity_version`(`tenant_id`, `material_stock_id`, `quantity_version_after`) USING BTREE,
   PRIMARY KEY (`tx_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_stock_tx_source`(`source_doc_type`, `source_doc_id`) USING BTREE,
   INDEX `idx_wm_stock_tx_sn_id`(`sn_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存事务表' ROW_FORMAT = DYNAMIC;
+
+-- 新安装库存归属合同;只有受控新写服务与独立对账才能认证。
+DROP TABLE IF EXISTS `wm_stock_reservation_event`;
+CREATE TABLE `wm_stock_reservation_event`  (
+  `event_id` bigint(20) NOT NULL COMMENT '不可变预留事件ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID;不默认租户',
+  `stock_id` bigint(20) NOT NULL COMMENT '归属库存ID',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `base_uom_id` varchar(64) NOT NULL COMMENT '物料基本单位规范ID',
+  `quantity_uom_version` varchar(64) NOT NULL COMMENT '事件发生时可信基本单位版本',
+  `owner_doc_type` varchar(64) NOT NULL COMMENT 'SO_LINE/WO_MRP_DETAIL;未知类型拒绝',
+  `owner_doc_id` bigint(20) NOT NULL COMMENT '所有者业务单据头ID',
+  `owner_doc_line_id` bigint(20) NOT NULL COMMENT '所有者业务单据行ID',
+  `owner_mrp_detail_id` bigint(20) NULL DEFAULT NULL COMMENT '工单所有者MRP明细ID;销售归属不得猜MRP',
+  `event_type` varchar(32) NOT NULL COMMENT 'RESERVE/RELEASE/CONSUME;不以余额猜类型',
+  `reserved_delta` decimal(18, 4) NOT NULL COMMENT '有符号基本单位预留变化量',
+  `before_reserved_quantity` decimal(18, 4) NOT NULL COMMENT '库存全体所有者预留变动前总量',
+  `after_reserved_quantity` decimal(18, 4) NOT NULL COMMENT '库存全体所有者预留变动后总量',
+  `reservation_version_before` bigint(20) NOT NULL COMMENT '连续预留链前版本',
+  `reservation_version_after` bigint(20) NOT NULL COMMENT '连续预留链后版本;须前版本+1',
+  `stock_version_before` int(11) NOT NULL COMMENT '原库存乐观锁CAS前版本',
+  `stock_version_after` int(11) NOT NULL COMMENT '同ERP事务库存CAS后版本',
+  `source_doc_type` varchar(64) NOT NULL COMMENT '预留/释放/消费来源业务类型',
+  `source_doc_id` bigint(20) NOT NULL COMMENT '来源业务单据头ID',
+  `source_doc_line_id` bigint(20) NOT NULL COMMENT '来源业务单据行ID',
+  `source_event_key` varchar(64) NOT NULL COMMENT '租户内原请求幂等键;重试不再占用',
+  `related_stock_tx_id` bigint(20) NULL DEFAULT NULL COMMENT 'CONSUME对应库存出库流水ID;其他事件不猜流水',
+  `quantity_contract_version` int(11) NULL DEFAULT NULL COMMENT '数量来源合同版本;缺失不认证',
+  `quantity_origin` varchar(32) NOT NULL DEFAULT 'UNPROVEN' COMMENT '无默认认证;与库存及业务来源独立对账',
+  `quantity_evidence_hash` char(64) NULL DEFAULT NULL COMMENT '独立来源证据摘要;不等于认证',
+  `create_by` bigint(20) NOT NULL COMMENT '受控业务执行人',
+  `create_time` datetime(6) NOT NULL COMMENT '受控数据库业务时间;禁止补造历史',
+  PRIMARY KEY (`event_id`) USING BTREE,
+  UNIQUE INDEX `uk_reservation_source_event`(`tenant_id`, `source_event_key`) USING BTREE,
+  UNIQUE INDEX `uk_reservation_stock_version`(`tenant_id`, `stock_id`, `reservation_version_after`) USING BTREE,
+  INDEX `idx_reservation_owner`(`tenant_id`, `owner_doc_type`, `owner_doc_id`, `owner_doc_line_id`) USING BTREE,
+  INDEX `idx_reservation_mrp`(`tenant_id`, `owner_mrp_detail_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存预留所有权不可变事件;旧余额无记录不认证' ROW_FORMAT = Dynamic;
 
 /** ---------------------------- */
 /** wm_material_stock_tx 基础种子记录。 */
@@ -8212,3 +8275,28 @@ END
 delimiter ;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+/** 可信采购永久命令表，仅新安装定义；现有环境使用独立增量。 */
+-- 2026-10-02：可信采购永久请求与跨运行恢复；本脚本不写业务事实、不升级旧申请。
+-- 仅适用于已审查P1账本基线的ERP库。执行前备份、核对目标及源码；禁止自动执行。
+CREATE TABLE `pu_certified_purchase_command` (
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `request_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '原始请求永久占用，不能删键重建',
+  `request_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '身份及排序来源请求摘要',
+  `actor_id` bigint(20) NOT NULL,
+  `entry_type` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `material_id` bigint(20) NOT NULL,
+  `vendor_id` bigint(20) NOT NULL,
+  `window_end` date NOT NULL,
+  `requisition_id` bigint(20) NOT NULL,
+  `requisition_no` varchar(64) NOT NULL,
+  `source_fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `result_fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '逐来源已提交申请行不可变摘要',
+  `catalog_fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '批准及转单前核对完整冻结目录，不含读取时钟',
+  `command_status` varchar(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'COMMITTED',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`tenant_id`,`request_key`),
+  UNIQUE KEY `uk_certified_purchase_requisition` (`tenant_id`,`requisition_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='可信采购永久命令与ERP提交恢复凭据';

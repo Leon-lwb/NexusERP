@@ -1,5 +1,9 @@
 package com.nexus.erp.pu;
 
+import com.nexus.workflow.domain.WfMyBusiness;
+
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -64,6 +68,8 @@ class PuPurchaseOrderServiceImplTest {
     private static final long ORDER_ID = 710L;
 
     @Mock
+    private PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
+    @Mock
     private PuPurchaseOrderMapper baseMapper;
     @Mock
     private PuPurchaseOrderLineMapper lineMapper;
@@ -97,6 +103,52 @@ class PuPurchaseOrderServiceImplTest {
         TableInfoHelper.initTableInfo(assistant, PuPurchaseOrder.class);
         TableInfoHelper.initTableInfo(assistant, PuPurchaseOrderLine.class);
         TableInfoHelper.initTableInfo(assistant, PuPurchaseRequisitionLine.class);
+    }
+
+    @Test
+    void protectedOrderMutationsMustNeverReachLegacyMappers() {
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderMutation(42L);
+        List<Runnable> mutations = List.of(
+            () -> orderService.close(42L), () -> orderService.cancel(42L),
+            () -> orderService.deleteByIds(new Long[]{42L}), () -> orderService.submit("42", "flow"),
+            () -> orderService.generateReceivingLink(42L),
+            () -> { WfMyBusiness flow = new WfMyBusiness(); flow.setDataId("42"); flow.setActStatus("pass"); orderService.afterFlowHandle(flow); }
+        );
+        for (Runnable mutation : mutations) {
+            org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, mutation::run));
+        }
+        verifyNoInteractions(baseMapper, lineMapper, vendorMapper, autoCodeUtil, processService, purchaseReceivingService);
+    }
+
+    @Test
+    void protectedOrderEditChecksCurrentAndProposedReferencesBeforeAnyLegacyRead() {
+        PuPurchaseOrderBo bo = manualOrderBo(); bo.setOrderId(42L);
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderEdit(42L, null, bo.getLineList());
+        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, () -> orderService.updateByBo(bo)));
+        verifyNoInteractions(baseMapper, lineMapper, vendorMapper, autoCodeUtil);
+    }
+
+    @Test
+    void mixedLegacyAndProtectedOrderDeleteIsPreflightedBeforeFirstWrite() {
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderMutation(43L);
+        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, () -> orderService.deleteByIds(new Long[]{42L,43L})));
+        verifyNoInteractions(baseMapper, lineMapper);
+    }
+
+    @Test
+    void rawManualOrderCannotCreateAnUnattributedPurchaseCommitment() {
+        PuPurchaseOrderBo bo = manualOrderBo();
+        bo.setOrderNo("PO-RAW");
+        lenient().when(vendorMapper.selectById(VENDOR_ID)).thenReturn(activeVendor());
+        lenient().when(baseMapper.insert(any(PuPurchaseOrder.class))).thenReturn(1);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> orderService.insertByBo(bo));
+
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"), error.getMessage());
+        verifyNoInteractions(baseMapper, lineMapper, vendorMapper, autoCodeUtil);
     }
 
     @ParameterizedTest
@@ -264,74 +316,30 @@ class PuPurchaseOrderServiceImplTest {
     }
 
     @Test
-    void manualOrderStillGetsServerNumberDraftStateAndPersistedLines() {
-        PuPurchaseOrderBo bo = manualOrderBo();
-        bo.setStatus("APPROVED");
-        when(vendorMapper.selectById(VENDOR_ID)).thenReturn(activeVendor());
-        when(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null)).thenReturn("PO-SERVER-0001");
-        when(baseMapper.insert(any(PuPurchaseOrder.class))).thenAnswer(invocation -> {
-            invocation.<PuPurchaseOrder>getArgument(0).setOrderId(ORDER_ID);
-            return 1;
-        });
-
-        assertEquals(1, orderService.insertByBo(bo));
-
-        verify(baseMapper).insert(insertedOrderCaptor.capture());
-        PuPurchaseOrder inserted = insertedOrderCaptor.getValue();
-        assertNull(inserted.getRequisitionId());
-        assertEquals("PO-SERVER-0001", inserted.getOrderNo());
-        assertEquals("DRAFT", inserted.getStatus());
-        assertNotNull(inserted.getOrderDate());
-        PuPurchaseOrderLine line = bo.getLineList().get(0);
-        assertNull(line.getLineId());
-        assertEquals(ORDER_ID, line.getOrderId());
-        verify(lineMapper).insert(line);
-        verify(autoCodeUtil).genSerialCode("PU_ORDER_CODE", null);
-        verifyNoInteractions(requisitionMapper, requisitionLineMapper);
+    void rawManualOrderCannotAuthorizeCreationWithAnApprovedStatus() {
+        PuPurchaseOrderBo bo = manualOrderBo(); bo.setStatus("APPROVED");
+        assertRawOrderRejected(bo);
+        assertEquals("APPROVED",bo.getStatus());
     }
 
     @Test
-    void manualOrderWithExistingNumberKeepsNormalNumberingBehavior() {
-        PuPurchaseOrderBo bo = manualOrderBo();
-        bo.setOrderNo("PO-MANUAL-0001");
-        when(vendorMapper.selectById(VENDOR_ID)).thenReturn(activeVendor());
-        when(baseMapper.insert(any(PuPurchaseOrder.class))).thenReturn(1);
-
-        assertEquals(1, orderService.insertByBo(bo));
-
-        verify(baseMapper).insert(insertedOrderCaptor.capture());
-        assertEquals("PO-MANUAL-0001", insertedOrderCaptor.getValue().getOrderNo());
-        verifyNoInteractions(autoCodeUtil, requisitionMapper, requisitionLineMapper);
+    void rawManualOrderNumberCannotAuthorizeUnattributedCreation() {
+        PuPurchaseOrderBo bo = manualOrderBo(); bo.setOrderNo("PO-MANUAL-0001");
+        assertRawOrderRejected(bo);
+        assertEquals("PO-MANUAL-0001",bo.getOrderNo());
     }
 
     @ParameterizedTest
     @NullAndEmptySource
-    void manualOrderWithoutLineListKeepsExistingSaveBehavior(List<PuPurchaseOrderLine> lines) {
-        PuPurchaseOrderBo bo = manualOrderBo();
-        bo.setOrderNo("PO-MANUAL-0002");
-        bo.setLineList(lines);
-        when(vendorMapper.selectById(VENDOR_ID)).thenReturn(activeVendor());
-        when(baseMapper.insert(any(PuPurchaseOrder.class))).thenAnswer(invocation -> {
-            invocation.<PuPurchaseOrder>getArgument(0).setOrderId(ORDER_ID);
-            return 1;
-        });
-
-        assertEquals(1, orderService.insertByBo(bo));
-
-        verify(baseMapper).insert(any(PuPurchaseOrder.class));
-        verifyNoInteractions(lineMapper, autoCodeUtil, requisitionMapper, requisitionLineMapper);
+    void rawManualOrderWithoutLinesCannotCreateAnUnattributedHeader(List<PuPurchaseOrderLine> lines) {
+        PuPurchaseOrderBo bo = manualOrderBo(); bo.setLineList(lines);
+        assertRawOrderRejected(bo);
     }
 
     @Test
-    void manualOrderStillRequiresVendorBeforeGeneratingNumberOrWriting() {
-        PuPurchaseOrderBo bo = manualOrderBo();
-        bo.setVendorId(null);
-
-        ServiceException error = assertThrows(ServiceException.class, () -> orderService.insertByBo(bo));
-
-        assertTrue(error.getMessage().contains("供应商ID不能为空"));
-        verifyNoInteractions(baseMapper, lineMapper, requisitionMapper, requisitionLineMapper,
-            vendorMapper, autoCodeUtil);
+    void rawManualOrderRejectsBeforeVendorValidationOrNumberReservation() {
+        PuPurchaseOrderBo bo = manualOrderBo(); bo.setVendorId(null);
+        assertRawOrderRejected(bo);
     }
 
     @ParameterizedTest
@@ -714,6 +722,19 @@ class PuPurchaseOrderServiceImplTest {
         verifyNoMoreInteractions(baseMapper, requisitionMapper, requisitionLineMapper);
         verifyNoInteractions(lineMapper, vendorMapper, autoCodeUtil, purchaseReceivingService,
             processService, wfMyBusinessServiceImpl, procInsIdHelper);
+    }
+
+    private void assertRawOrderRejected(PuPurchaseOrderBo bo) {
+        ServiceException error = assertThrows(ServiceException.class,() -> orderService.insertByBo(bo));
+        assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"),error.getMessage());
+        verifyNoInteractions(baseMapper,lineMapper,requisitionMapper,requisitionLineMapper,vendorMapper,autoCodeUtil);
+    }
+
+    @Test
+    void vendorReadinessStillRejectsMissingVendorForExistingBusinessPaths() {
+        ServiceException error = assertThrows(ServiceException.class,() -> orderService.validateVendor(null,null));
+        assertTrue(error.getMessage().contains("供应商ID不能为空"),error.getMessage());
+        verifyNoInteractions(vendorMapper,autoCodeUtil,baseMapper,lineMapper);
     }
 
     private PuPurchaseOrderBo manualOrderBo() {

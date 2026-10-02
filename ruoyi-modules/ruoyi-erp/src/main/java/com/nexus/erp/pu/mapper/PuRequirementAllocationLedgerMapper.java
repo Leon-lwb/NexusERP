@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Update;
 
 /**
@@ -24,11 +25,13 @@ public interface PuRequirementAllocationLedgerMapper {
         + "#{row.allocationStatus}, #{row.allocationKey}, #{row.decisionIdempotencyKey})")
     int insert(@Param("row") PuRequirementAllocationLedger row);
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("SELECT * FROM pu_requirement_allocation_ledger "
         + "WHERE tenant_id = #{tenantId} AND allocation_id = #{allocationId} FOR UPDATE")
     PuRequirementAllocationLedger lockById(@Param("tenantId") String tenantId,
                                             @Param("allocationId") Long allocationId);
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("SELECT * FROM pu_requirement_allocation_ledger "
         + "WHERE tenant_id = #{tenantId} AND allocation_key = #{allocationKey} FOR UPDATE")
     PuRequirementAllocationLedger lockByKey(@Param("tenantId") String tenantId,
@@ -42,7 +45,10 @@ public interface PuRequirementAllocationLedgerMapper {
         + "released_at = #{row.releasedAt}, release_reason = #{row.releaseReason}, "
         + "version = version + 1, update_time = NOW() "
         + "WHERE tenant_id = #{tenantId} AND allocation_id = #{row.allocationId} "
-        + "AND version = #{expectedVersion}")
+        + "AND version = #{expectedVersion} AND material_id = #{row.materialId} "
+        + "AND source_type = #{row.sourceType} AND detail_id = #{row.detailId} "
+        + "AND requisition_line_id = #{row.requisitionLineId} AND allocation_key = #{row.allocationKey} "
+        + "AND base_uom_id = #{row.baseUomId} AND covered_demand_base_qty = #{row.coveredDemandBaseQty}")
     int updateWithVersion(@Param("tenantId") String tenantId,
                           @Param("row") PuRequirementAllocationLedger row,
                           @Param("expectedVersion") Integer expectedVersion);

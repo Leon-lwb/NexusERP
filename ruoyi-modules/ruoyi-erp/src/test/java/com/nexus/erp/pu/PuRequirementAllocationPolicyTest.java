@@ -43,7 +43,7 @@ class PuRequirementAllocationPolicyTest {
     private static final Class<?>[] RELEASE_ARGS = {PuRequirementAllocationLedger.class, Date.class, String.class};
 
     @Test
-    void publicApiIsLimitedToThreePureTransitionsWithoutBooleanBypasses() {
+    void publicApiIsLimitedToSevenPureTransitionsWithoutBooleanBypasses() {
         Class<?> policy = policyClass();
         assertTrue(Modifier.isFinal(policy.getModifiers()));
         assertEquals(0, policy.getConstructors().length, "Pure utility must not be a service instance");
@@ -58,8 +58,9 @@ class PuRequirementAllocationPolicyTest {
                 assertFalse(Arrays.asList(method.getParameterTypes()).contains(Boolean.class));
             }
         }
-        assertEquals(3, publicMethodCount, "Overloaded public methods must not expand the bounded API");
-        assertEquals(Set.of("createRequestIntent", "commitToOrder", "releaseRequestIntent"), publicMethods);
+        assertEquals(7, publicMethodCount, "Overloaded public methods must not expand the bounded API");
+        assertEquals(Set.of("createRequestIntent", "commitToOrder", "releaseRequestIntent",
+            "approveRequestIntent", "receiveOrder", "releaseOrder", "returnOrder"), publicMethods);
         Class<?> changeType = policyMethod("createRequestIntent", CREATE_ARGS).getReturnType();
         assertEquals(changeType, policyMethod("commitToOrder", COMMIT_ARGS).getReturnType());
         assertEquals(changeType, policyMethod("releaseRequestIntent", RELEASE_ARGS).getReturnType());

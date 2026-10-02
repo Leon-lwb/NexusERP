@@ -14,7 +14,9 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
-import com.nexus.erp.pu.service.IPuPurchaseOrderService;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+import com.nexus.common.tenant.helper.TenantHelper;
+import java.util.LinkedHashSet;
 import com.nexus.erp.pu.service.PuPurchaseReceivingService;
 import com.nexus.erp.wm.domain.WmArrivalNotice;
 import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
@@ -41,7 +43,7 @@ import java.util.Map;
  * 支持 Flowable 审批流程集成：
  * <ul>
  *   <li>提交审批后状态变为 APPROVING</li>
- *   <li>审批通过后状态变为 APPROVED，并自动生成物料收货单，同时更新采购订单为已到货</li>
+ *   <li>审批通过后状态变为 APPROVED，并自动生成草稿物料收货单；不改采购订单履约状态</li>
  *   <li>审批驳回后状态变为 REJECTED</li>
  * </ul>
  *
@@ -56,6 +58,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     private final WmArrivalNoticeLineMapper noticeLineMapper;
     /** 到货通知数据访问映射器（Mapper） */
     private final PuPurchaseOrderMapper purchaseOrderMapper;
+    private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     /** 到货通知业务服务，提供到货通知相关能力 */
     private final PuPurchaseReceivingService purchaseReceivingService;
     /** WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询） */
@@ -113,6 +116,8 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmArrivalNoticeBo bo) {
+        if (bo == null) throw arrivalSourceUnknown();
+        requireLegacyOrder(bo.getPurOrderCode());
         WmArrivalNotice entity = MapstructUtils.convert(bo, WmArrivalNotice.class);
         if (StringUtils.isBlank(entity.getNoticeCode())) {
             entity.setNoticeCode(wm.autoCodeUtil.genSerialCode("WM_ARRIVAL_NOTICE_CODE", null));
@@ -131,6 +136,10 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmArrivalNoticeBo bo) {
+        if (bo == null) throw arrivalSourceUnknown();
+        WmArrivalNotice persisted = lockNotice(bo.getNoticeId());
+        requireLegacyOrder(persisted.getPurOrderCode());
+        requireLegacyOrder(bo.getPurOrderCode());
         WmArrivalNotice entity = MapstructUtils.convert(bo, WmArrivalNotice.class);
         noticeLineMapper.delete(new LambdaQueryWrapper<WmArrivalNoticeLine>()
             .eq(WmArrivalNoticeLine::getNoticeId, entity.getNoticeId()));
@@ -147,6 +156,13 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) throw arrivalSourceUnknown();
+        LinkedHashSet<Long> unique = new LinkedHashSet<>();
+        for (Long id : ids) {
+            if (id == null || id <= 0 || !unique.add(id)) throw arrivalSourceUnknown();
+        }
+        // 所有来源先预检，不能先删除前几张旧单据再发现认证来源。
+        for (Long id : unique) requireLegacyOrder(lockNotice(id).getPurOrderCode());
         noticeLineMapper.delete(new LambdaQueryWrapper<WmArrivalNoticeLine>()
             .in(WmArrivalNoticeLine::getNoticeId, List.of(ids)));
         return baseMapper.deleteBatchIds(List.of(ids));
@@ -164,6 +180,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
             throw new ServiceException("到货通知不存在");
         }
 
+        requireLegacyOrder(notice.getPurOrderCode());
         if (StringUtils.isBlank(selectFlowId)) {
             if (notice.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(notice.getSelectFlowId());
@@ -209,7 +226,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
      * <ol>
      *   <li>更新到货通知状态为 APPROVED</li>
      *   <li>自动生成物料收货单（DRAFT），失败则抛异常回滚</li>
-     *   <li>更新关联采购订单状态为 ARRIVED</li>
+     *   <li>不提前更新采购订单履约状态</li>
      * </ol>
      */
     @Override
@@ -221,6 +238,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
             return;
         }
 
+        requireLegacyOrder(notice.getPurOrderCode());
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
             notice.setStatus(STATUS_APPROVING);
@@ -232,8 +250,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
             notice.setStatus(STATUS_APPROVED);
             baseMapper.updateById(notice);
 
-            // 更新关联采购订单状态为已到货
-            updatePurchaseOrderToArrived(notice.getPurOrderCode());
+            // 此处仅创建 DRAFT/零实收收货单，不代表实际履约，不得提前设置 PO RECEIVED。
             return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             notice.setStatus(STATUS_REJECTED);
@@ -244,20 +261,34 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     }
 
     /**
-     * 根据采购订单号更新采购订单状态为已到货
+     * 核验到货通知当前来源；客户端改订单号不能洗掉原认证归属
      */
-    private void updatePurchaseOrderToArrived(String purOrderCode) {
-        if (StringUtils.isBlank(purOrderCode)) {
-            return;
-        }
-        PuPurchaseOrder order = purchaseOrderMapper.selectOne(
-            new LambdaQueryWrapper<PuPurchaseOrder>().eq(PuPurchaseOrder::getOrderNo, purOrderCode));
-        if (order == null) {
-            return;
-        }
-        order.setStatus(IPuPurchaseOrderService.STATUS_RECEIVED);
-        purchaseOrderMapper.updateById(order);
+    private WmArrivalNotice lockNotice(Long id) {
+        if (id == null || id <= 0) throw arrivalSourceUnknown();
+        WmArrivalNotice value;
+        try { value = baseMapper.selectById(id); }
+        catch (RuntimeException error) { throw arrivalSourceUnknown(); }
+        if (value == null || !id.equals(value.getNoticeId())) throw arrivalSourceUnknown();
+        return value;
     }
+
+    private void requireLegacyOrder(String orderNo) {
+        String tenant = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(orderNo) || StringUtils.isBlank(tenant)) throw arrivalSourceUnknown();
+        PuPurchaseOrder order;
+        try {
+            order = purchaseOrderMapper.selectOne(Wrappers.lambdaQuery(PuPurchaseOrder.class)
+                .eq(PuPurchaseOrder::getOrderNo, orderNo).apply("tenant_id = {0}", tenant).last("FOR UPDATE"));
+        } catch (RuntimeException error) { throw arrivalSourceUnknown(); }
+        if (order == null || order.getOrderId() == null || order.getOrderId() <= 0
+            || !orderNo.equals(order.getOrderNo())) throw arrivalSourceUnknown();
+        certifiedDocumentGuard.requireLegacyOrderMutation(order.getOrderId());
+    }
+
+    private ServiceException arrivalSourceUnknown() {
+        return new ServiceException("到货通知采购来源事实未知，禁止写入；新增来源请使用 /erp/pu/requisition/certified，认证单据须走受保护生命周期");
+    }
+
 
     /**
      * 获取到货通知详情

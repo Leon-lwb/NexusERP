@@ -421,7 +421,9 @@ class ErpPurchaseSourcesLockedReaderTest {
         assertTrue(units.stream().allMatch(query -> query.sql().contains("ORDER BY uom_id ASC FOR UPDATE")));
         assertTrue(f.executions.stream().filter(query -> query.table().equals("bd_material_vendor"))
             .allMatch(query -> query.sql().contains("ORDER BY relation_id ASC FOR UPDATE")));
-        assertEquals(5, snapshot.sourceVersions().size());
+        assertEquals(7, snapshot.sourceVersions().size());
+        assertTrue(snapshot.sourceVersions().get("material:" + MATERIAL).matches("[0-9a-f]{64}"));
+        assertTrue(snapshot.sourceVersions().get("vendor:" + VENDOR).matches("[0-9a-f]{64}"));
         assertEquals("30", snapshot.baseUnit().baseUnitId());
     }
 

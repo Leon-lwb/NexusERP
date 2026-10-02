@@ -1,5 +1,7 @@
 package com.nexus.erp.pu;
 
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -18,6 +20,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -48,6 +52,8 @@ class PuPurchaseReceiveWritebackServiceImplTest {
 
     private static final String IDEMPOTENT_KEY = "erp:writeback:receive:1";
 
+    @Mock
+    private PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     @Mock
     private PuPurchaseOrderMapper purchaseOrderMapper;
     @Mock
@@ -90,6 +96,135 @@ class PuPurchaseReceiveWritebackServiceImplTest {
     }
 
     /** ERP-PU-01：已收 50 + 本次 60 > 订单量 100（容差 0）→ 拒绝回写且不落库 */
+    @ParameterizedTest
+    @ValueSource(strings={"receive-read","order-read","exact-line-read","fallback-line-read","line-write","latest-lines-read","head-write"})
+    void allMapperBoundariesReplaceDatabaseDiagnosticsWithFixedCauseFreeBusinessFailure(String boundary) {
+        RuntimeException raw=new IllegalStateException("SELECT fixture-password jdbc:mysql://fixture-private-url");
+        WmMaterialReceiveLine receive=receiveLine("fallback-line-read".equals(boundary)?null:11L,new BigDecimal("1"));
+        PuPurchaseOrderLine initial=orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO);
+        PuPurchaseOrderLine latest=orderLine(11L,new BigDecimal("5"),new BigDecimal("1"));
+        lenient().when(receiveLineMapper.selectList(any())).thenReturn(List.of(receive));
+        lenient().when(purchaseOrderLineMapper.selectOne(any())).thenReturn(initial);
+        lenient().when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(initial),List.of(latest));
+        lenient().when(purchaseOrderLineMapper.update(any(),any())).thenReturn(1);
+        lenient().when(purchaseOrderMapper.update(any(),any())).thenReturn(1);
+        switch(boundary) {
+            case "receive-read" -> when(receiveLineMapper.selectList(any())).thenThrow(raw);
+            case "order-read" -> when(purchaseOrderLineMapper.selectList(any())).thenThrow(raw);
+            case "exact-line-read" -> when(purchaseOrderLineMapper.selectOne(any())).thenThrow(raw);
+            case "fallback-line-read" -> when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(initial)).thenThrow(raw);
+            case "line-write" -> when(purchaseOrderLineMapper.update(any(),any())).thenThrow(raw);
+            case "latest-lines-read" -> when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(initial)).thenThrow(raw);
+            case "head-write" -> when(purchaseOrderMapper.update(any(),any())).thenThrow(raw);
+            default -> throw new AssertionError(boundary);
+        }
+        ServiceException error=assertThrows(ServiceException.class,()->writebackService.writeBackReceivedQty(1L,100L));
+        assertEquals("采购收货回写数据访问失败，操作未完成",error.getMessage());
+        org.junit.jupiter.api.Assertions.assertNull(error.getCause());
+        assertEquals(0,error.getSuppressed().length);
+        java.io.StringWriter printed=new java.io.StringWriter();error.printStackTrace(new java.io.PrintWriter(printed));
+        org.junit.jupiter.api.Assertions.assertFalse(printed.toString().contains("fixture-password"));
+        org.junit.jupiter.api.Assertions.assertFalse(printed.toString().contains("fixture-private-url"));
+        redisUtilsMock.verify(()->RedisUtils.setObjectIfAbsent(anyString(),any(),any()),never());
+    }
+    @Test void mapperThrownServiceExceptionWithCauseOrSuppressedDiagnosticsIsNotTrustedBusinessText() {
+        ServiceException raw=new ServiceException("SQL fixture-password");raw.initCause(new IllegalStateException("jdbc:mysql://fixture-private-url"));
+        raw.addSuppressed(new IllegalStateException("SELECT private statement"));
+        when(receiveLineMapper.selectList(any())).thenThrow(raw);
+        ServiceException error=assertThrows(ServiceException.class,()->writebackService.writeBackReceivedQty(1L,100L));
+        assertEquals("采购收货回写数据访问失败，操作未完成",error.getMessage());
+        org.junit.jupiter.api.Assertions.assertNull(error.getCause());assertEquals(0,error.getSuppressed().length);
+    }
+    @Test void mapperJavaErrorPropagatesAsTheExactOriginalObject() {
+        AssertionError fatal=new AssertionError("fatal-fixture");when(receiveLineMapper.selectList(any())).thenThrow(fatal);
+        org.junit.jupiter.api.Assertions.assertSame(fatal,assertThrows(AssertionError.class,()->writebackService.writeBackReceivedQty(1L,100L)));
+    }
+    @Test
+    void legacyRepeatedOrderLineStillAccumulatesCorrectStatusAfterBatchSourcePreflight() {
+        WmMaterialReceiveLine first = receiveLine(11L,new BigDecimal("3"));
+        WmMaterialReceiveLine second = receiveLine(11L,new BigDecimal("2")); second.setLineId(2L);
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(first,second));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO)));
+        when(purchaseOrderLineMapper.selectOne(any())).thenReturn(
+            orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO),orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
+        when(purchaseOrderLineMapper.update(any(),any())).thenReturn(1);
+        writebackService.writeBackReceivedQty(1L,100L);
+        @SuppressWarnings({"rawtypes","unchecked"})
+        org.mockito.ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<PuPurchaseOrderLine>> updates =
+            (org.mockito.ArgumentCaptor) org.mockito.ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
+        verify(purchaseOrderLineMapper,times(2)).update(org.mockito.ArgumentMatchers.isNull(),updates.capture());
+        var last = updates.getAllValues().get(1); last.getSqlSegment();
+        assertTrue(last.getParamNameValuePairs().containsValue("FULL_RECEIVED"),last.getParamNameValuePairs().toString());
+    }
+
+    @Test
+    void explicitOrderLineResolutionIsScopedAndUsesCurrentRead() {
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(receiveLine(11L,new BigDecimal("1"))));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO)));
+        when(purchaseOrderLineMapper.selectOne(any())).thenReturn(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
+        when(purchaseOrderLineMapper.update(any(),any())).thenReturn(1);
+        writebackService.writeBackReceivedQty(1L,100L);
+        @SuppressWarnings({"rawtypes","unchecked"})
+        org.mockito.ArgumentCaptor<LambdaQueryWrapper<PuPurchaseOrderLine>> query =
+            (org.mockito.ArgumentCaptor) org.mockito.ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(purchaseOrderLineMapper).selectOne(query.capture());
+        String sql=query.getValue().getSqlSegment().toLowerCase();
+        assertTrue(sql.contains("order_id")&&sql.contains("material_id")&&sql.contains("for update"),sql);
+        assertTrue(query.getValue().getParamNameValuePairs().containsValue(100L));
+        assertTrue(query.getValue().getParamNameValuePairs().containsValue(500L));
+    }
+
+    @Test
+    void laterCertifiedReceiveLineIsFoundBeforeAnyEarlierLegacyWrite() {
+        WmMaterialReceiveLine first = receiveLine(11L,new BigDecimal("1"));
+        WmMaterialReceiveLine second = receiveLine(12L,new BigDecimal("1")); second.setLineId(2L);
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(first,second));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO)));
+        when(purchaseOrderLineMapper.selectOne(any())).thenReturn(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
+        org.mockito.Mockito.lenient().doThrow(new ServiceException("protected-document")).when(certifiedDocumentGuard).requireLegacyOrderLineMutation(12L);
+        assertThrows(ServiceException.class,() -> writebackService.writeBackReceivedQty(1L,100L));
+        verify(purchaseOrderLineMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+        redisUtilsMock.verify(() -> RedisUtils.setObjectIfAbsent(anyString(),any(),any()),never());
+    }
+
+    @Test
+    void certifiedMqReceiptRejectsBeforeRedisIdempotencyOrBusinessReads() {
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderMutation(100L);
+        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class,
+            () -> writebackService.writeBackReceivedQty(1L,100L)));
+        org.mockito.Mockito.verifyNoInteractions(purchaseOrderMapper,purchaseOrderLineMapper,receiveLineMapper);
+        redisUtilsMock.verifyNoInteractions();
+    }
+
+    @Test
+    void receiveLinePointingToCertifiedForeignOrderCannotHijackLegacyWriteback() {
+        WmMaterialReceiveLine receive = receiveLine(11L, new BigDecimal("1"));
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(receive));
+        lenient().when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO)));
+        lenient().when(purchaseOrderLineMapper.selectOne(any())).thenReturn(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
+        lenient().when(purchaseOrderLineMapper.update(org.mockito.ArgumentMatchers.isNull(), any())).thenReturn(1);
+        ServiceException protectedError = new ServiceException("protected-document");
+        lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderLineMutation(11L);
+        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class,
+            () -> writebackService.writeBackReceivedQty(1L,100L)));
+        verify(purchaseOrderLineMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+        verify(purchaseOrderMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+    }
+
+    @Test
+    void foreignOrderLineEvenIfLegacyMustNotBeSelectedByAnUnscopedExplicitId() {
+        WmMaterialReceiveLine receive = receiveLine(11L,new BigDecimal("1"));
+        PuPurchaseOrderLine foreign = orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO); foreign.setOrderId(200L);
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(receive));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(12L,new BigDecimal("5"),BigDecimal.ZERO)));
+        when(purchaseOrderLineMapper.selectOne(any())).thenReturn(foreign);
+        lenient().when(purchaseOrderLineMapper.update(org.mockito.ArgumentMatchers.isNull(), any())).thenReturn(1);
+        ServiceException error = assertThrows(ServiceException.class, () -> writebackService.writeBackReceivedQty(1L,100L));
+        assertTrue(error.getMessage().contains("归属"),error.getMessage());
+        verify(purchaseOrderLineMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+    }
+
     @Test
     void writeBack_overReceive_rejected() {
         WmMaterialReceiveLine receiveLine = receiveLine(11L, new BigDecimal("60"));

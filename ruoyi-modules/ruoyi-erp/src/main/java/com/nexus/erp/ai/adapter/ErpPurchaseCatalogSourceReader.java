@@ -139,6 +139,9 @@ public class ErpPurchaseCatalogSourceReader {
 
         Map<String, String> versions = new LinkedHashMap<>();
         versions.put("terms:" + terms.id(), terms.version());
+        versions.put("material:"+material.id(),contentVersion("material",material.tenantId(),material.id().toString(),
+            material.baseUomId().toString(),material.status().toString(),material.delFlag()));
+        versions.put("vendor:"+vendor.id(),contentVersion("vendor",vendor.tenantId(),vendor.id().toString(),vendor.status(),vendor.delFlag()));
         units.forEach((unitId, unit) -> versions.put("unit:" + unitId, unit.version()));
         if (locked) {
             // 行锁可能等待；最终时钟与时区仍由同连接数据库重读，不能沿用等待前已过期的条款。
@@ -352,6 +355,16 @@ public class ErpPurchaseCatalogSourceReader {
         return new UnitSource(row.getTenantId(), row.getUomId(), row.getPrimaryId(), row.getIsBase(), row.getCategory(),
             row.getConversionRate(), row.getQuantityScale(), row.getConversionVersion(), freeze(row.getConversionVerifiedAt()),
             row.getStatus(), row.getDelFlag());
+    }
+
+    /** 采购来源内容摘要，不是完整ERP主数据修订号；仅冻结实际认证过的身份/单位/有效状态。 */
+    private static String contentVersion(String... fields) {
+        try {
+            var digest=java.security.MessageDigest.getInstance("SHA-256");
+            for(String field:fields) { byte[] value=field.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                digest.update(java.nio.ByteBuffer.allocate(4).putInt(value.length).array());digest.update(value); }
+            return java.util.HexFormat.of().formatHex(digest.digest());
+        } catch(java.security.NoSuchAlgorithmException unavailable) { throw rejected("采购来源内容版本不可生成"); }
     }
 
     private record MaterialSource(String tenantId, Long id, Long baseUomId, Long status, String delFlag) { }

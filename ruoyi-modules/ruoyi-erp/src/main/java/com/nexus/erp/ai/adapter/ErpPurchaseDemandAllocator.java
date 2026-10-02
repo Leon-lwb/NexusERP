@@ -59,11 +59,15 @@ public final class ErpPurchaseDemandAllocator {
                              BigDecimal remainingBase, String baseUnitId, boolean verified) { }
 
     public record AllocationInput(Scope scope, Stock stock, List<Demand> demands,
-                                  List<OrderLine> orders, List<Commitment> commitments) {
+                                  List<OrderLine> orders, List<Commitment> commitments, Map<String, BigDecimal> ownedReservations) {
+        public AllocationInput(Scope scope, Stock stock, List<Demand> demands,List<OrderLine> orders,List<Commitment> commitments) {
+            this(scope,stock,demands,orders,commitments,Map.of());
+        }
         public AllocationInput {
             demands = List.copyOf(demands);
             orders = List.copyOf(orders);
             commitments = List.copyOf(commitments);
+            ownedReservations = ownedReservations == null ? null : Map.copyOf(ownedReservations);
         }
     }
 
@@ -123,6 +127,17 @@ public final class ErpPurchaseDemandAllocator {
             throw reject(RejectionReason.INCOMPLETE_POOL, "Requested detail missing from global pool");
         }
         demands.sort(DEMAND_ORDER);
+        if (input.ownedReservations() == null) throw reject(RejectionReason.UNVERIFIED_SOURCE, "Reservation ownership is unknown");
+        BigDecimal ownedTotal=BigDecimal.ZERO;
+        for (var ownership:input.ownedReservations().entrySet()) {
+            Demand owner=requireOrigin(byId,ownership.getKey());
+            requirePositive(ownership.getValue());
+            if(ownership.getValue().compareTo(owner.netDemandBase())>0)
+                throw reject(RejectionReason.INVALID_QUANTITY,"Owned reserve exceeds remaining original demand");
+            ownedTotal=ownedTotal.add(ownership.getValue());
+        }
+        if(ownedTotal.compareTo(stock.reserved())>0)
+            throw reject(RejectionReason.INVALID_QUANTITY,"Attributed reserve exceeds original reserved stock");
 
         /** 每个实际申请或订单来源只能是未结意向或订单之一，绝不能同时计入两者。 */
         Set<String> sourceKeys = new HashSet<>();
@@ -146,7 +161,7 @@ public final class ErpPurchaseDemandAllocator {
         }
         for (OrderLine order : input.orders()) {
             if (order == null || !decimalId(order.orderLineId()) || blank(order.sourceKey())
-                || order.status() == null || order.expectedDate() == null) {
+                || order.status() == null || (order.status() != OrderStatus.DRAFT && order.expectedDate() == null)) {
                 throw reject(RejectionReason.UNVERIFIED_SOURCE, "Unknown order provenance, status or ETA");
             }
             requireVerified(order.verified(), order.baseUnitId(), scope.baseUnitId());
@@ -185,10 +200,13 @@ public final class ErpPurchaseDemandAllocator {
         BigDecimal externalDemand = BigDecimal.ZERO;
         BigDecimal externalSupply = BigDecimal.ZERO;
         for (Demand demand : demands) {
-            BigDecimal outstanding = demand.netDemandBase();
-            BigDecimal allocatedStock = availableStock.min(outstanding);
-            availableStock = availableStock.subtract(allocatedStock);
-            outstanding = outstanding.subtract(allocatedStock);
+            // 本需求已核预留是专属供给，已从共享库存排除，不能再完整计成未满足需求。
+            BigDecimal owned=input.ownedReservations().getOrDefault(demand.detailId(),BigDecimal.ZERO);
+            BigDecimal outstanding = demand.netDemandBase().subtract(owned);
+            BigDecimal sharedStock = availableStock.min(outstanding);
+            BigDecimal allocatedStock = owned.add(sharedStock);
+            availableStock = availableStock.subtract(sharedStock);
+            outstanding = outstanding.subtract(sharedStock);
             BigDecimal allocatedOrder = BigDecimal.ZERO;
             for (OrderLine order : timelyOrders) {
                 if (outstanding.signum() == 0) {

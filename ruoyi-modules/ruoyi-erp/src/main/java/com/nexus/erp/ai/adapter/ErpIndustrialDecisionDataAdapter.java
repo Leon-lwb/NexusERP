@@ -37,6 +37,7 @@ public class ErpIndustrialDecisionDataAdapter implements IndustrialDecisionDataP
     private final ErpDecisionApsSimulation apsSimulation;
     private final ErpDecisionFreshnessChecker freshnessChecker;
     private final ErpDecisionActionExecutor actionExecutor;
+    private final ErpCertifiedPurchaseDecisionAdapter certifiedPurchaseAdapter;
 
     @Override
     public boolean canAccess(DecisionBusinessRef ref, DecisionActor actor) {
@@ -97,8 +98,9 @@ public class ErpIndustrialDecisionDataAdapter implements IndustrialDecisionDataP
         requireActor(actor);
         return inTenant(actor, () -> {
             requireActionAccess(action, actor);
-            // 注入的 Spring 服务保留事务边界及 ERP 数据源。
-            return actionExecutor.execute(action, actor);
+            // 采购必须直达无外层事务的专属 writer；排程继续保留既有 executor。
+            return action.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT
+                ? certifiedPurchaseAdapter.execute(action, actor) : actionExecutor.execute(action, actor);
         });
     }
 
@@ -109,7 +111,8 @@ public class ErpIndustrialDecisionDataAdapter implements IndustrialDecisionDataP
         requireActor(actor);
         return inTenant(actor, () -> {
             requireActionAccess(action, actor);
-            return actionExecutor.verify(action, result, actor);
+            return action.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT
+                ? certifiedPurchaseAdapter.verify(action, result, actor) : actionExecutor.verify(action, result, actor);
         });
     }
 
@@ -120,7 +123,8 @@ public class ErpIndustrialDecisionDataAdapter implements IndustrialDecisionDataP
         requireActor(actor);
         return inTenant(actor, () -> {
             requireActionAccess(action, actor);
-            return actionExecutor.compensate(action, result, actor);
+            return action.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT
+                ? certifiedPurchaseAdapter.compensate(action, result, actor) : actionExecutor.compensate(action, result, actor);
         });
     }
 

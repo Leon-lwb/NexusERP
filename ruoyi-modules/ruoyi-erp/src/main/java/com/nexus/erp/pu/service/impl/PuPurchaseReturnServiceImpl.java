@@ -22,6 +22,7 @@ import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.pu.service.IPuPurchaseReturnService;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
@@ -60,6 +61,7 @@ import java.util.Map;
 @Service("puPurchaseReturnService")
 public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
 
+    private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     private final PuPurchaseReturnMapper baseMapper;
     private final PuPurchaseReturnLineMapper lineMapper;
     private final PuPurchaseOrderLineMapper orderLineMapper;
@@ -111,6 +113,8 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseReturnBo bo) {
+        if (bo == null) throw new ServiceException("采购退货单不能为空");
+        certifiedDocumentGuard.requireLegacyReturnInput(bo.getOrderId(), bo.getPuPurchaseReturnLineList());
         PuPurchaseReturn entity = MapstructUtils.convert(bo, PuPurchaseReturn.class);
         if (StringUtils.isBlank(entity.getReturnNo())) {
             entity.setReturnNo(autoCodeUtil.genSerialCode("PU_RETURN_CODE", null));
@@ -133,6 +137,9 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseReturnBo bo) {
+        if (bo == null) throw new ServiceException("采购退货单不能为空");
+        certifiedDocumentGuard.requireLegacyReturnMutation(bo.getReturnId());
+        certifiedDocumentGuard.requireLegacyReturnInput(bo.getOrderId(), bo.getPuPurchaseReturnLineList());
         PuPurchaseReturn entity = MapstructUtils.convert(bo, PuPurchaseReturn.class);
         PuPurchaseReturn current = baseMapper.selectById(entity.getReturnId());
         if (current == null) {
@@ -156,6 +163,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) throw new ServiceException("采购退货单ID不能为空");
+        java.util.Set<Long> unique = new java.util.HashSet<>();
+        for (Long id : ids) {
+            if (id == null || id <= 0 || !unique.add(id)) throw new ServiceException("采购退货单ID无效或重复");
+        }
+        for (Long id : ids) certifiedDocumentGuard.requireLegacyReturnMutation(id);
         for (Long id : ids) {
             deleteLines(id);
         }
@@ -170,6 +183,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long returnId) {
+        certifiedDocumentGuard.requireLegacyReturnMutation(returnId);
         PuPurchaseReturn purchaseReturn = ensureReturn(returnId);
         if (!STATUS_DRAFT.equals(purchaseReturn.getStatus())) {
             throw new RuntimeException("只有草稿状态的采购退货单才能确认");
@@ -189,6 +203,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Long returnId) {
+        certifiedDocumentGuard.requireLegacyReturnMutation(returnId);
         PuPurchaseReturn purchaseReturn = ensureReturn(returnId);
         if (STATUS_EXECUTED.equals(purchaseReturn.getStatus())) {
             return;
@@ -252,6 +267,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String returnIdStr, String selectFlowId) {
         Long returnId = Long.parseLong(returnIdStr);
+        certifiedDocumentGuard.requireLegacyReturnMutation(returnId);
         PuPurchaseReturn entity = baseMapper.selectById(returnId);
         if (entity == null) {
             throw new ServiceException("采购退货单不存在");
@@ -310,6 +326,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long returnId = Long.parseLong(business.getDataId());
+        certifiedDocumentGuard.requireLegacyReturnMutation(returnId);
         PuPurchaseReturn entity = baseMapper.selectById(returnId);
         if (entity == null) return;
         String actStatus = business.getActStatus();

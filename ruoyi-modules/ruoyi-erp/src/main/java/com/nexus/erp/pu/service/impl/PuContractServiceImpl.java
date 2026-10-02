@@ -17,14 +17,10 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.erp.pu.domain.PuContract;
 import com.nexus.erp.pu.domain.PuContractLine;
-import com.nexus.erp.pu.domain.PuPurchaseOrder;
-import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.domain.bo.PuContractBo;
 import com.nexus.erp.pu.domain.vo.PuContractVo;
 import com.nexus.erp.pu.mapper.PuContractLineMapper;
 import com.nexus.erp.pu.mapper.PuContractMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.service.IPuContractService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -57,8 +53,6 @@ public class PuContractServiceImpl implements IPuContractService {
 
     private final PuContractMapper baseMapper;
     private final PuContractLineMapper lineMapper;
-    private final PuPurchaseOrderMapper purchaseOrderMapper;
-    private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
@@ -312,8 +306,8 @@ public class PuContractServiceImpl implements IPuContractService {
     }
 
     /**
-     * 根据采购合同生成采购订单：复制合同头与明细行为采购订单草稿，并把合同状态置为执行中。
-     * <p>仅 APPROVED/EXECUTING 状态的合同可生成。</p>
+     * 旧合同裸转单拒绝创建未归属采购订单；合同查询与其他历史业务不变。
+     * <p>创建采购订单必须经统一来源认证与受保护生命周期。</p>
      *
      * @param contractId 采购合同ID
      * @return 生成的采购订单ID
@@ -321,70 +315,7 @@ public class PuContractServiceImpl implements IPuContractService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createPurchaseOrderFromContract(Long contractId) {
-        // 1. 校验合同存在且状态为 APPROVED（EXECUTING 表示已生成过采购订单，禁止重复生成）
-        PuContract contract = baseMapper.selectById(contractId);
-        if (contract == null) {
-            throw new ServiceException("合同不存在: " + contractId);
-        }
-        if (!STATUS_APPROVED.equals(contract.getStatus())) {
-            throw new ServiceException("合同状态不允许生成采购订单, 仅 APPROVED 可生成(当前:" + contract.getStatus() + ")");
-        }
-
-        // 2. 查合同明细
-        List<PuContractLine> lines = lineMapper.selectList(
-            Wrappers.<PuContractLine>lambdaQuery().eq(PuContractLine::getContractId, contractId));
-        if (lines == null || lines.isEmpty()) {
-            throw new ServiceException("合同明细为空, 无法生成采购订单");
-        }
-
-        // 3. 创建采购订单主表
-        PuPurchaseOrder order = new PuPurchaseOrder();
-        order.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
-        order.setVendorId(contract.getVendorId());
-        order.setVendorCode(contract.getVendorCode());
-        order.setVendorName(contract.getVendorName());
-        order.setOrderDate(new Date());
-        order.setStatus("DRAFT");
-        order.setContractId(contract.getContractId());
-        order.setContractNo(contract.getContractNo());
-        purchaseOrderMapper.insert(order);
-
-        // 4. 逐行创建采购订单明细
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (PuContractLine line : lines) {
-            PuPurchaseOrderLine orderLine = new PuPurchaseOrderLine();
-            orderLine.setOrderId(order.getOrderId());
-            orderLine.setMaterialId(line.getMaterialId());
-            orderLine.setMaterialCode(line.getMaterialCode());
-            orderLine.setMaterialName(line.getMaterialName());
-            orderLine.setMaterialSpec(line.getMaterialSpec());
-            orderLine.setUnit(line.getUnit());
-            orderLine.setUnitPrice(line.getUnitPrice());
-            orderLine.setOrderQuantity(line.getQuantity());
-            orderLine.setReceivedQuantity(BigDecimal.ZERO);
-            orderLine.setLineAmount(line.getLineAmount());
-            orderLine.setSortOrder(line.getSortOrder());
-            purchaseOrderLineMapper.insert(orderLine);
-            if (line.getLineAmount() != null) {
-                totalAmount = totalAmount.add(line.getLineAmount());
-            }
-        }
-        order.setTotalAmount(totalAmount);
-        purchaseOrderMapper.updateById(order);
-
-        // 5. 更新合同状态为 EXECUTING——CAS 条件更新（仅 APPROVED 可转为 EXECUTING），
-        //    并发重复生成时第二个事务影响行数为 0 直接失败，杜绝同一合同生成多张采购订单
-        LambdaUpdateWrapper<PuContract> wrapper = Wrappers.<PuContract>lambdaUpdate()
-            .set(PuContract::getStatus, STATUS_EXECUTING)
-            .eq(PuContract::getContractId, contractId)
-            .eq(PuContract::getStatus, STATUS_APPROVED);
-        int contractRows = baseMapper.update(null, wrapper);
-        if (contractRows == 0) {
-            throw new ServiceException("合同状态已变更(可能已生成采购订单), 请勿重复操作");
-        }
-
-        log.info("合同 {} 生成采购订单 {}: 金额 {}", contractId, order.getOrderNo(), totalAmount);
-        return order.getOrderId();
+        throw new ServiceException("合同不是当前全局需求来源认证，禁止直接新增未归属采购订单；请使用 /erp/pu/requisition/certified 来源统一入口，再走受保护转单");
     }
 
     /**

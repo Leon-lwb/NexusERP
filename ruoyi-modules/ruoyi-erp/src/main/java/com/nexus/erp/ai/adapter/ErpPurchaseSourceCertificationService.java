@@ -30,12 +30,12 @@ public class ErpPurchaseSourceCertificationService {
     private final ErpPurchaseSourceSchemaVerifier schemaVerifier;
     private final PuRequirementCompetitionPoolReader poolReader;
     private final ErpPurchaseCatalogSourceReader catalogReader;
-    private final ErpPurchaseInventorySourceVerifier inventoryVerifier;
+    private final ErpPurchaseStockLineageVerifier inventoryVerifier;
     private final ErpPurchaseAllocationLineageReader lineageReader;
 
     public ErpPurchaseSourceCertificationService(PuRequirementErpTransactionQualification qualification,
             PuRequirementCompetitionPoolReader poolReader, ErpPurchaseCatalogSourceReader catalogReader,
-            ErpPurchaseInventorySourceVerifier inventoryVerifier, ErpPurchaseAllocationLineageReader lineageReader,
+            ErpPurchaseStockLineageVerifier inventoryVerifier, ErpPurchaseAllocationLineageReader lineageReader,
             ErpPurchaseSourceSchemaVerifier schemaVerifier) {
         this.qualification = Objects.requireNonNull(qualification); this.poolReader = Objects.requireNonNull(poolReader);
         this.catalogReader = Objects.requireNonNull(catalogReader); this.inventoryVerifier = Objects.requireNonNull(inventoryVerifier);
@@ -59,7 +59,8 @@ public class ErpPurchaseSourceCertificationService {
         CatalogSnapshot catalog = catalogReader.readLocked(tenantId, materialId, vendorId);
         var lineage = lineageReader.readLocked(tenantId, materialId);
         // 库存有效期只能在其他等待式读取完成后认证；验证器最后一次时钟当前读必须是本链最新时点。
-        var inventory = inventoryVerifier.verifyLocked(tenantId, materialId);
+        var stockLineage = inventoryVerifier.verifyLocked(tenantId, materialId);
+        var inventory = stockLineage == null ? null : stockLineage.inventory();
         require(raw != null && catalog != null && inventory != null && lineage != null, "完整当前读来源缺失");
         require(tenantId.equals(catalog.tenantId()) && materialId.toString().equals(catalog.material().materialId())
             && vendorId.toString().equals(catalog.vendorId()) && tenantId.equals(inventory.tenantId())
@@ -73,6 +74,26 @@ public class ErpPurchaseSourceCertificationService {
         raw.stocks().forEach(row -> require(row != null && row.getStockId() != null && stockIds.add(row.getStockId()),
             "原始库存身份缺失或重复"));
         require(stockIds.equals(inventory.stockIds()) && !stockIds.isEmpty(), "库存全集在认证链中不一致");
+        Map<Long,com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawStock> rawStocks=new HashMap<>();
+        raw.stocks().forEach(row->rawStocks.put(row.getStockId(),row));
+        Set<Long> provenStocks=new HashSet<>();BigDecimal originalReserved=BigDecimal.ZERO;
+        for(var proof:stockLineage.stocks()) {
+            require(proof!=null&&proof.stock()!=null&&proof.stock().stockId()!=null&&provenStocks.add(proof.stock().stockId()),
+                "原始库存归属证明缺失或重复");
+            var row=rawStocks.get(proof.stock().stockId());var original=proof.stock();
+            require(row!=null&&Objects.equals(row.getTenantId(),original.tenantId())&&Objects.equals(row.getMaterialId(),original.materialId())
+                &&Objects.equals(row.getBaseUomId(),original.baseUomId())&&Objects.equals(row.getVersion(),original.version())
+                &&Objects.equals(row.getFrozenFlag(),original.frozenFlag())&&Objects.equals(row.getDelFlag(),original.delFlag())
+                &&row.getStockQuantity()!=null&&original.stockQuantity()!=null&&row.getStockQuantity().compareTo(original.stockQuantity())==0
+                &&row.getReservedQuantity()!=null&&original.reservedQuantity()!=null&&row.getReservedQuantity().compareTo(original.reservedQuantity())==0,
+                "竞争池原库存与完整原始流水证明不一致");
+            originalReserved=originalReserved.add(original.reservedQuantity());
+        }
+        require(provenStocks.equals(stockIds),"原始库存来源证明未覆盖整个物料库存");
+        BigDecimal usableOwned=stockLineage.reservedByRequirementDetail().values().stream().reduce(BigDecimal.ZERO,BigDecimal::add);
+        BigDecimal frozenOwned=stockLineage.frozenReservedByRequirementDetail().values().stream().reduce(BigDecimal.ZERO,BigDecimal::add);
+        require(usableOwned.compareTo(inventory.reserved())==0&&usableOwned.add(frozenOwned).compareTo(originalReserved)==0,
+            "完整原始预留所有权净额与库存余额不一致");
         require(lineage.snapshotAt() != null && !inventory.snapshotAt().isBefore(catalog.snapshotAt())
             && !inventory.snapshotAt().isBefore(lineage.snapshotAt()), "最终库存时钟早于其他来源认证时点");
         Instant assessedAt = inventory.snapshotAt();
@@ -81,13 +102,18 @@ public class ErpPurchaseSourceCertificationService {
             && terms.verifiedAt() != null && !terms.effectiveAt().isAfter(assessedAt)
             && !terms.expiresAt().isBefore(assessedAt) && !terms.verifiedAt().isAfter(assessedAt),
             "最终认证时点的供应条款未知或过期");
-        // 未完成 RESERVE/CONSUME_RESERVE/UNRESERVE 所有权对账前，余额不能被认证为其他需求的占用。
-        require(inventory.reserved() != null && inventory.reserved().signum() == 0
-            && raw.stocks().stream().allMatch(row -> row.getReservedQuantity() != null && row.getReservedQuantity().signum() == 0),
-            "库存预留所有权尚未认证，拒绝采购缺口计算");
-        var input = ErpPurchasePoolCertification.certify(catalog, lineage, raw,
+        // 预留所有权必须由完整原始链产生；范围外owner仍扣共享供给，不能挪给本请求。
+        var basicInput = ErpPurchasePoolCertification.certify(catalog, lineage, raw,
             new Stock(inventory.quantity(),inventory.reserved(),inventory.safety(),inventory.baseUomId().toString(),true),
             windowEnd, requested);
+        Set<String> poolDemandIds=new HashSet<>();basicInput.demands().forEach(d->poolDemandIds.add(d.detailId()));
+        Map<String,BigDecimal> ownedReservations=new TreeMap<>();
+        stockLineage.reservedByRequirementDetail().forEach((id,amount)-> {
+            require(id!=null&&id>0&&amount!=null&&amount.signum()>0,"已核预留归属身份或数量未知");
+            if(poolDemandIds.contains(id.toString()))ownedReservations.put(id.toString(),amount);
+        });
+        var input=new ErpPurchaseDemandAllocator.AllocationInput(basicInput.scope(),basicInput.stock(),basicInput.demands(),
+            basicInput.orders(),basicInput.commitments(),ownedReservations);
         AllocationResult allocation;
         try { allocation = new ErpPurchaseDemandAllocator().allocate(input); }
         catch (ErpPurchaseDemandAllocator.AllocationRejectedException invalid) {
@@ -109,11 +135,21 @@ public class ErpPurchaseSourceCertificationService {
         Map<String,String> versions = new TreeMap<>();
         catalog.sourceVersions().forEach((key,value) -> versions.put("catalog:" + key,value));
         inventory.sourceVersions().forEach((key,value) -> versions.put("inventory:" + key,value));
+        stockLineage.sourceVersions().forEach((key,value)->versions.put("stock-lineage:"+key,value));
         lineage.sourceVersions().forEach((key,value) -> versions.put("lineage:" + key,value));
         // 不是外部时间/旗号：数量、需求窗口、期限、真实版本和整个竞争输入均进入稳定摘要。
         String fingerprint = fingerprint(input,catalog.material(),catalog.terms(),catalog.baseUnit(),catalog.orderUnit(),
-            catalog.moqUnit(),versions,lines,freezeMrpSources(raw));
+            catalog.moqUnit(),versions,lines,freezeMrpSources(raw),stockLineage.reservedByRequirementDetail(),
+            stockLineage.frozenReservedByRequirementDetail());
         return new CertifiedPurchaseScope(tenantId,materialId,vendorId,today,windowEnd,catalog,allocation,lines,versions,fingerprint);
+    }
+
+    /** 同一采购目录的稳定冻结摘要；不含每次读取时钟，绝不充当跨事务写授权。 */
+    public static String catalogFingerprint(CatalogSnapshot catalog) {
+        require(catalog!=null&&catalog.material()!=null&&catalog.terms()!=null&&catalog.baseUnit()!=null
+            &&catalog.orderUnit()!=null&&catalog.moqUnit()!=null&&catalog.sourceVersions()!=null,"冻结目录完整来源缺失");
+        return fingerprint(catalog.tenantId(),catalog.vendorId(),catalog.relationId(),catalog.databaseTimeZone(),
+            catalog.material(),catalog.terms(),catalog.baseUnit(),catalog.orderUnit(),catalog.moqUnit(),catalog.sourceVersions());
     }
 
     /** 将原始 MRP 数量、状态和归属冻结为不可变事实；净需求相等不表示来源未变。 */
