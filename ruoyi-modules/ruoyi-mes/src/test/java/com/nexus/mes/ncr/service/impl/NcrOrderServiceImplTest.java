@@ -5,7 +5,11 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.fasterxml.jackson.databind.DeserializationConfig;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.dto.SignCommand;
@@ -13,6 +17,7 @@ import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.lt.domain.LtLot;
 import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.service.ILtLotService;
+import com.nexus.mes.ncr.domain.NcrDefect;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.bo.NcrOrderBo;
 import com.nexus.mes.ncr.domain.vo.NcrOrderVo;
@@ -21,9 +26,14 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.ncr.service.INcrDefectService;
 import com.nexus.mes.ncr.service.INcrReworkOrderService;
 import com.nexus.mes.pro.service.IProAndonService;
+import com.nexus.mes.testsupport.SpringStaticBootstrap;
 import com.nexus.system.strategy.AutoCodeUtil;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InOrder;
@@ -31,11 +41,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,13 +55,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * NCR不合格品单 Service 单元测试 (23 tests)
- * <p>mockStatic(LambdaUtils,CALLS_REAL_METHODS) 解决 lambda 缓存;
- * autoCreate 传空 defectInfo 绕过 JsonUtils(需Spring上下文,回归由 E2E 覆盖)。
+ * NCR不合格品单 Service 单元测试。
+ * <p>mockStatic(LambdaUtils,CALLS_REAL_METHODS) 解决 lambda 缓存；
+ * SpringStaticBootstrap 准备真实 ObjectMapper，缺陷 JSON 走实际 JsonUtils 和业务解析。
+ * Mapper/写入服务使用替身，不代表数据库事务回滚或硬件端到端验收。
  * P0-6 处置签署(signDisposition + disposeWithSignature)的用例见文末。</p>
  */
 @ExtendWith(MockitoExtension.class)
-@TestMethodOrder(org.junit.jupiter.api.MethodOrderer.MethodName.class)
 class NcrOrderServiceImplTest {
 
     @Mock private NcrOrderMapper baseMapper;
@@ -65,10 +77,19 @@ class NcrOrderServiceImplTest {
     @InjectMocks private NcrOrderServiceImpl service;
 
     @Captor private ArgumentCaptor<NcrOrder> orderCaptor;
+    @Captor private ArgumentCaptor<List<NcrDefect>> defectsCaptor;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
+    private static ObjectMapper sharedJsonMapper;
+    private static DeserializationConfig sharedJsonConfiguration;
 
     @BeforeAll
     static void initLotTableInfo() {
+        // 同套件其它测试可能已经初始化 JsonUtils；复用其真实缓存实例，不替换或改动配置。
+        SpringStaticBootstrap.ensureActive();
+        sharedJsonMapper = JsonUtils.getObjectMapper();
+        sharedJsonConfiguration = sharedJsonMapper.getDeserializationConfig();
+        assertFalse(mockingDetails(sharedJsonMapper).isMock(),
+            "缺陷回归必须使用真实 ObjectMapper，不得 mock JsonUtils 解析结果");
         // LtLot 的真实列缓存: resolveLot/lotCodeOf 会构造 LtLot 查询与条件更新
         com.baomidou.mybatisplus.core.MybatisConfiguration configuration =
             new com.baomidou.mybatisplus.core.MybatisConfiguration();
@@ -103,7 +124,20 @@ class NcrOrderServiceImplTest {
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(NcrOrder.class)).thenReturn(cols);
     }
     private ColumnCache col(String c) { return new ColumnCache(c, c); }
-    @AfterEach void tearDown() { if (lambdaUtilsMock != null) lambdaUtilsMock.close(); }
+    @AfterEach
+    void tearDown() {
+        try {
+            // 所有正常/失败路径都不得更改共享 mapper，避免后续 suite/bootstrap 用户受影响。
+            assertAll(
+                () -> assertSame(sharedJsonMapper, JsonUtils.getObjectMapper()),
+                () -> assertSame(sharedJsonConfiguration, sharedJsonMapper.getDeserializationConfig(),
+                    "NCR 专用 reader 选项不得改变共享 ObjectMapper 配置"));
+        } finally {
+            if (lambdaUtilsMock != null) {
+                lambdaUtilsMock.close();
+            }
+        }
+    }
 
     private void stubCreate(Long ncrId, String code) {
         when(baseMapper.selectVoOne(any())).thenReturn(null);
@@ -116,7 +150,7 @@ class NcrOrderServiceImplTest {
     @Test
     void autoCreateFromIqc_defectQtyNull_defaultsZero() {
         stubCreate(100L, "NCR-001");
-        // 传空 defectInfo 绕过 parseAndInsertDefects(JsonUtils 需 Spring, E2E 已覆盖解析)
+        // 此用例只验证 NCR 头数量默认值，JSON 明细另有真实解析回归。
         service.autoCreateFromIqc(1L, 9001L, 1001L, "");
 
         verify(baseMapper).insert(orderCaptor.capture());
@@ -125,18 +159,179 @@ class NcrOrderServiceImplTest {
         assertEquals("OPEN", orderCaptor.getValue().getStatus());
     }
 
-    // ==================== Bug3: defectInfo 解析 (E2E 已覆盖, 此处仅标记) ====================
+    // ==================== defectInfo: 真实 JSON 解析与写入边界 ====================
 
     @Test
-    @Disabled("JsonUtils 需 Spring 上下文; defectInfo 解析+defectCodeId null 回归由 E2E 覆盖(28/28)")
     void autoCreateFromIqc_parsesDefectInfo_defectCodeIdNull() {
-        // E2E verified: IQC inspect UNQUALIFIED + defectInfo JSON -> autoCreate NCR -> ncr_defect(defectCode set, defectCodeId null)
+        stubCreate(101L, "NCR-JSON-001");
+        NcrOrderVo created = stubCreatedView(101L);
+
+        NcrOrderVo result = service.autoCreateFromIqc(1L, 9001L, 1001L,
+            "[{\"code\":\"SCRATCH\",\"qty\":5,\"desc\":\"划痕\"},"
+                + "{\"code\":\"DENT\",\"qty\":\"0.1250\",\"desc\":\"凹痕\"}]");
+
+        assertSame(created, result);
+        InOrder writes = inOrder(baseMapper, defectService);
+        writes.verify(baseMapper).insert(orderCaptor.capture());
+        writes.verify(defectService).batchInsertForNcr(eq(101L), defectsCaptor.capture());
+        writes.verify(baseMapper).selectVoById(101L);
+        assertEquals(101L, orderCaptor.getValue().getNcrId());
+        assertEquals("IQC", orderCaptor.getValue().getSourceType());
+        assertEquals(1L, orderCaptor.getValue().getSourceId());
+        assertEquals("OPEN", orderCaptor.getValue().getStatus());
+        List<NcrDefect> defects = defectsCaptor.getValue();
+        assertEquals(2, defects.size());
+        assertDefect(defects.get(0), 101L, "SCRATCH", new BigDecimal("5"), "划痕");
+        assertDefect(defects.get(1), 101L, "DENT", new BigDecimal("0.1250"), "凹痕");
+        verifyNoInteractions(defectMapper);
+        verifyNoMoreInteractions(defectService);
     }
 
     @Test
-    @Disabled("JsonUtils 需 Spring 上下文; 畸形 JSON 安全回归由 E2E 覆盖")
     void autoCreateFromIqc_defectInfoParseFail_safe() {
-        // E2E verified: bad JSON doesn't crash; NCR still created, no defects
+        assertNoDefectWriteForInput("[{\"code\":\"SCRATCH\",\"qty\":5}");
+    }
+
+    @ParameterizedTest(name = "empty defect info [{index}]")
+    @NullAndEmptySource
+    @ValueSource(strings = {" \t\n", "[]", "null"})
+    void autoCreateFromIqc_emptyDefectInfo_createsNcrWithoutDefects(String defectInfo) {
+        assertNoDefectWriteForInput(defectInfo);
+    }
+
+    @ParameterizedTest(name = "invalid defect input [{index}]")
+    @ValueSource(strings = {
+        "{\"code\":\"SCRATCH\",\"qty\":5}",
+        "[null]",
+        "[{\"code\":\"SCRATCH\",\"qty\":\"not-a-number\"}]",
+        "[{\"code\":\"SCRATCH\",\"qty\":\"\"}]",
+        "[{\"code\":\"SCRATCH\"}]",
+        "[{\"code\":\"SCRATCH\",\"qty\":null}]",
+        "[{\"code\":\"SCRATCH\",\"qty\":5},{\"code\":\"DENT\",\"qty\":\"bad\"}]"
+    })
+    void autoCreateFromIqc_invalidDefectInput_createsNcrWithoutPartialDefectWrites(String defectInfo) {
+        assertNoDefectWriteForInput(defectInfo);
+    }
+
+    @ParameterizedTest(name = "quantity {0} is retained")
+    @CsvSource({"0, 0", "2147483648, 2147483648", "2.75, 2.75", "\"0.1250\", 0.1250"})
+    void autoCreateFromIqc_validQuantityRepresentations_areRetained(String jsonQty, String expectedQty) {
+        stubCreate(103L, "NCR-JSON-003");
+        NcrOrderVo created = stubCreatedView(103L);
+
+        assertSame(created, service.autoCreateFromIqc(3L, 9003L, 1001L,
+            "[{\"code\":\"SCRATCH\",\"qty\":" + jsonQty + ",\"desc\":\"划痕\"}]"));
+
+        verify(defectService).batchInsertForNcr(eq(103L), defectsCaptor.capture());
+        assertEquals(1, defectsCaptor.getValue().size());
+        assertDefect(defectsCaptor.getValue().get(0), 103L, "SCRATCH", new BigDecimal(expectedQty), "划痕");
+        verifyNoMoreInteractions(defectService);
+    }
+
+    @Test
+    void autoCreateFromIqc_largeNumericDecimal_retainsExactQuantity() {
+        stubCreate(105L, "NCR-JSON-005");
+        NcrOrderVo created = stubCreatedView(105L);
+
+        assertSame(created, service.autoCreateFromIqc(5L, 9005L, 1001L,
+            "[{\"code\":\"SCRATCH\",\"qty\":10000000000000.0001,\"desc\":\"划痕\"}]"));
+
+        verify(defectService).batchInsertForNcr(eq(105L), defectsCaptor.capture());
+        assertEquals(1, defectsCaptor.getValue().size());
+        assertDefect(defectsCaptor.getValue().get(0), 105L, "SCRATCH",
+            new BigDecimal("10000000000000.0001"), "划痕");
+        verifyNoMoreInteractions(defectService);
+    }
+
+    @ParameterizedTest(name = "trailing JSON content [{index}] is rejected")
+    @ValueSource(strings = {
+        "[{\"code\":\"SCRATCH\",\"qty\":5}] trailing-garbage",
+        "[{\"code\":\"SCRATCH\",\"qty\":5}][{\"code\":\"DENT\",\"qty\":1}]"
+    })
+    void autoCreateFromIqc_trailingContent_createsNcrWithoutDefectWrites(String defectInfo) {
+        assertNoDefectWriteForInput(defectInfo);
+    }
+
+    @Test
+    void autoCreateFromIqc_localReader_doesNotChangeSharedMapper() {
+        ObjectMapper originalMapper = JsonUtils.getObjectMapper();
+        DeserializationConfig originalConfiguration = originalMapper.getDeserializationConfig();
+        String defectInfo = "[{\"code\":\"SCRATCH\",\"qty\":2.75,\"desc\":\"划痕\"}]";
+        Object genericQtyBefore = JsonUtils.parseArray(defectInfo, Map.class).get(0).get("qty");
+        stubCreate(106L, "NCR-JSON-006");
+        NcrOrderVo created = stubCreatedView(106L);
+
+        assertSame(created, service.autoCreateFromIqc(6L, 9006L, 1001L, defectInfo));
+
+        Object genericQtyAfter = JsonUtils.parseArray(defectInfo, Map.class).get(0).get("qty");
+        assertAll(
+            () -> assertSame(originalMapper, JsonUtils.getObjectMapper()),
+            () -> assertSame(originalConfiguration, originalMapper.getDeserializationConfig()),
+            () -> assertEquals(originalConfiguration.isEnabled(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS),
+                originalMapper.isEnabled(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)),
+            () -> assertEquals(originalConfiguration.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS),
+                originalMapper.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)),
+            () -> assertSame(genericQtyBefore.getClass(), genericQtyAfter.getClass()),
+            () -> assertEquals(genericQtyBefore, genericQtyAfter));
+        verify(defectService).batchInsertForNcr(eq(106L), defectsCaptor.capture());
+        assertEquals(1, defectsCaptor.getValue().size());
+        assertDefect(defectsCaptor.getValue().get(0), 106L, "SCRATCH", new BigDecimal("2.75"), "划痕");
+        verifyNoMoreInteractions(defectService);
+    }
+
+    @Test
+    void autoCreateFromIqc_defectWriteFailure_propagatesForRollback() {
+        stubCreate(104L, "NCR-JSON-004");
+        DataIntegrityViolationException writeFailure =
+            new DataIntegrityViolationException("NCR defect persistence failed");
+        doThrow(writeFailure).when(defectService).batchInsertForNcr(eq(104L), anyList());
+
+        assertSame(writeFailure, assertThrows(DataIntegrityViolationException.class,
+            () -> service.autoCreateFromIqc(4L, 9004L, 1001L,
+                "[{\"code\":\"SCRATCH\",\"qty\":5}]")),
+            "持久化失败不是 JSON 解析失败，必须向调用方传播以允许事务回滚");
+
+        verify(baseMapper).insert(orderCaptor.capture());
+        assertEquals(104L, orderCaptor.getValue().getNcrId());
+        verify(defectService).batchInsertForNcr(eq(104L), defectsCaptor.capture());
+        assertEquals(1, defectsCaptor.getValue().size());
+        assertDefect(defectsCaptor.getValue().get(0), 104L, "SCRATCH", new BigDecimal("5"), null);
+        verify(baseMapper, never()).selectVoById(any());
+        verifyNoInteractions(ltLotService, proAndonService);
+    }
+
+    private NcrOrderVo stubCreatedView(Long ncrId) {
+        NcrOrderVo created = new NcrOrderVo();
+        created.setNcrId(ncrId);
+        when(baseMapper.selectVoById(ncrId)).thenReturn(created);
+        return created;
+    }
+
+    private void assertNoDefectWriteForInput(String defectInfo) {
+        stubCreate(102L, "NCR-JSON-002");
+        NcrOrderVo created = stubCreatedView(102L);
+
+        assertSame(created, assertDoesNotThrow(
+            () -> service.autoCreateFromIqc(2L, 9002L, 1001L, defectInfo)));
+
+        verify(baseMapper).insert(orderCaptor.capture());
+        NcrOrder order = orderCaptor.getValue();
+        assertEquals(102L, order.getNcrId());
+        assertEquals("NCR-JSON-002", order.getNcrCode());
+        assertEquals("IQC", order.getSourceType());
+        assertEquals(2L, order.getSourceId());
+        assertEquals("OPEN", order.getStatus());
+        verify(baseMapper).selectVoById(102L);
+        verifyNoInteractions(defectService, defectMapper);
+    }
+
+    private void assertDefect(NcrDefect defect, Long ncrId, String code, BigDecimal qty, String desc) {
+        assertAll(
+            () -> assertEquals(ncrId, defect.getNcrId()),
+            () -> assertEquals(code, defect.getDefectCode()),
+            () -> assertNull(defect.getDefectCodeId(), "自动建单允许尚未关联正式缺陷代码库"),
+            () -> assertEquals(qty, defect.getDefectQty()),
+            () -> assertEquals(desc, defect.getRootCauseDesc()));
     }
 
     // ==================== 幂等 ====================

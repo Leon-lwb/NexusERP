@@ -5,6 +5,9 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
@@ -550,34 +553,42 @@ public class NcrOrderServiceImpl implements INcrOrderService {
      * 解析 defectInfo JSON 并插入缺陷明细
      * <p>
      * defectInfo 格式: [{"code":"SCRATCH","qty":5,"desc":"划痕"}]
-     * 解析失败时 log.warn 跳过,不阻断主流程。
+     * 数值型数量直接解析为 BigDecimal，且仅接受完整的单个 JSON 根；reader 选项不修改共享 mapper。
+     * JSON 或必填数量解析失败时 log.warn 跳过,不阻断主流程；写入异常必须向上传播。
      * </p>
      */
     private void parseAndInsertDefects(Long ncrId, String defectInfo) {
         if (StringUtils.isBlank(defectInfo)) {
             return;
         }
+        List<NcrDefect> defects = new ArrayList<>();
         try {
-            List<Map> defectMaps = JsonUtils.parseArray(defectInfo, Map.class);
+            ObjectReader reader = JsonUtils.getObjectMapper()
+                .readerFor(new TypeReference<List<Map<String, Object>>>() {})
+                .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
+                    DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+            List<Map<String, Object>> defectMaps = reader.readValue(defectInfo);
             if (defectMaps == null || defectMaps.isEmpty()) {
                 return;
             }
-            List<NcrDefect> defects = new ArrayList<>();
-            for (Map map : defectMaps) {
+            for (Map<String, Object> map : defectMaps) {
                 NcrDefect defect = new NcrDefect();
                 defect.setNcrId(ncrId);
                 defect.setDefectCode(map.get("code") != null ? map.get("code").toString() : null);
-                if (map.get("qty") != null) {
-                    defect.setDefectQty(new BigDecimal(map.get("qty").toString()));
+                if (map.get("qty") == null) {
+                    throw new IllegalArgumentException("缺陷数量不能为空");
                 }
+                defect.setDefectQty(new BigDecimal(map.get("qty").toString()));
                 defect.setRootCauseDesc(map.get("desc") != null ? map.get("desc").toString() : null);
                 defects.add(defect);
             }
-            if (!defects.isEmpty()) {
-                defectService.batchInsertForNcr(ncrId, defects);
-            }
         } catch (Exception e) {
             log.warn("解析defectInfo失败,跳过缺陷明细: ncrId={}, defectInfo={}", ncrId, defectInfo, e);
+            return;
+        }
+        // 写入失败不是解析失败：保留原异常，交由调用方事务处理，不得返回创建成功。
+        if (!defects.isEmpty()) {
+            defectService.batchInsertForNcr(ncrId, defects);
         }
     }
 
