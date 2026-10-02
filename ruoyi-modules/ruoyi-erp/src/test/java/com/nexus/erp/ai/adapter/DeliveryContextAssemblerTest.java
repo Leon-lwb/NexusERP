@@ -1850,6 +1850,7 @@ class DeliveryContextAssemblerTest {
             requirementDetail(901L, 301L, 501L, "1", "0",
                 LocalDate.now(ZoneId.of("Asia/Shanghai")))));
         when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(material(501L, "0")));
+        when(stockMapper.selectList(any())).thenReturn(List.of(stock(10001L,501L,"0","0")));
         DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null);
         DecisionActor actor = actor("ai:decision:run", "prd:work:query");
 
@@ -1896,7 +1897,8 @@ class DeliveryContextAssemblerTest {
 
         DeliveryContextSnapshot.StockFact stock = snapshot.stocks().stream()
             .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow();
-        assertEquals(BigDecimal.ZERO, stock.stockQty(), "无库存行但物料有作用域，显示库存 0");
+        assertNull(stock.stockQty(), "无库存行不能认证库存0");
+        assertNull(stock.reservedQty(), "无库存来源不能认证预留0");
         assertNull(stock.safetyStock(), "无 BdMaterial 时不得伪装成安全库存 0");
         assertTrue(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
         assertEquals(new BigDecimal("2"), snapshot.arrivals().stream()
@@ -1908,7 +1910,7 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
-    void knownMaterialWithNullSafetySettingDefaultsToZeroWithNoInventoryRows() {
+    void knownMaterialWithNullSafetySettingAndMissingInventoryRemainsUnknown() {
         PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
         stubSingleMaterialDemandAndArrival(wo);
         BdMaterial known = new BdMaterial();
@@ -1922,13 +1924,109 @@ class DeliveryContextAssemblerTest {
 
         DeliveryContextSnapshot.StockFact stock = snapshot.stocks().stream()
             .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow();
-        assertEquals(BigDecimal.ZERO, stock.stockQty());
-        assertEquals(BigDecimal.ZERO, stock.safetyStock());
+        assertNull(stock.stockQty());
+        assertNull(stock.reservedQty());
+        assertNull(stock.safetyStock());
         assertFalse(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
-        var result = new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
-            .simulate(snapshot, 14, null);
-        assertFalse(result.hasRisk());
-        assertEquals(BigDecimal.ZERO, result.totalGap());
+        assertTrue(snapshot.warnings().contains("UNKNOWN_STOCK_SOURCE:501"));
+        assertThrows(ServiceException.class, () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+            .simulate(snapshot, 14, null));
+    }
+
+
+    @Test
+    void missingStockRecordsRemainUnknownEvenWithKnownMaterialAndArrival() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
+            requirementDetail(901L,801L,501L,"10","2",LocalDate.now(ZoneId.of("Asia/Shanghai")))));
+        when(stockMapper.selectList(any())).thenReturn(List.of());
+        var snapshot=assembler.assemble(f.ref(),14,f.actor());
+        assertTrue(snapshot.stocks().stream().allMatch(x -> x.stockQty()==null && x.reservedQty()==null));
+        assertTrue(snapshot.warnings().contains("UNKNOWN_STOCK_SOURCE:501"));
+        assertThrows(ServiceException.class,()->new ErpDecisionShortageSimulation(new PrdShortageScenarioService()).simulate(snapshot,14,null));
+    }
+
+    @Test
+    void explicitZeroStockSourceRemainsKnownZero() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        when(stockMapper.selectList(any())).thenReturn(List.of(stock(10001L,501L,"0","0"),stock(10003L,502L,"0","0")));
+        var snapshot=assembler.assemble(f.ref(),14,f.actor());
+        var zeroFacts = snapshot.stocks().stream()
+            .filter(x -> x.materialId() == 501L || x.materialId() == 502L).toList();
+        assertEquals(2, zeroFacts.size(), "两个显式零来源物料都必须保留事实");
+        assertEquals(Set.of(501L, 502L), new LinkedHashSet<>(zeroFacts.stream().map(DeliveryContextSnapshot.StockFact::materialId).toList()));
+        assertTrue(zeroFacts.stream().allMatch(x -> x.stockQty() != null && x.reservedQty() != null
+            && BigDecimal.ZERO.compareTo(x.stockQty()) == 0 && BigDecimal.ZERO.compareTo(x.reservedQty()) == 0));
+    }
+
+    @Test
+    void nullQuantityCannotBecomeZeroOrPartialMaterialSum() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        var bad=stock(10001L,501L,"0","0"); bad.setStockQuantity(null);
+        when(stockMapper.selectList(any())).thenReturn(List.of(bad,stock(10002L,501L,"5","1"),stock(10003L,502L,"8","0")));
+        var snapshot=assembler.assemble(f.ref(),14,f.actor());
+        assertNull(snapshot.stocks().stream().filter(x->x.materialId()==501L).findFirst().orElseThrow().stockQty());
+    }
+
+    @Test
+    void unknownReservationOrFrozenStateCannotBecomeAvailableSupply() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        var bad=stock(10001L,501L,"20","3"); bad.setReservedQuantity(null);
+        when(stockMapper.selectList(any())).thenReturn(List.of(bad,stock(10003L,502L,"8","0")));
+        assertNull(assembler.assemble(f.ref(),14,f.actor()).stocks().stream().filter(x->x.materialId()==501L).findFirst().orElseThrow().reservedQty());
+        bad.setReservedQuantity(new BigDecimal("3")); bad.setFrozenFlag(null);
+        assertNull(assembler.assemble(f.ref(),14,f.actor()).stocks().stream().filter(x->x.materialId()==501L).findFirst().orElseThrow().stockQty());
+    }
+
+    @Test
+    void frozenStockBlocksEntireQuantityWithoutDoubleCountingReservation() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        var frozen=stock(10001L,501L,"20","3"); frozen.setFrozenFlag(1L);
+        when(stockMapper.selectList(any())).thenReturn(List.of(frozen,stock(10002L,501L,"5","1"),stock(10003L,502L,"8","0")));
+        var fact=assembler.assemble(f.ref(),14,f.actor()).stocks().stream().filter(x->x.materialId()==501L).findFirst().orElseThrow();
+        assertEquals(0,new BigDecimal("5").compareTo(fact.stockQty()), "推演供给只含非冻结来源");
+        assertEquals(0,BigDecimal.ONE.compareTo(fact.reservedQty()), "不能把冻结数量冒充预留或重复扣减");
+        assertEquals(0,new BigDecimal("4").compareTo(fact.stockQty().subtract(fact.reservedQty())));
+    }
+
+    @Test
+    void mismatchedBaseUnitCannotBeAggregatedAsSameMaterialStock() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        var bad=stock(10001L,501L,"20","3"); bad.setBaseUomId("999");
+        when(stockMapper.selectList(any())).thenReturn(List.of(bad,stock(10002L,501L,"5","1"),stock(10003L,502L,"8","0")));
+        assertNull(assembler.assemble(f.ref(),14,f.actor()).stocks().stream().filter(x->x.materialId()==501L).findFirst().orElseThrow().stockQty());
+    }
+
+    @Test
+    void rawUnknownVersusZeroAndFrozenUnitLocationChangesInvalidateFreshnessHash() {
+        RichFixture f=stubRichSalesOrderFixture(new AtomicBoolean(false),new AtomicReference<>(new BigDecimal("20")),new AtomicReference<>(new BigDecimal("3")));
+        var changed = stock(10001L, 501L, "0", "0");
+        var changedMaterial = material(501L, "0");
+        when(stockMapper.selectList(any())).thenReturn(List.of(changed, stock(10003L, 502L, "8", "0")));
+        when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(changedMaterial, material(502L, "1")));
+        String first = assembler.computeFreshnessHash(f.ref(), f.actor());
+        changed.setStockQuantity(null);
+        assertNotEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setStockQuantity(BigDecimal.ZERO);
+        assertEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setReservedQuantity(null);
+        assertNotEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()), "原始预留 NULL 与零必须区分");
+        changed.setReservedQuantity(BigDecimal.ZERO);
+        assertEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changedMaterial.setSafetyStock(null);
+        assertNotEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()), "原始安全库存 NULL 与零必须区分");
+        changedMaterial.setSafetyStock(BigDecimal.ZERO);
+        assertEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setFrozenFlag(1L);
+        assertNotEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setFrozenFlag(0L);
+        assertEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setBaseUomId("999");
+        assertNotEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setBaseUomId("56");
+        assertEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
+        changed.setLocationId(999L);
+        assertNotEquals(first, assembler.computeFreshnessHash(f.ref(), f.actor()));
     }
 
     private void stubSingleMaterialDemandAndArrival(PrdWorkOrder workOrder) {
@@ -2151,6 +2249,7 @@ class DeliveryContextAssemblerTest {
         WmMaterialStock row = new WmMaterialStock();
         row.setStockId(id);
         row.setMaterialId(materialId);
+        row.setBaseUomId("56"); row.setFrozenFlag(0L); row.setWarehouseId(10L); row.setAreaId(11L); row.setLocationId(12L);
         row.setStockQuantity(new BigDecimal(stock));
         row.setReservedQuantity(new BigDecimal(reserved));
         return row;
@@ -2159,6 +2258,7 @@ class DeliveryContextAssemblerTest {
     private BdMaterial material(long id, String safetyStock) {
         BdMaterial material = new BdMaterial();
         material.setMaterialId(id);
+        material.setBaseUomId(56L);
         material.setSafetyStock(new BigDecimal(safetyStock));
         return material;
     }

@@ -1342,27 +1342,48 @@ public class DeliveryContextAssembler {
                                             List<String> warnings) {
         Map<Long, BdMaterial> materialById = stocks.materials().stream()
             .collect(Collectors.toMap(BdMaterial::getMaterialId, material -> material, (left, right) -> left));
-        Map<Long, BigDecimal> stockByMaterial = new TreeMap<>();
-        Map<Long, BigDecimal> reservedByMaterial = new TreeMap<>();
-        materialIds.forEach(materialId -> {
-            stockByMaterial.put(materialId, BigDecimal.ZERO);
-            reservedByMaterial.put(materialId, BigDecimal.ZERO);
-        });
-        for (WmMaterialStock row : stocks.rows()) {
-            stockByMaterial.merge(row.getMaterialId(), zero(row.getStockQuantity()), BigDecimal::add);
-            reservedByMaterial.merge(row.getMaterialId(), zero(row.getReservedQuantity()), BigDecimal::add);
-        }
+        Map<Long, List<WmMaterialStock>> rowsByMaterial = stocks.rows().stream()
+            .collect(Collectors.groupingBy(WmMaterialStock::getMaterialId));
         List<StockFact> facts = new ArrayList<>();
         for (Long materialId : materialIds) {
             BdMaterial material = materialById.get(materialId);
             if (material == null) warnings.add("MISSING_MATERIAL_MASTER:" + materialId);
-            facts.add(new StockFact(
-                materialId,
-                stockByMaterial.getOrDefault(materialId, BigDecimal.ZERO),
-                reservedByMaterial.getOrDefault(materialId, BigDecimal.ZERO),
-                material == null ? null : zero(material.getSafetyStock())));
+            List<WmMaterialStock> rows = rowsByMaterial.getOrDefault(materialId, List.of());
+            boolean known = material != null && material.getBaseUomId() != null && material.getBaseUomId() > 0
+                && !rows.isEmpty();
+            BigDecimal supply = BigDecimal.ZERO;
+            BigDecimal reserved = BigDecimal.ZERO;
+            for (WmMaterialStock row : rows) {
+                boolean rowKnown = knownStockQuantity(row.getStockQuantity()) && knownStockQuantity(row.getReservedQuantity())
+                    && row.getReservedQuantity().compareTo(row.getStockQuantity()) <= 0
+                    && (Long.valueOf(0).equals(row.getFrozenFlag()) || Long.valueOf(1).equals(row.getFrozenFlag()))
+                    && material != null && material.getBaseUomId() != null
+                    && material.getBaseUomId().toString().equals(row.getBaseUomId());
+                known = known && rowKnown;
+                if (!rowKnown) continue; /** 任一未知行使整个物料供给未知，不能提供残缺合计。 */
+                if (Long.valueOf(1).equals(row.getFrozenFlag())) {
+                    warnings.add("FROZEN_STOCK_EXCLUDED:" + materialId);
+                    continue; /** 冻结来源不是可用供给，其预留也不再次扣减。 */
+                }
+                supply = supply.add(row.getStockQuantity());
+                reserved = reserved.add(row.getReservedQuantity());
+            }
+            if (!known) warnings.add("UNKNOWN_STOCK_SOURCE:" + materialId);
+            BigDecimal safety = material == null ? null : material.getSafetyStock();
+            if (!knownStockQuantity(safety)) {
+                safety = null;
+                if (material != null) warnings.add("UNKNOWN_SAFETY_STOCK_SOURCE:" + materialId);
+            }
+            facts.add(new StockFact(materialId, known ? supply : null, known ? reserved : null, safety));
         }
         return List.copyOf(facts);
+    }
+
+    /** 未知、负数或超出既有数量存储边界不得被默认值或取整认证。 */
+    private static boolean knownStockQuantity(BigDecimal quantity) {
+        return quantity != null && quantity.signum() >= 0
+            && quantity.stripTrailingZeros().scale() <= 4
+            && quantity.precision() - quantity.scale() <= 14;
     }
 
     private List<ArrivalFact> buildArrivalFacts(PurchaseBundle purchases,
@@ -1953,14 +1974,15 @@ public class DeliveryContextAssembler {
         List<CriticalStockRow> stocks = context.stockRows().stream()
             .sorted(stockRowComparator())
             .map(row -> new CriticalStockRow(
-                row.getStockId(), row.getMaterialId(), canonicalDecimal(zero(row.getStockQuantity())),
-                canonicalDecimal(zero(row.getReservedQuantity())), toIsoDateTime(row.getUpdateTime())))
+                row.getStockId(), row.getMaterialId(), row.getTenantId(), row.getBaseUomId(), row.getFrozenFlag(),
+                row.getWarehouseId(), row.getAreaId(), row.getLocationId(), row.getVersion(), row.getDelFlag(),
+                canonicalDecimal(row.getStockQuantity()), canonicalDecimal(row.getReservedQuantity()), toIsoDateTime(row.getUpdateTime())))
             .toList();
         List<CriticalMaterial> materials = context.materials().stream()
             .sorted(materialComparator())
             .map(material -> new CriticalMaterial(
-                material.getMaterialId(), canonicalDecimal(zero(material.getSafetyStock())),
-                toIsoDateTime(material.getUpdateTime())))
+                material.getMaterialId(), material.getBaseUomId(), material.getStatus(), material.getDelFlag(),
+                canonicalDecimal(material.getSafetyStock()), toIsoDateTime(material.getUpdateTime())))
             .toList();
         List<CriticalPurchaseOrder> purchaseOrders = context.purchaseOrders().stream()
             .sorted(purchaseOrderComparator())
@@ -2626,13 +2648,21 @@ public class DeliveryContextAssembler {
     private record CriticalStockRow(
         Long id,
         Long materialId,
+        String tenantId,
+        String baseUomId,
+        Long frozenFlag,
+        Long warehouseId,
+        Long areaId,
+        Long locationId,
+        Integer version,
+        String delFlag,
         String stockQty,
         String reservedQty,
         String updateTime
     ) {
     }
 
-    private record CriticalMaterial(Long id, String safetyStock, String updateTime) {
+    private record CriticalMaterial(Long id, Long baseUomId, Long status, String delFlag, String safetyStock, String updateTime) {
     }
 
     private record CriticalPurchaseOrder(Long id, String status, String expectedDate, String updateTime) {

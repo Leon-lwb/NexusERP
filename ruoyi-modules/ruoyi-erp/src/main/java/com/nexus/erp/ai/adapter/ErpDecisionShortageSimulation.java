@@ -57,7 +57,7 @@ public class ErpDecisionShortageSimulation {
         TreeMap<Long, MaterialDemand> demands = collectDemands(snapshot.requirements(), today, end, warnings);
         boolean incompleteEvidence = missingRequirementScope(snapshot.workOrders(), snapshot.requirements(),
             today, end, warnings);
-        Map<Long, StockTotal> stocks = collectStocks(snapshot.stocks());
+        Map<Long, StockTotal> stocks = collectStocks(snapshot.stocks(), demands.keySet());
         Map<Long, ArrivalFact> arrivalsById = new HashMap<>();
         Map<Long, List<PurchaseArrivalLine>> linesByMaterial =
             collectArrivals(snapshot.arrivals(), arrivalsById, today, warnings);
@@ -288,11 +288,16 @@ public class ErpDecisionShortageSimulation {
         }
         return incomplete;
     }
-    private static Map<Long, StockTotal> collectStocks(List<StockFact> stocks) {
+    private static Map<Long, StockTotal> collectStocks(List<StockFact> stocks, Set<Long> demandedMaterials) {
         Map<Long, StockTotal> totals = new HashMap<>();
+        Set<Long> unknownMaterials = new HashSet<>();
         for (StockFact fact : stocks) {
-            require(fact != null && positive(fact.materialId()) && fact.stockQty() != null
-                && fact.reservedQty() != null, "库存事实不完整");
+            require(fact != null && positive(fact.materialId()), "库存事实身份不完整");
+            if (!demandedMaterials.contains(fact.materialId())) continue;
+            if (fact.stockQty() == null || fact.reservedQty() == null) {
+                unknownMaterials.add(fact.materialId());
+                continue; /** 同物料任一未知事实会撤销全部局部供给，不能使用已知子集。 */
+            }
             require(fact.stockQty().signum() >= 0 && fact.reservedQty().signum() >= 0
                 && (fact.safetyStock() == null || fact.safetyStock().signum() >= 0), "库存事实数量无效");
             StockTotal total = totals.computeIfAbsent(fact.materialId(), id -> new StockTotal(fact.safetyStock()));
@@ -304,6 +309,7 @@ public class ErpDecisionShortageSimulation {
             }
             total.available = total.available.add(fact.stockQty().subtract(fact.reservedQty()));
         }
+        unknownMaterials.forEach(totals::remove);
         return totals;
     }
 

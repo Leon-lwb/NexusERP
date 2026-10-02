@@ -616,6 +616,30 @@ class ErpDecisionShortageSimulationTest {
         assertNull(result.kpis());
         assertTrue(result.warnings().contains("MISSING_MATERIAL_MASTER:101"));
     }
+
+    @Test
+    void unknownRequiredStockUsesIncompleteEvidenceClassificationNotZero() {
+        var context=snapshot(List.of(requirement(101L,TODAY,"1",11L)),
+            List.of(new StockFact(101L,null,null,BigDecimal.ZERO)),List.of(arrival(101L,5001L,TODAY,"2")),null);
+        ServiceException missing=assertThrows(ServiceException.class,()->simulation.simulate(context,1,null));
+        assertTrue(missing.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+    }
+
+    @Test
+    void unknownNonDemandedFinishedStockDoesNotInvalidateKnownComponentFacts() {
+        var context=snapshot(List.of(requirement(101L,TODAY,"1",11L)),
+            List.of(stock(101L,"0","0","0"),new StockFact(999L,null,null,null)),
+            List.of(arrival(101L,5001L,TODAY,"2")),null);
+        assertFalse(simulation.simulate(context,1,null).hasRisk());
+    }
+
+    @Test
+    void unknownDuplicateFactInvalidatesWholeMaterialRatherThanKnownSubset() {
+        var context=snapshot(List.of(requirement(101L,TODAY,"1",11L)),
+            List.of(stock(101L,"5","0","0"),new StockFact(101L,null,null,BigDecimal.ZERO)),List.of(),null);
+        assertThrows(ServiceException.class,()->simulation.simulate(context,1,null));
+    }
+
     @Test
     void recoveryBeforeLaterDemandDoesNotAffectSatisfiedWorkOrderOrSalesOrder() {
         DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(

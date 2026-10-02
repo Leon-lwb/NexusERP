@@ -250,6 +250,10 @@ public record DeliveryContextSnapshot(
         }
     }
 
+    /**
+     * 新快照供缺料推演使用的非冻结来源量及其预留；不是全仓账面库存报表。
+     * 任一来源缺失或未核验时数量为NULL，不能用0补齐；历史持久化快照不因新装配规则被重写。
+     */
     public record StockFact(Long materialId, BigDecimal stockQty, BigDecimal reservedQty,
                             BigDecimal safetyStock) implements Serializable {
     }
