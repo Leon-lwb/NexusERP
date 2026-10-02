@@ -114,7 +114,7 @@ public class FlashReportController extends BaseController {
             throw new ServiceException("上报服务未配置访问密钥，请联系管理员");
         }
         if (StringUtils.isBlank(headerKey) || !apiKey.equals(headerKey.trim())) {
-            log.warn("上报接口密钥校验失败: ip={}, uri={}, key={}", request.getRemoteAddr(), request.getRequestURI(), headerKey);
+            log.warn("上报接口密钥校验失败: ip={}, uri={}", request.getRemoteAddr(), request.getRequestURI());
             throw new ServiceException("无效的API密钥");
         }
     }
