@@ -4,6 +4,8 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceSchemaVerifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,9 +26,18 @@ import java.util.TreeSet;
 public class PuRequirementMaterialLockService {
 
     private final PuRequirementMaterialGuardMapper guardMapper;
+    private final ErpPurchaseSourceSchemaVerifier schemaVerifier;
 
     public PuRequirementMaterialLockService(PuRequirementMaterialGuardMapper guardMapper) {
         this.guardMapper = guardMapper;
+        this.schemaVerifier = null;
+    }
+
+    @Autowired
+    public PuRequirementMaterialLockService(PuRequirementMaterialGuardMapper guardMapper,
+                                            ErpPurchaseSourceSchemaVerifier schemaVerifier) {
+        this.guardMapper = java.util.Objects.requireNonNull(guardMapper);
+        this.schemaVerifier = java.util.Objects.requireNonNull(schemaVerifier);
     }
 
     /**
@@ -55,6 +66,12 @@ public class PuRequirementMaterialLockService {
                 throw new ServiceException("物料竞争池材料ID必须为正数");
             }
         }
+
+        // 位于真正 INSERT 边界，直接调用锁服务也不能绕开物理归属、表定义及事务引擎认证。
+        if (schemaVerifier == null) {
+            throw new ServiceException("物料竞争池锁缺少事务来源认证依赖");
+        }
+        schemaVerifier.requireTransactionalSources();
 
         Map<Long, Integer> versions = new LinkedHashMap<>();
         for (Long materialId : new TreeSet<>(materialIds)) {

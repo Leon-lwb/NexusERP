@@ -74,7 +74,7 @@ public class PuRequirementCompetitionPoolReader {
             || !tenantId.equals(TenantHelper.getTenantId())) {
             throw new ServiceException("物料竞争池租户未启用或与当前租户不匹配");
         }
-        transactionQualification.requireWritableErpTransaction();
+        transactionQualification.requireParticipatingWritableErpTransaction();
 
         if (!positive(materialId)) {
             throw new ServiceException("物料竞争池材料ID必须为正数");

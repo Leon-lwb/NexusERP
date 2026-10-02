@@ -96,6 +96,20 @@ public class PuRequirementErpTransactionQualification {
         }
     }
 
+    /** 连续认证读取器仅可复核专属入口拥有的会话；外部既有会话仍按原规则拒绝。 */
+    public void requireParticipatingWritableErpTransaction() {
+        if (!PuRequirementErpTransactionExecutor.requireOwnedRepeatableReadParticipation(sqlSessionFactory)) {
+            requireWritableErpTransaction();
+        }
+    }
+
+    /** 完整采购认证链仅支持专属入口明示的可重复读事务，不接受外部布尔或路由猜测。 */
+    public void requireSourceChainTransaction() {
+        if (!PuRequirementErpTransactionExecutor.requireOwnedRepeatableReadParticipation(sqlSessionFactory)) {
+            throw new ServiceException("完整采购认证链缺少专属可重复读事务归属");
+        }
+    }
+
     /** 仅读取真实工厂与显式注册身份；与专属入口共享解析，不借连接、补绑或放宽事务门禁。 */
     static ErpTransactionConfiguration resolveConfiguration(SqlSessionFactory sqlSessionFactory) {
         Configuration configuration = sqlSessionFactory.getConfiguration();

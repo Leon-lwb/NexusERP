@@ -5,6 +5,7 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
 import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceSchemaVerifier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,9 @@ class PuRequirementMaterialLockServiceTest {
 
     @Mock
     private PuRequirementMaterialGuardMapper mapper;
+
+    @Mock
+    private ErpPurchaseSourceSchemaVerifier schemaVerifier;
 
     @AfterEach
     void clearTransactionFlag() {
@@ -116,7 +120,8 @@ class PuRequirementMaterialLockServiceTest {
 
             assertEquals(List.of(2L, 5L, 9L), new ArrayList<>(versions.keySet()));
             assertEquals(Map.of(2L, 0, 5L, 7, 9L, 11), versions);
-            InOrder order = inOrder(mapper);
+            InOrder order = inOrder(schemaVerifier, mapper);
+            order.verify(schemaVerifier).requireTransactionalSources();
             order.verify(mapper).ensureGuard(TENANT, 2L);
             order.verify(mapper).lockVersion(TENANT, 2L);
             order.verify(mapper).ensureGuard(TENANT, 5L);
@@ -135,7 +140,8 @@ class PuRequirementMaterialLockServiceTest {
             when(mapper.ensureGuard(TENANT, 7L)).thenReturn(0);
             when(mapper.lockVersion(TENANT, 7L)).thenReturn(0);
             assertEquals(Map.of(7L, 0), service().lock(TENANT, List.of(7L)));
-            InOrder order = inOrder(mapper);
+            InOrder order = inOrder(schemaVerifier, mapper);
+            order.verify(schemaVerifier).requireTransactionalSources();
             order.verify(mapper).ensureGuard(TENANT, 7L);
             order.verify(mapper).lockVersion(TENANT, 7L);
             verifyNoMoreInteractions(mapper);
@@ -150,7 +156,8 @@ class PuRequirementMaterialLockServiceTest {
             /** Mockito 默认将未设桩的 Integer 返回为 0；必须显式模拟行缺失或 SQL NULL。 */
             when(mapper.lockVersion(TENANT, 5L)).thenReturn(null);
             assertThrows(ServiceException.class, () -> service().lock(TENANT, List.of(8L, 5L, 2L)));
-            InOrder order = inOrder(mapper);
+            InOrder order = inOrder(schemaVerifier, mapper);
+            order.verify(schemaVerifier).requireTransactionalSources();
             order.verify(mapper).ensureGuard(TENANT, 2L);
             order.verify(mapper).lockVersion(TENANT, 2L);
             order.verify(mapper).ensureGuard(TENANT, 5L);
@@ -159,8 +166,41 @@ class PuRequirementMaterialLockServiceTest {
         }
     }
 
+    @Test
+    void ungatedConstructorCannotWriteGuardEvenWithActiveThreadLocalTransaction() {
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        try (MockedStatic<TenantHelper> ignored = tenant(TENANT)) {
+            assertThrows(ServiceException.class, () -> new PuRequirementMaterialLockService(mapper).lock(TENANT,List.of(1L)));
+            verifyNoInteractions(mapper);
+        }
+    }
+
+    @Test
+    void schemaRejectionOccursAtRealGuardWriteBoundary() {
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        try (MockedStatic<TenantHelper> ignored = tenant(TENANT)) {
+            org.mockito.Mockito.doThrow(new ServiceException("unproved schema")).when(schemaVerifier).requireTransactionalSources();
+            assertThrows(ServiceException.class, () -> service().lock(TENANT,List.of(1L)));
+            org.mockito.Mockito.verify(schemaVerifier).requireTransactionalSources();
+            verifyNoInteractions(mapper);
+        }
+    }
+
+    @Test
+    void activeThreadLocalCannotGrantRealSourceChainOwnership() {
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        var schemaMapper = org.mockito.Mockito.mock(com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper.class);
+        var qualification = new com.nexus.erp.pu.service.PuRequirementErpTransactionQualification(
+            org.mockito.Mockito.mock(org.apache.ibatis.session.SqlSessionFactory.class));
+        var realVerifier = new ErpPurchaseSourceSchemaVerifier(schemaMapper,qualification);
+        try (MockedStatic<TenantHelper> ignored = tenant(TENANT)) {
+            assertThrows(ServiceException.class, () -> new PuRequirementMaterialLockService(mapper,realVerifier).lock(TENANT,List.of(1L)));
+            verifyNoInteractions(mapper,schemaMapper);
+        }
+    }
+
     private PuRequirementMaterialLockService service() {
-        return new PuRequirementMaterialLockService(mapper);
+        return new PuRequirementMaterialLockService(mapper, schemaVerifier);
     }
 
     private MockedStatic<TenantHelper> tenant(String current) {

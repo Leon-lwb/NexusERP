@@ -10,12 +10,14 @@ import com.nexus.erp.pu.domain.enums.PurchaseOrderLineReceiveStatus;
 import com.nexus.erp.pu.domain.enums.PurchaseOrderStatusEnum;
 import com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper.DatabaseClock;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawOrderHead;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawOrderLine;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequirementDetail;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequirementHead;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequisitionHead;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequisitionLine;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.NoTransactionException;
 import org.springframework.transaction.TransactionDefinition;
@@ -53,7 +55,8 @@ import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_REJE
 import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_SUBMITTED;
 
 /**
- * 在实际 ERP 只读、可重复读新事务代理内冻结单物料采购占用的有界归属事实。
+ * read 在实际 ERP 只读、可重复读新事务代理内冻结单物料采购占用的有界归属事实。
+ * readLocked 仅在调用方已核验的同连接可写 ERP 事务内当前读，不自行补绑或开启事务。
  * 只接租户与物料身份，不接受调用方事实、核验布尔或时钟；不从旧 source_id 推断
  * MRP 明细，不将物料汇总或空结果当作可靠来源、库存零值或可采购额度。
  * 仅支持现有未转单意图、未履约订单承接和完整未转单释放；部分收货、退货、履约
@@ -80,10 +83,19 @@ public class ErpPurchaseAllocationLineageReader {
     private static final Set<String> REQUIREMENT_STATES = Set.of("DRAFT", "CONFIRMED", "PARTIAL_ISSUED", "ISSUED", "CLOSED");
 
     private final ErpPurchaseAllocationLineageMapper mapper;
+    private final PuRequirementErpTransactionQualification transactionQualification;
 
     /** 构造只保存固定 SELECT Mapper，不读取数据库或自动补全业务事实。 */
     public ErpPurchaseAllocationLineageReader(ErpPurchaseAllocationLineageMapper mapper) {
+        this(mapper, null);
+    }
+
+    /** 仅保存固定来源 Mapper 和事务资格校验；不借连接、补绑或授予业务资格。 */
+    @Autowired
+    public ErpPurchaseAllocationLineageReader(ErpPurchaseAllocationLineageMapper mapper,
+        PuRequirementErpTransactionQualification transactionQualification) {
         this.mapper = Objects.requireNonNull(mapper);
+        this.transactionQualification = transactionQualification;
     }
 
     /**
@@ -100,15 +112,19 @@ public class ErpPurchaseAllocationLineageReader {
         checkTenant(tenantId);
         require(positive(materialId), "物料身份必须为正数");
         checkReadTransaction();
+        return readSources(tenantId, materialId, false);
+    }
 
-        DatabaseClock clock = selectMapper(mapper::selectDatabaseClock);
-        Instant snapshotAt = databaseInstant(clock);
-        MaterialSource material = freezeMaterial(selectMapper(() -> mapper.selectMaterial(tenantId, materialId)));
+    /** 共用完整归属认证，锁定模式不扩大履约、历史量纲或来源类型的支持范围。 */
+    private LineageSnapshot readSources(String tenantId, Long materialId, boolean locked) {
+        DatabaseClock clock = selectMapper(locked ? mapper::lockDatabaseClock : mapper::selectDatabaseClock);
+        Instant snapshotAt = locked ? lockedDatabaseInstant(clock) : databaseInstant(clock);
+        MaterialSource material = freezeMaterial(selectMapper(() -> locked ? mapper.lockMaterial(tenantId, materialId) : mapper.selectMaterial(tenantId, materialId)));
         require(tenantId.equals(material.tenantId()) && materialId.equals(material.materialId())
             && Long.valueOf(1L).equals(material.status()) && "0".equals(material.delFlag())
             && positive(material.baseUomId()), "真实物料或基本单位身份未核验");
 
-        List<AllocationSource> allocationRows = freezeRows(selectMapper(() -> mapper.selectAllocations(tenantId, materialId)),
+        List<AllocationSource> allocationRows = freezeRows(selectMapper(() -> locked ? mapper.lockAllocations(tenantId, materialId) : mapper.selectAllocations(tenantId, materialId)),
             ErpPurchaseAllocationLineageReader::freezeAllocation);
         Map<Long, AllocationSource> allocations = index(allocationRows, AllocationSource::allocationId);
         Set<String> allocationKeys = new HashSet<>();
@@ -125,14 +141,14 @@ public class ErpPurchaseAllocationLineageReader {
         }
 
         List<RequisitionLineSource> requisitionRows = freezeRows(
-            selectMapper(() -> mapper.selectRequisitionLines(tenantId, materialId)), ErpPurchaseAllocationLineageReader::freezeRequisitionLine);
+            selectMapper(() -> locked ? mapper.lockRequisitionLines(tenantId, materialId) : mapper.selectRequisitionLines(tenantId, materialId)), ErpPurchaseAllocationLineageReader::freezeRequisitionLine);
         Map<Long, RequisitionLineSource> requisitionLines = index(requisitionRows, RequisitionLineSource::lineId);
         for (RequisitionLineSource line : requisitionRows) {
             checkMaterialRow(line.tenantId(), line.materialId(), line.delFlag(), tenantId, materialId);
             require(positive(line.requisitionId()), "申请行父键未核验");
         }
 
-        List<OrderLineSource> orderRows = freezeRows(selectMapper(() -> mapper.selectOrderLines(tenantId, materialId)),
+        List<OrderLineSource> orderRows = freezeRows(selectMapper(() -> locked ? mapper.lockOrderLines(tenantId, materialId) : mapper.selectOrderLines(tenantId, materialId)),
             ErpPurchaseAllocationLineageReader::freezeOrderLine);
         Map<Long, OrderLineSource> orderLines = index(orderRows, OrderLineSource::lineId);
         Map<Long, Long> orderByRequisitionLine = new LinkedHashMap<>();
@@ -148,7 +164,7 @@ public class ErpPurchaseAllocationLineageReader {
 
         List<Long> requisitionIds = ids(requisitionRows, RequisitionLineSource::requisitionId);
         List<RequisitionHeadSource> requisitionHeadRows = requisitionIds.isEmpty() ? List.of() : freezeRows(
-            selectMapper(() -> mapper.selectRequisitionHeads(tenantId, requisitionIds)), ErpPurchaseAllocationLineageReader::freezeRequisitionHead);
+            selectMapper(() -> locked ? mapper.lockRequisitionHeads(tenantId, requisitionIds) : mapper.selectRequisitionHeads(tenantId, requisitionIds)), ErpPurchaseAllocationLineageReader::freezeRequisitionHead);
         Map<Long, RequisitionHeadSource> requisitionHeads = index(requisitionHeadRows, RequisitionHeadSource::requisitionId);
         requireReferences(requisitionHeads, requisitionIds);
         for (RequisitionHeadSource head : requisitionHeadRows) {
@@ -159,7 +175,7 @@ public class ErpPurchaseAllocationLineageReader {
 
         List<Long> orderIds = ids(orderRows, OrderLineSource::orderId);
         List<OrderHeadSource> orderHeadRows = orderIds.isEmpty() ? List.of() : freezeRows(
-            selectMapper(() -> mapper.selectOrderHeads(tenantId, orderIds)), ErpPurchaseAllocationLineageReader::freezeOrderHead);
+            selectMapper(() -> locked ? mapper.lockOrderHeads(tenantId, orderIds) : mapper.selectOrderHeads(tenantId, orderIds)), ErpPurchaseAllocationLineageReader::freezeOrderHead);
         Map<Long, OrderHeadSource> orderHeads = index(orderHeadRows, OrderHeadSource::orderId);
         requireReferences(orderHeads, orderIds);
         for (OrderHeadSource head : orderHeadRows) {
@@ -170,7 +186,7 @@ public class ErpPurchaseAllocationLineageReader {
 
         List<Long> detailIds = ids(allocationRows, AllocationSource::detailId);
         List<RequirementDetailSource> detailRows = detailIds.isEmpty() ? List.of() : freezeRows(
-            selectMapper(() -> mapper.selectRequirementDetails(tenantId, detailIds)), ErpPurchaseAllocationLineageReader::freezeRequirementDetail);
+            selectMapper(() -> locked ? mapper.lockRequirementDetails(tenantId, detailIds) : mapper.selectRequirementDetails(tenantId, detailIds)), ErpPurchaseAllocationLineageReader::freezeRequirementDetail);
         Map<Long, RequirementDetailSource> details = index(detailRows, RequirementDetailSource::detailId);
         requireReferences(details, detailIds);
         for (RequirementDetailSource detail : detailRows) {
@@ -180,7 +196,7 @@ public class ErpPurchaseAllocationLineageReader {
 
         List<Long> requirementIds = ids(detailRows, RequirementDetailSource::requirementId);
         List<RequirementHeadSource> requirementHeadRows = requirementIds.isEmpty() ? List.of() : freezeRows(
-            selectMapper(() -> mapper.selectRequirementHeads(tenantId, requirementIds)), ErpPurchaseAllocationLineageReader::freezeRequirementHead);
+            selectMapper(() -> locked ? mapper.lockRequirementHeads(tenantId, requirementIds) : mapper.selectRequirementHeads(tenantId, requirementIds)), ErpPurchaseAllocationLineageReader::freezeRequirementHead);
         Map<Long, RequirementHeadSource> requirementHeads = index(requirementHeadRows, RequirementHeadSource::requirementId);
         requireReferences(requirementHeads, requirementIds);
         for (RequirementHeadSource head : requirementHeadRows) {
@@ -233,8 +249,27 @@ public class ErpPurchaseAllocationLineageReader {
         for (OrderLineSource line : orderRows) {
             require(boundOrderLines.contains(line.lineId()), "开放订单行存在未绑定来源");
         }
+        if (locked) {
+            // 所有实际来源锁定后复核同连接业务时钟及 +08:00 合同，不采用应用时钟。
+            clock = selectMapper(mapper::lockDatabaseClock);
+            snapshotAt = lockedDatabaseInstant(clock);
+        }
         checkTenant(tenantId);
         return new LineageSnapshot(tenantId, materialId, material.baseUomId(), snapshotAt, clock.databaseTimeZone(), bindings, versions);
+    }
+
+    /**
+     * 只加入经参与式资格校验的同连接可写 ERP 事务；所有来源和引用均用固定当前读。
+     * 上层 guard/竞争池须先于本入口；未知单位仍为原始事实，不颁发可信换算或采购额度。
+     */
+    @DS("erp")
+    @Transactional(propagation = Propagation.MANDATORY)
+    public LineageSnapshot readLocked(String tenantId, Long materialId) {
+        checkTenant(tenantId);
+        require(positive(materialId), "物料身份必须为正数");
+        require(transactionQualification != null, "锁定读取缺少真实 ERP 事务资格校验依赖");
+        transactionQualification.requireParticipatingWritableErpTransaction();
+        return readSources(tenantId, materialId, true);
     }
 
     /** 快照只含实际绑定和已有版本，复制集合，不颁发库存、采购量或可执行资格。 */
@@ -339,6 +374,13 @@ public class ErpPurchaseAllocationLineageReader {
     }
 
     /** 先核原始会话 +08:00 合同，再精确解码十进制秒；不借用 JVM 日期或舍入。 */
+    /** 当前读的固定 SQL 产生至多六位小数秒；不把更高精度的未知来源升级为真实数据库时钟。 */
+    private static Instant lockedDatabaseInstant(DatabaseClock clock) {
+        Instant instant = databaseInstant(clock);
+        require(clock.epochSeconds().stripTrailingZeros().scale() <= 6, "数据库时钟精度超出固定六位小数秒合同");
+        return instant;
+    }
+
     private static Instant databaseInstant(DatabaseClock clock) {
         require(clock != null && "+08:00".equals(clock.databaseTimeZone())
             && clock.epochSeconds() != null && clock.epochSeconds().signum() > 0, "数据库时钟或墙上日期存储合同未核验");

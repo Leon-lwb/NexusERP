@@ -7,6 +7,7 @@ import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper;
@@ -173,12 +174,12 @@ class ErpPurchaseAllocationLineageReaderTest {
         if (ds == null) ds = entry().getAnnotation(DS.class);
         assertNotNull(ds);
         assertEquals("erp", ds.value());
-        assertEquals(List.of("read"), Arrays.stream(reader.getDeclaredMethods())
+        assertEquals(List.of("read", "readLocked"), Arrays.stream(reader.getDeclaredMethods())
             .filter(method -> Modifier.isPublic(method.getModifiers()) && !method.isSynthetic())
             .map(Method::getName).sorted().toList(), "不得接受外部事实、now、verified 或授权旁路");
-        assertEquals(1, reader.getConstructors().length);
+        assertEquals(2, reader.getConstructors().length);
         assertDoesNotThrow(() -> reader.getConstructor(mapper));
-        assertEquals(Set.of(mapper), Arrays.stream(reader.getDeclaredFields())
+        assertEquals(Set.of(mapper, PuRequirementErpTransactionQualification.class), Arrays.stream(reader.getDeclaredFields())
             .filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getType).collect(Collectors.toSet()),
             "不能注入写入口、应用时钟、供应条款认证或 allocator");
         Transactional transaction = entry().getAnnotation(Transactional.class);
@@ -203,19 +204,25 @@ class ErpPurchaseAllocationLineageReaderTest {
         Class<?> mapper = requiredClass(MAPPER);
         assertTrue(mapper.isInterface());
         assertEquals(0, mapper.getInterfaces().length, "禁止继承含写入方法的 BaseMapper");
-        assertEquals(Set.copyOf(QUERY_NAMES), Arrays.stream(mapper.getDeclaredMethods())
+        assertEquals(QUERY_NAMES.stream().flatMap(name -> Stream.of(name, "lock" + name.substring(6))).collect(Collectors.toSet()),
+            Arrays.stream(mapper.getDeclaredMethods())
             .map(Method::getName).collect(Collectors.toSet()));
         for (Method method : mapper.getDeclaredMethods()) {
             assertNull(method.getAnnotation(Insert.class));
             assertNull(method.getAnnotation(Update.class));
             assertNull(method.getAnnotation(Delete.class));
+            boolean locked = method.getName().startsWith("lock");
+            String selectName = locked ? "select" + method.getName().substring(4) : method.getName();
             String sql = sql(method);
+            // 新方法只允许固定当前读；移除锁定短语后沿用全部既有只读 SQL 安全断言。
+            assertEquals(locked, sql.contains("for update"));
+            sql = sql.replace("for update", "");
             assertFalse(sql.contains("${"));
             assertTrue(sql.matches("(?s).*\\bselect\\b.*"));
             assertFalse(sql.matches("(?s).*\\b(insert|update|delete|replace|alter|drop|truncate|call|join|limit)\\b.*"));
             assertFalse(sql.contains("for update"));
             assertFalse(sql.contains("coalesce(") || sql.contains("ifnull(") || sql.contains("sum("));
-            if (method.getName().equals("selectDatabaseClock")) {
+            if (selectName.equals("selectDatabaseClock")) {
                 assertEquals(0, method.getParameterCount());
                 assertTrue(sql.contains("unix_timestamp(current_timestamp(6))"));
                 assertTrue(sql.contains("@@session.time_zone"));
@@ -226,11 +233,11 @@ class ErpPurchaseAllocationLineageReaderTest {
             String where = sql.substring(sql.indexOf("where"));
             assertFalse(where.matches("(?s).*\\b(status|allocation_status|receive_status|required_date)\\s*(=|in|<|>|between).*"),
                 "不能隐藏关闭、未知状态或窗口外引用：" + method.getName());
-            if (Set.of("selectRequisitionLines", "selectOrderLines").contains(method.getName())) {
+            if (Set.of("selectRequisitionLines", "selectOrderLines").contains(selectName)) {
                 assertTrue(where.contains("del_flag is null"));
                 assertTrue(where.matches("(?s).*del_flag\\s+not\\s+in\\s*\\(\\s*'0'\\s*,\\s*'1'\\s*\\).*"));
                 assertTrue(where.matches("(?s).*material_id\\s*=\\s*#\\{materialid}.*"));
-            } else if (!method.getName().equals("selectMaterial")) {
+            } else if (!selectName.equals("selectMaterial")) {
                 assertFalse(where.contains("del_flag"), "被引用头/明细及完整账本不能过滤删除事实");
             }
             if (method.getParameterTypes()[1] == List.class) {

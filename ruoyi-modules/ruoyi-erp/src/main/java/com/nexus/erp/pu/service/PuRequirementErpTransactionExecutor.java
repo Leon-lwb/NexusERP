@@ -54,6 +54,9 @@ public class PuRequirementErpTransactionExecutor {
 
     private static final int MYBATIS_SYNCHRONIZATION_ORDER = DataSourceUtils.CONNECTION_SYNCHRONIZATION_ORDER - 1;
 
+    /** 仅在本类新建RR回调期间持有；外部参数/路由/事务标志不能制造归属对象。 */
+    private static final ThreadLocal<OwnedTransaction> SOURCE_CHAIN_OWNER = new ThreadLocal<>();
+
     private final SqlSessionFactory sqlSessionFactory;
 
     /** 构造仅保存已有命名工厂，不解析 catalog、不借连接或启动事务。 */
@@ -76,8 +79,18 @@ public class PuRequirementErpTransactionExecutor {
      * @param callback 将来由已授权 ERP 内部编排提供的回调，不接受外部事务或资格布尔
      * @return 实际提交及清理完成后的回调值
      */
+    /** 明确RR的内部来源认证入口，不能继承未知的数据库默认隔离级别。 */
+    public <T> T executeRepeatableRead(String tenantId, Supplier<T> callback) {
+        return executeInternal(tenantId, callback, true);
+    }
+
     public <T> T execute(String tenantId, Supplier<T> callback) {
+        return executeInternal(tenantId, callback, false);
+    }
+
+    private <T> T executeInternal(String tenantId, Supplier<T> callback, boolean sourceChain) {
         requireFreshThread(tenantId);
+        if (SOURCE_CHAIN_OWNER.get() != null) throw failed();
         if (callback == null) {
             throw new ServiceException("ERP 专属事务需要内部回调");
         }
@@ -87,17 +100,22 @@ public class PuRequirementErpTransactionExecutor {
                 throw failed();
             }
             OwnedTransaction owned = new OwnedTransaction(tenantId,
-                PuRequirementErpTransactionQualification.resolveConfiguration(sqlSessionFactory));
+                PuRequirementErpTransactionQualification.resolveConfiguration(sqlSessionFactory), sourceChain);
             ErpTransactionManager manager = new ErpTransactionManager(owned);
             TransactionTemplate transaction = new TransactionTemplate(manager);
             transaction.setReadOnly(false);
             transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+            if (sourceChain) transaction.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
             T result = transaction.execute(status -> {
                 try {
                     if (!status.isNewTransaction()) {
                         throw failed();
                     }
                     owned.bindRoutingAlias();
+                    if (sourceChain) {
+                        owned.requireRepeatableReadOwner(sqlSessionFactory);
+                        SOURCE_CHAIN_OWNER.set(owned);
+                    }
                     T value = callback.get();
                     if (status.isRollbackOnly()) {
                         throw failed();
@@ -115,6 +133,8 @@ public class PuRequirementErpTransactionExecutor {
                     owned.prepareRollbackSessionCleanup();
                     owned.rememberForeignFactoryBinding();
                     throw failed();
+                } finally {
+                    if (sourceChain) SOURCE_CHAIN_OWNER.remove();
                 }
             });
             owned.requireSuccessfulCompletion();
@@ -127,6 +147,14 @@ public class PuRequirementErpTransactionExecutor {
             rethrowCallbackFatal(callbackFatal[0]);
             throw failed();
         }
+    }
+
+    /** 仅复核当前线程的真实私有归属，不提供外部签发/补绑方法。 */
+    static boolean requireOwnedRepeatableReadParticipation(SqlSessionFactory requestedFactory) {
+        OwnedTransaction owned = SOURCE_CHAIN_OWNER.get();
+        if (owned == null) return false;
+        owned.requireRepeatableReadOwner(requestedFactory);
+        return true;
     }
 
     /** 原始回调致命错误按同一对象传播，不附加回滚诊断、异常链或成功状态。 */
@@ -167,6 +195,7 @@ public class PuRequirementErpTransactionExecutor {
     /** 单次调用的真实管理器持有者与生命周期，不提供可被调用方设置的资格标记。 */
     private final class OwnedTransaction {
         private final String tenantId;
+        private final boolean sourceChain;
         private final ErpTransactionConfiguration sources;
         private ConnectionHolder holder;
         private Connection connection;
@@ -179,9 +208,10 @@ public class PuRequirementErpTransactionExecutor {
         private boolean cleaned;
         private boolean factoryBindingViolation;
 
-        private OwnedTransaction(String tenantId, ErpTransactionConfiguration sources) {
+        private OwnedTransaction(String tenantId, ErpTransactionConfiguration sources, boolean sourceChain) {
             this.tenantId = tenantId;
             this.sources = sources;
+            this.sourceChain = sourceChain;
         }
 
         private void requireIdentity() {
@@ -246,10 +276,28 @@ public class PuRequirementErpTransactionExecutor {
             }
         }
 
+        private void requireRepeatableReadOwner(SqlSessionFactory requestedFactory) {
+            if (requestedFactory != sqlSessionFactory || !sourceChain) throw failed();
+            requireResources(Phase.CALLBACK_RETURN);
+        }
+
+        /** 仅专属来源链支持 RR；普通 execute 保留原隔离行为。末端检查不依赖已清除的线程票据。 */
+        private void requireRepeatableReadIsolation() {
+            if (!Integer.valueOf(TransactionDefinition.ISOLATION_REPEATABLE_READ)
+                .equals(TransactionSynchronizationManager.getCurrentTransactionIsolationLevel())) throw failed();
+            try {
+                if (connection.getTransactionIsolation() != Connection.TRANSACTION_REPEATABLE_READ) throw failed();
+            } catch (SQLException failure) {
+                throw failed();
+            }
+        }
+
         private void requireResources(Phase phase) {
             requireContext();
             requireIdentity();
             requireConnection();
+            // 包括回调出口、flush 前和真实 JDBC commit 前，防止最后一次资格核验后的隔离漂移。
+            if (sourceChain) requireRepeatableReadIsolation();
             if (TransactionSynchronizationManager.getResource(sources.routing()) != holder) {
                 throw failed();
             }

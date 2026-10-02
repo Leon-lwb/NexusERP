@@ -13,6 +13,8 @@ import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.BdVendor;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper.DatabaseClock;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Isolation;
@@ -34,7 +36,8 @@ import java.util.function.Supplier;
 
 /**
  * 从当前租户 ERP 主数据冻结一个物料与明确供应商的采购目录来源事实。
- * 仅经独立只读、可重复读新事务的服务代理调用；不接收外部事实、核验布尔或时间。
+ * read 经独立只读、可重复读新事务代理调用；readLocked 仅加入已核验的可写 ERP 事务。
+ * 两入口不接收外部事实、核验布尔或时间；锁定结果只对调用方当前事务有效。
  * NULL、失效、身份不符或未知换算链均拒绝，不继承旧 MOQ、名称或历史关系日期。
  * 本新增 P1 片段只支持 ERP 业务时区 Asia/Shanghai 的墙上 DATETIME 存储合同：
  * 后续人工确认新条款/换算日期及版本时，读写均须遵守此口径；读取会话必须明确
@@ -48,9 +51,18 @@ import java.util.function.Supplier;
 @DS("erp")
 public class ErpPurchaseCatalogSourceReader {
     private final ErpPurchaseCatalogSourceMapper mapper;
+    private final PuRequirementErpTransactionQualification transactionQualification;
 
     public ErpPurchaseCatalogSourceReader(ErpPurchaseCatalogSourceMapper mapper) {
+        this(mapper, null);
+    }
+
+    /** 仅保存固定来源 Mapper 和事务资格校验；不借连接、补绑或授予业务资格。 */
+    @Autowired
+    public ErpPurchaseCatalogSourceReader(ErpPurchaseCatalogSourceMapper mapper,
+        PuRequirementErpTransactionQualification transactionQualification) {
         this.mapper = Objects.requireNonNull(mapper);
+        this.transactionQualification = transactionQualification;
     }
 
     /**
@@ -67,30 +79,34 @@ public class ErpPurchaseCatalogSourceReader {
         checkTenant(requestTenantId);
         require(id(materialId) && id(vendorId), "物料或供应商身份无效");
         checkReadTransaction();
+        return readSources(requestTenantId, materialId, vendorId, false);
+    }
 
-        DatabaseClock clock = selectMapper(mapper::selectDatabaseClock);
+    /** 两种入口共用全部来源认证；模式只选择固定 Mapper，不是调用方认证旗号。 */
+    private CatalogSnapshot readSources(String requestTenantId, Long materialId, Long vendorId, boolean locked) {
+        DatabaseClock clock = selectMapper(locked ? mapper::lockDatabaseClock : mapper::selectDatabaseClock);
         Instant snapshotAt = databaseInstant(clock);
-        MaterialSource material = freeze(selectMapper(() -> mapper.selectMaterial(requestTenantId, materialId)));
+        MaterialSource material = freeze(selectMapper(() -> locked ? mapper.lockMaterial(requestTenantId, materialId) : mapper.selectMaterial(requestTenantId, materialId)));
         require(requestTenantId.equals(material.tenantId()) && materialId.equals(material.id())
             && active(material.status(), material.delFlag()) && id(material.baseUomId()), "物料主数据无效");
-        VendorSource vendor = freeze(selectMapper(() -> mapper.selectVendor(requestTenantId, vendorId)));
+        VendorSource vendor = freeze(selectMapper(() -> locked ? mapper.lockVendor(requestTenantId, vendorId) : mapper.selectVendor(requestTenantId, vendorId)));
         require(requestTenantId.equals(vendor.tenantId()) && vendorId.equals(vendor.id())
             && "ACTIVE".equals(vendor.status()) && "0".equals(vendor.delFlag()), "供应商主数据无效");
 
-        List<BdMaterialVendor> relations = selectMapper(() -> mapper.selectRelations(requestTenantId, materialId, vendorId));
+        List<BdMaterialVendor> relations = selectMapper(() -> locked ? mapper.lockRelations(requestTenantId, materialId, vendorId) : mapper.selectRelations(requestTenantId, materialId, vendorId));
         require(relations != null && relations.size() == 1, "供应关系缺失或重复");
         TermsSource terms = freeze(relations.get(0));
         checkTerms(terms, requestTenantId, materialId, vendorId, snapshotAt);
 
         List<Long> seedIds = List.copyOf(new LinkedHashSet<>(List.of(
             material.baseUomId(), terms.orderUomId(), terms.moqUomId())));
-        Map<Long, UnitSource> units = readUnits(requestTenantId, seedIds, snapshotAt);
+        Map<Long, UnitSource> units = readUnits(requestTenantId, seedIds, snapshotAt, locked);
         Set<Long> roots = new LinkedHashSet<>();
         for (Long unitId : seedIds) roots.add(units.get(unitId).primaryId());
         require(roots.size() == 1, "单位没有明确共同主单位");
         Long rootId = roots.iterator().next();
         if (!units.containsKey(rootId)) {
-            units.putAll(readUnits(requestTenantId, List.of(rootId), snapshotAt));
+            units.putAll(readUnits(requestTenantId, List.of(rootId), snapshotAt, locked));
         }
         UnitSource root = units.get(rootId);
         require(Long.valueOf(1).equals(root.isBase()) && rootId.equals(root.primaryId())
@@ -124,6 +140,15 @@ public class ErpPurchaseCatalogSourceReader {
         Map<String, String> versions = new LinkedHashMap<>();
         versions.put("terms:" + terms.id(), terms.version());
         units.forEach((unitId, unit) -> versions.put("unit:" + unitId, unit.version()));
+        if (locked) {
+            // 行锁可能等待；最终时钟与时区仍由同连接数据库重读，不能沿用等待前已过期的条款。
+            clock = selectMapper(mapper::lockDatabaseClock);
+            snapshotAt = databaseInstant(clock);
+            checkTerms(terms, requestTenantId, materialId, vendorId, snapshotAt);
+            for (UnitSource unit : units.values()) {
+                require(!unit.verifiedAt().isAfter(snapshotAt), "单位业务核验字段、精度或换算率无效");
+            }
+        }
         checkTenant(requestTenantId);
         return new CatalogSnapshot(requestTenantId, Long.toString(vendor.id()), Long.toString(terms.id()),
             snapshotAt, clock.databaseTimeZone(),
@@ -132,6 +157,20 @@ public class ErpPurchaseCatalogSourceReader {
                 Long.toString(terms.orderUomId()), Long.toString(terms.moqUomId()), terms.moqQty(), terms.multiple(),
                 terms.allowSplit(), terms.packSize(), terms.version(), terms.effectiveAt(), terms.expiresAt(),
                 terms.verifiedAt(), true), baseUnit, orderUnit, moqUnit, versions);
+    }
+
+    /**
+     * 在调用方已核验的同连接可写 ERP 事务内当前读；不自建事务、补绑或接受外部资格。
+     * 上层须先锁定单物料 guard 和竞争池；本结果不得带出事务作为持久采购授权。
+     */
+    @DS("erp")
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CatalogSnapshot readLocked(String requestTenantId, Long materialId, Long vendorId) {
+        checkTenant(requestTenantId);
+        require(id(materialId) && id(vendorId), "物料或供应商身份无效");
+        require(transactionQualification != null, "锁定读取缺少真实 ERP 事务资格校验依赖");
+        transactionQualification.requireParticipatingWritableErpTransaction();
+        return readSources(requestTenantId, materialId, vendorId, true);
     }
 
     /** 所有输出组成均不可变；版本映射再次复制，不能保留内部集合或实体别名。 */
@@ -210,10 +249,10 @@ public class ErpPurchaseCatalogSourceReader {
     }
 
     /** 每次仅读明确 ID：至多三个业务单位和一次共同根补读，不递归猜测多级链。 */
-    private Map<Long, UnitSource> readUnits(String tenantId, List<Long> ids, Instant snapshotAt) {
+    private Map<Long, UnitSource> readUnits(String tenantId, List<Long> ids, Instant snapshotAt, boolean locked) {
         Set<Long> expected = new LinkedHashSet<>(ids);
-        List<Long> selectedIds = List.copyOf(ids);
-        List<BdUnitOfMeasure> rows = selectMapper(() -> mapper.selectUnits(tenantId, selectedIds));
+        List<Long> selectedIds = locked ? ids.stream().sorted().toList() : List.copyOf(ids);
+        List<BdUnitOfMeasure> rows = selectMapper(() -> locked ? mapper.lockUnits(tenantId, selectedIds) : mapper.selectUnits(tenantId, selectedIds));
         require(rows != null && rows.size() == expected.size(), "单位来源缺失或重复");
         Map<Long, UnitSource> units = new LinkedHashMap<>();
         for (BdUnitOfMeasure row : rows) {

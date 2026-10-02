@@ -7,6 +7,7 @@ import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.Demand;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.Input;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.Material;
@@ -188,11 +189,11 @@ class ErpPurchaseCatalogSourceReaderTest {
         assertNull(reader.getAnnotation(RestController.class));
         assertNull(reader.getAnnotation(RequestMapping.class));
         assertEquals("erp", notNull(reader.getAnnotation(DS.class)).value());
-        assertEquals(List.of("read"), Arrays.stream(reader.getDeclaredMethods())
+        assertEquals(List.of("read", "readLocked"), Arrays.stream(reader.getDeclaredMethods())
             .filter(method -> Modifier.isPublic(method.getModifiers()) && !method.isSynthetic())
             .map(Method::getName).sorted().toList(), "禁止外部事实、verified 或快照时间的旁路入口");
         assertDoesNotThrow(() -> reader.getConstructor(requiredClass(MAPPER)));
-        assertEquals(Set.of(requiredClass(MAPPER)), Arrays.stream(reader.getDeclaredFields())
+        assertEquals(Set.of(requiredClass(MAPPER), PuRequirementErpTransactionQualification.class), Arrays.stream(reader.getDeclaredFields())
             .filter(field -> !Modifier.isStatic(field.getModifiers())).map(field -> field.getType()).collect(Collectors.toSet()),
             "不可注入应用时钟、AI、Flow 或写入器");
         Transactional transaction = notNull(entry().getAnnotation(Transactional.class));
@@ -213,18 +214,24 @@ class ErpPurchaseCatalogSourceReaderTest {
         Class<?> mapper = requiredClass(MAPPER);
         assertTrue(mapper.isInterface());
         assertEquals(0, mapper.getInterfaces().length, "不得继承包含写方法的 BaseMapper");
-        assertEquals(Set.of("selectDatabaseClock", "selectMaterial", "selectVendor", "selectRelations", "selectUnits"),
+        assertEquals(Set.of("selectDatabaseClock", "selectMaterial", "selectVendor", "selectRelations", "selectUnits",
+                "lockDatabaseClock", "lockMaterial", "lockVendor", "lockRelations", "lockUnits"),
             Arrays.stream(mapper.getDeclaredMethods()).map(Method::getName).collect(Collectors.toSet()));
         for (Method method : mapper.getDeclaredMethods()) {
             assertNull(method.getAnnotation(Insert.class));
             assertNull(method.getAnnotation(Update.class));
             assertNull(method.getAnnotation(Delete.class));
+            boolean locked = method.getName().startsWith("lock");
+            String selectName = locked ? "select" + method.getName().substring(4) : method.getName();
             String sql = sql(method);
+            // 新方法只允许固定当前读；移除锁定短语后沿用全部既有只读 SQL 安全断言。
+            assertEquals(locked, sql.contains("for update"));
+            sql = sql.replace("for update", "");
             assertTrue(sql.matches("(?s).*\\bselect\\b.*"), method.getName());
             assertFalse(sql.contains("${"), "禁止 SQL 文本插值");
             assertFalse(sql.matches("(?s).*\\b(insert|update|delete|replace|alter|drop|truncate|call)\\b.*"));
             assertFalse(sql.contains("for update"));
-            if (!method.getName().equals("selectDatabaseClock")) {
+            if (!selectName.equals("selectDatabaseClock")) {
                 assertTrue(sql.matches("(?s).*tenant_id\\s*=\\s*#\\{tenantid}.*"), method.getName());
                 assertTrue(sql.matches("(?s).*del_flag\\s*=\\s*'0'.*"), method.getName());
                 assertEquals("tenantId", notNull(method.getParameters()[0].getAnnotation(Param.class)).value());

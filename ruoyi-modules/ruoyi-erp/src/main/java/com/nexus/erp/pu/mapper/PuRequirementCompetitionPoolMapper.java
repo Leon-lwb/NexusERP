@@ -5,6 +5,10 @@ import lombok.Data;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
+import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper.EpochMillisDateTypeHandler;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,33 +25,40 @@ import java.util.List;
 @Mapper
 public interface PuRequirementCompetitionPoolMapper {
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         SELECT detail_id AS detailId, tenant_id AS tenantId, requirement_id AS requirementId,
                material_id AS materialId, unit, source_type AS sourceType,
                required_quantity AS requiredQuantity, issued_quantity AS issuedQuantity,
                stock_quantity AS stockQuantity, shortage_quantity AS shortageQuantity,
-               required_date AS requiredDate, status, del_flag AS delFlag,
+               UNIX_TIMESTAMP(required_date) * 1000 AS requiredDateEpochMillis, status, del_flag AS delFlag,
                backflush_flag AS backflushFlag, actual_consumed_qty AS actualConsumedQty,
-               create_time AS createTime, update_time AS updateTime
+               UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM prd_material_requirement_detail
         WHERE tenant_id = #{tenantId} AND material_id = #{materialId}
           AND (del_flag = '0' OR del_flag IS NULL OR del_flag NOT IN ('0', '1'))
           AND (required_date IS NULL OR DATE(required_date) <= #{windowEnd})
         ORDER BY detail_id ASC FOR UPDATE
         """)
+    @Results({
+        @Result(column = "requiredDateEpochMillis", property = "requiredDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawRequirementDetail> lockRequirementDetails(@Param("tenantId") String tenantId,
                                                      @Param("materialId") Long materialId,
                                                      @Param("windowEnd") LocalDate windowEnd);
 
     /** 包含删除/未知状态头；headIds 必须由已锁定明细提取、去重、升序排列且非空。 */
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         <script>
         SELECT requirement_id AS requirementId, tenant_id AS tenantId,
                requirement_no AS requirementNo, parent_requirement_id AS parentRequirementId,
                plan_id AS planId, plan_no AS planNo, bom_id AS bomId, material_id AS materialId,
-               requirement_date AS requirementDate, source_type AS sourceType, status,
-               confirmed_time AS confirmedTime, issued_time AS issuedTime, closed_time AS closedTime,
-               del_flag AS delFlag, create_time AS createTime, update_time AS updateTime
+               UNIX_TIMESTAMP(requirement_date) * 1000 AS requirementDateEpochMillis, source_type AS sourceType, status,
+               UNIX_TIMESTAMP(confirmed_time) * 1000 AS confirmedTimeEpochMillis, UNIX_TIMESTAMP(issued_time) * 1000 AS issuedTimeEpochMillis, UNIX_TIMESTAMP(closed_time) * 1000 AS closedTimeEpochMillis,
+               del_flag AS delFlag, UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM prd_material_requirement
         WHERE tenant_id = #{tenantId} AND requirement_id IN
           <foreach collection="headIds" item="headId" open="(" separator="," close=")">
@@ -56,47 +67,69 @@ public interface PuRequirementCompetitionPoolMapper {
         ORDER BY requirement_id ASC FOR UPDATE
         </script>
         """)
+    @Results({
+        @Result(column = "requirementDateEpochMillis", property = "requirementDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "confirmedTimeEpochMillis", property = "confirmedTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "issuedTimeEpochMillis", property = "issuedTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "closedTimeEpochMillis", property = "closedTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawRequirementHead> lockRequirementHeads(@Param("tenantId") String tenantId,
                                                  @Param("headIds") List<Long> headIds);
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         SELECT stock_id AS stockId, tenant_id AS tenantId, material_id AS materialId,
                base_uom_id AS baseUomId, base_uom_name AS baseUomName,
                stock_quantity AS stockQuantity, reserved_quantity AS reservedQuantity,
                frozen_flag AS frozenFlag, version, warehouse_id AS warehouseId,
                area_id AS areaId, location_id AS locationId, batch_id AS batchId,
-               sn_id AS snId, wo_id AS woId, production_date AS productionDate,
-               recpt_date AS recptDate, expire_date AS expireDate, del_flag AS delFlag,
-               create_time AS createTime, update_time AS updateTime
+               sn_id AS snId, wo_id AS woId, UNIX_TIMESTAMP(production_date) * 1000 AS productionDateEpochMillis,
+               UNIX_TIMESTAMP(recpt_date) * 1000 AS recptDateEpochMillis, UNIX_TIMESTAMP(expire_date) * 1000 AS expireDateEpochMillis, del_flag AS delFlag,
+               UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM wm_material_stock
         WHERE tenant_id = #{tenantId} AND material_id = #{materialId}
           AND (del_flag = '0' OR del_flag IS NULL OR del_flag NOT IN ('0', '1'))
         ORDER BY stock_id ASC FOR UPDATE
         """)
+    @Results({
+        @Result(column = "productionDateEpochMillis", property = "productionDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "recptDateEpochMillis", property = "recptDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "expireDateEpochMillis", property = "expireDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawStock> lockStocks(@Param("tenantId") String tenantId, @Param("materialId") Long materialId);
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         SELECT line_id AS lineId, tenant_id AS tenantId, order_id AS orderId,
                requisition_line_id AS requisitionLineId, material_id AS materialId, unit,
                order_quantity AS orderQuantity, received_quantity AS receivedQuantity,
                returned_quantity AS returnedQuantity, invoiced_qty AS invoicedQty,
                receive_status AS receiveStatus, del_flag AS delFlag,
-               create_time AS createTime, update_time AS updateTime
+               UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM pu_purchase_order_line
         WHERE tenant_id = #{tenantId} AND material_id = #{materialId}
           AND (del_flag = '0' OR del_flag IS NULL OR del_flag NOT IN ('0', '1'))
         ORDER BY line_id ASC FOR UPDATE
         """)
+    @Results({
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawOrderLine> lockOrderLines(@Param("tenantId") String tenantId,
                                      @Param("materialId") Long materialId);
 
     /** 过去/晚到/NULL 预计日期及所有状态均保留；不存在或跨租户的头由 reader 整池拒绝。 */
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         <script>
         SELECT order_id AS orderId, tenant_id AS tenantId, order_no AS orderNo,
                requisition_id AS requisitionId, vendor_id AS vendorId, status,
-               order_date AS orderDate, expected_arrival_date AS expectedArrivalDate,
-               del_flag AS delFlag, create_time AS createTime, update_time AS updateTime
+               UNIX_TIMESTAMP(order_date) * 1000 AS orderDateEpochMillis, UNIX_TIMESTAMP(expected_arrival_date) * 1000 AS expectedArrivalDateEpochMillis,
+               del_flag AS delFlag, UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM pu_purchase_order
         WHERE tenant_id = #{tenantId} AND order_id IN
           <foreach collection="headIds" item="headId" open="(" separator="," close=")">
@@ -105,32 +138,45 @@ public interface PuRequirementCompetitionPoolMapper {
         ORDER BY order_id ASC FOR UPDATE
         </script>
         """)
+    @Results({
+        @Result(column = "orderDateEpochMillis", property = "orderDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "expectedArrivalDateEpochMillis", property = "expectedArrivalDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawOrderHead> lockOrderHeads(@Param("tenantId") String tenantId,
                                      @Param("headIds") List<Long> headIds);
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         SELECT line_id AS lineId, tenant_id AS tenantId, requisition_id AS requisitionId,
                material_id AS materialId, unit, apply_quantity AS applyQuantity,
                approved_quantity AS approvedQuantity, shortage_quantity AS shortageQuantity,
-               required_date AS requiredDate, source_type AS sourceType, source_id AS sourceId,
+               UNIX_TIMESTAMP(required_date) * 1000 AS requiredDateEpochMillis, source_type AS sourceType, source_id AS sourceId,
                attr1, attr2, attr3, attr4, del_flag AS delFlag,
-               create_time AS createTime, update_time AS updateTime
+               UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM pu_purchase_requisition_line
         WHERE tenant_id = #{tenantId} AND material_id = #{materialId}
           AND (del_flag = '0' OR del_flag IS NULL OR del_flag NOT IN ('0', '1'))
         ORDER BY line_id ASC FOR UPDATE
         """)
+    @Results({
+        @Result(column = "requiredDateEpochMillis", property = "requiredDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawRequisitionLine> lockRequisitionLines(@Param("tenantId") String tenantId,
                                                  @Param("materialId") Long materialId);
 
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         <script>
         SELECT requisition_id AS requisitionId, tenant_id AS tenantId,
                requisition_no AS requisitionNo, source_type AS sourceType, status,
-               requisition_date AS requisitionDate, required_date AS requiredDate,
+               UNIX_TIMESTAMP(requisition_date) * 1000 AS requisitionDateEpochMillis, UNIX_TIMESTAMP(required_date) * 1000 AS requiredDateEpochMillis,
                decision_run_id AS decisionRunId, decision_action_id AS decisionActionId,
                decision_idempotency_key AS decisionIdempotencyKey, select_flow_id AS selectFlowId,
-               version, del_flag AS delFlag, create_time AS createTime, update_time AS updateTime
+               version, del_flag AS delFlag, UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis, UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM pu_purchase_requisition
         WHERE tenant_id = #{tenantId} AND requisition_id IN
           <foreach collection="headIds" item="headId" open="(" separator="," close=")">
@@ -139,10 +185,17 @@ public interface PuRequirementCompetitionPoolMapper {
         ORDER BY requisition_id ASC FOR UPDATE
         </script>
         """)
+    @Results({
+        @Result(column = "requisitionDateEpochMillis", property = "requisitionDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "requiredDateEpochMillis", property = "requiredDate", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<RawRequisitionHead> lockRequisitionHeads(@Param("tenantId") String tenantId,
                                                  @Param("headIds") List<Long> headIds);
 
     /** 不排除 RELEASED；账本身份、转移、释放及幂等审计必须原样可读。 */
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("""
         SELECT allocation_id AS allocationId, tenant_id AS tenantId, material_id AS materialId,
                source_type AS sourceType, detail_id AS detailId, requisition_line_id AS requisitionLineId,
@@ -150,13 +203,19 @@ public interface PuRequirementCompetitionPoolMapper {
                covered_demand_base_qty AS coveredDemandBaseQty, occupied_base_qty AS occupiedBaseQty,
                fulfilled_base_qty AS fulfilledBaseQty, released_base_qty AS releasedBaseQty,
                allocation_status AS allocationStatus, allocation_key AS allocationKey,
-               decision_idempotency_key AS decisionIdempotencyKey, version, create_time AS createTime,
-               transfer_time AS transferTime, released_at AS releasedAt, release_reason AS releaseReason,
-               update_time AS updateTime
+               decision_idempotency_key AS decisionIdempotencyKey, version, UNIX_TIMESTAMP(create_time) * 1000 AS createTimeEpochMillis,
+               UNIX_TIMESTAMP(transfer_time) * 1000 AS transferTimeEpochMillis, UNIX_TIMESTAMP(released_at) * 1000 AS releasedAtEpochMillis, release_reason AS releaseReason,
+               UNIX_TIMESTAMP(update_time) * 1000 AS updateTimeEpochMillis
         FROM pu_requirement_allocation_ledger
         WHERE tenant_id = #{tenantId} AND material_id = #{materialId}
         ORDER BY allocation_id ASC FOR UPDATE
         """)
+    @Results({
+        @Result(column = "createTimeEpochMillis", property = "createTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "transferTimeEpochMillis", property = "transferTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "releasedAtEpochMillis", property = "releasedAt", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class),
+        @Result(column = "updateTimeEpochMillis", property = "updateTime", javaType = Date.class, typeHandler = EpochMillisDateTypeHandler.class)
+    })
     List<PuRequirementAllocationLedger> lockAllocations(@Param("tenantId") String tenantId,
                                                        @Param("materialId") Long materialId);
 

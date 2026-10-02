@@ -90,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -168,6 +169,95 @@ class PuRequirementErpTransactionExecutorTest {
         assertTrue(fixture.erpJdbc.autoCommit.get());
         fixture.assertOnlyErpBorrowed(1);
         fixture.assertNoIdentityGuessing();
+    }
+
+    @Test
+    void explicitRepeatableReadChainRequalifiesOnlyItsOwnExistingSession() throws Exception {
+        Fixture fixture = new Fixture();
+        AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
+        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call -> isolation.get());
+        doAnswer(call -> { isolation.set(call.getArgument(0)); return null; })
+            .when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        Entry entry = fixture.entry();
+        Method method = executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            assertThrows(ServiceException.class, fixture.qualification::requireSourceChainTransaction);
+            String result = (String) method.invoke(entry.bean(), TENANT, (Supplier<String>) () -> {
+                assertEquals(Integer.valueOf(Connection.TRANSACTION_REPEATABLE_READ),
+                    TransactionSynchronizationManager.getCurrentTransactionIsolationLevel());
+                fixture.qualification.requireSourceChainTransaction();
+                assertNotNull(fixture.proxiedReader().materialPool(TENANT, MATERIAL, WINDOW_END));
+                fixture.stageBatch();
+                // 原资格依然拒绝预绑定会话，新机制只认入口私有归属及真实同连接同步。
+                assertThrows(ServiceException.class, fixture.qualification::requireWritableErpTransaction);
+                assertDoesNotThrow(fixture.qualification::requireParticipatingWritableErpTransaction);
+                assertDoesNotThrow(fixture.qualification::requireSourceChainTransaction);
+                assertSame(fixture.erpJdbc.connection, fixture.template.getConnection());
+                return "certified-chain";
+            });
+            assertEquals("certified-chain", result);
+            assertThrows(ServiceException.class, fixture.qualification::requireSourceChainTransaction);
+        }
+        assertEquals(Connection.TRANSACTION_READ_COMMITTED, isolation.get(), "RR仅作用于本次连接事务，收尾恢复原隔离级别");
+        fixture.assertOnlyErpBorrowed(1);
+        verify(fixture.erpJdbc.connection).commit();
+    }
+
+    @Test
+    void callbackFailureCannotLeakRepeatableReadChainOwnership() throws Exception {
+        Fixture fixture = new Fixture();
+        AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
+        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call -> isolation.get());
+        doAnswer(call -> { isolation.set(call.getArgument(0)); return null; })
+            .when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        Entry entry = fixture.entry();
+        Method method = executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            InvocationTargetException failure = assertThrows(InvocationTargetException.class,
+                () -> method.invoke(entry.bean(), TENANT, (Supplier<String>) () -> {
+                    fixture.stageBatch(); fixture.qualification.requireParticipatingWritableErpTransaction();
+                    throw new ServiceException("deliberate rollback");
+                }));
+            assertTrue(failure.getCause() instanceof ServiceException);
+            assertThrows(ServiceException.class, fixture.qualification::requireSourceChainTransaction);
+        }
+        verify(fixture.erpJdbc.connection).rollback();
+        assertEquals(Connection.TRANSACTION_READ_COMMITTED, isolation.get());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void sourceChainIsolationDriftAfterLastQualificationCannotCommit(boolean afterMybatisFlush) throws Exception {
+        Fixture fixture = new Fixture();
+        AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
+        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call -> isolation.get());
+        doAnswer(call -> { isolation.set(call.getArgument(0)); return null; })
+            .when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        AtomicBoolean driftObserved = new AtomicBoolean();
+        Entry entry = fixture.entry();
+        Method method = executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            InvocationTargetException failure = assertThrows(InvocationTargetException.class,
+                () -> method.invoke(entry.bean(), TENANT, (Supplier<String>) () -> {
+                    fixture.stageBatch(); fixture.qualification.requireSourceChainTransaction();
+                    Runnable drift = () -> { isolation.set(Connection.TRANSACTION_READ_COMMITTED); driftObserved.set(true); };
+                    if (afterMybatisFlush) {
+                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                            @Override public int getOrder() { return Ordered.LOWEST_PRECEDENCE - 1; }
+                            @Override public void beforeCommit(boolean readOnly) {
+                                assertTrue(fixture.events.contains("erp.flush"),"必须是真实MyBatis flush之后的漂移");
+                                drift.run();
+                            }
+                        });
+                    } else { drift.run(); }
+                    return "must-not-commit";
+                }));
+            assertTrue(failure.getCause() instanceof ServiceException);
+            assertTrue(driftObserved.get(),"不能将早期夹具/入口故障冒充晚期隔离漂移拒绝");
+            assertThrows(ServiceException.class,fixture.qualification::requireSourceChainTransaction);
+        }
+        fixture.assertRolledBack(); fixture.assertOnlyErpBorrowed(1);
+        assertEquals(Connection.TRANSACTION_READ_COMMITTED,isolation.get());
     }
 
     @Test
