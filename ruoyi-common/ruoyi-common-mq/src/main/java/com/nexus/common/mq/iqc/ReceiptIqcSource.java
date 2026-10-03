@@ -15,6 +15,15 @@ public interface ReceiptIqcSource {
         return readCompleted(tenantId, inspectionId);
     }
 
+    /** 只读回出生时的原生绑定；旧实现没有出生事实，不能用当前单位升级。 */
+    default BornInspection readCompletedBorn(String tenantId, Long inspectionId) {
+        throw new com.nexus.common.core.exception.ServiceException("UNIT_ORIGIN_UNPROVEN");
+    }
+
+    /** 与新建IQC同一物理事务产生的原始绑定，不接受调用方上传为持久化输入。 */
+    record BornInspection(Inspection inspection, ReceiptIqcBirthPort.Birth birth,
+                          long boundAt, String bindingSha256) { }
+
     /**
      * 未包含数量单位的原生观测，不是入库授权。V1 缺少原始数量单位及
      * 创建时的来源契约；绝不能用当前 ERP 单位或检验测量单位填补此缺口。

@@ -7,6 +7,10 @@ import java.util.List;
 
 /** 原字段当前读；不 CAST 浮点，不接受上传的余额/有效期/单位认证。 */
 public interface WmCertifiedReceiptPostingMapper {
+    /** 出生范围仅冻结头/行身份和数量；仓储分配在实际过账前仍走原父链/数量门禁。 */
+    @org.apache.ibatis.annotations.Select("SELECT birth_id FROM wm_receipt_iqc_birth WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY birth_id FOR UPDATE")
+    java.util.List<Long> lockBirthIdentities(@org.apache.ibatis.annotations.Param("tenant") String tenant, @org.apache.ibatis.annotations.Param("id") Long id);
+
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
     @Select("SELECT DISTINCT material_id FROM wm_material_receive_line WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY material_id")
     List<Long> discoverMaterials(@Param("tenant") String tenant,@Param("id") Long id);
@@ -122,6 +126,10 @@ public interface WmCertifiedReceiptPostingMapper {
 
     @Update("UPDATE wm_batch SET received_qty=#{qty},update_by=#{actor},update_time=#{at} WHERE tenant_id=#{tenant} AND batch_id=#{batch.batchId} AND source_doc_type='WM_MATERIAL_RECEIVE' AND source_doc_id=#{receiveId} AND quantity=#{batch.quantity} AND received_qty=0 AND issued_qty=0 AND status='ACTIVE' AND del_flag='0'")
     int receiveBatch(@Param("tenant") String tenant,@Param("receiveId") Long receiveId,@Param("batch") Batch batch,@Param("qty") BigDecimal qty,@Param("at") String at,@Param("actor") Long actor);
+
+    /** 全部原生来源与真实V2检验通过后，只CAS上架状态，不改量或出生范围。 */
+    @Update("UPDATE wm_material_receive SET status='SHELVED',shelf_by=#{actor},shelf_time=#{at},update_by=#{actor},update_time=#{at} WHERE tenant_id=#{tenant} AND receive_id=#{id} AND status='APPROVED' AND del_flag='0'")
+    int markShelved(@Param("tenant") String tenant,@Param("id") Long id,@Param("at") String at,@Param("actor") Long actor);
 
     @Update("UPDATE wm_material_receive SET status='FINISHED',update_by=#{actor},update_time=#{at} WHERE tenant_id=#{tenant} AND receive_id=#{id} AND status='SHELVED' AND del_flag='0'")
     int finish(@Param("tenant") String tenant,@Param("id") Long id,@Param("at") String at,@Param("actor") Long actor);

@@ -56,8 +56,11 @@ public class WmCertifiedReceiptPostingService {
     public record Result(Long receiveId,Long materialId,BigDecimal quantity,String sourceFingerprint,boolean replay,boolean notificationPending) { }
 
     /** 旧业务 API 只做路由，最终写入仍在新的独占可重复读事务中重读全部来源；此处不返回写入授权。 */
-    public boolean handles(Long receiveId) {
-        DecisionActor actor=auth.requireUser();need(actor!=null && positive(receiveId),"路由身份无效");
+    public boolean handles(Long receiveId) { return handlesFor(auth.requireUser(),receiveId); }
+    /** 上架路由只要求上架权限，不能额外要求库存执行权限。 */
+    public boolean handlesShelf(Long receiveId) { return handlesFor(auth.requireShelf(),receiveId); }
+    private boolean handlesFor(DecisionActor actor,Long receiveId) {
+        need(actor!=null && positive(receiveId),"路由身份无效");
         String tenant=actor.tenantId();need(TenantHelper.isEnable() && tenant!=null && tenant.equals(TenantHelper.getTenantId()),"路由租户不符");
         return tx.executeRepeatableRead(tenant,()->{
             qualification.requireSourceChainTransaction();
@@ -103,7 +106,16 @@ public class WmCertifiedReceiptPostingService {
         Result checked=postLocked(tenant,original.actorId(),receiveId,false);
         need(checked.replay() && original.sourceFingerprint().equals(checked.sourceFingerprint()),"内部过账认证不是原已提交结果");
     }
+    /** 上架和物理过账复用全部原生来源预检，但上架仅写状态/真实操作时间，不写库存或通知。 */
+    public boolean shelf(Long receiveId) {
+        DecisionActor actor=auth.requireShelf();need(positive(receiveId),"原收货身份缺失");
+        tx.executeRepeatableRead(actor.tenantId(),()->postLocked(actor.tenantId(),actor.userId(),receiveId,true,true));
+        return true;
+    }
     private Result postLocked(String tenant,Long actor,Long receiveId,boolean acquireMaterialGuard) {
+        return postLocked(tenant,actor,receiveId,acquireMaterialGuard,false);
+    }
+    private Result postLocked(String tenant,Long actor,Long receiveId,boolean acquireMaterialGuard,boolean shelving) {
         qualification.requireSourceChainTransaction();requireSchema();
         List<Long> discovered=read(()->mapper.discoverMaterials(tenant,receiveId));
         need(discovered!=null && discovered.size()==1 && positive(discovered.get(0)),"只支持完整单物料原始收货");
@@ -113,13 +125,14 @@ public class WmCertifiedReceiptPostingService {
         boolean replay=prior!=null;
         need(head!=null && tenant.equals(head.tenantId()) && receiveId.equals(head.receiveId()) && text(head.receiveCode())
             && "0".equals(head.delFlag()) && positive(head.orderId()) && positive(head.vendorId())
-            && (replay ? "FINISHED" : "SHELVED").equals(head.status()),"原始收货身份或状态不符");
+            && (replay ? "FINISHED".equals(head.status()) : shelving ? Set.of("APPROVED","SHELVED").contains(head.status()) : "SHELVED".equals(head.status())),"原始收货身份或状态不符");
         Clock clock=read(mapper::clock);
         need(clock!=null && text(clock.databaseAt()) && clock.epochMillis()!=null && "+08:00".equals(clock.timeZone()),"数据库时钟来源不符");
         BigDecimal originalAt=replay?postedAtMillis(prior.postedAt()):clock.epochMillis();
         need(originalAt.compareTo(clock.epochMillis())<=0,"永久过账时点在未来");
-        need(head.receiveAt()!=null && head.shelfAt()!=null && head.receiveAt().compareTo(head.shelfAt())<=0
-            && head.shelfAt().compareTo(originalAt)<=0,"真实收货/上架时点缺失或未来");
+        BigDecimal shelfAt=shelving && "APPROVED".equals(head.status())?clock.epochMillis():head.shelfAt();
+        need(head.receiveAt()!=null && shelfAt!=null && head.receiveAt().compareTo(shelfAt)<=0
+            && shelfAt.compareTo(originalAt)<=0,"真实收货/上架时点缺失或未来");
         need(positive(head.warehouseId()) && positive(head.areaId()) && nullablePositive(head.locationId()),"原始仓储身份缺失");
         Material material=read(()->mapper.lockMaterial(tenant,materialId));
         need(material!=null && tenant.equals(material.tenantId()) && materialId.equals(material.materialId())
@@ -215,6 +228,11 @@ public class WmCertifiedReceiptPostingService {
         for(Stock old:stocks) need(old!=null && !byBatchQuantity.containsKey(old.batchId()),"本次原始批次已有库存，不能覆盖旧来源或重新授予零起点");
         if (stocks.isEmpty()) need(txIds.isEmpty(),"孤立历史流水不能作为真实零起点");
         else verifyLineage(tenant,materialId);
+        if(shelving) {
+            // 出生范围不变：这里只改变上架状态/操作者/实际时点，不走旧头或行的任意更新。
+            if("APPROVED".equals(head.status())) one(mapper.markShelved(tenant,receiveId,clock.databaseAt(),actor));
+            qualification.requireSourceChainTransaction();return new Result(receiveId,materialId,total,fingerprint,"SHELVED".equals(head.status()),false);
+        }
         // 完整来源全部核验后才开始过账；相同批次不能覆盖旧库存维度/历史。
         Map<String,Stock> dimensions=new HashMap<>();
         for(Stock stock:stocks) need(stock!=null && dimensions.put(dimension(stock.warehouseId(),stock.areaId(),stock.locationId(),stock.batchId()),stock)==null,"库存维度重复");

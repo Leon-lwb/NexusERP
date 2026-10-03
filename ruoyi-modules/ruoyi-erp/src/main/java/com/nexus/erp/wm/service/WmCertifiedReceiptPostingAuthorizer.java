@@ -10,13 +10,15 @@ import java.util.Set;
 
 @Component
 public class WmCertifiedReceiptPostingAuthorizer {
-    public DecisionActor requireUser() {
+    public DecisionActor requireUser() { return require("wm:receive:execute"); }
+    public DecisionActor requireShelf() { return require("wm:receive:shelf"); }
+    private DecisionActor require(String permission) {
         StpUtil.checkLogin();
-        StpUtil.checkPermission("wm:receive:execute");
+        StpUtil.checkPermission(permission);
         String tenant=TenantHelper.getTenantId(); Long user=LoginHelper.getUserId();
         if (!TenantHelper.isEnable() || tenant==null || !tenant.matches("[0-9]{6,20}")
             || !tenant.equals(LoginHelper.getTenantId()) || user==null || user<=0)
             throw new ServiceException("精确入库身份与当前租户不一致");
-        return new DecisionActor(tenant,user,LoginHelper.getUsername(),Set.of("wm:receive:execute"));
+        return new DecisionActor(tenant,user,LoginHelper.getUsername(),Set.of(permission));
     }
 }

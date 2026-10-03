@@ -8,6 +8,8 @@ import com.nexus.common.mq.iqc.IqcNativeSchema;
 import com.nexus.common.mq.iqc.ReceiptIqcSource;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper;
+import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper;
+import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.Binding;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper.DetailBody;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper.InspectionRow;
 import org.apache.ibatis.mapping.Environment;
@@ -47,24 +49,31 @@ import java.util.Set;
 public class QcReceiptIqcEvidenceService implements ReceiptIqcSource {
     private final QcReceiptIqcEvidenceMapper mapper;
     private final SqlSessionFactory factory;
+    private final QcReceiptIqcBirthMapper birthMapper;
 
-    public QcReceiptIqcEvidenceService(QcReceiptIqcEvidenceMapper mapper,
+    public QcReceiptIqcEvidenceService(QcReceiptIqcEvidenceMapper mapper, QcReceiptIqcBirthMapper birthMapper,
         @Qualifier("sqlSessionFactory") SqlSessionFactory factory) {
         this.mapper = Objects.requireNonNull(mapper);
+        this.birthMapper = Objects.requireNonNull(birthMapper);
         this.factory = Objects.requireNonNull(factory);
     }
 
     @Override
     public Inspection readCompleted(String tenantId, Long inspectionId) {
-        return readSnapshot(tenantId, inspectionId, false);
+        return readSnapshot(tenantId, inspectionId, false, false).inspection();
     }
 
     @Override
     public Inspection readCompletedIdentity(String tenantId, Long inspectionId) {
-        return readSnapshot(tenantId, inspectionId, true);
+        return readSnapshot(tenantId, inspectionId, true, false).inspection();
     }
 
-    private Inspection readSnapshot(String tenantId, Long inspectionId, boolean identityOnly) {
+    @Override
+    public BornInspection readCompletedBorn(String tenantId, Long inspectionId) {
+        return readSnapshot(tenantId, inspectionId, false, true);
+    }
+
+    private BornInspection readSnapshot(String tenantId, Long inspectionId, boolean identityOnly, boolean born) {
         requireTenant(tenantId);
         if (inspectionId == null || inspectionId <= 0) throw fail("IQC_MES_IDENTITY_INVALID");
         requireFreshThread();
@@ -73,7 +82,8 @@ public class QcReceiptIqcEvidenceService implements ReceiptIqcSource {
             || environment.getTransactionFactory() == null
             || environment.getTransactionFactory().getClass() != SpringManagedTransactionFactory.class
             || !(environment.getDataSource() instanceof DynamicRoutingDataSource routing)
-            || !factory.getConfiguration().hasMapper(QcReceiptIqcEvidenceMapper.class)) {
+            || !factory.getConfiguration().hasMapper(QcReceiptIqcEvidenceMapper.class)
+            || (born && !factory.getConfiguration().hasMapper(QcReceiptIqcBirthMapper.class))) {
             throw fail("IQC_MES_SOURCE_TOPOLOGY_UNSUPPORTED");
         }
         DataSource mes = routing.getDataSources().get("mes");
@@ -87,10 +97,12 @@ public class QcReceiptIqcEvidenceService implements ReceiptIqcSource {
             snapshot.setReadOnly(true);
             snapshot.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
             snapshot.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-            Inspection actual = snapshot.execute(status -> {
+            BornInspection actual = snapshot.execute(status -> {
                 if (!status.isNewTransaction()) throw fail("IQC_MES_SOURCE_REQUIRES_FRESH_THREAD");
                 requireSnapshot(tenantId, routing, mes);
+                Object holder = TransactionSynchronizationManager.getResource(routing);
                 requireNativeDefinition(identityOnly);
+                int creationPrecision = born ? requireBornDefinition() : -1;
                 InspectionRow row = identityOnly ? mapper.selectInspectionIdentity(tenantId, inspectionId)
                     : mapper.selectInspection(tenantId, inspectionId);
                 requireCurrent(row, tenantId, inspectionId, identityOnly);
@@ -111,16 +123,23 @@ public class QcReceiptIqcEvidenceService implements ReceiptIqcSource {
                 }
                 ordered.sort(Comparator.comparing(DetailBody::getDetailId));
                 String bodySha = actualBodySha(row, ordered);
+                Binding binding = born ? birthMapper.selectBinding(tenantId, inspectionId) : null;
+                var birth = born ? QcReceiptIqcBirthService.requireBinding(binding, tenantId, inspectionId,
+                    row.getReceiveId(), row.getMaterialId(), row.getQuantity(), row.getCreateTime(), creationPrecision) : null;
                 requireSnapshot(tenantId, routing, mes);
                 requireNativeDefinition(identityOnly);
+                if (holder != TransactionSynchronizationManager.getResource(routing)
+                    || (born && creationPrecision != requireBornDefinition())) throw fail("IQC_MES_SNAPSHOT_INVALID");
                 long observedAt = System.currentTimeMillis();
                 if (row.getInspectTime().getTime() > observedAt || (row.getUpdateTime() != null
                     && row.getUpdateTime().getTime() > observedAt)) throw fail("IQC_MES_TIME_INVALID");
-                return new Inspection(tenantId, inspectionId, row.getIqcNo(), row.getReceiveId(), row.getMaterialId(),
+                Inspection inspection = new Inspection(tenantId, inspectionId, row.getIqcNo(), row.getReceiveId(), row.getMaterialId(),
                     identityOnly ? null : row.getQuantity(), row.getStatus(), row.getInspectResult(), row.getInspectorId(),
                     row.getCreateTime().getTime(), row.getInspectTime().getTime(),
                     row.getUpdateTime() == null ? null : row.getUpdateTime().getTime(), observedAt,
                     bodySha, "QC_IQC_CURRENT_V1:" + bodySha);
+                return new BornInspection(inspection, birth, born ? binding.getBoundAt().getTime() : 0,
+                    born ? binding.getBindingSha256() : null);
             });
             requireFreshThread();
             return actual;
@@ -132,6 +151,14 @@ public class QcReceiptIqcEvidenceService implements ReceiptIqcSource {
         } finally {
             DynamicDataSourceContextHolder.poll();
         }
+    }
+
+    private int requireBornDefinition() {
+        var columns = birthMapper.selectNativeColumns();
+        if (columns != null && columns.stream().noneMatch(c -> c != null && "qc_receipt_iqc_birth".equals(c.getTableName()))) {
+            throw fail("UNIT_ORIGIN_UNPROVEN");
+        }
+        return QcReceiptIqcBirthService.requireBirthDefinition(columns, birthMapper.selectNativeIndexes());
     }
 
     private void requireNativeDefinition(boolean identityOnly) {

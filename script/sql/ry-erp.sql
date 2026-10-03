@@ -8327,12 +8327,12 @@ CREATE TABLE `wm_certified_iqc_evidence` (
   `inspection_code` varchar(64) NOT NULL COMMENT '真实MES IQC编号',
   `receive_id` bigint(20) NOT NULL COMMENT '原真实ERP收货单',
   `material_id` bigint(20) NOT NULL COMMENT '原收货全物料范围',
-  `base_uom_id` bigint(20) NOT NULL COMMENT 'V1当前ERP观察单位；非原MES数量单位证明，不得授权',
+  `base_uom_id` bigint(20) NOT NULL COMMENT 'V1观察单位不授权；V2仅取实际创建时原生出生单位',
   `quantity_scale` tinyint(3) unsigned NOT NULL COMMENT '已核可信本单位精度；此来源仅支持0至4',
   `inspected_quantity` decimal(14,4) NOT NULL COMMENT 'MES真实检验量；须等于原收货同料全量',
   `inspect_result` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '真实QUALIFIED或UNQUALIFIED',
   `inspector_id` bigint(20) NOT NULL COMMENT '真实MES完成检验员',
-  `source_kind` varchar(48) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '固定MES_QC_IQC_RECEIVE_MATERIAL_V1',
+  `source_kind` varchar(48) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'V1无原单位证明；V2须重读原生出生登记与绑定',
   `source_version` varchar(96) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'QC_IQC_CURRENT_V1与实际数据主体摘要',
   `actual_body_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'MES原始当前单头及明细完整数据主体摘要',
   `receipt_scope_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原ERP收货同料全行数量单位来源摘要',
@@ -8343,6 +8343,8 @@ CREATE TABLE `wm_certified_iqc_evidence` (
   `source_updated_at` datetime(3) DEFAULT NULL COMMENT 'MES当前更新时间；无乐观版本列不据此猜最新',
   `observed_at` datetime(3) NOT NULL COMMENT '独立MES只读可重复读事务观察完成时间',
   `certified_at` datetime(3) NOT NULL COMMENT '独立ERP自主管理的可重复读事务证据落账时间',
+  `birth_id` bigint NULL COMMENT '真实新建IQC的ERP永久出生登记，历史NULL不认证',
+  `birth_sha256` char(64) NULL COMMENT '原生出生登记摘要，历史NULL不授权',
   PRIMARY KEY (`evidence_id`),
   UNIQUE KEY `uk_certified_iqc_inspection` (`tenant_id`, `inspection_id`),
   UNIQUE KEY `uk_certified_iqc_scope` (`tenant_id`, `receive_id`, `material_id`),
@@ -8431,3 +8433,25 @@ CREATE TABLE pu_certified_purchase_order_operation (
     UNIQUE KEY uk_operation_request (tenant_id,request_key),
     UNIQUE KEY uk_order_operation (tenant_id,order_id,operation)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ERP提交结果永久重放；不依赖AI回写成功';
+
+
+-- 仅新安装定义，存量库按独立增量审查，不回填历史IQC。
+CREATE TABLE wm_receipt_iqc_birth (
+  birth_id bigint NOT NULL COMMENT 'ERP服务器生成的永久出生身份',
+  tenant_id varchar(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '真实租户',
+  receive_id bigint NOT NULL COMMENT '真实收货头',
+  material_id bigint NOT NULL COMMENT '真实物料范围',
+  base_uom_id bigint NOT NULL COMMENT '创建新检验前冻结的真实原数量单位',
+  quantity_scale tinyint unsigned NOT NULL COMMENT '出生时已核原单位精度',
+  quantity decimal(14,4) NOT NULL COMMENT '出生时完整同物料原生收货量',
+  receipt_scope_sha256 char(64) NOT NULL COMMENT '出生时真实头和全部行范围摘要',
+  birth_sha256 char(64) NOT NULL COMMENT '全部登记事实完整性摘要，不是DTO授权',
+  captured_at bigint NOT NULL COMMENT '实际ERP捕获时点毫秒，非客户端时间',
+  receive_code varchar(64) NOT NULL COMMENT '真实收货编号',
+  material_code varchar(64) NOT NULL COMMENT '真实物料编码',
+  material_name varchar(255) NOT NULL COMMENT '真实物料名称',
+  vendor_id bigint NOT NULL COMMENT '真实供应商身份',
+  vendor_name varchar(255) NOT NULL COMMENT '真实供应商名称',
+  PRIMARY KEY(birth_id),
+  UNIQUE KEY uk_iqc_birth_scope(tenant_id,receive_id,material_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='永久IQC创建时单位与范围准备事实';

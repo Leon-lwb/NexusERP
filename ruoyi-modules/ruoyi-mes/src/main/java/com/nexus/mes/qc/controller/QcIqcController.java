@@ -13,6 +13,8 @@ import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
 import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
 import com.nexus.mes.qc.service.IQcIqcService;
+import com.nexus.mes.qc.service.QcReceiptIqcBirthService;
+import com.nexus.common.tenant.helper.TenantHelper;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +35,7 @@ import java.util.List;
 public class QcIqcController extends BaseController {
 
     private final IQcIqcService qcIqcService;
+    private final QcReceiptIqcBirthService birthService;
 
     /**
      * 分页查询 IQC 来料检验列表。
@@ -69,6 +72,11 @@ public class QcIqcController extends BaseController {
     @Log(title = "IQC新增", businessType = BusinessType.INSERT)
     @PostMapping
     public R<QcIqcVo> add(@RequestBody @Validated QcIqcBo bo) {
+        // 必须在 Controller 无事务处先准备 ERP 来源，不能从类级 MES 路由的旧 Service 调用。
+        if (bo.getReceiveId() != null) {
+            return R.ok(birthService.create(TenantHelper.getTenantId(), bo.getReceiveId(), bo.getMaterialId()));
+        }
+        // 未关联收货的人工检验可保留，但没有库存放行所需的原单位出生证明。
         return R.ok(qcIqcService.insertByBo(bo));
     }
 

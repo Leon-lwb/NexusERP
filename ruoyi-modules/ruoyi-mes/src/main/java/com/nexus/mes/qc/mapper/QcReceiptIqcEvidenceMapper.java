@@ -5,6 +5,7 @@ import com.nexus.common.mq.iqc.IqcNativeSchema.Column;
 import com.nexus.common.mq.iqc.IqcNativeSchema.IndexPart;
 import lombok.Data;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 
 import java.math.BigDecimal;
@@ -14,6 +15,8 @@ import java.util.List;
 /** 读取当前已提交的原生 MES 来源；不关联 ERP，也不执行写操作。 */
 public interface QcReceiptIqcEvidenceMapper {
     /** 已核实归属的 ERP 或 MES 连接上的原生引擎和列定义。 */
+    // 原生目录必须实际重查：清除会话缓存且禁用二级缓存，不能把缓存结果当作结构复核。
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @InterceptorIgnore(tenantLine = "true")
     @Select("""
         SELECT c.TABLE_NAME AS table_name, t.ENGINE AS engine, c.COLUMN_NAME AS column_name,
@@ -27,6 +30,8 @@ public interface QcReceiptIqcEvidenceMapper {
     List<Column> selectNativeColumns();
 
     /** 读取完整的永久索引组成部分，不根据当前记录数推断唯一性。 */
+    // 原生目录必须实际重查：清除会话缓存且禁用二级缓存，不能把缓存结果当作结构复核。
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @InterceptorIgnore(tenantLine = "true")
     @Select("""
         SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name, NON_UNIQUE AS non_unique,

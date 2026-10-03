@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 
-/** 经过认证的只读观测；本阶段始终拒绝提供已加载构建证明。 */
+/** 认证后绑定真实 premain 加载见证；独占链不能认证时保持 NONE，绝不授权业务写入。 */
 @Component
 public final class RuntimeAttestationProvider {
     public static final String PERMISSION = "system:runtime:attest";
@@ -72,14 +72,18 @@ public final class RuntimeAttestationProvider {
             build = LoadedArtifactAssessment.inspect(RuntimeAttestationProvider.class,
                 ManagementFactory.getRuntimeMXBean().getInputArguments(),
                 environment.getProperty("spring.devtools.restart.enabled", Boolean.class, false));
-        } catch (Exception ignored) {
+        } catch (Exception | LinkageError ignored) {
             build = new LoadedArtifactAssessment.Observation("UNPROVEN", "ATTESTATION_BUILD_UNPROVEN", "NONE", "UNKNOWN", "UNPROVEN");
         }
         String category = datasource.diagnosticCategory() != null ? datasource.diagnosticCategory()
-            : pid == null || startedAt == null ? "ATTESTATION_STARTUP_UNPROVEN" : "ATTESTATION_BUILD_UNPROVEN";
-        RuntimeAttestationReport report = new RuntimeAttestationReport(1, "BLOCKED", category, false,
+            : pid == null || startedAt == null ? "ATTESTATION_STARTUP_UNPROVEN"
+            : build.witness() != null && !"ABSENT".equals(build.witness().state()) ? build.diagnosticCategory() : "ATTESTATION_BUILD_UNPROVEN";
+        RuntimeAttestationReport report = new RuntimeAttestationReport(2, "BLOCKED", category, false,
             OffsetDateTime.now(ZoneOffset.ofHours(8)).toString(), challengeHash, randomDigest(), principalHash, tenantHash,
-            new RuntimeAttestationReport.RuntimeObservation(pid, startedAt == null ? null : startedAt.toString(), instanceSha256, profiles),
+            new RuntimeAttestationReport.RuntimeObservation(pid, startedAt == null ? null : startedAt.toString(), instanceSha256, profiles,
+                build.witness() != null && "LOAD_IDENTITY_CONFIRMED".equals(build.witness().state())
+                    ? build.witness().witnessSemantics() : "UNWITNESSED",
+                build.originKind(), List.of("EXCLUSIVE_CHAIN_UNPROVEN")),
             datasource.status(), datasource.identities(), build);
         audit(category, principalHash, tenantHash, challengeHash);
         return report;

@@ -12,12 +12,22 @@ public record RuntimeAttestationReport(
     LoadedArtifactAssessment.Observation build) {
 
     public RuntimeAttestationReport {
+        if (schemaVersion != 2 || !"BLOCKED".equals(status) || businessWriteAuthorized || build == null || !"NONE".equals(build.supportedProofDomain())) {
+            throw new IllegalArgumentException("ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN");
+        }
         datasources = Map.copyOf(datasources);
     }
 
     public record RuntimeObservation(Integer pid, String startedAt, String instanceSha256,
-                                     List<String> activeProfiles) {
-        public RuntimeObservation { activeProfiles = List.copyOf(activeProfiles); }
+                                     List<String> activeProfiles, String measurementMode,
+                                     String classLoading, List<String> runtimeOverrides) {
+        public RuntimeObservation {
+            activeProfiles = List.copyOf(activeProfiles);
+            runtimeOverrides = List.copyOf(runtimeOverrides);
+        }
+        public RuntimeObservation(Integer pid, String startedAt, String instanceSha256, List<String> activeProfiles) {
+            this(pid, startedAt, instanceSha256, activeProfiles, "UNWITNESSED", "UNPROVEN", List.of("EXCLUSIVE_CHAIN_UNPROVEN"));
+        }
     }
 
     public record DatasourceIdentity(int port, String schema, String serverUuidSha256,

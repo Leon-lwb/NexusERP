@@ -27,7 +27,6 @@ import com.nexus.mes.qc.service.IQcInspectDetailService;
 import com.nexus.mes.qc.service.QcJudgeEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -103,6 +102,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public QcIqcVo insertByBo(QcIqcBo bo) {
+        // 此方法已被 MES 数据源/事务切面包裹，禁止在这里切 ERP 或给旧单补出生认证。
+        if (bo.getReceiveId() != null) throw new ServiceException("IQC_RECEIPT_NATIVE_BIRTH_REQUIRED");
         QcIqc iqc = new QcIqc();
         iqc.setIqcNo(generateNo("IQC"));
         iqc.setReceiveId(bo.getReceiveId());
@@ -116,17 +117,7 @@ public class QcIqcServiceImpl implements IQcIqcService {
         iqc.setInspectResult("PENDING");
         iqc.setStatus(STATUS_PENDING);
         iqc.setRemark(bo.getRemark());
-        try {
-            baseMapper.insert(iqc);
-        } catch (DuplicateKeyException e) {
-            // MES-QC-04: uk_iqc_receive_material 冲突 = 并发下已被其他线程建单, 视为幂等成功(不抛, 避免消费者反复重投)
-            log.info("IQC已存在(唯一键冲突, 幂等跳过): receiveId={}, materialId={}",
-                bo.getReceiveId(), bo.getMaterialId());
-            return baseMapper.selectVoOne(Wrappers.<QcIqc>lambdaQuery()
-                .eq(QcIqc::getReceiveId, bo.getReceiveId())
-                .eq(QcIqc::getMaterialId, bo.getMaterialId())
-                .last("LIMIT 1"));
-        }
+        baseMapper.insert(iqc);
         log.info("新增IQC检验单: iqcId={}, iqcNo={}", iqc.getIqcId(), iqc.getIqcNo());
         // 按检验模板快照生成明细(带批量算 AQL 建议抽样量; 无匹配模板返回0, 保持人工判定, 不阻断)
         inspectDetailService.generateDetails("IQC", iqc.getIqcId(), iqc.getMaterialId(), iqc.getQuantity());

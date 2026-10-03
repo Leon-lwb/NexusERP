@@ -16,6 +16,13 @@
     </description>
 
     <dependencies>
+        <!-- 进程内 premain 见证 API；仅依赖不会启用 agent，也不会赋予证明能力。 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>runtime-attestation-agent</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!-- 通用工具-->
         <dependency>
             <groupId>com.nexus</groupId>

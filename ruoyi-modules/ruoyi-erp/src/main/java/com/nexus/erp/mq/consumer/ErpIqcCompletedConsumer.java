@@ -67,6 +67,8 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
      * @param completed MES来源读取后的实际完成事实
      */
     private void doUpdate(Completion completed) {
+        // 合格结论已由出生登记与MES原生绑定生成不可变V2证据；不走旧单头改写或解冻旁路。
+        if ("QUALIFIED".equals(completed.result())) return;
         if (!"UNQUALIFIED".equals(completed.result())) throw new ServiceException("UNIT_ORIGIN_UNPROVEN");
         WmMaterialReceive receive = materialReceiveService.getById(completed.receiveId());
         if (receive == null) throw new ServiceException("IQC_RECEIPT_PROJECTION_MISSING");

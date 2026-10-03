@@ -27,12 +27,12 @@ public class WmCertifiedReceiptMutationGuard {
     }
     public void requireMutableDetail(Long detailId,Long proposedReceiveId,Long proposedLineId) {
         String tenant=tenant();need(positive(detailId));SourceIdentity old=read(()->mapper.discoverDetailIdentity(tenant,detailId));validate(tenant,old);
-        mutableHead(tenant,old.receiveId(),true);SourceIdentity current=read(()->mapper.lockDetailIdentity(tenant,detailId));
+        mutableHead(tenant,old.receiveId(),true,false);SourceIdentity current=read(()->mapper.lockDetailIdentity(tenant,detailId));
         need(old.equals(current) && (proposedReceiveId==null || current.receiveId().equals(proposedReceiveId))
             && (proposedLineId==null || current.lineId().equals(proposedLineId)));
     }
     public void requireMutableDetailParent(Long receiveId,Long lineId) {
-        String tenant=tenant();mutableHead(tenant,receiveId,true);need(positive(lineId));
+        String tenant=tenant();mutableHead(tenant,receiveId,true,false);need(positive(lineId));
         SourceIdentity line=read(()->mapper.lockLineIdentity(tenant,lineId));validate(tenant,line);need(receiveId.equals(line.receiveId()));
     }
     public void requireLegacyExecution(Long receiveId) {
@@ -43,9 +43,13 @@ public class WmCertifiedReceiptMutationGuard {
         }
     }
     private Head mutableHead(String tenant,Long id,boolean editable) {
+        return mutableHead(tenant,id,editable,true);
+    }
+    private Head mutableHead(String tenant,Long id,boolean editable,boolean protectBirth) {
         need(positive(id));Head head=read(()->mapper.lockHead(tenant,id));
         need(head!=null && tenant.equals(head.tenantId()) && id.equals(head.receiveId()) && "0".equals(head.delFlag()));
         need(read(()->mapper.lockPosting(tenant,id))==null);
+        if(protectBirth) { var born=read(()->mapper.lockBirthIdentities(tenant,id));need(born!=null && born.isEmpty()); }
         if(editable) need(Set.of("DRAFT","REJECTED","APPROVED").contains(head.status()));
         return head;
     }

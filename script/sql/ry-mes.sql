@@ -3889,3 +3889,33 @@ END
 delimiter ;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+-- 新安装的IQC创建时原单位及范围绑定，历史无绑定不认证。
+CREATE TABLE `qc_receipt_iqc_birth` (
+  `iqc_id` bigint(20) NOT NULL COMMENT '同事务新建的IQC身份',
+  `tenant_id` varchar(20) NOT NULL COMMENT '实际租户',
+  `birth_id` bigint(20) NOT NULL COMMENT 'ERP永久出生登记身份',
+  `receive_id` bigint(20) NOT NULL COMMENT '原始收货身份',
+  `material_id` bigint(20) NOT NULL COMMENT '原始物料身份',
+  `base_uom_id` bigint(20) NOT NULL COMMENT '出生原单位，不从未来当前单位反推',
+  `quantity_scale` int NOT NULL COMMENT '出生时原单位小数精度，取值0至4',
+  `quantity` decimal(14,4) NOT NULL COMMENT 'ERP冻结的原单位检验数量',
+  `receipt_scope_sha256` varchar(64) NOT NULL COMMENT '冻结收货完整范围摘要',
+  `birth_sha256` varchar(64) NOT NULL COMMENT 'ERP出生事实完整性摘要，不独立授权',
+  `captured_at` bigint(20) NOT NULL COMMENT 'ERP实际冻结毫秒时间戳',
+  `receive_code` varchar(64) NOT NULL COMMENT '出生收货编码',
+  `material_code` varchar(64) NOT NULL COMMENT '出生物料编码',
+  `material_name` varchar(255) NOT NULL COMMENT '出生物料名称',
+  `vendor_id` bigint(20) NOT NULL COMMENT '出生供应商身份',
+  `vendor_name` varchar(255) NOT NULL COMMENT '出生供应商名称',
+  `bound_at` datetime(3) NOT NULL COMMENT '同连接采样的全新INSERT出生绑定时间，保留毫秒',
+  `binding_sha256` varchar(64) NOT NULL COMMENT 'IQC与出生事实不可变绑定摘要',
+  PRIMARY KEY (`iqc_id`) USING BTREE,
+  UNIQUE KEY `uk_native_iqc` (`tenant_id`,`iqc_id`) USING BTREE,
+  UNIQUE KEY `uk_native_birth` (`tenant_id`,`birth_id`) USING BTREE,
+  UNIQUE KEY `uk_native_scope` (`tenant_id`,`receive_id`,`material_id`) USING BTREE,
+  CONSTRAINT `fk_native_iqc_birth` FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)
+    ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='永久原生出生绑定，旧检验无绑定仍不具单位来源证明';

@@ -4,16 +4,21 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
+import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.bo.pda.PdaLineConfirmBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
+import com.nexus.erp.wm.service.PdaReceiveShelfAllocationService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -50,6 +55,14 @@ class PdaReceiveServiceImplTest {
     @Mock
     private IWmMaterialReceiveService receiveService;
     @Mock
+    private WmMaterialReceiveMapper receiveMapper;
+    @Mock
+    private WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    @Mock
+    private WmCertifiedReceiptPostingService certifiedPosting;
+    @Mock
+    private PdaReceiveShelfAllocationService shelfAllocation;
+    @Mock
     private WmMaterialReceiveLineMapper lineMapper;
     @Mock
     private WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
@@ -66,6 +79,7 @@ class PdaReceiveServiceImplTest {
     @BeforeAll
     static void initTableInfo() {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, WmMaterialReceive.class);
         TableInfoHelper.initTableInfo(assistant, WmMaterialReceiveLine.class);
         TableInfoHelper.initTableInfo(assistant, WmMaterialReceiveDetail.class);
         TableInfoHelper.initTableInfo(assistant, WmArrivalNoticeLine.class);
@@ -74,7 +88,7 @@ class PdaReceiveServiceImplTest {
     /** ERP-WM-03 核心回归：已收 90 + 本次 20 > 应到 100 → 必须拒绝，且不写任何库 */
     @Test
     void confirmLine_rejectsOverReceipt() {
-        when(receiveService.selectById(1L)).thenReturn(head(1L, 77L));
+        when(receiveMapper.selectVoOne(any())).thenReturn(head(1L, 77L));
         when(lineMapper.selectOne(any())).thenReturn(line(21L, new BigDecimal("90")));
         when(arrivalNoticeLineMapper.selectList(any())).thenReturn(List.of(noticeLine(31L, new BigDecimal("100"))));
 
@@ -90,7 +104,7 @@ class PdaReceiveServiceImplTest {
     /** ERP-WM-03：恰好收满允许通过，且上架明细数量必须跟随行实收总数（不再独立累加） */
     @Test
     void confirmLine_accumulatesWithinLimitAndSyncsDetail() {
-        when(receiveService.selectById(1L)).thenReturn(head(1L, 77L));
+        when(receiveMapper.selectVoOne(any())).thenReturn(head(1L, 77L));
         when(lineMapper.selectOne(any())).thenReturn(line(21L, new BigDecimal("90")));
         when(arrivalNoticeLineMapper.selectList(any())).thenReturn(List.of(noticeLine(31L, new BigDecimal("100"))));
         when(lineMapper.update(any(), any())).thenReturn(1);
@@ -109,7 +123,7 @@ class PdaReceiveServiceImplTest {
     /** ERP-WM-03：条件更新影响 0 行（并发下已被推到超限）时必须拒绝并提示刷新 */
     @Test
     void confirmLine_rejectsWhenConditionalUpdateAffectsNoRow() {
-        when(receiveService.selectById(1L)).thenReturn(head(1L, 77L));
+        when(receiveMapper.selectVoOne(any())).thenReturn(head(1L, 77L));
         when(lineMapper.selectOne(any())).thenReturn(line(21L, new BigDecimal("90")));
         when(arrivalNoticeLineMapper.selectList(any())).thenReturn(List.of(noticeLine(31L, new BigDecimal("100"))));
         when(lineMapper.update(any(), any())).thenReturn(0);
@@ -123,7 +137,7 @@ class PdaReceiveServiceImplTest {
     /** 非法数量（<=0）必须拒绝 */
     @Test
     void confirmLine_rejectsNonPositiveQty() {
-        when(receiveService.selectById(1L)).thenReturn(head(1L, 77L));
+        when(receiveMapper.selectVoOne(any())).thenReturn(head(1L, 77L));
         when(lineMapper.selectOne(any())).thenReturn(line(21L, new BigDecimal("90")));
 
         PdaActionResultVo result = service.confirmLine(1L, confirmBo(21L, BigDecimal.ZERO));

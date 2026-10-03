@@ -132,6 +132,24 @@ class RuntimePreflightTests(unittest.TestCase):
         self.assertIn('ry-erp.wm_material_stock: engine must be InnoDB',gaps)
         self.assertIn('ry-erp.wm_material_stock.stock_quantity: native DECIMAL required',gaps)
 
+    def test_stock_native_precision_contract_matches_migration_without_certifying_sources(self):
+        for precision, scale in ((18, 4), (28, 12), (18, 2), (12, 4)):
+            with self.subTest(precision=precision, scale=scale):
+                columns = {name: {'type':'decimal', 'precision':precision, 'scale':scale}
+                           for name in ('stock_quantity','reserved_quantity')}
+                columns['tenant_id'] = {'type':'varchar'}
+                metadata = {'ry-erp.wm_material_stock': {'engine':'InnoDB', 'columns':columns}}
+                gaps = self.m.metadata_gaps(metadata)
+                stock_gaps = [gap for gap in gaps if gap.startswith('ry-erp.wm_material_stock.')]
+                self.assertEqual(not (precision == 18 and scale == 4), bool(stock_gaps))
+
+    def test_tx_native_precision_requires_same_contract_but_migration_does_not_rewrite_tx(self):
+        columns = {name: {'type':'decimal', 'precision':18, 'scale':2}
+                   for name in ('tx_quantity','before_quantity','after_quantity')}
+        columns['tenant_id'] = {'type':'varchar'}
+        gaps = self.m.metadata_gaps({'ry-erp.wm_material_stock_tx': {'engine':'InnoDB', 'columns':columns}})
+        self.assertEqual(3, len([gap for gap in gaps if gap.startswith('ry-erp.wm_material_stock_tx.')]))
+
     def test_multi_document_yaml_and_maven_placeholders_are_supported(self):
         docs=self.m.parse_config_text('spring:\n  profiles:\n    active: @profiles.active@\n---\nsecret:\n  test: value\n')
         self.assertEqual('@profiles.active@', docs[0]['spring']['profiles']['active'])
@@ -208,7 +226,9 @@ class RuntimePreflightTests(unittest.TestCase):
                     rows=[];schema=self.params[0]
                     for table in self.params[1:]:
                         rows.extend([(table,'tenant_id','varchar',None,None),(table,'del_flag','char',None,None)])
-                        for col in self_outer.m.DECIMAL_FIELDS.get(schema+'.'+table,()):rows.append((table,col,'decimal',28,12))
+                        for col in self_outer.m.DECIMAL_FIELDS.get(schema+'.'+table,()):
+                            precision,scale = (18,4) if table in ('wm_material_stock','wm_material_stock_tx') else (28,12)
+                            rows.append((table,col,'decimal',precision,scale))
                     return rows
                 return []
         class DB:

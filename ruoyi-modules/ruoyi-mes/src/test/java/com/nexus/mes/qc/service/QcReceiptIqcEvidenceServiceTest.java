@@ -4,6 +4,10 @@ import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.iqc.IqcNativeSchema;
+import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
+import com.nexus.common.mq.iqc.ReceiptIqcBirthSupport;
+import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper;
+import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.Binding;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper.*;
@@ -32,6 +36,7 @@ class QcReceiptIqcEvidenceServiceTest {
     final String tenantId = "000007";
     final long now = System.currentTimeMillis();
     final QcReceiptIqcEvidenceMapper mapper = mock(QcReceiptIqcEvidenceMapper.class);
+    final QcReceiptIqcBirthMapper birthMapper = mock(QcReceiptIqcBirthMapper.class);
     final DynamicRoutingDataSource routing = new DynamicRoutingDataSource(List.of());
     final DataSource mes = mock(DataSource.class);
     final DataSource master = mock(DataSource.class);
@@ -78,7 +83,8 @@ class QcReceiptIqcEvidenceServiceTest {
         Configuration config = new Configuration(new Environment("private-mocked-mes",
             new SpringManagedTransactionFactory(), routing));
         config.setMapUnderscoreToCamelCase(true); config.addMapper(QcReceiptIqcEvidenceMapper.class);
-        service = new QcReceiptIqcEvidenceService(mapper, new DefaultSqlSessionFactory(config));
+        config.addMapper(QcReceiptIqcBirthMapper.class);
+        service = new QcReceiptIqcEvidenceService(mapper, birthMapper, new DefaultSqlSessionFactory(config));
         row.setIqcId(501L); row.setTenantId(tenantId); row.setIqcNo("IQC-501"); row.setReceiveId(101L);
         row.setMaterialId(201L); row.setQuantity(new BigDecimal("12.0000")); row.setStatus("COMPLETED");
         row.setInspectResult("QUALIFIED"); row.setInspectorId(801L); row.setDelFlag("0");
@@ -259,7 +265,7 @@ class QcReceiptIqcEvidenceServiceTest {
             verify(mapper, never()).selectInspection(anyString(), anyLong());
             verify(mapper, never()).selectInspectionBodies(anyString(), anyLong());
             verify(mapper, never()).selectInspectionVersions(anyString(), anyLong(), anyLong());
-            verify(connection).commit();
+            verify(connection).commit(); verifyNoInteractions(birthMapper);
         }
     }
     @Test void negativeIdentityReaderStillRejectsOtherTenantOrPendingState() throws Exception {
@@ -268,6 +274,77 @@ class QcReceiptIqcEvidenceServiceTest {
         try (var tenant = mockStatic(TenantHelper.class)) {
             tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
             assertThatThrownBy(() -> service.readCompletedIdentity(tenantId, 501L)).hasMessage("IQC_MES_CURRENT_COMPLETION_REQUIRED");
+            verify(connection).rollback();
+        }
+    }
+
+    Binding arrangeBirth() {
+        long boundAt = now - 10000;
+        Birth birth = QcReceiptIqcBirthServiceTest.birth(tenantId, now - 11000);
+        row.setQuantity(birth.quantity()); row.setCreateTime(new Date(boundAt / 1000 * 1000));
+        Binding binding = Binding.from(501L, birth, new Date(boundAt), ReceiptIqcBirthSupport.bindingHash(501L, birth, boundAt));
+        when(birthMapper.selectNativeColumns()).thenAnswer(i -> QcReceiptIqcBirthServiceTest.nativeColumns());
+        when(birthMapper.selectNativeIndexes()).thenAnswer(i -> QcReceiptIqcBirthServiceTest.nativeIndexes());
+        when(birthMapper.selectBinding(tenantId, 501L)).thenAnswer(i -> {
+            assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isTrue();
+            assertThat(TransactionSynchronizationManager.getCurrentTransactionIsolationLevel()).isEqualTo(Connection.TRANSACTION_REPEATABLE_READ);
+            return binding;
+        });
+        return binding;
+    }
+    @Test void nativeBirthBodyAndDetailsUseOneIndependentReadOnlySnapshot() throws Exception {
+        arrange(); Binding binding = arrangeBirth();
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
+            var actual = service.readCompletedBorn(tenantId, 501L);
+            assertThat(actual.inspection().sourceVersion()).startsWith("QC_IQC_CURRENT_V1:");
+            assertThat(actual.birth()).isEqualTo(binding.birth()); assertThat(actual.boundAt()).isEqualTo(binding.getBoundAt().getTime());
+            assertThat(actual.bindingSha256()).isEqualTo(binding.getBindingSha256());
+            verify(mes, times(1)).getConnection(); verify(connection).commit(); verify(connection, never()).rollback();
+            verify(mapper).selectInspection(tenantId, 501L); verify(mapper).selectInspectionBodies(tenantId, 501L);
+            verify(birthMapper).selectBinding(tenantId, 501L); verify(birthMapper, times(2)).selectNativeColumns();
+            verify(master, never()).getConnection();
+        }
+    }
+    @Test void existingCompletedIqcWithoutBindingKeepsUnitOriginUnproven() throws Exception {
+        arrange(); arrangeBirth(); doReturn(null).when(birthMapper).selectBinding(tenantId, 501L);
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
+            assertThatThrownBy(() -> service.readCompletedBorn(tenantId, 501L)).hasMessage("UNIT_ORIGIN_UNPROVEN");
+            verify(connection).rollback();
+        }
+    }
+    @Test void birthCannotBeReconstructedFromInspectionMeasurementUnit() throws Exception {
+        arrange(); Binding binding = arrangeBirth(); binding.setBaseUomId(999L);
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
+            assertThatThrownBy(() -> service.readCompletedBorn(tenantId, 501L)).hasMessage("IQC_BIRTH_BINDING_INVALID");
+            verify(connection).rollback();
+        }
+    }
+    @Test void alteredBodyQuantityCannotReuseOriginalUnitBinding() throws Exception {
+        arrange(); arrangeBirth(); row.setQuantity(new BigDecimal("12.35"));
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
+            assertThatThrownBy(() -> service.readCompletedBorn(tenantId, 501L)).hasMessage("IQC_BIRTH_BINDING_INVALID");
+            verify(connection).rollback();
+        }
+    }
+    @Test void correctlyHashedBindingCannotCertifyAnOldCreationTime() throws Exception {
+        arrange(); arrangeBirth(); row.setCreateTime(new Date(now - 86400000));
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
+            assertThatThrownBy(() -> service.readCompletedBorn(tenantId, 501L)).hasMessage("IQC_BIRTH_BINDING_INVALID");
+            verify(connection).rollback();
+        }
+    }
+    @Test void birthMetadataRecheckCannotWeakenNativeBoundPrecision() throws Exception {
+        arrange(); arrangeBirth(); var changed = QcReceiptIqcBirthServiceTest.nativeColumns();
+        changed.stream().filter(c -> "bound_at".equals(c.getColumnName())).forEach(c -> c.setDatetimePrecision(0));
+        doReturn(QcReceiptIqcBirthServiceTest.nativeColumns(), changed).when(birthMapper).selectNativeColumns();
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(tenantId);
+            assertThatThrownBy(() -> service.readCompletedBorn(tenantId, 501L)).hasMessage("IQC_BIRTH_NATIVE_SCHEMA_UNSUPPORTED");
             verify(connection).rollback();
         }
     }

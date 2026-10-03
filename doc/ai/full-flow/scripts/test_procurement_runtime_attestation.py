@@ -22,7 +22,7 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
         self.started=self.now-timedelta(hours=1)
         self.credentials=self.p.Credentials(token='private-token',client_id='fixture-client',tenant_id='000000')
         self.process={'listeners':[{'port':8080,'pid':13579,'name':'java.exe','startedAt':self.started.isoformat()}]}
-        self.calls=[];self.mutate=lambda data:None;self.http_error=None;self.clock_calls=0
+        self.calls=[];self.mutate=lambda data:None;self.http_error=None;self.clock_calls=0;self.contract_code=200
         self.identity={'principalSha256':self.p.digest('1'),'tenantSha256':self.p.digest('000000')}
         self.databases={name:{'port':3306,'schema':schema,'serverUuidSha256':'d'*64}
                         for name,schema in self.p.SCHEMAS.items()}
@@ -34,12 +34,12 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
         return self.m.BackendRuntimeAuthority(**{**args,**overrides})
 
     def payload(self,challenge):
-        return {'schemaVersion':1,'challengeSha256':self.p.digest(challenge),
+        return {'schemaVersion':2,'challengeSha256':self.p.digest(challenge),
                 'observedAt':self.now.isoformat(),**self.identity,
                 'runtime':{'pid':13579,'startedAt':self.started.isoformat(),'instanceSha256':'e'*64,
                            'activeProfiles':['dev'],'measurementMode':'IMMUTABLE_STARTUP_CLASS_BYTES',
                            'classLoading':'STANDARD_IMMUTABLE','runtimeOverrides':[]},
-                'build':{'gitCommit':'a'*40,'artifactSha256':'b'*64,'manifestSha256':'c'*64,
+                'build':{'boundaryContract':self.m.BOUNDARY_CONTRACT,'requiredClassSetSha256':self.m.REQUIRED_CLASS_SET_SHA256,'gitCommit':'a'*40,'artifactSha256':'b'*64,'manifestSha256':'c'*64,
                          'manifestSource':'EMBEDDED_BUILD_MANIFEST',
                          'classes':{name:{'sha256':'f'*64,'manifestClassSha256':'f'*64,'originSha256':'e'*64}
                                     for name in self.m.REQUIRED_CLASSES}},
@@ -55,7 +55,7 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
             self.assertEqual('/system/runtime/attestation',path)
             if self.http_error:raise self.http_error
             challenge=parse_qs(urlsplit(request.full_url).query)['challenge'][0]
-            data=self.payload(challenge);self.mutate(data);document={'code':200,'data':data}
+            data=self.payload(challenge);self.mutate(data);document={'code':self.contract_code,'data':data}
         result=io.BytesIO(json.dumps(document).encode());result.status=200;return result
 
     def enforce(self,authority=None):
@@ -67,22 +67,61 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
         self.assertIsInstance(self.authority,self.p.RuntimeAuthority)
         self.assertEqual('NOT_OBSERVED',self.authority.evidence()['status'])
 
-    def test_authenticated_nonce_bound_build_and_live_datasource_proof_enforces(self):
-        self.assertIsNone(self.enforce())
-        evidence=self.authority.evidence();self.assertEqual('VERIFIED',evidence['status'])
-        self.assertEqual('authenticated_backend_loaded_manifest_and_live_database_identity',evidence['source'])
+    def test_old_hash_matching_json_is_not_an_exclusive_loaded_runtime_proof(self):
+        with self.assertRaises(self.p.PreflightBlocked):
+            self.enforce()
+        self.assertEqual('BLOCKED',self.authority.evidence()['status'])
+
+    def test_fabricated_future_domain_and_verified_flags_cannot_enable_an_issuer(self):
+        def fabricate(data):
+            data['status']='VERIFIED'
+            data['build'].update({'proofStatus':'VERIFIED','supportedProofDomain':'SIGNED_EXCLUSIVE_PREMAIN_V1',
+                                  'finalBytesProven':True,'witness':{'state':'LOAD_IDENTITY_CONFIRMED'}})
+        self.mutate=fabricate
+        with self.assertRaises(self.p.PreflightBlocked):
+            self.enforce()
+        self.assertEqual('BLOCKED',self.authority.evidence()['status'])
+
+    def test_authenticated_nonce_bound_hashes_still_have_no_supported_issuer(self):
+        with self.assertRaises(self.p.PreflightBlocked):self.enforce()
+        evidence=self.authority.evidence();self.assertEqual('BLOCKED',evidence['status'])
+        self.assertFalse(self.m.SUPPORTED_PROOF_DOMAINS)
+        self.assertEqual('NONE',evidence['supportedProofDomain'])
         self.assertFalse(evidence['businessWriteAuthorized'])
-        self.assertEqual(len(self.m.REQUIRED_CLASSES),evidence['loadedClassCount'])
         self.assertNotIn('private-token',json.dumps(evidence))
         self.assertTrue(all(r.get_method()=='GET' for r in self.calls))
         self.assertTrue(all(r.get_header('Authorization')=='Bearer private-token' for r in self.calls))
 
     def test_each_enforcement_fetches_a_new_challenge_and_does_not_accept_saved_reports(self):
-        self.enforce();self.enforce()
+        for _ in range(2):
+            with self.assertRaises(self.p.PreflightBlocked):self.enforce()
         challenges=[parse_qs(urlsplit(r.full_url).query)['challenge'][0] for r in self.calls
                     if urlsplit(r.full_url).path=='/system/runtime/attestation']
         self.assertEqual(2,len(challenges));self.assertNotEqual(challenges[0],challenges[1])
         self.assertNotIn('attestation_file',__import__('inspect').signature(self.m.BackendRuntimeAuthority).parameters)
+
+    def test_confirmed_premain_witness_from_412_is_not_promoted_to_final_bytes_or_database_access(self):
+        def report(data):
+            data['status']='BLOCKED';data['diagnosticCategory']='ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN'
+            data['build']={'boundaryContract':self.m.BOUNDARY_CONTRACT,'requiredClassSetSha256':self.m.REQUIRED_CLASS_SET_SHA256,'proofStatus':'UNPROVEN','supportedProofDomain':'NONE',
+                           'witness':{'state':'LOAD_IDENTITY_CONFIRMED','finalBytesProven':False,
+                                      'witnessSemantics':'PREDEFINE_CALLBACK_AND_LOADED_CLASS_IDENTITY'}}
+        self.contract_code=412;self.mutate=report;connections=[]
+        authority=self.build(database_probe=lambda:connections.append('borrowed'))
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce(authority)
+        self.assertEqual('ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN',caught.exception.category)
+        self.assertEqual([],connections)
+        self.assertEqual('NONE',authority.evidence()['supportedProofDomain'])
+        self.assertEqual('LOAD_IDENTITY_CONFIRMED',authority.evidence()['reportedWitnessState'])
+
+    def test_confirmed_generic_witness_preserves_the_v2_boundary_rejection(self):
+        def report(data):
+            data['status']='BLOCKED';data['diagnosticCategory']='ATTESTATION_BOUNDARY_CONTRACT_UNSUPPORTED'
+            data['build'].update({'proofStatus':'UNPROVEN','supportedProofDomain':'NONE',
+                                  'witness':{'state':'LOAD_IDENTITY_CONFIRMED','boundaryContract':None}})
+        self.mutate=report;self.contract_code=412
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce()
+        self.assertEqual('ATTESTATION_BOUNDARY_CONTRACT_UNSUPPORTED',caught.exception.category)
 
     def test_flags_filetime_git_head_or_classpath_are_not_loaded_artifact_proof(self):
         for field,value in (('build',{'gitCommit':'a'*40,'verified':True,'filetime':self.now.isoformat()}),
@@ -92,7 +131,7 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
                 with self.assertRaises(self.p.PreflightBlocked):self.enforce()
                 self.assertEqual('BLOCKED',self.authority.evidence()['status'])
 
-    def test_final_committed_head_loaded_class_hash_origin_and_manifest_are_required(self):
+    def test_matching_or_mismatching_git_and_disk_class_claims_never_authorize(self):
         mutations=[lambda d:d['build'].__setitem__('gitCommit','b'*40),
                    lambda d:d['build'].__setitem__('manifestSource','CURRENT_GIT_HEAD'),
                    lambda d:d['build'].__setitem__('artifactSha256',True),
@@ -130,7 +169,7 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
         self.mutate=lambda d:self.process['listeners'][0].__setitem__('pid',24680)
         with self.assertRaises(self.p.PreflightBlocked):self.enforce()
 
-    def test_all_four_backend_datasources_must_equal_live_mysql_identity_not_url(self):
+    def test_backend_datasource_claims_cannot_supply_missing_loaded_authority(self):
         mutations=[lambda d:d['datasources'].pop('mes'),
                    lambda d:d['datasources']['master'].__setitem__('port',3307),
                    lambda d:d['datasources']['erp'].__setitem__('schema','ry-vue'),
@@ -224,9 +263,29 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
     def test_loopback_hostname_alias_is_bound_to_the_same_8080_listener_not_a_different_environment(self):
         credentials=self.p.Credentials(token='private-token',client_id='fixture-client',tenant_id='000000',
                                        base_url='http://localhost:8080')
-        try:result=self.enforce(self.build(credentials=credentials))
-        except self.p.PreflightBlocked:result='rejected'
-        self.assertIsNone(result,'validated localhost/127.0.0.1 aliases must not prevent a real local attestation')
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce(self.build(credentials=credentials))
+        self.assertEqual('LOADED_BUILD_UNVERIFIED',caught.exception.category,
+                         '别名通过监听器绑定，但不虚构尚不存在的已加载权威')
+
+    def test_schema_one_report_cannot_be_reused_for_born_v2(self):
+        self.mutate=lambda data:data.__setitem__('schemaVersion',1)
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce()
+        self.assertEqual('ATTESTATION_CONTRACT_UNAVAILABLE',caught.exception.category)
+
+    def test_java_signer_system_and_python_required_class_sets_are_identical(self):
+        source=Path(__file__).resolve().parents[4]/'ruoyi-common/runtime-attestation-agent/src/main/java/com/nexus/runtime/attestation/ProcurementRuntimeBoundary.java'
+        declared=tuple(__import__('re').findall(r'"(com\.nexus\.[^"]+)"',source.read_text(encoding='utf-8')))
+        self.assertEqual(set(self.m.REQUIRED_CLASSES),set(declared))
+        self.assertEqual(self.p.digest('\n'.join(sorted(declared))+'\n'),self.m.REQUIRED_CLASS_SET_SHA256)
+
+    def test_born_v2_writer_and_readback_classes_are_in_the_required_boundary(self):
+        for name in ('com.nexus.erp.wm.service.WmReceiptIqcBirthService',
+                     'com.nexus.mes.qc.service.QcReceiptIqcBirthService',
+                     'com.nexus.erp.wm.service.WmReceiptIqcEvidenceService',
+                     'com.nexus.mes.qc.service.QcReceiptIqcEvidenceService'):
+            self.assertIn(name,self.m.REQUIRED_CLASSES)
+        self.assertEqual(25,len(self.m.REQUIRED_CLASSES))
+        self.assertEqual('PROCUREMENT_RECEIPT_IQC_BIRTH_V2',getattr(self.m,'BOUNDARY_CONTRACT',None))
 
     def test_receipt_producer_and_mq_writer_classes_are_in_the_required_loaded_manifest(self):
         for name in ('com.nexus.erp.wm.service.impl.WmMqSendService',

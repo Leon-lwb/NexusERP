@@ -3,34 +3,25 @@ package com.nexus.mes.common.mq.consumer;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.ReceiveApprovedMessage;
-import com.nexus.mes.qc.domain.bo.QcIqcBo;
-import com.nexus.mes.qc.service.IQcIqcService;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.qc.service.QcReceiptIqcBirthService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 /**
- * 消费 ERP 收货审批通过消息，自动创建 MES IQC 检验单。
- * <p>
- * 幂等：同一 (receiveId, materialId) 已创建 IQC 则跳过（查 qc_iqc.receive_id + material_id）。
- * 同一收货单多个需检物料时，ERP 按物料逐条发消息，此处逐条建独立 IQC。
- * <p>
- * 数据源注意：幂等查询与新增均经 {@link IQcIqcService} 调用，走类级 {@code @DS("mes")}
- * 切换到 ry-mes 库（qc_iqc 表所在库）。切勿在此直调 QcIqcMapper——消费者线程无 {@code @DS}
- * 上下文，直调 Mapper 会落到默认 master 库（ry-vue）报 Table doesn't exist。
- *
- * @author Nexus
+ * 收货审批消息只提供租户、收货和物料身份。原单位、数量及名称必须重新从 ERP 永久出生
+ * 登记取得；MES 创建与永久绑定由原生入口同事务完成，不用 Redis TTL 或裸唯一键冲突作认证。
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class IqcAutoCreateConsumer extends BaseMessageConsumer<ReceiveApprovedMessage> {
 
-    private final IQcIqcService iqcService;
+    private final QcReceiptIqcBirthService birthService;
 
     @Override
     protected Class<ReceiveApprovedMessage> getMessageClass() {
@@ -39,57 +30,32 @@ public class IqcAutoCreateConsumer extends BaseMessageConsumer<ReceiveApprovedMe
 
     @Override
     protected void doProcess(ReceiveApprovedMessage message) {
-        log.info("收到收货审批通过消息: receiveId={}, receiveCode={}, materialCode={}, quantity={}",
-            message.getReceiveId(), message.getReceiveCode(),
-            message.getMaterialCode(), message.getQuantity());
-
-        doCreateIqc(message);
-    }
-
-    /**
-     * 幂等创建 IQC：同 (receiveId, materialId) 已存在则跳过。
-     * <p>
-     * 幂等查询与新增都走 {@link IQcIqcService}（类级 {@code @DS("mes")}），确保落到 ry-mes 库。
-     */
-    private void doCreateIqc(ReceiveApprovedMessage message) {
-        if (iqcService.existsByReceiveAndMaterial(message.getReceiveId(), message.getMaterialId())) {
-            log.info("[IqcAutoCreate] 收货单 {} 物料 {} 已存在 IQC，跳过自动创建",
-                message.getReceiveId(), message.getMaterialId());
-            return;
-        }
-
-        try {
-            QcIqcBo bo = new QcIqcBo();
-            bo.setReceiveId(message.getReceiveId());
-            bo.setMaterialId(message.getMaterialId());
-            bo.setMaterialCode(message.getMaterialCode());
-            bo.setMaterialName(message.getMaterialName());
-            bo.setVendorId(message.getVendorId());
-            bo.setVendorName(message.getVendorName());
-            bo.setQuantity(message.getQuantity());
-            // iqcNo / status / inspectResult 由 QcIqcServiceImpl.insertByBo 内部生成
-            iqcService.insertByBo(bo);
-            log.info("[IqcAutoCreate] 收货单 {} 物料 {} 已自动创建 IQC",
-                message.getReceiveId(), message.getMaterialId());
-        } catch (DuplicateKeyException e) {
-            // MES-QC-04: uk_iqc_receive_material 冲突 = 并发下已被其他线程建单, 视为幂等成功, 不重投消息
-            log.info("[IqcAutoCreate] 收货单 {} 物料 {} 唯一键冲突, 视为已创建(幂等跳过)",
-                message.getReceiveId(), message.getMaterialId());
-        } catch (Exception e) {
-            log.error("[IqcAutoCreate] 收货单 {} 物料 {} 自动创建 IQC 失败: {}",
-                message.getReceiveId(), message.getMaterialId(), e.getMessage(), e);
-            throw new RuntimeException("IQC 自动创建失败", e);
-        }
+        birthService.create(TenantHelper.getTenantId(), message.getReceiveId(), message.getMaterialId());
+        log.info("[IqcAutoCreate] 原生 IQC 创建或完整出生重放成功: receiveId={}, materialId={}",
+            message.getReceiveId(), message.getMaterialId());
     }
 
     @RabbitListener(queues = QueueConstants.MES_IQC_CREATE_QUEUE)
     /**
      * onMessage 操作
-     * @param message message
-     * @param channel channel
-     * @param amqpMessage amqpMessage
+     * @param message 收货审批消息
+     * @param channel 消息确认通道
+     * @param amqpMessage 原始投递元信息
      */
     public void onMessage(ReceiveApprovedMessage message, Channel channel, Message amqpMessage) throws Exception {
+        try {
+            // 原生创建或同 Birth 恢复必须先完成，Redis 的 DONE/PENDING 不能代替永久事实。
+            String tenantId = resolveTenantId(message);
+            TenantHelper.dynamic(tenantId, () -> doProcess(message));
+        } catch (RuntimeException unprovenBirth) {
+            // 沿用来源预检失败的隔离策略：不确认、不删除旧占位，修复后由运维重新投递。
+            // 不将原生 SQL、来源主体或连接诊断带入消息日志。
+            log.warn("IQC出生永久事实预检失败，消息隔离: messageId={}",
+                message == null ? null : message.getMessageId());
+            channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, false);
+            return;
+        }
+        // 普通消费仍由基类处理；再次 create 必须核验同永久身份，而不是新增检验或模板。
         processMessage(message, channel, amqpMessage);
     }
 }

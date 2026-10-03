@@ -4,6 +4,10 @@ import com.baomidou.dynamic.datasource.tx.TransactionContext;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.iqc.IqcNativeSchema;
 import com.nexus.common.mq.iqc.ReceiptIqcSource;
+import com.nexus.common.mq.iqc.ReceiptIqcBirthSupport;
+import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
+import com.nexus.common.mq.iqc.ReceiptIqcSource.BornInspection;
+import com.nexus.erp.wm.mapper.WmReceiptIqcBirthMapper;
 import com.nexus.common.mq.iqc.ReceiptIqcSource.Inspection;
 import com.nexus.common.mq.message.IqcCompletedMessage;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -33,21 +37,31 @@ import java.util.function.Consumer;
 /**
  * IQC 授权仅来自当前 MES 真实读取，绝不来自收货单头或 MQ 中的结果、数量。
  * 先读取 MES，再进入 ERP 独立掌控的可重复读事务；这不是跨库 ACID。
- * 合格 IQC 认证保持关闭：qc_iqc 缺少原生原始数量单位及创建时来源范围契约。
+ * 新IQC仅由实际ERP登记与同MES创建事务的原生绑定生成V2；旧无出生事实的合格检验保持关闭。
  * 既有 V1 记录和当前 ERP 数值相等，绝不能升级缺失的历史来源证明。
  * 没有任何公开方法接收 Inspection、EvidenceRow 或已验证 DTO 作为持久化输入。
  */
 @Service
 public class WmReceiptIqcEvidenceService {
+    private static final String BORN_SOURCE_KIND = "MES_QC_IQC_RECEIVE_MATERIAL_V2";
     private static final String SOURCE_KIND = "MES_QC_IQC_RECEIVE_MATERIAL_V1";
     private static final String SOURCE_VERSION_PREFIX = "QC_IQC_CURRENT_V1:";
     private final WmReceiptIqcEvidenceMapper mapper;
     private final ReceiptIqcSource source;
+    private final WmReceiptIqcBirthMapper births;
     private final PuRequirementErpTransactionExecutor transactions;
     private final PuRequirementErpTransactionQualification qualification;
 
     public WmReceiptIqcEvidenceService(WmReceiptIqcEvidenceMapper mapper, ReceiptIqcSource source,
         PuRequirementErpTransactionExecutor transactions, PuRequirementErpTransactionQualification qualification) {
+        this(mapper, source, transactions, qualification, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WmReceiptIqcEvidenceService(WmReceiptIqcEvidenceMapper mapper, ReceiptIqcSource source,
+        PuRequirementErpTransactionExecutor transactions, PuRequirementErpTransactionQualification qualification,
+        WmReceiptIqcBirthMapper births) {
+        this.births = births;
         this.mapper = Objects.requireNonNull(mapper);
         this.source = Objects.requireNonNull(source);
         this.transactions = Objects.requireNonNull(transactions);
@@ -59,7 +73,7 @@ public class WmReceiptIqcEvidenceService {
         requireLockedEvidence(tenantId, receiveId, materialId, baseUomId, expectedQty);
     }
 
-    /** 同样执行封闭的 V1 核验；实现原生创建时来源采集之前不签发 EvidenceIdentity。 */
+    /** V1仍拒绝；V2重读原生出生登记及范围，不凭当前数值相等签发 EvidenceIdentity。 */
     public EvidenceIdentity requireLockedEvidence(String tenantId, Long receiveId, Long materialId,
                                                   Long baseUomId, BigDecimal expectedQty) {
         requireTenant(tenantId);
@@ -69,8 +83,9 @@ public class WmReceiptIqcEvidenceService {
         EvidenceRow evidence = mapper.selectReceiptMaterialForUpdate(tenantId, receiveId, materialId);
         if (evidence == null) throw fail("IQC_EVIDENCE_MISSING");
         requireIntegrity(evidence, tenantId);
-        requireOriginalQuantityContract();
+        if (!BORN_SOURCE_KIND.equals(evidence.getSourceKind()) || evidence.getBirthId() == null) requireOriginalQuantityContract();
         Scope scope = requireScope(tenantId, receiveId, materialId);
+        requireStoredBirth(evidence, scope);
         if (!"QUALIFIED".equals(evidence.getInspectResult())) throw fail("IQC_EVIDENCE_NOT_QUALIFIED");
         requireScopeMatches(evidence, scope);
         if (!baseUomId.equals(evidence.getBaseUomId())) throw fail("IQC_EVIDENCE_UNIT_MISMATCH");
@@ -88,12 +103,30 @@ public class WmReceiptIqcEvidenceService {
      * 只有 MES 的实际 UNQUALIFIED 结论才能进入基于身份的不合格隔离。不得推断数量或单位
      * 契约，不插入证据，也不允许合格放行。
      * 真实不合格消息重复到达时可幂等重施保护，包括已入账的收货单。
-     * 实现原生数量单位及创建时来源采集之前，合格认证保持关闭。
+     * 合格观测必须另读原生出生绑定并重核ERP登记；无绑定的历史合格检验仍拒绝。
      */
     public void consumeCompleted(IqcCompletedMessage message, Consumer<Completion> projection) {
         if (projection == null) throw fail("IQC_PROJECTION_REQUIRED");
         Inspection actual = readSource(message);
-        if (!"UNQUALIFIED".equals(actual.result())) requireOriginalQuantityContract();
+        if ("QUALIFIED".equals(actual.result())) {
+            BornInspection born = readBorn(actual);
+            transactions.executeRepeatableRead(actual.tenantId(), () -> {
+                Scope scope = requireScope(actual.tenantId(), actual.receiveId(), actual.materialId());
+                requireBornRegistry(born, scope);
+                EvidenceRow existing = findExisting(message, born.inspection());
+                if (existing == null) {
+                    EvidenceRow fresh = evidence(message, born.inspection(), scope, born);
+                    if (mapper.insertEvidence(fresh) != 1) throw fail("IQC_EVIDENCE_INSERT_CONFLICT");
+                } else {
+                    if (!BORN_SOURCE_KIND.equals(existing.getSourceKind())) requireOriginalQuantityContract();
+                    requireReplayMatches(existing, born.inspection(), scope); requireStoredBirth(existing, scope);
+                }
+                projection.accept(new Completion(actual.inspectionId(), actual.inspectionCode(), actual.receiveId(),
+                    actual.materialId(), "QUALIFIED", born.inspection().quantity()));
+                qualification.requireSourceChainTransaction(); return null;
+            });
+            return;
+        }
         transactions.executeRepeatableRead(actual.tenantId(), () -> {
             NegativeIdentity identity = requireUnqualifiedIdentity(actual);
             isolateOriginalTargets(actual, identity);
@@ -108,7 +141,17 @@ public class WmReceiptIqcEvidenceService {
     /** 仅做核验；消费者预检通过 consumeCompleted 幂等重施安全保护。 */
     public void verifyReplay(IqcCompletedMessage message) {
         Inspection actual = readSource(message);
-        if (!"UNQUALIFIED".equals(actual.result())) requireOriginalQuantityContract();
+        if ("QUALIFIED".equals(actual.result())) {
+            BornInspection born = readBorn(actual);
+            transactions.executeRepeatableRead(actual.tenantId(), () -> {
+                Scope scope = requireScope(actual.tenantId(), actual.receiveId(), actual.materialId());
+                requireBornRegistry(born, scope); EvidenceRow existing = findExisting(message, born.inspection());
+                if (existing == null) throw fail("IQC_EVIDENCE_MISSING");
+                if (!BORN_SOURCE_KIND.equals(existing.getSourceKind())) requireOriginalQuantityContract();
+                requireReplayMatches(existing, born.inspection(), scope); requireStoredBirth(existing, scope); return null;
+            });
+            return;
+        }
         transactions.executeRepeatableRead(actual.tenantId(), () -> { requireUnqualifiedIdentity(actual); return null; });
     }
 
@@ -282,14 +325,23 @@ public class WmReceiptIqcEvidenceService {
         requireTimes(actual.createdAt(), actual.completedAt(), actual.updatedAt(), actual.observedAt(),
             System.currentTimeMillis());
         // 只有真实的 UNQUALIFIED 身份才能进入不合格隔离。其原始数量
-        // 特意不作为依据；合格观测仍然缺少创建时来源证明。
-        if (!"UNQUALIFIED".equals(actual.result())) requireOriginalQuantityContract();
+        // 特意不作为依据；合格观测必须再核其实际创建时来源证明。
         return actual;
     }
 
     private void requireNativeSchema() {
         qualification.requireSourceChainTransaction();
         IqcNativeSchema.requireErpDefinition(mapper.selectNativeColumns(), mapper.selectNativeIndexes());
+    }
+
+    /** 只返回同ERP独占事务中的原生创建范围，不给旧检验补单位，也不接受外部Scope。 */
+    public Scope captureBirthScopeLocked(String tenantId, Long receiveId, Long materialId) {
+        requireTenant(tenantId); qualification.requireSourceChainTransaction();
+        Scope scope = requireScope(tenantId, receiveId, materialId);
+        requireBornUnit(tenantId, materialId, scope.baseUomId());
+        ReceiptHeader header = mapper.selectReceiveForUpdate(tenantId, receiveId);
+        if (header == null || !"APPROVED".equals(header.getStatus())) throw fail("IQC_BIRTH_RECEIPT_NOT_APPROVED");
+        return scope;
     }
 
     private Scope requireScope(String tenantId, Long receiveId, Long materialId) {
@@ -321,6 +373,8 @@ public class WmReceiptIqcEvidenceService {
         List<Object> body = new ArrayList<>(List.of(SOURCE_KIND, tenantId, receiveId, materialId,
             header.getReceiveCode(), header.getCreateTime(), material.getBaseUomId(), unit.getQuantityScale()));
         body.add(header.getNoticeId()); body.add(header.getPurId()); body.add(header.getVendorId());
+        body.add(unit.getIsBase()); body.add(unit.getPrimaryId()); body.add(unit.getConversionRate());
+        body.add(unit.getConversionVersion()); body.add(unit.getConversionVerifiedAt()); body.add(unit.getCategory());
         Set<Long> ids = new HashSet<>();
         BigDecimal total = BigDecimal.ZERO;
         for (ReceiptLine line : lines) {
@@ -389,11 +443,93 @@ public class WmReceiptIqcEvidenceService {
             || row.getCompletedAt().getTime() < scope.receiptCreatedAt()) throw fail("IQC_EVIDENCE_RECEIPT_CHANGED");
     }
 
-    private EvidenceRow evidence(IqcCompletedMessage message, Inspection actual, Scope scope) {
-        // 绝不能将 scope.baseUomId() 赋给历史上未包含单位的 MES 数量。此工厂
-        // 在实现原生创建时数量单位及来源采集之前保持关闭。
-        requireOriginalQuantityContract();
-        throw fail("UNIT_ORIGIN_UNPROVEN");
+    /** 只从MES原生出生绑定及ERP重读的同一登记生成V2，不从当前单位升级历史裸检验。 */
+    private EvidenceRow evidence(IqcCompletedMessage message, Inspection actual, Scope scope, BornInspection born) {
+        EvidenceRow row = new EvidenceRow();
+        row.setEvidenceId(com.baomidou.mybatisplus.core.toolkit.IdWorker.getId()); row.setTenantId(actual.tenantId());
+        row.setInspectionId(actual.inspectionId()); row.setInspectionCode(actual.inspectionCode());
+        row.setReceiveId(actual.receiveId()); row.setMaterialId(actual.materialId());
+        row.setBaseUomId(born.birth().baseUomId()); row.setQuantityScale(born.birth().quantityScale());
+        row.setInspectedQuantity(actual.quantity()); row.setInspectResult(actual.result()); row.setInspectorId(actual.inspectorId());
+        row.setSourceKind(BORN_SOURCE_KIND); row.setSourceVersion(actual.sourceVersion());
+        row.setActualBodySha256(actual.actualBodySha256()); row.setReceiptScopeSha256(born.birth().receiptScopeSha256());
+        row.setFirstMessageId(message.getMessageId()); row.setSourceCreatedAt(new Date(actual.createdAt()));
+        row.setCompletedAt(new Date(actual.completedAt())); row.setSourceUpdatedAt(actual.updatedAt()==null?null:new Date(actual.updatedAt()));
+        row.setObservedAt(new Date(actual.observedAt())); row.setCertifiedAt(new Date(System.currentTimeMillis()));
+        row.setBirthId(born.birth().birthId()); row.setBirthSha256(born.birth().birthSha256());
+        row.setEvidenceSha256(evidenceSha(row)); requireIntegrity(row, actual.tenantId()); return row;
+    }
+
+    private BornInspection readBorn(Inspection identity) {
+        if (births == null) requireOriginalQuantityContract();
+        requireOutsideTransaction(); BornInspection born;
+        try { born = source.readCompletedBorn(identity.tenantId(), identity.inspectionId()); }
+        catch (ServiceException invalid) {
+            if ("UNIT_ORIGIN_UNPROVEN".equals(invalid.getMessage())) requireOriginalQuantityContract();
+            throw fail("IQC_SOURCE_UNAVAILABLE");
+        } catch (RuntimeException invalid) { throw fail("IQC_SOURCE_UNAVAILABLE"); }
+        requireOutsideTransaction();
+        if (born == null || born.inspection() == null || born.birth() == null) requireOriginalQuantityContract();
+        Inspection actual = born.inspection(); ReceiptIqcBirthSupport.validate(born.birth());
+        if (!identity.tenantId().equals(actual.tenantId()) || !identity.inspectionId().equals(actual.inspectionId())
+            || !identity.receiveId().equals(actual.receiveId()) || !identity.materialId().equals(actual.materialId())
+            || !"COMPLETED".equals(actual.status()) || !"QUALIFIED".equals(actual.result())
+            || !hash(actual.actualBodySha256()) || !Objects.equals(actual.sourceVersion(), SOURCE_VERSION_PREFIX+actual.actualBodySha256())
+            || !identity.inspectorId().equals(actual.inspectorId()) || !Objects.equals(identity.createdAt(), actual.createdAt())
+            || !Objects.equals(identity.completedAt(), actual.completedAt()) || !Objects.equals(identity.updatedAt(),actual.updatedAt())
+            || !identity.inspectionCode().equals(actual.inspectionCode()) || actual.quantity()==null
+            || actual.quantity().compareTo(born.birth().quantity())!=0 || born.boundAt()>actual.observedAt()
+            || born.boundAt()<born.birth().capturedAt() || actual.createdAt()>born.boundAt()
+            || born.boundAt()-actual.createdAt()>=1000 || !ReceiptIqcBirthSupport.bindingHash(actual.inspectionId(),born.birth(),born.boundAt()).equals(born.bindingSha256())) {
+            throw fail("IQC_BIRTH_BINDING_INVALID");
+        }
+        requireTimes(actual.createdAt(),actual.completedAt(),actual.updatedAt(),actual.observedAt(),System.currentTimeMillis());
+        return born;
+    }
+
+    private Birth requireBornRegistry(BornInspection born, Scope scope) {
+        Birth registered = registry(born.birth().tenantId(),born.birth().birthId());
+        if (!registered.birthSha256().equals(born.birth().birthSha256())
+            || !registered.baseUomId().equals(born.birth().baseUomId()) || registered.quantity().compareTo(born.birth().quantity())!=0) {
+            throw fail("IQC_BIRTH_REGISTRY_CONFLICT");
+        }
+        requireBornUnit(registered.tenantId(), registered.materialId(), registered.baseUomId());
+        matchBirthScope(registered,scope); return registered;
+    }
+    private void requireStoredBirth(EvidenceRow evidence, Scope scope) {
+        Birth registered = registry(evidence.getTenantId(),evidence.getBirthId());
+        if (!registered.birthSha256().equals(evidence.getBirthSha256())
+            || !registered.baseUomId().equals(evidence.getBaseUomId()) || !Objects.equals(registered.quantityScale(),evidence.getQuantityScale())
+            || registered.quantity().compareTo(evidence.getInspectedQuantity())!=0) throw fail("IQC_BIRTH_REGISTRY_CONFLICT");
+        requireBornUnit(registered.tenantId(), registered.materialId(), registered.baseUomId());
+        matchBirthScope(registered,scope);
+    }
+    private Birth registry(String tenant,Long id) {
+        if (births==null || id==null) requireOriginalQuantityContract();
+        qualification.requireSourceChainTransaction();
+        IqcNativeSchema.requireErpBirthDefinition(births.columns(),births.indexes());
+        var record=births.lockId(tenant,id); if(record==null) throw fail("IQC_BIRTH_REGISTRY_MISSING");
+        Birth registered=record.value();ReceiptIqcBirthSupport.validate(registered);
+        if(!tenant.equals(registered.tenantId())||!id.equals(registered.birthId())||registered.capturedAt()>System.currentTimeMillis()) throw fail("IQC_BIRTH_REGISTRY_CONFLICT");
+        return registered;
+    }
+    /** 新出生原单位必须有真实恒等根及版本/核验时点；不猜历史默认根或换算率。 */
+    private void requireBornUnit(String tenant, Long materialId, Long unitId) {
+        NativeUnit unit=mapper.selectUnitForUpdate(tenant,unitId);
+        MaterialUnit material=mapper.selectMaterialForUpdate(tenant,materialId);
+        if(unit==null||material==null||!tenant.equals(material.getTenantId())||!unitId.equals(material.getBaseUomId())
+            ||!tenant.equals(unit.getTenantId())||!unitId.equals(unit.getUomId())||!Long.valueOf(1).equals(unit.getIsBase())
+            ||!unitId.equals(unit.getPrimaryId())||unit.getConversionRate()==null||unit.getConversionRate().compareTo(BigDecimal.ONE)!=0
+            ||blank(unit.getConversionVersion())||blank(unit.getCategory())||unit.getConversionVerifiedAt()==null
+            ||unit.getConversionVerifiedAt().getTime()>System.currentTimeMillis()||!Integer.valueOf(1).equals(unit.getStatus())
+            ||!"0".equals(unit.getDelFlag())||!"0".equals(material.getDelFlag())) throw fail("IQC_NATIVE_UNIT_UNKNOWN");
+    }
+    private static void matchBirthScope(Birth registered,Scope scope) {
+        if(!registered.receiveId().equals(scope.receiveId())||!registered.materialId().equals(scope.materialId())
+            ||!registered.baseUomId().equals(scope.baseUomId())||registered.quantityScale()!=scope.quantityScale()
+            ||registered.quantity().compareTo(scope.quantity())!=0||!registered.receiptScopeSha256().equals(scope.sha256())) {
+            throw fail("IQC_BIRTH_SOURCE_CHANGED");
+        }
     }
 
     private static void requireOriginalQuantityContract() {
@@ -405,7 +541,7 @@ public class WmReceiptIqcEvidenceService {
     private void requireIntegrity(EvidenceRow row, String tenantId) {
         positiveId(row.getEvidenceId()); positiveId(row.getInspectionId()); positiveId(row.getReceiveId());
         positiveId(row.getMaterialId()); positiveId(row.getBaseUomId()); positiveId(row.getInspectorId());
-        if (!tenantId.equals(row.getTenantId()) || !SOURCE_KIND.equals(row.getSourceKind())
+        if (!tenantId.equals(row.getTenantId()) || !(SOURCE_KIND.equals(row.getSourceKind()) || BORN_SOURCE_KIND.equals(row.getSourceKind()))
             || !result(row.getInspectResult()) || blank(row.getInspectionCode()) || blank(row.getFirstMessageId())
             || row.getQuantityScale() == null || row.getQuantityScale() < 0 || row.getQuantityScale() > 4
             || !hash(row.getActualBodySha256()) || !hash(row.getReceiptScopeSha256()) || !hash(row.getEvidenceSha256())
@@ -419,11 +555,13 @@ public class WmReceiptIqcEvidenceService {
     }
 
     private static String evidenceSha(EvidenceRow row) {
-        return sha(row.getEvidenceId(), row.getTenantId(), row.getInspectionId(), row.getInspectionCode(),
+        String original = sha(row.getEvidenceId(), row.getTenantId(), row.getInspectionId(), row.getInspectionCode(),
             row.getReceiveId(), row.getMaterialId(), row.getBaseUomId(), row.getQuantityScale(), row.getInspectedQuantity(),
             row.getInspectResult(), row.getInspectorId(), row.getSourceKind(), row.getSourceVersion(),
             row.getActualBodySha256(), row.getReceiptScopeSha256(), row.getFirstMessageId(), row.getSourceCreatedAt(),
             row.getCompletedAt(), row.getSourceUpdatedAt(), row.getObservedAt(), row.getCertifiedAt());
+        if (BORN_SOURCE_KIND.equals(row.getSourceKind())) return sha(original,row.getBirthId(),row.getBirthSha256());
+        return original;
     }
 
     private static void requireTenant(String tenantId) {
@@ -469,7 +607,7 @@ public class WmReceiptIqcEvidenceService {
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException impossible) { throw fail("IQC_DIGEST_UNAVAILABLE"); }
     }
-    private record Scope(Long receiveId, Long materialId, Long baseUomId, int quantityScale,
+    public record Scope(Long receiveId, Long materialId, Long baseUomId, int quantityScale,
                          BigDecimal quantity, String sha256, long receiptCreatedAt) { }
     public record Completion(Long inspectionId, String inspectionCode, Long receiveId, Long materialId,
                              String result, BigDecimal quantity) { }

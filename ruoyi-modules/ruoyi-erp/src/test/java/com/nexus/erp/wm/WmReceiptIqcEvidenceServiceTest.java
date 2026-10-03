@@ -66,6 +66,8 @@ class WmReceiptIqcEvidenceServiceTest {
         material.setTenantId(TENANT); material.setMaterialId(201L); material.setBaseUomId(301L); material.setDelFlag("0");
         when(mapper.selectMaterialForUpdate(TENANT, 201L)).thenReturn(material);
         NativeUnit unit = new NativeUnit();
+        unit.setCategory("COUNT"); unit.setIsBase(1L); unit.setPrimaryId(301L); unit.setConversionRate(BigDecimal.ONE);
+        unit.setConversionVersion("root-v1"); unit.setConversionVerifiedAt(new Date(now-200000));
         unit.setTenantId(TENANT); unit.setUomId(301L); unit.setQuantityScale(4); unit.setStatus(1); unit.setDelFlag("0");
         when(mapper.selectUnitForUpdate(TENANT, 301L)).thenReturn(unit);
         when(mapper.insertEvidence(any())).thenAnswer(i -> { stored = i.getArgument(0); return 1; });

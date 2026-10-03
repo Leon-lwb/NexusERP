@@ -1,9 +1,9 @@
-"""可执行的只读已加载运行时权威校验器；绝不授予业务写入权限。
+"""认证绑定的运行时权威入口；签名发布和真实 premain 见证仍不能代替独占链证明。
 
-信任根是正在运行的本机回环后端返回的新鲜且经过认证的响应，而不是
-可编辑的证据文件、git status、JVM 类路径、调用方标志或磁盘时间。
-构建度量契约刻意采用比标准 actuator info 更严格的要求。
-缺少该后端契约时，默认具体实现仍明确处于 BLOCKED 状态。
+固定外部根与回调/成功 Class 身份由进程内 agent 核验，HTTP JSON 只是传输载体。
+JDK 公共 API 无法认证全部 Java/native transformer 及未来注册禁令，当前没有可
+诚实签发最终加载字节证明的域。无论响应声称什么 verified 标志，均保持 BLOCKED；
+不得用 Git HEAD、磁盘摘要、资源内容或后端自报标志升级为业务写入前置证明。
 """
 from __future__ import annotations
 from copy import deepcopy
@@ -22,8 +22,11 @@ from procurement_runtime_preflight import (Credentials, LocalSettings, Preflight
     diagnostic_category, configuration_value, parse_config_text, _flatten, LOCAL_TIMEZONE)
 
 ATTESTATION_PATH = '/system/runtime/attestation'
+# 空集合明确表示尚无可信独占链签发域，不能通过参数或配置增补。
+SUPPORTED_PROOF_DOMAINS = frozenset()
 MAX_AGE_SECONDS = 30
 CLOCK_SKEW_SECONDS = 2
+BOUNDARY_CONTRACT = 'PROCUREMENT_RECEIPT_IQC_BIRTH_V2'
 REQUIRED_CLASSES = (
     'com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService',
     'com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard',
@@ -37,7 +40,21 @@ REQUIRED_CLASSES = (
     'com.nexus.erp.mq.message.StockInMessage',
     'com.nexus.erp.mq.consumer.PurchaseReceiveWritebackConsumer',
     'com.nexus.common.mq.consumer.BaseMessageConsumer',
+    'com.nexus.erp.wm.service.WmReceiptIqcBirthService',
+    'com.nexus.mes.qc.service.QcReceiptIqcBirthService',
+    'com.nexus.erp.wm.service.WmReceiptIqcEvidenceService',
+    'com.nexus.mes.qc.service.QcReceiptIqcEvidenceService',
+    'com.nexus.erp.wm.service.WmCertifiedReceiptPostingService',
+    'com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard',
+    'com.nexus.erp.wm.service.PdaReceiveShelfAllocationService',
+    'com.nexus.erp.wm.service.impl.PdaReceiveServiceImpl',
+    'com.nexus.erp.mq.consumer.ErpIqcCompletedConsumer',
+    'com.nexus.mes.common.mq.consumer.IqcAutoCreateConsumer',
+    'com.nexus.common.mq.iqc.ReceiptIqcBirthSupport',
+    'com.nexus.erp.pu.service.PuCertifiedPurchaseOrderWorkflowService',
+    'com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService',
 )
+REQUIRED_CLASS_SET_SHA256 = digest('\n'.join(sorted(REQUIRED_CLASSES)) + '\n')
 ATTESTATION_CATEGORIES = frozenset({
     'ATTESTATION_ENDPOINT_MISSING','ATTESTATION_CONTRACT_UNAVAILABLE','ATTESTATION_REJECTED',
     'ATTESTATION_STALE','ATTESTATION_CHALLENGE_MISMATCH','AUTH_CONTEXT_MISMATCH',
@@ -48,6 +65,16 @@ ATTESTATION_CATEGORIES = frozenset({
     'CONNECTION_REFUSED','CONNECTION_TIMEOUT','SCHEMA_MISSING','TARGET_MISMATCH',
     'READONLY_CLEANUP_FAILED','ENCRYPTED_CONFIG_UNRESOLVED','ENCRYPTED_CONFIG_UNSUPPORTED',
     'ENCRYPTED_CONFIG_DECRYPTION_FAILED',
+    'ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN','ATTESTATION_TRUST_ROOT_UNAVAILABLE',
+    'ATTESTATION_RELEASE_SIGNATURE_INVALID','ATTESTATION_RELEASE_MANIFEST_INVALID',
+    'ATTESTATION_LAUNCH_MODE_UNSUPPORTED','ATTESTATION_REQUIRED_CLASS_NOT_LOADED',
+    'ATTESTATION_CALLBACK_BYTES_MISMATCH','ATTESTATION_CLASS_LOADER_UNSUPPORTED',
+    'ATTESTATION_REDEFINITION_UNSUPPORTED','ATTESTATION_PACKAGING_UNSUPPORTED',
+    'ATTESTATION_RELEASE_INPUT_CHANGED','ATTESTATION_INSTRUMENTATION_UNPROVEN',
+    'ATTESTATION_DUPLICATE_AGENT_UNSUPPORTED','ATTESTATION_PREMAIN_TOO_LATE',
+    'ATTESTATION_IMMUTABLE_FILES_UNPROVEN','ATTESTATION_AGENT_STARTUP_FAILED',
+    'ATTESTATION_AGENT_ABSENT','ATTESTATION_BUILD_UNPROVEN',
+    'ATTESTATION_BOUNDARY_CONTRACT_UNSUPPORTED','ATTESTATION_BOUNDARY_CLASS_SET_INCOMPLETE',
 })
 
 
@@ -210,10 +237,11 @@ class BackendRuntimeAuthority(RuntimeAuthority):
     """默认的强制校验实现，绑定显式提供的现有凭据。
 
     构造或导入时不执行 I/O。每次 require_current 都会重新认证、
-    签发新的 nonce 并读取运行中的后端契约，比较独立获取的
-    实际数据源身份，随后重新检查监听器及身份主体。
-    成功时仅返回 None，绝不是报告、布尔值或写入授权。
-    仅测试使用的适配器替换的是 I/O 边界，而非提供 verified 或 apply 开关。
+    生成新的 nonce 并读取运行中的后端契约，再次检查监听器和身份主体。
+    目前所有独占链域均不受支持，因此任何响应都不能返回成功；尚未有可
+    验证的加载证明时不借用数据库连接。独立数据库身份读取函数仍供只读
+    核验使用，不以其成功替代加载证明。expected_head 仅保留接口兼容性，
+    不再把相等的源码提交视为已加载证据。测试适配器只替换 I/O 边界。
     """
     def __init__(self, *, credentials, settings=None, root=ROOT, config_dir=None,
                  opener=None, clock=None, process_probe=None, database_probe=None):
@@ -262,10 +290,10 @@ class BackendRuntimeAuthority(RuntimeAuthority):
             request=Request(target.base_url.rstrip('/')+ATTESTATION_PATH+'?'+urlencode({'challenge':nonce}),
                             headers=self._credentials.headers(),method='GET')
             document=request_document(request,self._open_contract,attempts=1)
-            _require(type(document.get('code')) is int and document['code']==200,
+            _require(type(document.get('code')) is int and document['code'] in (200,412),
                      'ATTESTATION_ENDPOINT_MISSING' if document.get('code')==404 else 'ATTESTATION_CONTRACT_UNAVAILABLE')
             data=document.get('data');_require(isinstance(data,dict),'ATTESTATION_CONTRACT_UNAVAILABLE')
-            _require(type(data.get('schemaVersion')) is int and data['schemaVersion']==1,'ATTESTATION_CONTRACT_UNAVAILABLE')
+            _require(type(data.get('schemaVersion')) is int and data['schemaVersion']==2,'ATTESTATION_CONTRACT_UNAVAILABLE')
             _require(data.get('challengeSha256')==digest(nonce),'ATTESTATION_CHALLENGE_MISMATCH')
             _require(data.get('tenantSha256')==digest(tenant_id) and data.get('principalSha256')==principal_sha256,
                      'AUTH_CONTEXT_MISMATCH')
@@ -275,48 +303,28 @@ class BackendRuntimeAuthority(RuntimeAuthority):
             _require(type(runtime.get('pid')) is int and (runtime['pid'],_time(runtime.get('startedAt')))==process_before
                      and _hash(runtime.get('instanceSha256')),'RUNTIME_PROCESS_UNVERIFIED')
             _require(runtime.get('activeProfiles')==['dev'],'RUNTIME_PROFILE_MISMATCH')
-            _require(runtime.get('measurementMode')=='IMMUTABLE_STARTUP_CLASS_BYTES'
-                     and runtime.get('classLoading')=='STANDARD_IMMUTABLE' and runtime.get('runtimeOverrides')==[],
-                     'RUNTIME_OVERRIDES_UNVERIFIED')
             build=data.get('build');_require(isinstance(build,dict),'LOADED_BUILD_UNVERIFIED')
-            _require(build.get('gitCommit')==expected_head,'LOADED_BUILD_MISMATCH')
-            _require(build.get('manifestSource')=='EMBEDDED_BUILD_MANIFEST'
-                     and _hash(build.get('artifactSha256')) and _hash(build.get('manifestSha256')),
-                     'LOADED_BUILD_UNVERIFIED')
-            classes=build.get('classes');_require(isinstance(classes,dict),'LOADED_BUILD_UNVERIFIED')
-            for name in REQUIRED_CLASSES:
-                item=classes.get(name)
-                _require(isinstance(item,dict) and _hash(item.get('sha256')) and _hash(item.get('originSha256'))
-                         and item['sha256']==item.get('manifestClassSha256'),'LOADED_BUILD_UNVERIFIED')
-            backend=data.get('datasources');actual=self._database_probe()
-            _require(isinstance(backend,dict) and isinstance(actual,dict)
-                     and set(backend)==set(actual)==set(SCHEMAS),'RUNTIME_DATASOURCE_MISMATCH')
-            for name,schema in SCHEMAS.items():
-                item=backend[name];local=actual[name]
-                _require(isinstance(item,dict) and isinstance(local,dict)
-                         and item.get('identitySource')=='LIVE_JDBC_METADATA_SELECT'
-                         and item.get('host') in ('localhost','127.0.0.1') and type(item.get('port')) is int
-                         and item['port']==local.get('port')==3306 and item.get('schema')==local.get('schema')==schema
-                         and _hash(item.get('serverUuidSha256'))
-                         and item['serverUuidSha256']==local.get('serverUuidSha256'),'RUNTIME_DATASOURCE_MISMATCH')
-                _fresh(item.get('observedAt'),before,self._clock())
+            _require(build.get('boundaryContract')==BOUNDARY_CONTRACT
+                     and build.get('requiredClassSetSha256')==REQUIRED_CLASS_SET_SHA256,
+                     'ATTESTATION_BOUNDARY_CONTRACT_UNSUPPORTED')
             _require(_listener(self._process_probe())==process_before,'RUNTIME_RESTARTED')
             auth_after=authentication_evidence(ReadOnlyClient(target,self._credentials,opener=self._opener),self._credentials)
             _require(auth_after.get('status')=='VERIFIED' and auth_after.get('principalSha256')==principal_sha256,
                      'AUTH_CONTEXT_MISMATCH')
             _require((self._credentials,self._opener)==binding,'AUTH_CONTEXT_MISMATCH')
-            observed=self._clock();_fresh(data['observedAt'],before,observed)
-            self._evidence={'status':'VERIFIED','businessWriteAuthorized':False,
-                'source':'authenticated_backend_loaded_manifest_and_live_database_identity',
-                'observedAt':observed.astimezone(LOCAL_TIMEZONE).isoformat(),'endpoint':ATTESTATION_PATH,
-                'principalSha256':principal_sha256,'tenantSha256':digest(tenant_id),
-                'gitCommit':expected_head,'artifactSha256':build['artifactSha256'],
-                'manifestSha256':build['manifestSha256'],'loadedClassCount':len(REQUIRED_CLASSES),
-                'processPid':process_before[0],'processStartedAt':process_before[1].isoformat(),
-                'instanceSha256':runtime['instanceSha256'],'activeProfiles':['dev'],
-                'datasourceIdentitySha256':digest(str(sorted((name,item['schema'],item['serverUuidSha256'])
-                                                            for name,item in actual.items())))}
-            return None
+            _fresh(data['observedAt'],before,self._clock())
+            witness=build.get('witness')
+            reported_state=witness.get('state') if isinstance(witness,dict) else 'ABSENT'
+            if reported_state not in {'ABSENT','DISABLED','INVALIDATED','PENDING_DEFINITIONS','LOAD_IDENTITY_CONFIRMED'}:
+                reported_state='UNSUPPORTED'
+            self._evidence.update({'supportedProofDomain':'NONE','reportedWitnessState':reported_state})
+            # 回调与真实 Class 身份是有限见证；后续 transformer 可在同一 JVM 改写字节。
+            # 没有外部强制独占链的实现，不能预留一个仅靠 JSON 名称/标志启用的成功路径。
+            category=data.get('diagnosticCategory') if document['code']==412 or data.get('status')=='BLOCKED' else None
+            category=category if category in ATTESTATION_CATEGORIES else 'LOADED_BUILD_UNVERIFIED'
+            if category=='LOADED_BUILD_UNVERIFIED' and reported_state=='LOAD_IDENTITY_CONFIRMED' and build.get('supportedProofDomain')=='NONE':
+                category='ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN'
+            raise PreflightBlocked('exclusive loaded-byte authority has no supported trusted issuer',category=category)
         except Exception as error:
             category=diagnostic_category(error)
             category=category if isinstance(category,str) and category in ATTESTATION_CATEGORIES else 'ATTESTATION_REJECTED'

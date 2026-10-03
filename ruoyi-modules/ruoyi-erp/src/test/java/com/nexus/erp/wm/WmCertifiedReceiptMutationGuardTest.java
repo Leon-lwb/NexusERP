@@ -28,4 +28,18 @@ class WmCertifiedReceiptMutationGuardTest {
     @Test void ordinaryExecuteMustNotBypassNativePostingForCertifiedOrder(){when(mapper.lockHead("000000",101L)).thenReturn(head("SHELVED"));when(mapper.lockCertifiedOrderIdentities("000000",301L)).thenReturn(List.of(301L));assertThrows(ServiceException.class,()->guard.requireLegacyExecution(101L));}
     @Test void legacyHistoryIsNotUpgradedByTheGuard(){when(mapper.lockCertifiedOrderIdentities("000000",301L)).thenReturn(List.of());assertDoesNotThrow(()->guard.requireLegacyExecution(101L));}
     @Test void wrongTenantAndDatabaseErrorsAreFailClosedWithoutLeaking(){when(mapper.lockHead("000000",101L)).thenThrow(new IllegalStateException("jdbc password token"));var failure=assertThrows(ServiceException.class,()->guard.requireUnposted(101L));assertFalse(failure.getMessage().contains("password"));assertNull(failure.getCause());}
+    @Test void nativeBirthPreventsHeadAndReceiptQuantityRewriteBeforePosting() {
+        when(mapper.lockHead("000000",101L)).thenReturn(head("APPROVED"));
+        when(mapper.lockBirthIdentities("000000",101L)).thenReturn(List.of(71L));
+        assertThrows(ServiceException.class,()->guard.requireUnposted(101L));
+        assertThrows(ServiceException.class,()->guard.requireMutableLineParent(101L));
+        assertThrows(ServiceException.class,()->guard.requireMutableLine(701L,101L));
+    }
+    @Test void birthDoesNotPretendInspectionCoveredFutureStorageAllocation() {
+        when(mapper.lockHead("000000",101L)).thenReturn(head("APPROVED"));
+        when(mapper.lockBirthIdentities("000000",101L)).thenReturn(List.of(71L));
+        assertDoesNotThrow(()->guard.requireMutableDetailParent(101L,701L));
+        assertDoesNotThrow(()->guard.requireMutableDetail(901L,101L,701L));
+        verify(mapper,never()).lockBirthIdentities(anyString(),anyLong());
+    }
 }

@@ -154,6 +154,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      */
     @Override
     public boolean confirmShelf(Long receiveId) {
+        if(certifiedPosting.handlesShelf(receiveId)) return certifiedPosting.shelf(receiveId);
         return crudService.confirmShelf(receiveId);
     }
 

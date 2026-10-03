@@ -22,6 +22,7 @@ import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
+from stock_native_precision_migration import NATIVE_COLUMNS, native_precision_gaps
 
 # 直接执行脚本与具体权威校验实现必须共用同一组类。
 if __name__ == '__main__':
@@ -531,6 +532,10 @@ def metadata_gaps(metadata):
             columns = entry.get('columns', {})
             if 'tenant_id' not in columns:
                 gaps.append(key + ': tenant column unavailable')
+            if table in NATIVE_COLUMNS:
+                # 共用迁移守卫的原生18,4合同；结构匹配绝不等于来源认证或迁移授权。
+                gaps.extend(native_precision_gaps(key, columns))
+                continue
             for column in DECIMAL_FIELDS.get(key, ()):
                 spec = columns.get(column, {})
                 if spec.get('type') != 'decimal' or type(spec.get('precision')) is not int or type(spec.get('scale')) is not int:
@@ -614,6 +619,16 @@ def database_evidence(settings, tenant_id, *, connector=None):
                     require(key in metadata and isinstance(column, str), 'unexpected column metadata')
                     metadata[key]['columns'][column] = {'type':kind, 'precision':precision, 'scale':scale}
             result['metadata'] = metadata
+            stock_precision_gaps = []
+            for stock_table in NATIVE_COLUMNS:
+                key = 'ry-erp.' + stock_table
+                stock_precision_gaps.extend(native_precision_gaps(key, metadata.get(key, {}).get('columns', {})))
+            result['stockNativePrecision'] = {
+                'status':'BLOCKED' if stock_precision_gaps else 'NATIVE_METADATA_MATCH',
+                'requiredPrecision':18, 'requiredScale':4, 'gaps':stock_precision_gaps,
+                'sourceCertification':'NOT_PERFORMED',
+                'migrationGuard':'stock_native_precision_migration.py',
+                'requiresIndependentReviewBackupMaintenanceAndSignedExecution':True}
             gaps = metadata_gaps(metadata)
             result['gaps'] = gaps
             if gaps:
@@ -646,7 +661,7 @@ def database_evidence(settings, tenant_id, *, connector=None):
                            "FROM `ry-erp`.`wm_material_stock` WHERE tenant_id=%s AND del_flag='0'", (tenant_id,))
             stock_count, quantity, reserved = cursor.fetchone()
             result['stockAggregate'] = {'rows':stock_count, 'quantity':_db_decimal(quantity), 'reserved':_db_decimal(reserved),
-                                       'notAvailableBalanceOrSourceProof':True}
+                                       'notAvailableBalanceOrSourceProof':True, 'missingRowsDoNotProveZero':True}
             cursor.execute("SELECT COUNT(*) FROM `ry-erp`.`wm_material_stock_tx` WHERE tenant_id=%s AND del_flag='0' "
                            "AND (source_doc_type IS NULL OR source_doc_type='' OR source_doc_id IS NULL)", (tenant_id,))
             missing_sources = cursor.fetchone()[0]

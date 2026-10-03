@@ -94,9 +94,17 @@ class QcIqcServiceImplTest {
     }
 
     @Test
-    void insertByBoSetsInitialStatusAndResult() {
+    void legacyReceiptCreationMustNotBypassNativeBirthDispatcher() {
         QcIqcBo bo = new QcIqcBo();
-        bo.setReceiveId(100L);
+        bo.setReceiveId(100L); bo.setMaterialId(200L); bo.setQuantity(new BigDecimal("999"));
+        ServiceException failure = assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        assertEquals("IQC_RECEIPT_NATIVE_BIRTH_REQUIRED", failure.getMessage());
+        verifyNoInteractions(baseMapper, inspectDetailService);
+    }
+
+    @Test
+    void unlinkedManualInsertSetsInitialStatusAndResult() {
+        QcIqcBo bo = new QcIqcBo();
         bo.setMaterialId(200L);
         bo.setMaterialCode("MAT-001");
         bo.setMaterialName("测试物料");
@@ -116,7 +124,7 @@ class QcIqcServiceImplTest {
         QcIqc captured = insertCaptor.getValue();
         assertEquals("PENDING", captured.getInspectResult());
         assertEquals("PENDING", captured.getStatus());
-        assertEquals(100L, captured.getReceiveId());
+        assertNull(captured.getReceiveId());
         assertEquals(200L, captured.getMaterialId());
         assertEquals("MAT-001", captured.getMaterialCode());
         assertEquals("测试物料", captured.getMaterialName());
@@ -222,7 +230,7 @@ class QcIqcServiceImplTest {
 
         service.inspect(1L, "QUALIFIED", null, null, null);
 
-        // afterCommit won't execute in unit test (no transaction), but verify the MQ was not called directly
+        // 单元测试没有真实事务，不会执行提交后回调；仍须确认没有直接发送MQ。
         verify(mesMqSendService, never()).sendIqcCompleted(any(), any(), any(), any(), any(), any(), any());
     }
 
@@ -243,22 +251,14 @@ class QcIqcServiceImplTest {
         verify(baseMapper).update(any(), any());
     }
 
-    // ==================== MES-QC-04: 唯一键冲突视为幂等成功 ====================
-
+    // 原始唯一键冲突不能作为出生绑定存在或人工单创建成功的证据。
     @Test
-    void insertByBoDuplicateKeyIsIdempotentAndDoesNotThrow() {
-        QcIqcBo bo = new QcIqcBo();
-        bo.setReceiveId(100L);
-        bo.setMaterialId(200L);
-        QcIqcVo existing = new QcIqcVo();
-        existing.setIqcId(9L);
-        when(baseMapper.insert(any(QcIqc.class))).thenThrow(new DuplicateKeyException("uk_iqc_receive_material"));
-        when(baseMapper.selectVoOne(any())).thenReturn(existing);
-
-        QcIqcVo result = service.insertByBo(bo);
-
-        assertEquals(9L, result.getIqcId(), "MES-QC-04: 唯一键冲突必须幂等返回已存在单, 不抛异常");
-        verify(inspectDetailService, never()).generateDetails(any(), any(), any(), any());
+    void unlinkedManualDuplicateKeyIsNotBlindSuccess() {
+        QcIqcBo bo = new QcIqcBo(); bo.setMaterialId(200L);
+        when(baseMapper.insert(any(QcIqc.class))).thenThrow(new DuplicateKeyException("uk_iqc_no"));
+        assertThrows(DuplicateKeyException.class, () -> service.insertByBo(bo));
+        verify(baseMapper, never()).selectVoOne(any());
+        verifyNoInteractions(inspectDetailService);
     }
 
     // ==================== MES-QC-05: 缺项提交必须被拒 ====================
@@ -310,7 +310,6 @@ class QcIqcServiceImplTest {
         Set<String> nos = new java.util.HashSet<>();
         for (int i = 0; i < 10; i++) {
             QcIqcBo bo = new QcIqcBo();
-            bo.setReceiveId((long) i);
             bo.setMaterialId(200L);
             service.insertByBo(bo);
         }

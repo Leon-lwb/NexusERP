@@ -2,11 +2,14 @@ package com.nexus.erp.wm.service.impl;
 
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.tx.TransactionContext;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.WmStorageLocation;
@@ -18,15 +21,20 @@ import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaReceiveDetailVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaTodoItemVo;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.service.IPdaReceiveService;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
+import com.nexus.erp.wm.service.PdaReceiveShelfAllocationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -43,6 +51,10 @@ import java.util.Map;
 public class PdaReceiveServiceImpl implements IPdaReceiveService {
 
     private final IWmMaterialReceiveService receiveService;
+    private final WmMaterialReceiveMapper receiveMapper;
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    private final WmCertifiedReceiptPostingService certifiedPosting;
+    private final PdaReceiveShelfAllocationService shelfAllocation;
     private final WmMaterialReceiveLineMapper lineMapper;
     /** 到货通知行 Mapper（ERP-WM-03: 超收上限取自到货通知行应到量 quantity_arrival） */
     private final com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
@@ -122,7 +134,9 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PdaActionResultVo confirmLine(Long receiveId, PdaLineConfirmBo bo) {
-        WmMaterialReceiveVo head = receiveService.selectById(receiveId);
+        // 必须参与当前 ERP 事务：先锁真实头/行归属并拒绝已出生或已过账来源，再读量、写量。
+        certifiedReceiptGuard.requireMutableLine(bo.getLineId(), receiveId);
+        WmMaterialReceiveVo head = currentHead(receiveId);
         if (head == null) {
             throw new ServiceException("收货单不存在");
         }
@@ -131,7 +145,7 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
         }
         WmMaterialReceiveLine line = lineMapper.selectOne(Wrappers.<WmMaterialReceiveLine>lambdaQuery()
             .eq(WmMaterialReceiveLine::getLineId, bo.getLineId())
-            .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+            .eq(WmMaterialReceiveLine::getReceiveId, receiveId).last("FOR UPDATE"));
         if (line == null) {
             return PdaActionResultVo.fail("单据行不存在");
         }
@@ -163,6 +177,16 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
             return PdaActionResultVo.fail("累计实收(" + newReceived.stripTrailingZeros().toPlainString()
                 + ")超过应到数量(" + limit.stripTrailingZeros().toPlainString() + ")");
         }
+        // 分配明细也先核当前归属；不能先改行再发现明细重绑，且锁定读不能复用旧 RR 数量。
+        WmMaterialReceiveDetail detail = detailMapper.selectOne(Wrappers.<WmMaterialReceiveDetail>lambdaQuery()
+            .eq(WmMaterialReceiveDetail::getLineId, bo.getLineId())
+            .eq(WmMaterialReceiveDetail::getReceiveId, receiveId).last("FOR UPDATE"));
+        if (detail == null) {
+            certifiedReceiptGuard.requireMutableDetailParent(receiveId, line.getLineId());
+        } else {
+            certifiedReceiptGuard.requireMutableDetail(detail.getDetailId(), receiveId, line.getLineId());
+        }
+
         // 条件更新：数量原子累加 + 上限守卫（影响 0 行 = 并发下已被推到超限，或行已被删除）
         int updated = lineMapper.update(null, Wrappers.<WmMaterialReceiveLine>lambdaUpdate()
             .setSql("quantity_received = IFNULL(quantity_received, 0) + " + bo.getQty().toPlainString())
@@ -175,10 +199,7 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
         }
 
         // 上架明细: 每行一条, 数量跟随行实收总数(不再独立无上限累加), 库位覆盖
-        WmMaterialReceiveDetail detail = detailMapper.selectOne(Wrappers.<WmMaterialReceiveDetail>lambdaQuery()
-            .eq(WmMaterialReceiveDetail::getLineId, bo.getLineId())
-            .eq(WmMaterialReceiveDetail::getReceiveId, receiveId)
-            .last("limit 1"));
+
         if (detail == null) {
             detail = new WmMaterialReceiveDetail();
             detail.setLineId(line.getLineId());
@@ -217,72 +238,27 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public PdaActionResultVo shelf(Long receiveId, PdaShelfBo bo) {
-        WmMaterialReceiveVo head = receiveService.selectById(receiveId);
-        if (head == null) {
-            throw new ServiceException("收货单不存在");
+        // 分类及专属上架都不能继承普通分配事务；也不静默挂起调用方事务。
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+            || TransactionSynchronizationManager.isSynchronizationActive()
+            || !TransactionSynchronizationManager.getResourceMap().isEmpty()
+            || TransactionSynchronizationManager.isCurrentTransactionReadOnly() || TransactionContext.getXID() != null) {
+            throw new ServiceException("PDA上架调度必须在无既有事务上下文中执行");
         }
-        if (!IWmMaterialReceiveCrudService.STATUS_APPROVED.equals(head.getStatus())) {
-            return PdaActionResultVo.fail("单据当前状态不允许上架确认");
+        if (!certifiedPosting.handlesShelf(receiveId)) return shelfAllocation.shelfLegacy(receiveId, bo);
+        PdaActionResultVo allocated = shelfAllocation.allocateCertified(receiveId, bo);
+        if (allocated == null) throw new ServiceException("仓储分配结果不可用");
+        if (!Boolean.TRUE.equals(allocated.getOk())) return allocated;
+        // 实际代理返回后分配已经提交；认证上架另启专属 RR，重新核所有原生来源与真实 V2。
+        // 两个事务不具整体原子性：上架失败不撤销已提交分配，不标记单据完成，原分配可重核重试。
+        try {
+            if (certifiedPosting.shelf(receiveId)) return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
+        } catch (RuntimeException unprovenShelf) {
+            // 不把 SQL、连接诊断或来源主体返回 PDA；不得用失败兜底进入旧上架或物理入库。
         }
-        WmStorageLocation loc = findLocation(head.getWarehouseId(), bo.getLocationCode());
-        if (loc == null) {
-            WmMaterialReceiveLine firstLine = lineMapper.selectOne(Wrappers.<WmMaterialReceiveLine>lambdaQuery()
-                .eq(WmMaterialReceiveLine::getReceiveId, receiveId).last("limit 1"));
-            Long materialId = firstLine != null ? firstLine.getMaterialId() : null;
-            return recommendFail(materialId, head.getWarehouseId(), BigDecimal.ONE);
-        }
-
-        List<WmMaterialReceiveLine> lines = lineMapper.selectList(
-            Wrappers.<WmMaterialReceiveLine>lambdaQuery().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
-        if (lines.isEmpty()) {
-            return PdaActionResultVo.fail("单据无明细行");
-        }
-        List<WmMaterialReceiveDetail> details = detailMapper.selectList(
-            Wrappers.<WmMaterialReceiveDetail>lambdaQuery().eq(WmMaterialReceiveDetail::getReceiveId, receiveId));
-        Map<Long, WmMaterialReceiveDetail> detailByLine = new HashMap<>();
-        for (WmMaterialReceiveDetail d : details) {
-            detailByLine.putIfAbsent(d.getLineId(), d);
-        }
-
-        // 每行必须有已定位的上架明细: 缺失则按行实收数量补建, 未定位则填充本次库位
-        for (WmMaterialReceiveLine line : lines) {
-            WmMaterialReceiveDetail detail = detailByLine.get(line.getLineId());
-            if (detail == null) {
-                detail = new WmMaterialReceiveDetail();
-                detail.setLineId(line.getLineId());
-                detail.setReceiveId(receiveId);
-                detail.setMaterialId(line.getMaterialId());
-                detail.setMaterialCode(line.getMaterialCode());
-                detail.setMaterialName(line.getMaterialName());
-                detail.setMaterialSpec(line.getMaterialSpec());
-                detail.setBaseUomId(line.getBaseUomId());
-                detail.setBaseUomName(line.getBaseUomName());
-                detail.setBatchId(line.getBatchId());
-                detail.setBatchCode(line.getBatchCode());
-                detail.setWarehouseId(line.getWarehouseId());
-                detail.setWarehouseCode(line.getWarehouseCode());
-                detail.setWarehouseName(line.getWarehouseName());
-                detail.setAreaId(line.getAreaId());
-                detail.setAreaCode(line.getAreaCode());
-                detail.setAreaName(line.getAreaName());
-                detail.setQuantity(line.getQuantityReceived() == null ? BigDecimal.ZERO : line.getQuantityReceived());
-                detail.setLocationId(loc.getLocationId());
-                detail.setLocationCode(loc.getLocationCode());
-                detailMapper.insert(detail);
-            } else if (detail.getLocationId() == null) {
-                detail.setLocationId(loc.getLocationId());
-                detail.setLocationCode(loc.getLocationCode());
-                detailMapper.updateById(detail);
-            }
-        }
-
-        // 复用既有上架确认(含质检联动校验)
-        receiveService.confirmShelf(receiveId);
-        return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
+        return PdaActionResultVo.fail("仓储分配已提交，认证上架未完成；请核验当前单据后重试");
     }
-
     @Override
     public PdaActionResultVo finish(Long receiveId) {
         WmMaterialReceiveVo head = receiveService.selectById(receiveId);
@@ -296,6 +272,12 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
     }
 
+    /** 写路径使用当前锁定读；普通快照不能覆盖守卫已取得的真实头状态或源量。 */
+    private WmMaterialReceiveVo currentHead(Long receiveId) {
+        return receiveMapper.selectVoOne(Wrappers.<WmMaterialReceive>lambdaQuery()
+            .eq(WmMaterialReceive::getReceiveId, receiveId)
+            .eq(WmMaterialReceive::getTenantId, TenantHelper.getTenantId()).last("FOR UPDATE"));
+    }
     /**
      * ERP-WM-03: 解析行的"应到量"上限 —— 取到货通知行 {@code quantity_arrival} 按物料汇总。
      * <p>无到货通知关联（手工建单）时返回 {@code null} 表示无系统上限：
@@ -306,6 +288,7 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
      * @param materialId 物料 ID（可空）
      * @return 应到量上限；{@code null} 表示不限
      */
+
     private BigDecimal resolveArrivalLimit(Long noticeId, Long materialId) {
         if (noticeId == null || materialId == null) {
             return null;

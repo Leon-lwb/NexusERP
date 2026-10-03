@@ -89,6 +89,23 @@ public final class IqcNativeSchema {
         }
     }
 
+    /** ERP出生登记必须原生精确且具有永久完整唯一性，不凭记录数推断身份。 */
+    public static void requireErpBirthDefinition(List<Column> columns, List<IndexPart> indexes) {
+        String table = "wm_receipt_iqc_birth";
+        var nativeColumns = requireColumns(columns, Set.of(table));
+        for (String name : List.of("birth_id", "receive_id", "material_id", "base_uom_id", "vendor_id", "captured_at")) {
+            column(nativeColumns, table, name, "bigint", null, null, true);
+        }
+        column(nativeColumns, table, "tenant_id", "varchar", null, null, true);
+        column(nativeColumns, table, "quantity", "decimal", 14, 4, true);
+        column(nativeColumns, table, "quantity_scale", "tinyint", null, null, true);
+        column(nativeColumns, table, "receipt_scope_sha256", "char", null, null, true);
+        column(nativeColumns, table, "birth_sha256", "char", null, null, true);
+        var nativeIndexes = requireIndexes(indexes, Set.of(table));
+        primary(nativeIndexes, table, "birth_id");
+        unique(nativeIndexes, table, null, "tenant_id", "receive_id", "material_id");
+    }
+
     private static Map<String, Column> requireColumns(List<Column> rows, Set<String> tables) {
         if (rows == null || rows.isEmpty()) throw failed();
         Map<String, Column> result = new HashMap<>();

@@ -16,7 +16,8 @@ import java.util.List;
 /** 仅访问 ERP，按显式租户范围锁定读取；IQC 证据仅允许插入。 */
 public interface WmReceiptIqcEvidenceMapper {
     /** 已核实归属的 ERP 或 MES 连接上的原生引擎和列定义。 */
-    @InterceptorIgnore(tenantLine = "true")
+    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
     @Select("""
         SELECT c.TABLE_NAME AS table_name, t.ENGINE AS engine, c.COLUMN_NAME AS column_name,
                c.DATA_TYPE AS data_type, c.NUMERIC_PRECISION AS numeric_precision,
@@ -29,7 +30,8 @@ public interface WmReceiptIqcEvidenceMapper {
     List<Column> selectNativeColumns();
 
     /** 读取完整的永久索引组成部分，不根据当前记录数推断唯一性。 */
-    @InterceptorIgnore(tenantLine = "true")
+    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
     @Select("""
         SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name, NON_UNIQUE AS non_unique,
                SEQ_IN_INDEX AS seq_in_index, COLUMN_NAME AS column_name,
@@ -41,7 +43,8 @@ public interface WmReceiptIqcEvidenceMapper {
     List<IndexPart> selectNativeIndexes();
 
     /** 已核实归属的 ERP 或 MES 连接上的原生引擎和列定义。 */
-    @InterceptorIgnore(tenantLine = "true")
+    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
     @Select("""
         SELECT c.TABLE_NAME AS table_name, t.ENGINE AS engine, c.COLUMN_NAME AS column_name,
                c.DATA_TYPE AS data_type, c.NUMERIC_PRECISION AS numeric_precision,
@@ -54,7 +57,8 @@ public interface WmReceiptIqcEvidenceMapper {
     List<Column> selectIsolationColumns();
 
     /** 读取完整的永久索引组成部分，不根据当前记录数推断唯一性。 */
-    @InterceptorIgnore(tenantLine = "true")
+    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
     @Select("""
         SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name, NON_UNIQUE AS non_unique,
                SEQ_IN_INDEX AS seq_in_index, COLUMN_NAME AS column_name,
@@ -100,7 +104,7 @@ public interface WmReceiptIqcEvidenceMapper {
     MaterialUnit selectMaterialForUpdate(@Param("tenantId") String tenantId, @Param("materialId") Long materialId);
 
     @Select("""
-        SELECT tenant_id, uom_id, quantity_scale, status, del_flag FROM bd_unit_of_measure
+        SELECT tenant_id, uom_id, quantity_scale, status, del_flag, is_base, primary_id, conversion_rate, conversion_version, conversion_verified_at, category FROM bd_unit_of_measure
         WHERE tenant_id = #{tenantId} AND uom_id = #{unitId} FOR UPDATE
         """)
     NativeUnit selectUnitForUpdate(@Param("tenantId") String tenantId, @Param("unitId") Long unitId);
@@ -130,12 +134,12 @@ public interface WmReceiptIqcEvidenceMapper {
          base_uom_id, quantity_scale, inspected_quantity, inspect_result, inspector_id,
          source_kind, source_version, actual_body_sha256, receipt_scope_sha256,
          evidence_sha256, first_message_id, source_created_at, completed_at, source_updated_at,
-         observed_at, certified_at)
+         observed_at, certified_at, birth_id, birth_sha256)
         VALUES (#{e.evidenceId}, #{e.tenantId}, #{e.inspectionId}, #{e.inspectionCode}, #{e.receiveId},
          #{e.materialId}, #{e.baseUomId}, #{e.quantityScale}, #{e.inspectedQuantity}, #{e.inspectResult},
          #{e.inspectorId}, #{e.sourceKind}, #{e.sourceVersion}, #{e.actualBodySha256},
          #{e.receiptScopeSha256}, #{e.evidenceSha256}, #{e.firstMessageId}, #{e.sourceCreatedAt},
-         #{e.completedAt}, #{e.sourceUpdatedAt}, #{e.observedAt}, #{e.certifiedAt})
+         #{e.completedAt}, #{e.sourceUpdatedAt}, #{e.observedAt}, #{e.certifiedAt}, #{e.birthId}, #{e.birthSha256})
         """)
     int insertEvidence(@Param("e") EvidenceRow evidence);
 
@@ -270,6 +274,9 @@ public interface WmReceiptIqcEvidenceMapper {
     }
     @Data
     class NativeUnit {
+        private String category;
+        private Long isBase; private Long primaryId; private BigDecimal conversionRate;
+        private String conversionVersion; private Date conversionVerifiedAt;
         private String tenantId;
         private Long uomId;
         private Integer quantityScale;
@@ -279,6 +286,8 @@ public interface WmReceiptIqcEvidenceMapper {
     /** 仅作为映射器记录：服务没有接收此可变 DTO 的接口。 */
     @Data
     class EvidenceRow {
+        private Long birthId;
+        private String birthSha256;
         private Long evidenceId;
         private String tenantId;
         private Long inspectionId;
