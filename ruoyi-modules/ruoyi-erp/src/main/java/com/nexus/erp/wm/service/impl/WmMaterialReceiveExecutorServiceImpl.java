@@ -48,6 +48,8 @@ import java.util.Map;
 @Service
 public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveExecutorService {
 
+    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+
     /** 待入库状态（已上架） */
     private static final String ORDER_STATUS_SHELVED = "SHELVED";
     /** 已完成状态 */
@@ -94,6 +96,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean executeReceive(Long receiveId) {
+        certifiedReceiptGuard.requireLegacyExecution(receiveId);
         WmMaterialReceiveVo receiveVo = buildReceiveVo(receiveId);
         if (receiveVo == null) {
             throw new ServiceException("入库单不存在");

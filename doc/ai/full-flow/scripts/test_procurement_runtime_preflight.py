@@ -1,4 +1,4 @@
-"""Task C: offline tests. No local services or shared Maven are touched."""
+"""任务 C：离线测试。不接触本地服务或共享 Maven。"""
 import importlib
 import importlib.util
 import io
@@ -269,7 +269,7 @@ class RuntimePreflightTests(unittest.TestCase):
     def test_evidence_directory_uses_actual_cross_day_observation_date(self):
         from datetime import datetime,timezone,timedelta
         observed=datetime(2026,10,3,0,1,tzinfo=timezone(timedelta(hours=8)))
-        self.assertEqual('20261003-unified-procurement',self.m.evidence_directory(observed).parent.name)
+        self.assertEqual('20261003-procurement-execution',self.m.evidence_directory(observed).parent.name)
 
     def test_redirect_handler_never_forwards_a_credential(self):
         self.assertIsNone(self.m._NoRedirect().redirect_request(None,None,302,'moved',{},'http://remote.example'))
@@ -312,6 +312,163 @@ class RuntimePreflightTests(unittest.TestCase):
         for broken in ([],rows[:-1],[('PRIMARY',0,1,'tenant_id',3),*rows[1:]],
                        [('PRIMARY',1,1,'tenant_id',None),*rows[1:]]):
             with self.subTest(broken=broken):self.assertTrue(self.m.certified_index_gaps(broken))
+
+
+
+    # 测试向量由已安装的 Jasypt 1.9.3 命令行工具使用仅用于测试夹具的密钥生成。
+    ENCRYPTED_FIXTURE = 'ENC(D28akg/ic9qZL9TTAqhsDp74muCG6mcmGQlZiCw9bes+GzedDgzu9uaSfijUAQlgMogBh6R1zsiWhfFyJ2GXdA==)'
+
+    def crypto_context(self):
+        return {'jasypt.encryptor.algorithm':'PBEWITHHMACSHA512ANDAES_256',
+                'jasypt.encryptor.password':'${JASYPT_PASSWORD:fixture-local-secret}'}
+
+    def test_encrypted_config_is_decrypted_in_memory_using_real_jasypt_vector(self):
+        decrypt=getattr(self.m,'configuration_value',None)
+        self.assertTrue(callable(decrypt),'ENC configuration must not be sent as a MySQL password')
+        plain=decrypt(self.ENCRYPTED_FIXTURE,self.crypto_context(),{})
+        self.assertEqual('fixture-db-password',plain)
+
+    def test_encrypted_config_wrong_key_and_unsupported_algorithm_are_fixed_diagnostics(self):
+        decrypt=getattr(self.m,'configuration_value',None)
+        self.assertTrue(callable(decrypt),'bounded local configuration decryption is missing')
+        for ctx,env in ((self.crypto_context(),{'JASYPT_PASSWORD':'private-wrong-key'}),
+                        ({**self.crypto_context(),'jasypt.encryptor.algorithm':'unsupported-secret-algorithm'},{})):
+            with self.subTest(envPresent=bool(env)):
+                try: decrypt(self.ENCRYPTED_FIXTURE,ctx,env)
+                except self.m.PreflightBlocked as error:
+                    self.assertIn(error.category,('ENCRYPTED_CONFIG_UNSUPPORTED','ENCRYPTED_CONFIG_DECRYPTION_FAILED'))
+                    self.assertNotIn('private-wrong-key',str(error));self.assertNotIn('unsupported-secret-algorithm',str(error))
+                else:self.fail('failed decryption must not silently fall through to a password')
+
+    def test_plaintext_config_is_not_modified_and_encrypted_password_never_in_summary(self):
+        decrypt=getattr(self.m,'configuration_value',None)
+        self.assertTrue(callable(decrypt),'local configuration resolver is missing')
+        self.assertEqual('fixture-plain',decrypt('${DB_PASSWORD}',{}, {'DB_PASSWORD':'fixture-plain'}))
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);resources=root/'ruoyi-admin/src/main/resources';resources.mkdir(parents=True)
+            (resources/'application.yml').write_text('spring:\n  profiles:\n    active: dev\njasypt:\n  encryptor:\n    algorithm: PBEWITHHMACSHA512ANDAES_256\n    password: fixture-local-secret\n',encoding='utf-8')
+            text='spring:\n  datasource:\n    dynamic:\n      datasource:\n'
+            for name,schema in self.m.SCHEMAS.items():
+                text+=f'        {name}:\n          url: jdbc:mysql://127.0.0.1:3306/{schema}\n          username: fixture-user\n          password: {self.ENCRYPTED_FIXTURE}\n'
+            (resources/'application-dev.yml').write_text(text,encoding='utf-8')
+            settings=self.m.settings_from_files(root,environ={})
+            self.assertEqual('fixture-db-password',settings.datasources['master']['password'])
+            self.assertTrue(settings.summary.get('encryptedValuesResolvedInMemory'))
+            self.assertNotIn('fixture-db-password',json.dumps(settings.summary))
+
+
+
+    def test_existing_private_sessions_are_discovered_but_fresh_getinfo_is_still_required(self):
+        resolve=getattr(self.m,'resolve_existing_authentication',None)
+        self.assertTrue(callable(resolve),'existing local sessions must be freshly verified without a login')
+        calls=[]
+        def opener(request,timeout):
+            calls.append(request)
+            good=request.get_header('Authorization')=='Bearer private-fresh-session'
+            doc={'code':200,'data':{'user':{'userId':'1','tenantId':'000000'}}} if good else {'code':401,'msg':'private-stale-session'}
+            response=io.BytesIO(json.dumps(doc).encode());response.status=200;return response
+        with tempfile.TemporaryDirectory() as temporary,patch.object(self.m,'PRIVATE_ROOT',Path(temporary)):
+            root=Path(temporary);fresh=root/'20261003-procurement-execution/runtime/private-credential-20261003T090000.json';fresh.parent.mkdir(parents=True)
+            for file,token in ((root/'session-token.json','private-stale-session'),(fresh,'private-fresh-session')):
+                file.write_text(json.dumps({'token':token,'clientId':'fixture-client','tenantId':'000000','baseUrl':'http://127.0.0.1:8080'}),encoding='utf-8')
+            credentials,auth=resolve(environ={},opener=opener)
+            self.assertEqual('private-fresh-session',credentials.token);self.assertEqual('VERIFIED',auth['status'])
+            self.assertNotIn('private-fresh-session',json.dumps(auth));self.assertTrue(all(c.get_method()=='GET' for c in calls))
+            self.assertTrue(all(url.endswith('/system/user/getInfo') for url in (c.full_url for c in calls)))
+
+    def test_session_discovery_does_not_merge_partial_environment_or_accept_active_flags(self):
+        resolve=getattr(self.m,'resolve_existing_authentication',None)
+        self.assertTrue(callable(resolve),'fresh local session resolver is missing')
+        calls=[]
+        with tempfile.TemporaryDirectory() as temporary,patch.object(self.m,'PRIVATE_ROOT',Path(temporary)):
+            (Path(temporary)/'session-token.json').write_text(json.dumps({'token':'private-token','clientId':'fixture-client',
+                'tenantId':'000000','baseUrl':'http://127.0.0.1:8080','status':'ACTIVE'}),encoding='utf-8')
+            for env in ({'NEXUS_FULL_FLOW_TOKEN':'partial-private-token'},{}):
+                credentials,auth=resolve(environ=env,opener=lambda *a,**kw:calls.append(a))
+                self.assertIsNone(credentials);self.assertEqual('BLOCKED',auth['status'])
+                self.assertNotIn('partial-private-token',json.dumps(auth))
+            self.assertEqual([],calls)
+
+    def test_loaded_runtime_is_probed_even_while_independent_schema_guards_are_blocked(self):
+        calls=[]
+        class Authority(self.m.RuntimeAuthority):
+            def require_current(self,**kwargs):
+                calls.append(kwargs)
+                raise self_outer.m.PreflightBlocked('secret backend contents',category='ATTESTATION_ENDPOINT_MISSING')
+        self_outer=self
+        result=self.m.readiness(self.m.RuntimeTarget(),self.credentials(),'a'*40,
+                {'status':'VERIFIED','principalSha256':'b'*64},
+                {'status':'BLOCKED','gaps':['actual_schema_gap']},{},attestor=Authority())
+        self.assertEqual(1,len(calls),'schema blockers must not hide the loaded-build diagnostic')
+        self.assertIn('ATTESTATION_ENDPOINT_MISSING',result['diagnosticCategories'])
+        self.assertNotIn('secret backend contents',json.dumps(result));self.assertEqual('BLOCKED',result['status'])
+
+    def test_inspect_local_constructs_default_concrete_runtime_authority_without_business_permission(self):
+        resolve=getattr(self.m,'resolve_existing_authentication',None)
+        self.assertTrue(callable(resolve),'default inspection needs freshly verified existing credentials')
+        calls=[];outer=self
+        class Authority(self.m.RuntimeAuthority):
+            def __init__(self,**kwargs):calls.append(('constructor',kwargs))
+            def require_current(self,**kwargs):calls.append(('require_current',kwargs));return None
+        with patch.object(self.m,'resolve_existing_authentication',return_value=(self.credentials(),{'status':'VERIFIED','principalSha256':'b'*64})), \
+             patch.object(self.m,'settings_from_files',return_value=self.m.LocalSettings({'master':{'username':'x','password':'x','url':'jdbc:mysql://localhost:3306/ry-vue'}},{})), \
+             patch.object(self.m,'database_evidence',return_value={'status':'OBSERVED','gaps':[]}), \
+             patch.object(self.m,'process_evidence',return_value={}), \
+             patch('procurement_runtime_attestation.BackendRuntimeAuthority',Authority), \
+             patch('procurement_runtime_attestation.management_metadata_evidence',return_value={'status':'OBSERVED','activeProfiles':['dev'],'notLoadedArtifactProof':True}) as management, \
+             patch.object(self.m.subprocess,'check_output',side_effect=['codex/fixture\n','a'*40+'\n','2026-10-03T00:00:00+08:00\n','']):
+            report=self.m.inspect_local()
+        self.assertEqual(['constructor','require_current'],[item[0] for item in calls])
+        self.assertEqual(1,management.call_count,'default preflight must safely observe existing actuator metadata')
+        self.assertEqual(['dev'],report.get('management',{}).get('activeProfiles'))
+        self.assertEqual('READ_ONLY_READY',report['status']);self.assertFalse(report['businessWriteAuthorized'])
+
+
+
+    def test_direct_cli_does_not_create_a_second_runtimeauthority_or_credentials_class(self):
+        import subprocess,sys
+        program="""import ast,sys,types
+from pathlib import Path
+path=Path(sys.argv[1]).resolve()
+sys.path.insert(0,str(path.parent))
+tree=ast.parse(path.read_text(encoding='utf-8'))
+tree.body=tree.body[:-1]
+module=types.ModuleType('__main__');module.__file__=str(path)
+sys.modules['__main__']=module
+exec(compile(tree,str(path),'exec'),module.__dict__)
+import procurement_runtime_attestation as authority
+assert authority.RuntimeAuthority is module.RuntimeAuthority, 'CLI RuntimeAuthority identity split'
+assert authority.Credentials is module.Credentials, 'CLI Credentials identity split'
+"""
+        completed=subprocess.run([sys.executable,'-c',program,str(Path(self.m.__file__).resolve())],
+                                 capture_output=True,text=True,timeout=10)
+        self.assertEqual(0,completed.returncode,completed.stderr)
+
+
+
+    def test_windows_listener_timestamp_is_explicitly_offset_aware_for_runtime_binding(self):
+        from types import SimpleNamespace
+        commands=[]
+        def run(command,**kwargs):
+            commands.append(command)
+            return SimpleNamespace(returncode=0,stdout='[{"port":8080,"pid":13579,"name":"java.exe","startedAt":"2026-10-03T08:00:00+08:00","commandLine":"fixture"}]')
+        with tempfile.TemporaryDirectory() as temporary,patch.object(self.m.os,'name','nt'), \
+             patch.object(self.m.subprocess,'run',side_effect=run),patch.object(self.m.socket,'create_connection',side_effect=OSError):
+            self.m.process_evidence(Path(temporary))
+        self.assertIn('[DateTimeOffset]',commands[0][-1],
+                      'CIM CreationDate is often naive; requesting o alone cannot bind an aware backend timestamp')
+
+
+
+    def test_schema_contract_failure_is_not_misreported_as_a_login_or_actual_database_target_failure(self):
+        db=self.fake_db()
+        settings=self.m.LocalSettings({'master':{'username':'fixture','password':'fixture',
+                    'url':'jdbc:mysql://127.0.0.1:3306/ry-vue'}},{})
+        with patch.object(self.m,'metadata_gaps',return_value=['ry-erp.wm_material_stock.stock_quantity: native DECIMAL required']):
+            report=self.m.database_evidence(settings,'000000',connector=lambda **kwargs:db)
+        self.assertTrue(report['actualTargetVerified']);self.assertEqual('BLOCKED',report['status'])
+        self.assertEqual('SCHEMA_OR_PRECISION_UNVERIFIED',report.get('diagnosticCategory'))
+        self.assertIs(False,report.get('backendDatasourceBindingVerified'))
 
 
 if __name__=='__main__':unittest.main()

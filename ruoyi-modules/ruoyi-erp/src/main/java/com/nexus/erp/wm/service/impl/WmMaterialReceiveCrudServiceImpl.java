@@ -76,6 +76,8 @@ import java.util.Set;
 @Service("wmMaterialReceiveCrudService")
 public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudService {
 
+    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+
     /** 基础数据访问映射器（Mapper） */
     private final WmMaterialReceiveMapper baseMapper;
     /** 领用行数据访问映射器（Mapper） */
@@ -165,6 +167,10 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialReceiveBo bo) {
+        if (bo == null || (StringUtils.isNotBlank(bo.getStatus()) && !STATUS_DRAFT.equals(bo.getStatus()))
+            || bo.getShelfBy() != null || bo.getShelfTime() != null) {
+            throw new ServiceException("新增收货只能为草稿，审批和上架留痕不能由表单提供");
+        }
         WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
         if (StringUtils.isBlank(entity.getReceiveCode())) {
             entity.setReceiveCode(autoCodeUtil.genSerialCode("WM_MATERIAL_RECEIVE_CODE", null));
@@ -186,6 +192,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialReceiveBo bo) {
+        certifiedReceiptGuard.requireUnposted(bo.getReceiveId());
         WmMaterialReceive existing = baseMapper.selectById(bo.getReceiveId());
         if (existing == null) {
             throw new ServiceException("入库单不存在或无权限访问");
@@ -360,6 +367,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long receiveId : ids) {
+            certifiedReceiptGuard.requireUnposted(receiveId);
             /** 校验状态：只有草稿状态才能删除 */
             WmMaterialReceive existing = baseMapper.selectById(receiveId);
             if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
@@ -419,6 +427,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String receiveIdStr, String selectFlowId) {
         Long receiveId = Long.parseLong(receiveIdStr);
+        certifiedReceiptGuard.requireUnposted(receiveId);
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
         if (receive == null) {
             throw new ServiceException("入库单不存在");
@@ -476,6 +485,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean confirmShelf(Long receiveId) {
+        certifiedReceiptGuard.requireUnposted(receiveId);
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
         if (receive == null) {
             throw new ServiceException("入库单不存在");
@@ -593,6 +603,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long receiveId = Long.parseLong(business.getDataId());
+        certifiedReceiptGuard.requireUnposted(receiveId);
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
         if (receive == null) {
             return;

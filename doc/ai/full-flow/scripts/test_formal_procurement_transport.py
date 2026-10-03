@@ -1,4 +1,4 @@
-"""Task C transport contracts; injected services are strictly offline."""
+"""任务 C 的传输契约测试；注入的服务严格保持离线。"""
 import importlib
 import importlib.util
 import io
@@ -325,6 +325,55 @@ class TransportTests(unittest.TestCase):
         for field,value in (('runtime',Runtime()),('lifecycle',Lifecycle())):
             with self.subTest(field=field),self.assertRaises(self.m.TransportBlocked):
                 self.build(**{field:value}).send(self.request(),intent_id='procurement-intent-0001')
+        self.assertEqual([],self.dispatched())
+
+
+
+    def test_omitted_runtime_uses_concrete_authority_but_does_not_issue_write_permission(self):
+        from procurement_runtime_attestation import BackendRuntimeAuthority
+        client=self.m.FormalProcurementTransport(credentials=self.p.Credentials(token='secret-token',
+                client_id='test-client',tenant_id='000000'),expected_head='a'*40,opener=self.opener)
+        self.assertIsInstance(client.runtime,BackendRuntimeAuthority)
+        self.assertEqual([],self.calls,'constructor must not perform reads or writes')
+        with self.assertRaises(self.m.TransportBlocked):client.send(self.request(),intent_id='procurement-intent-0001')
+        self.assertEqual([],self.calls,'default runtime is not a business-write/lifecycle grant')
+
+    def test_live_runtime_rejection_preserves_only_a_fixed_nonsecret_category(self):
+        outer=self
+        class Runtime(self.p.RuntimeAuthority):
+            def require_current(self,**kwargs):
+                raise outer.p.PreflightBlocked('secret-token database-password',category='ATTESTATION_ENDPOINT_MISSING')
+        with self.assertRaises(self.m.TransportBlocked) as caught:
+            self.build(runtime=Runtime()).send(self.request(),intent_id='procurement-intent-0001')
+        self.assertEqual('ATTESTATION_ENDPOINT_MISSING',getattr(caught.exception,'category',None))
+        self.assertNotIn('secret-token',str(caught.exception));self.assertEqual([],self.dispatched())
+
+    def test_runtime_is_rechecked_after_source_authorities_immediately_before_dispatch(self):
+        outer=self
+        class Runtime(self.p.RuntimeAuthority):
+            def __init__(self):self.calls=0
+            def require_current(self,**kwargs):
+                self.calls+=1
+                if self.calls>1:raise outer.p.PreflightBlocked('fixture restart',category='RUNTIME_RESTARTED')
+        runtime=Runtime()
+        with self.assertRaises(self.m.TransportBlocked):
+            self.build(runtime=runtime).send(self.request(),intent_id='procurement-intent-0001')
+        self.assertEqual(2,runtime.calls);self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load(),'never journal DISPATCHED when final runtime check fails')
+
+
+
+    def test_untrusted_runtime_error_category_cannot_leak_or_escape_as_an_unhashable_exception(self):
+        outer=self
+        for category in ('secret-token',['secret-token'],{'secret-token':True}):
+            class Runtime(self.p.RuntimeAuthority):
+                def require_current(self,**kwargs):
+                    raise outer.p.PreflightBlocked('secret-token',category=category)
+            try:self.build(runtime=Runtime()).send(self.request(),intent_id='procurement-intent-0001')
+            except self.m.TransportBlocked as error:
+                self.assertEqual('BUILD_ATTESTATION_REJECTED',error.category);self.assertNotIn('secret-token',str(error))
+            except Exception:self.fail('runtime error category must remain a fixed, redacted TransportBlocked')
+            else:self.fail('an invalid runtime category must not authorize a dispatch')
         self.assertEqual([],self.dispatched())
 
 

@@ -1,10 +1,10 @@
-"""Auditable procurement transport; import/construction never performs a write.
+"""可审计的采购传输通道；导入或构造时绝不执行写入。
 
-No execute CLI, login, SQL, inventory seeding, approval impersonation, or boolean
-write switch. The main integration must supply independent enforcing authorities
-and an API+DB/source readback adapter. HTTP success (often R<Void>) is NOT business
-completion. Journal contains digests, never tokens, request bodies or business IDs.
-Read retries are bounded; writes dispatch once. Uncertain commands are recover-first; explicit replay requires proven idempotency.
+不提供执行命令行入口，不执行登录、SQL、库存数据植入或审批身份冒用，也不提供布尔型
+写入开关。主集成必须提供独立的强制校验机制
+以及 API 与数据库/来源回读适配器。HTTP 成功（通常为 R<Void>）不代表业务
+完成。日志只包含摘要，绝不包含令牌、请求体或业务 ID。
+读取重试有次数限制；写入只发送一次。不确定的命令须先恢复核验；显式重放要求幂等性已获证明。
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -26,10 +26,16 @@ from procurement_runtime_preflight import (PRIVATE_ROOT as _PRIVATE_ROOT, Creden
     RuntimeAuthority, RuntimeTarget, ReadOnlyClient, authentication_evidence, exact_decimal,
     local_opener, request_document, response_id_strings, safe_path, strict_id)
 
+from procurement_runtime_attestation import BackendRuntimeAuthority, ATTESTATION_CATEGORIES
+
+_DEFAULT_RUNTIME = object()
 PRIVATE_ROOT = _PRIVATE_ROOT
 
 class TransportBlocked(RuntimeError):
-    """Fixed diagnostic; raw HTTP, credentials and adapter errors are suppressed."""
+    """固定诊断信息；不暴露原始 HTTP 信息、凭据或适配器错误。"""
+    def __init__(self,message,*,category='UNVERIFIED'):
+        super().__init__(message)
+        self.category=category
 
 def require(condition, message):
     if not condition:
@@ -86,12 +92,12 @@ class WriteScope:
         return _sha(self.target_sha256 + '\0' + self.tenant_id + '\0' + self.intent_id)
 
 class WriteAuthority(ABC):
-    """Independent, time-bounded, exact-request permission; never issued by Task C.
+    """独立、限时且绑定精确请求的权限；绝不由任务 C 签发。
 
-    Enforce the transport/principal, target, tenant, intent, exact request hash,
-    action and expiry. No apply/verified flag or editable JSON is a grant. On
-    retry additionally certify settled original request and server-side action
-    idempotency in the attested loaded build, NOT merely absence of a DB row.
+    强制校验传输通道/身份主体、目标、租户、意图、精确请求哈希、
+    操作及有效期。apply/verified 标志或可编辑的 JSON 均不构成授权。
+    重试时还须证明原始请求的处理状态已最终确定，以及经证明的已加载构建中服务端操作的
+    幂等性；不能仅以数据库中不存在某行作为证明。
     """
     @abstractmethod
     def require_authorized(self, *, transport, scope):
@@ -101,13 +107,13 @@ class WriteAuthority(ABC):
         raise TransportBlocked('independent settled-request idempotency proof required')
 
 class LifecycleAuthority(ABC):
-    """Main thread must close source+writer+lifecycle before EACH action/recovery.
+    """主线程必须在每次操作或恢复前完成来源、写入方及生命周期的闭环核验。
 
-    Check complete tenant-scoped baseline, original sources and line quantities,
-    draft/approval state, real actor/Flowable process, supply/receipt/IQC/shelf
-    evidence as appropriate, and idempotency/outbox boundaries. No model-invented
-    price, stock, arrival, approval or production fact is admissible. Raises on
-    any gap. Never substitute a dictionary of empty/presumed booleans.
+    检查完整的租户范围基线、原始来源及明细数量、
+    草稿/审批状态、真实操作人/Flowable 流程，以及适用的供应/收货/IQC/上架
+    证据与幂等性/outbox 边界。不接受模型编造的
+    价格、库存、到货、审批或生产事实。
+    任何缺口均须抛出异常；绝不能用包含空值或假定布尔值的字典代替核验。
     """
     @abstractmethod
     def require_closed(self, *, scope):
@@ -143,32 +149,32 @@ class RecoveryEvidence:
         return self
 
 class RecoveryReader(ABC):
-    """Independent enforcing reader, not an HTTP response projector.
+    """独立执行强制校验的读取器，不是 HTTP 响应投影器。
 
-    Must SELECT and GET actual tenant-scoped records, uniquely match ORIGINAL
-    intent/source/baseline, server-generated ID/number, all lines/quantities and
-    persisted lifecycle state. Conflicts/incomplete pagination/read failure must
-    raise, never mean absent. Return None only for a completed, unambiguous read
-    with no matching committed record. Digest fields are audit links, not proof
-    by themselves. Task C intentionally supplies no production implementation.
+    必须通过 SELECT 和 GET 读取租户范围内的实际记录，并唯一匹配原始
+    意图/来源/基线、服务端生成的 ID/单号、全部明细/数量及
+    已持久化的生命周期状态。冲突、分页不完整或读取失败必须
+    抛出异常，绝不能解释为记录不存在。只有读取已完整完成且无歧义、
+    并且没有匹配的已提交记录时才返回 None。摘要字段只是审计关联，本身不能作为
+    证明。任务 C 刻意不提供生产实现。
     """
     @abstractmethod
     def read_back(self, *, scope, request):
         raise TransportBlocked('independent persisted business readback required')
 
-# This round exposes ONLY the unified certified endpoint. Its server-side
-# permanent (tenant_id, request_key) receipt binds actor and original request
-# hash and rejects changed/pending/compensated commands. This is a source
-# contract, NOT proof that the running backend implements it. Explicit replay
-# requires fresh RuntimeAuthority, settled-request retry proof and lifecycle.
+# 本轮仅暴露统一的可信端点。其服务端
+# 永久回执 (tenant_id, request_key) 绑定操作人与原始请求
+# 哈希，并拒绝已变更、处理中或已补偿的命令。这是源码
+# 契约，不是运行中的后端已实现该契约的证明。显式重放
+# 要求新鲜有效的 RuntimeAuthority、原始请求处理状态已最终确定的重试证明及生命周期核验。
 CERTIFIED_ENDPOINT = '/erp/pu/requisition/certified'
 CERTIFIED_FIELDS = frozenset({'requestKey','materialId','vendorId','windowEnd',
                              'requirementDetailIds','expectedSourceFingerprint'})
 IDEMPOTENT_ACTIONS = frozenset({'requisition.certified.create'})
 
 def _values(value, tenant_id):
-    # Read-query guard only; certified write commands cannot contain quantities,
-    # units, tenant overrides, approval flags, or caller-assigned business codes.
+    # 仅用于读取查询的防护；可信写入命令不能包含数量、
+    # 单位、租户覆盖值、审批标志或调用方指定的业务编码。
     require(not isinstance(value,float),'binary floating-point values forbidden')
     if isinstance(value,dict):
         require(all(isinstance(k,str) for k in value),'query field names must be strings')
@@ -218,11 +224,11 @@ def validate_request(request,tenant_id):
 
 
 class AuditJournal:
-    """Append-only fsynced digest journal with a process-wide OS exclusion lock.
+    """仅追加且经 fsync 同步的摘要日志，使用进程范围的操作系统互斥锁。
 
-    Hash chains detect damage, not independent source authenticity. If the file is
-    missing/corrupt, callers must not resume old intents in a fresh journal; the
-    external lifecycle authority must prove a complete pre-create baseline.
+    哈希链只能检测损坏，不能独立证明来源真实性。如果文件
+    缺失或损坏，调用方不得在新日志中恢复旧意图；
+    外部生命周期校验器必须证明创建前的基线完整。
     """
     FIELDS = frozenset({'seq','at','event','action','intentSha256','requestSha256',
                        'tenantSha256','principalSha256','targetSha256','resultSha256',
@@ -264,7 +270,7 @@ class AuditJournal:
                 fcntl.flock(handle.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
             locked = True
             self._owner = threading.get_ident()
-            self.load()  # Validate the entire history before any new operation.
+            self.load()  # 在任何新操作之前校验完整历史。
             yield
         except OSError:
             raise TransportBlocked('audit lock or persistence failure; dispatch disabled') from None
@@ -340,16 +346,16 @@ READ_QUERY_FIELDS = frozenset({'pageNum','pageSize','orderNo','requisitionNo','n
                               'materialId','sourceId','sourceType','status','processInstanceId','procInsId'})
 
 class FormalProcurementTransport:
-    """Caller explicitly supplies original intents; no default issuer or executor.
+    """调用方提供原始意图；默认运行时仅用于只读校验，绝不签发写入授权。
 
-    send({method,path,body,query?}, intent_id=..., retry=False) is the write API.
-    Recover uses the same send with original hash: already-dispatched commands
-    read back first; explicit replay requires independent idempotency enforcement. Even HTTP 200 returns UNCERTAIN until independent
-    readback. post/put require explicit intent_id; they are NOT drop-in write
-    bypasses for existing read-only ApiClient. Main thread must adapt its gates.
+    send({method,path,body,query?}, intent_id=..., retry=False) 是写入 API。
+    恢复时使用同一个 send 及原始哈希：已发送的命令
+    须先回读核验；显式重放要求独立强制校验幂等性。即使 HTTP 200，在独立
+    回读核验前仍返回 UNCERTAIN。post/put 要求显式提供 intent_id；它们不能作为现有只读
+    ApiClient 的直接替换来绕过写入限制。主线程必须对接其门禁。
     """
     def __init__(self, *, target=None, credentials, expected_head, authority=None,
-                 runtime=None, lifecycle=None, recovery=None, journal=None, opener=None):
+                 runtime=_DEFAULT_RUNTIME, lifecycle=None, recovery=None, journal=None, opener=None):
         try:
             self.target=(target or RuntimeTarget()).validate()
             self.credentials=credentials.validate()
@@ -360,6 +366,8 @@ class FormalProcurementTransport:
         self.expected_head=expected_head
         self.authority,self.runtime,self.lifecycle,self.recovery,self.journal=authority,runtime,lifecycle,recovery,journal
         self._opener=opener or local_opener()
+        if runtime is _DEFAULT_RUNTIME:
+            self.runtime=BackendRuntimeAuthority(credentials=self.credentials,opener=self._opener)
         self._principal=None
 
     def get(self,path,query=None):
@@ -395,17 +403,26 @@ class FormalProcurementTransport:
         require(isinstance(self.recovery,RecoveryReader),'independent API+database recovery reader required')
         require(isinstance(self.journal,AuditJournal),'durable private audit journal required')
 
-    def _enforce(self,scope):
+    def _require_runtime(self,scope):
         try:
             require(self.runtime.require_current(target=self.target,expected_head=self.expected_head,
                         tenant_id=self.credentials.tenant_id,principal_sha256=scope.principal_sha256) is None,
                     'runtime authority must enforce, not return a flag')
+        except Exception as error:
+            category=getattr(error,'category',None)
+            raise TransportBlocked('loaded runtime attestation rejected; details suppressed',
+                category=category if isinstance(category,str) and category in ATTESTATION_CATEGORIES else 'BUILD_ATTESTATION_REJECTED') from None
+
+    def _enforce(self,scope):
+        try:
             require(self.authority.require_authorized(transport=self,scope=scope) is None,
                     'write authority must enforce, not return a flag')
             require(self.lifecycle.require_closed(scope=scope) is None,
                     'lifecycle authority must enforce, not return a flag')
         except Exception:
-            raise TransportBlocked('independent runtime/write/source/lifecycle authority rejected') from None
+            raise TransportBlocked('independent write/source/lifecycle authority rejected') from None
+        # 在可能耗时的外部来源检查之后，获取新鲜有效的已加载运行时证明。
+        self._require_runtime(scope)
 
     def _readback(self,scope,request):
         try:
@@ -451,6 +468,8 @@ class FormalProcurementTransport:
                 proof=self._readback(scope,frozen)
                 self._binding_guard(binding)
                 if proof:
+                    self._require_runtime(scope)
+                    self._binding_guard(binding)
                     self.journal.append(scope,'RECOVERED',proof=proof)
                     return self._result(proof,'RECOVERED')
                 require(history['event'] not in ('COMPLETED','RECOVERED'),
@@ -473,14 +492,17 @@ class FormalProcurementTransport:
             query=frozen.get('query')
             http=Request(binding[0].base_url.rstrip('/')+frozen['path']+('?' + urlencode(query) if query else ''),
                          data=body,headers=headers,method=frozen['method'])
-            # Write-ahead record survives response timeouts and process crashes.
-            # Never infer no-commit from timeout, exception type or missing row.
+            # 预写记录可在响应超时及进程崩溃后保留。
+            # 绝不根据超时、异常类型或缺失行推断未提交。
+            self._enforce(scope)
+            self._binding_guard(binding)
             self.journal.append(scope,'DISPATCHED')
             try:
                 document=request_document(http,binding[3],attempts=1)
                 require(type(document.get('code')) is int and document['code']==200,
                         'business response not successful; details suppressed')
                 proof=self._readback(scope,frozen)
+                if proof is not None:self._require_runtime(scope)
                 self._binding_guard(binding)
             except Exception:
                 self.journal.append(scope,'UNCERTAIN')

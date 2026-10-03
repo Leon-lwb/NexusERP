@@ -24,9 +24,12 @@ import java.util.List;
  *
  * @author nexus
  */
+@lombok.RequiredArgsConstructor
 @DS("erp")
 @Service
 public class WmMaterialReceiveDetailServiceImpl extends ServiceImpl<WmMaterialReceiveDetailMapper, WmMaterialReceiveDetail> implements IWmMaterialReceiveDetailService {
+
+    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
      * 分页查询物料领用明细列表
@@ -73,6 +76,7 @@ public class WmMaterialReceiveDetailServiceImpl extends ServiceImpl<WmMaterialRe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialReceiveDetailBo bo) {
+        certifiedReceiptGuard.requireMutableDetailParent(bo.getReceiveId(),bo.getLineId());
         WmMaterialReceiveDetail entity = MapstructUtils.convert(bo, WmMaterialReceiveDetail.class);
         return baseMapper.insert(entity);
     }
@@ -86,6 +90,7 @@ public class WmMaterialReceiveDetailServiceImpl extends ServiceImpl<WmMaterialRe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialReceiveDetailBo bo) {
+        certifiedReceiptGuard.requireMutableDetail(bo.getDetailId(),bo.getReceiveId(),bo.getLineId());
         WmMaterialReceiveDetail entity = MapstructUtils.convert(bo, WmMaterialReceiveDetail.class);
         return baseMapper.updateById(entity);
     }
@@ -99,6 +104,7 @@ public class WmMaterialReceiveDetailServiceImpl extends ServiceImpl<WmMaterialRe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        for(Long id:ids) { certifiedReceiptGuard.requireMutableDetail(id,null,null); }
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 

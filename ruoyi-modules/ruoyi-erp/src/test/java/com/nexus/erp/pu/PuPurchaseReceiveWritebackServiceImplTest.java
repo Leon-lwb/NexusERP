@@ -42,6 +42,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * 采购收货回写单元测试（ERP-PU-01 超收守卫 / ERP-PU-02 幂等键可重试）。
@@ -62,12 +64,17 @@ class PuPurchaseReceiveWritebackServiceImplTest {
     private WmMaterialReceiveLineMapper receiveLineMapper;
 
     @InjectMocks
-    private PuPurchaseReceiveWritebackServiceImpl writebackService;
+    private PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback writebackService;
 
     private static MockedStatic<RedisUtils> redisUtilsMock;
 
     @BeforeAll
-    static void initStatics() {
+    static void initStatics() throws Exception {
+        try(var spring=mockStatic(cn.hutool.extra.spring.SpringUtil.class)) {
+            spring.when(()->cn.hutool.extra.spring.SpringUtil.getBean(org.redisson.api.RedissonClient.class))
+                .thenReturn(mock(org.redisson.api.RedissonClient.class));
+            Class.forName(RedisUtils.class.getName(),true,RedisUtils.class.getClassLoader());
+        }
         MybatisConfiguration configuration = new MybatisConfiguration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, PuPurchaseOrderLine.class);
@@ -335,5 +342,40 @@ class PuPurchaseReceiveWritebackServiceImplTest {
     @SuppressWarnings("unused")
     private void assertDecimalEquals(String expected, BigDecimal actual) {
         assertEquals(0, new BigDecimal(expected).compareTo(actual));
+    }
+    @Test void dispatcherMustNotOpenAnAmbientTransactionBeforeDedicatedReceiptExecutor() throws Exception {
+        org.junit.jupiter.api.Assertions.assertNull(PuPurchaseReceiveWritebackServiceImpl.class
+            .getMethod("writeBackReceivedQty",Long.class,Long.class)
+            .getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+    }
+    @Test void certifiedDispatcherNeverInvokesLegacyProxyEvenOnDurableReplay() {
+        var batch=mock(com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.class);
+        var legacy=mock(PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback.class);
+        var dispatcher=new PuPurchaseReceiveWritebackServiceImpl(batch,legacy);
+        try(var tenant=mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
+            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000001");
+            when(batch.consumeReceipt("000001",1L,null)).thenReturn(new com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.BatchReceipt("000001",1L,100L,true,List.of(),true));
+            dispatcher.writeBackReceivedQty(1L,null);verifyNoInteractions(legacy);
+        }
+    }
+    @Test void historicalDispatcherCallsTheSeparateLegacyProxyWithLockedActualOrder() {
+        var batch=mock(com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.class);
+        var legacy=mock(PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback.class);
+        var dispatcher=new PuPurchaseReceiveWritebackServiceImpl(batch,legacy);
+        try(var tenant=mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
+            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000001");
+            when(batch.consumeReceipt("000001",1L,null)).thenReturn(new com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.BatchReceipt("000001",1L,100L,false,List.of(),false));
+            dispatcher.writeBackReceivedQty(1L,null);verify(legacy).writeBackReceivedQty(1L,100L);
+        }
+    }
+    @Test void uncertainCommitMustNeverFallBackToLegacyWrites() {
+        var batch=mock(com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.class);
+        var legacy=mock(PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback.class);
+        var dispatcher=new PuPurchaseReceiveWritebackServiceImpl(batch,legacy);
+        try(var tenant=mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
+            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000001");
+            when(batch.consumeReceipt("000001",1L,null)).thenThrow(new ServiceException("commit unknown"));
+            assertThrows(ServiceException.class,()->dispatcher.writeBackReceivedQty(1L,null));verifyNoInteractions(legacy);
+        }
     }
 }

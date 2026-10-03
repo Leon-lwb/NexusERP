@@ -4370,6 +4370,8 @@ CREATE TABLE `pu_purchase_order`  (
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   `buyer_id` bigint(20) NULL DEFAULT NULL COMMENT '采购员ID（关联sys_user）',
   `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
+  `certified_version` int NULL DEFAULT NULL COMMENT '可信订单CAS版本；历史NULL不认证',
+  `certified_terms_id` bigint NULL DEFAULT NULL COMMENT '已独立确认的不可变报价版本ID',
   PRIMARY KEY (`order_id`) USING BTREE,
   UNIQUE INDEX `uk_order_no`(`order_no`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = DYNAMIC;
@@ -8300,3 +8302,132 @@ CREATE TABLE `pu_certified_purchase_command` (
   PRIMARY KEY (`tenant_id`,`request_key`),
   UNIQUE KEY `uk_certified_purchase_requisition` (`tenant_id`,`requisition_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='可信采购永久命令与ERP提交恢复凭据';
+
+
+/** wm_certified_receipt_posting 新装定义；存量升级单独审查，不补造历史认证。 */
+CREATE TABLE IF NOT EXISTS `wm_certified_receipt_posting` (
+  `tenant_id` varchar(20) NOT NULL COMMENT '明确当前租户',
+  `receive_id` bigint NOT NULL COMMENT '真实原入库单，永久幂等身份',
+  `material_id` bigint NOT NULL,
+  `actor_id` bigint NOT NULL,
+  `source_fingerprint` char(64) NOT NULL COMMENT '冻结真实来源摘要，不是上传的核验布尔',
+  `total_quantity` decimal(18,4) NOT NULL,
+  `posted_at` datetime NOT NULL,
+  `notification_status` varchar(16) NOT NULL COMMENT 'PENDING/ENQUEUED，接受不等于消费者完成',
+  PRIMARY KEY (`tenant_id`,`receive_id`),
+  KEY `idx_certified_receipt_material` (`tenant_id`,`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='原生精确收货过账结果与提交后通知恢复';
+
+
+/** wm_certified_iqc_evidence 新装定义；存量升级单独审查，不补造历史认证。 */
+CREATE TABLE `wm_certified_iqc_evidence` (
+  `evidence_id` bigint(20) NOT NULL COMMENT 'ERP不可变IQC证据ID',
+  `tenant_id` varchar(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '真实消息与MES/ERP一致租户',
+  `inspection_id` bigint(20) NOT NULL COMMENT '真实MES qc_iqc.iqc_id',
+  `inspection_code` varchar(64) NOT NULL COMMENT '真实MES IQC编号',
+  `receive_id` bigint(20) NOT NULL COMMENT '原真实ERP收货单',
+  `material_id` bigint(20) NOT NULL COMMENT '原收货全物料范围',
+  `base_uom_id` bigint(20) NOT NULL COMMENT 'V1当前ERP观察单位；非原MES数量单位证明，不得授权',
+  `quantity_scale` tinyint(3) unsigned NOT NULL COMMENT '已核可信本单位精度；此来源仅支持0至4',
+  `inspected_quantity` decimal(14,4) NOT NULL COMMENT 'MES真实检验量；须等于原收货同料全量',
+  `inspect_result` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '真实QUALIFIED或UNQUALIFIED',
+  `inspector_id` bigint(20) NOT NULL COMMENT '真实MES完成检验员',
+  `source_kind` varchar(48) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '固定MES_QC_IQC_RECEIVE_MATERIAL_V1',
+  `source_version` varchar(96) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'QC_IQC_CURRENT_V1与实际数据主体摘要',
+  `actual_body_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'MES原始当前单头及明细完整数据主体摘要',
+  `receipt_scope_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原ERP收货同料全行数量单位来源摘要',
+  `evidence_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '本不可变证据字段完整性摘要',
+  `first_message_id` varchar(128) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '首个真实消息标识；不是质量授权',
+  `source_created_at` datetime(3) NOT NULL COMMENT 'MES真实创建时间',
+  `completed_at` datetime(3) NOT NULL COMMENT 'MES真实检验完成时间',
+  `source_updated_at` datetime(3) DEFAULT NULL COMMENT 'MES当前更新时间；无乐观版本列不据此猜最新',
+  `observed_at` datetime(3) NOT NULL COMMENT '独立MES只读可重复读事务观察完成时间',
+  `certified_at` datetime(3) NOT NULL COMMENT '独立ERP自主管理的可重复读事务证据落账时间',
+  PRIMARY KEY (`evidence_id`),
+  UNIQUE KEY `uk_certified_iqc_inspection` (`tenant_id`, `inspection_id`),
+  UNIQUE KEY `uk_certified_iqc_scope` (`tenant_id`, `receive_id`, `material_id`),
+  UNIQUE KEY `uk_certified_iqc_message` (`tenant_id`, `first_message_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MES真实完成来源的ERP不可变IQC证据';
+
+
+/** pu_certified_purchase_order_terms 新装定义；存量升级单独审查，不补造历史认证。 */
+CREATE TABLE pu_certified_purchase_order_terms (
+    quote_id BIGINT NOT NULL,
+    tenant_id VARCHAR(20) COLLATE utf8mb4_bin NOT NULL,
+    order_id BIGINT NOT NULL,
+    quote_version INT NOT NULL,
+    request_key VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
+    request_hash CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    entered_by BIGINT NOT NULL,
+    entered_at DATETIME(3) NOT NULL,
+    vendor_id BIGINT NOT NULL,
+    material_id BIGINT NOT NULL,
+    base_uom_id BIGINT NOT NULL,
+    source_request_key VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
+    source_fingerprint CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    catalog_fingerprint CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    order_fingerprint CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    quantity DECIMAL(18,4) NOT NULL,
+    unit_price_excluding_tax DECIMAL(18,4) NOT NULL,
+    tax_rate DECIMAL(10,4) NOT NULL,
+    currency VARCHAR(16) COLLATE utf8mb4_bin NOT NULL,
+    exchange_rate DECIMAL(18,6) NOT NULL,
+    promised_arrival_date DATE NOT NULL,
+    valid_from DATE NOT NULL,
+    valid_until DATE NOT NULL,
+    supplier_quote_reference VARCHAR(128) NOT NULL,
+    supplier_contact VARCHAR(128) NOT NULL,
+    evidence_reference VARCHAR(255) NOT NULL,
+    evidence_sha256 CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    payment_terms VARCHAR(255) NOT NULL,
+    delivery_terms VARCHAR(255) NOT NULL,
+    rounding_policy VARCHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    quote_hash CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    PRIMARY KEY (quote_id),
+    UNIQUE KEY uk_quote_request (tenant_id,request_key),
+    UNIQUE KEY uk_order_quote_version (tenant_id,order_id,quote_version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购供应确认条款不可变版本；无UPDATE/DELETE API';
+
+
+/** pu_certified_purchase_order_terms_confirmation 新装定义；存量升级单独审查，不补造历史认证。 */
+CREATE TABLE pu_certified_purchase_order_terms_confirmation (
+    confirmation_id BIGINT NOT NULL,
+    tenant_id VARCHAR(20) COLLATE utf8mb4_bin NOT NULL,
+    quote_id BIGINT NOT NULL,
+    quote_hash CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    request_key VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
+    request_hash CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    actor_id BIGINT NOT NULL,
+    permission_code VARCHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    confirmed_at DATETIME(3) NOT NULL,
+    review_note VARCHAR(500) NOT NULL,
+    PRIMARY KEY (confirmation_id),
+    UNIQUE KEY uk_confirmation_request (tenant_id,request_key),
+    UNIQUE KEY uk_quote_confirmation (tenant_id,quote_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='不同操作人独立确认审计；只追加不替换';
+
+
+/** pu_certified_purchase_order_operation 新装定义；存量升级单独审查，不补造历史认证。 */
+CREATE TABLE pu_certified_purchase_order_operation (
+    command_id BIGINT NOT NULL,
+    tenant_id VARCHAR(20) COLLATE utf8mb4_bin NOT NULL,
+    order_id BIGINT NOT NULL,
+    request_key VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
+    request_hash CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    actor_id BIGINT NOT NULL,
+    operation VARCHAR(32) COLLATE utf8mb4_bin NOT NULL,
+    expected_version INT NOT NULL,
+    result_version INT NOT NULL,
+    result_status VARCHAR(32) COLLATE utf8mb4_bin NOT NULL,
+    quote_id BIGINT NULL,
+    quote_hash CHAR(64) COLLATE utf8mb4_bin NULL,
+    expected_arrival_date DATE NULL,
+    total_amount DECIMAL(18,2) NULL,
+    amount_excluding_tax DECIMAL(18,2) NULL,
+    tax_amount DECIMAL(18,2) NULL,
+    result_fingerprint CHAR(64) COLLATE utf8mb4_bin NOT NULL,
+    occurred_at DATETIME(3) NOT NULL,
+    PRIMARY KEY (command_id),
+    UNIQUE KEY uk_operation_request (tenant_id,request_key),
+    UNIQUE KEY uk_order_operation (tenant_id,order_id,operation)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ERP提交结果永久重放；不依赖AI回写成功';

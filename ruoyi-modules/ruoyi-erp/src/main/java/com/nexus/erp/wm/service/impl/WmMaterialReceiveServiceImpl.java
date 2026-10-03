@@ -31,6 +31,9 @@ import java.util.Map;
 @Service
 public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
 
+    private final com.nexus.erp.wm.service.WmCertifiedReceiptPostingService certifiedPosting;
+    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+
     /** 物料领用业务服务，提供物料领用相关能力 */
     private final IWmMaterialReceiveCrudService crudService;
     /** 执行器业务服务，提供执行器相关能力 */
@@ -120,7 +123,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      * 物料领用处理（submit）
      *
      * @param receiveIdStr 参数 receiveIdStr
-     * @param selectFlowId selectFlow ID
+     * @param selectFlowId 所选流程 ID
      * @return 结果
      */
     @Override
@@ -136,6 +139,10 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      */
     @Override
     public boolean executeReceive(Long receiveId) {
+        if (certifiedPosting.handles(receiveId)) {
+            certifiedPosting.post(receiveId);
+            return true;
+        }
         return executorService.executeReceive(receiveId);
     }
 
@@ -186,7 +193,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     /**
      * 物料领用处理（flowValuesOfTask）
      *
-     * @param taskNameId taskName ID
+     * @param taskNameId 任务名称 ID
      * @param values 参数 values
      * @return 结果对象
      */
@@ -198,7 +205,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     /**
      * 物料领用处理（flowCandidateUsernamesOfTask）
      *
-     * @param taskNameId taskName ID
+     * @param taskNameId 任务名称 ID
      * @param values 参数 values
      * @return 结果对象
      */
@@ -225,7 +232,9 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      * @return 影响行数
      */
     @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public int updateById(WmMaterialReceive entity) {
+        certifiedReceiptGuard.requireUnposted(entity.getReceiveId());
         return materialReceiveMapper.updateById(entity);
     }
 }

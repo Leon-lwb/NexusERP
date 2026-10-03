@@ -1,0 +1,22 @@
+package com.nexus.erp.wm.service;
+
+import cn.dev33.satoken.stp.StpUtil;
+import com.nexus.common.ai.decision.dto.DecisionActor;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import org.springframework.stereotype.Component;
+import java.util.Set;
+
+@Component
+public class WmCertifiedReceiptPostingAuthorizer {
+    public DecisionActor requireUser() {
+        StpUtil.checkLogin();
+        StpUtil.checkPermission("wm:receive:execute");
+        String tenant=TenantHelper.getTenantId(); Long user=LoginHelper.getUserId();
+        if (!TenantHelper.isEnable() || tenant==null || !tenant.matches("[0-9]{6,20}")
+            || !tenant.equals(LoginHelper.getTenantId()) || user==null || user<=0)
+            throw new ServiceException("精确入库身份与当前租户不一致");
+        return new DecisionActor(tenant,user,LoginHelper.getUsername(),Set.of("wm:receive:execute"));
+    }
+}

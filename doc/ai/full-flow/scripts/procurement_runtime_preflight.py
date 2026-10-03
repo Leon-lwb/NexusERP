@@ -1,15 +1,15 @@
-"""Read-only Task C runtime evidence; NEVER grants business-write permission.
+"""任务 C 的只读运行时证据；绝不授予业务写入权限。
 
-Only bounded GET getInfo and tenant-scoped SELECTs in a READ ONLY snapshot.
-No login, migrations or service lifecycle. Config, target hashes and pid are NOT
-loaded-build attestation. RuntimeAuthority is an external enforcing port; there
-is intentionally no authority implementation or --apply flag in this module.
+仅允许有边界限制的 GET getInfo，以及 READ ONLY 快照中限定租户范围的 SELECT。
+不执行登录、迁移或服务生命周期操作。配置、目标哈希及 pid 均不是
+已加载构建证明。默认的 BackendRuntimeAuthority 独立读取
+绑定 nonce 且经过认证的后端契约；不提供 --apply 或写入授权。
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import argparse
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -18,12 +18,18 @@ from pathlib import Path
 import re
 import socket
 import subprocess
+import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
+# 直接执行脚本与具体权威校验实现必须共用同一组类。
+if __name__ == '__main__':
+    sys.modules['procurement_runtime_preflight'] = sys.modules[__name__]
+
 ROOT = Path(__file__).resolve().parents[4]
 PRIVATE_ROOT = ROOT / '.codex' / 'full-flow-20260928'
+LOCAL_TIMEZONE = timezone(timedelta(hours=8))
 MAX_DOCUMENT = 1_000_000
 SCHEMAS = {'master':'ry-vue', 'erp':'ry-erp', 'mes':'ry-mes', 'iot':'ry-iot'}
 TABLES = {
@@ -46,7 +52,7 @@ DECIMAL_FIELDS = {
 }
 
 class PreflightBlocked(RuntimeError):
-    """Fixed diagnostic; never wrap raw remote/config exceptions."""
+    """固定诊断信息；绝不包装原始远端或配置异常。"""
     def __init__(self,message,*,category='UNVERIFIED'):
         super().__init__(message)
         self.category=category
@@ -239,10 +245,10 @@ def request_document(request, opener, *, attempts=1):
             raise PreflightBlocked('HTTP response unavailable; details suppressed',category=diagnostic_category(error)) from None
 
 def response_id_strings(value,*,identity=False):
-    """Only fresh raw-JSON integer IDs may normalize to strings, never floats.
+    """仅允许将新获取的原始 JSON 整数 ID 规范化为字符串，绝不接受浮点数。
 
-    Python JSON integers retain all digits; do not pass JS-rounded IDs here.
-    Non-ID numbers such as counts remain integers and quantities remain Decimal.
+    Python 的 JSON 整数保留所有数字；不要在此传入经 JS 舍入的 ID。
+    计数等非 ID 数值仍保持为整数，数量仍保持为 Decimal。
     """
     if identity:
         if value is None or isinstance(value,str):return value
@@ -260,7 +266,7 @@ def response_id_strings(value,*,identity=False):
     return value
 
 class ReadOnlyClient:
-    """Authentication GET only. GET order/generate is forbidden."""
+    """仅允许认证 GET 请求；禁止 GET order/generate。"""
     def __init__(self, target, credentials, *, opener=None):
         self.target, self.credentials = target.validate(), credentials.validate()
         self._opener = opener or local_opener()
@@ -295,22 +301,70 @@ def authentication_evidence(client, credentials):
                 'authentication permission shape unavailable')
         result.update({'status':'VERIFIED', 'principalSha256':digest(principal),
                        'permissionCount':len(permissions), 'permissionSetSha256':digest('\n'.join(sorted(permissions))),
-                       'observedAt':datetime.now().astimezone().isoformat()})
+                       'observedAt':datetime.now(LOCAL_TIMEZONE).isoformat()})
         return result
     except Exception as error:
         result['reason'] = 'authentication_probe_unavailable_or_invalid'
         result['diagnosticCategory']=diagnostic_category(error)
         return result
 
-class RuntimeAuthority(ABC):
-    """External trust root, NOT a report parser or flag.
 
-    Must independently verify LIVE process/startup, loaded artifact digest/HEAD,
-    effective dev profile and backend datasource UUID/schema, principal/tenant,
-    freshness and runtime overrides. Recheck EACH action/recovery; ambiguity raises.
-    expected_head MUST be the final committed source baseline, not the starting
-    task HEAD or process timestamp. Validate the actual LOADED artifact, never
-    only the current on-disk target. Return exactly None on success; no issuer here.
+def resolve_existing_authentication(*, target=None, path=None, environ=None, opener=None):
+    """仅查找既定的私有会话位置；通过 GET 验证每个候选项。
+
+    绝不执行登录、抓取任意浏览器用户配置、接受 ACTIVE 标志、拼接
+    不完整上下文或按文件时间选择未验证的令牌。候选名称
+    仅限定搜索范围；新鲜的 getInfo 响应用于证明身份与租户。
+    """
+    target=(target or RuntimeTarget()).validate()
+    env=os.environ if environ is None else environ
+    names=('NEXUS_FULL_FLOW_TOKEN','NEXUS_FULL_FLOW_COOKIE',
+           'NEXUS_FULL_FLOW_CLIENT_ID','NEXUS_FULL_FLOW_TENANT_ID')
+    explicit=path is not None or any(env.get(name) for name in names)
+    if explicit:
+        candidates=[path]
+    else:
+        root=PRIVATE_ROOT.resolve()
+        found=[]
+        for directory in root.glob('*-procurement-execution/runtime'):
+            if re.fullmatch(r'[0-9]{8}-procurement-execution',directory.parent.name):
+                found.extend(directory.glob('private-credential-*.json'))
+        candidates=sorted(found,key=lambda item:str(item),reverse=True)[:7]
+        saved=root/'session-token.json'
+        if saved.is_file():candidates.append(saved)
+    verified=[];categories=set()
+    for candidate in candidates:
+        try:
+            credentials=load_credentials(target=target,path=candidate,environ=env)
+            auth=authentication_evidence(ReadOnlyClient(target,credentials,opener=opener),credentials)
+            if auth.get('status')=='VERIFIED':
+                auth.update({'contextSource':'explicit_context' if explicit else 'verified_existing_private_session',
+                             'credentialSourcePathSha256':digest(str(Path(candidate).resolve())) if candidate else None})
+                verified.append((credentials,auth))
+            else:categories.add(auth.get('diagnosticCategory','AUTH_CONTEXT_UNVERIFIED'))
+        except (PreflightBlocked,OSError) as error:
+            categories.add(diagnostic_category(error))
+    identities={(c.tenant_id,a['principalSha256']) for c,a in verified}
+    if len(identities)==1:
+        credentials,auth=verified[0]
+        auth.update({'candidateCount':len(candidates),'verifiedCandidateCount':len(verified)})
+        return credentials,auth
+    category='AUTH_CONTEXT_AMBIGUOUS' if len(identities)>1 else 'AUTH_FAILED' if 'AUTH_FAILED' in categories else 'AUTH_CONTEXT_UNVERIFIED'
+    return None,{'status':'BLOCKED','reason':'existing_authentication_context_missing_invalid_or_ambiguous',
+                 'diagnosticCategory':category,'candidateCount':len(candidates),'businessWrites':0,
+                 'loginRequests':0}
+
+
+class RuntimeAuthority(ABC):
+    """外部信任根，不是报告解析器或标志位。
+
+    必须独立验证实际运行的进程/启动信息、已加载构件摘要/HEAD、
+    生效的 dev 配置及后端数据源 UUID/数据库模式、身份主体/租户、
+    新鲜度及运行时覆盖值。每次操作或恢复均须重新检查；有歧义则抛出异常。
+    expected_head 必须是最终已提交的源码基线，而非任务开始时的
+    HEAD 或进程时间戳。校验实际已加载的构件，绝不能
+    只校验当前磁盘上的目标。成功时仅返回 None；不签发写入授权。
+    BackendRuntimeAuthority 是默认的经过认证的具体实现。
     """
     @abstractmethod
     def require_current(self, *, target, expected_head, tenant_id, principal_sha256):
@@ -347,6 +401,55 @@ def _resolve(value, context, env, seen=()):
     require('${' not in value and not re.search(r'@[A-Za-z0-9_.-]+@', value), 'configuration reference unresolved')
     return value
 
+
+def configuration_value(value, context, env):
+    """在内存中解析本地配置的 Jasypt 格式，绝不将密文用作数据库连接凭据。
+
+    刻意只支持本仓库明确指定的 AES-256/HMAC-SHA512
+    配置，使用随机的 16 字节盐/IV 并以 base64 输出。其他加密
+    设置一律拒绝；不猜测密码、不启动 Java 子进程，也不记录日志。
+    """
+    resolved = _resolve(value, context, env)
+    if not resolved.startswith('ENC('):
+        return resolved
+    algorithm = context.get('jasypt.encryptor.algorithm')
+    if algorithm != 'PBEWITHHMACSHA512ANDAES_256':
+        raise PreflightBlocked('local encrypted configuration algorithm unsupported',
+                               category='ENCRYPTED_CONFIG_UNSUPPORTED')
+    options = {'jasypt.encryptor.salt-generator-classname':'org.jasypt.salt.RandomSaltGenerator',
+               'jasypt.encryptor.iv-generator-classname':'org.jasypt.iv.RandomIvGenerator',
+               'jasypt.encryptor.string-output-type':'base64'}
+    if any(context.get(key, default) != default for key, default in options.items()) or any(
+            context.get(key) for key in ('jasypt.encryptor.provider-name','jasypt.encryptor.provider-class-name')):
+        raise PreflightBlocked('local encrypted configuration parameters unsupported',
+                               category='ENCRYPTED_CONFIG_UNSUPPORTED')
+    try:
+        import base64
+        from cryptography.hazmat.primitives import padding
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+        iterations = context.get('jasypt.encryptor.key-obtention-iterations', 1000)
+        require((type(iterations) is int or isinstance(iterations, str) and iterations.isdecimal())
+                and 1 <= int(iterations) <= 1_000_000, 'bounded encryption iteration count required')
+        require(resolved.endswith(')') and len(resolved) <= MAX_DOCUMENT,
+                'bounded encrypted configuration required')
+        secret = _resolve(context.get('jasypt.encryptor.password'), context, env)
+        require(0 < len(secret) <= 4096 and secret.isascii(), 'supported local encryption secret required')
+        raw = base64.b64decode(resolved[4:-1], validate=True)
+        require(len(raw) >= 48 and (len(raw)-32) % 16 == 0,
+                'encrypted configuration salt/IV/cipher shape unavailable')
+        key = hashlib.pbkdf2_hmac('sha512', secret.encode('ascii'), raw[:16], int(iterations), dklen=32)
+        decryptor = Cipher(algorithms.AES(key), modes.CBC(raw[16:32])).decryptor()
+        padded = decryptor.update(raw[32:]) + decryptor.finalize()
+        unpadder = padding.PKCS7(128).unpadder()
+        return (unpadder.update(padded) + unpadder.finalize()).decode('utf-8')
+    except ImportError:
+        raise PreflightBlocked('local encrypted configuration dependency unavailable',
+                               category='DEPENDENCY_MISSING') from None
+    except Exception:
+        raise PreflightBlocked('local encrypted configuration decryption failed; contents suppressed',
+                               category='ENCRYPTED_CONFIG_DECRYPTION_FAILED') from None
+
+
 def validate_jdbc(name, datasource):
     require(name in SCHEMAS and isinstance(datasource, dict), 'unapproved datasource')
     try:
@@ -374,6 +477,9 @@ class LocalSettings:
             validate_jdbc(name, datasource)
             require(isinstance(datasource.get('username'), str) and bool(datasource['username']) and
                     isinstance(datasource.get('password'), str), 'explicit datasource credentials required')
+            if datasource['password'].startswith('ENC('):
+                raise PreflightBlocked('local encrypted datasource credential unresolved',
+                                       category='ENCRYPTED_CONFIG_UNRESOLVED')
         return self
 
 def settings_from_files(root=ROOT, *, config_dir=None, environ=None):
@@ -400,10 +506,11 @@ def settings_from_files(root=ROOT, *, config_dir=None, environ=None):
         for key in ('url', 'username', 'password'):
             config_key = prefix + name + '.' + key
             require(config_key in context, 'complete four-datasource configuration required')
-            fields[key] = _resolve(context[config_key], context, env)
+            fields[key] = configuration_value(context[config_key], context, env)
         datasources[name] = fields
     summary = {'sourceKind':'source_resources' if base == approved[0] else 'target_resources',
                'filesSha256':fingerprints,
+               'encryptedValuesResolvedInMemory':any(isinstance(v,str) and v.startswith('ENC(') for v in context.values()),
                'datasources':{name:{'jdbcBase':'jdbc:mysql://127.0.0.1:3306/' + SCHEMAS[name],
                                   'usernamePresent':bool(v['username']), 'passwordPresent':bool(v['password']),
                                   'credentialValuesNeverReported':True}
@@ -431,7 +538,7 @@ def metadata_gaps(metadata):
     return sorted(gaps)
 
 def certified_index_gaps(rows):
-    """Mirror current writer's permanent receipt unique-key contract, read-only."""
+    """只读核对当前写入方的永久回执唯一键契约。"""
     expected={'PRIMARY':['tenant_id','request_key'],
               'uk_certified_purchase_requisition':['tenant_id','requisition_id']}
     observed={}
@@ -464,7 +571,8 @@ def database_evidence(settings, tenant_id, *, connector=None):
                     'gaps':['readonly_database_driver_missing'],'businessWrites':0}
     connection = None
     result = {'status':'BLOCKED', 'transaction':'REPEATABLE READ / CONSISTENT SNAPSHOT / READ ONLY',
-              'tenantSha256':digest(tenant_id), 'businessWrites':0,'actualTargetVerified':False}
+              'tenantSha256':digest(tenant_id), 'businessWrites':0,'actualTargetVerified':False,
+              'backendDatasourceBindingVerified':False}
     try:
         master = settings.datasources['master']
         connection = connector(host='127.0.0.1', port=3306, user=master['username'], password=master['password'],
@@ -510,6 +618,7 @@ def database_evidence(settings, tenant_id, *, connector=None):
             result['gaps'] = gaps
             if gaps:
                 result['reason'] = 'schema_engine_or_native_precision_not_verified'
+                result['diagnosticCategory']='SCHEMA_OR_PRECISION_UNVERIFIED' if any('native DECIMAL' in gap or 'engine must' in gap for gap in gaps) else 'SCHEMA_UNVERIFIED'
                 return result
             cursor.execute('SELECT INDEX_NAME,NON_UNIQUE,SEQ_IN_INDEX,COLUMN_NAME,SUB_PART '
                            'FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s '
@@ -573,11 +682,11 @@ def _file_digest(path):
     after = path.stat()
     require((before.st_size, before.st_mtime_ns) == (after.st_size, after.st_mtime_ns), 'artifact changed during inspection')
     return {'sha256':result.hexdigest(), 'size':after.st_size,
-            'mtime':datetime.fromtimestamp(after.st_mtime).astimezone().isoformat(), 'notLoadedArtifactProof':True}
+            'mtime':datetime.fromtimestamp(after.st_mtime, LOCAL_TIMEZONE).isoformat(), 'notLoadedArtifactProof':True}
 
 def process_evidence(root=ROOT):
     root = Path(root)
-    result = {'observedAt':datetime.now().astimezone().isoformat(), 'ports':{}, 'listeners':[],
+    result = {'observedAt':datetime.now(LOCAL_TIMEZONE).isoformat(), 'ports':{}, 'listeners':[],
               'notLoadedHeadAttestation':True, 'targetSnapshots':{}}
     for port in (3306, 8080):
         try:
@@ -586,8 +695,8 @@ def process_evidence(root=ROOT):
         except OSError:
             result['ports'][str(port)] = 'UNREACHABLE'
     if os.name == 'nt':
-        # Command lines are captured in memory ONLY; never save/print them.
-        script = "$ErrorActionPreference='Stop'; $items=@(); foreach($c in (Get-NetTCPConnection -State Listen -LocalPort 8080,3306)){ $p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$c.OwningProcess); $items += [PSCustomObject]@{port=$c.LocalPort;pid=$p.ProcessId;name=$p.Name;startedAt=$p.CreationDate.ToString('o');commandLine=$p.CommandLine} }; ConvertTo-Json -InputObject $items -Compress"
+        # 命令行仅在内存中捕获；绝不保存或打印。
+        script = "$ErrorActionPreference='Stop'; $items=@(); foreach($c in (Get-NetTCPConnection -State Listen -LocalPort 8080,3306)){ $p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$c.OwningProcess); $items += [PSCustomObject]@{port=$c.LocalPort;pid=$p.ProcessId;name=$p.Name;startedAt=([DateTimeOffset]$p.CreationDate).ToString('o');commandLine=$p.CommandLine} }; ConvertTo-Json -InputObject $items -Compress"
         try:
             completed = subprocess.run(['powershell', '-NoProfile', '-Command', script],
                                        capture_output=True, text=True, timeout=15, check=False)
@@ -639,25 +748,37 @@ def readiness(target, credentials, expected_head, authentication, database, proc
         categories.add('SCHEMA_OR_PRECISION_UNVERIFIED')
     if 'stock_balance_source_reconciliation_not_established' in database_gaps:
         categories.add('STOCK_SOURCE_UNVERIFIED')
+    loaded={'status':'BLOCKED','businessWriteAuthorized':False}
     if not isinstance(attestor, RuntimeAuthority):
         gaps.append('trusted_loaded_build_and_effective_target_attestation_missing')
         categories.add('BUILD_ATTESTATION_MISSING')
-    elif not gaps:
+        loaded['diagnosticCategory']='BUILD_ATTESTATION_MISSING'
+    elif authentication.get('status')!='VERIFIED' or not isinstance(credentials,Credentials):
+        gaps.append('loaded_runtime_attestation_requires_fresh_authenticated_context')
+        categories.add('BUILD_ATTESTATION_AUTH_CONTEXT_UNVERIFIED')
+        loaded['diagnosticCategory']='BUILD_ATTESTATION_AUTH_CONTEXT_UNVERIFIED'
+    else:
         try:
-            require(re.fullmatch(r'[0-9a-f]{40}',expected_head) is not None,'exact final committed Git HEAD required')
+            require(isinstance(expected_head,str) and re.fullmatch(r'[0-9a-f]{40}',expected_head) is not None,
+                    'exact final committed Git HEAD required')
             require(attestor.require_current(target=target,expected_head=expected_head,
                     tenant_id=credentials.tenant_id,principal_sha256=authentication['principalSha256']) is None,
                     'runtime authority must enforce, not return a flag')
-        except Exception:
+            loaded.update({'status':'VERIFIED','source':'independent_enforcing_runtime_authority'})
+        except Exception as error:
+            from procurement_runtime_attestation import ATTESTATION_CATEGORIES
+            category=diagnostic_category(error)
+            category=category if isinstance(category,str) and category in ATTESTATION_CATEGORIES else 'BUILD_ATTESTATION_REJECTED'
             gaps.append('trusted_loaded_build_and_effective_target_attestation_rejected')
-            categories.add('BUILD_ATTESTATION_REJECTED')
+            categories.add(category)
+            loaded['diagnosticCategory']=category
     return {'status':'BLOCKED' if gaps else 'READ_ONLY_READY','gaps':sorted(set(gaps)),
-            'diagnosticCategories':sorted(categories),'businessWriteAuthorized':False,
+            'diagnosticCategories':sorted(categories),'loadedRuntime':loaded,'businessWriteAuthorized':False,
             'requiresIndependentWriteAndLifecycleAuthority':True}
 
-def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=None):
+def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=None, expected_head=None):
     target = RuntimeTarget().validate()
-    observed = datetime.now().astimezone()
+    observed = datetime.now(LOCAL_TIMEZONE)
     git = {'branch':subprocess.check_output(['git', 'branch', '--show-current'], cwd=root, text=True).strip(),
            'head':subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
            'commitDate':subprocess.check_output(['git', 'log', '-1', '--format=%cI'], cwd=root, text=True).strip()}
@@ -668,13 +789,7 @@ def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=
     report = {'schemaVersion':1, 'observedAt':observed.isoformat(), 'mode':'READ_ONLY',
               'git':git, 'target':target.evidence(), 'process':process,
               'businessWrites':0, 'serviceLifecycleActions':0}
-    credentials = None
-    try:
-        credentials = load_credentials(target=target, path=credential_path)
-        auth = authentication_evidence(ReadOnlyClient(target, credentials), credentials)
-    except (PreflightBlocked,OSError) as error:
-        auth={'status':'BLOCKED','reason':'explicit_authentication_context_missing_or_invalid',
-              'diagnosticCategory':diagnostic_category(error)}
+    credentials,auth=resolve_existing_authentication(target=target,path=credential_path)
     report['authentication'] = auth
     try:
         settings = settings_from_files(root, config_dir=config_dir)
@@ -687,12 +802,16 @@ def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=
         db={'status':'BLOCKED','gaps':['local_config_or_read_driver_unavailable_details_suppressed'],
             'diagnosticCategory':diagnostic_category(error),'actualTargetVerified':False}
     report['database'] = db
-    report.update(readiness(target, credentials, git['head'], auth, db, process, attestor=attestor))
+    from procurement_runtime_attestation import BackendRuntimeAuthority, management_metadata_evidence
+    report['management']=management_metadata_evidence(root=root)
+    if attestor is None and credentials is not None:
+        attestor=BackendRuntimeAuthority(credentials=credentials,root=root,config_dir=config_dir)
+    report.update(readiness(target, credentials, expected_head or git['head'], auth, db, process, attestor=attestor))
     return report
 
 def evidence_directory(now=None):
-    now = now or datetime.now().astimezone()
-    return PRIVATE_ROOT / (now.strftime('%Y%m%d') + '-unified-procurement') / 'runtime'
+    now = now or datetime.now(LOCAL_TIMEZONE)
+    return PRIVATE_ROOT / (now.strftime('%Y%m%d') + '-procurement-execution') / 'runtime'
 
 def main(argv=None):
     class SafeParser(argparse.ArgumentParser):
@@ -700,10 +819,12 @@ def main(argv=None):
     parser = SafeParser(description='Task C read-only runtime preflight', exit_on_error=False)
     parser.add_argument('--credential-file')
     parser.add_argument('--config-dir')
+    parser.add_argument('--expected-head')
     try:
         args = parser.parse_args(argv)
-        report = inspect_local(credential_path=args.credential_file, config_dir=args.config_dir)
-        now = datetime.now().astimezone()
+        report = inspect_local(credential_path=args.credential_file, config_dir=args.config_dir,
+                               expected_head=args.expected_head)
+        now = datetime.now(LOCAL_TIMEZONE)
         path = private_file(evidence_directory(now) / ('runtime-preflight-' + now.strftime('%Y%m%dT%H%M%S%f') + '.json'))
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('x', encoding='utf-8') as handle:

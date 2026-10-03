@@ -30,6 +30,29 @@ public class WmMqSendService {
     /** 消息提供器 */
     private final ReliableMessageProducer messageProducer;
 
+    /** 精确过账提交后同步获得主库可靠消息生产器接受；不在 ERP 事务内调用。 */
+    public void sendCertifiedPurchaseReceiveWriteback(Long receiveId, String tenantId) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
+            || org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()
+            || !org.springframework.transaction.support.TransactionSynchronizationManager.getResourceMap().isEmpty()
+            || receiveId == null || receiveId <= 0 || tenantId == null || !tenantId.matches("[0-9]{6,20}")) {
+            throw new com.nexus.common.core.exception.ServiceException("精确入库通知必须在提交后以明确租户发送");
+        }
+        PurchaseReceiveWritebackMessage message = new PurchaseReceiveWritebackMessage();
+        message.setReceiveId(receiveId);
+        message.setSourceModule("wm");
+        message.setTenantIdStr(tenantId);
+        DynamicDataSourceContextHolder.push("master");
+        try {
+            messageProducer.sendDurable(ExchangeConstants.TOPIC_EXCHANGE,
+                RoutingKeyConstants.PURCHASE_RECEIVE_WRITEBACK, message);
+        } catch (RuntimeException failure) {
+            throw new com.nexus.common.core.exception.ServiceException("采购收货通知尚未获得可靠生产器接受，可重试恢复");
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
     /**
      * 异步发送采购收货回写消息
      * <p>

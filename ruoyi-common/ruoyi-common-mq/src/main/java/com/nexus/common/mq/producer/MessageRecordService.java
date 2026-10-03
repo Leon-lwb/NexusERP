@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * mq_message_record 表位于 ry-vue(master)库。若在 @DS("erp")/("mes") 的业务事务中
  * 直接写该表，因数据库连接已绑定到业务库，类级 @DS("master") 无法生效，会报
- * "Table 'ry-erp.mq_message_record' doesn't exist"。
+ * “ry-erp 库不存在 mq_message_record 表”的错误。
  * <p>
  * 此处显式 @DS("master") + REQUIRES_NEW：挂起调用方的业务事务，在 master 库开启新事务写入，
  * 确保 ERP/MES 业务事务内的 MQ 发送也能正确记录消息状态。
@@ -35,6 +35,24 @@ public class MessageRecordService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void saveSending(MessageRecord record) {
         messageRecordMapper.insert(record);
+    }
+
+    /** 新采购过账通知专用：不得吞掉主库持久化失败或零影响行。 */
+    @DS("master")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void saveSendingStrict(MessageRecord record) {
+        if (messageRecordMapper.insert(record) != 1) {
+            throw new com.nexus.common.core.exception.ServiceException("可靠消息持久化未确认");
+        }
+    }
+
+    @DS("master")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void updateStatusStrict(String messageId, String status) {
+        if (messageRecordMapper.update(null, new LambdaUpdateWrapper<MessageRecord>()
+            .eq(MessageRecord::getMessageId, messageId).set(MessageRecord::getStatus, status)) != 1) {
+            throw new com.nexus.common.core.exception.ServiceException("可靠消息状态未确认");
+        }
     }
 
     /**

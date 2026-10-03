@@ -24,9 +24,12 @@ import java.util.List;
  *
  * @author nexus
  */
+@lombok.RequiredArgsConstructor
 @DS("erp")
 @Service
 public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialReceiveLineMapper, WmMaterialReceiveLine> implements IWmMaterialReceiveLineService {
+
+    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
      * 分页查询物料领用行列表
@@ -73,6 +76,7 @@ public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialRece
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialReceiveLineBo bo) {
+        certifiedReceiptGuard.requireMutableLineParent(bo.getReceiveId());
         WmMaterialReceiveLine entity = MapstructUtils.convert(bo, WmMaterialReceiveLine.class);
         return baseMapper.insert(entity);
     }
@@ -86,6 +90,7 @@ public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialRece
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialReceiveLineBo bo) {
+        certifiedReceiptGuard.requireMutableLine(bo.getLineId(),bo.getReceiveId());
         WmMaterialReceiveLine entity = MapstructUtils.convert(bo, WmMaterialReceiveLine.class);
         return baseMapper.updateById(entity);
     }
@@ -99,6 +104,7 @@ public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialRece
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        for(Long id:ids) { certifiedReceiptGuard.requireMutableLine(id,null); }
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 

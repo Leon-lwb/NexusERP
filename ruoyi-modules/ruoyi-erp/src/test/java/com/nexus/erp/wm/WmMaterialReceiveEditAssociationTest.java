@@ -49,7 +49,27 @@ class WmMaterialReceiveEditAssociationTest {
     @Mock WmMaterialReceiveLineMapper receiveLineMapper;
     @Mock WmMaterialReceiveDetailMapper receiveDetailMapper;
     @Mock WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
+    @Mock com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
     @InjectMocks WmMaterialReceiveCrudServiceImpl service;
+
+    @Test
+    void permanentSourceGuardFailureStopsAllOldHeadAndLineWrites() {
+        doThrow(new com.nexus.common.core.exception.ServiceException("receipt source frozen"))
+            .when(certifiedReceiptGuard).requireUnposted(21L);
+        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.updateByBo(edit(51L)));
+        verifyNoInteractions(baseMapper, receiveLineMapper, receiveDetailMapper);
+    }
+
+    @Test
+    void createCannotClaimApprovalOrShelfAuditFromAnEditableForm() {
+        WmMaterialReceiveBo bo=new WmMaterialReceiveBo();bo.setReceiveCode("RK202610030001");bo.setStatus("SHELVED");bo.setShelfBy(7L);bo.setShelfTime(new java.util.Date());
+        WmMaterialReceive entity=existing("SHELVED");
+        try(MockedStatic<MapstructUtils> convert=mockStatic(MapstructUtils.class)) {
+            convert.when(()->MapstructUtils.convert(bo,WmMaterialReceive.class)).thenReturn(entity);
+            assertThrows(com.nexus.common.core.exception.ServiceException.class,()->service.insertByBo(bo));
+            verifyNoInteractions(baseMapper,receiveLineMapper,receiveDetailMapper);
+        }
+    }
 
     @BeforeAll
     static void initTableInfo() {

@@ -21,27 +21,155 @@ import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSuppo
 
 /**
  * 逐来源账本/订单计数/永久事件的原子服务，不接 HTTP、AI 或旧业务门禁。
- * public 自启专属 ERP RR，Locked 仅供同一 owned RR 的统一 writer/路由使用。
+ * public 方法自行启动ERP独占可重复读事务，Locked 方法仅供同一ERP独占可重复读事务中的统一写入方/路由使用。
  * 审批/转单/关闭要求真实单据已由业务状态机变更；路由必须在同一回调先写真实单据
  * 再调用 Locked，不能先提交再落账。收货/退货根据真实库存流水自行更新订单计数，
- * 不可先走旧累加代码。只支持根基本单位、逐申请行一条 ledger、一条精确订单承接。
+ * 不可先走旧累加代码。只支持根基本单位、逐申请行一条账本记录、一条精确订单承接。
  * 不能证明的状态明确拒绝；重放返回持久 occupied 事件，而非伪造完整历史余额。
  */
 @Service
 @DS("erp")
 public class PuCertifiedPurchaseLifecycleService {
     public enum Operation { APPROVE, TRANSFER_TO_ORDER, CLOSE_REQUISITION, CANCEL_REQUISITION,
-        REJECT_REQUISITION, CLOSE_ORDER, CANCEL_ORDER, RECEIPT_POSTED, RETURN_POSTED, COMPENSATE_DRAFT }
-    /** IDs/expected version only: no quantity, status, permissions or verified flag. */
+        REJECT_REQUISITION, CLOSE_ORDER, CANCEL_ORDER, RECEIPT_POSTED, RETURN_POSTED, COMPENSATE_DRAFT, APPROVE_ORDER }
+    /** 仅包含 ID/预期版本：不包含数量、状态、权限或 verified 标志。 */
     public record Command(String tenantId, Long actorId, Long materialId, String allocationKey,
         String requestKey, Integer expectedVersion, Operation operation, Long businessLineId) { }
-    /** Internal MQ entry: actor and quantity are obtained from the persisted physical result. */
+    /** 内部 MQ 入口：操作人与数量均从持久化的物理结果中获取。 */
     public record ReceiptCommand(String tenantId, Long materialId, String allocationKey,
         String requestKey, Integer expectedVersion, Long receiveLineId) { }
     public record EventReceipt(Long eventId, Long allocationId, Operation operation, String fromStatus,
         String toStatus, BigDecimal occupiedBefore, BigDecimal occupiedAfter,
         Long requisitionLineId, Long orderLineId, Long actorId, boolean replayed) { }
-    /** Full-document compensation: expected versions describe identities, never authoritative quantities. */
+    /** 按订单分组的操作；数量与供应商条款绝不取自此命令。 */
+    public record OrderCommand(String tenantId,Long actorId,Long materialId,String requestKey,Long orderId,
+        Operation operation,Map<String,Integer> expectedAllocationVersions) {
+        public OrderCommand {if(expectedAllocationVersions!=null)expectedAllocationVersions=Collections.unmodifiableMap(new LinkedHashMap<>(expectedAllocationVersions));}
+    }
+    public record OrderReceipt(Long orderId,Operation operation,List<EventReceipt> allocations,boolean replayed) {
+        public OrderReceipt {allocations=List.copyOf(allocations);}
+    }
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public void validateOrderForWorkflowLocked(OrderCommand command) {
+        validateOrderCommand(command);
+        if(command.operation()==Operation.APPROVE_ORDER) {
+            // 只读报价预检不得授予或要求写入批准角色。
+            StpUtil.checkLogin();StpUtil.checkPermissionOr("pu:order:approve","pu:order:terms:add","pu:order:terms:confirm");
+            require(command.actorId().equals(LoginHelper.getUserId())&&command.tenantId().equals(LoginHelper.getTenantId()),"报价预检actor/租户不匹配");
+        }else requireActor(orderLineCommand(command,command.expectedAllocationVersions().keySet().iterator().next()));
+        qualification.requireSourceChainTransaction();sourceGate.requireOrderDefinitions();
+        List<Context> contexts=orderContexts(command.tenantId(),command.materialId(),command.requestKey(),command.orderId(),command.expectedAllocationVersions());
+        for(Context c:contexts)checkOrderContext(c,command,false);
+    }
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public OrderReceipt applyOrderForWorkflowLocked(OrderCommand command) {
+        validateOrderCommand(command);requireActor(orderLineCommand(command,command.expectedAllocationVersions().keySet().iterator().next()));
+        qualification.requireSourceChainTransaction();sourceGate.requireOrderDefinitions();
+        List<Context> contexts=orderContexts(command.tenantId(),command.materialId(),command.requestKey(),command.orderId(),command.expectedAllocationVersions());
+        long priorCount=contexts.stream().filter(c->c.history().stream().anyMatch(e->eventKey(c,command.operation(),null).equals(e.getEventKey()))).count();
+        require(priorCount==0||priorCount==contexts.size(),"整订单永久事件只有部分来源，不能继续或伪造重放");
+        if(priorCount==0)for(Context c:contexts)checkOrderContext(c,command,true);
+        List<EventReceipt> results=new ArrayList<>();
+        for(Context before:contexts) {
+            // 先完成所有行的预检；每次推进序列后重新读取守卫版本。
+            Context c=readContext(command.tenantId(),command.materialId(),before.row().getAllocationKey(),command.requestKey());
+            results.add(transition(c,orderLineCommand(command,c.row().getAllocationKey()),null));
+        }
+        require(results.stream().allMatch(e->e.replayed()==(priorCount!=0)),"整单新写/重放混合结果未知");
+        qualification.requireSourceChainTransaction();return new OrderReceipt(command.orderId(),command.operation(),results,priorCount!=0);
+    }
+    /** 物理结果生成方证明：不得为后台过账/重放伪造用户身份或批准权限。 */
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public List<EventReceipt> approvedOrderEventsLocked(String tenantId,Long materialId,String requestKey,Long orderId) {
+        requireTenant(tenantId);qualification.requireSourceChainTransaction();sourceGate.requireOrderDefinitions();
+        List<PuRequirementAllocationLedger> rows=io(()->mapper.lockOrderAllocations(tenantId,orderId));
+        require(rows!=null&&!rows.isEmpty()&&rows.stream().allMatch(Objects::nonNull),"物理订单批准账本全集未知");
+        Map<String,Integer> versions=new LinkedHashMap<>();for(var row:rows)require(versions.putIfAbsent(row.getAllocationKey(),row.getVersion())==null,"物理订单批准账本重复");
+        List<Context> contexts=orderContexts(tenantId,materialId,requestKey,orderId,versions);List<EventReceipt> approved=new ArrayList<>();
+        for(Context c:contexts) {
+            require((RECEIVING.contains(c.orderHead().status())&&ORDER.equals(c.row().getAllocationStatus()))
+                ||(Set.of("CLOSED","CANCELLED").contains(c.orderHead().status())&&RELEASED.equals(c.row().getAllocationStatus())),"原始批准证明的订单/账本状态不支持");
+            requireOrderApprovalSource(c);reconcileCounters(c);
+            String key=eventKey(c,Operation.APPROVE_ORDER,null);
+            List<PuRequirementAllocationEvent> matches=c.history().stream().filter(e->key.equals(e.getEventKey())&&"APPROVE_ORDER".equals(e.getEventType())).toList();
+            require(matches.size()==1,"物理订单缺少真实批准逐来源事件");var e=matches.get(0);
+            require(ORDER.equals(e.getFromStatus())&&ORDER.equals(e.getToStatus())&&c.row().getOrderLineId().equals(e.getOrderLineId())
+                &&e.getOccupiedBaseBefore().compareTo(c.row().getCoveredDemandBaseQty())==0&&e.getOccupiedBaseAfter().compareTo(e.getOccupiedBaseBefore())==0,"原始批准事件改变冻结继承占额");
+            approved.add(result(e,Operation.APPROVE_ORDER,true));
+        }
+        qualification.requireSourceChainTransaction();return List.copyOf(approved);
+    }
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public List<EventReceipt> settledOrderEventsLocked(String tenantId,Long materialId,String requestKey,Long orderId) {
+        requireTenant(tenantId);qualification.requireSourceChainTransaction();sourceGate.requireOrderDefinitions();
+        List<PuRequirementAllocationLedger> rows=io(()->mapper.lockOrderAllocations(tenantId,orderId));
+        require(rows!=null&&!rows.isEmpty()&&rows.stream().allMatch(Objects::nonNull),"终态账本全集未知");Map<String,Integer> versions=new LinkedHashMap<>();
+        for(var row:rows)require(versions.putIfAbsent(row.getAllocationKey(),row.getVersion())==null,"终态账本重复");
+        List<Context> contexts=orderContexts(tenantId,materialId,requestKey,orderId,versions);List<EventReceipt> closed=new ArrayList<>();
+        for(Context c:contexts) {
+            require(Set.of("CLOSED","CANCELLED").contains(c.orderHead().status())&&RELEASED.equals(c.row().getAllocationStatus())&&c.row().getOccupiedBaseQty().signum()==0,"订单终态尚未完整释放未履约占额");
+            reconcileCounters(c);requireNoUnprocessedMovements(c);
+            Operation op="CLOSED".equals(c.orderHead().status())?Operation.CLOSE_ORDER:Operation.CANCEL_ORDER;String key=eventKey(c,op,null);
+            var terminal=c.history().stream().filter(e->Set.of("CLOSE_ORDER","CANCEL_ORDER").contains(e.getEventType())).toList();
+            require(terminal.size()==1,"终态永久释放事件缺失/重复");var e=terminal.get(0);
+            require(key.equals(e.getEventKey())&&op.name().equals(e.getEventType())&&ORDER.equals(e.getFromStatus())&&RELEASED.equals(e.getToStatus())
+                &&c.row().getOrderLineId().equals(e.getOrderLineId())&&e.getOccupiedBaseAfter().signum()==0,"终态释放原事件不一致");closed.add(result(e,op,true));
+        }
+        qualification.requireSourceChainTransaction();return List.copyOf(closed);
+    }
+    private static void validateOrderCommand(OrderCommand c) {
+        require(c!=null&&positive(c.actorId())&&positive(c.materialId())&&positive(c.orderId())&&text(c.requestKey(),128)
+            &&Set.of(Operation.APPROVE_ORDER,Operation.CLOSE_ORDER,Operation.CANCEL_ORDER).contains(c.operation())
+            &&c.expectedAllocationVersions()!=null&&!c.expectedAllocationVersions().isEmpty()&&c.expectedAllocationVersions().size()<=1000,"整订单身份/操作/逐来源版本无效");
+        for(var item:c.expectedAllocationVersions().entrySet())require(text(item.getKey(),128)&&item.getValue()!=null&&item.getValue()>=0&&item.getValue()<Integer.MAX_VALUE,"整订单逐来源版本未知");
+        requireTenant(c.tenantId());
+    }
+    private static Command orderLineCommand(OrderCommand c,String allocation) {
+        return new Command(c.tenantId(),c.actorId(),c.materialId(),allocation,c.requestKey(),c.expectedAllocationVersions().get(allocation),c.operation(),null);
+    }
+    private List<Context> orderContexts(String tenant,Long material,String request,Long orderId,Map<String,Integer> versions) {
+        requireTenant(tenant);qualification.requireSourceChainTransaction();
+        require(positive(material)&&positive(orderId)&&text(request,128)&&versions!=null,"整订单读取身份未知");
+        List<PuRequirementAllocationLedger> rows=io(()->mapper.lockOrderAllocations(tenant,orderId));
+        List<PuRequirementAllocationLedger> scope=io(()->mapper.lockCommandAllocations(tenant,request));
+        List<OrderLine> lines=io(()->mapper.lockOrderLines(tenant,orderId));
+        require(rows!=null&&!rows.isEmpty()&&rows.size()<=1000&&scope!=null&&scope.size()==rows.size()&&lines!=null&&lines.size()==rows.size()
+            &&rows.stream().allMatch(Objects::nonNull)&&scope.stream().allMatch(Objects::nonNull)&&lines.stream().allMatch(Objects::nonNull),"整订单账本/真实行/永久command未全覆盖");
+        Set<String> keys=new HashSet<>();Set<Long> ids=new HashSet<>();Set<Long> actualLines=new HashSet<>();List<Context> contexts=new ArrayList<>();
+        for(var row:rows) {
+            require(text(row.getAllocationKey(),128)&&keys.add(row.getAllocationKey())&&positive(row.getAllocationId())&&ids.add(row.getAllocationId()),"整订单账本重复/来源键未知");
+            Context c=readContext(tenant,material,row.getAllocationKey(),request);
+            require(c.row().getAllocationId().equals(row.getAllocationId())&&c.orderLine()!=null&&orderId.equals(c.orderLine().orderId())
+                &&orderId.equals(c.orderHead().orderId())&&c.orderLine().lineId().equals(c.row().getOrderLineId())&&actualLines.add(c.orderLine().lineId())
+                &&"ORDERED".equals(c.head().status())&&Objects.equals(versions.get(row.getAllocationKey()),c.row().getVersion()),"整订单承接/逐行版本已变化");
+            contexts.add(c);
+        }
+        require(keys.equals(versions.keySet())&&ids.equals(scope.stream().map(PuRequirementAllocationLedger::getAllocationId).collect(java.util.stream.Collectors.toSet()))
+            &&actualLines.equals(lines.stream().map(OrderLine::lineId).collect(java.util.stream.Collectors.toSet())),"整订单存在未覆盖/额外账本或实际行");
+        return List.copyOf(contexts);
+    }
+    private void checkOrderContext(Context c,OrderCommand command,boolean applying) {
+        String state=c.orderHead().status();
+        if(applying)require((command.operation()==Operation.APPROVE_ORDER?"APPROVED":command.operation()==Operation.CLOSE_ORDER?"CLOSED":"CANCELLED").equals(state),"真实订单头尚未完成同RR状态CAS");
+        else require(command.operation()==Operation.APPROVE_ORDER?"DRAFT".equals(state):Set.of("DRAFT","APPROVED","PARTIALLY_RECEIVED","PARTIAL_RECEIVED","RECEIVED").contains(state),"真实整订单状态不支持");
+        require(ORDER.equals(c.row().getAllocationStatus()),"整订单已经释放/缺少订单继承");reconcileCounters(c);requireNoUnprocessedMovements(c);
+        if(command.operation()==Operation.APPROVE_ORDER) {
+            require(c.orderLine().receivedQuantity().signum()==0&&c.orderLine().returnedQuantity().signum()==0
+                &&c.row().getFulfilledBaseQty().signum()==0&&c.row().getReleasedBaseQty().signum()==0,"批准前出现履约/释放");requireCatalog(c);
+            if(applying)requireOrderApprovalSource(c);
+        }
+    }
+    private void requireOrderApprovalSource(Context c) {
+        OrderApprovalSource a=io(()->mapper.lockOrderApprovalSource(c.tenantId(),c.orderLine().orderId()));
+        require(a!=null&&c.tenantId().equals(a.tenantId())&&c.orderLine().orderId().equals(a.orderId())&&c.command().vendorId().equals(a.vendorId())
+            &&positive(a.quoteId())&&a.version()!=null&&a.version()>0&&c.row().getMaterialId().equals(a.materialId())&&c.row().getBaseUomId().equals(a.baseUomId())
+            &&c.command().requestKey().equals(a.sourceRequestKey())&&digest(a.catalogFingerprint())&&a.catalogFingerprint().equals(c.command().catalogFingerprint())
+            &&digest(a.quoteHash())&&a.quoteHash().equals(a.confirmedHash())&&positive(a.enteredBy())&&positive(a.confirmedBy())&&!a.enteredBy().equals(a.confirmedBy())
+            &&"pu:order:terms:confirm".equals(a.permissionCode())&&a.confirmedAt()!=null&&!a.confirmedAt().after(c.now())&&text(a.expectedArrivalDate(),10)
+            &&a.totalAmount()!=null&&a.totalAmount().signum()>0&&a.amountExcludingTax()!=null&&a.amountExcludingTax().signum()>0&&a.taxAmount()!=null&&a.taxAmount().signum()>=0
+            &&a.totalAmount().compareTo(a.amountExcludingTax().add(a.taxAmount()))==0,"缺少真实已确认报价/批准金额与ETA来源");
+    }
+    /** 整单补偿：预期版本用于描述标识，绝不作为数量的权威依据。 */
     public record CompensationCommand(String tenantId,Long actorId,Long materialId,String requestKey,
         Long requisitionId,Integer expectedDocumentVersion,Map<String,Integer> expectedAllocationVersions) {
         public CompensationCommand {
@@ -55,7 +183,7 @@ public class PuCertifiedPurchaseLifecycleService {
         validateCompensation(command);
         return executor.executeRepeatableRead(command.tenantId(),()->compensateDraftLocked(command));
     }
-    /** Full-document soft compensation; no command, ledger or event is ever deleted. */
+    /** 整单软补偿；绝不删除任何命令、账本或事件。 */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public CompensationReceipt compensateDraftLocked(CompensationCommand command) {
         validateCompensation(command); qualification.requireSourceChainTransaction();
@@ -171,7 +299,7 @@ public class PuCertifiedPurchaseLifecycleService {
     private static final Set<String> ENTRIES = Set.of("MANUAL", "MRP", "LOW_STOCK", "AI_DECISION");
     private static final Set<String> DEMAND_STATES = Set.of("DRAFT", "CONFIRMED", "PARTIAL_ISSUED", "ISSUED", "CLOSED");
     private static final Set<String> PRE_RECEIPT = Set.of("DRAFT", "SUBMITTED", "APPROVING", "APPROVED", "REJECTED");
-    private static final Set<String> RECEIVING = Set.of("APPROVED", "PARTIALLY_RECEIVED", "RECEIVED");
+    private static final Set<String> RECEIVING = Set.of("APPROVED", "PARTIALLY_RECEIVED", "PARTIAL_RECEIVED", "RECEIVED");
     private final PuRequirementErpTransactionExecutor executor;
     private final PuRequirementErpTransactionQualification qualification;
     private final PuRequirementMaterialLockService locks;
@@ -190,14 +318,14 @@ public class PuCertifiedPurchaseLifecycleService {
         this.ledgers=Objects.requireNonNull(ledgers); this.events=Objects.requireNonNull(events); this.mapper=Objects.requireNonNull(mapper);
         this.sourceGate=new PuCertifiedPurchaseLifecycleSourceGate(mapper,qualification);
     }
-    /** Refuses outer transactions; never calls cross-database AutoCode in the callback. */
+    /** 拒绝外层事务；绝不在回调中调用跨库 AutoCode。 */
     public EventReceipt apply(Command command) {
-        validate(command); requireActor(command);
+        validate(command);require(command.operation()!=Operation.APPROVE_ORDER,"订单批准只允许整单入口"); requireActor(command);
         return executor.executeRepeatableRead(command.tenantId(), () -> applyLocked(command));
     }
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public EventReceipt applyLocked(Command command) {
-        validate(command); requireActor(command); qualification.requireSourceChainTransaction();
+        validate(command);require(command.operation()!=Operation.APPROVE_ORDER,"订单批准只允许整单入口"); requireActor(command); qualification.requireSourceChainTransaction();
         Context c=readContext(command.tenantId(),command.materialId(),command.allocationKey(),command.requestKey());
         PostedEffect posted=switch(command.operation()) {
             case RECEIPT_POSTED -> receipt(c,command.businessLineId());
@@ -206,7 +334,7 @@ public class PuCertifiedPurchaseLifecycleService {
         if(posted!=null) require(command.actorId().equals(posted.actorId()),"真实过账操作人不一致");
         return transition(c,command,posted);
     }
-    /** Only persisted FINISHED receipt + matching stock result may enter the internal MQ route. */
+    /** 只有持久化的 FINISHED 收货单与匹配的库存结果，才能进入内部 MQ 路由。 */
     public EventReceipt consumeReceipt(ReceiptCommand command) {
         validateReceipt(command);
         return executor.executeRepeatableRead(command.tenantId(), () -> consumeReceiptLocked(command));
@@ -221,12 +349,27 @@ public class PuCertifiedPurchaseLifecycleService {
         return transition(c,internal,posted);
     }
 
-    /** Orchestrator preflight: no returned certificate, and no mutation; qualification is rechecked later. */
+    /** 批次预检：读取全部真实物理事实及既有因果事件/计数，绝不修改数据。 */
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public void validateReceiptLocked(ReceiptCommand command) {
+        validateReceipt(command);qualification.requireSourceChainTransaction();
+        Context c=readContext(command.tenantId(),command.materialId(),command.allocationKey(),command.requestKey());PostedEffect posted=receipt(c,command.receiveLineId());reconcileCounters(c);
+        String key=eventKey(c,Operation.RECEIPT_POSTED,command.receiveLineId());
+        List<PuRequirementAllocationEvent> prior=c.history().stream().filter(e->key.equals(e.getEventKey())).toList();
+        if(!prior.isEmpty()) {
+            require(prior.size()==1,"收货原事件重复");var e=prior.get(0);
+            require("RECEIPT_POSTED".equals(e.getEventType())&&c.orderLine().lineId().equals(e.getOrderLineId())&&posted.actorId().equals(e.getActorId())
+                &&ORDER.equals(e.getFromStatus())&&ORDER.equals(e.getToStatus())&&e.getOccupiedBaseBefore().subtract(e.getOccupiedBaseAfter()).compareTo(posted.quantity())==0,"物理批次原事件数量/身份变化");
+        }else require(command.expectedVersion().equals(c.row().getVersion())&&command.expectedVersion()<Integer.MAX_VALUE&&RECEIVING.contains(c.orderHead().status())
+            &&ORDER.equals(c.row().getAllocationStatus())&&c.row().getOccupiedBaseQty().compareTo(posted.quantity())>=0,"收货批次新入账版本/状态/余量不支持");
+        qualification.requireSourceChainTransaction();
+    }
+    /** 编排方预检：不返回凭证，也不修改数据；后续仍须重新核验资格。 */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void validateForWorkflowLocked(Command command) {
         require(command!=null&&positive(command.actorId())&&command.operation()!=null,"整单预检身份/操作无效");
         validateIdentity(command.tenantId(),command.materialId(),command.allocationKey(),command.requestKey(),command.expectedVersion());
-        // A future order line does not exist yet. This read-only preflight cannot require or fabricate its ID.
+        // 待创建的订单行尚不存在；此只读预检不能要求或伪造其 ID。
         requireActor(command); qualification.requireSourceChainTransaction();
         Context c=readContext(command.tenantId(),command.materialId(),command.allocationKey(),command.requestKey());
         require(command.expectedVersion().equals(c.row().getVersion())&&command.expectedVersion()<Integer.MAX_VALUE,"整单生命周期版本已变化");
@@ -334,7 +477,7 @@ public class PuCertifiedPurchaseLifecycleService {
                     require(ORDER.equals(prior.getFromStatus())&&ORDER.equals(prior.getToStatus()),"收货重放原始状态未知");
                     original=prior.getOccupiedBaseBefore().subtract(prior.getOccupiedBaseAfter());
                 } else {
-                    // RELEASED -> RELEASED has delta zero and the old event schema stores no posted quantity.
+                    // RELEASED -> RELEASED 的增量为零，旧事件结构不保存过账数量。
                     require(ORDER.equals(prior.getFromStatus())&&ORDER.equals(prior.getToStatus()),"已结案退货事件缺少原数量冻结证据，不支持重放");
                     original=prior.getOccupiedBaseAfter().subtract(prior.getOccupiedBaseBefore());
                 }
@@ -344,6 +487,13 @@ public class PuCertifiedPurchaseLifecycleService {
         }
         require(command.expectedVersion().equals(c.row().getVersion())&&command.expectedVersion()<Integer.MAX_VALUE,"账本期望版本已变化");
         if(command.operation()==Operation.APPROVE||command.operation()==Operation.TRANSFER_TO_ORDER) requireCatalog(c);
+        if(command.operation()==Operation.APPROVE_ORDER) {
+            require("APPROVED".equals(c.orderHead().status())&&ORDER.equals(c.row().getAllocationStatus()),"真实订单未完成批准");
+            requireOrderApprovalSource(c);requireCatalog(c);reconcileCounters(c);requireNoUnprocessedMovements(c);
+            require(c.row().getFulfilledBaseQty().signum()==0&&c.row().getReleasedBaseQty().signum()==0,"订单批准出现履约/释放");
+            var after=new PuRequirementAllocationLedger();org.springframework.beans.BeanUtils.copyProperties(c.row(),after);after.setUpdateTime(new Date(c.now().getTime()));
+            return persistLifecycle(c,command,key,after);
+        }
         PuRequirementAllocationPolicy.Change change;
         try {
             change=switch(command.operation()) {
@@ -379,47 +529,65 @@ public class PuCertifiedPurchaseLifecycleService {
                         &&Set.of("CLOSED","CANCELLED").contains(Objects.toString(c.orderHead().status(),""))),"订单退货状态不支持");
                     reconcileCounters(c);yield PuRequirementAllocationPolicy.returnOrder(c.row(),posted.quantity(),c.now());
                 }
+                case APPROVE_ORDER -> throw failed("订单批准必须走整单合同");
                 case COMPENSATE_DRAFT -> throw failed("补偿必须走整张草稿的版本/永久command合同");
             };
         } catch(IllegalArgumentException invalid) {throw failed("账本局部生命周期不变量不满足");}
         if(posted!=null) persistCounters(c,command,posted);
-        PuRequirementAllocationLedger after=change.ledger();
+        return persistLifecycle(c,command,key,change.ledger());
+    }
+    private EventReceipt persistLifecycle(Context c,Command command,String key,PuRequirementAllocationLedger after) {
         require(io(()->ledgers.updateWithVersion(c.tenantId(),after,command.expectedVersion()))==1,"账本版本CAS失败");
         PuRequirementAllocationEvent event=event(c,command,key,after);
         require(io(()->events.insert(event))==1,"永久事件追加失败");
         require(io(()->guards.advanceVersion(c.tenantId(),c.row().getMaterialId(),c.guardVersion()))==1,"guard版本CAS失败");
-        if(command.operation()==Operation.APPROVE||command.operation()==Operation.TRANSFER_TO_ORDER) requireCatalog(c);
+        if(command.operation()==Operation.APPROVE||command.operation()==Operation.TRANSFER_TO_ORDER||command.operation()==Operation.APPROVE_ORDER) requireCatalog(c);
         qualification.requireSourceChainTransaction();
         return result(event,command.operation(),false);
     }
 
     private PostedEffect receipt(Context c, Long receiveLineId) {
-        sourceGate.requireDefinitions();
-        require(positive(receiveLineId)&&c.orderLine()!=null&&c.row().getOrderLineId()!=null,"收货承接身份未知");
+        sourceGate.requireDefinitions();require(positive(receiveLineId)&&c.orderLine()!=null&&c.row().getOrderLineId()!=null,"收货承接身份未知");
         ReceiveLine line=io(()->mapper.lockReceiveLine(c.tenantId(),receiveLineId));
-        require(line!=null&&c.tenantId().equals(line.tenantId())&&receiveLineId.equals(line.lineId())
-            &&c.orderLine().lineId().equals(line.purchaseLineId())&&c.row().getMaterialId().equals(line.materialId())
-            &&c.row().getBaseUomId().toString().equals(line.baseUomId())&&"0".equals(line.delFlag()),"实际收货行归属未知");
-        quantity(line.quantityReceived(),c.unit(),true);
+        require(line!=null&&c.tenantId().equals(line.tenantId())&&receiveLineId.equals(line.lineId())&&c.orderLine().lineId().equals(line.purchaseLineId())
+            &&c.row().getMaterialId().equals(line.materialId())&&c.row().getBaseUomId().toString().equals(line.baseUomId())&&"0".equals(line.delFlag()),"真实收货行归属未知");quantity(line.quantityReceived(),c.unit(),true);
         ReceiveHead head=io(()->mapper.lockReceiveHead(c.tenantId(),line.receiveId()));
-        require(head!=null&&c.tenantId().equals(head.tenantId())&&line.receiveId().equals(head.receiveId())
-            &&c.orderLine().orderId().equals(head.orderId())&&"FINISHED".equals(head.status())&&"0".equals(head.delFlag()),"收货尚未真实执行完成");
+        require(head!=null&&c.tenantId().equals(head.tenantId())&&line.receiveId().equals(head.receiveId())&&c.orderLine().orderId().equals(head.orderId())
+            &&"FINISHED".equals(head.status())&&"0".equals(head.delFlag()),"收货尚未真实执行完成");
         List<ReceiveLine> lines=io(()->mapper.lockReceiveLines(c.tenantId(),line.receiveId()));
-        require(lines!=null&&lines.size()==1&&line.equals(lines.get(0)),"暂不支持缺逐行库存归属的多行收货");
-        List<StockEffect> effects=io(()->mapper.lockStockEffects(c.tenantId(),"WM_MATERIAL_RECEIVE",line.receiveId()));
-        BigDecimal incoming=BigDecimal.ZERO,outgoing=BigDecimal.ZERO; Long actor=null;Set<Long> ids=new HashSet<>();
-        require(effects!=null&&!effects.isEmpty(),"收货缺少持久库存入账结果");
-        for(StockEffect effect:effects) {
-            checkEffect(c,effect,"WM_MATERIAL_RECEIVE",line.receiveId());
-            require(ids.add(effect.txId())&&(effect.sourceDocLineId()==null||line.lineId().equals(effect.sourceDocLineId())),"库存入账归属冲突");
-            if(actor==null) actor=effect.actorId();require(actor.equals(effect.actorId()),"入账结果操作人不一致");
-            if("TARGET_IN".equals(effect.txType())&&Integer.valueOf(1).equals(effect.txFlag())) incoming=incoming.add(effect.quantity());
-            else if("VIRTUAL_OUT".equals(effect.txType())&&Integer.valueOf(-1).equals(effect.txFlag())) outgoing=outgoing.add(effect.quantity());
-            else throw failed("未知收货库存结果类型");
+        List<OrderLine> orders=io(()->mapper.lockOrderLines(c.tenantId(),head.orderId()));
+        require(lines!=null&&!lines.isEmpty()&&lines.size()<=1000&&lines.stream().allMatch(Objects::nonNull)&&orders!=null&&orders.stream().allMatch(Objects::nonNull),"收货/订单当前行全集未知");
+        Map<Long,OrderLine> byOrder=new HashMap<>();for(var o:orders)require(positive(o.lineId())&&byOrder.putIfAbsent(o.lineId(),o)==null&&head.orderId().equals(o.orderId()),"原订单行身份重复/归属未知");
+        Map<Long,ReceiveLine> byLine=new HashMap<>();
+        for(var l:lines) {
+            OrderLine o=byOrder.get(l.purchaseLineId());
+            require(o!=null&&c.tenantId().equals(l.tenantId())&&line.receiveId().equals(l.receiveId())&&positive(l.lineId())&&byLine.putIfAbsent(l.lineId(),l)==null
+                &&c.row().getMaterialId().equals(l.materialId())&&c.row().getBaseUomId().toString().equals(l.baseUomId())&&o.materialId().equals(l.materialId())&&o.unit().equals(l.baseUomId())
+                &&"0".equals(l.delFlag())&&"0".equals(o.delFlag()),"物理批次缺逐行采购/根单位归属（混合物料不支持）");quantity(l.quantityReceived(),c.unit(),true);
         }
-        require(incoming.compareTo(line.quantityReceived())==0&&outgoing.compareTo(incoming)==0,"实际库存入账与收货行不守恒");
+        require(line.equals(byLine.get(line.lineId())),"收货行与完整物理批次不一致");
+        List<StockEffect> effects=io(()->mapper.lockStockEffects(c.tenantId(),"WM_MATERIAL_RECEIVE",line.receiveId()));
+        require(effects!=null&&!effects.isEmpty()&&effects.stream().allMatch(Objects::nonNull),"缺少持久库存入账结果");
+        boolean nativeReceipt=effects.stream().allMatch(e->"RECEIVE_IN".equals(e.txType()));
+        require(nativeReceipt||lines.size()==1,"非原生逐行effect只能支持严格单行旧成对来源");
+        Map<Long,BigDecimal> incoming=new HashMap<>(),outgoing=new HashMap<>(),lastAfter=new HashMap<>();Set<Long> ids=new HashSet<>();Long actor=null;
+        for(var effect:effects) {
+            checkEffect(c,effect,"WM_MATERIAL_RECEIVE",line.receiveId());require(ids.add(effect.txId()),"库存结果身份重复");
+            if(actor==null)actor=effect.actorId();require(actor.equals(effect.actorId()),"整张入账操作人不一致");
+            BigDecimal previous=lastAfter.put(effect.stockId(),effect.afterQuantity());if(previous!=null)require(previous.compareTo(effect.beforeQuantity())==0,"同库存逐行effect前后链断裂");
+            Long target=nativeReceipt?effect.sourceDocLineId():line.lineId();
+            require(positive(target)&&byLine.containsKey(target)&&(nativeReceipt||effect.sourceDocLineId()==null||target.equals(effect.sourceDocLineId())),"库存结果缺逐行来源/归属冲突");
+            if(nativeReceipt) {
+                require(Integer.valueOf(1).equals(effect.txFlag()),"原生RECEIVE_IN不是正向入账");incoming.merge(target,effect.quantity(),BigDecimal::add);
+            }else if("TARGET_IN".equals(effect.txType())&&Integer.valueOf(1).equals(effect.txFlag()))incoming.merge(target,effect.quantity(),BigDecimal::add);
+            else if("VIRTUAL_OUT".equals(effect.txType())&&Integer.valueOf(-1).equals(effect.txFlag()))outgoing.merge(target,effect.quantity(),BigDecimal::add);
+            else throw failed("未知/混合收货库存结果类型");
+        }
+        require(incoming.keySet().equals(byLine.keySet())&&positive(actor),"库存结果未完整覆盖实际批次");
+        for(var l:lines)require(equalQuantity(incoming.get(l.lineId()),l.quantityReceived())&&(nativeReceipt||equalQuantity(outgoing.get(l.lineId()),l.quantityReceived())),"实际库存effect与全部收货行不守恒");
         return new PostedEffect(line.quantityReceived(),actor);
     }
+    private static boolean equalQuantity(BigDecimal a,BigDecimal b){return decimal(a)&&b!=null&&a.compareTo(b)==0;}
 
     private PostedEffect returned(Context c, Long returnLineId) {
         sourceGate.requireDefinitions();
@@ -479,24 +647,30 @@ public class PuCertifiedPurchaseLifecycleService {
             c.orderHead().status(),nextStatus,command.actorId()))==1,"订单头收货状态CAS失败");
     }
 
-    /** Pending physical results must be consumed before closing; counters alone are not evidence. */
+    /** 关闭前必须消费待处理的物理结果；仅凭计数不能构成证据。 */
     private void requireNoUnprocessedMovements(Context c) {
         if(c.orderLine()==null) return;
         sourceGate.requireMovementDefinitions();
         checkMovementSources(c,io(()->mapper.lockReceiptSources(c.tenantId(),c.orderLine().lineId())),"FINISHED",Operation.RECEIPT_POSTED);
         checkMovementSources(c,io(()->mapper.lockReturnSources(c.tenantId(),c.orderLine().lineId())),"EXECUTED",Operation.RETURN_POSTED);
     }
-    private static void checkMovementSources(Context c,List<MovementSource> sources,String terminal,Operation operation) {
-        require(sources!=null,"下游物理单据当前读取未知");Set<Long> ids=new HashSet<>();
+    private void checkMovementSources(Context c,List<MovementSource> sources,String terminal,Operation operation) {
+        require(sources!=null,"下游物理单据当前读取未知");Set<Long> ids=new HashSet<>();Set<String> seen=new HashSet<>();
         for(MovementSource source:sources) {
             require(source!=null&&c.tenantId().equals(source.tenantId())&&positive(source.lineId())&&ids.add(source.lineId())
                 &&positive(source.documentId())&&"0".equals(source.delFlag())&&"0".equals(source.lineDelFlag())&&terminal.equals(source.status()),"存在未闭合或未知下游物理单据");
             String key=eventKey(c,operation,source.lineId());
-            require(c.history().stream().anyMatch(e->key.equals(e.getEventKey())&&operation.name().equals(e.getEventType())),"存在尚未永久入账的收货/退货结果");
+            List<PuRequirementAllocationEvent> matches=c.history().stream().filter(e->key.equals(e.getEventKey())&&operation.name().equals(e.getEventType())).toList();
+            require(matches.size()==1&&seen.add(key),"存在尚未永久入账/重复来源的收货退货结果");
+            PostedEffect posted=operation==Operation.RECEIPT_POSTED?receipt(c,source.lineId()):returned(c,source.lineId());var e=matches.get(0);
+            BigDecimal original=operation==Operation.RECEIPT_POSTED?e.getOccupiedBaseBefore().subtract(e.getOccupiedBaseAfter()):e.getOccupiedBaseAfter().subtract(e.getOccupiedBaseBefore());
+            require(ORDER.equals(e.getFromStatus())&&ORDER.equals(e.getToStatus())&&c.orderLine().lineId().equals(e.getOrderLineId())&&posted.actorId().equals(e.getActorId())
+                &&equalQuantity(original,posted.quantity()),"当前physical effect与原事件/逐行冻结入账量不一致");
         }
+        require(seen.equals(c.history().stream().filter(e->operation.name().equals(e.getEventType())).map(PuRequirementAllocationEvent::getEventKey).collect(java.util.stream.Collectors.toSet())),"永久收货/退货事件缺少当前物理来源，不能释放");
     }
 
-    /** Frozen total is read from real requisition lines; no fresh allocation or re-occupation is performed. */
+    /** 从真实采购申请行读取冻结总量；不执行新的分配或重新占用。 */
     private void requireCatalog(Context c) {
         VendorIdentity vendor=io(()->mapper.lockLifecycleVendor(c.tenantId(),c.command().vendorId()));
         require(vendor!=null&&c.tenantId().equals(vendor.tenantId())&&c.command().vendorId().equals(vendor.vendorId())
@@ -582,7 +756,7 @@ public class PuCertifiedPurchaseLifecycleService {
     }
     private static String eventKey(Context c,Operation op,Long businessLine) {
         Long source=switch(op) {case TRANSFER_TO_ORDER,RECEIPT_POSTED,RETURN_POSTED -> businessLine;
-            case CLOSE_ORDER,CANCEL_ORDER -> c.orderLine()==null?null:c.orderLine().orderId();default -> c.head().requisitionId();};
+            case APPROVE_ORDER,CLOSE_ORDER,CANCEL_ORDER -> c.orderLine()==null?null:c.orderLine().orderId();default -> c.head().requisitionId();};
         require(positive(source),"永久生命周期业务来源身份未知");
         return "LIFECYCLE:"+hash(c.tenantId(),c.row().getAllocationKey(),op.name(),source.toString());
     }
@@ -616,7 +790,7 @@ public class PuCertifiedPurchaseLifecycleService {
         String permission=switch(c.operation()) {case APPROVE,REJECT_REQUISITION -> "pu:requisition:approve";
             case TRANSFER_TO_ORDER -> "pu:requisition:convert";case CLOSE_REQUISITION -> "pu:requisition:close";
             case CANCEL_REQUISITION -> "pu:requisition:cancel";case CLOSE_ORDER -> "pu:order:close";case CANCEL_ORDER -> "pu:order:cancel";
-            case RECEIPT_POSTED -> "pu:order:receive";case RETURN_POSTED -> "pu:return:execute";case COMPENSATE_DRAFT -> "pu:requisition:remove";};
+            case APPROVE_ORDER -> "pu:order:approve";case RECEIPT_POSTED -> "pu:order:receive";case RETURN_POSTED -> "pu:return:execute";case COMPENSATE_DRAFT -> "pu:requisition:remove";};
         StpUtil.checkPermission(permission);
         require(c.actorId().equals(LoginHelper.getUserId())&&c.tenantId().equals(LoginHelper.getTenantId()),"当前租户/actor不匹配");
     }

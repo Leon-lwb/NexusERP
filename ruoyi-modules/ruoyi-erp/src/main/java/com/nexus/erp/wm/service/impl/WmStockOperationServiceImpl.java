@@ -11,6 +11,7 @@ import com.nexus.erp.wm.domain.WmTransferLine;
 import com.nexus.erp.wm.domain.vo.AllocatedStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.erp.wm.strategy.StockOperationStrategyFactory;
 import com.nexus.erp.wm.strategy.impl.ProductionIssueStrategy;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,8 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
     private final StockOperationStrategyFactory strategyFactory;
     /** 生产发料策略（库存操作相关字段） */
     private final ProductionIssueStrategy productionIssueStrategy;
+    /** 旧采购入库不得绕过认证来源和永久过账保护。 */
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
      * 物料入库过账
@@ -45,6 +48,8 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void postMaterialReceive(Long receiveId) {
+        // 在本方法的 ERP 事务内先锁定真实来源；旧 MQ 不构成认证过账授权。
+        certifiedReceiptGuard.requireLegacyExecution(receiveId);
         strategyFactory.getStrategy(StockOperationTypeEnum.RECEIVE_IN).execute(receiveId);
     }
 

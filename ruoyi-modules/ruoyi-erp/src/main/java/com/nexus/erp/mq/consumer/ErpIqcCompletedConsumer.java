@@ -1,5 +1,7 @@
 package com.nexus.erp.mq.consumer;
 
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.IqcCompletedMessage;
@@ -8,6 +10,8 @@ import com.nexus.erp.wm.service.IWmArrivalNoticeLineService;
 import com.nexus.erp.wm.service.IWmBatchService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
 import com.nexus.erp.wm.service.IWmMaterialStockService;
+import com.nexus.erp.wm.service.WmReceiptIqcEvidenceService;
+import com.nexus.erp.wm.service.WmReceiptIqcEvidenceService.Completion;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,18 +20,10 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * IQC检验完成消费者（ERP侧）
- * <p>
- * 消费MES发出的IQC检验完成消息，按物料行回写ERP到货通知行(wm_arrival_notice_line)的质检结果：
- * iqc_id / iqc_code / iqc_status(QUALIFIED|UNQUALIFIED)。
- * <p>
- * 收货单头仅回写 iqc_id/iqc_code(展示用)，不再强改收货单状态——上架门禁由
- * {@code WmMaterialReceiveCrudServiceImpl.confirmShelf} 按 iqc_status 校验，
- * 避免多需检料时单头状态在 QUALIFIED/REJECTED 间反复跳变。
- * <p>
- * 边界: 仅回写质检结果，不实现不良品入库/退货流程。
- *
- * @author Nexus
+ * MES 的实际 UNQUALIFIED 结论保留既有基于身份的库存和批次隔离。数量单位或
+ * 创建时来源未知时，绝不生成证据或释放库存。不合格消息重放的保护投影在
+ * Redis 的 DONE/PENDING 快捷分支之前执行；绝不修改已入账的收货单头。
+ * 先读取并关闭 MES 快照，再进入 ERP 独立掌控的可重复读事务，不宣称跨库 ACID。
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -38,6 +34,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
     private final IWmArrivalNoticeLineService arrivalNoticeLineService;
     private final IWmBatchService batchService;
     private final IWmMaterialStockService materialStockService;
+    private final WmReceiptIqcEvidenceService iqcEvidenceService;
 
     /**
      * 获取消息类型
@@ -56,7 +53,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
      */
     @Override
     protected void doProcess(IqcCompletedMessage message) {
-        doUpdate(message);
+        iqcEvidenceService.consumeCompleted(message, this::doUpdate);
     }
 
     /**
@@ -67,69 +64,35 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
      *   <li>批次 qc_status（按收货行批次号定位, 发料门禁依据）</li>
      * </ol>
      *
-     * @param message IQC检验完成消息
+     * @param completed MES来源读取后的实际完成事实
      */
-    private void doUpdate(IqcCompletedMessage message) {
-        WmMaterialReceive receive = materialReceiveService.getById(message.getReceiveId());
-        if (receive == null) {
-            log.warn("收货单不存在: receiveId={}", message.getReceiveId());
-            return;
+    private void doUpdate(Completion completed) {
+        if (!"UNQUALIFIED".equals(completed.result())) throw new ServiceException("UNIT_ORIGIN_UNPROVEN");
+        WmMaterialReceive receive = materialReceiveService.getById(completed.receiveId());
+        if (receive == null) throw new ServiceException("IQC_RECEIPT_PROJECTION_MISSING");
+        // 真实 DETAIL/RECEIVE_IN 库存标识已在本次投影前于服务独立掌控的可重复读事务内
+        // 完成锁定和冻结，并已标记原始批次。绝不调用仅依据 LINE 的写入方法。
+        if (receive.getNoticeId() != null) {
+            arrivalNoticeLineService.updateIqcResult(receive.getNoticeId(), completed.materialId(),
+                completed.inspectionId(), completed.inspectionCode(), "UNQUALIFIED");
         }
-
-        // 1. 收货单头回写 iqc_id/iqc_code/iqc_status（展示用 + 无到货通知时的上架门禁依据）
-        receive.setIqcId(message.getIqcId());
-        receive.setIqcCode(message.getIqcCode());
-        receive.setIqcStatus(message.getInspectResult());
-        materialReceiveService.updateById(receive);
-
-        // 2. 按物料行回写 wm_arrival_notice_line: iqc_id/iqc_code/iqc_status（门禁依据）
-        if (receive.getNoticeId() != null && message.getMaterialId() != null) {
-            int rows = arrivalNoticeLineService.updateIqcResult(
-                receive.getNoticeId(), message.getMaterialId(),
-                message.getIqcId(), message.getIqcCode(), message.getInspectResult());
-            log.info("IQC按行回写: receiveId={}, materialId={}, result={}, 影响行数={}",
-                message.getReceiveId(), message.getMaterialId(), message.getInspectResult(), rows);
-        } else {
-            log.warn("IQC回写缺少 noticeId/materialId，跳过按行回写: receiveId={}, materialId={}",
-                message.getReceiveId(), message.getMaterialId());
-        }
-
-        // 3. 批次质检状态回写(按收货行批次号定位; 发料门禁依据, M3 批次 5)
-        if (message.getMaterialId() != null) {
-            batchService.markQcStatusByReceive(message.getReceiveId(), message.getMaterialId(),
-                message.getInspectResult());
-        }
-
-        // 4. 不合格冻结库存: 定位该收货单对应批次并冻结库存行(无批次号时回退批次ID; 都定位不到则记 warn,
-        //    由 confirmShelf 的单据级 iqc_status 门禁兜底)
-        if ("UNQUALIFIED".equals(message.getInspectResult()) && message.getMaterialId() != null) {
-            int frozen = materialStockService.freezeStockByReceiveBatches(message.getReceiveId(), message.getMaterialId());
-            log.info("IQC不合格冻结库存: receiveId={}, materialId={}, 冻结行数={}",
-                message.getReceiveId(), message.getMaterialId(), frozen);
-        }
-
-        // 5. 复检/让步后合格解冻: 冻结必须可解, 否则被 IQC 冻结的库存永久无法发料/出库(审计 MES-X-01)。
-        //    复检合格或让步接收后重新判定合格时, 解除该收货单该物料的库存冻结。
-        if ("QUALIFIED".equals(message.getInspectResult()) && message.getMaterialId() != null) {
-            int unfrozen = materialStockService.unfreezeByReceive(message.getReceiveId(), message.getMaterialId(),
-                "IQC合格解冻(" + message.getIqcCode() + ")");
-            log.info("IQC合格解冻库存: receiveId={}, materialId={}, 解冻行数={}",
-                message.getReceiveId(), message.getMaterialId(), unfrozen);
-        }
-        log.info("IQC回写收货单完成: receiveId={}, iqcCode={}, result={}",
-            message.getReceiveId(), message.getIqcCode(), message.getInspectResult());
+        log.info("真实IQC不合格精确隔离完成: receiveId={}, materialId={}", completed.receiveId(), completed.materialId());
     }
 
-    /**
-     * 监听IQC检验完成队列消息
-     *
-     * @param message     IQC检验完成消息
-     * @param channel     RabbitMQ通道
-     * @param amqpMessage AMQP原始消息
-     * @throws Exception 异常
-     */
     @RabbitListener(queues = QueueConstants.ERP_IQC_COMPLETED_QUEUE)
     public void onMessage(IqcCompletedMessage message, Channel channel, Message amqpMessage) throws Exception {
+        try {
+            // 基类在 doProcess 中恢复同一规范化租户。也必须在 Redis 的
+            // DONE/PENDING 快捷分支之前核验，否则实际数据主体已变化的消息也可能被确认。
+            String tenantId = resolveTenantId(message);
+            TenantHelper.dynamic(tenantId, () -> iqcEvidenceService.consumeCompleted(message, this::doUpdate));
+        } catch (RuntimeException unsafeReplay) {
+            // 此路径不得调用基类的重复消息确认逻辑。来源冲突或证据不可用时应隔离消息，而非
+            // 无限重新入队；运维可在修复后重新投递。
+            log.warn("IQC真实结果/隔离预检失败，消息隔离: messageId={}", message.getMessageId());
+            channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, false);
+            return;
+        }
         processMessage(message, channel, amqpMessage);
     }
 }

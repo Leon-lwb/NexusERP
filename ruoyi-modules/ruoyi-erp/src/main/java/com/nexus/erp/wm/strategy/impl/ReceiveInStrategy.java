@@ -12,6 +12,7 @@ import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +49,8 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
     private final IInventoryValuationService valuationService;
     /** 物料基础数据 Mapper(取参考价/标准成本) */
     private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
+    /** 策略被直接调用时也必须遵守旧执行的事务、租户与来源门禁。 */
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
      * 构造采购入库策略实例
@@ -58,19 +61,22 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
      * @param stockMapper          库存Mapper
      * @param valuationService     库存计价服务
      * @param materialMapper       物料Mapper
+     * @param certifiedReceiptGuard 认证收货来源保护
      */
     public ReceiveInStrategy(WmMaterialStockTxMapper stockTxMapper,
                              WmMaterialReceiveMapper receiveMapper,
                              WmMaterialReceiveDetailMapper receiveDetailMapper,
                              WmMaterialStockMapper stockMapper,
                              IInventoryValuationService valuationService,
-                             com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper) {
+                             com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper,
+                             WmCertifiedReceiptMutationGuard certifiedReceiptGuard) {
         super(stockTxMapper);
         this.receiveMapper = receiveMapper;
         this.receiveDetailMapper = receiveDetailMapper;
         this.stockMapper = stockMapper;
         this.valuationService = valuationService;
         this.materialMapper = materialMapper;
+        this.certifiedReceiptGuard = certifiedReceiptGuard;
     }
 
     /** 入库计价:优先参考价,其次标准成本,无价格按 0 */
@@ -103,6 +109,8 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
     @Override
     public void execute(Object... args) {
         Long receiveId = (Long) args[0];
+        // 必须早于 hasPosted 捷径和任何库存访问；guard 的 MANDATORY 不允许无事务直写。
+        certifiedReceiptGuard.requireLegacyExecution(receiveId);
         WmMaterialReceive receive = receiveMapper.selectById(receiveId);
         if (receive == null) {
             throw new RuntimeException("入库单不存在");

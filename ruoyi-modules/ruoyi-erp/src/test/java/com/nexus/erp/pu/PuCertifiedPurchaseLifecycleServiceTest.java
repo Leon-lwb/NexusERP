@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
-/** No database or running service: persisted rows are explicit boundary doubles, arithmetic is real. */
+/** 不连接数据库或运行中的服务：持久化行由明确的边界测试替身表示，算术运算使用真实实现。 */
 class PuCertifiedPurchaseLifecycleServiceTest {
     private static final String T = "000001", KEY = "request-0000000001", ALLOCATION = "allocation-101";
     private static final Date NOW = new Date(1790900000000L);
@@ -355,7 +355,7 @@ class PuCertifiedPurchaseLifecycleServiceTest {
     }
     @Test void nonDeletedConsumedReturnAllowsClosingOnlyUnfulfilledRemainder() {
         try(var f=new Fixture()) {
-            consumedReturn(f);
+            consumedReturn(f);f.returned();
             when(f.mapper.lockReturnSources(T,701L)).thenReturn(List.of(new MovementSource(T,1201L,1301L,"EXECUTED","0","0")));
             assertEquals("RELEASED",f.service.applyLocked(f.command(Operation.CLOSE_ORDER,null)).toStatus());
             verify(f.ledgers).updateWithVersion(eq(T),argThat(r->r.getReleasedBaseQty().compareTo(new BigDecimal("8"))==0),eq(3));
@@ -558,6 +558,7 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             transferred("ORDERED",orderStatus,new BigDecimal("4.0000"),BigDecimal.ZERO);
             row=PuRequirementAllocationPolicy.receiveOrder(row,new BigDecimal("4.0000"),NOW).ledger();row.setVersion(2);
             history.add(event(Operation.RECEIPT_POSTED,1101L,BigDecimal.TEN,new BigDecimal("6.0000"),row.getAllocationStatus(),row.getAllocationStatus(),701L));
+            receipt();when(mapper.lockReceiptSources(T,701L)).thenReturn(List.of(new MovementSource(T,1101L,1001L,"FINISHED","0","0")));
         }
         void receipt() {
             receiveLine=new ReceiveLine(T,1101L,1001L,701L,201L,"501",new BigDecimal("4.0000"),"0");
@@ -580,6 +581,73 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             e.setRequisitionLineId(401L);e.setOrderLineId(orderLine);e.setActorId(ACTOR);e.setOccurredAt(NOW);return e;
         }
         public void close(){auth.close();login.close();tenant.close();}
+    }
+    @Test void groupedActualOrderApprovalAppendsASequenceWithoutChangingAnyFrozenBalance() {
+        try(var f=new Fixture()) {
+            f.transferred("ORDERED","APPROVED",BigDecimal.ZERO,BigDecimal.ZERO);stubOrderGroup(f);
+            var receipt=f.service.applyOrderForWorkflowLocked(orderGroup(f,Operation.APPROVE_ORDER));
+            assertFalse(receipt.replayed());assertEquals(1,receipt.allocations().size());assertEquals(Operation.APPROVE_ORDER,receipt.allocations().get(0).operation());
+            verify(f.ledgers).updateWithVersion(eq(T),argThat(r->r.getCoveredDemandBaseQty().compareTo(BigDecimal.TEN)==0&&r.getOccupiedBaseQty().compareTo(BigDecimal.TEN)==0&&r.getFulfilledBaseQty().signum()==0&&r.getReleasedBaseQty().signum()==0),eq(1));
+            verify(f.events).insert(argThat(e->"APPROVE_ORDER".equals(e.getEventType())&&Integer.valueOf(2).equals(e.getEventSequence())));
+        }
+    }
+    @Test void groupedClosureRetainsGrossReceivedAndFulfilledAndReleasesOnlyRemainingSix() {
+        try(var f=new Fixture()) {
+            f.partiallyReceived("CLOSED");stubOrderGroup(f);
+            when(f.mapper.lockReceiptSources(T,701L)).thenReturn(List.of(new MovementSource(T,1101L,1001L,"FINISHED","0","0")));
+            var receipt=f.service.applyOrderForWorkflowLocked(orderGroup(f,Operation.CLOSE_ORDER));
+            assertEquals(0,receipt.allocations().get(0).occupiedAfter().signum());
+            verify(f.ledgers).updateWithVersion(eq(T),argThat(r->r.getFulfilledBaseQty().compareTo(new BigDecimal("4"))==0&&r.getReleasedBaseQty().compareTo(new BigDecimal("6"))==0&&r.getCoveredDemandBaseQty().compareTo(BigDecimal.TEN)==0),eq(2));
+            verify(f.mapper,never()).updateOrderCounters(any(),any(),any(),any(),any(),any());
+        }
+    }
+    @Test void groupedOrderRejectsAnExtraActualLineBeforeWritingAnyLedger() {
+        try(var f=new Fixture()) {
+            f.transferred("ORDERED","CLOSED",BigDecimal.ZERO,BigDecimal.ZERO);stubOrderGroup(f);
+            when(f.mapper.lockOrderLines(T,801L)).thenReturn(List.of(f.orderLine,new OrderLine(T,799L,801L,499L,201L,"501",BigDecimal.ONE,BigDecimal.ZERO,BigDecimal.ZERO,"PENDING","0")));
+            assertThrows(ServiceException.class,()->f.service.applyOrderForWorkflowLocked(orderGroup(f,Operation.CLOSE_ORDER)));assertNoLifecycleWrites(f);
+        }
+    }
+    @Test void groupedApprovalCannotUseACallerCommandInsteadOfPersistedIndependentQuoteProof() {
+        try(var f=new Fixture()) {
+            f.transferred("ORDERED","APPROVED",BigDecimal.ZERO,BigDecimal.ZERO);stubOrderGroup(f);when(f.mapper.lockOrderApprovalSource(T,801L)).thenReturn(null);
+            assertThrows(ServiceException.class,()->f.service.applyOrderForWorkflowLocked(orderGroup(f,Operation.APPROVE_ORDER)));assertNoLifecycleWrites(f);
+        }
+    }
+    @Test void readOnlyQuotePreflightDoesNotRequireQuoteEntererToAlsoHaveOrderApprovalPermission() {
+        try(var f=new Fixture()) {
+            f.transferred("ORDERED","DRAFT",BigDecimal.ZERO,BigDecimal.ZERO);stubOrderGroup(f);
+            f.auth.when(()->StpUtil.checkPermission("pu:order:approve")).thenThrow(new ServiceException("no approval role"));
+            assertDoesNotThrow(()->f.service.validateOrderForWorkflowLocked(orderGroup(f,Operation.APPROVE_ORDER)));
+            assertThrows(ServiceException.class,()->f.service.applyOrderForWorkflowLocked(orderGroup(f,Operation.APPROVE_ORDER)));
+            assertNoLifecycleWrites(f);
+        }
+    }
+    @Test void finishedReceiptWithMatchingEventKeyButChangedPhysicalQuantityCannotReleaseTheOrder() {
+        try(var f=new Fixture()) {
+            f.partiallyReceived("CLOSED");f.receipt();stubOrderGroup(f);
+            when(f.mapper.lockReceiptSources(T,701L)).thenReturn(List.of(new MovementSource(T,1101L,1001L,"FINISHED","0","0")));
+            ReceiveLine changed=new ReceiveLine(T,1101L,1001L,701L,201L,"501",new BigDecimal("3"),"0");
+            when(f.mapper.lockReceiveLine(T,1101L)).thenReturn(changed);when(f.mapper.lockReceiveLines(T,1001L)).thenReturn(List.of(changed));
+            when(f.mapper.lockStockEffects(T,"WM_MATERIAL_RECEIVE",1001L)).thenReturn(List.of(new StockEffect(T,2102L,"RECEIVE_IN",201L,"501","WM_MATERIAL_RECEIVE",1001L,1101L,1,new BigDecimal("3"),BigDecimal.ZERO,new BigDecimal("3"),3002L,ACTOR,"0")));
+            assertThrows(ServiceException.class,()->f.service.applyOrderForWorkflowLocked(orderGroup(f,Operation.CLOSE_ORDER)));assertNoLifecycleWrites(f);
+        }
+    }
+    @Test void nativeLineAttributedReceiveInIsARealPhysicalSourceWithoutInventingAVirtualOut() {
+        try(var f=new Fixture()) {
+            f.transferred("ORDERED","APPROVED",BigDecimal.ZERO,BigDecimal.ZERO);f.receipt();
+            when(f.mapper.lockStockEffects(T,"WM_MATERIAL_RECEIVE",1001L)).thenReturn(List.of(new StockEffect(T,2102L,"RECEIVE_IN",201L,"501","WM_MATERIAL_RECEIVE",1001L,1101L,1,new BigDecimal("4"),BigDecimal.ZERO,new BigDecimal("4"),3002L,ACTOR,"0")));
+            assertDoesNotThrow(()->f.service.consumeReceiptLocked(f.receiptCommand()));
+        }
+    }
+    private static PuCertifiedPurchaseLifecycleService.OrderCommand orderGroup(Fixture f,Operation op) {
+        return new PuCertifiedPurchaseLifecycleService.OrderCommand(T,ACTOR,201L,KEY,801L,op,Map.of(ALLOCATION,f.row.getVersion()));
+    }
+    private static void stubOrderGroup(Fixture f) {
+        PuCertifiedPurchaseOrderWorkflowMapperTest.stubOrderDefinitions(f.mapper);
+        when(f.mapper.lockOrderAllocations(T,801L)).thenAnswer(a->List.of(f.row));when(f.mapper.lockCommandAllocations(T,KEY)).thenAnswer(a->List.of(f.row));
+        when(f.mapper.lockOrderApprovalSource(T,801L)).thenReturn(new OrderApprovalSource(T,801L,1501L,1801L,1,new BigDecimal("113"),new BigDecimal("100"),new BigDecimal("13"),
+            "2026-10-12",201L,501L,KEY,"d".repeat(64),"e".repeat(64),902L,903L,"e".repeat(64),"pu:order:terms:confirm",NOW));
     }
     static String hash(String... values) {
         try {var d=MessageDigest.getInstance("SHA-256");for(String value:values){byte[] b=value.getBytes(StandardCharsets.UTF_8);d.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());d.update(b);}return HexFormat.of().formatHex(d.digest());}

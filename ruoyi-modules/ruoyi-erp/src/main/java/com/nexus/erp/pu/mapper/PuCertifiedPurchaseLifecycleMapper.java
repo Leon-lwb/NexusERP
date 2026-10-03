@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
-/** Fixed, tenant-explicit current reads; no generic CRUD or caller-supplied quantity authority. */
+/** 固定且显式指定租户的当前读；不提供通用 CRUD，也不将调用方提供的数量作为权威依据。 */
 @Mapper
 @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
 public interface PuCertifiedPurchaseLifecycleMapper {
@@ -81,7 +81,7 @@ public interface PuCertifiedPurchaseLifecycleMapper {
     List<PuRequirementAllocationLedger> lockRequisitionAllocations(@Param("tenantId") String tenantId,
         @Param("requisitionId") Long requisitionId);
 
-    /** Includes detached rows: a damaged line reference cannot hide a permanent request allocation. */
+    /** 包含已脱离关联的行：行引用损坏不能掩盖永久请求占用记录。 */
     @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("SELECT * FROM pu_requirement_allocation_ledger WHERE tenant_id=#{tenantId} "
         + "AND decision_idempotency_key=#{requestKey} ORDER BY material_id,allocation_id FOR UPDATE")
@@ -137,17 +137,17 @@ public interface PuCertifiedPurchaseLifecycleMapper {
 
     @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("SELECT l.tenant_id,l.line_id,l.receive_id AS document_id,h.status,h.del_flag AS del_flag,l.del_flag AS line_del_flag FROM wm_material_receive_line l "
-        + "JOIN wm_material_receive h ON h.tenant_id=l.tenant_id AND h.receive_id=l.receive_id "
+        + "LEFT JOIN wm_material_receive h ON h.tenant_id=l.tenant_id AND h.receive_id=l.receive_id "
         + "WHERE l.tenant_id=#{tenantId} AND l.purchase_line_id=#{id} ORDER BY l.line_id FOR UPDATE")
     List<MovementSource> lockReceiptSources(@Param("tenantId") String tenantId, @Param("id") Long id);
 
     @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
     @Select("SELECT l.tenant_id,l.line_id,l.return_id AS document_id,h.status,h.del_flag AS del_flag,l.del_flag AS line_del_flag FROM pu_purchase_return_line l "
-        + "JOIN pu_purchase_return h ON h.tenant_id=l.tenant_id AND h.return_id=l.return_id "
+        + "LEFT JOIN pu_purchase_return h ON h.tenant_id=l.tenant_id AND h.return_id=l.return_id "
         + "WHERE l.tenant_id=#{tenantId} AND l.order_line_id=#{id} ORDER BY l.line_id FOR UPDATE")
     List<MovementSource> lockReturnSources(@Param("tenantId") String tenantId, @Param("id") Long id);
 
-    /** Row locks plus exact old counters protect legacy rows without a version column. */
+    /** 通过行锁与精确匹配旧计数值，保护没有版本列的历史行。 */
     @Update("UPDATE pu_purchase_order_line SET received_quantity=#{received},returned_quantity=#{returned},"
         + "receive_status=#{receiveStatus},update_by=#{actorId},update_time=NOW() "
         + "WHERE tenant_id=#{tenantId} AND line_id=#{old.lineId} AND order_id=#{old.orderId} "
@@ -189,7 +189,7 @@ public interface PuCertifiedPurchaseLifecycleMapper {
         +"SELECT event_id FROM pu_requirement_allocation_event WHERE 1=0")
     List<Long> pinAllocationDefinitions();
 
-    /** Actual empty reads acquire per-table MDL; information_schema alone does not pin definitions. */
+    /** 通过真实空读获取各表的 MDL；仅查询 information_schema 不能固定表定义。 */
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
     @Select("SELECT SQL_NO_CACHE requisition_id FROM pu_certified_purchase_command WHERE 1=0 UNION ALL "
         +"SELECT allocation_id FROM pu_requirement_allocation_ledger WHERE 1=0 UNION ALL "
@@ -224,6 +224,46 @@ public interface PuCertifiedPurchaseLifecycleMapper {
     @Select("SELECT tenant_id,vendor_id,status,del_flag FROM bd_vendor WHERE tenant_id=#{tenantId} AND vendor_id=#{id} FOR UPDATE")
     VendorIdentity lockLifecycleVendor(@Param("tenantId") String tenantId,@Param("id") Long id);
     record VendorIdentity(String tenantId,Long vendorId,Long status,String delFlag) { }
+
+    /** 检查元数据前先获取整订单相关表的 MDL，包括新增报价/审计/永久回执来源。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT SQL_NO_CACHE certified_version FROM pu_purchase_order WHERE 1=0 UNION ALL "
+        +"SELECT line_id FROM pu_purchase_order_line WHERE 1=0 UNION ALL "
+        +"SELECT quote_id FROM pu_certified_purchase_order_terms WHERE 1=0 UNION ALL "
+        +"SELECT confirmation_id FROM pu_certified_purchase_order_terms_confirmation WHERE 1=0 UNION ALL "
+        +"SELECT command_id FROM pu_certified_purchase_order_operation WHERE 1=0")
+    List<Long> pinOrderDefinitions();
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT table_name,engine FROM information_schema.TABLES WHERE table_schema=DATABASE() AND table_name IN "
+        +"('pu_purchase_order','pu_purchase_order_line','pu_certified_purchase_order_terms','pu_certified_purchase_order_terms_confirmation','pu_certified_purchase_order_operation')")
+    List<TableDefinition> orderTableDefinitions();
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT table_name,column_name,data_type,numeric_precision AS precision,numeric_scale AS scale,character_maximum_length AS max_length,is_nullable AS nullable "
+        +"FROM information_schema.COLUMNS WHERE table_schema=DATABASE() AND table_name IN "
+        +"('pu_purchase_order','pu_purchase_order_line','pu_certified_purchase_order_terms','pu_certified_purchase_order_terms_confirmation','pu_certified_purchase_order_operation')")
+    List<OrderColumnDefinition> orderColumnDefinitions();
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT table_name,index_name,non_unique,seq_in_index AS `sequence`,column_name,sub_part FROM information_schema.STATISTICS "
+        +"WHERE table_schema=DATABASE() AND table_name IN ('pu_certified_purchase_order_terms','pu_certified_purchase_order_terms_confirmation','pu_certified_purchase_order_operation') "
+        +"ORDER BY table_name,index_name,seq_in_index")
+    List<IndexDefinition> orderUniqueDefinitions();
+    record OrderColumnDefinition(String tableName,String columnName,String dataType,Integer precision,Integer scale,Long maxLength,String nullable) { }
+
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT a.* FROM pu_requirement_allocation_ledger a JOIN pu_purchase_order_line l ON l.tenant_id=a.tenant_id AND l.line_id=a.order_line_id "
+        +"WHERE a.tenant_id=#{tenantId} AND l.order_id=#{id} ORDER BY a.allocation_id FOR UPDATE")
+    List<PuRequirementAllocationLedger> lockOrderAllocations(@Param("tenantId") String tenantId,@Param("id") Long orderId);
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT o.tenant_id,o.order_id,o.vendor_id,o.certified_terms_id AS quote_id,o.certified_version AS version,o.total_amount,o.amount_excluding_tax,o.tax_amount,"
+        +"DATE_FORMAT(o.expected_arrival_date,'%Y-%m-%d') AS expected_arrival_date,q.material_id,q.base_uom_id,q.source_request_key,q.catalog_fingerprint,q.quote_hash,"
+        +"q.entered_by,c.actor_id AS confirmed_by,c.quote_hash AS confirmed_hash,c.permission_code,c.confirmed_at "
+        +"FROM pu_purchase_order o JOIN pu_certified_purchase_order_terms q ON q.tenant_id=o.tenant_id AND q.quote_id=o.certified_terms_id AND q.order_id=o.order_id AND q.vendor_id=o.vendor_id "
+        +"JOIN pu_certified_purchase_order_terms_confirmation c ON c.tenant_id=q.tenant_id AND c.quote_id=q.quote_id "
+        +"WHERE o.tenant_id=#{tenantId} AND o.order_id=#{id} FOR UPDATE")
+    OrderApprovalSource lockOrderApprovalSource(@Param("tenantId") String tenantId,@Param("id") Long id);
+    record OrderApprovalSource(String tenantId,Long orderId,Long vendorId,Long quoteId,Integer version,BigDecimal totalAmount,BigDecimal amountExcludingTax,
+        BigDecimal taxAmount,String expectedArrivalDate,Long materialId,Long baseUomId,String sourceRequestKey,String catalogFingerprint,String quoteHash,
+        Long enteredBy,Long confirmedBy,String confirmedHash,String permissionCode,Date confirmedAt) { }
 
     record TableDefinition(String tableName,String engine) { }
     record NativeQuantityDefinition(String tableName,String columnName,String dataType,Integer precision,Integer scale) { }
