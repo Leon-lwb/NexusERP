@@ -3,6 +3,7 @@ import importlib
 import importlib.util
 import io
 import json
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
@@ -22,6 +23,7 @@ class TransportTests(unittest.TestCase):
         self.patch.start();self.addCleanup(self.patch.stop)
         self.calls=[]
         self.recovered=None
+        self.readbacks=[]
         outer=self
         class Authority(self.m.WriteAuthority):
             def require_authorized(self,*,transport,scope):return None
@@ -31,7 +33,8 @@ class TransportTests(unittest.TestCase):
         class Runtime(self.p.RuntimeAuthority):
             def require_current(self,**kwargs):return None
         class Recovery(self.m.RecoveryReader):
-            def read_back(self,*,scope,request):return outer.recovered
+            def read_back(self,*,scope,request):
+                outer.readbacks.append((scope,request));return outer.recovered
         self.authority,self.lifecycle,self.runtime,self.recovery=Authority(),Lifecycle(),Runtime(),Recovery()
         self.journal=self.m.AuditJournal(Path(self.temp.name)/'runtime/audit.jsonl')
         self.client=self.build()
@@ -64,6 +67,297 @@ class TransportTests(unittest.TestCase):
                    entity_id='9223372036854775807',server_number='REQ202610020001',
                    api_sha256='b'*64,db_sha256='c'*64,source_sha256='d'*64,
                    source_fingerprint=request['body']['expectedSourceFingerprint'])
+
+    def receipt_request(self, step='shelf', receive_id='9223372036854775806'):
+        return {'method':'POST','path':f'/erp/wm/receive/certified/{step}/{receive_id}','body':None}
+
+    def test_certified_shelf_dispatches_only_its_state_transition(self):
+        try:
+            result=self.client.send(self.receipt_request(),intent_id='receipt-shelf-intent-0001')
+        except self.m.TransportBlocked:
+            self.fail('受控上架入口缺失，不能退回旧 CRUD 上架')
+        self.assertEqual('UNCERTAIN',result['status'])
+        self.assertEqual(['/erp/wm/receive/certified/shelf/9223372036854775806'],
+                         [r.selector for r in self.dispatched()])
+        self.assertIsNone(self.dispatched()[0].data)
+        self.assertEqual('receipt.certified.shelf',self.journal.load()[0]['action'])
+
+    def test_certified_execute_is_a_separate_original_intent(self):
+        seen=[]
+        class Lifecycle(self.m.LifecycleAuthority):
+            def require_closed(self,*,scope):seen.append(scope);return None
+        client=self.build(lifecycle=Lifecycle())
+        try:
+            client.send(self.receipt_request(),intent_id='receipt-shelf-intent-0001')
+            client.send(self.receipt_request('execute'),intent_id='receipt-post-intent-0001')
+        except self.m.TransportBlocked:
+            self.fail('实际过账入口尚未与受控上架分别续接')
+        self.assertEqual(['/erp/wm/receive/certified/shelf/9223372036854775806',
+                          '/erp/wm/receive/certified/execute/9223372036854775806'],
+                         [r.selector for r in self.dispatched()])
+        self.assertEqual({'receipt.certified.shelf','receipt.certified.post'},{s.action for s in seen})
+        self.assertTrue(all(s.command.receive_id=='9223372036854775806' for s in seen))
+
+
+    def receipt_proof(self, request=None, *, stage='SHELVED', notification=None, lifecycle=None, **changes):
+        """仅为离线服务读取器提供替身，不生成或发送真实出生事实。"""
+        evidence=getattr(self.m,'ReceiptRecoveryEvidence',None)
+        self.assertIsNotNone(evidence,'缺少原生出生、V2 与永久过账分层读回契约')
+        request=request or self.receipt_request()
+        values={'tenant_id':'000000','request_sha256':self.m.request_digest(request),
+                'entity_id':request['path'].rsplit('/',1)[1],'server_number':'RCV202610030001',
+                'api_sha256':'a'*64,'db_sha256':'b'*64,'source_sha256':'c'*64,'source_fingerprint':'d'*64,
+                'material_id':'9223372036854775807','inspection_id':'123456789123456788',
+                'source_kind':'MES_QC_IQC_RECEIVE_MATERIAL_V2','birth_sha256':'e'*64,
+                'binding_sha256':'f'*64,'iqc_sha256':'1'*64,'stage':stage,
+                'posting_sha256':'2'*64 if stage=='FINISHED' else None,
+                'notification_status':notification,'lifecycle_sha256':lifecycle,**changes}
+        return evidence(**values)
+
+    def test_shelf_completes_only_after_native_birth_and_v2_readback(self):
+        request=self.receipt_request()
+        previous=self.opener
+        def shelved(http,timeout):
+            if http.get_method()=='POST':self.recovered=self.receipt_proof(request)
+            return previous(http,timeout)
+        result=self.build(opener=shelved).send(request,intent_id='receipt-shelf-intent-0001')
+        self.assertEqual('COMPLETED',result['status'])
+        self.assertEqual('RCV202610030001',result['serverNumber'])
+        self.assertEqual(1,len(self.dispatched()))
+        self.assertEqual('COMPLETED',self.journal.load()[-1]['event'])
+
+    def test_restart_shelf_reads_native_permanent_result_without_reposting(self):
+        request=self.receipt_request()
+        self.client.send(request,intent_id='receipt-shelf-intent-0001')
+        self.recovered=self.receipt_proof(request)
+        restarted=self.build(journal=self.m.AuditJournal(self.journal.path))
+        result=restarted.send(request,intent_id='receipt-shelf-intent-0001')
+        self.assertEqual('RECOVERED',result['status'])
+        self.assertEqual(1,len(self.dispatched()))
+        self.assertEqual(request,self.readbacks[-1][1])
+
+    def test_terminal_shelf_restores_posted_origin_without_calling_execute(self):
+        request=self.receipt_request()
+        self.client.send(request,intent_id='receipt-shelf-intent-0001')
+        self.recovered=self.receipt_proof(request,stage='FINISHED',notification='PENDING')
+        result=self.build().send(request,intent_id='receipt-shelf-intent-0001')
+        self.assertEqual('RECOVERED',result['status'])
+        self.assertEqual(['POST'],[r.get_method() for r in self.dispatched()])
+        self.assertTrue(all('/shelf/' in r.selector for r in self.dispatched()))
+
+    def test_duplicate_receipt_without_local_history_uses_native_readback_not_a_write(self):
+        request=self.receipt_request('execute')
+        self.recovered=self.receipt_proof(request,stage='FINISHED',notification='ENQUEUED',lifecycle='3'*64)
+        result=self.client.send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual('RECOVERED',result['status'])
+        self.assertEqual([],self.dispatched())
+        self.assertEqual('RECOVERED',self.journal.load()[-1]['event'])
+
+    def test_execute_pending_notification_stays_uncertain(self):
+        request=self.receipt_request('execute')
+        previous=self.opener
+        def pending(http,timeout):
+            if http.get_method()=='POST':
+                self.recovered=self.receipt_proof(request,stage='FINISHED',notification='PENDING')
+            return previous(http,timeout)
+        result=self.build(opener=pending).send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual('UNCERTAIN',result['status'])
+        self.assertEqual('await_receipt_lifecycle_readback',result['reason'])
+        self.assertEqual(['DISPATCHED','UNCERTAIN'],[r['event'] for r in self.journal.load()])
+        self.assertNotEqual('0'*64,self.journal.load()[-1]['resultSha256'])
+        again=self.build().send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual('UNCERTAIN',again['status'])
+        self.assertEqual(1,len(self.dispatched()))
+
+    def test_explicit_pending_execute_retry_requires_proof_and_replays_only_original_service(self):
+        request=self.receipt_request('execute')
+        previous=self.opener
+        retries=[]
+        class Authority(self.m.WriteAuthority):
+            def require_authorized(self,**kwargs):return None
+            def require_retry_safe(self,*,transport,scope):retries.append(scope);return None
+        def service(http,timeout):
+            if http.get_method()=='POST':
+                enqueued=bool(self.dispatched())
+                self.recovered=self.receipt_proof(request,stage='FINISHED',
+                    notification='ENQUEUED' if enqueued else 'PENDING',lifecycle='3'*64 if enqueued else None)
+            return previous(http,timeout)
+        client=self.build(authority=Authority(),opener=service)
+        self.assertEqual('UNCERTAIN',client.send(request,intent_id='receipt-post-intent-0001')['status'])
+        restarted=self.build(authority=client.authority,opener=service,journal=self.m.AuditJournal(self.journal.path))
+        self.assertEqual('COMPLETED',restarted.send(request,intent_id='receipt-post-intent-0001',retry=True)['status'])
+        self.assertEqual(1,len(retries))
+        self.assertEqual([request['path'],request['path']],[r.selector for r in self.dispatched()])
+        self.assertTrue(all(r.data is None for r in self.dispatched()))
+        self.assertEqual('RECOVERED',restarted.send(request,intent_id='receipt-post-intent-0001')['status'])
+        self.assertEqual(2,len(self.dispatched()))
+
+    def test_enqueued_without_consumed_receipt_lifecycle_is_not_completion(self):
+        request=self.receipt_request('execute')
+        self.client.send(request,intent_id='receipt-post-intent-0001')
+        self.recovered=self.receipt_proof(request,stage='FINISHED',notification='ENQUEUED')
+        result=self.client.send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual('UNCERTAIN',result['status'])
+        self.assertEqual(1,len(self.dispatched()))
+        self.assertNotIn('RECOVERED',[r['event'] for r in self.journal.load()])
+
+    def test_receipt_recovery_rejects_historical_or_incomplete_native_evidence(self):
+        request=self.receipt_request('execute')
+        self.client.send(request,intent_id='receipt-post-intent-0001')
+        valid=self.receipt_proof(request,stage='FINISHED',notification='ENQUEUED',lifecycle='3'*64)
+        for changes in ({'source_kind':'MES_QC_IQC_RECEIVE_MATERIAL_V1'},{'birth_sha256':''},
+                        {'binding_sha256':None},{'iqc_sha256':''},{'source_fingerprint':None},
+                        {'posting_sha256':None},{'notification_status':'DONE'},
+                        {'notification_status':'ENQUEUED','lifecycle_sha256':'verified'}):
+            self.recovered=replace(valid,**changes)
+            with self.subTest(changes=changes),self.assertRaises(self.m.TransportBlocked):
+                self.client.send(request,intent_id='receipt-post-intent-0001',retry=True)
+        self.assertEqual(1,len(self.dispatched()))
+
+    def test_receipt_recovery_must_match_native_identity_and_original_request(self):
+        request=self.receipt_request()
+        self.client.send(request,intent_id='receipt-shelf-intent-0001')
+        valid=self.receipt_proof(request)
+        for changes in ({'tenant_id':'123456'},{'request_sha256':'0'*64},{'entity_id':'123'},
+                        {'material_id':9223372036854775807},{'inspection_id':1},{'server_number':''}):
+            self.recovered=replace(valid,**changes)
+            with self.subTest(changes=changes),self.assertRaises(self.m.TransportBlocked):
+                self.client.send(request,intent_id='receipt-shelf-intent-0001')
+        self.assertEqual(1,len(self.dispatched()))
+
+    def test_shelf_evidence_cannot_be_projected_as_a_posted_receipt(self):
+        request=self.receipt_request('execute')
+        self.recovered=self.receipt_proof(request)
+        with self.assertRaises(self.m.TransportBlocked):
+            self.client.send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual([],self.dispatched())
+
+    def test_bare_cache_status_or_generic_proof_cannot_restore_native_receipt(self):
+        request=self.receipt_request()
+        self.client.send(request,intent_id='receipt-shelf-intent-0001')
+        generic=replace(self.proof(),request_sha256=self.m.request_digest(request),entity_id='9223372036854775806')
+        for proof in ({'status':'SHELVED','verified':True},{'status':'DONE','birthSha256':'e'*64},generic):
+            self.recovered=proof
+            with self.subTest(proof=type(proof).__name__),self.assertRaises(self.m.TransportBlocked):
+                self.client.send(request,intent_id='receipt-shelf-intent-0001')
+        self.assertEqual(1,len(self.dispatched()))
+
+    def test_completed_receipt_cannot_be_retried_after_readback_disappears_or_regresses(self):
+        request=self.receipt_request('execute')
+        valid=self.receipt_proof(request,stage='FINISHED',notification='ENQUEUED',lifecycle='3'*64)
+        self.recovered=valid
+        self.assertEqual('RECOVERED',self.client.send(request,intent_id='receipt-post-intent-0001')['status'])
+        for proof in (None,replace(valid,notification_status='PENDING',lifecycle_sha256=None)):
+            self.recovered=proof
+            with self.subTest(proof=proof is None),self.assertRaises(self.m.TransportBlocked):
+                self.client.send(request,intent_id='receipt-post-intent-0001',retry=True)
+        self.assertEqual([],self.dispatched())
+
+    def test_changed_receipt_path_cannot_replace_the_original_durable_intent(self):
+        self.client.send(self.receipt_request(),intent_id='receipt-shelf-intent-0001')
+        for request in (self.receipt_request('execute'),self.receipt_request(receive_id='123')):
+            with self.subTest(path=request['path']),self.assertRaises(self.m.TransportBlocked):
+                self.client.send(request,intent_id='receipt-shelf-intent-0001',retry=True)
+        self.assertEqual(1,len(self.dispatched()))
+
+    def test_receipt_requests_refuse_body_flags_legacy_methods_and_non_native_ids(self):
+        for step in ('shelf','execute'):
+            original=self.receipt_request(step)
+            for field in ('quantity','baseUomId','verified','birth','status','tenantId'):
+                request={**original,'body':{field:'unexpected'}}
+                with self.subTest(step=step,field=field),self.assertRaises(self.m.TransportBlocked):
+                    self.client.send(request,intent_id='receipt-original-intent')
+            for changes in ({'method':'PUT'},{'query':{'verified':True}},
+                            {'path':f'/erp/wm/receive/{step}/123'},
+                            {'path':f'/erp/wm/receive/certified/{step}/9223372036854775808'},
+                            {'path':f'/erp/wm/receive/certified/{step}/00123'}):
+                with self.subTest(changes=changes),self.assertRaises(self.m.TransportBlocked):
+                    self.client.send({**original,**changes},intent_id='receipt-original-intent')
+        self.assertEqual([],self.calls)
+
+    def test_native_iqc_gets_are_read_only_without_a_crud_birth_fallback(self):
+        for path,query in (('/mes/qc/iqc/list',{'receiveId':'9223372036854775806','materialId':'9223372036854775807'}),
+                           ('/mes/qc/iqc/123456789123456788',None),
+                           ('/mes/qc/iqc/123456789123456788/details',None)):
+            try:self.client.get(path,query)
+            except self.m.TransportBlocked:self.fail('正式 transport 缺少真实 IQC 本体和明细只读取证入口')
+        request={'method':'POST','path':'/mes/qc/iqc',
+                 'body':{'receiveId':'9223372036854775806','materialId':'9223372036854775807','iqcNo':'CLIENT-NUMBER'}}
+        with self.assertRaises(self.m.TransportBlocked):self.client.send(request,intent_id='iqc-original-intent')
+        self.assertEqual([],self.dispatched())
+        self.assertEqual(3,len(self.calls))
+
+    def test_receipt_retry_still_requires_the_original_private_dispatch(self):
+        with self.assertRaises(self.m.TransportBlocked):
+            self.client.send(self.receipt_request('execute'),intent_id='receipt-post-intent-0001',retry=True)
+        self.assertEqual([],self.dispatched())
+
+    def test_missing_loading_proof_blocks_both_receipt_steps_and_terminal_recovery(self):
+        outer=self
+        class Runtime(self.p.RuntimeAuthority):
+            def require_current(self,**kwargs):
+                raise outer.p.PreflightBlocked('替身没有真实加载证明',category='ATTESTATION_ENDPOINT_MISSING')
+        for step in ('shelf','execute'):
+            with self.subTest(step=step),self.assertRaises(self.m.TransportBlocked):
+                self.build(runtime=Runtime()).send(self.receipt_request(step),intent_id=f'receipt-{step}-intent-0001')
+        request=self.receipt_request('execute')
+        self.recovered=self.receipt_proof(request,stage='FINISHED',notification='ENQUEUED',lifecycle='3'*64)
+        with self.assertRaises(self.m.TransportBlocked):
+            self.build(runtime=Runtime()).send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load())
+
+    def test_receipt_http_terminal_flags_do_not_substitute_for_native_readback(self):
+        previous=self.opener
+        def bare(http,timeout):
+            if http.get_method()=='GET':return previous(http,timeout)
+            self.calls.append(http)
+            response=io.BytesIO(b'{"code":200,"data":{"status":"FINISHED","verified":true,"notificationPending":false}}')
+            response.status=200;return response
+        result=self.build(opener=bare).send(self.receipt_request('execute'),intent_id='receipt-post-intent-0001')
+        self.assertEqual('UNCERTAIN',result['status'])
+        self.assertEqual(1,len(self.dispatched()))
+        self.assertEqual('UNCERTAIN',self.journal.load()[-1]['event'])
+
+    def test_pending_receipt_retry_denies_missing_or_boolean_retry_authority(self):
+        request=self.receipt_request('execute')
+        self.client.send(request,intent_id='receipt-post-intent-0001')
+        self.recovered=self.receipt_proof(request,stage='FINISHED',notification='PENDING')
+        class Denied(self.m.WriteAuthority):
+            def require_authorized(self,**kwargs):return None
+        class Boolean(Denied):
+            def require_retry_safe(self,**kwargs):return True
+        for authority in (Denied(),Boolean()):
+            with self.subTest(authority=type(authority).__name__),self.assertRaises(self.m.TransportBlocked):
+                self.build(authority=authority).send(request,intent_id='receipt-post-intent-0001',retry=True)
+        self.assertEqual(1,len(self.dispatched()))
+
+    def test_terminal_receipt_readback_cannot_outlive_the_loading_proof(self):
+        request=self.receipt_request('execute')
+        self.recovered=self.receipt_proof(request,stage='FINISHED',notification='ENQUEUED',lifecycle='3'*64)
+        outer=self
+        class Runtime(self.p.RuntimeAuthority):
+            def __init__(self):self.calls=0
+            def require_current(self,**kwargs):
+                self.calls+=1
+                if self.calls>1:raise outer.p.PreflightBlocked('替身证明失效',category='RUNTIME_RESTARTED')
+        runtime=Runtime()
+        with self.assertRaises(self.m.TransportBlocked):
+            self.build(runtime=runtime).send(request,intent_id='receipt-post-intent-0001')
+        self.assertEqual(2,runtime.calls)
+        self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load())
+
+    def test_native_receipt_read_failure_is_not_absence_or_permission_to_dispatch(self):
+        outer=self
+        class Recovery(self.m.RecoveryReader):
+            def read_back(self,**kwargs):raise outer.m.TransportBlocked('UNIT_ORIGIN_UNPROVEN secret-token')
+        for step in ('shelf','execute'):
+            with self.subTest(step=step),self.assertRaises(self.m.TransportBlocked) as caught:
+                self.build(recovery=Recovery()).send(self.receipt_request(step),intent_id=f'receipt-{step}-intent-0001')
+            self.assertNotIn('secret-token',str(caught.exception))
+        self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load())
 
     def test_missing_independent_authority_cannot_send(self):
         for field in ('authority','runtime','lifecycle','recovery','journal'):

@@ -202,7 +202,9 @@ class RuntimePreflightTests(unittest.TestCase):
         self.assertEqual('CONNECTION_TIMEOUT',self.m.diagnostic_category(TimeoutError()))
         self.assertEqual('DEPENDENCY_MISSING',self.m.diagnostic_category(ModuleNotFoundError()))
 
-    def fake_db(self,*,cleanup_fail=False,wrong_schema=False):
+    def fake_db(self,*,cleanup_fail=False,wrong_schema=False,stock_count=1,missing_table=None):
+        from test_procurement_schema_contract import fresh_metadata
+        contract_metadata = fresh_metadata()
         outer=self
         class Cursor:
             def __enter__(self):return self
@@ -212,23 +214,43 @@ class RuntimePreflightTests(unittest.TestCase):
             def fetchone(self):
                 if 'VERSION()' in self.sql:
                     return ('8.0.39',3306,'test-uuid','private-host',0,'other' if wrong_schema else 'ry-vue')
-                if 'COALESCE(SUM' in self.sql:return (1,Decimal('0.123456789123'),Decimal('0.000000000001'))
+                if 'COALESCE(SUM' in self.sql:
+                    return (stock_count, Decimal('0.123456789123') if stock_count else Decimal('0'),
+                            Decimal('0.000000000001') if stock_count else Decimal('0'))
+                if self.sql.startswith('SELECT COUNT(*) FROM `ry-erp`.`wm_material_stock`'):
+                    return (stock_count,)
                 return (1,)
             def fetchall(self):
                 if self.sql=='SHOW GRANTS':return [('GRANT SELECT ON *.* TO test',)]
                 if 'information_schema.SCHEMATA' in self.sql:return [(v,) for v in self_outer.m.SCHEMAS.values()]
-                if 'information_schema.TABLES' in self.sql:return [(t,'InnoDB') for t in self.params[1:]]
+                if 'information_schema.TABLES' in self.sql:
+                    return [(t,'InnoDB') for t in self.params[1:]
+                            if self.params[0]+'.'+t != missing_table]
                 if 'information_schema.STATISTICS' in self.sql:
-                    return [('PRIMARY',0,1,'tenant_id',None),('PRIMARY',0,2,'request_key',None),
-                            ('uk_certified_purchase_requisition',0,1,'tenant_id',None),
-                            ('uk_certified_purchase_requisition',0,2,'requisition_id',None)]
+                    return [(table,*part) for table in self.params[1:]
+                            if self.params[0]+'.'+table != missing_table
+                            for part in contract_metadata.get(self.params[0]+'.'+table, {}).get('indexes', [])]
                 if 'information_schema.COLUMNS' in self.sql:
                     rows=[];schema=self.params[0]
                     for table in self.params[1:]:
-                        rows.extend([(table,'tenant_id','varchar',None,None),(table,'del_flag','char',None,None)])
-                        for col in self_outer.m.DECIMAL_FIELDS.get(schema+'.'+table,()):
-                            precision,scale = (18,4) if table in ('wm_material_stock','wm_material_stock_tx') else (28,12)
-                            rows.append((table,col,'decimal',precision,scale))
+                        key = schema+'.'+table
+                        if key == missing_table: continue
+                        def spec(kind, length=None, precision=None, scale=None):
+                            return {'type':kind, 'precision':precision, 'scale':scale, 'nullable':'NO',
+                                    'characterMaximumLength':length,
+                                    'columnType':f'{kind}({length})' if length else
+                                                 f'decimal({precision},{scale})' if kind=='decimal' else kind,
+                                    'collation':'utf8mb4_unicode_ci' if kind in ('varchar','char') else None,
+                                    'datetimePrecision':None, 'extra':'', 'generationExpression':''}
+                        columns = {'tenant_id':spec('varchar', 20), 'del_flag':spec('char', 1)}
+                        for col in self_outer.m.DECIMAL_FIELDS.get(key, ()):
+                            precision, scale = (18,4) if table in ('wm_material_stock','wm_material_stock_tx') else (28,12)
+                            columns[col] = spec('decimal', precision=precision, scale=scale)
+                        columns.update(contract_metadata.get(key, {}).get('columns', {}))
+                        fields = ('type','precision','scale','nullable','characterMaximumLength','columnType',
+                                  'collation','datetimePrecision','extra','generationExpression')
+                        rows.extend((table,col,*(observed[field] for field in fields))
+                                    for col,observed in columns.items())
                     return rows
                 return []
         class DB:
@@ -491,4 +513,270 @@ assert authority.Credentials is module.Credentials, 'CLI Credentials identity sp
         self.assertIs(False,report.get('backendDatasourceBindingVerified'))
 
 
-if __name__=='__main__':unittest.main()
+
+
+
+    def test_empty_stock_rows_never_remove_source_completeness_gate(self):
+        db = self.fake_db(stock_count=0)
+        settings = self.m.LocalSettings({'master': {'username':'x', 'password':'x',
+                                         'url':'jdbc:mysql://localhost:3306/ry-vue'}}, {})
+        observed = self.m.database_evidence(settings, '000000', connector=lambda **kw: db)
+        self.assertEqual('EMPTY_OBSERVED', observed['stockOrigin']['status'])
+        self.assertIs(True, observed['stockOrigin']['requiresFullSourceLedgerAndReceiptReconciliation'])
+        self.assertIn('empty_stock_snapshot_completeness_not_established', observed['gaps'])
+        class Authority(self.m.RuntimeAuthority):
+            def require_current(self, **kwargs): return None
+        ready = self.m.readiness(self.m.RuntimeTarget(), self.credentials(), 'a'*40,
+                                  {'status':'VERIFIED', 'principalSha256':'b'*64},
+                                  observed, {}, attestor=Authority())
+        self.assertEqual('BLOCKED', ready['status'])
+        self.assertIn('STOCK_SOURCE_UNVERIFIED', ready['diagnosticCategories'])
+        self.assertIs(False, ready['businessWriteAuthorized'])
+
+
+    def test_v2_birth_schema_is_checked_before_any_tenant_business_read(self):
+        self.assertIn('wm_receipt_iqc_birth', self.m.TABLES['ry-erp'])
+        self.assertIn('qc_receipt_iqc_birth', self.m.TABLES['ry-mes'])
+        db = self.fake_db(missing_table='ry-mes.qc_receipt_iqc_birth')
+        settings = self.m.LocalSettings({'master': {'username':'x', 'password':'x',
+                                         'url':'jdbc:mysql://localhost:3306/ry-vue'}}, {})
+        observed = self.m.database_evidence(settings, '000000', connector=lambda **kw: db)
+        self.assertEqual('BLOCKED', observed['status'])
+        self.assertTrue(any('ry-mes.qc_receipt_iqc_birth' in gap for gap in observed['gaps']))
+        self.assertEqual('BLOCKED', observed['procurementSchema']['status'])
+        self.assertTrue(observed['actualTargetVerified'])
+        self.assertFalse(any(' FROM `ry-' in sql for sql, _ in self.queries))
+        self.assertEqual((1, 1), (self.rollback_calls, self.close_calls))
+
+    def test_full_v2_schema_observation_is_not_source_or_write_certification(self):
+        db = self.fake_db()
+        settings = self.m.LocalSettings({'master': {'username':'x', 'password':'x',
+                                         'url':'jdbc:mysql://localhost:3306/ry-vue'}}, {})
+        observed = self.m.database_evidence(settings, '000000', connector=lambda **kw: db)
+        contract = observed.get('procurementSchema', {})
+        self.assertEqual('SCHEMA_METADATA_MATCH', contract.get('status'))
+        self.assertEqual('NOT_PERFORMED', contract.get('sourceCertification'))
+        self.assertIs(False, contract.get('businessWriteAuthorized'))
+        self.assertEqual('UNVERIFIED', observed['stockOrigin']['status'])
+        self.assertTrue(all('IS_NULLABLE' in sql and 'GENERATION_EXPRESSION' in sql
+                            for sql, _ in self.queries if 'information_schema.COLUMNS' in sql))
+        self.assertTrue(all('INDEX_TYPE' in sql for sql, _ in self.queries
+                            if 'information_schema.STATISTICS' in sql))
+
+class AuthenticationDiagnosticTests(unittest.TestCase):
+    """失败诊断只保留固定分类和数值，不能误导操作者或开放业务读取。"""
+
+    def setUp(self):
+        self.m = importlib.import_module('procurement_runtime_preflight')
+        self.env = {'NEXUS_FULL_FLOW_TOKEN': 'private-test-session',
+                    'NEXUS_FULL_FLOW_CLIENT_ID': 'private-client',
+                    'NEXUS_FULL_FLOW_TENANT_ID': '000000'}
+
+    def response_opener(self, code):
+        class Response:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, *args):
+                return json.dumps({'code': code, 'msg': 'private-test-session private-pwd',
+                                   'data': {'private': 'secret-business-row'}}).encode('utf-8')
+        return lambda *args, **kwargs: Response()
+
+    def test_explicit_failed_session_preserves_401_without_remote_body(self):
+        credentials, auth = self.m.resolve_existing_authentication(
+            environ=self.env, opener=self.response_opener(401))
+        self.assertIsNone(credentials)
+        self.assertEqual('BLOCKED', auth['status'])
+        self.assertEqual(401, auth.get('businessCode'))
+        self.assertEqual('AUTH_FAILED', auth['diagnosticCategory'])
+        self.assertEqual(0, auth['loginRequests'])
+        self.assertEqual(0, auth['businessWrites'])
+        self.assertNotIn('private-test-session', json.dumps(auth))
+        self.assertNotIn('private-pwd', json.dumps(auth))
+        self.assertNotIn('secret-business-row', json.dumps(auth))
+
+    def test_permission_and_backend_errors_are_not_reported_as_expired_login(self):
+        for code, category in ((403, 'READ_PERMISSION_DENIED'), (429, 'AUTH_RATE_LIMITED'),
+                               (500, 'AUTH_BACKEND_ERROR'), (503, 'AUTH_BACKEND_ERROR')):
+            with self.subTest(code=code):
+                credentials, auth = self.m.resolve_existing_authentication(
+                    environ=self.env, opener=self.response_opener(code))
+                self.assertIsNone(credentials)
+                self.assertEqual(code, auth.get('businessCode'))
+                self.assertEqual(category, auth['diagnosticCategory'])
+
+    def test_unknown_business_code_and_malformed_shape_remain_unverified(self):
+        for code in (404, 412, True, '401', None):
+            with self.subTest(code=code):
+                credentials, auth = self.m.resolve_existing_authentication(
+                    environ=self.env, opener=self.response_opener(code))
+                self.assertIsNone(credentials)
+                self.assertEqual('AUTH_CONTEXT_UNVERIFIED', auth['diagnosticCategory'])
+                self.assertEqual(code if type(code) is int else None, auth.get('businessCode'))
+
+    def test_transport_failure_retains_safe_specific_diagnostic(self):
+        from urllib.error import HTTPError
+        def rejected(*args, **kwargs):
+            raise HTTPError('http://127.0.0.1:8080', 403, 'private-pwd', {}, None)
+        credentials, auth = self.m.resolve_existing_authentication(environ=self.env, opener=rejected)
+        self.assertIsNone(credentials)
+        self.assertEqual('READ_PERMISSION_DENIED', auth['diagnosticCategory'])
+        self.assertNotIn('private-pwd', json.dumps(auth))
+
+    def test_cli_summary_exposes_only_safe_authentication_diagnostic(self):
+        report = {'status': 'BLOCKED', 'observedAt': '2026-10-03T15:39:00+08:00',
+                  'gaps': ['fresh_authenticated_tenant_principal_context_missing'],
+                  'diagnosticCategories': ['AUTH_FAILED'],
+                  'authentication': {'status': 'BLOCKED', 'businessCode': 401,
+                                     'diagnosticCategory': 'AUTH_FAILED',
+                                     'credentialSha256': 'private-fingerprint',
+                                     'arbitraryRemoteBody': 'private-test-session'}}
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(self.m, 'PRIVATE_ROOT', Path(directory)), \
+             patch.object(self.m, 'inspect_local', return_value=report), \
+             patch('sys.stdout', output):
+            self.assertEqual(2, self.m.main([]))
+        summary = json.loads(output.getvalue())
+        self.assertEqual({'status': 'BLOCKED', 'businessCode': 401,
+                          'diagnosticCategory': 'AUTH_FAILED'}, summary.get('authentication'))
+        self.assertIs(False, summary['businessWriteAuthorized'])
+        self.assertNotIn('private-test-session', output.getvalue())
+        self.assertNotIn('private-fingerprint', output.getvalue())
+
+
+
+
+
+
+    def test_multiple_failed_candidates_keep_bounded_classifications_and_code_counts(self):
+        codes = {'private-test-one':401, 'private-test-two':500}
+        def opener(request, **kwargs):
+            code = codes[request.get_header('Authorization').removeprefix('Bearer ')]
+            return self.response_opener(code)(request, **kwargs)
+        with tempfile.TemporaryDirectory() as directory, patch.object(self.m, 'PRIVATE_ROOT', Path(directory)):
+            folder = Path(directory)/'20261003-procurement-execution'/'runtime'
+            folder.mkdir(parents=True)
+            for index, token in enumerate(codes):
+                (folder/f'private-credential-{index}.json').write_text(json.dumps({
+                    'token':token, 'clientId':'private-client', 'tenantId':'000000',
+                    'baseUrl':'http://127.0.0.1:8080'}), encoding='utf-8')
+            credentials, auth = self.m.resolve_existing_authentication(environ={}, opener=opener)
+        self.assertIsNone(credentials)
+        self.assertEqual('AUTH_CONTEXT_UNVERIFIED', auth['diagnosticCategory'])
+        self.assertEqual(['AUTH_BACKEND_ERROR', 'AUTH_FAILED'], auth.get('failureCategories'))
+        self.assertEqual([{'code':401, 'count':1}, {'code':500, 'count':1}], auth.get('businessCodeCounts'))
+        self.assertNotIn('private-test-one', json.dumps(auth))
+        self.assertNotIn('private-client', json.dumps(auth))
+        self.assertNotIn('private-credential', json.dumps(auth))
+
+    def test_non_success_business_code_survives_unrelated_invalid_id_fields(self):
+        class Response:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, *args): return json.dumps(self.body).encode('utf-8')
+        for code, category in ((401,'AUTH_FAILED'), (403,'READ_PERMISSION_DENIED'),
+                               (429,'AUTH_RATE_LIMITED'), (500,'AUTH_BACKEND_ERROR')):
+            with self.subTest(code=code):
+                response = Response()
+                response.body = {'code':code, 'data':{'debugId':True, 'userId':1.5}}
+                credentials, auth = self.m.resolve_existing_authentication(
+                    environ=self.env, opener=lambda *a, **kw: response)
+                self.assertIsNone(credentials)
+                self.assertEqual(code, auth.get('businessCode'))
+                self.assertEqual(category, auth['diagnosticCategory'])
+        response = Response()
+        response.body = {'code':200, 'data':{'user':{'userId':True, 'tenantId':'000000'}, 'permissions':[]}}
+        credentials, auth = self.m.resolve_existing_authentication(
+            environ=self.env, opener=lambda *a, **kw: response)
+        self.assertIsNone(credentials)
+        self.assertEqual('BLOCKED', auth['status'])
+
+    def test_http_failure_keeps_safe_status_separate_from_business_code(self):
+        from urllib.error import HTTPError
+        for status, category in ((401,'AUTH_FAILED'), (403,'READ_PERMISSION_DENIED'),
+                                 (429,'AUTH_RATE_LIMITED'), (500,'AUTH_BACKEND_ERROR'),
+                                 (503,'AUTH_BACKEND_ERROR'), (404,'HTTP_REJECTED')):
+            def rejected(*args, **kwargs):
+                raise HTTPError('http://127.0.0.1:8080', status, 'private-pwd', {}, None)
+            with self.subTest(status=status):
+                credentials, auth = self.m.resolve_existing_authentication(environ=self.env, opener=rejected)
+                self.assertIsNone(credentials)
+                self.assertEqual(status, auth.get('httpStatus'))
+                self.assertIsNone(auth.get('businessCode'))
+                self.assertEqual(category, auth['diagnosticCategory'])
+                self.assertNotIn('private-pwd', json.dumps(auth))
+
+    def test_known_urllib_transport_causes_keep_specific_fixed_diagnostics(self):
+        from urllib.error import URLError
+        for reason, category in ((ConnectionRefusedError('private-pwd'),'CONNECTION_REFUSED'),
+                                 (TimeoutError('private-pwd'),'CONNECTION_TIMEOUT'),
+                                 ('private-pwd','PROBE_FAILED')):
+            def unavailable(*args, **kwargs): raise URLError(reason)
+            with self.subTest(category=category):
+                credentials, auth = self.m.resolve_existing_authentication(environ=self.env, opener=unavailable)
+                self.assertIsNone(credentials)
+                self.assertEqual(category, auth['diagnosticCategory'])
+                self.assertNotIn('private-pwd', json.dumps(auth))
+
+
+class SchemaMetadataQueryTests(unittest.TestCase):
+    """结构读取保留原生属性及永久唯一键，不查询或改写业务行。"""
+
+    def setUp(self):
+        self.m = importlib.import_module('procurement_runtime_preflight')
+        self.assertTrue(callable(getattr(self.m, '_read_schema_metadata', None)),
+                        '完整结构合同缺少实际元数据读取入口')
+
+    def cursor(self, *, duplicate_column=False, unexpected_table=False):
+        class Cursor:
+            def __init__(self): self.calls = []
+            def execute(self, sql, params): self.calls.append((sql, params)); self.sql = sql
+            def fetchall(self):
+                if 'information_schema.TABLES' in self.sql:
+                    return [('wm_material_stock', 'InnoDB')]
+                if 'information_schema.COLUMNS' in self.sql:
+                    table = 'unapproved_table' if unexpected_table else 'wm_material_stock'
+                    rows = [(table, 'tenant_id', 'varchar', None, None, 'NO', 20, 'varchar(20)', 'utf8mb4_unicode_ci', None, '', ''),
+                            (table, 'stock_quantity', 'decimal', 18, 4, 'NO', None, 'decimal(18,4)', None, None, '', '')]
+                    if duplicate_column: rows.append(rows[-1])
+                    return rows
+                if 'information_schema.STATISTICS' in self.sql:
+                    return [('wm_material_stock', 'PRIMARY', 0, 1, 'stock_id', None, 'BTREE')]
+                return []
+        return Cursor()
+
+    def test_read_only_parameterized_queries_keep_native_column_and_unique_key_attributes(self):
+        cursor = self.cursor()
+        metadata, indexes = self.m._read_schema_metadata(cursor, {'ry-erp': ('wm_material_stock',)})
+        key = 'ry-erp.wm_material_stock'
+        self.assertEqual('InnoDB', metadata[key]['engine'])
+        self.assertEqual({'type':'varchar', 'precision':None, 'scale':None, 'nullable':'NO',
+                          'characterMaximumLength':20, 'columnType':'varchar(20)', 'collation':'utf8mb4_unicode_ci',
+                          'datetimePrecision':None, 'extra':'', 'generationExpression':''}, metadata[key]['columns']['tenant_id'])
+        self.assertEqual([('PRIMARY', 0, 1, 'stock_id', None, 'BTREE')], indexes[key])
+        self.assertEqual(3, len(cursor.calls))
+        for sql, params in cursor.calls:
+            self.assertTrue(sql.startswith('SELECT '))
+            self.assertIn('information_schema.', sql)
+            self.assertEqual(('ry-erp', 'wm_material_stock'), params)
+        self.assertIn('IS_NULLABLE', cursor.calls[1][0])
+        self.assertIn('CHARACTER_MAXIMUM_LENGTH', cursor.calls[1][0])
+        self.assertIn('COLUMN_TYPE', cursor.calls[1][0])
+
+    def test_duplicate_or_unexpected_column_metadata_is_not_silently_accepted(self):
+        for args in ({'duplicate_column':True}, {'unexpected_table':True}):
+            with self.subTest(args=args), self.assertRaises(self.m.PreflightBlocked):
+                self.m._read_schema_metadata(self.cursor(**args), {'ry-erp': ('wm_material_stock',)})
+
+    def test_unapproved_schema_or_unsafe_table_name_is_rejected_before_query(self):
+        for groups in ({'unknown': ('wm_material_stock',)}, {'ry-erp': ('stock;DROP',)}):
+            cursor = self.cursor()
+            with self.subTest(groups=groups), self.assertRaises(self.m.PreflightBlocked):
+                self.m._read_schema_metadata(cursor, groups)
+            self.assertEqual([], cursor.calls)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -23,6 +23,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 from stock_native_precision_migration import NATIVE_COLUMNS, native_precision_gaps
+from procurement_schema_contract import TABLES as CERTIFIED_TABLES, schema_evidence as certified_schema_evidence
 
 # 直接执行脚本与具体权威校验实现必须共用同一组类。
 if __name__ == '__main__':
@@ -44,6 +45,10 @@ TABLES = {
                'wm_material_receive_detail', 'wm_material_stock', 'wm_material_stock_tx'),
     'ry-mes': ('pro_work_order',), 'ry-iot': ('iot_device',),
 }
+# 新出生及永久命令/账本/过账的结构必须一起观察；缺项不能继续读取业务行。
+for _schema, _tables in CERTIFIED_TABLES.items():
+    TABLES[_schema] = tuple(dict.fromkeys((*TABLES.get(_schema, ()), *_tables)))
+
 DECIMAL_FIELDS = {
     'ry-erp.wm_material_stock': ('stock_quantity', 'reserved_quantity'),
     'ry-erp.wm_material_stock_tx': ('tx_quantity', 'before_quantity', 'after_quantity'),
@@ -54,11 +59,15 @@ DECIMAL_FIELDS = {
 
 class PreflightBlocked(RuntimeError):
     """固定诊断信息；绝不包装原始远端或配置异常。"""
-    def __init__(self,message,*,category='UNVERIFIED'):
+    def __init__(self,message,*,category='UNVERIFIED',http_status=None):
         super().__init__(message)
         self.category=category
+        self.http_status = http_status if type(http_status) is int and 100 <= http_status <= 599 else None
 
 def diagnostic_category(error):
+    # urllib 包装只按已知异常类型展开，不读取或输出远端原因文本。
+    if isinstance(error, URLError) and isinstance(error.reason, (ConnectionRefusedError, TimeoutError)):
+        return diagnostic_category(error.reason)
     if isinstance(error,ImportError):return 'DEPENDENCY_MISSING'
     if isinstance(error,ConnectionRefusedError):return 'CONNECTION_REFUSED'
     if isinstance(error,TimeoutError):return 'CONNECTION_TIMEOUT'
@@ -236,7 +245,12 @@ def request_document(request, opener, *, attempts=1):
         except HTTPError as error:
             if request.get_method() == 'GET' and error.code in (429, 502, 503, 504) and attempt + 1 < attempts:
                 continue
-            raise PreflightBlocked('HTTP request rejected; body suppressed',category='AUTH_FAILED' if error.code==401 else 'READ_PERMISSION_DENIED' if error.code==403 else 'HTTP_REJECTED') from None
+            status = error.code if type(error.code) is int and 100 <= error.code <= 599 else None
+            category = ({401:'AUTH_FAILED', 403:'READ_PERMISSION_DENIED', 429:'HTTP_RATE_LIMITED'}
+                        .get(status, 'HTTP_BACKEND_ERROR' if status is not None and status >= 500
+                             else 'HTTP_REJECTED'))
+            raise PreflightBlocked('HTTP request rejected; body suppressed', category=category,
+                                   http_status=status) from None
         except (URLError, TimeoutError, OSError) as error:
             if request.get_method() == 'GET' and attempt + 1 < attempts:
                 continue
@@ -276,17 +290,26 @@ class ReadOnlyClient:
         require(safe_path(path) == '/system/user/getInfo', 'preflight permits getInfo only')
         request = Request(self.target.base_url.rstrip('/') + path,
                           headers=self.credentials.headers(), method='GET')
-        return response_id_strings(request_document(request,self._opener,attempts=3))
+        document = request_document(request, self._opener, attempts=3)
+        # 失败响应先交给固定业务码诊断，不让无关的非法 ID 抹掉 401 等证据。
+        # 成功响应仍完整保留原生整数/字符串身份校验，绝不按失败路径放宽。
+        return response_id_strings(document) if type(document.get('code')) is int and document['code'] == 200 else document
 
 def authentication_evidence(client, credentials):
     result = {**credentials.evidence(), 'status':'BLOCKED'}
     try:
         document = client.get('/system/user/getInfo')
         code = document.get('code') if isinstance(document, dict) else None
-        result['businessCode'] = code if type(code) is int else None
+        result['businessCode'] = code if type(code) is int and 100 <= code <= 599 else None
         if type(code) is not int or code != 200:
             result['reason'] = 'authentication_not_successful'
-            result['diagnosticCategory']='AUTH_FAILED'
+            # 业务错误码只作诊断；后端故障和缺权限不能误报为会话过期。
+            result['diagnosticCategory'] = 'AUTH_CONTEXT_UNVERIFIED'
+            if type(code) is int:
+                fallback = 'AUTH_BACKEND_ERROR' if 500 <= code <= 599 else 'AUTH_CONTEXT_UNVERIFIED'
+                result['diagnosticCategory'] = {
+                    401:'AUTH_FAILED', 403:'READ_PERMISSION_DENIED', 429:'AUTH_RATE_LIMITED'
+                }.get(code, fallback)
             return result
         data = document.get('data')
         require(isinstance(data, dict) and isinstance(data.get('user'), dict), 'authentication shape unavailable')
@@ -306,8 +329,25 @@ def authentication_evidence(client, credentials):
         return result
     except Exception as error:
         result['reason'] = 'authentication_probe_unavailable_or_invalid'
-        result['diagnosticCategory']=diagnostic_category(error)
+        category = diagnostic_category(error)
+        result['diagnosticCategory'] = {'HTTP_RATE_LIMITED':'AUTH_RATE_LIMITED',
+                                        'HTTP_BACKEND_ERROR':'AUTH_BACKEND_ERROR'}.get(category, category)
+        if isinstance(error, PreflightBlocked) and error.http_status is not None:
+            result['httpStatus'] = error.http_status
         return result
+
+
+def _failure_diagnostics(failures):
+    """最多八个候选的固定分类及数值计数，不输出候选身份、路径或远端本体。"""
+    summary = {'failureCategories':sorted({failure['diagnosticCategory'] for failure in failures})}
+    for field, output in (('businessCode', 'businessCodeCounts'), ('httpStatus', 'httpStatusCounts')):
+        counts = {}
+        for failure in failures:
+            value = failure.get(field)
+            if type(value) is int and 100 <= value <= 599:
+                counts[value] = counts.get(value, 0) + 1
+        summary[output] = [{'code':value, 'count':counts[value]} for value in sorted(counts)]
+    return summary
 
 
 def resolve_existing_authentication(*, target=None, path=None, environ=None, opener=None):
@@ -333,7 +373,7 @@ def resolve_existing_authentication(*, target=None, path=None, environ=None, ope
         candidates=sorted(found,key=lambda item:str(item),reverse=True)[:7]
         saved=root/'session-token.json'
         if saved.is_file():candidates.append(saved)
-    verified=[];categories=set()
+    verified=[];categories=set();failures=[]
     for candidate in candidates:
         try:
             credentials=load_credentials(target=target,path=candidate,environ=env)
@@ -342,18 +382,36 @@ def resolve_existing_authentication(*, target=None, path=None, environ=None, ope
                 auth.update({'contextSource':'explicit_context' if explicit else 'verified_existing_private_session',
                              'credentialSourcePathSha256':digest(str(Path(candidate).resolve())) if candidate else None})
                 verified.append((credentials,auth))
-            else:categories.add(auth.get('diagnosticCategory','AUTH_CONTEXT_UNVERIFIED'))
+            else:
+                categories.add(auth.get('diagnosticCategory','AUTH_CONTEXT_UNVERIFIED'))
+                failures.append(auth)
         except (PreflightBlocked,OSError) as error:
-            categories.add(diagnostic_category(error))
+            category = diagnostic_category(error)
+            categories.add(category)
+            failures.append({'status':'BLOCKED', 'diagnosticCategory':category,
+                             'reason':'authentication_probe_unavailable_or_invalid'})
     identities={(c.tenant_id,a['principalSha256']) for c,a in verified}
     if len(identities)==1:
         credentials,auth=verified[0]
         auth.update({'candidateCount':len(candidates),'verifiedCandidateCount':len(verified)})
         return credentials,auth
-    category='AUTH_CONTEXT_AMBIGUOUS' if len(identities)>1 else 'AUTH_FAILED' if 'AUTH_FAILED' in categories else 'AUTH_CONTEXT_UNVERIFIED'
+    # 明确的单一上下文保留数值与固定分类，不回传响应本体、凭证或候选文件名。
+    if len(candidates) == 1 and len(failures) == 1:
+        failure = failures[0]
+        report = {'status':'BLOCKED', 'reason':failure['reason'],
+                  'businessCode':failure.get('businessCode'),
+                  'diagnosticCategory':failure['diagnosticCategory'],
+                  'candidateCount':1, 'businessWrites':0, 'loginRequests':0,
+                  **_failure_diagnostics(failures)}
+        if failure.get('httpStatus') is not None:
+            report['httpStatus'] = failure['httpStatus']
+        return None, report
+    category = ('AUTH_CONTEXT_AMBIGUOUS' if len(identities) > 1
+                else next(iter(categories)) if len(categories) == 1
+                else 'AUTH_CONTEXT_UNVERIFIED')
     return None,{'status':'BLOCKED','reason':'existing_authentication_context_missing_invalid_or_ambiguous',
                  'diagnosticCategory':category,'candidateCount':len(candidates),'businessWrites':0,
-                 'loginRequests':0}
+                 'loginRequests':0, **_failure_diagnostics(failures)}
 
 
 class RuntimeAuthority(ABC):
@@ -564,6 +622,51 @@ def _db_decimal(value):
     require(type(value) is int or isinstance(value, Decimal), 'non-native database numeric result')
     return format(Decimal(value), 'f')
 
+
+
+def _read_schema_metadata(cursor, table_groups):
+    """只读取批准库的原生列和唯一索引；结构观测不认证业务来源或围栏 DDL。"""
+    require(isinstance(table_groups, dict) and bool(table_groups), 'approved table groups required')
+    for schema, tables in table_groups.items():
+        require(schema in SCHEMAS.values() and isinstance(tables, (tuple, list)) and
+                0 < len(tables) <= 100 and
+                all(isinstance(table, str) and re.fullmatch(r'[a-z][a-z0-9_]*', table) for table in tables) and
+                len(set(tables)) == len(tables),
+                'bounded approved schema and table names required')
+    metadata, indexes = {}, {}
+    for schema, tables in table_groups.items():
+        marks = ','.join(['%s'] * len(tables))
+        parameters = (schema, *tables)
+        cursor.execute('SELECT TABLE_NAME,ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=%s '
+                       "AND TABLE_TYPE='BASE TABLE' AND TABLE_NAME IN (" + marks + ')', parameters)
+        for table, engine in cursor.fetchall():
+            key = schema + '.' + table
+            require(table in tables and key not in metadata, 'unexpected or duplicate table metadata')
+            metadata[key] = {'engine':engine, 'columns':{}}
+            indexes[key] = []
+        cursor.execute('SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,NUMERIC_PRECISION,NUMERIC_SCALE,'
+                       'IS_NULLABLE,CHARACTER_MAXIMUM_LENGTH,COLUMN_TYPE,COLLATION_NAME,'
+                       'DATETIME_PRECISION,EXTRA,GENERATION_EXPRESSION '
+                       'FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=%s AND TABLE_NAME IN (' + marks +
+                       ') ORDER BY TABLE_NAME,ORDINAL_POSITION', parameters)
+        for table, column, kind, precision, scale, nullable, length, column_type, collation, datetime_precision, extra, generation in cursor.fetchall():
+            key = schema + '.' + table
+            require(key in metadata and isinstance(column, str) and column not in metadata[key]['columns'],
+                    'unexpected or duplicate column metadata')
+            metadata[key]['columns'][column] = {'type':kind, 'precision':precision, 'scale':scale,
+                                               'nullable':nullable, 'characterMaximumLength':length,
+                                               'columnType':column_type, 'collation':collation,
+                                               'datetimePrecision':datetime_precision, 'extra':extra,
+                                               'generationExpression':generation}
+        cursor.execute('SELECT TABLE_NAME,INDEX_NAME,NON_UNIQUE,SEQ_IN_INDEX,COLUMN_NAME,SUB_PART,INDEX_TYPE '
+                       'FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=%s AND TABLE_NAME IN (' + marks +
+                       ') ORDER BY TABLE_NAME,INDEX_NAME,SEQ_IN_INDEX', parameters)
+        for table, index, non_unique, sequence, column, prefix, index_type in cursor.fetchall():
+            key = schema + '.' + table
+            require(key in indexes, 'unexpected index table metadata')
+            indexes[key].append((index, non_unique, sequence, column, prefix, index_type))
+    return metadata, indexes
+
 def database_evidence(settings, tenant_id, *, connector=None):
     settings.validate()
     strict_id(tenant_id, tenant=True)
@@ -603,21 +706,7 @@ def database_evidence(settings, tenant_id, *, connector=None):
             grants = [str(row[0]) for row in cursor.fetchall()]
             from inventory_local3306 import grants_select_only
             result['accountPosture'] = 'SELECT_ONLY' if grants_select_only(grants) else 'PRIVILEGED_ACCOUNT_READ_ONLY_TRANSACTION'
-            metadata = {}
-            for schema, tables in TABLES.items():
-                marks = ','.join(['%s'] * len(tables))
-                cursor.execute('SELECT TABLE_NAME,ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=%s '
-                               'AND TABLE_TYPE=\'BASE TABLE\' AND TABLE_NAME IN (' + marks + ')', (schema, *tables))
-                for table, engine in cursor.fetchall():
-                    require(table in tables, 'unexpected table metadata')
-                    metadata[schema + '.' + table] = {'engine':engine, 'columns':{}}
-                cursor.execute('SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,NUMERIC_PRECISION,NUMERIC_SCALE '
-                               'FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=%s AND TABLE_NAME IN (' + marks +
-                               ') ORDER BY TABLE_NAME,ORDINAL_POSITION', (schema, *tables))
-                for table, column, kind, precision, scale in cursor.fetchall():
-                    key = schema + '.' + table
-                    require(key in metadata and isinstance(column, str), 'unexpected column metadata')
-                    metadata[key]['columns'][column] = {'type':kind, 'precision':precision, 'scale':scale}
+            metadata, indexes = _read_schema_metadata(cursor, TABLES)
             result['metadata'] = metadata
             stock_precision_gaps = []
             for stock_table in NATIVE_COLUMNS:
@@ -629,21 +718,15 @@ def database_evidence(settings, tenant_id, *, connector=None):
                 'sourceCertification':'NOT_PERFORMED',
                 'migrationGuard':'stock_native_precision_migration.py',
                 'requiresIndependentReviewBackupMaintenanceAndSignedExecution':True}
-            gaps = metadata_gaps(metadata)
+            procurement_schema = certified_schema_evidence(metadata, indexes)
+            result['procurementSchema'] = procurement_schema
+            result['certifiedReceiptIndexContract'] = ('LIVE_METADATA_MATCH'
+                if procurement_schema['status'] == 'SCHEMA_METADATA_MATCH' else 'UNVERIFIED')
+            gaps = sorted(set(metadata_gaps(metadata) + procurement_schema['gaps']))
             result['gaps'] = gaps
             if gaps:
                 result['reason'] = 'schema_engine_or_native_precision_not_verified'
                 result['diagnosticCategory']='SCHEMA_OR_PRECISION_UNVERIFIED' if any('native DECIMAL' in gap or 'engine must' in gap for gap in gaps) else 'SCHEMA_UNVERIFIED'
-                return result
-            cursor.execute('SELECT INDEX_NAME,NON_UNIQUE,SEQ_IN_INDEX,COLUMN_NAME,SUB_PART '
-                           'FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s '
-                           'AND NON_UNIQUE=0 ORDER BY INDEX_NAME,SEQ_IN_INDEX',
-                           ('ry-erp','pu_certified_purchase_command'))
-            index_gaps=certified_index_gaps(cursor.fetchall())
-            result['gaps'].extend(index_gaps)
-            result['certifiedReceiptIndexContract']='UNVERIFIED' if index_gaps else 'LIVE_METADATA_MATCH'
-            if index_gaps:
-                result.update({'status':'BLOCKED','diagnosticCategory':'SCHEMA_UNVERIFIED'})
                 return result
             cursor.execute("SELECT COUNT(*) FROM `ry-vue`.`sys_tenant` WHERE tenant_id=%s AND status='0' AND del_flag='0'", (tenant_id,))
             active_count = cursor.fetchone()[0]
@@ -667,10 +750,11 @@ def database_evidence(settings, tenant_id, *, connector=None):
             missing_sources = cursor.fetchone()[0]
             result['stockOrigin'] = {'transactionRowsWithMissingSource':missing_sources,
                 'status':'EMPTY_OBSERVED' if stock_count == 0 else 'UNVERIFIED',
-                'requiresFullSourceLedgerAndReceiptReconciliation':stock_count != 0,
+                'requiresFullSourceLedgerAndReceiptReconciliation':True,
                 'presenceOfTransactionsDoesNotProveStockOrigin':True}
-            if stock_count:
-                result['gaps'].append('stock_balance_source_reconciliation_not_established')
+            # 空快照只表示未观察到行；没有来源范围/完整性证明，不能认定可靠库存零。
+            result['gaps'].append('stock_balance_source_reconciliation_not_established' if stock_count
+                                  else 'empty_stock_snapshot_completeness_not_established')
             result['status'] = 'OBSERVED'
         return result
     except Exception as error:
@@ -754,6 +838,7 @@ def readiness(target, credentials, expected_head, authentication, database, proc
     if authentication.get('status') != 'VERIFIED':
         gaps.append('fresh_authenticated_tenant_principal_context_missing')
         categories.add(authentication.get('diagnosticCategory','AUTH_CONTEXT_UNVERIFIED'))
+        categories.update(authentication.get('failureCategories', []))
     if database.get('status') != 'OBSERVED':
         gaps.append('live_dev3306_database_metadata_not_verified')
         categories.add(database.get('diagnosticCategory','DATABASE_UNVERIFIED'))
@@ -761,7 +846,8 @@ def readiness(target, credentials, expected_head, authentication, database, proc
     gaps.extend(database_gaps)
     if any('native DECIMAL' in gap or 'engine must' in gap for gap in database_gaps):
         categories.add('SCHEMA_OR_PRECISION_UNVERIFIED')
-    if 'stock_balance_source_reconciliation_not_established' in database_gaps:
+    if any(gap in database_gaps for gap in ('stock_balance_source_reconciliation_not_established',
+                                             'empty_stock_snapshot_completeness_not_established')):
         categories.add('STOCK_SOURCE_UNVERIFIED')
     loaded={'status':'BLOCKED','businessWriteAuthorized':False}
     if not isinstance(attestor, RuntimeAuthority):
@@ -845,8 +931,18 @@ def main(argv=None):
         with path.open('x', encoding='utf-8') as handle:
             json.dump(report, handle, ensure_ascii=True, indent=2, allow_nan=False)
             handle.write('\n'); handle.flush(); os.fsync(handle.fileno())
+        # 终端只给出固定诊断及数值，完整证据留在私有目录；不输出远端本体或凭证摘要。
+        auth = report.get('authentication', {})
+        auth_summary = {key:auth.get(key) for key in ('status', 'businessCode', 'diagnosticCategory')}
+        if auth.get('httpStatus') is not None:
+            auth_summary['httpStatus'] = auth['httpStatus']
+        if auth.get('candidateCount', 0) > 1:
+            for key in ('failureCategories', 'businessCodeCounts', 'httpStatusCounts'):
+                auth_summary[key] = auth.get(key, [])
         print(json.dumps({'status':report['status'], 'observedAt':report['observedAt'],
-                          'evidencePath':str(path), 'gaps':report['gaps'],'diagnosticCategories':report['diagnosticCategories'], 'businessWriteAuthorized':False}, ensure_ascii=True))
+                          'evidencePath':str(path), 'gaps':report['gaps'],
+                          'authentication':auth_summary, 'diagnosticCategories':report['diagnosticCategories'],
+                          'businessWriteAuthorized':False}, ensure_ascii=True))
         return 2 if report['status'] == 'BLOCKED' else 0
     except (PreflightBlocked, argparse.ArgumentError, OSError, ValueError, TypeError):
         print('{"status":"BLOCKED","reason":"preflight_input_or_evidence_failure_details_suppressed","businessWriteAuthorized":false}')

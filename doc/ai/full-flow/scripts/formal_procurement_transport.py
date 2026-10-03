@@ -76,6 +76,11 @@ class CertifiedIdentity:
                    tuple(body['requirementDetailIds']),body['expectedSourceFingerprint'])
 
 @dataclass(frozen=True)
+class ReceiptIdentity:
+    """仅绑定路径中的真实收货身份，不接收客户端数量、单位或出生结论。"""
+    receive_id: str = field(repr=False)
+
+@dataclass(frozen=True)
 class WriteScope:
     tenant_id: str = field(repr=False)
     intent_id: str = field(repr=False)
@@ -85,7 +90,7 @@ class WriteScope:
     expected_head: str
     action: str
     retry: bool
-    command: CertifiedIdentity | None = field(default=None,repr=False)
+    command: CertifiedIdentity | ReceiptIdentity | None = field(default=None,repr=False)
 
     @property
     def intent_sha256(self):
@@ -113,6 +118,8 @@ class LifecycleAuthority(ABC):
     草稿/审批状态、真实操作人/Flowable 流程，以及适用的供应/收货/IQC/上架
     证据与幂等性/outbox 边界。不接受模型编造的
     价格、库存、到货、审批或生产事实。
+    恢复必须重核已提交的永久出生/原流水，不以当前单位补源或按当前可用库存重算历史入库；
+    首次动作与恢复须分别核验实际服务约束，不能把终态当成首次供给。
     任何缺口均须抛出异常；绝不能用包含空值或假定布尔值的字典代替核验。
     """
     @abstractmethod
@@ -130,7 +137,7 @@ class RecoveryEvidence:
     source_sha256: str
     source_fingerprint: str | None = None
 
-    def validate(self, scope):
+    def _validate_common(self, scope):
         try:
             strict_id(self.tenant_id, tenant=True)
             strict_id(self.entity_id)
@@ -143,10 +150,73 @@ class RecoveryEvidence:
                 'independent server-generated number readback required')
         require(all(_hash(v) for v in (self.api_sha256,self.db_sha256,self.source_sha256)),
                 'independent API/database/source readback digests required')
-        require(scope.command is not None and _hash(self.source_fingerprint) and
+        return self
+
+    def validate(self, scope):
+        self._validate_common(scope)
+        require(isinstance(scope.command,CertifiedIdentity) and _hash(self.source_fingerprint) and
                 self.source_fingerprint==scope.command.expected_source_fingerprint,
                 'persisted source fingerprint differs from frozen original command')
         return self
+
+    def completed_for(self, scope):
+        return True
+
+@dataclass(frozen=True,kw_only=True)
+class ReceiptRecoveryEvidence(RecoveryEvidence):
+    """独立服务读回的原生证据摘要；不是客户端出生数据或写入授权。
+
+    读取器须实际核验 ERP 永久出生登记、MES 同快照出生绑定及完整检验、V2 和原收货范围。
+    FINISHED 还须核验永久过账与全量原流水；通知接受及采购整批消费未闭合时不能宣称过账完成。
+    状态及摘要形状仅供分流/审计，不能替代读取器的强制核验。
+    """
+    material_id: str = field(repr=False)
+    inspection_id: str = field(repr=False)
+    source_kind: str
+    birth_sha256: str
+    binding_sha256: str
+    iqc_sha256: str
+    stage: str
+    posting_sha256: str | None = None
+    notification_status: str | None = None
+    lifecycle_sha256: str | None = None
+
+    def validate(self, scope):
+        self._validate_common(scope)
+        require(isinstance(scope.command,ReceiptIdentity) and scope.action in RECEIPT_ACTIONS and
+                self.entity_id==scope.command.receive_id,'native recovery receipt identity mismatch')
+        try: strict_id(self.material_id);strict_id(self.inspection_id)
+        except PreflightBlocked: raise TransportBlocked('native material and inspection identities required') from None
+        require(self.source_kind=='MES_QC_IQC_RECEIVE_MATERIAL_V2' and
+                all(_hash(v) for v in (self.source_fingerprint,self.birth_sha256,self.binding_sha256,self.iqc_sha256)),
+                'native birth binding and complete V2 inspection readback required; historical IQC forbidden')
+        require(self.stage in ('SHELVED','FINISHED'),'native receipt completion stage required')
+        if self.stage=='SHELVED':
+            require(scope.action=='receipt.certified.shelf' and self.posting_sha256 is None and
+                    self.notification_status is None and self.lifecycle_sha256 is None,
+                    'shelving is only a state transition, not stock posting or notification completion')
+        else:
+            require(_hash(self.posting_sha256) and self.notification_status in ('PENDING','ENQUEUED') and
+                    (self.lifecycle_sha256 is None or _hash(self.lifecycle_sha256)),
+                    'permanent posting/original transactions and notification readback required')
+        return self
+
+    def completed_for(self, scope):
+        return scope.action=='receipt.certified.shelf' or (
+            self.notification_status=='ENQUEUED' and _hash(self.lifecycle_sha256))
+
+
+def _result_digest(proof):
+    values={'entityId':proof.entity_id,'serverNumber':proof.server_number,
+            'api':proof.api_sha256,'db':proof.db_sha256,'source':proof.source_sha256}
+    if isinstance(proof,ReceiptRecoveryEvidence):
+        # 出生和永久结果只以摘要关联到审计链，绝不落明文业务身份或事实。
+        values.update(materialId=proof.material_id,inspectionId=proof.inspection_id,
+            sourceFingerprint=proof.source_fingerprint,sourceKind=proof.source_kind,
+            birth=proof.birth_sha256,binding=proof.binding_sha256,iqc=proof.iqc_sha256,
+            stage=proof.stage,posting=proof.posting_sha256,notification=proof.notification_status,
+            lifecycle=proof.lifecycle_sha256)
+    return _sha(_json(values))
 
 class RecoveryReader(ABC):
     """独立执行强制校验的读取器，不是 HTTP 响应投影器。
@@ -156,21 +226,27 @@ class RecoveryReader(ABC):
     已持久化的生命周期状态。冲突、分页不完整或读取失败必须
     抛出异常，绝不能解释为记录不存在。只有读取已完整完成且无歧义、
     并且没有匹配的已提交记录时才返回 None。摘要字段只是审计关联，本身不能作为
-    证明。任务 C 刻意不提供生产实现。
+    证明。收货分支必须通过实际服务读取永久出生/V2/仓储父链和原物理过账全集；
+    不能拿 GET 的裸状态、Redis 占位或当前单位推断原生事实。终态恢复读取原结果，不补建 IQC。
+    无本地发送记录的新核对意图仅可读回外部生命周期已完整核验的永久结果；这不授权重发。
+    遗失旧审计的原意图仍须被外部校验拒绝，不能借新日志冒充其恢复。
+    本通道刻意不提供生产读取器或替代运行态证明。
     """
     @abstractmethod
     def read_back(self, *, scope, request):
         raise TransportBlocked('independent persisted business readback required')
 
-# 本轮仅暴露统一的可信端点。其服务端
-# 永久回执 (tenant_id, request_key) 绑定操作人与原始请求
+# 申请创建仅暴露统一可信端点。其服务端永久回执 (tenant_id, request_key) 绑定操作人与原始请求
 # 哈希，并拒绝已变更、处理中或已补偿的命令。这是源码
 # 契约，不是运行中的后端已实现该契约的证明。显式重放
 # 要求新鲜有效的 RuntimeAuthority、原始请求处理状态已最终确定的重试证明及生命周期核验。
 CERTIFIED_ENDPOINT = '/erp/pu/requisition/certified'
 CERTIFIED_FIELDS = frozenset({'requestKey','materialId','vendorId','windowEnd',
                              'requirementDetailIds','expectedSourceFingerprint'})
-IDEMPOTENT_ACTIONS = frozenset({'requisition.certified.create'})
+# 收货以永久租户/收货身份恢复；上架仅改状态，过账及通知恢复必须单独发送。
+RECEIPT_ROUTE = r'/erp/wm/receive/certified/(shelf|execute)/([1-9][0-9]*)'
+RECEIPT_ACTIONS = frozenset({'receipt.certified.shelf','receipt.certified.post'})
+IDEMPOTENT_ACTIONS = frozenset({'requisition.certified.create'}) | RECEIPT_ACTIONS
 
 def _values(value, tenant_id):
     # 仅用于读取查询的防护；可信写入命令不能包含数量、
@@ -195,8 +271,16 @@ def validate_request(request,tenant_id):
     require(isinstance(request,dict) and {'method','path','body'}<=set(request) and
             set(request)<={'method','path','body','query'},'explicit original request shape required')
     frozen=deepcopy(request)
-    require(frozen['method']=='POST' and frozen['path']==CERTIFIED_ENDPOINT,
-            'only unified POST certified procurement is enabled this round')
+    require(frozen['method']=='POST' and isinstance(frozen['path'],str),
+            'only explicit certified POST business commands are enabled')
+    receipt=re.fullmatch(RECEIPT_ROUTE,frozen['path'])
+    if receipt:
+        require(frozen['body'] is None and frozen.get('query') is None,
+                'certified receipt takes only a path identity; body/query overrides forbidden')
+        try: strict_id(receipt.group(2))
+        except PreflightBlocked: raise TransportBlocked('native receipt identity required') from None
+        return frozen,'receipt.certified.shelf' if receipt.group(1)=='shelf' else 'receipt.certified.post'
+    require(frozen['path']==CERTIFIED_ENDPOINT,'unsupported certified business endpoint')
     require(not frozen.get('query'),'certified command query overrides forbidden')
     body=frozen['body']
     require(isinstance(body,dict) and set(body)==CERTIFIED_FIELDS,
@@ -322,8 +406,7 @@ class AuditJournal:
                 'intentSha256':scope.intent_sha256,'requestSha256':scope.request_sha256,
                 'tenantSha256':_sha(scope.tenant_id),'principalSha256':scope.principal_sha256,
                 'targetSha256':scope.target_sha256,
-                'resultSha256':_sha(_json({'entityId':proof.entity_id,'serverNumber':proof.server_number,
-                                        'api':proof.api_sha256,'db':proof.db_sha256,'source':proof.source_sha256})) if proof else '0'*64,
+                'resultSha256':_result_digest(proof) if proof else '0'*64,
                 'priorSha256':rows[-1]['eventSha256'] if rows else '0'*64}
         record['eventSha256']=_sha(_json(record))
         self._path(self.path, '.jsonl')
@@ -340,10 +423,11 @@ READ_ROUTES = (
     r'/erp/pu/(?:requisition|order)/(?:list|[1-9][0-9]*(?:/(?:proc|lines))?)',
     r'/erp/wm/(?:arrivalnotice|receive)/(?:list|[1-9][0-9]*(?:/proc)?)',
     r'/erp/prd/(?:plan|work|requirement)/(?:list|[1-9][0-9]*)',
+    r'/mes/qc/iqc/(?:list|[1-9][0-9]*(?:/details)?)',
     r'/workflow/process/iscompleted',
 )
 READ_QUERY_FIELDS = frozenset({'pageNum','pageSize','orderNo','requisitionNo','noticeId','orderId',
-                              'materialId','sourceId','sourceType','status','processInstanceId','procInsId'})
+                              'materialId','receiveId','iqcId','sourceId','sourceType','status','processInstanceId','procInsId'})
 
 class FormalProcurementTransport:
     """调用方提供原始意图；默认运行时仅用于只读校验，绝不签发写入授权。
@@ -429,6 +513,8 @@ class FormalProcurementTransport:
             proof=self.recovery.read_back(scope=scope,request=deepcopy(request))
             if proof is not None:
                 require(isinstance(proof,RecoveryEvidence),'typed independent business readback required')
+                require(isinstance(proof,ReceiptRecoveryEvidence) if scope.action in RECEIPT_ACTIONS
+                        else not isinstance(proof,ReceiptRecoveryEvidence),'action-specific native readback required')
                 proof.validate(scope)
             return proof
         except Exception:
@@ -455,35 +541,42 @@ class FormalProcurementTransport:
         require(isinstance(intent_id,str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}',intent_id) is not None,
                 'explicit stable original intent required')
         frozen,action=validate_request(request,self.credentials.tenant_id)
-        require(frozen['body']['requestKey']==intent_id,'requestKey must be the durable original intent')
+        command=ReceiptIdentity(frozen['path'].rsplit('/',1)[1]) if action in RECEIPT_ACTIONS else CertifiedIdentity.from_body(frozen['body'])
+        if isinstance(command,CertifiedIdentity):
+            require(command.request_key==intent_id,'requestKey must be the durable original intent')
         with self.journal.transaction():
             scope=WriteScope(tenant_id=self.credentials.tenant_id,intent_id=intent_id,
                 request_sha256=request_digest(frozen),principal_sha256=self._identity(),
                 target_sha256=_sha(_json(self.target.evidence())),expected_head=self.expected_head,
-                action=action,retry=retry,command=CertifiedIdentity.from_body(frozen['body']))
+                action=action,retry=retry,command=command)
             history=self.journal.last(scope)
             self._enforce(scope)
             self._binding_guard(binding)
-            if history:
+            if not history:
+                require(not retry,'retry requires the durable original dispatch')
+            if history or action in RECEIPT_ACTIONS:
+                # 终态和重复先走永久事实读回；上架恢复绝不隐式调用过账。
                 proof=self._readback(scope,frozen)
                 self._binding_guard(binding)
-                if proof:
+                if proof is not None and proof.completed_for(scope):
                     self._require_runtime(scope)
                     self._binding_guard(binding)
                     self.journal.append(scope,'RECOVERED',proof=proof)
                     return self._result(proof,'RECOVERED')
-                require(history['event'] not in ('COMPLETED','RECOVERED'),
-                        'previously completed source missing; no resend')
-                if not retry:
-                    return {'status':'UNCERTAIN','reason':'await_independent_readback'}
-                require(action in IDEMPOTENT_ACTIONS,'ambiguous CREATE/generator/update cannot be retried')
-                try:
-                    require(self.authority.require_retry_safe(transport=self,scope=scope) is None,
-                            'retry authority must enforce, not return a flag')
-                except Exception:
-                    raise TransportBlocked('independent settled-request retry proof rejected') from None
-            else:
-                require(not retry,'retry requires the durable original dispatch')
+                if history:
+                    require(history['event'] not in ('COMPLETED','RECOVERED'),
+                            'previously completed source missing or regressed; no resend')
+                if proof is not None and not retry:
+                    return {'status':'UNCERTAIN','reason':'await_receipt_lifecycle_readback'}
+                if history:
+                    if not retry:
+                        return {'status':'UNCERTAIN','reason':'await_independent_readback'}
+                    require(action in IDEMPOTENT_ACTIONS,'ambiguous CREATE/generator/update cannot be retried')
+                    try:
+                        require(self.authority.require_retry_safe(transport=self,scope=scope) is None,
+                                'retry authority must enforce, not return a flag')
+                    except Exception:
+                        raise TransportBlocked('independent settled-request retry proof rejected') from None
             self._binding_guard(binding)
             headers=binding[1].headers()
             payload=frozen['body']
@@ -510,6 +603,9 @@ class FormalProcurementTransport:
             if proof is None:
                 self.journal.append(scope,'UNCERTAIN')
                 return {'status':'UNCERTAIN','reason':'await_independent_readback'}
+            if not proof.completed_for(scope):
+                self.journal.append(scope,'UNCERTAIN',proof=proof)
+                return {'status':'UNCERTAIN','reason':'await_receipt_lifecycle_readback'}
             self.journal.append(scope,'COMPLETED',proof=proof)
             return self._result(proof,'COMPLETED')
 
