@@ -1,6 +1,7 @@
 """仅使用合成传输；这些断言不会创建真实业务记录。"""
 from copy import deepcopy
 from datetime import date
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -749,6 +750,64 @@ class SourceContractRegressionTests(unittest.TestCase):
         with self.assertRaises(PreflightError):
             self.writer.send(request, tenant_id=TENANT, intent_id=prepare(self.spec)['cases'][0]['intentId'], target=self.system.target)
         self.assertEqual(self.system.posts, [])
+
+    def test_sender_freezes_exact_request_before_external_authorization(self):
+        # 外部授权回调可能持有调用方请求；实际派发必须仍匹配已授权摘要。
+        plan = prepare(self.spec)
+        request = deepcopy(plan['cases'][0]['steps'][0]['request'])
+        original = deepcopy(request)
+        authorize = self.authority.require_authorized
+
+        def mutate_caller_request(**scope):
+            authorize(**scope)
+            request['body']['soSalesOrderLineList'][0]['unitPrice'] = '99.9500'
+
+        self.authority.require_authorized = mutate_caller_request
+        self.writer.send(request, tenant_id=TENANT, intent_id=plan['cases'][0]['intentId'],
+                         target=self.system.target)
+        self.assertEqual(self.system.posts, [(original['path'], original['body'])])
+        self.assertEqual(self.authority.calls[-1]['request_sha256'],
+                         hashlib.sha256(batch._json(original).encode('utf-8')).hexdigest())
+
+    def test_sender_rejects_capability_rebinding_during_authorization(self):
+        # 授权完成后不能改换客户端或授权器，拒绝发生在派发观察回调之前。
+        for attribute in ('_client', '_authority'):
+            with self.subTest(attribute=attribute):
+                self.setUp()
+                plan = prepare(self.spec)
+                request = deepcopy(plan['cases'][0]['steps'][0]['request'])
+                replacement = SyntheticSystem(self.spec) if attribute == '_client' else Authority()
+                observed = []
+                authorize = self.authority.require_authorized
+
+                def replace_capability(**scope):
+                    authorize(**scope)
+                    setattr(self.writer, attribute, replacement)
+
+                self.authority.require_authorized = replace_capability
+                with self.assertRaises(batch.BatchContractError):
+                    self.writer.send(request, tenant_id=TENANT, intent_id=plan['cases'][0]['intentId'],
+                                     target=self.system.target, on_dispatch=lambda: observed.append('dispatch'))
+                self.assertEqual(observed, [])
+                self.assertEqual(self.system.posts, [])
+                if attribute == '_client':
+                    self.assertEqual(replacement.posts, [])
+
+    def test_sender_rejects_capability_rebinding_from_dispatch_observer(self):
+        # 观察回调仅记录派发边界，不能在授权之后改换真正的发送主体。
+        for attribute in ('_client', '_authority'):
+            with self.subTest(attribute=attribute):
+                self.setUp()
+                plan = prepare(self.spec)
+                request = deepcopy(plan['cases'][0]['steps'][0]['request'])
+                replacement = SyntheticSystem(self.spec) if attribute == '_client' else Authority()
+                with self.assertRaises(batch.BatchContractError):
+                    self.writer.send(request, tenant_id=TENANT, intent_id=plan['cases'][0]['intentId'],
+                                     target=self.system.target,
+                                     on_dispatch=lambda: setattr(self.writer, attribute, replacement))
+                self.assertEqual(self.system.posts, [])
+                if attribute == '_client':
+                    self.assertEqual(replacement.posts, [])
 
     def test_transport_has_no_caller_idempotent_upgrade_for_create_retry(self):
         self.assertTrue(callable(getattr(self.writer, 'send', None)), 'bounded sender is missing')

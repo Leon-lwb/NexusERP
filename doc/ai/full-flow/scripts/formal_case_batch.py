@@ -349,11 +349,19 @@ class BusinessWriteCapability:
     def send(self, request, *, tenant_id, intent_id, target, retry=False, on_dispatch=None):
         """回调只记录派发边界，不授予权限；授权拒绝发生在回调和真实 POST 之前。"""
         require(on_dispatch is None or callable(on_dispatch), 'dispatch observer must be callable')
-        self.authorize(request, tenant_id=tenant_id, intent_id=intent_id, target=target, retry=retry)
-        path, payload = request['path'], deepcopy(request['body'])
+        # 在外部授权之前冻结请求；回调持有的原对象不能替换已授权的精确载荷。
+        frozen = deepcopy(request)
+        client, authority = self._client, self._authority
+        self.authorize(frozen, tenant_id=tenant_id, intent_id=intent_id, target=target, retry=retry)
+        require(self._client is client and self._authority is authority,
+                'authorized business capability changed before dispatch')
+        path, payload = frozen['path'], deepcopy(frozen['body'])
         if on_dispatch is not None:
             on_dispatch()
-        return self._client.post(path, payload=payload)
+        # 观察回调不授予权限，也不能在最后一刻替换实际客户端或授权器。
+        require(self._client is client and self._authority is authority,
+                'authorized business capability changed before dispatch')
+        return client.post(path, payload=payload)
 
 
 class BatchCoordinator:
