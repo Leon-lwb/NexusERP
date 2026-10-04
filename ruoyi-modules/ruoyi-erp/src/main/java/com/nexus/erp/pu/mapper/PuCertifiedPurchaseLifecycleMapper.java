@@ -223,7 +223,8 @@ public interface PuCertifiedPurchaseLifecycleMapper {
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
     @Select("SELECT tenant_id,vendor_id,status,del_flag FROM bd_vendor WHERE tenant_id=#{tenantId} AND vendor_id=#{id} FOR UPDATE")
     VendorIdentity lockLifecycleVendor(@Param("tenantId") String tenantId,@Param("id") Long id);
-    record VendorIdentity(String tenantId,Long vendorId,Long status,String delFlag) { }
+    /** 供应商主档使用字符串状态；不得把 ACTIVE 强制读取或改写为数值状态。 */
+    record VendorIdentity(String tenantId,Long vendorId,String status,String delFlag) { }
 
     /** 检查元数据前先获取整订单相关表的 MDL，包括新增报价/审计/永久回执来源。 */
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)

@@ -518,7 +518,7 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             when(mapper.pinCommandDefinition()).thenReturn(List.of());
             PuCertifiedPurchaseLifecycleSourceGateTest.stub(mapper);
             when(mapper.pinAllocationDefinitions()).thenReturn(List.of());
-            when(mapper.lockLifecycleVendor(T,1501L)).thenReturn(new VendorIdentity(T,1501L,1L,"0"));
+            when(mapper.lockLifecycleVendor(T,1501L)).thenReturn(new VendorIdentity(T,1501L,"ACTIVE","0"));
             when(mapper.lockPurchaseTerms(T,201L,1501L)).thenReturn(List.of(new PurchaseTerms(T,1601L,201L,1501L,501L,501L,
                 BigDecimal.ZERO,BigDecimal.ONE,1,BigDecimal.ONE,"terms-v1",new Date(NOW.getTime()-1000),new Date(NOW.getTime()+86400000),NOW,1L,"0")));
             when(mapper.lockDemandDetail(T,301L)).thenReturn(new DemandDetail(T,301L,1401L,201L,1L,"0"));

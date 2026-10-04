@@ -4,6 +4,9 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
+import com.nexus.erp.bd.domain.BdVendor;
+import org.apache.ibatis.session.Configuration;
+import java.sql.ResultSet;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
 import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
@@ -16,6 +19,9 @@ import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
 import com.nexus.erp.pu.service.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import java.math.BigDecimal;
 import java.util.*;
@@ -24,8 +30,58 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
-/** Grouped writer-boundary tests; no external DB, server, SQL runner or shared Maven target. */
+/** 整申请写入边界测试，不连接外部数据库或服务，构建输出使用任务独立目录。 */
 class PuCertifiedPurchaseWorkflowServiceTest {
+    @Test void vendorStatusMatchesStringDomainModelAndMyBatisTextMapping() throws Exception {
+        Class<?> statusType=Arrays.stream(Vendor.class.getRecordComponents())
+            .filter(component->"status".equals(component.getName())).findFirst().orElseThrow().getType();
+        assertEquals(BdVendor.class.getDeclaredField("status").getType(),statusType,"供应商状态必须与真实领域模型保持字符串口径");
+        assertEquals(String.class,statusType,"不能将供应商 ACTIVE 状态映射为数字");
+        ResultSet resultSet=mock(ResultSet.class);
+        when(resultSet.getString("status")).thenReturn("ACTIVE");
+        var handler=new Configuration().getTypeHandlerRegistry().getTypeHandler(statusType);
+        assertNotNull(handler,"供应商状态必须有原生字符串类型处理器");
+        assertEquals("ACTIVE",handler.getResult(resultSet,"status"));
+        verify(resultSet).getString("status");
+        verify(resultSet,never()).getLong("status");
+    }
+    @Test void activeVendorIsAcceptedAndPreservedWhenCreatingThePurchaseOrder() {
+        try(var f=new Fixture("APPROVED")) {
+            var result=f.service.convert(601L,0);
+            assertNotNull(result.orderId());
+            verify(f.mapper).insertOrder(eq(f.t),anyLong(),eq("PO-1"),any(),
+                argThat(vendor->"ACTIVE".equals(vendor.status())),eq(901L),eq("operator"),eq(7L));
+        }
+    }
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings={"INACTIVE","DISABLED","UNKNOWN","1","0","active"," ACTIVE","ACTIVE "})
+    void inactiveUnknownOrLegacyNumericVendorStatusesCannotCreateAnOrder(String status) {
+        try(var f=new Fixture("APPROVED")) {
+            when(f.mapper.lockVendor(f.t,1501L)).thenReturn(new Vendor(f.t,1501L,"V-1","Supplier",status,"0"));
+            assertVendorRejectedBeforeAnyBusinessWrite(f);
+        }
+    }
+    @Test void deletedActiveVendorStillCannotCreateAnOrder() {
+        try(var f=new Fixture("APPROVED")) {
+            when(f.mapper.lockVendor(f.t,1501L)).thenReturn(new Vendor(f.t,1501L,"V-1","Supplier","ACTIVE","2"));
+            assertVendorRejectedBeforeAnyBusinessWrite(f);
+        }
+    }
+    @Test void activeVendorFromAnotherTenantStillCannotCreateAnOrder() {
+        try(var f=new Fixture("APPROVED")) {
+            when(f.mapper.lockVendor(f.t,1501L)).thenReturn(new Vendor("000002",1501L,"V-1","Supplier","ACTIVE","0"));
+            assertVendorRejectedBeforeAnyBusinessWrite(f);
+        }
+    }
+    private static void assertVendorRejectedBeforeAnyBusinessWrite(Fixture f) {
+        ServiceException failure=assertThrows(ServiceException.class,()->f.service.convert(601L,0));
+        assertTrue(failure.getMessage().contains("真实供应商来源未知"),"必须由供应商门禁拒绝，不能由无关来源错误代替");
+        assertEquals("APPROVED",f.state);
+        assertEquals(0,f.version);
+        assertTrue(f.orders.isEmpty());
+        assertNoBusinessWrite(f);
+    }
     @Test void conversionCreatesOneActualOrderAndAllSourceLinesBeforeAtomicLedgerTransfers() {
         try(var f=new Fixture("APPROVED")) {
             var result=f.service.convert(601L,0);
@@ -244,7 +300,7 @@ class PuCertifiedPurchaseWorkflowServiceTest {
             when(sources.lockRequisitionLines(t,601L)).thenAnswer(a->List.copyOf(lines));
             when(mapper.lockOrders(t,601L)).thenAnswer(a->List.copyOf(orders));
             when(sources.lockOrderLines(eq(t),anyLong())).thenAnswer(a->List.copyOf(orderLines));
-            when(mapper.lockVendor(t,1501L)).thenReturn(new Vendor(t,1501L,"V-1","Supplier",1L,"0"));
+            when(mapper.lockVendor(t,1501L)).thenReturn(new Vendor(t,1501L,"V-1","Supplier","ACTIVE","0"));
             when(mapper.casHead(eq(t),eq(601L),eq(key),anyString(),anyString(),anyInt(),eq(901L))).thenAnswer(a->{assertTrue(callback);if(!state.equals(a.getArgument(3))||version!=(Integer)a.getArgument(5))return 0;state=a.getArgument(4);version++;return 1;});
             when(mapper.approveLine(eq(t),any(),eq(901L))).thenAnswer(a->{RequisitionLine line=a.getArgument(1);int at=lines.indexOf(line);lines.set(at,new RequisitionLine(t,line.lineId(),601L,201L,"501",BigDecimal.TEN,BigDecimal.TEN,"MRP",line.sourceId(),line.requiredDate(),"0"));return 1;});
             when(mapper.insertOrder(eq(t),anyLong(),anyString(),any(),any(),eq(901L),eq("operator"),eq(7L))).thenAnswer(a->{assertTrue(callback);orders.add(new PurchaseOrder(t,a.getArgument(1),601L,a.getArgument(2),"DRAFT","0",1501L));return 1;});

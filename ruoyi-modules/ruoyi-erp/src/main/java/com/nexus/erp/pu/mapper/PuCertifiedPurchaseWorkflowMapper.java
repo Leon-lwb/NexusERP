@@ -56,5 +56,6 @@ public interface PuCertifiedPurchaseWorkflowMapper {
     record Head(String tenantId,Long requisitionId,String requisitionNo,String sourceType,String status,
         String requestKey,Integer version,String delFlag,Long selectFlowId) { }
     record PurchaseOrder(String tenantId,Long orderId,Long requisitionId,String orderNo,String status,String delFlag,Long vendorId) { }
-    record Vendor(String tenantId,Long vendorId,String vendorCode,String vendorName,Long status,String delFlag) { }
+    /** 供应商原始状态与领域模型一致，保留 ACTIVE 等字符串，不做数字映射。 */
+    record Vendor(String tenantId,Long vendorId,String vendorCode,String vendorName,String status,String delFlag) { }
 }

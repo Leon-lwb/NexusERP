@@ -89,8 +89,9 @@ public class PuCertifiedPurchaseWorkflowService {
             if("ORDERED".equals(d.head().status())) return recoverOrder(d,actor);
             requireConvertible(d,actor,version);
             Vendor vendor=io(()->mapper.lockVendor(actor.tenantId(),d.source().vendorId()));
+            // 供应商只接受原始 ACTIVE 状态，不将数字、大小写或空白变体当作启用。
             require(vendor!=null&&actor.tenantId().equals(vendor.tenantId())&&d.source().vendorId().equals(vendor.vendorId())
-                &&Long.valueOf(1).equals(vendor.status())&&"0".equals(vendor.delFlag())&&text(vendor.vendorCode(),64)&&text(vendor.vendorName(),128),"真实供应商来源未知");
+                &&"ACTIVE".equals(vendor.status())&&"0".equals(vendor.delFlag())&&text(vendor.vendorCode(),64)&&text(vendor.vendorName(),128),"真实供应商来源未知");
             casHead(d,actor,"ORDERED");
             Long orderId=IdWorker.getId();
             require(io(()->mapper.insertOrder(actor.tenantId(),orderId,number,d.head(),vendor,actor.userId(),actor.name(),actor.deptId()))==1,"真实订单头写入失败");

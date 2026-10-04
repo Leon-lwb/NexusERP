@@ -690,7 +690,7 @@ public class PuCertifiedPurchaseLifecycleService {
     private void requireCatalog(Context c) {
         VendorIdentity vendor=io(()->mapper.lockLifecycleVendor(c.tenantId(),c.command().vendorId()));
         require(vendor!=null&&c.tenantId().equals(vendor.tenantId())&&c.command().vendorId().equals(vendor.vendorId())
-            &&Long.valueOf(1).equals(vendor.status())&&"0".equals(vendor.delFlag()),"当前真实供应商失效");
+            &&"ACTIVE".equals(vendor.status())&&"0".equals(vendor.delFlag()),"当前真实供应商失效");
         List<PurchaseTerms> rows=io(()->mapper.lockPurchaseTerms(c.tenantId(),c.row().getMaterialId(),c.command().vendorId()));
         require(rows!=null&&rows.size()==1&&rows.get(0)!=null,"当前供应条款缺失/重复");PurchaseTerms terms=rows.get(0);
         Date clock=io(mapper::databaseNow);
