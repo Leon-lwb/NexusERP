@@ -88,7 +88,7 @@ public class ErpMrpSnapshotSourceVerifier {
                 throw unverified();
             }
         }
-        /** 明细实体未映射 del_flag，因此必须在读取查询中显式约束该字段。 */
+        /** 明细已支持逻辑删除；定制来源读取仍须显式约束删除标记，不能依赖 ORM 自动过滤。 */
         List<PrdMaterialRequirementDetail> fetched = detailMapper.selectList(
             Wrappers.<PrdMaterialRequirementDetail>query()
                 .in("detail_id", detailIds)

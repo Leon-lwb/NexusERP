@@ -19,6 +19,7 @@ import com.nexus.erp.prd.domain.vo.PrdMaterialRequirementVo;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.service.IPrdMaterialRequirementService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -201,15 +202,7 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdMaterialRequirementBo bo) {
         PrdMaterialRequirement entity = MapstructUtils.convert(bo, PrdMaterialRequirement.class);
-        // Delete existing details
-        deleteDetailByRequirementId(entity.getRequirementId());
-        // Insert new details
-        if (bo.getPrdMaterialRequirementDetailList() != null && !bo.getPrdMaterialRequirementDetailList().isEmpty()) {
-            for (PrdMaterialRequirementDetail detail : bo.getPrdMaterialRequirementDetailList()) {
-                detail.setRequirementId(entity.getRequirementId());
-            }
-            insertPrdMaterialRequirementDetails(bo.getPrdMaterialRequirementDetailList());
-        }
+        replacePrdMaterialRequirementDetails(entity.getRequirementId(), bo.getPrdMaterialRequirementDetailList());
         return baseMapper.updateById(entity);
     }
 
@@ -222,8 +215,8 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePrdMaterialRequirement(PrdMaterialRequirement prdMaterialRequirement) {
-        deleteDetailByRequirementId(prdMaterialRequirement.getRequirementId());
-        insertPrdMaterialRequirementDetail(prdMaterialRequirement);
+        replacePrdMaterialRequirementDetails(prdMaterialRequirement.getRequirementId(),
+            prdMaterialRequirement.getPrdMaterialRequirementDetailList());
         return baseMapper.updateById(prdMaterialRequirement);
     }
 
@@ -519,6 +512,29 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             if (!list.isEmpty()) {
                 insertPrdMaterialRequirementDetails(list);
             }
+        }
+    }
+
+    /**
+     * 替换明细仅创建新身份，主键由既有雪花策略生成，不复用或重新启用历史来源。
+     * 新行固定为未删除，租户与审计字段交由既有插件和填充器确定。
+     */
+    private void replacePrdMaterialRequirementDetails(Long requirementId, List<PrdMaterialRequirementDetail> requestedDetails) {
+        List<PrdMaterialRequirementDetail> replacements = new ArrayList<>();
+        if (requestedDetails != null) {
+            for (PrdMaterialRequirementDetail requested : requestedDetails) {
+                PrdMaterialRequirementDetail replacement = new PrdMaterialRequirementDetail();
+                BeanUtils.copyProperties(requested, replacement,
+                    "detailId", "requirementId", "delFlag", "tenantId",
+                    "createDept", "createBy", "createTime", "updateBy", "updateTime", "searchValue", "params");
+                replacement.setRequirementId(requirementId);
+                replacement.setDelFlag("0");
+                replacements.add(replacement);
+            }
+        }
+        deleteDetailByRequirementId(requirementId);
+        if (!replacements.isEmpty()) {
+            insertPrdMaterialRequirementDetails(replacements);
         }
     }
 

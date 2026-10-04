@@ -2,6 +2,7 @@ package com.nexus.erp.prd.domain;
 
 import cn.idev.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -134,6 +135,13 @@ public class PrdMaterialRequirementDetail extends TenantEntity {
      * 状态
      */
     private Long status;
+
+    /**
+     * 删除标志：0为未删除，1为已删除。
+     * 逻辑删除保留账本来源及原始主键，不得复用已删除明细主键重新写入。
+     */
+    @TableLogic
+    private String delFlag;
 
     /**
      * 备注

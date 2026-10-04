@@ -10,7 +10,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-/** No outer @Transactional: dedicated ERP transaction ownership must remain provable. */
+/** 不设置外层事务，确保专属 ERP 事务的物理连接归属始终可核验。 */
 @Validated
 @RestController
 @RequestMapping("/erp/pu/requisition/certified")
