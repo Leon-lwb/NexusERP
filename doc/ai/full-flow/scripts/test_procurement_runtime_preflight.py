@@ -445,7 +445,7 @@ class RuntimePreflightTests(unittest.TestCase):
         self.assertIn('ATTESTATION_ENDPOINT_MISSING',result['diagnosticCategories'])
         self.assertNotIn('secret backend contents',json.dumps(result));self.assertEqual('BLOCKED',result['status'])
 
-    def test_inspect_local_constructs_default_concrete_runtime_authority_without_business_permission(self):
+    def test_inspect_local_explicit_strict_keeps_strong_diagnostic_without_business_permission(self):
         resolve=getattr(self.m,'resolve_existing_authentication',None)
         self.assertTrue(callable(resolve),'default inspection needs freshly verified existing credentials')
         calls=[];outer=self
@@ -456,16 +456,40 @@ class RuntimePreflightTests(unittest.TestCase):
              patch.object(self.m,'settings_from_files',return_value=self.m.LocalSettings({'master':{'username':'x','password':'x','url':'jdbc:mysql://localhost:3306/ry-vue'}},{})), \
              patch.object(self.m,'database_evidence',return_value={'status':'OBSERVED','gaps':[]}), \
              patch.object(self.m,'process_evidence',return_value={}), \
-             patch('procurement_runtime_attestation.BackendRuntimeAuthority',Authority), \
+             patch('procurement_local_runtime.BackendRuntimeAuthority',Authority), \
              patch('procurement_runtime_attestation.management_metadata_evidence',return_value={'status':'OBSERVED','activeProfiles':['dev'],'notLoadedArtifactProof':True}) as management, \
              patch.object(self.m.subprocess,'check_output',side_effect=['codex/fixture\n','a'*40+'\n','2026-10-03T00:00:00+08:00\n','']):
-            report=self.m.inspect_local()
+            report=self.m.inspect_local(runtime_check_mode='strict')
         self.assertEqual(['constructor','require_current'],[item[0] for item in calls])
-        self.assertEqual(1,management.call_count,'default preflight must safely observe existing actuator metadata')
+        self.assertEqual(1,management.call_count,'explicit strict preserves actuator diagnostics')
         self.assertEqual(['dev'],report.get('management',{}).get('activeProfiles'))
         self.assertEqual('READ_ONLY_READY',report['status']);self.assertFalse(report['businessWriteAuthorized'])
 
 
+
+    def test_inspect_local_default_uses_local_consistency_without_actuator_or_signer(self):
+        from procurement_local_runtime import LocalDevelopmentRuntimeAuthority
+        calls=[]
+        class Authority(LocalDevelopmentRuntimeAuthority):
+            def __init__(self,**kwargs):
+                calls.append(('constructor',kwargs));self._evidence=self._empty_evidence('LOCAL_DEV_CHECKED')
+            def require_current(self,**kwargs):calls.append(('require_current',kwargs));return None
+        with patch.object(self.m,'resolve_existing_authentication',return_value=(self.credentials(),{'status':'VERIFIED','principalSha256':'b'*64})), \
+             patch.object(self.m,'settings_from_files',return_value=self.m.LocalSettings({'master':{'username':'x','password':'x','url':'jdbc:mysql://localhost:3306/ry-vue'}},{})), \
+             patch.object(self.m,'database_evidence',return_value={'status':'OBSERVED','gaps':[]}), \
+             patch.object(self.m,'process_evidence',return_value={}), \
+             patch('procurement_local_runtime.LocalDevelopmentRuntimeAuthority',Authority), \
+             patch('procurement_runtime_attestation.management_metadata_evidence',side_effect=AssertionError('本地默认不需要actuator强证明')) as management, \
+             patch.object(self.m.subprocess,'check_output',side_effect=['codex/fixture\n','a'*40+'\n','2026-10-04T00:00:00+08:00\n','']):
+            report=self.m.inspect_local()
+        self.assertEqual(['constructor','require_current'],[item[0] for item in calls]);management.assert_not_called()
+        self.assertEqual('local-dev',report['runtimeCheckMode']);self.assertEqual('LOCAL_DEV_CHECKED',report['loadedRuntime']['status'])
+        self.assertFalse(report['loadedRuntime']['productionProof']);self.assertFalse(report['businessWriteAuthorized'])
+        self.assertFalse(report['git']['finalSourceCommitAndLoadedArtifactVerificationRequired'])
+    def test_unknown_runtime_mode_rejected_before_process_or_network_probe(self):
+        with patch.object(self.m,'process_evidence',side_effect=AssertionError('不应执行进程检查')) as process:
+            with self.assertRaises(self.m.PreflightBlocked) as caught:self.m.inspect_local(runtime_check_mode='prod-bypass')
+        process.assert_not_called();self.assertEqual('RUNTIME_CHECK_MODE_UNSUPPORTED',caught.exception.category)
 
     def test_direct_cli_does_not_create_a_second_runtimeauthority_or_credentials_class(self):
         import subprocess,sys

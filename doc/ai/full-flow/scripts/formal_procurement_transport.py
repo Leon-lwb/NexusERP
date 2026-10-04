@@ -26,8 +26,10 @@ from procurement_runtime_preflight import (PRIVATE_ROOT as _PRIVATE_ROOT, Creden
     RuntimeAuthority, RuntimeTarget, ReadOnlyClient, authentication_evidence, exact_decimal,
     local_opener, request_document, response_id_strings, safe_path, strict_id)
 
-from procurement_runtime_attestation import BackendRuntimeAuthority, ATTESTATION_CATEGORIES
+from procurement_runtime_attestation import ATTESTATION_CATEGORIES
+from procurement_local_runtime import create_runtime_authority, LOCAL_RUNTIME_CATEGORIES
 
+_RUNTIME_CATEGORIES = ATTESTATION_CATEGORIES | LOCAL_RUNTIME_CATEGORIES
 _DEFAULT_RUNTIME = object()
 PRIVATE_ROOT = _PRIVATE_ROOT
 
@@ -433,6 +435,8 @@ READ_QUERY_FIELDS = frozenset({'pageNum','pageSize','orderNo','requisitionNo','n
 class FormalProcurementTransport:
     """调用方提供原始意图；默认运行时仅用于只读校验，绝不签发写入授权。
 
+    默认 local-dev 检查本地运行事实，不证明生产或最终加载字节；strict 显式保留强诊断。
+    显式传入 runtime（包括 None）不由工厂替换，运行检查不能替代业务门禁。
     send({method,path,body,query?}, intent_id=..., retry=False) 是写入 API。
     恢复时使用同一个 send 及原始哈希：已发送的命令
     须先回读核验；显式重放要求独立强制校验幂等性。即使 HTTP 200，在独立
@@ -440,7 +444,8 @@ class FormalProcurementTransport:
     ApiClient 的直接替换来绕过写入限制。主线程必须对接其门禁。
     """
     def __init__(self, *, target=None, credentials, expected_head, authority=None,
-                 runtime=_DEFAULT_RUNTIME, lifecycle=None, recovery=None, journal=None, opener=None):
+                 runtime=_DEFAULT_RUNTIME, runtime_check_mode='local-dev', lifecycle=None,
+                 recovery=None, journal=None, opener=None):
         try:
             self.target=(target or RuntimeTarget()).validate()
             self.credentials=credentials.validate()
@@ -452,7 +457,15 @@ class FormalProcurementTransport:
         self.authority,self.runtime,self.lifecycle,self.recovery,self.journal=authority,runtime,lifecycle,recovery,journal
         self._opener=opener or local_opener()
         if runtime is _DEFAULT_RUNTIME:
-            self.runtime=BackendRuntimeAuthority(credentials=self.credentials,opener=self._opener)
+            # 只为省略的运行检查创建默认实例；None 与显式适配器保持原拒绝/注入语义。
+            try:
+                self.runtime=create_runtime_authority(mode=runtime_check_mode,
+                    credentials=self.credentials,opener=self._opener)
+            except PreflightBlocked as error:
+                category=getattr(error,'category',None)
+                raise TransportBlocked('runtime check selection rejected; details suppressed',
+                    category=category if isinstance(category,str) and category in _RUNTIME_CATEGORIES
+                    else 'BUILD_ATTESTATION_REJECTED') from None
         self._principal=None
 
     def get(self,path,query=None):
@@ -488,7 +501,7 @@ class FormalProcurementTransport:
 
     def _capabilities(self):
         require(isinstance(self.authority,WriteAuthority),'independent business write authority required')
-        require(isinstance(self.runtime,RuntimeAuthority),'trusted loaded runtime authority required')
+        require(isinstance(self.runtime,RuntimeAuthority),'enforcing runtime check authority required')
         require(isinstance(self.lifecycle,LifecycleAuthority),'independent source/lifecycle authority required')
         require(isinstance(self.recovery,RecoveryReader),'independent API+database recovery reader required')
         require(isinstance(self.journal,AuditJournal),'durable private audit journal required')
@@ -500,8 +513,8 @@ class FormalProcurementTransport:
                     'runtime authority must enforce, not return a flag')
         except Exception as error:
             category=getattr(error,'category',None)
-            raise TransportBlocked('loaded runtime attestation rejected; details suppressed',
-                category=category if isinstance(category,str) and category in ATTESTATION_CATEGORIES else 'BUILD_ATTESTATION_REJECTED') from None
+            raise TransportBlocked('runtime check rejected; details suppressed',
+                category=category if isinstance(category,str) and category in _RUNTIME_CATEGORIES else 'BUILD_ATTESTATION_REJECTED') from None
 
     def _enforce(self,scope):
         try:
@@ -511,7 +524,7 @@ class FormalProcurementTransport:
                     'lifecycle authority must enforce, not return a flag')
         except Exception:
             raise TransportBlocked('independent write/source/lifecycle authority rejected') from None
-        # 在可能耗时的外部来源检查之后，获取新鲜有效的已加载运行时证明。
+        # 在可能耗时的来源检查后复验运行事实；本地检查不冒充生产/最终加载字节证明。
         self._require_runtime(scope)
 
     def _readback(self,scope,request):

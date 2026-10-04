@@ -1,9 +1,9 @@
-"""任务 C 的只读运行时证据；绝不授予业务写入权限。
+"""本地开发测试的只读运行预检：默认普通服务/进程/四库检查。
 
-仅允许有边界限制的 GET getInfo，以及 READ ONLY 快照中限定租户范围的 SELECT。
-不执行登录、迁移或服务生命周期操作。配置、目标哈希及 pid 均不是
-已加载构建证明。默认的 BackendRuntimeAuthority 独立读取
-绑定 nonce 且经过认证的后端契约；不提供 --apply 或写入授权。
+用户已明确本地无真实用户，不要求正式签发或完整JVM防篡改体系。默认local-dev
+仅核对认证、dev/loopback进程及实际四库一致性；Git/编译产物仅作诊断，绝不宣称
+最终定义字节或生产认证。strict保留为显式高保证诊断。业务来源/单位/额度、写授权、
+生命周期、幂等及独立对账不因运行模式简化而放松。本工具不写业务数据或启停服务。
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -415,15 +415,12 @@ def resolve_existing_authentication(*, target=None, path=None, environ=None, ope
 
 
 class RuntimeAuthority(ABC):
-    """外部信任根，不是报告解析器或标志位。
+    """运行上下文检查契约，不是业务写入授权或可提交的verified旗标。
 
-    必须独立验证实际运行的进程/启动信息、已加载构件摘要/HEAD、
-    生效的 dev 配置及后端数据源 UUID/数据库模式、身份主体/租户、
-    新鲜度及运行时覆盖值。每次操作或恢复均须重新检查；有歧义则抛出异常。
-    expected_head 必须是最终已提交的源码基线，而非任务开始时的
-    HEAD 或进程时间戳。校验实际已加载的构件，绝不能
-    只校验当前磁盘上的目标。成功时仅返回 None；不签发写入授权。
-    BackendRuntimeAuthority 是默认的经过认证的具体实现。
+    local-dev核对受信本地开发服务、身份、进程与四库一致性，不要求签发根或
+    最终类字节证明；strict是显式的更高保证诊断。expected_head在本地模式只作
+    源码上下文，不能冒充已加载版本。每次执行/恢复均fresh检查，歧义抛异常；
+    成功只返回None，不签发来源、审批、数量或生命周期授权。
     """
     @abstractmethod
     def require_current(self, *, target, expected_head, tenant_id, principal_sha256):
@@ -865,11 +862,17 @@ def readiness(target, credentials, expected_head, authentication, database, proc
             require(attestor.require_current(target=target,expected_head=expected_head,
                     tenant_id=credentials.tenant_id,principal_sha256=authentication['principalSha256']) is None,
                     'runtime authority must enforce, not return a flag')
-            loaded.update({'status':'VERIFIED','source':'independent_enforcing_runtime_authority'})
+            from procurement_local_runtime import LocalDevelopmentRuntimeAuthority
+            if isinstance(attestor,LocalDevelopmentRuntimeAuthority):
+                loaded.update(attestor.evidence())
+                loaded['businessWriteAuthorized']=False
+            else:
+                loaded.update({'status':'VERIFIED','source':'independent_enforcing_runtime_authority'})
         except Exception as error:
             from procurement_runtime_attestation import ATTESTATION_CATEGORIES
+            from procurement_local_runtime import LOCAL_RUNTIME_CATEGORIES
             category=diagnostic_category(error)
-            category=category if isinstance(category,str) and category in ATTESTATION_CATEGORIES else 'BUILD_ATTESTATION_REJECTED'
+            category=category if isinstance(category,str) and category in ATTESTATION_CATEGORIES|LOCAL_RUNTIME_CATEGORIES else 'BUILD_ATTESTATION_REJECTED'
             gaps.append('trusted_loaded_build_and_effective_target_attestation_rejected')
             categories.add(category)
             loaded['diagnosticCategory']=category
@@ -877,7 +880,10 @@ def readiness(target, credentials, expected_head, authentication, database, proc
             'diagnosticCategories':sorted(categories),'loadedRuntime':loaded,'businessWriteAuthorized':False,
             'requiresIndependentWriteAndLifecycleAuthority':True}
 
-def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=None, expected_head=None):
+def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=None, expected_head=None, runtime_check_mode='local-dev'):
+    from procurement_local_runtime import RUNTIME_CHECK_MODES,create_runtime_authority
+    if type(runtime_check_mode)is not str or runtime_check_mode not in RUNTIME_CHECK_MODES:
+        raise PreflightBlocked('运行检查模式不受支持',category='RUNTIME_CHECK_MODE_UNSUPPORTED')
     target = RuntimeTarget().validate()
     observed = datetime.now(LOCAL_TIMEZONE)
     git = {'branch':subprocess.check_output(['git', 'branch', '--show-current'], cwd=root, text=True).strip(),
@@ -885,10 +891,10 @@ def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=
            'commitDate':subprocess.check_output(['git', 'log', '-1', '--format=%cI'], cwd=root, text=True).strip()}
     dirty=subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True)
     git.update({'dirtyEntryCount':len(dirty.splitlines()),'workingTreeStateSha256':digest(dirty),
-                'finalSourceCommitAndLoadedArtifactVerificationRequired':True})
+                'finalSourceCommitAndLoadedArtifactVerificationRequired':runtime_check_mode=='strict'})
     process = process_evidence(root)
     report = {'schemaVersion':1, 'observedAt':observed.isoformat(), 'mode':'READ_ONLY',
-              'git':git, 'target':target.evidence(), 'process':process,
+              'git':git, 'target':target.evidence(), 'process':process,'runtimeCheckMode':runtime_check_mode,
               'businessWrites':0, 'serviceLifecycleActions':0}
     credentials,auth=resolve_existing_authentication(target=target,path=credential_path)
     report['authentication'] = auth
@@ -903,10 +909,13 @@ def inspect_local(*, root=ROOT, credential_path=None, config_dir=None, attestor=
         db={'status':'BLOCKED','gaps':['local_config_or_read_driver_unavailable_details_suppressed'],
             'diagnosticCategory':diagnostic_category(error),'actualTargetVerified':False}
     report['database'] = db
-    from procurement_runtime_attestation import BackendRuntimeAuthority, management_metadata_evidence
-    report['management']=management_metadata_evidence(root=root)
+    if runtime_check_mode=='strict':
+        from procurement_runtime_attestation import management_metadata_evidence
+        report['management']=management_metadata_evidence(root=root)
+    else:
+        report['management']={'status':'NOT_REQUIRED_FOR_LOCAL_DEV','businessWriteAuthorized':False,'apiReadRequests':0}
     if attestor is None and credentials is not None:
-        attestor=BackendRuntimeAuthority(credentials=credentials,root=root,config_dir=config_dir)
+        attestor=create_runtime_authority(mode=runtime_check_mode,credentials=credentials,root=root,config_dir=config_dir)
     report.update(readiness(target, credentials, expected_head or git['head'], auth, db, process, attestor=attestor))
     return report
 
@@ -921,10 +930,11 @@ def main(argv=None):
     parser.add_argument('--credential-file')
     parser.add_argument('--config-dir')
     parser.add_argument('--expected-head')
+    parser.add_argument('--runtime-check',choices=('local-dev','strict'),default='local-dev')
     try:
         args = parser.parse_args(argv)
         report = inspect_local(credential_path=args.credential_file, config_dir=args.config_dir,
-                               expected_head=args.expected_head)
+                               expected_head=args.expected_head,runtime_check_mode=args.runtime_check)
         now = datetime.now(LOCAL_TIMEZONE)
         path = private_file(evidence_directory(now) / ('runtime-preflight-' + now.strftime('%Y%m%dT%H%M%S%f') + '.json'))
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -942,7 +952,8 @@ def main(argv=None):
         print(json.dumps({'status':report['status'], 'observedAt':report['observedAt'],
                           'evidencePath':str(path), 'gaps':report['gaps'],
                           'authentication':auth_summary, 'diagnosticCategories':report['diagnosticCategories'],
-                          'businessWriteAuthorized':False}, ensure_ascii=True))
+                          'businessWriteAuthorized':False,'runtimeCheckMode':report.get('runtimeCheckMode'),
+                          'runtimeCheckStatus':report.get('loadedRuntime',{}).get('status')}, ensure_ascii=True))
         return 2 if report['status'] == 'BLOCKED' else 0
     except (PreflightBlocked, argparse.ArgumentError, OSError, ValueError, TypeError):
         print('{"status":"BLOCKED","reason":"preflight_input_or_evidence_failure_details_suppressed","businessWriteAuthorized":false}')

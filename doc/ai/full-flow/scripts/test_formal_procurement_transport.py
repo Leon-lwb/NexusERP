@@ -2,6 +2,7 @@
 import importlib
 import importlib.util
 import io
+import inspect
 import json
 from dataclasses import replace
 from pathlib import Path
@@ -641,14 +642,130 @@ class TransportTests(unittest.TestCase):
 
 
 
-    def test_omitted_runtime_uses_concrete_authority_but_does_not_issue_write_permission(self):
-        from procurement_runtime_attestation import BackendRuntimeAuthority
+    def build_with_runtime_mode(self,mode,**overrides):
+        # 先断言选型接口存在，RED 明确报告缺少接线而非意外的 TypeError。
+        self.assertIn('runtime_check_mode',inspect.signature(self.m.FormalProcurementTransport).parameters,
+                      '真正执行客户端必须提供本地/严格运行检查选型')
+        return self.build(**{'runtime':self.m._DEFAULT_RUNTIME,'runtime_check_mode':mode,**overrides})
+
+    def test_omitted_runtime_uses_local_authority_but_does_not_issue_write_permission(self):
         client=self.m.FormalProcurementTransport(credentials=self.p.Credentials(token='secret-token',
                 client_id='test-client',tenant_id='000000'),expected_head='a'*40,opener=self.opener)
-        self.assertIsInstance(client.runtime,BackendRuntimeAuthority)
-        self.assertEqual([],self.calls,'constructor must not perform reads or writes')
+        self.assertEqual('LocalDevelopmentRuntimeAuthority',type(client.runtime).__name__)
+        local=importlib.import_module('procurement_local_runtime')
+        self.assertIsInstance(client.runtime,local.LocalDevelopmentRuntimeAuthority)
+        self.assertIsInstance(client.runtime,self.p.RuntimeAuthority)
+        self.assertEqual([],self.calls,'构造不能认证、连接数据库或发送业务请求')
         with self.assertRaises(self.m.TransportBlocked):client.send(self.request(),intent_id='procurement-intent-0001')
-        self.assertEqual([],self.calls,'default runtime is not a business-write/lifecycle grant')
+        self.assertEqual([],self.calls,'本地运行检查不是业务授权或生命周期许可')
+
+    def test_omitted_runtime_factory_binds_existing_credentials_and_opener(self):
+        with patch.object(self.m,'create_runtime_authority',return_value=self.runtime,create=True) as factory:
+            client=self.build(runtime=self.m._DEFAULT_RUNTIME)
+        factory.assert_called_once_with(mode='local-dev',credentials=client.credentials,opener=self.opener)
+        self.assertIs(client.runtime,self.runtime)
+        self.assertEqual([],self.calls)
+
+    def test_explicit_local_mode_selects_the_same_default_authority(self):
+        client=self.build_with_runtime_mode('local-dev')
+        local=importlib.import_module('procurement_local_runtime')
+        self.assertIsInstance(client.runtime,local.LocalDevelopmentRuntimeAuthority)
+        self.assertEqual([],self.calls)
+
+    def test_explicit_strict_mode_retains_backend_attestation_without_io(self):
+        from procurement_runtime_attestation import BackendRuntimeAuthority
+        client=self.build_with_runtime_mode('strict')
+        self.assertIsInstance(client.runtime,BackendRuntimeAuthority)
+        self.assertFalse(client.runtime.evidence()['businessWriteAuthorized'])
+        self.assertEqual([],self.calls,'strict 仍只在校验时读取，不在构造时访问服务')
+
+    def test_unsupported_runtime_mode_is_fixed_redacted_and_never_dispatches(self):
+        with self.assertRaises(self.m.TransportBlocked) as caught:
+            self.build_with_runtime_mode('secret-token-unsupported-mode')
+        self.assertEqual('RUNTIME_CHECK_MODE_UNSUPPORTED',caught.exception.category)
+        self.assertNotIn('secret-token',str(caught.exception))
+        self.assertEqual([],self.calls)
+        self.assertEqual([],self.journal.load())
+
+    def test_runtime_mode_is_forwarded_to_factory_with_the_bound_io(self):
+        for mode in ('local-dev','strict'):
+            with self.subTest(mode=mode),patch.object(self.m,'create_runtime_authority',
+                    return_value=self.runtime,create=True) as factory:
+                client=self.build_with_runtime_mode(mode)
+                factory.assert_called_once_with(mode=mode,credentials=client.credentials,opener=self.opener)
+                self.assertIs(client.runtime,self.runtime)
+        self.assertEqual([],self.calls)
+
+    def test_explicit_none_runtime_is_not_replaced_by_factory_or_mode(self):
+        for mode in ('local-dev','strict'):
+            with self.subTest(mode=mode),patch.object(self.m,'create_runtime_authority',create=True) as factory:
+                client=self.build_with_runtime_mode(mode,runtime=None)
+                self.assertIsNone(client.runtime)
+                with self.assertRaises(self.m.TransportBlocked):
+                    client.send(self.request(),intent_id='procurement-intent-0001')
+                factory.assert_not_called()
+        self.assertEqual([],self.calls)
+        self.assertEqual([],self.journal.load())
+
+    def test_explicit_runtime_authority_is_not_replaced_by_mode(self):
+        for mode in ('local-dev','strict'):
+            with self.subTest(mode=mode),patch.object(self.m,'create_runtime_authority',create=True) as factory:
+                client=self.build_with_runtime_mode(mode,runtime=self.runtime)
+                self.assertIs(client.runtime,self.runtime)
+                factory.assert_not_called()
+        self.assertEqual([],self.calls)
+
+    def test_default_runtime_cannot_supply_missing_or_boolean_business_gates(self):
+        # 隔离运行检查使其成功，反例专门验证真正的业务门禁依然拒绝。
+        for field in ('authority','lifecycle','recovery','journal'):
+            for value in (None,True):
+                with self.subTest(field=field,value=value),patch.object(self.m,'create_runtime_authority',
+                        return_value=self.runtime,create=True) as factory:
+                    client=self.build(runtime=self.m._DEFAULT_RUNTIME,**{field:value})
+                    with self.assertRaises(self.m.TransportBlocked):
+                        client.send(self.request(),intent_id='procurement-intent-0001')
+                    factory.assert_called_once()
+        self.assertEqual([],self.calls)
+        self.assertEqual([],self.journal.load())
+
+    def test_default_runtime_does_not_bypass_source_lifecycle_rejection(self):
+        class Lifecycle(self.m.LifecycleAuthority):
+            def require_closed(self,*,scope):raise RuntimeError('secret-token missing business source')
+        with patch.object(self.m,'create_runtime_authority',return_value=self.runtime,create=True) as factory:
+            client=self.build(runtime=self.m._DEFAULT_RUNTIME,lifecycle=Lifecycle())
+            with self.assertRaises(self.m.TransportBlocked) as caught:
+                client.send(self.request(),intent_id='procurement-intent-0001')
+            factory.assert_called_once()
+        self.assertNotIn('secret-token',str(caught.exception))
+        self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load())
+
+    def test_factory_error_category_is_redacted_and_not_arbitrary_runtime_text(self):
+        for category in ('RUNTIME_SECRET_TOKEN',['secret-token'],{'secret-token':True}):
+            error=self.p.PreflightBlocked('secret-token database-password',category=category)
+            with self.subTest(category=category):
+                with patch.object(self.m,'create_runtime_authority',side_effect=error,create=True):
+                    with self.assertRaises(self.m.TransportBlocked) as caught:
+                        self.build_with_runtime_mode('local-dev')
+                self.assertEqual('BUILD_ATTESTATION_REJECTED',caught.exception.category)
+                self.assertNotIn('secret-token',str(caught.exception))
+        self.assertEqual([],self.calls)
+
+    def test_local_runtime_rejection_preserves_only_its_fixed_nonsecret_category(self):
+        outer=self
+        self.assertIn('RUNTIME_CHECK_MODE_UNSUPPORTED',self.m.LOCAL_RUNTIME_CATEGORIES)
+        # 穷举主线程公开的本地固定类别；不能按任意 RUNTIME_ 前缀放行错误文本。
+        for category in sorted(self.m.LOCAL_RUNTIME_CATEGORIES):
+            class Runtime(self.p.RuntimeAuthority):
+                def require_current(self,**kwargs):
+                    raise outer.p.PreflightBlocked('secret-token database-password',category=category)
+            with self.subTest(category=category):
+                with self.assertRaises(self.m.TransportBlocked) as caught:
+                    self.build(runtime=Runtime()).send(self.request(),intent_id='procurement-intent-0001')
+                self.assertEqual(category,caught.exception.category)
+                self.assertNotIn('secret-token',str(caught.exception))
+        self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load())
 
     def test_live_runtime_rejection_preserves_only_a_fixed_nonsecret_category(self):
         outer=self
@@ -677,7 +794,7 @@ class TransportTests(unittest.TestCase):
 
     def test_untrusted_runtime_error_category_cannot_leak_or_escape_as_an_unhashable_exception(self):
         outer=self
-        for category in ('secret-token',['secret-token'],{'secret-token':True}):
+        for category in ('secret-token','RUNTIME_SECRET_TOKEN',['secret-token'],{'secret-token':True}):
             class Runtime(self.p.RuntimeAuthority):
                 def require_current(self,**kwargs):
                     raise outer.p.PreflightBlocked('secret-token',category=category)
