@@ -1,5 +1,11 @@
 # 签名发布与真正 premain 加载见证
 
+## 本地开发验收范围（2026-10-04更新）
+
+用户已明确当前只是本机开发测试、无真实用户，不要求本模块的签发/JVM防篡改体系作为业务开发前置。预检与执行transport现在默认采用 `local-dev` 服务/进程/四库一致性检查，允许IDE/classpath/调试agent，不需要部署正式根或本agent。具体见 `doc/ai/full-flow/scripts/procurement_local_runtime.py` 和本地运行简化复验报告。
+
+本模块的NONE/UNPROVEN及最终字节证书限制仍真实存在，但只属于显式 `--runtime-check strict` 的高保证诊断，**不再据此认定本地服务不能进行功能测试**。本地结果LOCAL_DEV_CHECKED不是本模块强证明成功，不构成生产证明或业务写权限；单位、来源、额度、事务、幂等和对账仍须业务校验。
+
 ## 当前交付状态
 
 本模块实际核验固定外部根的 Ed25519 签名发布清单，注册真正的 `ClassFileTransformer`，以回调输入作摘要，再用 `Instrumentation.getAllLoadedClasses()` 对账已经成功定义的 `Class`、真实 defining loader 对象与来源身份。不是磁盘/资源读取诊断器。
