@@ -39,7 +39,11 @@ class DecisionDemoProfileTest {
             assertEquals("5672", environment.getProperty("spring.rabbitmq.port"));
             assertEquals("true", environment.getProperty("snail-job.enabled"));
             assertEquals("true", environment.getProperty("spring.boot.admin.client.enabled"));
-            assertEquals("true", environment.getProperty("captcha.enable"));
+            // 本地验证码可由用户明确关闭；验证实际日常配置被加载，不强迫改写其工作区。
+            var daily = new org.springframework.beans.factory.config.YamlPropertiesFactoryBean();
+            daily.setResources(new org.springframework.core.io.ClassPathResource("application-dev.yml"));
+            assertEquals(java.util.Objects.requireNonNull(daily.getObject()).getProperty("captcha.enable"),
+                environment.getProperty("captcha.enable"));
         }
     }
 
