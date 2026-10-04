@@ -10,6 +10,8 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.erp.bd.domain.bo.BdMaterialVendorTermsConfirmBo;
+import com.nexus.erp.bd.service.BdCatalogConfirmationService;
 import com.nexus.erp.bd.domain.bo.BdMaterialVendorBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVendorVo;
 import com.nexus.erp.bd.service.IBdMaterialVendorService;
@@ -32,6 +34,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/erp/bd/materialVendor")
 public class BdMaterialVendorController extends BaseController {
+
+    private final BdCatalogConfirmationService catalogConfirmationService;
 
     private final IBdMaterialVendorService bdMaterialVendorService;
 
@@ -121,5 +125,13 @@ public class BdMaterialVendorController extends BaseController {
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(bdMaterialVendorService.deleteByIds(ids));
+    }
+
+    /** 明确确认实际资料；请求证据与当前登录操作者使用现有操作日志留痕。 */
+    @SaCheckPermission("bd:materialVendor:edit")
+    @Log(title = "供应条款确认", businessType = BusinessType.UPDATE)
+    @PostMapping("/{id}/confirm-terms")
+    public R<BdMaterialVendorVo> confirmTerms(@PathVariable Long id, @Validated @RequestBody BdMaterialVendorTermsConfirmBo request) {
+        return R.ok(catalogConfirmationService.confirmTerms(id, request));
     }
 }

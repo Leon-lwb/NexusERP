@@ -53,3 +53,66 @@ export interface PurchaseRequisitionQuery {
  * 继承自PurchaseRequisitionVO，用于新增和编辑操作
  */
 export interface PurchaseRequisitionForm extends PurchaseRequisitionVO {}
+
+/** 可信创建只接收真实来源身份；所有业务 ID 保持字符串。 */
+export interface CertifiedPurchaseSource {
+  materialId: string;
+  vendorId: string;
+  windowEnd: string;
+  requirementDetailIds: readonly string[];
+}
+
+/** 与后端统一写命令对应，数量、单位、编号和租户不得由客户端提交。 */
+export interface PuCertifiedPurchaseCommand extends CertifiedPurchaseSource {
+  requestKey: string;
+  expectedSourceFingerprint: string;
+}
+
+/** 数量只展示服务端原值，不在客户端换算或汇总。 */
+export interface CertifiedPurchasePreviewLine {
+  detailId: string;
+  requiredDate: string;
+  coveredDemandBase: string | number;
+  orderQuantity: string | number;
+  baseUomId: string;
+  orderUomId: string;
+}
+
+export interface CertifiedPurchaseSourcePreview {
+  materialId: string;
+  vendorId: string;
+  snapshotDate: string;
+  windowEnd: string;
+  sourceFingerprint: string;
+  inventoryEvidence: string;
+  catalog: {
+    material: { materialId: string };
+    baseUnit: { unitId: string };
+    orderUnit: { unitId: string };
+  };
+  lines: CertifiedPurchasePreviewLine[];
+}
+
+export interface CertifiedPurchaseResult {
+  requisitionId: string;
+  requisitionNo: string;
+  status: string;
+  version: number;
+  replayed: boolean;
+  sourceFingerprint: string;
+  lines: {
+    lineId: string;
+    requirementDetailId: string;
+    materialId: string;
+    baseUomId: string;
+    applyQuantity: string | number;
+    requiredDate: string;
+  }[];
+}
+
+/** 保留业务信封，业务拒绝与网络结果未知不能混为成功。 */
+export interface CertifiedPurchaseResponse<T> {
+  code: number;
+  msg?: string;
+  data?: T;
+}

@@ -52,6 +52,9 @@ public class PuCertifiedPurchaseWriteService {
         this.allocationDefinitions=new PuCertifiedPurchaseLifecycleSourceGate(lifecycleMapper,qualification);
     }
 
+    /** 仅复核当前请求的实际身份，不写业务表、编号、guard，也不清除动态租户。 */
+    public DecisionActor currentActorContext() { return authorizer.requireUser(); }
+
     public PuCertifiedPurchaseResult createManual(PuCertifiedPurchaseCommand command) {
         return execute(command,authorizer.requireUser(),"MANUAL",null,null,null,null);
     }

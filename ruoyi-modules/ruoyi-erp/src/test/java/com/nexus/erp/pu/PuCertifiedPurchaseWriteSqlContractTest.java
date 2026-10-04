@@ -34,7 +34,11 @@ class PuCertifiedPurchaseWriteSqlContractTest {
             var permission=method.getAnnotation(SaCheckPermission.class);assertNotNull(permission);
             assertArrayEquals(new String[]{"pu:requisition:add"},permission.value());endpoints++;
         }
-        assertEquals(3,endpoints);
+        assertEquals(4,endpoints);
+        assertEquals(3,java.util.Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
+            .filter(m -> m.isAnnotationPresent(org.springframework.web.bind.annotation.PostMapping.class)).count());
+        assertEquals(1,java.util.Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
+            .filter(m -> m.isAnnotationPresent(org.springframework.web.bind.annotation.GetMapping.class)).count());
     }
     @Test void migrationNeverUpdatesLegacyBusinessRowsOrRemovesPermanentKeys() throws Exception {
         Path root=Path.of(".").toAbsolutePath();while(root!=null&&!Files.exists(root.resolve("script/sql/ry-erp.sql")))root=root.getParent();

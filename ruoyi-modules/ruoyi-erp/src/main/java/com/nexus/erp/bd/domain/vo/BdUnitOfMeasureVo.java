@@ -9,6 +9,7 @@ import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * 计量单位视图对象 bd_unit_of_measure
@@ -88,4 +89,12 @@ public class BdUnitOfMeasureVo implements Serializable {
     @ExcelProperty(value = "排序")
     private Long sortOrder;
 
+    /** 经确认的数量精度；未确认或认证失效仍不能用于可信采购。 */
+    private Integer quantityScale;
+
+    /** 服务端生成的换算族版本。 */
+    private String conversionVersion;
+
+    /** 服务端生成的数量核验时间。 */
+    private Date conversionVerifiedAt;
 }

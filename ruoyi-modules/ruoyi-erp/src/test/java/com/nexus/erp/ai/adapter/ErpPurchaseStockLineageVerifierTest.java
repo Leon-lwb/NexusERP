@@ -40,6 +40,40 @@ class ErpPurchaseStockLineageVerifierTest {
     private static BigDecimal time(long seconds) { return BigDecimal.valueOf(NOW.plusSeconds(seconds).toEpochMilli()); }
 
     @Test
+    void nonEmptyPathCannotHideAnotherTenantDeletedStockFromGlobalMaterialCoverage() {
+        Fixture f=new Fixture();
+        var all=mock(com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class);
+        when(all.lockAllStocks(MATERIAL)).thenReturn(List.of(91L,55L));
+        when(all.lockAllTransactions(MATERIAL)).thenReturn(List.of(100L,101L,102L));
+        f.coverage=new ErpCertifiedSourceBirthReader(all,f.qualification);
+        assertThrows(ServiceException.class,f::read,"另一租户或删除库存不能因当前租户过滤而消失");
+        verify(all,never()).lockBirth(anyString(),anyLong());
+    }
+
+    @Test
+    void nonEmptyPathCannotHideAnotherTenantOrphanTransactionFromGlobalMaterialCoverage() {
+        Fixture f=new Fixture();
+        var all=mock(com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class);
+        when(all.lockAllStocks(MATERIAL)).thenReturn(List.of(91L));
+        when(all.lockAllTransactions(MATERIAL)).thenReturn(List.of(100L,101L,102L,999L));
+        f.coverage=new ErpCertifiedSourceBirthReader(all,f.qualification);
+        assertThrows(ServiceException.class,f::read,"同物料另一租户孤立流水不得隐藏或加入供给");
+        verify(all,never()).lockBirth(anyString(),anyLong());
+    }
+
+    @Test
+    void globallyCompleteNonEmptyOriginalSourcesDoNotRequireOldStockToHaveBirth() {
+        Fixture f=new Fixture();
+        var all=mock(com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class);
+        when(all.lockAllStocks(MATERIAL)).thenReturn(List.of(91L));
+        when(all.lockAllTransactions(MATERIAL)).thenReturn(List.of(100L,101L,102L));
+        f.coverage=new ErpCertifiedSourceBirthReader(all,f.qualification);
+        assertEquals(q("10"),f.read().inventory().quantity());
+        verify(all).lockAllStocks(MATERIAL);verify(all).lockAllTransactions(MATERIAL);
+        verify(all,never()).lockBirth(anyString(),anyLong());verify(all,never()).pinRegistry();
+    }
+
+    @Test
     void attributesOwnReservationInsteadOfChargingItAsOtherDemand() {
         Fixture f = new Fixture();
         StockLineageSnapshot result = f.read();
@@ -450,6 +484,7 @@ class ErpPurchaseStockLineageVerifierTest {
     }
 
     private static class Fixture {
+        ErpCertifiedSourceBirthReader coverage=mock(ErpCertifiedSourceBirthReader.class);
         final ErpPurchaseStockLineageMapper mapper = mock(ErpPurchaseStockLineageMapper.class);
         final ErpPurchaseInventorySourceVerifier inventory = mock(ErpPurchaseInventorySourceVerifier.class);
         final PuRequirementErpTransactionQualification qualification = mock(PuRequirementErpTransactionQualification.class);
@@ -537,7 +572,7 @@ class ErpPurchaseStockLineageVerifierTest {
             issueLine("issuedQty", q("3")); issueLine("shortQty", q("5")); issueLine("lineStatus", "PARTIAL");
             issueHead("status", "PARTIAL"); requirement("issuedQuantity", q("3")); summary(q("7"), q("3"), q("0"));
         }
-        ErpPurchaseStockLineageVerifier verifier() { return new ErpPurchaseStockLineageVerifier(mapper, inventory, qualification); }
+        ErpPurchaseStockLineageVerifier verifier() { return new ErpPurchaseStockLineageVerifier(mapper, inventory, qualification, coverage); }
         StockLineageSnapshot read() {
             try (MockedStatic<TenantHelper> tenant = mockStatic(TenantHelper.class)) {
                 tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(TENANT);

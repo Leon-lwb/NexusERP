@@ -69,6 +69,9 @@ public class BdUnitOfMeasureBo extends BaseEntity {
      */
     private BigDecimal conversionRate;
 
+    /** 数量小数精度；普通编辑只登记事实，不能授予核验资格。 */
+    private Integer quantityScale;
+
     /**
      * 状态 0:停用 1:启用
      */

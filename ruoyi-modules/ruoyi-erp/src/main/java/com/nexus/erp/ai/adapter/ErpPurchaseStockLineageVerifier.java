@@ -68,6 +68,7 @@ public class ErpPurchaseStockLineageVerifier {
         "wm_production_issue_line.short_qty", "prd_material_requirement_detail.required_quantity",
         "prd_material_requirement_detail.issued_quantity", "bd_unit_of_measure.conversion_rate");
 
+    private final ErpCertifiedSourceBirthReader birthReader;
     private final ErpPurchaseStockLineageMapper mapper;
     private final ErpPurchaseInventorySourceVerifier inventoryVerifier;
     private final PuRequirementErpTransactionQualification transactionQualification;
@@ -75,6 +76,13 @@ public class ErpPurchaseStockLineageVerifier {
     public ErpPurchaseStockLineageVerifier(ErpPurchaseStockLineageMapper mapper,
                                          ErpPurchaseInventorySourceVerifier inventoryVerifier,
                                          PuRequirementErpTransactionQualification transactionQualification) {
+        this(mapper,inventoryVerifier,transactionQualification,null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ErpPurchaseStockLineageVerifier(ErpPurchaseStockLineageMapper mapper,ErpPurchaseInventorySourceVerifier inventoryVerifier,
+            PuRequirementErpTransactionQualification transactionQualification,ErpCertifiedSourceBirthReader birthReader){
+        this.birthReader=birthReader;
         this.mapper = Objects.requireNonNull(mapper);
         this.inventoryVerifier = Objects.requireNonNull(inventoryVerifier);
         this.transactionQualification = Objects.requireNonNull(transactionQualification);
@@ -100,7 +108,22 @@ public class ErpPurchaseStockLineageVerifier {
         UnitRow unit = select(() -> mapper.lockUnit(tenantId, inventory.baseUomId()));
         validateUnit(unit, inventory);
         Map<Long, StockRow> stocks = indexed(select(() -> mapper.lockStocks(tenantId, materialId)), StockRow::stockId, "库存");
-        require(!stocks.isEmpty() && stocks.keySet().equals(inventory.stockIds()), "空库存、删除库存或库存身份覆盖不完整，不能作为可信零");
+        require(stocks.keySet().equals(inventory.stockIds()),"库存身份覆盖不完整");
+        if(stocks.isEmpty()) {
+            require(birthReader!=null&&inventory.sourceBirth()!=null,"空库存缺少持久新物料出生，不能作为可信零");
+            // 独立重新读取永久出生和全部原始库存/流水，不信任库存层传入的出生声明。
+            var born=birthReader.verifyInitialEmptyLocked(tenantId,materialId);
+            require(born.equals(inventory.sourceBirth()),"库存层与流水层的持久出生不一致");
+            var versions=new TreeMap<>(inventory.sourceVersions());versions.put("stock-lineage-table-engines",tableEngines);
+            versions.put("stock-lineage-quantity-schema",quantitySchema(select(mapper::selectQuantityColumns)));
+            versions.put("erp_certified_source_birth:"+born.birthId(),born.birthFingerprint());
+            var current=select(()->inventoryVerifier.verifyLocked(tenantId,materialId));
+            require(current!=null&&current.stockIds().isEmpty()&&born.equals(current.sourceBirth())
+                &&inventory.sourceVersions().equals(current.sourceVersions())&&!current.snapshotAt().isBefore(inventory.snapshotAt())
+                &&current.quantity().signum()==0&&current.reserved().signum()==0&&current.frozenQuantity().signum()==0,
+                "末端出生空范围变更，必须重走原始来源认证");
+            return new StockLineageSnapshot(current,Map.of(),Map.of(),List.of(),Set.of(),versions);
+        }
         for (StockRow row : stocks.values()) validateStock(row, inventory, unitId, scale);
         Set<Dimension> dimensions = new TreeSet<>(Comparator.comparing(Dimension::toString));
         for (StockRow row : stocks.values()) require(dimensions.add(dimension(row)), "同维度多库存不能证明入库明细分配");
@@ -115,6 +138,11 @@ public class ErpPurchaseStockLineageVerifier {
         Map<Long, TransactionRow> transactions = indexed(select(() -> mapper.lockTransactions(tenantId, materialId, stockIds)), TransactionRow::txId, "库存流水");
         require(!transactions.isEmpty(), "缺少原始流水，历史库存不能作为可信余额或可信零");
         for (TransactionRow row : transactions.values()) validateTransaction(row, stocks, tenantId, materialId, unitId, scale);
+        require(birthReader!=null,"非空库存缺少全物料身份覆盖读取依赖");
+        select(()->{
+            birthReader.requireGlobalCoverageLocked(tenantId,materialId,stocks.keySet(),transactions.keySet());
+            return Boolean.TRUE;
+        });
         Originals originals = lockOriginals(tenantId, transactions);
         Map<String, String> versions = new TreeMap<>(inventory.sourceVersions());
         versions.put("stock-lineage-table-engines", tableEngines);

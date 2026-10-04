@@ -84,7 +84,7 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
         private static final BigDecimal OVER_RECEIVE_TOLERANCE = BigDecimal.ZERO;
 
         /**
-         * 回写采购订单行已收货数量，按物料匹配收货行与采购行，累加已收数量并更新行级收货状态
+         * 回写采购订单行已收货数量，仅按真实采购行ID匹配目标，累加已收数量并更新行级收货状态
          *
          * @param receiveId 收货单ID
          * @param purId     采购订单ID
@@ -206,33 +206,22 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
         }
 
         /**
-         * 将收货行匹配到采购订单行。
-         * <p>优先按收货行的 {@code purchaseLineId} 精确匹配；旧数据缺失时按 orderId + materialId 兜底，
-         * 同一物料在订单中有多行时给出可读错误（避免 {@code selectOne} 抛 TooManyResultsException，ERP-PU-06）。</p>
+         * 仅按收货行持久化的采购订单行ID精确匹配目标，禁止根据物料推测收货归属。
          *
-         * @param purId       采购订单ID
+         * @param purId 采购订单ID
          * @param receiveLine 收货行
          * @return 匹配到的采购订单行，未匹配返回 null
          */
         private PuPurchaseOrderLine resolveOrderLine(Long purId, WmMaterialReceiveLine receiveLine) {
-            if (receiveLine.getPurchaseLineId() != null) {
-                return io(() -> purchaseOrderLineMapper.selectOne(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
-                    .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId())
-                    .eq(PuPurchaseOrderLine::getOrderId, purId)
-                    .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId())
-                    .last("FOR UPDATE")));
-            }
-            List<PuPurchaseOrderLine> matched = io(() -> purchaseOrderLineMapper.selectList(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
-                .eq(PuPurchaseOrderLine::getOrderId, purId)
-                .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId()).last("FOR UPDATE")));
-            if (matched == null || matched.isEmpty()) {
-                return null;
-            }
-            if (matched.size() > 1) {
+            if (receiveLine.getPurchaseLineId() == null) {
                 throw new ServiceException("收货行[" + receiveLine.getLineId()
-                    + "]对应物料在采购订单中存在多行，无法确定回写目标，请补充收货行的采购订单行ID");
+                    + "]缺少真实采购订单行ID，禁止按物料猜测回写目标");
             }
-            return matched.get(0);
+            return io(() -> purchaseOrderLineMapper.selectOne(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+                .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId())
+                .eq(PuPurchaseOrderLine::getOrderId, purId)
+                .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId())
+                .last("FOR UPDATE")));
         }
 
         /**

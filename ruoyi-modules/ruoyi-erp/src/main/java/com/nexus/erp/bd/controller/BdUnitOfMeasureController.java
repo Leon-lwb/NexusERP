@@ -10,6 +10,8 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.erp.bd.domain.bo.BdUnitQuantityConfirmBo;
+import com.nexus.erp.bd.service.BdCatalogConfirmationService;
 import com.nexus.erp.bd.domain.bo.BdUnitOfMeasureBo;
 import com.nexus.erp.bd.domain.vo.BdUnitOfMeasureVo;
 import com.nexus.erp.bd.service.IBdUnitOfMeasureService;
@@ -28,6 +30,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/erp/bd/measure")
 public class BdUnitOfMeasureController extends BaseController {
+
+    private final BdCatalogConfirmationService catalogConfirmationService;
 
     private final IBdUnitOfMeasureService bdUnitOfMeasureService;
 
@@ -154,5 +158,13 @@ public class BdUnitOfMeasureController extends BaseController {
     @DeleteMapping("/{uomIds}")
     public R<Void> remove(@PathVariable Long[] uomIds) {
         return toAjax(bdUnitOfMeasureService.deleteByIds(uomIds));
+    }
+
+    /** 明确确认实际资料；请求证据与当前登录操作者使用现有操作日志留痕。 */
+    @SaCheckPermission("bd:measure:edit")
+    @Log(title = "计量单位数量确认", businessType = BusinessType.UPDATE)
+    @PostMapping("/{id}/confirm-quantity")
+    public R<BdUnitOfMeasureVo> confirmQuantity(@PathVariable Long id, @Validated @RequestBody BdUnitQuantityConfirmBo request) {
+        return R.ok(catalogConfirmationService.confirmQuantity(id, request));
     }
 }

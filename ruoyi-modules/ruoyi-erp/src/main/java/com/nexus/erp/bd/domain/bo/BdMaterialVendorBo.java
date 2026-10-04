@@ -120,6 +120,31 @@ public class BdMaterialVendorBo extends BaseEntity {
      */
     private Long attr4;
 
+
+    /** 明确登记的订购单位。 */
+    private Long orderUomId;
+
+    /** 明确登记的起订量单位。 */
+    private Long moqUomId;
+
+    /** 独立登记的起订量，不回填旧起订量。 */
+    private BigDecimal verifiedMoqQty;
+
+    /** 以订购单位计的订购倍数。 */
+    private BigDecimal orderMultiple;
+
+    /** 是否允许拆零；空值仍代表未知。 */
+    private Boolean allowSplit;
+
+    /** 每包装对应的物料基本单位数量。 */
+    private BigDecimal unitsPerPack;
+
+    /** 新条款生效时间。 */
+    private Date termsEffectiveAt;
+
+    /** 新条款到期时间。 */
+    private Date termsExpiresAt;
+
     /**
      * 批量删除ID集合
      */

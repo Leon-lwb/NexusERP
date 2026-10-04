@@ -2,6 +2,7 @@ package com.nexus.erp.bd.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -16,16 +17,22 @@ import com.nexus.erp.bd.domain.vo.BdMaterialVendorVo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdMaterialVendorMapper;
+import com.nexus.erp.bd.mapper.BdCatalogConfirmationMapper;
+import com.nexus.erp.bd.service.BdCatalogConfirmationSupport.ActorContext;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.bd.service.IBdMaterialVendorService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.nexus.erp.bd.service.BdCatalogConfirmationSupport.*;
 
 /**
  * 物料-供应商关系Service业务层处理
@@ -40,6 +47,8 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
 
     private final BdMaterialVendorMapper baseMapper;
     private final BdMaterialMapper materialMapper;
+    private final BdCatalogConfirmationMapper catalogMapper;
+    private final PuRequirementErpTransactionExecutor executor;
 
     /**
      * 分页查询物料-供应商关系列表
@@ -106,21 +115,51 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
      * 修改物料-供应商关系
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdMaterialVendorBo bo) {
-        // isDefault 唯一性: 切换为默认时, 将该物料的其他默认供应商置为非默认(排除自身)
-        if (Long.valueOf(1L).equals(bo.getIsDefault())
-            && bo.getRelationId() != null
-            && bo.getMaterialId() != null) {
-            baseMapper.update(null, Wrappers.<BdMaterialVendor>lambdaUpdate()
-                .set(BdMaterialVendor::getIsDefault, 0L)
-                .eq(BdMaterialVendor::getMaterialId, bo.getMaterialId())
-                .ne(BdMaterialVendor::getRelationId, bo.getRelationId()));
-        }
-        BdMaterialVendor entity = MapstructUtils.convert(bo, BdMaterialVendor.class);
-        return baseMapper.updateById(entity);
+        ActorContext actor = currentActor();
+        require(bo != null && bo.getRelationId() != null && bo.getRelationId() > 0, "条款编辑身份无效");
+        return executor.executeRepeatableRead(actor.tenantId(), () -> {
+            checkActor(actor);
+            BdMaterialVendor existing = catalogMapper.lockRelation(actor.tenantId(), bo.getRelationId());
+            require(existing != null && actor.tenantId().equals(existing.getTenantId())
+                && bo.getRelationId().equals(existing.getRelationId()) && "0".equals(existing.getDelFlag()), "当前租户供应关系不存在");
+            if (Long.valueOf(1L).equals(bo.getIsDefault()) && bo.getMaterialId() != null) {
+                baseMapper.update(null, Wrappers.<BdMaterialVendor>lambdaUpdate()
+                    .set(BdMaterialVendor::getIsDefault, 0L).eq(BdMaterialVendor::getMaterialId, bo.getMaterialId())
+                    .eq(BdMaterialVendor::getTenantId, actor.tenantId()).ne(BdMaterialVendor::getRelationId, bo.getRelationId()));
+            }
+            boolean factsChanged = termsFactsChanged(existing, bo);
+            BdMaterialVendor entity = MapstructUtils.convert(bo, BdMaterialVendor.class);
+            entity.setCreateBy(null); entity.setCreateDept(null); entity.setCreateTime(null);
+            entity.setUpdateBy(actor.actorId()); entity.setUpdateTime(new Date());
+            LambdaUpdateWrapper<BdMaterialVendor> update = Wrappers.<BdMaterialVendor>lambdaUpdate()
+                .eq(BdMaterialVendor::getRelationId, existing.getRelationId())
+                .eq(BdMaterialVendor::getTenantId, actor.tenantId());
+            if (existing.getTermsVersion() == null) update.isNull(BdMaterialVendor::getTermsVersion);
+            else update.eq(BdMaterialVendor::getTermsVersion, existing.getTermsVersion());
+            if (factsChanged) {
+                // 保留登记事实供重新确认，显式撤销旧认证，禁止留下旧核验时间。
+                update.set(BdMaterialVendor::getTermsVersion, null).set(BdMaterialVendor::getTermsVerifiedAt, null);
+            }
+            checkActor(actor);
+            int updated = baseMapper.update(entity, update);
+            require(updated == 1, "条款编辑原版本 CAS 失败");
+            return updated;
+        });
     }
 
+    private boolean termsFactsChanged(BdMaterialVendor existing, BdMaterialVendorBo bo) {
+        return changed(existing.getMaterialId(), bo.getMaterialId()) || changed(existing.getVendorId(), bo.getVendorId())
+            || changed(existing.getVendorCode(), bo.getVendorCode()) || changed(existing.getVendorName(), bo.getVendorName())
+            || changed(existing.getLeadTime(), bo.getLeadTime()) || changed(existing.getMinOrderQty(), bo.getMinOrderQty())
+            || changed(existing.getPrice(), bo.getPrice()) || changed(existing.getCurrency(), bo.getCurrency())
+            || changed(existing.getEffectiveDate(), bo.getEffectiveDate()) || changed(existing.getExpiryDate(), bo.getExpiryDate())
+            || changed(existing.getStatus(), bo.getStatus()) || changed(existing.getOrderUomId(), bo.getOrderUomId())
+            || changed(existing.getMoqUomId(), bo.getMoqUomId()) || changed(existing.getVerifiedMoqQty(), bo.getVerifiedMoqQty())
+            || changed(existing.getOrderMultiple(), bo.getOrderMultiple()) || changed(existing.getAllowSplit(), bo.getAllowSplit())
+            || changed(existing.getUnitsPerPack(), bo.getUnitsPerPack()) || changed(existing.getTermsEffectiveAt(), bo.getTermsEffectiveAt())
+            || changed(existing.getTermsExpiresAt(), bo.getTermsExpiresAt());
+    }
     /**
      * 批量删除物料-供应商关系
      */

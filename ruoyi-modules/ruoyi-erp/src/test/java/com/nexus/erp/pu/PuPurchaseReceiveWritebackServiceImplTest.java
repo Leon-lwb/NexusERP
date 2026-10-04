@@ -104,10 +104,10 @@ class PuPurchaseReceiveWritebackServiceImplTest {
 
     /** ERP-PU-01：已收 50 + 本次 60 > 订单量 100（容差 0）→ 拒绝回写且不落库 */
     @ParameterizedTest
-    @ValueSource(strings={"receive-read","order-read","exact-line-read","fallback-line-read","line-write","latest-lines-read","head-write"})
+    @ValueSource(strings={"receive-read","order-read","exact-line-read","line-write","latest-lines-read","head-write"})
     void allMapperBoundariesReplaceDatabaseDiagnosticsWithFixedCauseFreeBusinessFailure(String boundary) {
         RuntimeException raw=new IllegalStateException("SELECT fixture-password jdbc:mysql://fixture-private-url");
-        WmMaterialReceiveLine receive=receiveLine("fallback-line-read".equals(boundary)?null:11L,new BigDecimal("1"));
+        WmMaterialReceiveLine receive=receiveLine(11L,new BigDecimal("1"));
         PuPurchaseOrderLine initial=orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO);
         PuPurchaseOrderLine latest=orderLine(11L,new BigDecimal("5"),new BigDecimal("1"));
         lenient().when(receiveLineMapper.selectList(any())).thenReturn(List.of(receive));
@@ -119,7 +119,6 @@ class PuPurchaseReceiveWritebackServiceImplTest {
             case "receive-read" -> when(receiveLineMapper.selectList(any())).thenThrow(raw);
             case "order-read" -> when(purchaseOrderLineMapper.selectList(any())).thenThrow(raw);
             case "exact-line-read" -> when(purchaseOrderLineMapper.selectOne(any())).thenThrow(raw);
-            case "fallback-line-read" -> when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(initial)).thenThrow(raw);
             case "line-write" -> when(purchaseOrderLineMapper.update(any(),any())).thenThrow(raw);
             case "latest-lines-read" -> when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(initial)).thenThrow(raw);
             case "head-write" -> when(purchaseOrderMapper.update(any(),any())).thenThrow(raw);
@@ -290,9 +289,42 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         redisUtilsMock.verify(() -> RedisUtils.setObjectIfAbsent(anyString(), any(), any()), never());
     }
 
-    /** ERP-PU-06：同一物料在订单中有多行时给出可读错误，而不是 TooManyResultsException */
     @Test
-    void writeBack_ambiguousMaterialLine_throwsReadableError() {
+    void missingPurchaseLineIdRejectsInsteadOfGuessingByMaterial() {
+        WmMaterialReceiveLine receiveLine = receiveLine(null, new BigDecimal("1"));
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(receiveLine));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(
+            orderLine(11L, new BigDecimal("5"), BigDecimal.ZERO)));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> writebackService.writeBackReceivedQty(1L, 100L));
+
+        assertTrue(ex.getMessage().contains("采购订单行ID"), ex.getMessage());
+        verify(purchaseOrderLineMapper, times(1)).selectList(any());
+        verify(purchaseOrderLineMapper, never()).selectOne(any());
+        verify(purchaseOrderLineMapper, never()).update(any(), any());
+        verify(purchaseOrderMapper, never()).update(any(), any());
+        redisUtilsMock.verify(()->RedisUtils.setObjectIfAbsent(anyString(),any(),any()),never());
+    }
+
+    @Test
+    void missingTargetOnTheLastReceiptLinePreventsAnyEarlierQuantityWrite() {
+        WmMaterialReceiveLine first=receiveLine(11L,BigDecimal.ONE);
+        WmMaterialReceiveLine last=receiveLine(null,BigDecimal.ONE);last.setLineId(2L);
+        PuPurchaseOrderLine order=orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO);
+        when(receiveLineMapper.selectList(any())).thenReturn(List.of(first,last));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(order));
+        when(purchaseOrderLineMapper.selectOne(any())).thenReturn(order);
+        ServiceException error=assertThrows(ServiceException.class,()->writebackService.writeBackReceivedQty(1L,100L));
+        assertTrue(error.getMessage().contains("采购订单行ID"),error.getMessage());
+        verify(purchaseOrderLineMapper,never()).update(any(),any());
+        verify(purchaseOrderMapper,never()).update(any(),any());
+        redisUtilsMock.verify(()->RedisUtils.setObjectIfAbsent(anyString(),any(),any()),never());
+    }
+
+    /** 缺少采购行身份时，即使物料可匹配多行也必须直接拒绝，不尝试猜测。 */
+    @Test
+    void missingPurchaseLineIdRejectsBeforeAnyMaterialFallbackForMultipleCandidates() {
         WmMaterialReceiveLine receiveLine = receiveLine(null, new BigDecimal("10"));
         when(receiveLineMapper.selectList(any())).thenReturn(List.of(receiveLine));
         when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(
@@ -301,7 +333,10 @@ class PuPurchaseReceiveWritebackServiceImplTest {
 
         ServiceException ex = assertThrows(ServiceException.class,
             () -> writebackService.writeBackReceivedQty(1L, 100L));
-        assertTrue(ex.getMessage().contains("多行"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("采购订单行ID"), ex.getMessage());
+        verify(purchaseOrderLineMapper, times(1)).selectList(any());
+        verify(purchaseOrderLineMapper, never()).selectOne(any());
+        verify(purchaseOrderLineMapper, never()).update(any(), any());
     }
 
     /** 幂等：已回写过的收货单直接跳过 */

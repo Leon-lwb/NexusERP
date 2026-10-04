@@ -8,6 +8,14 @@ import java.util.List;
 /** 原字段当前读；不 CAST 浮点，不接受上传的余额/有效期/单位认证。 */
 public interface WmCertifiedReceiptPostingMapper {
     /** 出生范围仅冻结头/行身份和数量；仓储分配在实际过账前仍走原父链/数量门禁。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT attr1 FROM wm_material_receive WHERE tenant_id=#{tenant} AND receive_id=#{id} FOR UPDATE")
+    String lockCreationKind(@Param("tenant") String tenant,@Param("id") Long id);
+    /** 永久请求只追加；已锁收货头后只读冻结事实，避免与原键重放形成反向锁序。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT line_id,material_id,base_uom_id,quantity FROM wm_certified_receive_command WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY line_id")
+    List<FrozenDraftLine> readFrozenDraftLines(@Param("tenant") String tenant,@Param("id") Long id);
+    record FrozenDraftLine(Long lineId,Long materialId,String baseUomId,BigDecimal quantity) { }
     @org.apache.ibatis.annotations.Select("SELECT birth_id FROM wm_receipt_iqc_birth WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY birth_id FOR UPDATE")
     java.util.List<Long> lockBirthIdentities(@org.apache.ibatis.annotations.Param("tenant") String tenant, @org.apache.ibatis.annotations.Param("id") Long id);
 

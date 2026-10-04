@@ -10,6 +10,8 @@ import java.util.Set;
 
 @Component
 public class WmCertifiedReceiptPostingAuthorizer {
+    /** 创建真实草稿只核创建权限，不借用上架或库存执行权限。 */
+    public DecisionActor requireCreate() { return require("wm:receive:add"); }
     public DecisionActor requireUser() { return require("wm:receive:execute"); }
     public DecisionActor requireShelf() { return require("wm:receive:shelf"); }
     /** 永久恢复读回只要求查询权限，不借用上架/执行身份。 */

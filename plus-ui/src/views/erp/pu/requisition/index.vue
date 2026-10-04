@@ -32,7 +32,7 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:requisition:add']"> 新增 </el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:requisition:add']"> 可信来源创建 </el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['pu:requisition:edit']"> 修改 </el-button>
@@ -67,7 +67,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleGenerateFromLowStock()" v-hasPermi="['pu:requisition:add']">
-          低库存生成
+          低库存生成（已暂停）
         </el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -99,6 +99,8 @@
 
     <!-- 分页组件 -->
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <el-alert type="warning" show-icon :closable="false" title="旧低库存生成已暂停：须具备完整可信来源，不会把无库存记录当成 0 或用普通 BO 新增。" />
+    <CertifiedPurchaseDialog ref="certifiedPurchaseDialogRef" @created="getList" />
   </div>
 </template>
 
@@ -107,15 +109,16 @@
 import {
   listPurchaseRequisition,
   getPurchaseRequisition,
-  addPurchaseRequisition,
   updatePurchaseRequisition,
   delPurchaseRequisition,
-  convertPurchaseRequisition,
-  generateFromLowStock
+  convertPurchaseRequisition
 } from '@/api/erp/pu/requisition';
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import CertifiedPurchaseDialog from './CertifiedPurchaseDialog.vue';
+
+const certifiedPurchaseDialogRef = ref<InstanceType<typeof CertifiedPurchaseDialog>>();
 
 const router = useRouter();
 // 获取当前实例并获取字典数据
@@ -149,7 +152,6 @@ const {
   apis: {
     list: listPurchaseRequisition,
     get: getPurchaseRequisition,
-    add: addPurchaseRequisition,
     update: updatePurchaseRequisition,
     del: delPurchaseRequisition
   },
@@ -170,7 +172,7 @@ function resetQuery() {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  router.push({ path: '/erp/pu/requisition/form', query: { action: 'add' } });
+  certifiedPurchaseDialogRef.value?.open();
 }
 
 /** 修改按钮操作 */
@@ -218,21 +220,10 @@ function handleConvert() {
 }
 
 /**
- * 低库存生成按钮操作 - 扫描安全库存自动生成采购申请
+ * 低库存旧通道保持暂停，不通过普通 BO 新增
  */
 function handleGenerateFromLowStock() {
-  proxy.$modal
-    .confirm('是否确认从低库存自动生成采购申请？')
-    .then(() => generateFromLowStock())
-    .then((res: any) => {
-      const count = res.data ? res.data.length : 0;
-      if (count > 0) {
-        proxy.$modal.msgSuccess('成功生成 ' + count + ' 条采购申请');
-      } else {
-        proxy.$modal.msgWarning('未发现低库存物料，无需生成采购申请');
-      }
-      getList();
-    });
+  proxy.$modal.msgWarning('旧低库存生成已暂停，请使用可信来源创建并先完成服务端完整预览；无库存记录不能按 0 处理。');
 }
 
 onActivated(() => {

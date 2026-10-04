@@ -7,9 +7,11 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <!-- 保存按钮，仅在非查看模式下显示 -->
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled && form.requisitionId">保存</el-button>
             <!-- 提交审批按钮 -->
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.requisitionId && form.status === 'DRAFT'"
+              >提交审批</el-button
+            >
             <!-- 查看流程按钮 -->
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <!-- 取消按钮 -->
@@ -18,6 +20,14 @@
         </div>
       </template>
 
+      <el-alert
+        v-if="!form.requisitionId"
+        type="warning"
+        show-icon
+        :closable="false"
+        title="普通 BO 新增已关闭，请返回采购申请列表使用独立的可信来源创建入口，先进行服务端完整预览。旧单据详情/维护不会升级为新认证。"
+        style="margin-bottom: 12px"
+      />
       <!-- 表单区域 -->
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <!-- 基本信息 -->
@@ -215,7 +225,6 @@
 <script setup lang="ts" name="PurchaseRequisitionForm">
 /** 导入请购单相关的API方法 */
 import {
-  addPurchaseRequisition,
   getPurchaseRequisition,
   updatePurchaseRequisition,
   convertPurchaseRequisition,
@@ -291,7 +300,7 @@ const loadingFlow = ref(false);
 const flowOptions = ref([]);
 
 /** 表单禁用状态（考虑流程嵌入和查看模式）。 */
-const formDisabled = computed(() => isViewMode.value || props.disabled);
+const formDisabled = computed(() => isViewMode.value || props.disabled || !form.value.requisitionId);
 
 /** 物料选择对话框 */
 const materialSelectDialogRef = ref<any>(null);
@@ -404,6 +413,10 @@ function tryAutoSelect() {
  * 提交审批
  */
 function handleSubmitFlow() {
+  if (!form.value.requisitionId) {
+    proxy.$modal.msgWarning('普通 BO 新增已关闭，请使用可信来源创建并先保存真实单据');
+    return;
+  }
   (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
@@ -509,17 +522,16 @@ function handleMaterialSelected(row: any) {
  * 提交表单
  */
 function submitForm() {
+  if (!form.value.requisitionId) {
+    proxy.$modal.msgWarning('普通 BO 新增已关闭，请返回列表使用可信来源创建');
+    return;
+  }
   form.value.puPurchaseRequisitionLineList = lineList.value;
   /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
   if (autoGenFlag.value) {
     form.value.requisitionNo = undefined;
   }
-  const isEdit = route.query.action === 'edit' || form.value.requisitionId != null;
-  if (isEdit && !form.value.requisitionId) {
-    proxy.$modal.msgError('单据ID丢失，请刷新页面后重试');
-    return;
-  }
-  (isEdit ? updatePurchaseRequisition(form.value) : addPurchaseRequisition(form.value)).then(() => {
+  updatePurchaseRequisition(form.value).then(() => {
     proxy.$modal.msgSuccess('保存成功');
     router.push('/erp/pu/requisition');
   });

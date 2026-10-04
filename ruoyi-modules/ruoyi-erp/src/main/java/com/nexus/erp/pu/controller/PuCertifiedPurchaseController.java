@@ -15,6 +15,15 @@ import org.springframework.web.bind.annotation.*;
 public class PuCertifiedPurchaseController {
     private final PuCertifiedPurchaseWriteService writer;
     public PuCertifiedPurchaseController(PuCertifiedPurchaseWriteService writer) { this.writer=writer; }
+    /** 页面跨标签页恢复前读取实际请求主体，不接受缓存身份作为证明。 */
+    @GetMapping("/context")
+    @SaCheckPermission("pu:requisition:add")
+    public R<ActorContext> context() {
+        var actor = writer.currentActorContext();
+        return R.ok(new ActorContext(actor.tenantId(), actor.userId()));
+    }
+    public record ActorContext(String tenantId, Long userId) { }
+
     @PostMapping
     @SaCheckPermission("pu:requisition:add")
     @Log(title="可信来源采购申请",businessType=BusinessType.INSERT)

@@ -301,7 +301,7 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             return new ArrayList<>();
         }
 
-        // 3. Batch-query materials for code, spec, and UOM name
+        // 3. 批量读取物料编码、规格与基本单位身份
         List<Long> materialIds = bomDetails.stream()
             .map(BdBomDetailVo::getChildMaterialId)
             .filter(Objects::nonNull)
@@ -340,7 +340,10 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             reqDetail.setMaterialCode(detail.getChildMaterialCode() != null ? detail.getChildMaterialCode() : (mat != null ? mat.getMaterialCode() : null));
             reqDetail.setMaterialName(detail.getChildMaterialName() != null ? detail.getChildMaterialName() : (mat != null ? mat.getMaterialName() : null));
             reqDetail.setMaterialSpec(detail.getChildMaterialSpec() != null ? detail.getChildMaterialSpec() : (mat != null ? mat.getMaterialSpec() : null));
-            reqDetail.setUnit(mat != null ? mat.getBaseUomName() : null);
+            // 新生成明细只登记基本单位主键；名称仅供展示，不能推断认证身份。
+            // 未知主键保持 NULL，数量与单位可信资格仍由来源认证独立复验。
+            Long baseUomId = mat != null ? mat.getBaseUomId() : null;
+            reqDetail.setUnit(baseUomId != null && baseUomId > 0 ? baseUomId.toString() : null);
             reqDetail.setBomQuantity(detail.getQuantityPerParent());
             reqDetail.setLossRate(detail.getLossRate());
             if (detail.getQuantityPerParent() != null) {

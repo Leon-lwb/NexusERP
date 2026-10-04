@@ -62,11 +62,19 @@ public class ErpPurchaseInventorySourceVerifier {
     private static final Set<String> QUANTITY_COLUMNS = Set.of("bd_material.safety_stock",
         "wm_material_stock.stock_quantity", "wm_material_stock.reserved_quantity");
 
+    private final ErpCertifiedSourceBirthReader birthReader;
     private final ErpPurchaseInventorySourceMapper mapper;
     private final PuRequirementErpTransactionQualification transactionQualification;
 
     public ErpPurchaseInventorySourceVerifier(ErpPurchaseInventorySourceMapper mapper,
                                               PuRequirementErpTransactionQualification transactionQualification) {
+        this(mapper,transactionQualification,null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ErpPurchaseInventorySourceVerifier(ErpPurchaseInventorySourceMapper mapper,
+            PuRequirementErpTransactionQualification transactionQualification,ErpCertifiedSourceBirthReader birthReader) {
+        this.birthReader=birthReader;
         this.mapper = Objects.requireNonNull(mapper);
         this.transactionQualification = Objects.requireNonNull(transactionQualification);
     }
@@ -110,7 +118,23 @@ public class ErpPurchaseInventorySourceVerifier {
         BigDecimal safety = quantity(material.getSafetyStock(), scale, "安全库存未知或不精确");
 
         List<WmMaterialStock> stocks = select(() -> mapper.lockStocks(tenantId, materialId));
-        require(stocks != null && !stocks.isEmpty(), "库存来源缺失，空行不能作为可信零");
+        require(stocks != null, "库存来源读取未知，不能作为可信零");
+        if(stocks.isEmpty()) {
+            require(birthReader!=null,"库存来源缺失且没有持久出生读取器，空行不能作为可信零");
+            var born=birthReader.verifyInitialEmptyLocked(tenantId,materialId);
+            require(baseUomId.equals(born.baseUomId())&&scale.equals(born.quantityScale())
+                &&unit.getConversionVersion().equals(born.conversionVersion())&&verifiedAt.equals(Instant.ofEpochMilli(born.unitVerifiedAt())),
+                "当前库存单位与持久出生版本不符");
+            versions.put("quantity-schema",quantitySchema(select(mapper::selectQuantityColumns)));
+            versions.put("erp_certified_source_birth:"+born.birthId(),born.birthFingerprint());
+            versions.put("bd_material:"+materialId,fingerprint(tenantId,materialId,baseUomId,safety,material.getStatus(),material.getDelFlag()));
+            versions.put("bd_unit_of_measure:"+baseUomId,"conversionVersion="+unit.getConversionVersion()+";"+fingerprint(unit.getTenantId(),baseUomId,
+                unit.getIsBase(),unit.getPrimaryId(),unit.getCategory(),unit.getConversionRate(),scale,unit.getConversionVersion(),verifiedAt,unit.getStatus(),unit.getDelFlag()));
+            var finalClock=select(mapper::selectDatabaseClock);var snapshotAt=databaseInstant(finalClock);
+            require(!snapshotAt.isBefore(startedAt)&&!verifiedAt.isAfter(snapshotAt),"出生库存数据库时点或单位核验时点不符");
+            // 数量零来自同事务永久出生与完整空来源观察，不能把无出生的空表补零。
+            return new InventorySnapshot(tenantId,materialId,baseUomId,scale,snapshotAt,finalClock.databaseTimeZone(),ZERO,ZERO,safety,ZERO,Set.of(),versions,born);
+        }
         Set<Long> stockIds = new TreeSet<>();
         Set<Long> warehouseIds = new TreeSet<>();
         Set<Long> areaIds = new TreeSet<>();
@@ -333,7 +357,13 @@ public class ErpPurchaseInventorySourceVerifier {
     public record InventorySnapshot(String tenantId, Long materialId, Long baseUomId, Integer quantityScale,
                                     Instant snapshotAt, String databaseTimeZone, BigDecimal quantity,
                                     BigDecimal reserved, BigDecimal safety, BigDecimal frozenQuantity,
-                                    Set<Long> stockIds, Map<String, String> sourceVersions) {
+                                    Set<Long> stockIds, Map<String, String> sourceVersions,
+                                    com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.StoredBirth sourceBirth) {
+        public InventorySnapshot(String tenantId,Long materialId,Long baseUomId,Integer quantityScale,Instant snapshotAt,
+                String databaseTimeZone,BigDecimal quantity,BigDecimal reserved,BigDecimal safety,BigDecimal frozenQuantity,
+                Set<Long> stockIds,Map<String,String> sourceVersions){
+            this(tenantId,materialId,baseUomId,quantityScale,snapshotAt,databaseTimeZone,quantity,reserved,safety,frozenQuantity,stockIds,sourceVersions,null);
+        }
         public InventorySnapshot {
             stockIds = Set.copyOf(stockIds);
             sourceVersions = Map.copyOf(sourceVersions);

@@ -220,6 +220,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         }
         List<WmMaterialReceiveLineBo> requested = bo.getWmMaterialReceiveLineList() != null
             ? bo.getWmMaterialReceiveLineList() : List.of();
+        certifiedReceiptGuard.requireFrozenDraftLines(existing.getReceiveId(),requested);
         List<WmMaterialReceiveLine> current = receiveLineMapper.selectList(
             new LambdaQueryWrapper<WmMaterialReceiveLine>()
                 .eq(WmMaterialReceiveLine::getReceiveId, existing.getReceiveId()));
@@ -302,6 +303,8 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
         entity.setReceiveId(existing.getReceiveId());
         entity.setStatus(existing.getStatus());
+        // 永久草稿标记不可由普通编辑移除，否则会绕过承诺量与原请求恢复保护。
+        if ("CERTIFIED_DRAFT_V1".equals(existing.getAttr1())) entity.setAttr1(existing.getAttr1());
         if (existing.getPurId() != null || existing.getNoticeId() != null) {
             entity.setPurId(existing.getPurId());
             entity.setPurCode(existing.getPurCode());
@@ -367,7 +370,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long receiveId : ids) {
-            certifiedReceiptGuard.requireUnposted(receiveId);
+            certifiedReceiptGuard.requireDeletable(receiveId);
             /** 校验状态：只有草稿状态才能删除 */
             WmMaterialReceive existing = baseMapper.selectById(receiveId);
             if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {

@@ -26,6 +26,8 @@ import java.util.*;
 @Service
 @DS("erp")
 public class ErpPurchaseSourceCertificationService {
+    private final ErpCertifiedSourceBirthReader birthReader;
+    private final ErpPurchaseCompetitionSourceReader previewPools;
     private final PuRequirementErpTransactionQualification qualification;
     private final ErpPurchaseSourceSchemaVerifier schemaVerifier;
     private final PuRequirementCompetitionPoolReader poolReader;
@@ -37,6 +39,15 @@ public class ErpPurchaseSourceCertificationService {
             PuRequirementCompetitionPoolReader poolReader, ErpPurchaseCatalogSourceReader catalogReader,
             ErpPurchaseStockLineageVerifier inventoryVerifier, ErpPurchaseAllocationLineageReader lineageReader,
             ErpPurchaseSourceSchemaVerifier schemaVerifier) {
+        this(qualification,poolReader,catalogReader,inventoryVerifier,lineageReader,schemaVerifier,null,null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ErpPurchaseSourceCertificationService(PuRequirementErpTransactionQualification qualification,
+            PuRequirementCompetitionPoolReader poolReader,ErpPurchaseCatalogSourceReader catalogReader,
+            ErpPurchaseStockLineageVerifier inventoryVerifier,ErpPurchaseAllocationLineageReader lineageReader,
+            ErpPurchaseSourceSchemaVerifier schemaVerifier,ErpPurchaseCompetitionSourceReader previewPools,ErpCertifiedSourceBirthReader birthReader){
+        this.birthReader=birthReader;this.previewPools=previewPools;
         this.qualification = Objects.requireNonNull(qualification); this.poolReader = Objects.requireNonNull(poolReader);
         this.catalogReader = Objects.requireNonNull(catalogReader); this.inventoryVerifier = Objects.requireNonNull(inventoryVerifier);
         this.lineageReader = Objects.requireNonNull(lineageReader);
@@ -44,8 +55,20 @@ public class ErpPurchaseSourceCertificationService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    public CertifiedPurchaseScope previewLocked(String tenantId,Long materialId,Long vendorId,LocalDate windowEnd,Set<Long> requestedDetailIds){
+        require(previewPools!=null,"完整来源预览读取器缺失");
+        return certifyCurrentSources(tenantId,materialId,vendorId,windowEnd,requestedDetailIds,true);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public CertifiedPurchaseScope prepareLocked(String tenantId, Long materialId, Long vendorId,
             LocalDate windowEnd, Set<Long> requestedDetailIds) {
+        return certifyCurrentSources(tenantId,materialId,vendorId,windowEnd,requestedDetailIds,false);
+    }
+
+    /** 模式只决定是否允许创建技术guard，目录、库存、流水、需求及摘要认证全部共用。 */
+    private CertifiedPurchaseScope certifyCurrentSources(String tenantId,Long materialId,Long vendorId,
+            LocalDate windowEnd,Set<Long> requestedDetailIds,boolean preview){
         require(TenantHelper.isEnable() && tenantId != null && tenantId.matches("[0-9]{6,20}")
             && tenantId.equals(TenantHelper.getTenantId()), "请求租户不属于当前启用租户");
         require(materialId != null && materialId > 0 && vendorId != null && vendorId > 0
@@ -55,7 +78,7 @@ public class ErpPurchaseSourceCertificationService {
         Set<Long> requested = Set.copyOf(requestedDetailIds);
         qualification.requireSourceChainTransaction();
         schemaVerifier.requireTransactionalSources();
-        var raw = poolReader.materialPool(tenantId, materialId, windowEnd);
+        var raw = preview ? previewPools.readLocked(tenantId,materialId,windowEnd) : poolReader.materialPool(tenantId, materialId, windowEnd);
         CatalogSnapshot catalog = catalogReader.readLocked(tenantId, materialId, vendorId);
         var lineage = lineageReader.readLocked(tenantId, materialId);
         // 库存有效期只能在其他等待式读取完成后认证；验证器最后一次时钟当前读必须是本链最新时点。
@@ -73,7 +96,29 @@ public class ErpPurchaseSourceCertificationService {
         Set<Long> stockIds = new HashSet<>();
         raw.stocks().forEach(row -> require(row != null && row.getStockId() != null && stockIds.add(row.getStockId()),
             "原始库存身份缺失或重复"));
-        require(stockIds.equals(inventory.stockIds()) && !stockIds.isEmpty(), "库存全集在认证链中不一致");
+        require(stockIds.equals(inventory.stockIds()),"库存全集在认证链中不一致");
+        if(stockIds.isEmpty()) {
+            require(birthReader!=null&&inventory.sourceBirth()!=null,"完整来源缺少持久出生，空集合不是可靠库存零");
+            // 完整认证第三次独立观察，不能仅依赖上游快照布尔或一个出生摘要。
+            var born=birthReader.verifyInitialEmptyLocked(tenantId,materialId);
+            require(born.equals(inventory.sourceBirth())&&inventory.baseUomId().equals(born.baseUomId())
+                &&Objects.equals(inventory.quantityScale(),born.quantityScale())
+                &&catalog.baseUnit().conversionVersion().equals(born.conversionVersion())
+                &&catalog.baseUnit().verifiedAt().equals(Instant.ofEpochMilli(born.unitVerifiedAt()))
+                &&stockLineage.stocks().isEmpty()&&stockLineage.transactionIds().isEmpty()
+                &&inventory.quantity().signum()==0&&inventory.reserved().signum()==0&&inventory.frozenQuantity().signum()==0,
+                "完整来源与永久出生单位版本、空库存或原始流水证明不一致");
+            // 第三层出生复读也可能等待锁；最后再完整认证库存及数据库时钟，不能沿用过期条款。
+            var refreshed=inventoryVerifier.verifyLocked(tenantId,materialId);
+            var latest=refreshed==null?null:refreshed.inventory();
+            require(latest!=null&&born.equals(latest.sourceBirth())&&latest.stockIds().isEmpty()
+                &&inventory.sourceVersions().equals(latest.sourceVersions())&&latest.quantity().signum()==0
+                &&latest.reserved().signum()==0&&latest.frozenQuantity().signum()==0
+                &&inventory.safety().compareTo(latest.safety())==0&&!latest.snapshotAt().isBefore(inventory.snapshotAt())
+                &&today.equals(latest.snapshotAt().atZone(ErpPurchasePoolCertification.DATABASE_ZONE).toLocalDate()),
+                "完整出生复读后库存范围、业务日或时钟改变");
+            stockLineage=refreshed;inventory=latest;
+        } else require(inventory.sourceBirth()==null,"已有库存不能使用空出生绕过原始来源链");
         Map<Long,com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawStock> rawStocks=new HashMap<>();
         raw.stocks().forEach(row->rawStocks.put(row.getStockId(),row));
         Set<Long> provenStocks=new HashSet<>();BigDecimal originalReserved=BigDecimal.ZERO;
@@ -141,7 +186,7 @@ public class ErpPurchaseSourceCertificationService {
         String fingerprint = fingerprint(input,catalog.material(),catalog.terms(),catalog.baseUnit(),catalog.orderUnit(),
             catalog.moqUnit(),versions,lines,freezeMrpSources(raw),stockLineage.reservedByRequirementDetail(),
             stockLineage.frozenReservedByRequirementDetail());
-        return new CertifiedPurchaseScope(tenantId,materialId,vendorId,today,windowEnd,catalog,allocation,lines,versions,fingerprint);
+        return new CertifiedPurchaseScope(tenantId,materialId,vendorId,today,windowEnd,catalog,allocation,lines,versions,fingerprint,inventory.sourceBirth());
     }
 
     /** 同一采购目录的稳定冻结摘要；不含每次读取时钟，绝不充当跨事务写授权。 */
@@ -243,7 +288,12 @@ public class ErpPurchaseSourceCertificationService {
     /** 版本和来源摘要供同事务写入冻结；本对象不是controller接受的请求类型。 */
     public record CertifiedPurchaseScope(String tenantId, Long materialId, Long vendorId,
             LocalDate snapshotDate, LocalDate windowEnd, CatalogSnapshot catalog, AllocationResult allocation,
-            List<CertifiedLine> lines, Map<String,String> sourceVersions, String sourceFingerprint) {
+            List<CertifiedLine> lines, Map<String,String> sourceVersions, String sourceFingerprint,
+            com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.StoredBirth sourceBirth) {
+        public CertifiedPurchaseScope(String tenantId,Long materialId,Long vendorId,LocalDate snapshotDate,LocalDate windowEnd,
+                CatalogSnapshot catalog,AllocationResult allocation,List<CertifiedLine> lines,Map<String,String> sourceVersions,String sourceFingerprint){
+            this(tenantId,materialId,vendorId,snapshotDate,windowEnd,catalog,allocation,lines,sourceVersions,sourceFingerprint,null);
+        }
         public CertifiedPurchaseScope { lines = List.copyOf(lines); sourceVersions = Map.copyOf(sourceVersions); }
     }
 }
