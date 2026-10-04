@@ -13,8 +13,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class PuCertifiedPurchaseLifecycleSqlContractTest {
     @Test void metadataRecordsHaveExplicitAliasesInsteadOfDependingOnPositionalConstructorDefaults() throws Exception {
         String columns=sql(PuCertifiedPurchaseLifecycleMapper.class,"lifecycleQuantityDefinitions");
-        assertTrue(columns.contains("numeric_precision AS precision"));assertTrue(columns.contains("numeric_scale AS scale"));
+        assertTrue(columns.contains("numeric_precision AS `precision`"));assertTrue(columns.contains("numeric_scale AS `scale`"));
         assertTrue(sql(PuCertifiedPurchaseLifecycleMapper.class,"lifecycleUniqueDefinitions").replace("`","").contains("seq_in_index AS sequence"));
+    }
+    /** 元数据别名在 MySQL 5.7 中也必须合法，不能只验证 MyBatis 能解析注解。 */
+    @Test void orderMetadataAliasesRemainMysqlCompatibleAndKeepRecordNames() throws Exception {
+        String columns = sql(PuCertifiedPurchaseLifecycleMapper.class, "orderColumnDefinitions");
+        assertTrue(columns.contains("numeric_precision AS `precision`"));
+        assertTrue(columns.contains("numeric_scale AS `scale`"));
+        assertTrue(columns.contains("is_nullable AS `nullable`"));
+        assertFalse(columns.matches("(?is).*\\bAS\\s+precision\\b.*"));
+        // 仅显式本地诊断时导出已编译注解 SQL；默认回归不连接任何数据库。
+        String export = System.getProperty("nexus.metadataSqlExport");
+        if (export != null) {
+            java.nio.file.Files.writeString(java.nio.file.Path.of(export),
+                columns + "\n---\n" + sql(PuCertifiedPurchaseLifecycleMapper.class, "lifecycleQuantityDefinitions"));
+        }
     }
     @Test void currentReadsFlushBothMybatisCachesAndDoNotReuseSessionSnapshot() {
         for(Class<?> type:new Class<?>[]{PuCertifiedPurchaseLifecycleMapper.class,PuCertifiedPurchaseWorkflowMapper.class,PuRequirementAllocationLedgerMapper.class,PuRequirementAllocationEventMapper.class})

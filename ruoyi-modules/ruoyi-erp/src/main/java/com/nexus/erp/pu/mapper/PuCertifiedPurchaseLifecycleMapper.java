@@ -202,9 +202,10 @@ public interface PuCertifiedPurchaseLifecycleMapper {
     List<Long> pinLifecycleDefinitions();
 
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
-    @Select("SELECT table_name,column_name,data_type,numeric_precision AS precision,numeric_scale AS scale FROM information_schema.COLUMNS "
+    @Select("SELECT table_name,column_name,data_type,numeric_precision AS `precision`,numeric_scale AS `scale` FROM information_schema.COLUMNS "
         +"WHERE table_schema=DATABASE() AND table_name IN ('wm_material_receive_line','wm_material_stock_tx','pu_purchase_return_line') "
         +"AND column_name IN ('quantity_received','tx_quantity','before_quantity','after_quantity','return_quantity')")
+    /** 保留列名映射，并引用 MySQL 保留字别名，避免运行态元数据读取失败。 */
     List<NativeQuantityDefinition> lifecycleQuantityDefinitions();
 
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
@@ -239,7 +240,7 @@ public interface PuCertifiedPurchaseLifecycleMapper {
         +"('pu_purchase_order','pu_purchase_order_line','pu_certified_purchase_order_terms','pu_certified_purchase_order_terms_confirmation','pu_certified_purchase_order_operation')")
     List<TableDefinition> orderTableDefinitions();
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
-    @Select("SELECT table_name,column_name,data_type,numeric_precision AS precision,numeric_scale AS scale,character_maximum_length AS max_length,is_nullable AS nullable "
+    @Select("SELECT table_name,column_name,data_type,numeric_precision AS `precision`,numeric_scale AS `scale`,character_maximum_length AS max_length,is_nullable AS `nullable` "
         +"FROM information_schema.COLUMNS WHERE table_schema=DATABASE() AND table_name IN "
         +"('pu_purchase_order','pu_purchase_order_line','pu_certified_purchase_order_terms','pu_certified_purchase_order_terms_confirmation','pu_certified_purchase_order_operation')")
     List<OrderColumnDefinition> orderColumnDefinitions();
