@@ -22,6 +22,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.erp.mq.message.StockInMessage;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
@@ -47,6 +48,7 @@ import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -77,6 +79,9 @@ import java.util.Set;
 public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudService {
 
     private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+
+    /** 审批准备仅持有短 ERP 事务，返回前提交并释放单据头锁。 */
+    private final PuRequirementErpTransactionExecutor receiptSubmissionTransactions;
 
     /** 基础数据访问映射器（Mapper） */
     private final WmMaterialReceiveMapper baseMapper;
@@ -427,28 +432,33 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      * @return 是否成功
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public boolean submit(String receiveIdStr, String selectFlowId) {
+        // 不能挂起一个可能持有单据头锁的调用方事务，再等待流程独立 ERP 回调。
+        // 也不能用 NEVER/NOT_SUPPORTED 的空事务同步替代真正无事务的编排边界。
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+            || TransactionSynchronizationManager.isSynchronizationActive()
+            || !TransactionSynchronizationManager.getResourceMap().isEmpty()) {
+            throw new IllegalTransactionStateException("收货审批提交不允许已有事务、同步或资源绑定");
+        }
         Long receiveId = Long.parseLong(receiveIdStr);
-        certifiedReceiptGuard.requireUnposted(receiveId);
-        WmMaterialReceive receive = baseMapper.selectById(receiveId);
+        WmMaterialReceive receive = receiptSubmissionTransactions.executeRepeatableRead(TenantHelper.getTenantId(), () -> {
+            certifiedReceiptGuard.requireUnposted(receiveId);
+            return baseMapper.selectById(receiveId);
+        });
+        // 状态与模板提示在已提交的锁内快照上判断，避免原生入口的异常脱敏掩盖正常业务提示。
         if (receive == null) {
             throw new ServiceException("入库单不存在");
         }
-
-        /** 校验状态：只有草稿和已驳回状态才能提交审批 */
         if (!STATUS_DRAFT.equals(receive.getStatus()) && !STATUS_REJECTED.equals(receive.getStatus())) {
             throw new ServiceException("当前状态不允许提交审批，只有草稿和已驳回状态才能提交！");
         }
-
-        if (StringUtils.isBlank(selectFlowId)) {
-            if (receive.getSelectFlowId() != null) {
-                selectFlowId = String.valueOf(receive.getSelectFlowId());
-            } else {
+        String chosenFlow = selectFlowId;
+        if (StringUtils.isBlank(chosenFlow)) {
+            if (receive.getSelectFlowId() == null) {
                 throw new ServiceException("请先在编辑页选择审批流程并保存");
             }
+            chosenFlow = String.valueOf(receive.getSelectFlowId());
         }
-
         Map<String, Object> variables = new HashMap<>();
         variables.put("dataId", receiveIdStr);
         variables.put("requireTaskOnStart", true);
@@ -458,7 +468,9 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         variables.put("vendorId", receive.getVendorId());
         variables.put("vendorName", receive.getVendorName());
         variables.put("receiveDate", receive.getReceiveDate());
-        R<Void> result = processService.startProcessByDataId(receiveIdStr, selectFlowId, "wmMaterialReceiveCrudService", variables);
+        // 此时准备事务已经真实提交并清理，master 流程及新 ERP 回调不会等待本方法自己的行锁。
+        R<Void> result = processService.startProcessByDataId(receiveIdStr, chosenFlow,
+            "wmMaterialReceiveCrudService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
