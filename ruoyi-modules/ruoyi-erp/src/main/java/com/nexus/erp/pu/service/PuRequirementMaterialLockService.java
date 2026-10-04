@@ -51,6 +51,17 @@ public class PuRequirementMaterialLockService {
     @DS("erp")
     @Transactional(propagation = Propagation.MANDATORY)
     public Map<Long, Integer> lock(String tenantId, Collection<Long> materialIds) {
+        return lockInternal(tenantId, materialIds, true);
+    }
+
+    /** 永久恢复查询只锁既有guard，不ensure或补建；缺失、未知版本均拒绝。 */
+    @DS("erp")
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Map<Long, Integer> lockExisting(String tenantId, Collection<Long> materialIds) {
+        return lockInternal(tenantId, materialIds, false);
+    }
+
+    private Map<Long, Integer> lockInternal(String tenantId, Collection<Long> materialIds, boolean provision) {
         if (!TenantHelper.isEnable() || tenantId == null || tenantId.isBlank()
             || !tenantId.equals(TenantHelper.getTenantId())) {
             throw new ServiceException("物料竞争池租户未启用或与当前租户不匹配");
@@ -76,10 +87,10 @@ public class PuRequirementMaterialLockService {
         Map<Long, Integer> versions = new LinkedHashMap<>();
         for (Long materialId : new TreeSet<>(materialIds)) {
             /** INSERT IGNORE 返回 0 可能表示 guard 已存在；必须继续 SELECT ... FOR UPDATE。 */
-            guardMapper.ensureGuard(tenantId, materialId);
+            if (provision) guardMapper.ensureGuard(tenantId, materialId);
             Integer version = guardMapper.lockVersion(tenantId, materialId);
-            if (version == null) {
-                throw new ServiceException("物料竞争池行不存在或版本为空");
+            if (version == null || (!provision && (version < 0 || version == Integer.MAX_VALUE))) {
+                throw new ServiceException("物料竞争池行不存在或版本不可核验");
             }
             versions.put(materialId, version);
         }

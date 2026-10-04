@@ -208,6 +208,114 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
 
 
 
+    def blocked_build_report(self,data):
+        data.update({'status':'BLOCKED','diagnosticCategory':'ATTESTATION_BUILD_UNPROVEN',
+                     'businessWriteAuthorized':False})
+        data['build'].update({'proofStatus':'UNPROVEN','supportedProofDomain':'NONE',
+                              'witness':{'state':'ABSENT','finalBytesProven':False}})
+
+    def test_recorded_cim_and_java_os_creation_times_reveal_only_build_unproven(self):
+        self.now=datetime(2026,10,4,10,7,tzinfo=timezone(timedelta(hours=8)))
+        self.process['listeners'][0].update({'pid':31752,
+            'startedAt':'2026-10-04T09:51:46.4274600+08:00'})
+        def report(data):
+            self.blocked_build_report(data)
+            data['runtime'].update({'pid':31752,'startedAt':'2026-10-04T01:51:46.427Z'})
+        self.contract_code=412;self.mutate=report;connections=[]
+        authority=self.build(database_probe=lambda:connections.append('borrowed'))
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce(authority)
+        self.assertEqual('ATTESTATION_BUILD_UNPROVEN',caught.exception.category)
+        evidence=authority.evidence()
+        self.assertEqual('BLOCKED',evidence['status'])
+        self.assertEqual('NONE',evidence['supportedProofDomain'])
+        self.assertEqual('ABSENT',evidence['reportedWitnessState'])
+        self.assertFalse(evidence['businessWriteAuthorized'])
+        self.assertFalse(self.m.SUPPORTED_PROOF_DOMAINS)
+        self.assertEqual([],connections)
+        self.assertEqual(['/system/user/getInfo','/system/runtime/attestation','/system/user/getInfo'],
+                         [urlsplit(request.full_url).path for request in self.calls])
+        self.assertTrue(all(request.get_method()=='GET' for request in self.calls))
+
+    def test_same_millisecond_precision_binding_does_not_promote_a_confirmed_witness(self):
+        self.process['listeners'][0]['startedAt']='2026-10-04T09:51:46.4279999+08:00'
+        def report(data):
+            data.update({'status':'BLOCKED','diagnosticCategory':'ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN'})
+            data['runtime']['startedAt']='2026-10-04T01:51:46.427Z'
+            data['build'].update({'proofStatus':'UNPROVEN','supportedProofDomain':'NONE',
+                                  'witness':{'state':'LOAD_IDENTITY_CONFIRMED','finalBytesProven':False}})
+        self.contract_code=412;self.mutate=report;connections=[]
+        authority=self.build(database_probe=lambda:connections.append('borrowed'))
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce(authority)
+        self.assertEqual('ATTESTATION_EXCLUSIVE_CHAIN_UNPROVEN',caught.exception.category)
+        self.assertEqual('NONE',authority.evidence()['supportedProofDomain'])
+        self.assertEqual('LOAD_IDENTITY_CONFIRMED',authority.evidence()['reportedWitnessState'])
+        self.assertFalse(authority.evidence()['businessWriteAuthorized'])
+        self.assertEqual([],connections)
+
+    def test_different_runtime_pid_or_epoch_millisecond_stays_unverified(self):
+        self.process['listeners'][0]['startedAt']='2026-10-04T09:51:46.4279999+08:00'
+        cases=(('pid',24680),('pid',True),('pid','13579'),
+               ('startedAt','2026-10-04T01:51:46.426Z'),
+               ('startedAt','2026-10-04T01:51:46.428Z'))
+        for field,value in cases:
+            with self.subTest(field=field,value=value):
+                def report(data):
+                    self.blocked_build_report(data)
+                    data['runtime']['startedAt']='2026-10-04T01:51:46.427Z'
+                    data['runtime'][field]=value
+                self.contract_code=412;self.mutate=report
+                with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce()
+                self.assertEqual('RUNTIME_PROCESS_UNVERIFIED',caught.exception.category)
+                self.assertFalse(self.authority.evidence()['businessWriteAuthorized'])
+
+    def test_second_listener_pid_or_millisecond_change_is_a_restart(self):
+        initial='2026-10-04T09:51:46.4279999+08:00'
+        for field,value in (('pid',24680),('startedAt','2026-10-04T09:51:46.4280000+08:00')):
+            with self.subTest(field=field,value=value):
+                self.process['listeners'][0].update({'pid':13579,'startedAt':initial})
+                def report(data):
+                    self.blocked_build_report(data)
+                    data['runtime']['startedAt']='2026-10-04T01:51:46.427Z'
+                    self.process['listeners'][0][field]=value
+                self.contract_code=412;self.mutate=report;connections=[]
+                authority=self.build(database_probe=lambda:connections.append('borrowed'))
+                with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce(authority)
+                self.assertEqual('RUNTIME_RESTARTED',caught.exception.category)
+                self.assertFalse(authority.evidence()['businessWriteAuthorized'])
+                self.assertEqual([],connections)
+
+    def test_invalid_backend_creation_time_cannot_pass_process_binding(self):
+        self.process['listeners'][0]['startedAt']='2026-10-04T01:51:46.427Z'
+        values=(None,True,1791078706427,[],{},'2026-10-04T01:51:46.427',
+                '2026-10-04 01:51:46.427+00:00','2026-10-04T01:51:46.427+0000',
+                '2026-10-04T01:51:46.4270000000Z','2026-10-04T01:51:46.427+00:00:01')
+        for value in values:
+            with self.subTest(value=value):
+                def report(data):
+                    self.blocked_build_report(data)
+                    data['runtime']['startedAt']=value
+                self.contract_code=412;self.mutate=report
+                with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce()
+                self.assertEqual('RUNTIME_PROCESS_UNVERIFIED',caught.exception.category)
+                self.assertFalse(self.authority.evidence()['businessWriteAuthorized'])
+
+    def test_matching_os_milliseconds_and_forged_verified_flags_still_never_authorize(self):
+        self.process['listeners'][0]['startedAt']='2026-10-04T09:51:46.4274600+08:00'
+        def report(data):
+            data['runtime']['startedAt']='2026-10-04T01:51:46.427Z'
+            data.update({'status':'VERIFIED','businessWriteAuthorized':True})
+            data['build'].update({'proofStatus':'VERIFIED','supportedProofDomain':'SIGNED_EXCLUSIVE_PREMAIN_V1',
+                                  'finalBytesProven':True,'witness':{'state':'LOAD_IDENTITY_CONFIRMED'}})
+        self.mutate=report;connections=[]
+        authority=self.build(database_probe=lambda:connections.append('borrowed'))
+        with self.assertRaises(self.p.PreflightBlocked) as caught:self.enforce(authority)
+        self.assertEqual('LOADED_BUILD_UNVERIFIED',caught.exception.category)
+        self.assertEqual('BLOCKED',authority.evidence()['status'])
+        self.assertEqual('NONE',authority.evidence()['supportedProofDomain'])
+        self.assertFalse(authority.evidence()['businessWriteAuthorized'])
+        self.assertFalse(self.m.SUPPORTED_PROOF_DOMAINS)
+        self.assertEqual([],connections)
+
     def test_live_database_identities_use_four_actual_connections_and_read_only_cleanup(self):
         calls=[];queries=[];cleanups=[];outer=self
         class Cursor:
@@ -293,6 +401,85 @@ class BackendRuntimeAuthorityTests(unittest.TestCase):
                      'com.nexus.erp.mq.consumer.PurchaseReceiveWritebackConsumer',
                      'com.nexus.common.mq.consumer.BaseMessageConsumer'):
             self.assertIn(name,self.m.REQUIRED_CLASSES)
+
+
+class ProcessCreationTimeTests(unittest.TestCase):
+    def setUp(self):
+        self.m=importlib.import_module('procurement_runtime_attestation')
+        self.p=importlib.import_module('procurement_runtime_preflight')
+
+    def listener(self,value):
+        return {'listeners':[{'port':8080,'pid':31752,'name':'java.exe','startedAt':value}]}
+
+    def known_identity(self,probe):
+        try:return self.m._listener(probe)
+        except self.p.PreflightBlocked as error:
+            self.fail('已知的同毫秒进程创建时间不应被拒绝：'+error.category)
+
+    def test_cim_process_identity_contains_native_integer_epoch_milliseconds(self):
+        identity=self.known_identity(self.listener('2026-10-04T09:51:46.4274600+08:00'))
+        self.assertEqual((31752,1791078706427),identity)
+        self.assertIs(type(identity[1]),int)
+
+    def test_known_fraction_widths_and_offsets_are_normalized_to_the_same_millisecond(self):
+        values=('2026-10-04T01:51:46.427Z','2026-10-04T01:51:46.427000+00:00',
+                '2026-10-04T09:51:46.4274600+08:00','2026-10-03T18:51:46.427999999-07:00',
+                '2026-10-04T07:21:46.42701+05:30')
+        for value in values:
+            with self.subTest(value=value):
+                self.assertEqual((31752,1791078706427),self.known_identity(self.listener(value)))
+        for fraction,millis in (('',0),('.4',400),('.42',420),('.427',427),('.4274',427),
+                                ('.42746',427),('.427460',427),('.4274600',427),
+                                ('.42746001',427),('.427460019',427)):
+            with self.subTest(fraction=fraction):
+                value='2026-10-04T01:51:46'+fraction+'Z'
+                self.assertEqual((31752,1791078706000+millis),self.known_identity(self.listener(value)))
+
+    def test_submilliseconds_use_integer_floor_even_before_epoch_and_far_future(self):
+        cases=(('2026-10-04T01:51:46.4279999Z',1791078706427),
+               ('1969-12-31T23:59:59.9999999Z',-1),
+               ('1970-01-01T00:00:00.0009999Z',0),
+               ('9999-12-31T23:59:59.9999999Z',253402300799999))
+        for value,expected in cases:
+            with self.subTest(value=value):
+                identity=self.known_identity(self.listener(value))
+                self.assertIs(type(identity[1]),int)
+                self.assertEqual(expected,identity[1])
+
+    def test_submillisecond_proximity_across_a_millisecond_boundary_never_matches(self):
+        before=self.known_identity(self.listener('2026-10-04T09:51:46.4279999+08:00'))
+        after=self.known_identity(self.listener('2026-10-04T01:51:46.428Z'))
+        self.assertEqual((31752,1791078706427),before)
+        self.assertEqual((31752,1791078706428),after)
+        self.assertNotEqual(before,after)
+
+    def test_duplicate_socket_entries_require_one_pid_and_epoch_millisecond(self):
+        probe=self.listener('2026-10-04T09:51:46.4274600+08:00')
+        probe['listeners'].extend(self.listener('2026-10-04T01:51:46.427Z')['listeners'])
+        self.assertEqual((31752,1791078706427),self.known_identity(probe))
+        for field,value in (('pid',31753),('startedAt','2026-10-04T01:51:46.428Z')):
+            with self.subTest(field=field,value=value):
+                changed=deepcopy(probe);changed['listeners'][1][field]=value
+                with self.assertRaises(self.p.PreflightBlocked) as caught:self.m._listener(changed)
+                self.assertEqual('RUNTIME_PROCESS_UNVERIFIED',caught.exception.category)
+
+    def test_unknown_or_naive_creation_time_formats_and_types_fail_closed(self):
+        values=(None,True,1791078706427,[],{},b'2026-10-04T01:51:46.427Z',
+                datetime(2026,10,4,1,51,46,tzinfo=timezone.utc),
+                '2026-10-04','2026-10-04T01:51:46.427',
+                '2026-10-04 01:51:46.427+00:00','2026-10-04t01:51:46.427+00:00',
+                '2026-10-04T01:51:46.427z','2026-10-04T01:51:46,427+00:00',
+                '2026-10-04T01:51:46.427+0000','2026-10-04T01:51:46.427+00',
+                '2026-10-04T01:51:46.427+00:00:01','2026-10-04T01:51:46.427+08:60',
+                '2026-10-04T01:51:46.427+24:00','2026-10-04T01:51:46.4270000000Z',
+                '2026-10-04T01:51:46.٤٢٧+00:00','2026-02-30T01:51:46.427Z',
+                '2026-10-04T24:00:00Z','2026-10-04T01:51:60Z',
+                '2026-10-04T01:51:46.427Z\n',' 2026-10-04T01:51:46.427Z')
+        for value in values:
+            with self.subTest(value=value):
+                with self.assertRaises(self.p.PreflightBlocked) as caught:
+                    self.m._listener(self.listener(value))
+                self.assertEqual('RUNTIME_PROCESS_UNVERIFIED',caught.exception.category)
 
 
 if __name__=='__main__':unittest.main()

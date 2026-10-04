@@ -85,7 +85,7 @@ public class PuCertifiedPurchaseLifecycleService {
         List<PuRequirementAllocationLedger> rows=io(()->mapper.lockOrderAllocations(tenantId,orderId));
         require(rows!=null&&!rows.isEmpty()&&rows.stream().allMatch(Objects::nonNull),"物理订单批准账本全集未知");
         Map<String,Integer> versions=new LinkedHashMap<>();for(var row:rows)require(versions.putIfAbsent(row.getAllocationKey(),row.getVersion())==null,"物理订单批准账本重复");
-        List<Context> contexts=orderContexts(tenantId,materialId,requestKey,orderId,versions);List<EventReceipt> approved=new ArrayList<>();
+        List<Context> contexts=orderContexts(tenantId,materialId,requestKey,orderId,versions,true);List<EventReceipt> approved=new ArrayList<>();
         for(Context c:contexts) {
             require((RECEIVING.contains(c.orderHead().status())&&ORDER.equals(c.row().getAllocationStatus()))
                 ||(Set.of("CLOSED","CANCELLED").contains(c.orderHead().status())&&RELEASED.equals(c.row().getAllocationStatus())),"原始批准证明的订单/账本状态不支持");
@@ -105,7 +105,7 @@ public class PuCertifiedPurchaseLifecycleService {
         List<PuRequirementAllocationLedger> rows=io(()->mapper.lockOrderAllocations(tenantId,orderId));
         require(rows!=null&&!rows.isEmpty()&&rows.stream().allMatch(Objects::nonNull),"终态账本全集未知");Map<String,Integer> versions=new LinkedHashMap<>();
         for(var row:rows)require(versions.putIfAbsent(row.getAllocationKey(),row.getVersion())==null,"终态账本重复");
-        List<Context> contexts=orderContexts(tenantId,materialId,requestKey,orderId,versions);List<EventReceipt> closed=new ArrayList<>();
+        List<Context> contexts=orderContexts(tenantId,materialId,requestKey,orderId,versions,true);List<EventReceipt> closed=new ArrayList<>();
         for(Context c:contexts) {
             require(Set.of("CLOSED","CANCELLED").contains(c.orderHead().status())&&RELEASED.equals(c.row().getAllocationStatus())&&c.row().getOccupiedBaseQty().signum()==0,"订单终态尚未完整释放未履约占额");
             reconcileCounters(c);requireNoUnprocessedMovements(c);
@@ -128,6 +128,10 @@ public class PuCertifiedPurchaseLifecycleService {
         return new Command(c.tenantId(),c.actorId(),c.materialId(),allocation,c.requestKey(),c.expectedAllocationVersions().get(allocation),c.operation(),null);
     }
     private List<Context> orderContexts(String tenant,Long material,String request,Long orderId,Map<String,Integer> versions) {
+        return orderContexts(tenant,material,request,orderId,versions,false);
+    }
+    /** 永久批准/终态事件读回只取得既有守卫，批准及其他写路径保留原先的守卫确保语义。 */
+    private List<Context> orderContexts(String tenant,Long material,String request,Long orderId,Map<String,Integer> versions,boolean existingGuardOnly) {
         requireTenant(tenant);qualification.requireSourceChainTransaction();
         require(positive(material)&&positive(orderId)&&text(request,128)&&versions!=null,"整订单读取身份未知");
         List<PuRequirementAllocationLedger> rows=io(()->mapper.lockOrderAllocations(tenant,orderId));
@@ -138,7 +142,7 @@ public class PuCertifiedPurchaseLifecycleService {
         Set<String> keys=new HashSet<>();Set<Long> ids=new HashSet<>();Set<Long> actualLines=new HashSet<>();List<Context> contexts=new ArrayList<>();
         for(var row:rows) {
             require(text(row.getAllocationKey(),128)&&keys.add(row.getAllocationKey())&&positive(row.getAllocationId())&&ids.add(row.getAllocationId()),"整订单账本重复/来源键未知");
-            Context c=readContext(tenant,material,row.getAllocationKey(),request);
+            Context c=readContext(tenant,material,row.getAllocationKey(),request,existingGuardOnly);
             require(c.row().getAllocationId().equals(row.getAllocationId())&&c.orderLine()!=null&&orderId.equals(c.orderLine().orderId())
                 &&orderId.equals(c.orderHead().orderId())&&c.orderLine().lineId().equals(c.row().getOrderLineId())&&actualLines.add(c.orderLine().lineId())
                 &&"ORDERED".equals(c.head().status())&&Objects.equals(versions.get(row.getAllocationKey()),c.row().getVersion()),"整订单承接/逐行版本已变化");
@@ -352,8 +356,16 @@ public class PuCertifiedPurchaseLifecycleService {
     /** 批次预检：读取全部真实物理事实及既有因果事件/计数，绝不修改数据。 */
     @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
     public void validateReceiptLocked(ReceiptCommand command) {
+        validateReceiptContextLocked(command,false);
+    }
+    /** 永久消费读回专用预检：完整来源、原事件和计数校验不变，但绝不确保或新建守卫。 */
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public void validateReceiptReadOnlyLocked(ReceiptCommand command) {
+        validateReceiptContextLocked(command,true);
+    }
+    private void validateReceiptContextLocked(ReceiptCommand command,boolean existingGuardOnly) {
         validateReceipt(command);qualification.requireSourceChainTransaction();
-        Context c=readContext(command.tenantId(),command.materialId(),command.allocationKey(),command.requestKey());PostedEffect posted=receipt(c,command.receiveLineId());reconcileCounters(c);
+        Context c=readContext(command.tenantId(),command.materialId(),command.allocationKey(),command.requestKey(),existingGuardOnly);PostedEffect posted=receipt(c,command.receiveLineId());reconcileCounters(c);
         String key=eventKey(c,Operation.RECEIPT_POSTED,command.receiveLineId());
         List<PuRequirementAllocationEvent> prior=c.history().stream().filter(e->key.equals(e.getEventKey())).toList();
         if(!prior.isEmpty()) {
@@ -378,8 +390,12 @@ public class PuCertifiedPurchaseLifecycleService {
     }
 
     private Context readContext(String tenantId, Long materialId, String allocationKey, String requestKey) {
+        return readContext(tenantId,materialId,allocationKey,requestKey,false);
+    }
+    /** 只读分支显式锁定既有守卫，不借线程标记或存在性预查调用旧的确保写入。 */
+    private Context readContext(String tenantId, Long materialId, String allocationKey, String requestKey,boolean existingGuardOnly) {
         requireTenant(tenantId);
-        Map<Long,Integer> versions=io(()->locks.lock(tenantId,List.of(materialId)));
+        Map<Long,Integer> versions=io(()->existingGuardOnly?locks.lockExisting(tenantId,List.of(materialId)):locks.lock(tenantId,List.of(materialId)));
         require(versions!=null&&versions.size()==1&&versions.get(materialId)!=null&&versions.get(materialId)>=0
             &&versions.get(materialId)<Integer.MAX_VALUE,"物料guard版本未知");
         require("InnoDB".equalsIgnoreCase(io(mapper::commandTableEngine)),"永久command表不是已核事务表");

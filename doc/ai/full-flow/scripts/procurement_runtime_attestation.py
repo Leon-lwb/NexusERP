@@ -108,6 +108,26 @@ def _fresh(value, lower, upper):
     return timestamp
 
 
+def _process_started_at_millis(value):
+    # 仅接受 OS 创建时间的带偏移格式；观测时间的新鲜度容忍窗不参与进程绑定。
+    _require(type(value) is str and len(value)<=64,'RUNTIME_PROCESS_UNVERIFIED')
+    match=re.fullmatch(r'([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})'
+                      r'(?:\.([0-9]{1,9}))?(Z|[+-][0-9]{2}:[0-9]{2})',value)
+    _require(match is not None,'RUNTIME_PROCESS_UNVERIFIED')
+    prefix,fraction,offset=match.groups()
+    _require(offset=='Z' or (int(offset[1:3])<24 and int(offset[4:])<60),
+             'RUNTIME_PROCESS_UNVERIFIED')
+    # 截取微秒只为兼容 Python 3.10，随后用整数绑定本机 ProcessHandle 的毫秒精度。
+    normalized=prefix+('.'+(fraction+'000000')[:6] if fraction else '')+offset
+    try:
+        elapsed=_time(normalized)-datetime(1970,1,1,tzinfo=timezone.utc)
+    except PreflightBlocked:
+        raise PreflightBlocked('process creation time unavailable; details suppressed',
+                               category='RUNTIME_PROCESS_UNVERIFIED') from None
+    # 这是共同精度的规范化，不四舍五入、不容忍相邻毫秒；负 epoch 也向下取整。
+    return elapsed.days*86_400_000+elapsed.seconds*1000+elapsed.microseconds//1000
+
+
 def _listener(probe):
     _require(isinstance(probe,dict),'RUNTIME_PROCESS_UNVERIFIED')
     identities=set()
@@ -116,7 +136,7 @@ def _listener(probe):
             _require(type(item.get('pid')) is int and item['pid']>0
                      and str(item.get('name','')).lower() in ('java.exe','javaw.exe','java'),
                      'RUNTIME_PROCESS_UNVERIFIED')
-            identities.add((item['pid'],_time(item.get('startedAt'))))
+            identities.add((item['pid'],_process_started_at_millis(item.get('startedAt'))))
     _require(len(identities)==1,'RUNTIME_PROCESS_UNVERIFIED')
     return next(iter(identities))
 
@@ -300,7 +320,7 @@ class BackendRuntimeAuthority(RuntimeAuthority):
             after=self._clock();_fresh(data.get('observedAt'),before,after)
             _require(0 <= (after-before).total_seconds() <= MAX_AGE_SECONDS,'ATTESTATION_STALE')
             runtime=data.get('runtime');_require(isinstance(runtime,dict),'RUNTIME_PROCESS_UNVERIFIED')
-            _require(type(runtime.get('pid')) is int and (runtime['pid'],_time(runtime.get('startedAt')))==process_before
+            _require(type(runtime.get('pid')) is int and (runtime['pid'],_process_started_at_millis(runtime.get('startedAt')))==process_before
                      and _hash(runtime.get('instanceSha256')),'RUNTIME_PROCESS_UNVERIFIED')
             _require(runtime.get('activeProfiles')==['dev'],'RUNTIME_PROFILE_MISMATCH')
             build=data.get('build');_require(isinstance(build,dict),'LOADED_BUILD_UNVERIFIED')

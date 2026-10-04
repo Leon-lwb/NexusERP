@@ -202,6 +202,18 @@ class PuCertifiedPurchaseOrderWorkflowServiceTest {
             assertThrows(ServiceException.class,()->f.service.requireApprovedReplayLocked(f.t,801L));f.callback=false;
         }
     }
+    @Test void approvedReplayValidationOnlyLocksExistingGuardAndNeverEnsures() {
+        try(var f=new Fixture()) {
+            var q=f.confirmed();f.actor=903L;f.service.approve(801L,0,q.quoteId(),"approve-recovery-query");
+            clearInvocations(f.locks,f.mapper);
+            assertDoesNotThrow(()->f.executor.executeRepeatableRead(f.t,()->{f.service.requireApprovedReplayLocked(f.t,801L);return true;}));
+            verify(f.locks,never()).lock(anyString(),any());
+            verify(f.locks).lockExisting(f.t,List.of(201L));
+            verify(f.mapper,never()).insertOperation(any());
+            verify(f.mapper,never()).priceLine(any(),any(),any(),any());
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final String t="000000",sourceKey="manual-source",frozenFingerprint;
         final LocalDate end=LocalDate.of(2026,10,16);String today="2026-10-03",state="DRAFT";int version=0,executions=0;Long actor=901L,attachedQuote=null;
@@ -222,7 +234,7 @@ class PuCertifiedPurchaseOrderWorkflowServiceTest {
             login.when(LoginHelper::getUsername).thenReturn("operator");login.when(LoginHelper::getDeptId).thenReturn(7L);
             when(executor.executeRepeatableRead(eq(t),any())).thenAnswer(a->{executions++;callback=true;try{return ((Supplier<?>)a.getArgument(1)).get();}finally{callback=false;}});
             doAnswer(a->{assertTrue(callback,"ownership must be rechecked inside RR");return null;}).when(qualification).requireSourceChainTransaction();
-            when(locks.lock(t,List.of(201L))).thenReturn(Map.of(201L,0));when(mapper.findMaterial(t,801L)).thenReturn(201L);
+            when(locks.lock(t,List.of(201L))).thenReturn(Map.of(201L,0));when(locks.lockExisting(t,List.of(201L))).thenReturn(Map.of(201L,0));when(mapper.findMaterial(t,801L)).thenReturn(201L);
             when(mapper.databaseDate()).thenAnswer(a->today);when(sources.databaseNow()).thenReturn(Date.from(Instant.parse("2026-10-03T04:00:00Z")));
             PuCertifiedPurchaseOrderWorkflowMapperTest.stubOrderDefinitions(sources);
             when(mapper.lockHead(t,801L)).thenAnswer(a->head());

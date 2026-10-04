@@ -56,14 +56,27 @@ public class PuCertifiedPurchaseReceiptBatchService {
         require(positive(receiveId)&&(expectedOrderId==null||positive(expectedOrderId)),"真实收货/订单ID无效");
         return executor.executeRepeatableRead(tenantId,()->consumeLocked(tenantId,receiveId,expectedOrderId));
     }
+    /**
+     * 在调用方已拥有的 ERP 可重复读事务中读回永久消费证据，不自启事务或补造任何业务结果。
+     * 空结果仅表示全部原事件均未观察到，不能据此认定收货消费已完成。
+     */
+    public Optional<BatchReceipt> readCommittedReceiptLocked(String tenantId,Long receiveId,Long expectedOrderId) {
+        require(TenantHelper.isEnable()&&text(tenantId,20)&&tenantId.equals(TenantHelper.getTenantId()),"当前租户未启用或不一致");
+        require(positive(receiveId)&&(expectedOrderId==null||positive(expectedOrderId)),"真实收货/订单ID无效");
+        return receiptLocked(tenantId,receiveId,expectedOrderId,true);
+    }
     private BatchReceipt consumeLocked(String tenant,Long receiveId,Long expectedOrderId) {
+        return receiptLocked(tenant,receiveId,expectedOrderId,false).orElseThrow(()->failed("消费结果未确认"));
+    }
+    /** 读回与消费共享完整原生来源校验，守卫取得和最终结果生成必须显式区分读写路径。 */
+    private Optional<BatchReceipt> receiptLocked(String tenant,Long receiveId,Long expectedOrderId,boolean readOnly) {
         qualification.requireSourceChainTransaction();sources.requireAllocationDefinitions();
         ReceiveHead hint=io(()->mapper.readReceiptHead(tenant,receiveId));
         require(hint!=null&&tenant.equals(hint.tenantId())&&receiveId.equals(hint.receiveId())&&positive(hint.orderId()),"收货原父链缺失");
         List<Long> hints=rows(io(()->mapper.readMaterialHints(tenant,receiveId)));
         require(!hints.isEmpty()&&hints.stream().allMatch(v->positive(v)),"收货/订单物料发现未知");
         List<Long> materials=List.copyOf(new TreeSet<>(hints));
-        Map<Long,Integer> guarded=io(()->locks.lock(tenant,materials));
+        Map<Long,Integer> guarded=io(()->readOnly?locks.lockExisting(tenant,materials):locks.lock(tenant,materials));
         require(guarded!=null&&guarded.keySet().equals(new HashSet<>(materials))&&guarded.values().stream()
             .allMatch(v->v!=null&&v>=0&&v<Integer.MAX_VALUE),"物料guard版本未知");
 
@@ -92,7 +105,10 @@ public class PuCertifiedPurchaseReceiptBatchService {
         boolean certified=!commands.isEmpty()||!allocations.isEmpty()||heads.stream().anyMatch(h->h.requestKey()!=null||sourceHint(h.sourceType()))
             ||requisitions.stream().anyMatch(l->l.sourceId()!=null||sourceHint(l.sourceType()));
         validateRequisitionReferences(order,orderLines,heads,requisitions);
-        if(!certified) return new BatchReceipt(tenant,receiveId,head.orderId(),false,List.of(),false);
+        if(!certified) {
+            require(!readOnly,"非认证来源不能证明永久收货消费结果");
+            return Optional.of(new BatchReceipt(tenant,receiveId,head.orderId(),false,List.of(),false));
+        }
 
         require(commands.size()==1&&heads.size()==1,"认证来源永久command/申请头不是完整单一承接");
         CommandSource command=commands.get(0);RequisitionHead requisition=heads.get(0);
@@ -134,18 +150,20 @@ public class PuCertifiedPurchaseReceiptBatchService {
         // 此只读 API 不得执行库存写入、新建单据或要求伪造 MQ 登录。
         posting.validatePostedLocked(tenant,receiveId);
         Long actor=validatePhysical(tenant,receiveId,received);
-        int hits=0;
+        int hits=0;Map<Long,PuRequirementAllocationEvent> priorEvents=new HashMap<>();
         for(ReceiveLine line:received) {
             var allocation=byOrder.get(line.purchaseLineId());String key=eventKey(tenant,allocation,line.lineId());
             var prior=io(()->mapper.lockReceiptEvent(tenant,key));
-            if(prior!=null) {validatePrior(tenant,allocation,line,actor,key,prior);hits++;}
+            if(prior!=null) {validatePrior(tenant,allocation,line,actor,key,prior);priorEvents.put(line.lineId(),prior);hits++;}
         }
         require(hits==0||hits==received.size(),"永久收货批次证据仅部分存在，拒绝伪造完整恢复");boolean replay=hits==received.size();
         Map<String,Integer> versions=new HashMap<>();allocations.forEach(a->versions.put(a.getAllocationKey(),a.getVersion()));
         // 此循环中不允许修改业务数据。D 负责共用的来源/历史/计数校验。
         for(ReceiveLine line:received) {
             var a=byOrder.get(line.purchaseLineId());
-            lifecycle.validateReceiptLocked(new ReceiptCommand(tenant,material,a.getAllocationKey(),command.requestKey(),versions.get(a.getAllocationKey()),line.lineId()));
+            ReceiptCommand check=new ReceiptCommand(tenant,material,a.getAllocationKey(),command.requestKey(),versions.get(a.getAllocationKey()),line.lineId());
+            if(readOnly) lifecycle.validateReceiptReadOnlyLocked(check);
+            else lifecycle.validateReceiptLocked(check);
         }
         if(!replay) {
             Map<Long,BigDecimal> amounts=new HashMap<>();for(ReceiveLine l:received)amounts.merge(l.purchaseLineId(),l.quantityReceived(),BigDecimal::add);
@@ -154,8 +172,16 @@ public class PuCertifiedPurchaseReceiptBatchService {
         }
         List<LineReceipt> results=new ArrayList<>();
         for(ReceiveLine line:received) {
+            if(readOnly&&!replay) continue;
             var a=byOrder.get(line.purchaseLineId());Integer version=versions.get(a.getAllocationKey());
-            EventReceipt result=lifecycle.consumeReceiptLocked(new ReceiptCommand(tenant,material,a.getAllocationKey(),command.requestKey(),version,line.lineId()));
+            EventReceipt result;
+            if(readOnly) {
+                // 回执各字段只取本行已锁定的永久原事件，绝不由当前余额或单据编码推导。
+                PuRequirementAllocationEvent prior=priorEvents.get(line.lineId());
+                result=new EventReceipt(prior.getEventId(),prior.getAllocationId(),Operation.valueOf(prior.getEventType()),
+                    prior.getFromStatus(),prior.getToStatus(),prior.getOccupiedBaseBefore(),prior.getOccupiedBaseAfter(),
+                    prior.getRequisitionLineId(),prior.getOrderLineId(),prior.getActorId(),true);
+            }else result=lifecycle.consumeReceiptLocked(new ReceiptCommand(tenant,material,a.getAllocationKey(),command.requestKey(),version,line.lineId()));
             require(result!=null&&positive(result.eventId())&&a.getAllocationId().equals(result.allocationId())&&Operation.RECEIPT_POSTED==result.operation()
                 &&a.getRequisitionLineId().equals(result.requisitionLineId())&&a.getOrderLineId().equals(result.orderLineId())&&actor.equals(result.actorId())
                 &&result.replayed()==replay&&decimal(result.occupiedBefore())&&decimal(result.occupiedAfter())
@@ -165,7 +191,7 @@ public class PuCertifiedPurchaseReceiptBatchService {
         require(head.equals(io(()->mapper.lockReceiptHead(tenant,receiveId)))&&received.equals(rows(io(()->mapper.lockReceiptLines(tenant,receiveId))).stream()
             .sorted(Comparator.comparing(ReceiveLine::lineId)).toList()),"批次末端原收货身份漂移");
         qualification.requireSourceChainTransaction();
-        return new BatchReceipt(tenant,receiveId,head.orderId(),true,results,replay);
+        return readOnly&&!replay?Optional.empty():Optional.of(new BatchReceipt(tenant,receiveId,head.orderId(),true,results,replay));
     }
     private static void validateRequisitionReferences(OrderHead order,List<OrderLine> orders,List<RequisitionHead> heads,List<RequisitionLine> lines) {
         Map<Long,RequisitionHead> byHead=new HashMap<>();Map<Long,RequisitionLine> byLine=new HashMap<>();

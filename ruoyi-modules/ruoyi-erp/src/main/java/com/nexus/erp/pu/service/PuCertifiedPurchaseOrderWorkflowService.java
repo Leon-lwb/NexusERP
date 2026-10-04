@@ -107,12 +107,12 @@ public class PuCertifiedPurchaseOrderWorkflowService {
      * 要求原始批准回执/完整占用事件，不能仅凭 APPROVED 状态与正价格判定。
      */
     public void requireApprovedLocked(String tenantId,Long orderId) {
-        requireTenant(tenantId);qualification.requireSourceChainTransaction();validateId(orderId);Document d=load(tenantId,orderId);
+        requireTenant(tenantId);qualification.requireSourceChainTransaction();validateId(orderId);Document d=load(tenantId,orderId,true);
         require(RECEIVING.contains(d.head().status()),"订单不在实际接收状态");verifyApproved(d,false);qualification.requireSourceChainTransaction();
     }
     /** 仅用于恢复永久过账结果；绝不授权对终态订单执行新的物理写入。 */
     public void requireApprovedReplayLocked(String tenantId,Long orderId) {
-        requireTenant(tenantId);qualification.requireSourceChainTransaction();validateId(orderId);Document d=load(tenantId,orderId);
+        requireTenant(tenantId);qualification.requireSourceChainTransaction();validateId(orderId);Document d=load(tenantId,orderId,true);
         if(RECEIVING.contains(d.head().status())){verifyApproved(d,false);return;}
         require(Set.of("CLOSED","CANCELLED").contains(d.head().status()),"永久posting恢复订单状态不支持");Quote q=verifyApproved(d,true);
         Operation op="CLOSED".equals(d.head().status())?Operation.CLOSE_ORDER:Operation.CANCEL_ORDER;
@@ -200,9 +200,11 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         Result original=new Result(op.orderId(),d.head().orderNo(),op.requestKey(),op.resultStatus(),op.resultVersion(),op.quoteId(),op.quoteHash(),op.expectedArrivalDate(),op.totalAmount(),op.amountExcludingTax(),op.taxAmount(),true,events);
         require(op.resultFingerprint().equals(resultFingerprint(d.head().tenantId(),original)),"批准结果及全来源事件摘要不符");return q;
     }
-    private Document load(String tenant,Long id) {
+    private Document load(String tenant,Long id) { return load(tenant,id,false); }
+    /** 内部已提交结果校验只锁既有guard；定价/批准等写入口保留原ensure分支。 */
+    private Document load(String tenant,Long id,boolean existingGuardOnly) {
         requireTenant(tenant);qualification.requireSourceChainTransaction();Long material=io(()->mapper.findMaterial(tenant,id));require(positive(material),"订单缺少永久可信command，历史单据不可升级");
-        Map<Long,Integer> guard=io(()->locks.lock(tenant,List.of(material)));require(guard!=null&&guard.size()==1&&guard.get(material)!=null&&guard.get(material)>=0&&guard.get(material)<Integer.MAX_VALUE,"物料guard版本未知");
+        Map<Long,Integer> guard=io(()->existingGuardOnly?locks.lockExisting(tenant,List.of(material)):locks.lock(tenant,List.of(material)));require(guard!=null&&guard.size()==1&&guard.get(material)!=null&&guard.get(material)>=0&&guard.get(material)<Integer.MAX_VALUE,"物料guard版本未知");
         sourceGate.requireOrderDefinitions();Head head=io(()->mapper.lockHead(tenant,id));
         require(head!=null&&tenant.equals(head.tenantId())&&id.equals(head.orderId())&&text(head.orderNo(),64)&&positive(head.requisitionId())&&positive(head.vendorId())
             &&head.version()!=null&&head.version()>=0&&head.version()<Integer.MAX_VALUE&&"0".equals(head.delFlag())&&head.selectFlowId()==null,"真实订单头/版本/租户/直接ERP审批范围未知");

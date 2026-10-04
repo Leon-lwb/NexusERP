@@ -424,6 +424,7 @@ READ_ROUTES = (
     r'/erp/wm/(?:arrivalnotice|receive)/(?:list|[1-9][0-9]*(?:/proc)?)',
     r'/erp/prd/(?:plan|work|requirement)/(?:list|[1-9][0-9]*)',
     r'/mes/qc/iqc/(?:list|[1-9][0-9]*(?:/details)?)',
+    r'/erp/wm/receive/certified/recovery/[1-9][0-9]*',
     r'/workflow/process/iscompleted',
 )
 READ_QUERY_FIELDS = frozenset({'pageNum','pageSize','orderNo','requisitionNo','noticeId','orderId',
@@ -458,6 +459,11 @@ class FormalProcurementTransport:
         try: safe_path(path)
         except PreflightBlocked: raise TransportBlocked('unsafe read API path') from None
         require(any(re.fullmatch(pattern,path) for pattern in READ_ROUTES),'side-effecting or unsupported GET forbidden')
+        if path.startswith('/erp/wm/receive/certified/recovery/'):
+            # 恢复只绑定原路径身份，不能通过查询缩小完整来源或改换单据。
+            require(query is None or query == {}, 'permanent recovery query overrides forbidden')
+            try: strict_id(path.rsplit('/',1)[1])
+            except PreflightBlocked: raise TransportBlocked('canonical native recovery ID required') from None
         require(query is None or isinstance(query,dict) and set(query)<=READ_QUERY_FIELDS,'unsupported read query')
         if query:
             _values(query,self.credentials.tenant_id)

@@ -97,6 +97,37 @@ public class WmCertifiedReceiptPostingService {
             return result;
         }
     }
+    /** 永久物理结果读回，不重新入库、上架、确认通知或创建缺失guard。 */
+    public record PostedSnapshot(Long orderId, Result result, String postedAt, String notificationStatus) { }
+
+    public PostedSnapshot readPostedLocked(String tenant, Long receiveId) {
+        qualification.requireSourceChainTransaction();
+        need(TenantHelper.isEnable() && tenant != null && tenant.equals(TenantHelper.getTenantId())
+            && positive(receiveId), "恢复读回租户/原单据无效");
+        requireSchema();
+        List<Long> materials = read(() -> mapper.discoverMaterials(tenant, receiveId));
+        need(materials != null && materials.size() == 1 && positive(materials.get(0)), "恢复物料范围未知");
+        Long material = materials.get(0);
+        Map<Long,Integer> guards = read(() -> locks.lockExisting(tenant, List.of(material)));
+        need(guards != null && guards.size() == 1 && guards.get(material) != null
+            && guards.get(material) >= 0 && guards.get(material) < Integer.MAX_VALUE, "恢复既有物料guard未知");
+        // 与既有Facade保持头→posting锁序，避免不持物料guard的路由读与恢复读形成反向等待。
+        Head firstHead = read(() -> mapper.lockHead(tenant, receiveId));
+        need(firstHead != null && tenant.equals(firstHead.tenantId()) && receiveId.equals(firstHead.receiveId())
+            && positive(firstHead.orderId()) && "FINISHED".equals(firstHead.status()), "缺少原已完物理单据");
+        Posting original = read(() -> mapper.lockPosting(tenant, receiveId));
+        need(original != null && tenant.equals(original.tenantId()) && receiveId.equals(original.receiveId())
+            && material.equals(original.materialId()) && positive(original.actorId()), "缺少真正永久过账，查询不补建");
+        // 在已锁定posting的前提下只允许现有完整replay分支；绝不调用公开post及其提交后MQ。
+        Result checked = postLocked(tenant, original.actorId(), receiveId, false);
+        need(checked.replay() && original.sourceFingerprint().equals(checked.sourceFingerprint()), "恢复不是原已提交结果");
+        Head head = read(() -> mapper.lockHead(tenant, receiveId));
+        need(head != null && tenant.equals(head.tenantId()) && receiveId.equals(head.receiveId())
+            && firstHead.equals(head) && positive(head.orderId()) && "FINISHED".equals(head.status()), "恢复原父单据漂移");
+        qualification.requireSourceChainTransaction();
+        return new PostedSnapshot(head.orderId(), checked, original.postedAt(), original.notificationStatus());
+    }
+
     /** 内部整批收货只读边界；调用方已持有物料守卫。不能用 MQ 消息载荷生成或补写过账及通知。 */
     public void validatePostedLocked(String tenant,Long receiveId) {
         qualification.requireSourceChainTransaction();

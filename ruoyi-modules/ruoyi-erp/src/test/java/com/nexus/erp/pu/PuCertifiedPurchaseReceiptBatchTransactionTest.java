@@ -77,6 +77,44 @@ class PuCertifiedPurchaseReceiptBatchTransactionTest {
             assertClean();
         }
     }
+    @Test void permanentReadbackRejectsNoOwnedTransactionWithoutOpeningAnyConnection() throws Exception {
+        try(var f=new Fixture()) {
+            var db=new Physical(f);
+            assertThrows(ServiceException.class,()->f.service.readCommittedReceiptLocked(T,901L,801L));
+            assertTrue(db.connections.isEmpty());verifyNoInteractions(f.executor,f.mapper,f.lifecycle,f.locks);
+            verify(db.master,never()).getConnection();assertClean();
+        }
+    }
+    @Test void permanentReadbackJoinsOnlyTheCallerOwnedErpRepeatableReadConnection() throws Exception {
+        try(var f=new Fixture()) {
+            var db=new Physical(f);
+            when(f.locks.lockExisting(T,List.of(201L))).thenReturn(Map.of(201L,5));
+            for(var row:f.allocations) {
+                row.setVersion(3);Long id=row.getOrderLineId()+8300;db.permanent.put(id,f.event(row,id));
+            }
+            var before=new LinkedHashMap<>(db.permanent);
+            var result=f.executor.executeRepeatableRead(T,()->f.service.readCommittedReceiptLocked(T,901L,801L)).orElseThrow();
+            assertTrue(result.replayed());assertEquals(2,result.lines().size());
+            assertEquals(before,db.permanent);assertTrue(db.pending.isEmpty());assertEquals(1,db.connections.size());
+            verify(f.executor,times(1)).executeRepeatableRead(eq(T),any());
+            verify(f.locks).lockExisting(T,List.of(201L));verify(f.locks,never()).lock(any(),any());
+            verify(f.lifecycle,times(2)).validateReceiptReadOnlyLocked(any());
+            verify(f.lifecycle,never()).validateReceiptLocked(any());verify(f.lifecycle,never()).consumeReceiptLocked(any());
+            verify(db.connections.get(0)).commit();verify(db.master,never()).getConnection();assertClean();
+        }
+    }
+    @Test void ambientResourcesCannotBeBorrowedByPermanentReadback() throws Exception {
+        try(var f=new Fixture()) {
+            var db=new Physical(f);Object key=new Object(),caller=new Object();
+            TransactionSynchronizationManager.bindResource(key,caller);
+            try {
+                assertThrows(ServiceException.class,()->f.service.readCommittedReceiptLocked(T,901L,801L));
+                assertSame(caller,TransactionSynchronizationManager.getResource(key));assertTrue(db.connections.isEmpty());
+                verifyNoInteractions(f.executor,f.mapper,f.lifecycle,f.locks);verify(db.master,never()).getConnection();
+            } finally {assertSame(caller,TransactionSynchronizationManager.unbindResource(key));}
+            assertClean();
+        }
+    }
     static void assertClean() {
         assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
         assertFalse(TransactionSynchronizationManager.isActualTransactionActive());assertFalse(TransactionSynchronizationManager.isSynchronizationActive());

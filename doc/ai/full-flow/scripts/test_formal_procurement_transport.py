@@ -275,6 +275,24 @@ class TransportTests(unittest.TestCase):
                     self.client.send({**original,**changes},intent_id='receipt-original-intent')
         self.assertEqual([],self.calls)
 
+    def test_permanent_receipt_recovery_get_has_no_business_dispatch(self):
+        path='/erp/wm/receive/certified/recovery/9223372036854775806'
+        try:self.client.get(path)
+        except self.m.TransportBlocked:self.fail('永久收货恢复GET尚未接入只读路由')
+        self.assertEqual(1,len(self.calls))
+        self.assertEqual('GET',self.calls[0].get_method())
+        self.assertTrue(self.calls[0].full_url.endswith(path))
+        self.assertEqual([],self.dispatched())
+        self.assertEqual([],self.journal.load())
+
+    def test_permanent_recovery_identity_is_not_overridden_by_query_or_unsafe_id(self):
+        path='/erp/wm/receive/certified/recovery/'
+        for request_path, query in ((path+'9223372036854775806',{'receiveId':'1'}),
+                                    (path+'9223372036854775808',None), (path+'01',None)):
+            with self.subTest(path=request_path),self.assertRaises(self.m.TransportBlocked):
+                self.client.get(request_path,query)
+        self.assertEqual([],self.calls)
+
     def test_native_iqc_gets_are_read_only_without_a_crud_birth_fallback(self):
         for path,query in (('/mes/qc/iqc/list',{'receiveId':'9223372036854775806','materialId':'9223372036854775807'}),
                            ('/mes/qc/iqc/123456789123456788',None),

@@ -12,6 +12,8 @@ import java.util.Set;
 public class WmCertifiedReceiptPostingAuthorizer {
     public DecisionActor requireUser() { return require("wm:receive:execute"); }
     public DecisionActor requireShelf() { return require("wm:receive:shelf"); }
+    /** 永久恢复读回只要求查询权限，不借用上架/执行身份。 */
+    public DecisionActor requireQuery() { return require("wm:receive:query"); }
     private DecisionActor require(String permission) {
         StpUtil.checkLogin();
         StpUtil.checkPermission(permission);
