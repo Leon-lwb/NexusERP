@@ -93,11 +93,11 @@ public class SysMenuBo extends BaseEntity {
     private String status;
 
     /**
-     * 权限标识
+     * 权限标识（可选；冒号分隔至少三段，例如 pu:order:terms:add）
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Size(min = 0, max = 100, message = "权限标识长度不能超过{max}个字符")
-    @Pattern(regexp = RegexConstants.PERMISSION_STRING, message = "权限标识必须符合 tool:build:list 格式")
+    @Pattern(regexp = RegexConstants.PERMISSION_STRING, message = "权限标识必须由冒号分隔至少三段非空内容，如 tool:build:list 或 pu:order:terms:add")
     private String perms;
 
     /**

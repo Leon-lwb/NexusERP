@@ -171,11 +171,11 @@
             </el-form-item>
           </el-col>
           <el-col v-if="form.menuType !== 'M'" :span="12">
-            <el-form-item>
+            <el-form-item prop="perms">
               <el-input v-model="form.perms" placeholder="请输入权限标识" maxlength="100" />
               <template #label>
                 <span>
-                  <el-tooltip content="控制器中定义的权限字符，如：@SaCheckPermission('system:user:list')" placement="top">
+                  <el-tooltip content="控制器中定义的权限字符，冒号分隔至少三段，如 system:user:list 或 pu:order:terms:add；可留空" placement="top">
                     <el-icon>
                       <question-filled />
                     </el-icon>
@@ -305,6 +305,7 @@
 import { addMenu, cascadeDelMenu, delMenu, getMenu, listMenu, updateMenu } from '@/api/system/menu';
 import { MenuForm, MenuQuery, MenuVO } from '@/api/system/menu/types';
 import { MenuTypeEnum } from '@/enums/MenuTypeEnum';
+import { validPermission } from '@/utils/validate';
 
 interface MenuOptionsType {
   menuId: number;
@@ -351,7 +352,19 @@ const data = reactive<PageData<MenuForm, MenuQuery>>({
   rules: {
     menuName: [{ required: true, message: '菜单名称不能为空', trigger: 'blur' }],
     orderNum: [{ required: true, message: '菜单顺序不能为空', trigger: 'blur' }],
-    path: [{ required: true, message: '路由地址不能为空', trigger: 'blur' }]
+    path: [{ required: true, message: '路由地址不能为空', trigger: 'blur' }],
+    perms: [
+      {
+        validator: (_rule, value, callback) => {
+          if (validPermission(value)) {
+            callback();
+          } else {
+            callback(new Error('权限标识不能超过100个字符，且必须由冒号分隔至少三段非空内容，如 system:user:list 或 pu:order:terms:add'));
+          }
+        },
+        trigger: 'blur'
+      }
+    ]
   }
 });
 

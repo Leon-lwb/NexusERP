@@ -97,3 +97,11 @@ export const isArray = (arg: string | string[]) => {
   }
   return Array.isArray(arg);
 };
+
+/**
+ * 菜单权限格式：可留空，非空值最多 100 字符；至少三段，首段不允许通配符，后续段保留既有 * 支持。
+ * 仅校验格式，不参与授权匹配；严格匹配结尾，避免 $ 接受末尾换行。
+ */
+export const validPermission = (permission?: string | null): boolean => {
+  return permission == null || permission === '' || (permission.length <= 100 && /^[a-zA-Z0-9_]+(?::[a-zA-Z0-9_*]+){2,}(?![\s\S])/.test(permission));
+};
