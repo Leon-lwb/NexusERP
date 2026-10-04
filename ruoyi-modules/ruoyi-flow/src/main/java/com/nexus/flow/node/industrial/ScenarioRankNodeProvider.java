@@ -28,10 +28,10 @@ public class ScenarioRankNodeProvider extends AbstractIndustrialNodeProvider {
     @Override public String getNodeType() { return "industrial.scenarioRank"; }
     @Override protected Object run(FlowExecutionContext ctx, DecisionActor actor) {
         var compare = support.read(ctx.getState().get("nodes.aps.output"), ApsScenarioCompareResult.class);
-        var ranked = ranking.rank(compare.scenarios());
         long id = support.requireRunId(ctx);
         var run = persistence.requireRun(id, actor.tenantId());
         var snapshot = persistence.requireSnapshot(id, actor.tenantId());
+        var ranked = ranking.rank(id, snapshot, persistence.requireHorizonDays(run), compare.scenarios());
         var shortage = support.read(ctx.getState().get("nodes.shortage.output"), ShortageSimulationResult.class);
         // 向模型请求文字前，构建相同的确定性风险及带来源证据。
         // modelId 与原始文本为空；本准备阶段不调用模型或持久化动作。

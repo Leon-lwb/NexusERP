@@ -30,6 +30,8 @@ public class PrdShortageResult {
     private LocalDate earliestShortageDate;
     /** 最大缺口(最深负余额的绝对值) */
     private BigDecimal maxGap = BigDecimal.ZERO;
+    /** 首次达到最大缺口的日期；无缺口保持未知。 */
+    private LocalDate maxGapDate;
     /** 存在缺口的需求日期（不包含仅到货的日期，按时间升序） */
     private List<LocalDate> shortageDemandDates = List.of();
     /** 缺口天数(余额 < 0 的天数) */

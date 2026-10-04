@@ -457,6 +457,72 @@ class DeliveryRiskDecisionOrchestratorTest {
         });
     }
 
+    @Test void completionAcceptsNewRatioWithServerFrozenWindow() {
+        withTenant(() -> {
+            var snapshot = configureRatioCompletion();
+            var result = resultWithRatio(snapshot, 30, false);
+            assertDoesNotThrow(() -> orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor()));
+            verify(data).loadDeliveryContext(any(), eq(30), eq(actor()));
+            verify(store).completeAnalysis(99L, result, "TEMPLATE_FALLBACK");
+            return null;
+        });
+    }
+
+    @Test void completionRejectsCroppedRatioWindowBeforeFinalPersistence() {
+        assertRatioWindowRejected(1, true);
+    }
+
+    @Test void completionRejectsExpandedRatioWindowBeforeFinalPersistence() {
+        assertRatioWindowRejected(31, false);
+    }
+
+    private void assertRatioWindowRejected(int basisDays, boolean omitDemand) {
+        withTenant(() -> {
+            var snapshot = configureRatioCompletion();
+            var result = resultWithRatio(snapshot, basisDays, omitDemand);
+            var failure = assertThrows(ServiceException.class, () ->
+                orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor()));
+            assertTrue(failure.getMessage().contains("窗口"));
+            verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
+            return null;
+        });
+    }
+
+    private DeliveryContextSnapshot configureRatioCompletion() {
+        var stock = stockSnapshot("hash-1");
+        var date = stock.snapshotAt().toLocalDate().plusDays(10);
+        var snapshot = new DeliveryContextSnapshot(stock.rootBusinessRef(), stock.salesOrders(), stock.workOrders(),
+            stock.routingByMaterial(), List.of(new DeliveryContextSnapshot.RequirementFact(301L, 101L, "MAT101", "物料",
+                date, java.math.BigDecimal.TEN, 11L, "WO-11", 1L)), stock.stocks(), stock.arrivals(), stock.capacityByDate(),
+            stock.holidays(), stock.currentSchedule(), stock.supplierMetrics(), stock.snapshotHash(), stock.snapshotAt(), stock.warnings());
+        var running = run(99L, DecisionRunStatus.RUNNING);
+        running.setInputSnapshotHash("hash-1");
+        running.setScoreConfigJson("{\"horizonDays\":30}");
+        when(store.requireRun(99L, "000000")).thenReturn(running);
+        when(store.requireSnapshot(99L, "000000")).thenReturn(snapshot);
+        when(store.requireHorizonDays(running)).thenReturn(30);
+        when(data.canAccess(any(), any())).thenReturn(true);
+        when(data.checkFreshness(any(), eq("hash-1"), eq(actor())))
+            .thenReturn(new DecisionFreshnessResult(true, "hash-1", List.of()));
+        when(data.loadDeliveryContext(any(), eq(30), eq(actor()))).thenReturn(snapshot);
+        return snapshot;
+    }
+
+    private static DecisionResult resultWithRatio(DeliveryContextSnapshot snapshot, int basisDays, boolean omitDemand) {
+        var row = snapshot.requirements().get(0);
+        var start = snapshot.snapshotAt().toLocalDate();
+        var basis = new DecisionShortageBasis("99", "snapshot:" + snapshot.snapshotHash(), start,
+            start.plusDays(basisDays - 1L), omitDemand ? List.of() : List.of(new DecisionShortageBasis.Requirement(
+                row.detailId(), row.materialId(), row.requiredDate(), row.requiredQty(), row.baseUomId())),
+            omitDemand ? List.of() : List.of(new DecisionShortageBasis.Gap(row.materialId(), row.baseUomId(),
+                java.math.BigDecimal.ZERO, null, "DERIVED:SHORTAGE:BASELINE_CURRENT_101:max_gap")),
+            "DERIVED:SHORTAGE:BASELINE_CURRENT:complete");
+        var k = new DecisionKpiSet(0, 0, 0, 0, null, 0, null, null, java.math.BigDecimal.ZERO, 0, 0,
+            java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, basis);
+        return new DecisionResult(99L, snapshot.rootBusinessRef(), 0, DecisionRiskLevel.LOW, "HIGH", List.of(), k,
+            List.of(), null, Map.of(), new DecisionSourceFactVerifier().numericFacts(99L, snapshot), List.of(), List.of());
+    }
+
     private static DeliveryContextSnapshot stockSnapshot(String hash) {
         return new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
             List.of(), List.of(), Map.of(), List.of(),

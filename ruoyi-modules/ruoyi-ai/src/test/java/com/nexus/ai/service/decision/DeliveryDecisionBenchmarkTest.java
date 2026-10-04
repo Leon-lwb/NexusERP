@@ -65,11 +65,13 @@ class DeliveryDecisionBenchmarkTest {
         if (!routesComplete) assertNull(result.score(), "Missing routing must not publish a false LOW risk");
     }
 
-    @Test void scenarioRankingPrefersLowerTardinessWithoutAnExternalModel() {
+    @Test void legacyScenarioRankingCannotRecommendWithoutMaterialUnitProof() {
         var ranking = new DecisionScenarioRankingService(config);
         var baseline = scenario("BASELINE_CURRENT", true, kpis(3, 8, 0), 0);
         var improved = scenario("APS_EDD", true, kpis(1, 2, 1), 0);
-        assertEquals("APS_EDD", ranking.rank(List.of(baseline, improved)).get(0).scenarioCode());
+        var ranked = ranking.rank(List.of(baseline, improved));
+        assertTrue(ranked.stream().noneMatch(DecisionScenario::feasible));
+        assertTrue(ranked.stream().allMatch(s -> s.infeasibleReasons().contains("SHORTAGE_GAP_RATIO_UNRANKABLE")));
     }
 
     @Test void control001StaleApprovalCannotStartExecution() {
@@ -213,6 +215,13 @@ class DeliveryDecisionBenchmarkTest {
         var ranked = new DecisionScenarioRankingService(config).rank(simulatedCandidates(facts, caseId));
         var selected = ranked.stream().filter(DecisionScenario::feasible).findFirst()
             .map(DecisionScenario::scenarioCode).orElse(null);
+        if (ranked.stream().allMatch(s -> s.kpis() == null || s.kpis().shortageBasis() == null)) {
+            // 历史离线 fixture 只有总缺口，不能补造单位/来源并冒充新版 40 案例验收。
+            // 此处只验证已有风险事实及新门禁；旧黄金推荐与案例文件原样保留。
+            assertNull(selected, caseId);
+            assertTrue(ranked.stream().allMatch(s -> s.objectiveScore() == null && s.rank() == 0), caseId);
+            return;
+        }
         assertEquals(recommendedCode, selected, caseId);
         var causesForActions = new HashSet<>(risk.rootCauseCodes());
         if (causesForActions.contains("DELIVERY_DELAY")) causesForActions.add("SCHEDULE_DELAY");

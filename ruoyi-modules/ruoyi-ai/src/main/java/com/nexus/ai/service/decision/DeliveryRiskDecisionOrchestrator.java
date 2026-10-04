@@ -80,12 +80,12 @@ public class DeliveryRiskDecisionOrchestrator {
             if (freshness == null || !freshness.fresh()
                 || !stored.snapshotHash().equals(freshness.currentHash()))
                 throw new ServiceException("业务关键数据已变化，请重新分析");
-            DeliveryContextSnapshot reread = dataPort.loadDeliveryContext(ref,
-                persistence.requireHorizonDays(run), actor);
+            int horizonDays = persistence.requireHorizonDays(run);
+            DeliveryContextSnapshot reread = dataPort.loadDeliveryContext(ref, horizonDays, actor);
             if (reread == null || !ref.equals(reread.rootBusinessRef())
                 || !stored.snapshotHash().equals(reread.snapshotHash()))
                 throw new ServiceException("ERP 重读事实与已持久化快照不一致");
-            new DecisionSourceFactVerifier().assertProvenance(result, stored, reread);
+            new DecisionSourceFactVerifier().assertProvenance(result, stored, reread, horizonDays);
             persistence.completeAnalysis(runId, result, summaryMode);
         });
     }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -1050,4 +1051,86 @@ class ErpDecisionApsSimulationTest {
         assertEquals(List.of("INVALID_SAVED_SCHEDULE"), left.infeasibleReasons());
         assertEquals(left.inputHash(), right.inputHash());
     }
+    @Test
+    void mixedUnitNullTotalDoesNotLoseRealApsOrExpediteBasis() {
+        var snapshot = confirmedMixedMaterialSnapshot(true);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
+        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call ->
+            engineInput(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getStrategy(), new BigDecimal("8")));
+        var scenarios = withRealShortage().compare(snapshot, null, 7).scenarios();
+        assertEquals(4, scenarios.size());
+        for (var scenario : scenarios) {
+            assertNotNull(scenario.kpis(), scenario.scenarioCode());
+            assertNull(scenario.kpis().totalShortageGap(), scenario.scenarioCode());
+            var basis = scenario.kpis().shortageBasis();
+            assertNotNull(basis, "混单位总量为空不能被当作缺料来源未知");
+            assertEquals(2, basis.requirements().size());
+            assertEquals(List.of(56L, 57L), basis.gaps().stream().map(g -> g.baseUomId()).toList());
+            assertEquals("DERIVED:SHORTAGE:" + scenario.scenarioCode() + ":complete", basis.simulationEvidenceKey());
+            assertTrue(scenario.evidenceKeys().contains(basis.simulationEvidenceKey()));
+        }
+        var expedite = scenarios.get(3);
+        assertTrue(expedite.feasible(), "完整可信混物料来源的正向方案不能被全拒绝");
+        assertTrue(expedite.kpis().shortageBasis().gaps().stream().allMatch(g -> g.maxGap().signum() == 0));
+    }
+
+    @Test
+    void evenSingleRequestedScenarioWithUnknownArrivalCannotMintRankableKpi() {
+        var snapshot = confirmedMixedMaterialSnapshot(false);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
+        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call ->
+            engineInput(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getStrategy(), new BigDecimal("8")));
+        for (String code : List.of("BASELINE_CURRENT", "APS_EDD")) {
+            var compared = withRealShortage().compare(snapshot, List.of(code), 7);
+            var scenario = compared.scenarios().get(0);
+            assertFalse(scenario.feasible());
+            assertNull(scenario.kpis());
+            assertTrue(scenario.infeasibleReasons().contains("SHORTAGE_UNKNOWN"));
+            assertTrue(compared.warnings().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+        }
+    }
+
+    private DeliveryContextSnapshot confirmedMixedMaterialSnapshot(boolean confirmedArrival) {
+        var original = withMaterialEvidence(savedOneTask(), true, true, true);
+        var stocks = new ArrayList<>(original.stocks());
+        stocks.add(new DeliveryContextSnapshot.StockFact(201L, new BigDecimal("20"), BigDecimal.ZERO, BigDecimal.ZERO));
+        var arrivals = original.arrivals().stream().map(a -> new DeliveryContextSnapshot.ArrivalFact(a.materialId(), a.purchaseLineId(),
+            a.expectedDate(), a.remainingQty(), a.vendorId(), confirmedArrival ? 56L : null)).toList();
+        return new DeliveryContextSnapshot(original.rootBusinessRef(), original.salesOrders(), original.workOrders(), original.routingByMaterial(),
+            List.of(new DeliveryContextSnapshot.RequirementFact(7001L, 200L, "RAW", "原料", TODAY.plusDays(1), BigDecimal.TEN, 11L, "WO-11", 56L),
+                new DeliveryContextSnapshot.RequirementFact(7002L, 201L, "RAW-B", "原料B", TODAY.plusDays(1), new BigDecimal("20"), 11L, "WO-11", 57L)),
+            stocks, arrivals, original.capacityByDate(), original.holidays(), original.currentSchedule(), original.supplierMetrics(),
+            original.snapshotHash(), original.snapshotAt(), original.warnings());
+    }
+
+    @Test
+    void actualApsAndExpediteCopiesPreserveProducerBasisAndScenarioSpecificEvidence() {
+        var original = withMaterialEvidence(savedOneTask(), true, true, true);
+        var snapshot = new DeliveryContextSnapshot(original.rootBusinessRef(), original.salesOrders(), original.workOrders(),
+            original.routingByMaterial(), List.of(new DeliveryContextSnapshot.RequirementFact(7001L, 200L, "RAW", "原料",
+                TODAY.plusDays(1), new BigDecimal("10"), 11L, "WO-11", 56L)), original.stocks(),
+            original.arrivals().stream().map(a -> new DeliveryContextSnapshot.ArrivalFact(a.materialId(), a.purchaseLineId(),
+                a.expectedDate(), a.remainingQty(), a.vendorId(), 56L)).toList(),
+            original.capacityByDate(), original.holidays(), original.currentSchedule(), original.supplierMetrics(),
+            original.snapshotHash(), original.snapshotAt(), original.warnings());
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
+        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call ->
+            engineInput(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getStrategy(), new BigDecimal("8")));
+        var originalArrival = snapshot.arrivals().get(0).expectedDate();
+        var scenarios = withRealShortage().compare(snapshot, null, 7).scenarios();
+        for (var scenario : scenarios) {
+            assertNotNull(scenario.kpis().shortageBasis(), scenario.scenarioCode());
+            var basis = scenario.kpis().shortageBasis();
+            assertEquals(7001L, basis.requirements().get(0).detailId());
+            assertEquals(56L, basis.requirements().get(0).baseUomId());
+            assertEquals("DERIVED:SHORTAGE:" + scenario.scenarioCode() + ":complete", basis.simulationEvidenceKey());
+            assertTrue(scenario.evidenceKeys().contains(basis.simulationEvidenceKey()));
+            assertTrue(scenario.evidenceKeys().contains("ERP:REQUIREMENT:7001:base_uom_id"));
+            assertTrue(scenario.evidenceKeys().contains(basis.gaps().get(0).sourceEvidenceKey()));
+        }
+        assertEquals(0, scenarios.get(3).kpis().shortageBasis().gaps().get(0).maxGap().signum());
+        assertTrue(scenarios.get(3).feasible());
+        assertEquals(originalArrival, snapshot.arrivals().get(0).expectedDate(), "推演不得改写原采购到货事实");
+    }
+
 }

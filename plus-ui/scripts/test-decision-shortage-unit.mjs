@@ -245,3 +245,136 @@ test('evidence drawer preserves raw aggregate for audit but warns that its unit 
   assert.ok(countRow?.includes('4'), 'unrelated count evidence stays visible');
   assert.doesNotMatch(countRow, /单位未核|不可合计/);
 });
+
+// v2 数学展示 fixture 仅用于组件契约，不是正式业务案例。
+const v2Kpis = { ...kpis, shortageGapRatio: '0.25000000', shortageBasis: { runId: '9007199254740993' } };
+
+test('v2 KPI 比较展示无量纲原始比例和百分点差，不把混单位原值当收益', async () => {
+  const html = await render('DecisionKpiCompare', { baseline: v2Kpis, projected: { ...v2Kpis, shortageGapRatio: '0.12500000' }, actual: null });
+  assert.match(html, /缺口比例/);
+  assert.match(html, /25\.00%/);
+  assert.match(html, /12\.50%/);
+  assert.match(html, /百分点/);
+  assert.doesNotMatch(html, /38\.2762/);
+});
+
+test('v2 方案列表展示比例而不隐藏旧的不可合计提示', async () => {
+  const html = await render('DecisionScenarioTable', { scenarios: [{ ...scenario, kpis: v2Kpis }] });
+  assert.match(html, /25\.00%/);
+  assert.match(html, /单位待核/);
+  assert.doesNotMatch(html, /38\.2762/);
+});
+
+test('v2 预览展示比例且相对零分不等于无缺料', async () => {
+  const html = await render('DecisionScenarioPreview', { modelValue: true, scenario: { ...scenario, objectiveScore: '0', kpis: v2Kpis } });
+  assert.match(html, /25\.00%/);
+  assert.match(html, /归一化/);
+  assert.doesNotMatch(html, /38\.2762/);
+});
+
+test('新合同缺单位或裸比例仍显示不可排名，不显示零比例或可比较缺口', async () => {
+  for (const name of ['DecisionKpiCompare', 'DecisionScenarioTable', 'DecisionScenarioPreview']) {
+    const unproven = { ...kpis, shortageGapRatio: '0.25', shortageBasis: null };
+    const blocked = { ...scenario, rank: 0, infeasibleReasons: ['SHORTAGE_GAP_RATIO_UNRANKABLE'], kpis: unproven };
+    const props =
+      name === 'DecisionKpiCompare'
+        ? { baseline: unproven }
+        : name === 'DecisionScenarioTable'
+          ? { scenarios: [blocked] }
+          : { modelValue: true, scenario: blocked };
+    const html = await render(name, props);
+    assert.match(html, /不可排名/);
+    assert.doesNotMatch(html, /25\.00%|0\.00%/);
+  }
+});
+
+// 新版展示回归只使用组件合同样本，不把历史总量或归一化得分当作新比例。
+const ratioRow = (markup) => (markup.match(/<tr>.*?<\/tr>/gs) ?? []).find((row) => row.includes('缺口比例（无量纲）'));
+const propsFor = (name, data) =>
+  name === 'DecisionKpiCompare'
+    ? { baseline: data, projected: data, actual: data }
+    : name === 'DecisionScenarioTable'
+      ? { scenarios: [{ ...scenario, kpis: data }] }
+      : { modelValue: true, scenario: { ...scenario, kpis: data } };
+const ratioSurfaces = ['DecisionKpiCompare', 'DecisionScenarioTable', 'DecisionScenarioPreview'];
+
+test('纯新版比较、预览、表格只展示核验比例，不再展示旧缺口 KPI', async () => {
+  const data = { ...v2Kpis, shortageMaterialCount: 0, totalShortageGap: '0' };
+  for (const name of ratioSurfaces) {
+    const html = await render(name, propsFor(name, data));
+    assert.match(html, /25\.00%（逐物料等权）/);
+    assert.doesNotMatch(html, /0（无缺料）/, `${name} 不能沿用旧总量合成新版结论`);
+    if (name === 'DecisionKpiCompare') {
+      assert.ok(ratioRow(html));
+      assert.ok(!(html.match(/<tr>.*?<\/tr>/gs) ?? []).some((row) => row.includes('缺料缺口')));
+    } else {
+      assert.doesNotMatch(html, /data-label="(?:缺料缺口|预测缺料)"/);
+    }
+  }
+});
+
+test('新合同没有 R 或缺核验来源时明确未知，历史零不能回填新 R', async () => {
+  for (const shortageGapRatio of [null, '', 'NaN', '-0.1', '1.1']) {
+    const data = { ...v2Kpis, shortageGapRatio, shortageMaterialCount: 0, totalShortageGap: '0' };
+    for (const name of ratioSurfaces) {
+      const html = await render(name, propsFor(name, data));
+      assert.match(html, /未知.*不可排名/s, `${name}：未知必须明确展示`);
+      assert.doesNotMatch(html, /0（无缺料）|历史口径：未记录无量纲比例|(?:\d+\.\d+)%/);
+    }
+  }
+  for (const name of ratioSurfaces) {
+    const html = await render(name, propsFor(name, { ...v2Kpis, shortageBasis: null }));
+    assert.match(html, /未知.*不可排名/s);
+    assert.doesNotMatch(html, /25\.00%/);
+  }
+});
+
+test('比较的未知或空比例不参与百分点差计算，已核验比例差仍只作展示', async () => {
+  for (const shortageGapRatio of [null, '', 'NaN']) {
+    const html = await render('DecisionKpiCompare', {
+      baseline: { ...v2Kpis, shortageGapRatio },
+      projected: v2Kpis,
+      actual: null
+    });
+    const row = ratioRow(html);
+    assert.ok(row);
+    assert.ok(row.includes('data-label="变化">—</td>'));
+    assert.doesNotMatch(row, /百分点/);
+  }
+  const html = await render('DecisionKpiCompare', { baseline: v2Kpis, projected: { ...v2Kpis, shortageGapRatio: '0.12500000' } });
+  assert.match(ratioRow(html), /-12\.50 百分点/);
+});
+
+test('混合新旧比较保留历史信息，但新版单元格不能借用旧数量，新旧排名保持后端原值', async () => {
+  const legacy = { ...kpis, shortageMaterialCount: 0, totalShortageGap: '0' };
+  const modern = { ...v2Kpis, shortageMaterialCount: 0, totalShortageGap: '0' };
+  const comparison = await render('DecisionKpiCompare', { baseline: legacy, projected: modern, actual: null });
+  assert.match(comparison, /历史口径/);
+  const history = (comparison.match(/<tr>.*?<\/tr>/gs) ?? []).find((row) => row.includes('缺料缺口'));
+  assert.ok(history.includes('data-label="当前基线" data-overflow-tooltip="true">0（无缺料）</td>'));
+  assert.ok(history.includes('data-label="推荐方案预测" data-overflow-tooltip="true">—</td>'));
+  assert.doesNotMatch(ratioRow(comparison), /0\.00%|百分点/);
+  const scenarios = [
+    { ...scenario, scenarioCode: 'OLD', rank: 7, kpis: legacy },
+    { ...scenario, scenarioCode: 'NEW', rank: 3, kpis: modern }
+  ];
+  const original = structuredClone(scenarios);
+  const tableHtml = await render('DecisionScenarioTable', { scenarios });
+  const tableRows = tableHtml.match(/<tr>.*?<\/tr>/gs) ?? [];
+  const oldRow = tableRows.find((row) => row.includes('>OLD</td>'));
+  const newRow = tableRows.find((row) => row.includes('>NEW</td>'));
+  assert.match(oldRow, /历史口径：未记录无量纲比例/);
+  assert.ok(oldRow.includes('data-label="排名">7</td>'));
+  assert.ok(newRow.includes('data-label="排名">3</td>'));
+  assert.doesNotMatch(newRow, /0（无缺料）/);
+  assert.deepEqual(scenarios, original, '不得改写后端 KPI 或重新计算排名');
+});
+
+test('旧 run 不插入新版比例或新结论，既有信息明确标为历史口径', async () => {
+  for (const name of ratioSurfaces) {
+    const html = await render(name, propsFor(name, kpis));
+    assert.match(html, /历史口径/);
+    assert.doesNotMatch(html, /缺口比例（无量纲）|逐物料等权|不可排名/);
+    assert.match(html, /单位待核/);
+  }
+});

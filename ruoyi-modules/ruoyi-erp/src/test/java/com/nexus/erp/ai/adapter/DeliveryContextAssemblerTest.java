@@ -156,6 +156,8 @@ class DeliveryContextAssemblerTest {
     @Mock
     private BdMaterialMapper materialMapper;
     @Mock
+    private com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper evidenceUnitMapper;
+    @Mock
     private BdRoutingMapper routingMapper;
     @Mock
     private BdRoutingStepMapper routingStepMapper;
@@ -2411,6 +2413,92 @@ class DeliveryContextAssemblerTest {
             return;
         }
         throw new AssertionError("currentSchedule 包含不安全类型: " + value.getClass().getName());
+    }
+
+
+    @Test
+    void verifiedMrpUnitIdentitySurvivesActualRequirementProjection() {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        var detail = requirementDetail(9901L, 801L, 501L, "10", "2", TODAY);
+        detail.setTenantId("000000"); detail.setUnit("56");
+        var master = material(501L, "0");
+        master.setTenantId("000000"); master.setStatus(1L); master.setDelFlag("0");
+        var unit = new com.nexus.erp.bd.domain.BdUnitOfMeasure();
+        unit.setUomId(56L); unit.setTenantId("000000"); unit.setStatus(1L); unit.setDelFlag("0");
+        unit.setPrimaryId(56L); unit.setIsBase(1L); unit.setConversionRate(BigDecimal.ONE); unit.setQuantityScale(0);
+        unit.setConversionVersion("CONFIRMED_TEST_ROOT"); unit.setConversionVerifiedAt(new java.util.Date());
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(801L, 701L)));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(detail));
+        when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(master));
+        when(evidenceUnitMapper.selectBatchIds(anyCollection())).thenReturn(List.of(unit));
+        var snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertEquals(56L, snapshot.requirements().get(0).baseUomId());
+        assertEquals(new BigDecimal("8"), snapshot.requirements().get(0).requiredQty());
+        assertEquals(9901L, snapshot.requirements().get(0).detailId());
+        String hash = snapshot.snapshotHash();
+        unit.setStatus(0L);
+        var disabled = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertNull(disabled.requirements().get(0).baseUomId());
+        assertTrue(disabled.warnings().stream().anyMatch(w -> w.startsWith("UNKNOWN_REQUIREMENT_UNIT:")));
+        assertNotEquals(hash, disabled.snapshotHash(), "单位主档失效须改变真实来源版本");
+    }
+
+    @Test
+    void purchaseSupplyRequiresActualRootUnitAndItsRawUnitChangesFingerprint() throws Exception {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        var detail = requirementDetail(9901L, 801L, 501L, "10", "2", TODAY);
+        detail.setTenantId("000000"); detail.setUnit("56");
+        var master = material(501L, "0");
+        master.setTenantId("000000"); master.setStatus(1L); master.setDelFlag("0");
+        var unit = new com.nexus.erp.bd.domain.BdUnitOfMeasure();
+        unit.setUomId(56L); unit.setTenantId("000000"); unit.setStatus(1L); unit.setDelFlag("0");
+        unit.setPrimaryId(56L); unit.setIsBase(1L); unit.setConversionRate(BigDecimal.ONE); unit.setQuantityScale(0);
+        unit.setConversionVersion("CONFIRMED_TEST_ROOT"); unit.setConversionVerifiedAt(new java.util.Date());
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(801L, 701L)));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(detail));
+        when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(master));
+        when(evidenceUnitMapper.selectBatchIds(anyCollection())).thenReturn(List.of(unit));
+        var order = purchaseOrder(4001L, 301L, "APPROVED", TODAY.plusDays(1));
+        var arrivalLine = purchaseLine(4002L, 4001L, 501L, "1000", "0");
+        arrivalLine.setUnit("56");
+        when(purchaseOrderMapper.selectList(any())).thenReturn(List.of(order));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(arrivalLine));
+        var snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        var arrival = snapshot.arrivals().get(0);
+        assertEquals(56L, arrival.getClass().getMethod("baseUomId").invoke(arrival));
+        String hash = snapshot.snapshotHash();
+        arrivalLine.setUnit("克");
+        var changed = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertNull(changed.arrivals().get(0).getClass().getMethod("baseUomId").invoke(changed.arrivals().get(0)));
+        assertTrue(changed.warnings().stream().anyMatch(w -> w.startsWith("UNKNOWN_ARRIVAL_UNIT:")));
+        assertNotEquals(hash, changed.snapshotHash(), "不能把1000克默认成基础单位1000千克且保留旧指纹");
+        arrivalLine.setUnit("56");
+        for (Long base : java.util.Arrays.asList(0L, null)) {
+            unit.setIsBase(base);
+            var invalid = assembler.assemble(fixture.ref(), 14, fixture.actor());
+            assertNull(invalid.arrivals().get(0).getClass().getMethod("baseUomId").invoke(invalid.arrivals().get(0)));
+        }
+        unit.setIsBase(1L);
+        var verified = unit.getConversionVerifiedAt();
+        unit.setConversionVerifiedAt(java.sql.Date.valueOf("2099-01-01"));
+        var future = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertNull(future.arrivals().get(0).getClass().getMethod("baseUomId").invoke(future.arrivals().get(0)));
+        unit.setConversionVerifiedAt(verified);
+        arrivalLine.setReceivedQuantity(null);
+        var unknown = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertNull(unknown.arrivals().get(0).getClass().getMethod("baseUomId").invoke(unknown.arrivals().get(0)));
+        assertNotEquals(hash, unknown.snapshotHash(), "收货null不能规范为0后仍保留原资格指纹");
+        arrivalLine.setReceivedQuantity(BigDecimal.valueOf(-1));
+        var negative = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertNull(negative.arrivals().get(0).getClass().getMethod("baseUomId").invoke(negative.arrivals().get(0)));
+        arrivalLine.setOrderQuantity(BigDecimal.ONE); arrivalLine.setReceivedQuantity(BigDecimal.ZERO);
+        var integer = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        arrivalLine.setOrderQuantity(new BigDecimal("1.5")); arrivalLine.setReceivedQuantity(new BigDecimal("0.5"));
+        var fraction = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertNull(fraction.arrivals().get(0).getClass().getMethod("baseUomId").invoke(fraction.arrivals().get(0)));
+        assertNotEquals(integer.snapshotHash(), fraction.snapshotHash(), "净量相同仍须核原订购/收货量精度与指纹");
     }
 
     private record RichFixture(DecisionBusinessRef ref, DecisionActor actor) {

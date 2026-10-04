@@ -134,6 +134,30 @@ public class DecisionEvidenceService {
         if (kpi.totalShortageGap() != null) {
             requireMetric(evidence, scope, "total_shortage_gap", kpi.totalShortageGap(), linkedKeys);
         }
+        if (kpi.shortageGapRatio() != null) {
+            if (kpi.shortageBasis() == null || kpi.shortageGapRatio().signum() < 0
+                || kpi.shortageGapRatio().compareTo(BigDecimal.ONE) > 0)
+                throw new IllegalArgumentException("缺口比例缺少逐物料来源依据");
+            requireMetric(evidence, scope, "shortage_gap_ratio", kpi.shortageGapRatio(), linkedKeys);
+            String ratioKey = "DERIVED:CALC:" + scope + ":shortage_gap_ratio";
+            var ratio = evidence.get(ratioKey);
+            if (ratio == null || !"ratio".equals(ratio.unit()))
+                throw new IllegalArgumentException("缺口比例必须具有无量纲证据");
+            for (var row : kpi.shortageBasis().requirements()) {
+                for (String metric : List.of("required_qty", "base_uom_id")) {
+                    String key = "ERP:REQUIREMENT:" + row.detailId() + ":" + metric;
+                    if (!evidence.containsKey(key) || !ratio.derivedFromEvidenceKeys().contains(key))
+                        throw new IllegalArgumentException("缺口比例未引用需求分母和基础单位来源");
+                }
+            }
+            for (var gap : kpi.shortageBasis().gaps()) {
+                var source = evidence.get(gap.sourceEvidenceKey());
+                if (source == null || !"uom:".concat(String.valueOf(gap.baseUomId())).equals(source.unit())
+                    || new BigDecimal(source.value()).compareTo(gap.maxGap()) != 0
+                    || !ratio.derivedFromEvidenceKeys().contains(source.evidenceKey()))
+                    throw new IllegalArgumentException("缺口比例未引用对应物料、基础单位的缺口证据");
+            }
+        }
         if (kpi.maxResourceUtilization() != null) {
             requireMetric(evidence, scope, "max_resource_utilization", kpi.maxResourceUtilization(), linkedKeys);
         }

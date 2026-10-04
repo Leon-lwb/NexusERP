@@ -3,6 +3,7 @@ package com.nexus.ai.service.decision;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
+import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,34 @@ import java.util.function.ToDoubleFunction;
 public class DecisionScenarioRankingService {
     private final AiProperties properties;
 
+    /** 实际Flow先绑定服务端运行与快照，再重算比例；模型和ERP不能自行指定运行身份。 */
+    public List<DecisionScenario> rank(Long runId, com.nexus.common.ai.decision.dto.DeliveryContextSnapshot snapshot,
+            int horizonDays, List<DecisionScenario> scenarios) {
+        if (runId == null || runId <= 0 || snapshot == null || horizonDays < 1 || horizonDays > 90 || scenarios == null)
+            throw new com.nexus.common.core.exception.ServiceException("排名缺少服务端冻结运行范围");
+        List<DecisionScenario> bound = new ArrayList<>();
+        for (var scenario : scenarios) {
+            if (scenario == null) throw new com.nexus.common.core.exception.ServiceException("排名候选缺失");
+            var k = scenario.kpis();
+            if (k == null || k.shortageBasis() == null) { bound.add(scenario); continue; }
+            var old = k.shortageBasis();
+            if (old.runId() != null && !runId.toString().equals(old.runId()))
+                throw new com.nexus.common.core.exception.ServiceException("推演依据属于其他运行");
+            var basis = new DecisionShortageBasis(runId.toString(), old.snapshotEvidenceKey(), old.windowStart(), old.windowEnd(),
+                old.requirements(), old.gaps(), old.simulationEvidenceKey());
+            var frozen = new DecisionKpiSet(k.impactedOrderCount(), k.delayedWorkOrderCount(), k.totalTardinessDays(), k.maxTardinessDays(),
+                k.makespanDate(), k.shortageMaterialCount(), k.totalShortageGap(), k.earliestShortageDate(), k.maxResourceUtilization(),
+                k.overloadedResourceCount(), k.changedWorkOrderCount(), k.actionCost(), k.shortageGapRatio(), basis);
+            bound.add(new DecisionScenario(scenario.scenarioCode(), scenario.scenarioName(), scenario.strategy(), scenario.feasible(),
+                scenario.infeasibleReasons(), frozen, scenario.objectiveScore(), scenario.rank(), scenario.overrides(), scenario.evidenceKeys(),
+                scenario.schedulePreview(), scenario.inputHash(), scenario.delayedOrders(), scenario.bottleneckResources()));
+        }
+        var ranked = rank(bound);
+        var verifier = new DecisionSourceFactVerifier();
+        for (var scenario : ranked) verifier.assertShortageBasis(runId, scenario.kpis(), snapshot, horizonDays);
+        return ranked;
+    }
+
     public List<DecisionScenario> rank(List<DecisionScenario> scenarios) {
         if (scenarios == null || scenarios.isEmpty() || scenarios.size() > properties.getDecision().getMaxScenarios()) {
             throw new IllegalArgumentException("方案数量不在允许范围内");
@@ -43,14 +72,21 @@ public class DecisionScenarioRankingService {
         }
         // 无成本重排可证明动作成本为零；没有估算的催交方案不能如此处理，
         // 保留原始 ERP 指标以便审计。
-        List<DecisionScenario> candidates = scenarios.stream().map(DecisionScenarioRankingService::knownZeroCost).toList();
+        // 先用完整的同运行来源集合重算 R/N；外部传入的裸比例不能绕过物料/UOM 门禁。
+        Map<String, DecisionShortageRatioCalculator.ScenarioRatio> ratios = shortageRatios(scenarios);
+        List<DecisionScenario> candidates = scenarios.stream().map(s -> withRatio(s,
+            ratios.containsKey(s.scenarioCode()) ? ratios.get(s.scenarioCode()).rawRatio() : null))
+            .map(DecisionScenarioRankingService::knownZeroCost).toList();
         List<DecisionScenario> complete = candidates.stream().filter(s -> validKpis(s.kpis())).toList();
+        boolean completeComparison = complete.size() == candidates.size();
         List<DecisionScenario> scored = new ArrayList<>(scenarios.size());
         for (DecisionScenario scenario : candidates) {
-            if (!validKpis(scenario.kpis())) {
+            if (!completeComparison || !validKpis(scenario.kpis())) {
                 List<String> reasons = new ArrayList<>();
                 if (scenario.infeasibleReasons() != null) reasons.addAll(scenario.infeasibleReasons());
-                reasons.add("MISSING_KPI");
+                if (!completeComparison) reasons.add("INCOMPLETE_SCENARIO_COMPARISON");
+                reasons.add(scenario.kpis() != null && !validShortageGapRatio(scenario.kpis())
+                    ? "SHORTAGE_GAP_RATIO_UNRANKABLE" : "MISSING_KPI");
                 scored.add(copy(scenario, false, List.copyOf(reasons), null, 0));
                 continue;
             }
@@ -58,7 +94,7 @@ public class DecisionScenarioRankingService {
             double objective = (
                 weights.getTardinessWeight() * normalized(complete, s -> s.kpis().totalTardinessDays(), k.totalTardinessDays())
                 + weights.getDelayedCountWeight() * normalized(complete, s -> s.kpis().delayedWorkOrderCount(), k.delayedWorkOrderCount())
-                + weights.getShortageWeight() * normalized(complete, s -> s.kpis().totalShortageGap().doubleValue(), k.totalShortageGap().doubleValue())
+                + weights.getShortageWeight() * ratios.get(scenario.scenarioCode()).normalizedRatio().doubleValue()
                 + weights.getUtilizationWeight() * normalized(complete, s -> Math.max(0, s.kpis().maxResourceUtilization().doubleValue() - 80),
                     Math.max(0, k.maxResourceUtilization().doubleValue() - 80))
                 + weights.getActionCostWeight() * normalized(complete, s -> s.kpis().actionCost().doubleValue(), k.actionCost().doubleValue())
@@ -77,9 +113,81 @@ public class DecisionScenarioRankingService {
         List<DecisionScenario> ranked = new ArrayList<>(scored.size());
         for (int i = 0; i < scored.size(); i++) {
             DecisionScenario s = scored.get(i);
-            ranked.add(copy(s, s.feasible(), s.infeasibleReasons(), s.objectiveScore(), i + 1));
+            ranked.add(copy(s, s.feasible(), s.infeasibleReasons(), s.objectiveScore(),
+                s.objectiveScore() == null ? 0 : i + 1));
         }
         return List.copyOf(ranked);
+    }
+
+    private static Map<String, DecisionShortageRatioCalculator.ScenarioRatio> shortageRatios(
+        List<DecisionScenario> scenarios) {
+        var calculator = new DecisionShortageRatioCalculator();
+        DecisionShortageRatioCalculator.FrozenRun frozen = null;
+        List<DecisionShortageRatioCalculator.ScenarioFacts> facts = new ArrayList<>();
+        try {
+            for (DecisionScenario scenario : scenarios) {
+                if (scenario.kpis() == null) return Map.of(); // 任一已生成候选缺KPI时整次比较不可推荐。
+                DecisionShortageBasis basis = scenario.kpis().shortageBasis();
+                if (basis == null || basis.requirements() == null || basis.gaps() == null
+                    || basis.runId() == null || !basis.runId().matches("[1-9][0-9]{0,18}")
+                    || scenario.evidenceKeys() == null
+                    || !scenario.evidenceKeys().contains(basis.snapshotEvidenceKey())
+                    || !scenario.evidenceKeys().contains(basis.simulationEvidenceKey())
+                    || !("DERIVED:SHORTAGE:" + scenario.scenarioCode() + ":complete").equals(basis.simulationEvidenceKey()))
+                    return Map.of();
+                List<DecisionShortageRatioCalculator.RequirementRow> demands = new ArrayList<>();
+                for (var row : basis.requirements()) {
+                    if (!positive(row.detailId()) || !positive(row.materialId()) || !positive(row.baseUomId())
+                        || !scenario.evidenceKeys().contains("ERP:REQUIREMENT:" + row.detailId() + ":required_qty")
+                        || !scenario.evidenceKeys().contains("ERP:REQUIREMENT:" + row.detailId() + ":base_uom_id"))
+                        return Map.of();
+                    demands.add(new DecisionShortageRatioCalculator.RequirementRow(row.materialId().toString(),
+                        row.detailId().toString(), row.requiredDate(), row.requiredQty(), row.baseUomId().toString()));
+                }
+                demands.sort(Comparator.comparing(DecisionShortageRatioCalculator.RequirementRow::detailId));
+                var current = new DecisionShortageRatioCalculator.FrozenRun(basis.runId(), basis.windowStart(),
+                    basis.windowEnd(), demands, basis.snapshotEvidenceKey());
+                if (frozen == null) frozen = current;
+                else if (!frozen.equals(current)) return Map.of();
+                List<DecisionShortageRatioCalculator.GapFact> gaps = new ArrayList<>();
+                for (var gap : basis.gaps()) {
+                    if (!positive(gap.materialId()) || !positive(gap.baseUomId())
+                        || !scenario.evidenceKeys().contains(gap.sourceEvidenceKey())
+                        || !("DERIVED:SHORTAGE:" + scenario.scenarioCode() + "_" + gap.materialId() + ":max_gap")
+                            .equals(gap.sourceEvidenceKey())) return Map.of();
+                    gaps.add(new DecisionShortageRatioCalculator.GapFact(gap.materialId().toString(),
+                        gap.maxGap(), gap.baseUomId().toString(), gap.peakDate(), gap.sourceEvidenceKey()));
+                }
+                facts.add(new DecisionShortageRatioCalculator.ScenarioFacts(basis.runId(), scenario.scenarioCode(),
+                    basis.windowStart(), basis.windowEnd(), gaps, basis.simulationEvidenceKey()));
+            }
+            var computed = calculator.calculate(frozen, facts);
+            Map<String, DecisionShortageRatioCalculator.ScenarioRatio> result = new LinkedHashMap<>();
+            computed.scenarios().forEach(ratio -> result.put(ratio.scenarioCode(), ratio));
+            for (var scenario : scenarios) {
+                if (scenario.kpis() == null || scenario.kpis().shortageGapRatio() == null) continue;
+                if (scenario.kpis().shortageGapRatio().compareTo(result.get(scenario.scenarioCode()).rawRatio()) != 0)
+                    return Map.of(); // 拒绝伪造比例，不静默纠正后再推荐。
+            }
+            return result;
+        } catch (IllegalArgumentException invalid) {
+            // 数量、分母、日期或集合不可比较时保留原始 KPI，只撤销新评分资格。
+            return Map.of();
+        }
+    }
+
+    private static boolean positive(Long id) { return id != null && id > 0; }
+
+    private static DecisionScenario withRatio(DecisionScenario s, BigDecimal ratio) {
+        if (s.kpis() == null) return s;
+        DecisionKpiSet k = s.kpis();
+        var calculated = new DecisionKpiSet(k.impactedOrderCount(), k.delayedWorkOrderCount(),
+            k.totalTardinessDays(), k.maxTardinessDays(), k.makespanDate(), k.shortageMaterialCount(),
+            k.totalShortageGap(), k.earliestShortageDate(), k.maxResourceUtilization(),
+            k.overloadedResourceCount(), k.changedWorkOrderCount(), k.actionCost(), ratio, k.shortageBasis());
+        return new DecisionScenario(s.scenarioCode(), s.scenarioName(), s.strategy(), s.feasible(),
+            s.infeasibleReasons(), calculated, s.objectiveScore(), s.rank(), s.overrides(),
+            s.evidenceKeys(), s.schedulePreview(), s.inputHash(), s.delayedOrders(), s.bottleneckResources());
     }
 
     private static DecisionScenario knownZeroCost(DecisionScenario s) {
@@ -91,7 +199,8 @@ public class DecisionScenarioRankingService {
         DecisionKpiSet withCost = new DecisionKpiSet(k.impactedOrderCount(), k.delayedWorkOrderCount(),
             k.totalTardinessDays(), k.maxTardinessDays(), k.makespanDate(), k.shortageMaterialCount(),
             k.totalShortageGap(), k.earliestShortageDate(), k.maxResourceUtilization(),
-            k.overloadedResourceCount(), k.changedWorkOrderCount(), BigDecimal.ZERO);
+            k.overloadedResourceCount(), k.changedWorkOrderCount(), BigDecimal.ZERO,
+            k.shortageGapRatio(), k.shortageBasis());
         return new DecisionScenario(s.scenarioCode(), s.scenarioName(), s.strategy(), s.feasible(),
             s.infeasibleReasons(), withCost, s.objectiveScore(), s.rank(), s.overrides(),
             s.evidenceKeys(), s.schedulePreview(), s.inputHash(), s.delayedOrders(), s.bottleneckResources());
@@ -99,10 +208,14 @@ public class DecisionScenarioRankingService {
 
     private static boolean validKpis(DecisionKpiSet k) {
         return k != null && k.totalTardinessDays() >= 0 && k.delayedWorkOrderCount() >= 0
-            && k.changedWorkOrderCount() >= 0 && k.totalShortageGap() != null
-            && k.totalShortageGap().signum() >= 0 && k.actionCost() != null
+            && k.changedWorkOrderCount() >= 0 && validShortageGapRatio(k) && k.actionCost() != null
             && k.actionCost().signum() >= 0 && k.maxResourceUtilization() != null
             && k.maxResourceUtilization().signum() >= 0;
+    }
+
+    private static boolean validShortageGapRatio(DecisionKpiSet k) {
+        return k.shortageGapRatio() != null && k.shortageGapRatio().signum() >= 0
+            && k.shortageGapRatio().compareTo(BigDecimal.ONE) <= 0;
     }
 
     private static double normalized(List<DecisionScenario> scenarios, ToDoubleFunction<DecisionScenario> metric,

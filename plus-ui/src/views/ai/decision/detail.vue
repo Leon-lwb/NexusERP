@@ -21,6 +21,16 @@
         class="mb-4"
         @view-preview="previewScenario"
       />
+      <el-card v-if="result?.scenarios?.length" class="mb-4">
+        <template #header>量纲安全排名依据</template>
+        <el-table :data="result.scenarios" size="small">
+          <el-table-column prop="scenarioCode" label="方案" min-width="150" />
+          <el-table-column label="逐物料缺口比例 / 排名资格" min-width="320">
+            <template #default="scope">{{ decisionShortageRankingDisplay(scope.row) }}</template>
+          </el-table-column>
+        </el-table>
+        <small class="block text-gray-500 mt-2">原始缺口聚合只供审计，不参与新版排名；相对归一化为零不代表无缺料。历史结论不重写。</small>
+      </el-card>
       <DecisionActionApproval
         v-if="canApproveRun({ status: detail.run.status, stale: isStale })"
         :run="detail.run"
@@ -69,6 +79,7 @@ import {
   type DecisionTimelineItem
 } from '@/api/ai/decision';
 import { applyDecisionFlowEvent, canApproveRun, flowProgressEventId, shouldPollDecision } from './decisionViewModel';
+import { decisionShortageRankingDisplay } from './decisionDisplay';
 import DecisionSummaryCard from '@/components/ai/decision/DecisionSummaryCard.vue';
 import DecisionKpiCompare from '@/components/ai/decision/DecisionKpiCompare.vue';
 import DecisionScenarioTable from '@/components/ai/decision/DecisionScenarioTable.vue';

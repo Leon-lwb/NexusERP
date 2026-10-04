@@ -833,4 +833,22 @@ class DecisionContractTest {
             }
         }
     }
+    @Test
+    void legacyKpisAndRequirementJsonRemainUnrankableWithoutRewritingTheirOriginalValues() throws Exception {
+        var mapper = new ObjectMapper().findAndRegisterModules();
+        String legacy = "{\"impactedOrderCount\":1,\"delayedWorkOrderCount\":0,\"totalTardinessDays\":0,"
+            + "\"maxTardinessDays\":0,\"shortageMaterialCount\":4,\"totalShortageGap\":38.2762,"
+            + "\"overloadedResourceCount\":0,\"changedWorkOrderCount\":0}";
+        var k = mapper.readValue(legacy, DecisionKpiSet.class);
+        assertEquals(new BigDecimal("38.2762"), k.totalShortageGap());
+        assertNull(k.shortageGapRatio());
+        assertNull(k.shortageBasis());
+        var requirement = mapper.readValue("{\"detailId\":101,\"materialId\":140,\"requiredQty\":5.4292}",
+            DeliveryContextSnapshot.RequirementFact.class);
+        assertNull(requirement.baseUomId());
+        assertEquals(new BigDecimal("5.4292"), requirement.requiredQty());
+        var roundTrip = mapper.readValue(mapper.writeValueAsString(k), DecisionKpiSet.class);
+        assertEquals(k, roundTrip);
+    }
+
 }

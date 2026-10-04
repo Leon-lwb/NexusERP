@@ -162,6 +162,37 @@ class DecisionEvidenceServiceTest {
         assertEquals("1", normalized.value());
     }
 
+
+    @Test
+    void shortageRatioCannotBorrowRawAggregateEvidence() {
+        // 相同数值的原始跨单位聚合，不是无量纲比例的来源证据。
+        var k = new com.nexus.common.ai.decision.dto.DecisionKpiSet(1, 1, 3, 3,
+            "2026-10-01", 0, BigDecimal.ZERO, null, BigDecimal.valueOf(80), 0, 0,
+            BigDecimal.ZERO, new BigDecimal("0.25"));
+        var provided = new java.util.ArrayList<EvidenceItem>();
+        provided.add(scoped("RISK", "risk_score", "50"));
+        for (String metric : List.of("impacted_order_count", "delayed_work_order_count",
+            "total_tardiness_days", "max_tardiness_days", "shortage_material_count",
+            "overloaded_resource_count", "changed_work_order_count", "total_shortage_gap",
+            "max_resource_utilization", "action_cost")) {
+            String value = switch (metric) {
+                case "impacted_order_count", "delayed_work_order_count" -> "1";
+                case "total_tardiness_days", "max_tardiness_days" -> "3";
+                case "max_resource_utilization" -> "80";
+                default -> "0";
+            };
+            provided.add(scoped("APS_CR", metric, value));
+        }
+        var original = DecisionTestFixtures.scenario("APS_CR", true, k, 0);
+        var scenario = new com.nexus.common.ai.decision.dto.DecisionScenario("APS_CR", "CR", "CR", true,
+            List.of(), k, BigDecimal.ZERO, 1, original.overrides(), service.normalize(provided).stream()
+                .filter(e -> "APS_CR".equals(e.sourceCode())).map(EvidenceItem::evidenceKey).toList(),
+            List.of(), original.inputHash(), List.of(), List.of());
+        var result = new DecisionResult(10L, null, 50, null, "HIGH", List.of(), null,
+            List.of(scenario), null, null, provided, List.of(), List.of());
+        assertThrows(IllegalArgumentException.class, () -> service.assertNumericEvidenceCoverage(result));
+    }
+
     private static EvidenceItem scoped(String scope, String metric, String value) {
         return new EvidenceItem(10L, null, "ERP", "SCENARIO", null, scope, scope,
             metric, metric, "NUMBER", value, null, LocalDateTime.of(2026, 9, 23, 10, 0),

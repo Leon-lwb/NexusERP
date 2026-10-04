@@ -37,6 +37,17 @@ export interface DecisionRunAccepted {
   sceneCode: string;
   acceptedAt: string;
 }
+/** 服务端冻结并核验的逐物料缺口排名来源，不是采购授权。 */
+export interface DecisionShortageBasis {
+  /** ERP 生产阶段未绑定运行；受保护 AI 组装后绑定真实 runId。 */
+  runId: DecisionId | null;
+  snapshotEvidenceKey: string;
+  windowStart: string;
+  windowEnd: string;
+  simulationEvidenceKey: string;
+  requirements: Array<{ detailId: DecisionId; materialId: DecisionId; requiredDate: string; requiredQty: string | number; baseUomId: DecisionId }>;
+  gaps: Array<{ materialId: DecisionId; baseUomId: DecisionId; maxGap: string | number; peakDate?: string | null; sourceEvidenceKey: string }>;
+}
 export interface DecisionKpis {
   impactedOrderCount: number;
   delayedWorkOrderCount: number;
@@ -44,7 +55,10 @@ export interface DecisionKpis {
   maxTardinessDays: number;
   makespanDate?: string | null;
   shortageMaterialCount: number;
+  /** 原始审计值可能混单位；不参与新版排名。 */
   totalShortageGap?: string | null;
+  shortageGapRatio?: string | number | null;
+  shortageBasis?: DecisionShortageBasis | null;
   earliestShortageDate?: string | null;
   maxResourceUtilization?: string | null;
   overloadedResourceCount: number;

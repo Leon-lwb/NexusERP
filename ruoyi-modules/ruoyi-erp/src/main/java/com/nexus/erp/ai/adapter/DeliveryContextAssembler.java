@@ -132,6 +132,7 @@ public class DeliveryContextAssembler {
     private final PrdProductionPlanMapper productionPlanMapper;
     private final WmMaterialStockMapper stockMapper;
     private final BdMaterialMapper materialMapper;
+    private final com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper evidenceUnitMapper;
     private final BdRoutingMapper routingMapper;
     private final BdRoutingStepMapper routingStepMapper;
     private final PrdCapacityCalendarMapper capacityCalendarMapper;
@@ -181,7 +182,7 @@ public class DeliveryContextAssembler {
         validateAccess(ref, actor);
         LocalDate businessDate = businessDate();
         DecisionScope scope = loadScope(ref);
-        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, businessDate);
+        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, businessDate, actor.tenantId());
         String freshnessHash = hash(buildFingerprint(scope, context));
         SnapshotProjection projection = projectSnapshot(scope, context, horizonDays, businessDate);
 
@@ -224,7 +225,7 @@ public class DeliveryContextAssembler {
         validateAccess(ref, actor);
         LocalDate businessDate = businessDate();
         DecisionScope scope = loadScope(ref);
-        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, businessDate);
+        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, businessDate, actor.tenantId());
         return hash(buildFingerprint(scope, context));
     }
 
@@ -600,7 +601,7 @@ public class DeliveryContextAssembler {
         return workOrder != null && "MATERIAL_REQUIREMENT".equalsIgnoreCase(workOrder.getSourceType());
     }
 
-    private LoadedContext loadContext(DecisionScope scope, int horizonDays, LocalDate businessDate) {
+    private LoadedContext loadContext(DecisionScope scope, int horizonDays, LocalDate businessDate, String tenantId) {
         LocalDate horizonEnd = businessDate.plusDays(horizonDays - 1L);
         ScheduleInput apsInput = assembleScheduleInput(scope.workOrders(), horizonDays, businessDate);
         SourceFacts sourceFacts = loadSourceFacts(scope, apsInput, businessDate, horizonEnd);
@@ -615,6 +616,10 @@ public class DeliveryContextAssembler {
             scope, businessDate, horizonEnd, warnings);
         LinkedHashSet<Long> materialIds = collectRelevantMaterialIds(scope, requirementRows);
         StockBundle stocks = loadStocks(materialIds);
+        var unitIds = stocks.materials().stream().map(BdMaterial::getBaseUomId)
+            .filter(id -> id != null && id > 0).distinct().sorted().toList();
+        var evidenceUnits = unitIds.isEmpty() ? List.<com.nexus.erp.bd.domain.BdUnitOfMeasure>of()
+            : safeList(evidenceUnitMapper.selectBatchIds(unitIds));
         PurchaseBundle purchases = loadPurchases(materialIds, horizonEnd, warnings);
         List<SupplierMetricFact> supplierMetrics = loadSupplierMetrics(purchases.vendorIds(), warnings);
         ScheduleSelection schedule = loadCurrentSchedule(scope, warnings);
@@ -629,6 +634,7 @@ public class DeliveryContextAssembler {
             requirementRows,
             stocks.rows(),
             stocks.materials(),
+            List.copyOf(evidenceUnits),
             purchases.orders(),
             purchases.lines(),
             schedule,
@@ -638,7 +644,7 @@ public class DeliveryContextAssembler {
             holidays,
             currentSchedule,
             supplierMetrics,
-            List.copyOf(warnings));
+            List.copyOf(warnings), tenantId, new Date());
     }
 
     private SnapshotProjection projectSnapshot(DecisionScope scope,
@@ -661,7 +667,7 @@ public class DeliveryContextAssembler {
         PurchaseBundle purchases = new PurchaseBundle(
             context.purchaseOrders(), context.purchaseLines(), List.of());
         List<String> warnings = new ArrayList<>(context.warnings());
-        List<ArrivalFact> arrivals = buildArrivalFacts(purchases, materialIds, horizonEnd);
+        List<ArrivalFact> arrivals = buildArrivalFacts(purchases, materialIds, horizonEnd, context.materials(), context.evidenceUnits(), context.tenantId(), warnings, context.observedAt());
 
         LinkedHashMap<LocalDate, Map<String, BigDecimal>> capacity = new LinkedHashMap<>();
         context.capacityByDate().forEach((date, resources) -> {
@@ -673,6 +679,7 @@ public class DeliveryContextAssembler {
             .filter(date -> !date.isBefore(businessDate) && !date.isAfter(horizonEnd))
             .toList();
         List<StockFact> stockFacts = buildStockFacts(materialIds, stocks, warnings);
+        var requirementFacts = buildRequirementFacts(requirementRows, context.materials(), context.evidenceUnits(), warnings, context.tenantId(), context.observedAt());
         List<String> stableWarnings = warnings.stream()
             .filter(Objects::nonNull)
             .distinct()
@@ -680,7 +687,7 @@ public class DeliveryContextAssembler {
             .toList();
         return new SnapshotProjection(
             context.routingByMaterial(),
-            buildRequirementFacts(requirementRows),
+            requirementFacts,
             stockFacts,
             arrivals,
             Collections.unmodifiableMap(capacity),
@@ -1323,7 +1330,11 @@ public class DeliveryContextAssembler {
         return workshops.size() == 1 ? workshops.get(0) : null;
     }
 
-    private List<RequirementFact> buildRequirementFacts(List<RequirementLink> rows) {
+    /** 数量不换算；只有原MRP单位与已确认根基本单位一致时才保留排名单位身份。 */
+    private List<RequirementFact> buildRequirementFacts(List<RequirementLink> rows, List<BdMaterial> materials,
+            List<com.nexus.erp.bd.domain.BdUnitOfMeasure> units, List<String> warnings, String tenantId, Date observedAt) {
+        var masters = materials.stream().collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a));
+        var byId = units.stream().collect(Collectors.toMap(com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId, u -> u, (a, b) -> a));
         return rows.stream()
             .filter(row -> row.netQuantity().signum() > 0)
             .map(row -> new RequirementFact(
@@ -1334,8 +1345,41 @@ public class DeliveryContextAssembler {
                 toLocalDate(row.detail().getRequiredDate()),
                 row.netQuantity(),
                 row.workOrder() == null ? null : row.workOrder().getWoId(),
-                row.workOrder() == null ? null : row.workOrder().getWoNo()))
+                row.workOrder() == null ? null : row.workOrder().getWoNo(),
+                verifiedRequirementUnit(row, masters, byId, warnings, tenantId, observedAt)))
             .toList();
+    }
+
+    private Long verifiedRequirementUnit(RequirementLink row, Map<Long, BdMaterial> materials,
+            Map<Long, com.nexus.erp.bd.domain.BdUnitOfMeasure> units, List<String> warnings, String tenant, Date observedAt) {
+        Long unit = verifiedBaseQuantityUnit(row.detail().getMaterialId(), row.detail().getUnit(), row.netQuantity(), materials, units, tenant, observedAt);
+        if (unit == null) warnings.add("UNKNOWN_REQUIREMENT_UNIT:" + row.detail().getDetailId());
+        return unit;
+    }
+
+    /** 原单位和数量都需匹配已确认根单位；不从名称猜ID、不为采购供给擅自换算。 */
+    private Long verifiedBaseQuantityUnit(Long materialId, String originalUnit, BigDecimal quantity, Map<Long, BdMaterial> materials,
+            Map<Long, com.nexus.erp.bd.domain.BdUnitOfMeasure> units, String tenant, Date observedAt) {
+        var material = materials.get(materialId);
+        var unit = material == null ? null : units.get(material.getBaseUomId());
+        if (material != null && unit != null && Objects.equals(tenant, material.getTenantId())
+            && Objects.equals(tenant, unit.getTenantId()) && Objects.equals(1L, material.getStatus())
+            && "0".equals(material.getDelFlag()) && Objects.equals(1L, unit.getStatus()) && "0".equals(unit.getDelFlag())
+            && Objects.equals(1L, unit.getIsBase()) && Objects.equals(unit.getUomId(), unit.getPrimaryId()) && unit.getConversionRate() != null
+            && unit.getConversionRate().compareTo(BigDecimal.ONE) == 0 && unit.getQuantityScale() != null
+            && unit.getQuantityScale() >= 0 && unit.getQuantityScale() <= 4
+            && unit.getConversionVersion() != null && !unit.getConversionVersion().isBlank()
+            && unit.getConversionVerifiedAt() != null && observedAt != null && !unit.getConversionVerifiedAt().after(observedAt)
+            && unit.getUomId().toString().equals(originalUnit)
+            && rawQuantityWithinUnit(quantity, unit.getQuantityScale())) return unit.getUomId();
+        return null;
+    }
+
+    /** 原始数量独立核精度/边界，不让净量相减或NULL归零掩盖原值非法。 */
+    private static boolean rawQuantityWithinUnit(BigDecimal value, Integer scale) {
+        if (value == null || value.signum() < 0 || scale == null) return false;
+        var normalized = value.stripTrailingZeros();
+        return normalized.scale() <= scale && (long) normalized.precision() - normalized.scale() <= 14;
     }
 
     private List<StockFact> buildStockFacts(LinkedHashSet<Long> materialIds, StockBundle stocks,
@@ -1388,7 +1432,10 @@ public class DeliveryContextAssembler {
 
     private List<ArrivalFact> buildArrivalFacts(PurchaseBundle purchases,
                                                  Set<Long> materialIds,
-                                                 LocalDate horizonEnd) {
+                                                 LocalDate horizonEnd, List<BdMaterial> materials,
+                                                 List<com.nexus.erp.bd.domain.BdUnitOfMeasure> units, String tenant, List<String> warnings, Date observedAt) {
+        var masters = materials.stream().collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a));
+        var byId = units.stream().collect(Collectors.toMap(com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId, u -> u, (a, b) -> a));
         Map<Long, PuPurchaseOrder> orderById = purchases.orders().stream()
             .collect(Collectors.toMap(PuPurchaseOrder::getOrderId, order -> order));
         List<ArrivalFact> arrivals = new ArrayList<>();
@@ -1408,8 +1455,14 @@ public class DeliveryContextAssembler {
             if (remaining.signum() <= 0) {
                 continue;
             }
+            Long baseUnit = verifiedBaseQuantityUnit(line.getMaterialId(), line.getUnit(), remaining, masters, byId, tenant, observedAt);
+            var sourceUnit = baseUnit == null ? null : byId.get(baseUnit);
+            if (sourceUnit == null || !rawQuantityWithinUnit(line.getOrderQuantity(), sourceUnit.getQuantityScale())
+                || !rawQuantityWithinUnit(line.getReceivedQuantity(), sourceUnit.getQuantityScale())
+                || line.getReceivedQuantity().compareTo(line.getOrderQuantity()) > 0) baseUnit = null;
+            if (baseUnit == null) warnings.add("UNKNOWN_ARRIVAL_UNIT:" + line.getLineId());
             arrivals.add(new ArrivalFact(
-                line.getMaterialId(), line.getLineId(), expectedDate, remaining, order.getVendorId()));
+                line.getMaterialId(), line.getLineId(), expectedDate, remaining, order.getVendorId(), baseUnit));
         }
         arrivals.sort(Comparator
             .comparing(ArrivalFact::expectedDate, Comparator.nullsLast(Comparator.naturalOrder()))
@@ -1969,7 +2022,7 @@ public class DeliveryContextAssembler {
             .map(row -> new CriticalRequirementDetail(
                 row.detail().getDetailId(), row.detail().getRequirementId(), row.detail().getMaterialId(),
                 toIsoDate(row.detail().getRequiredDate()), canonicalDecimal(row.netQuantity()),
-                toIsoDateTime(row.detail().getUpdateTime())))
+                toIsoDateTime(row.detail().getUpdateTime()), row.detail().getUnit()))
             .toList();
         List<CriticalStockRow> stocks = context.stockRows().stream()
             .sorted(stockRowComparator())
@@ -1995,7 +2048,7 @@ public class DeliveryContextAssembler {
             .map(line -> new CriticalPurchaseLine(
                 line.getLineId(), line.getOrderId(), line.getMaterialId(),
                 canonicalDecimal(remaining(line.getOrderQuantity(), line.getReceivedQuantity())),
-                toIsoDateTime(line.getUpdateTime())))
+                toIsoDateTime(line.getUpdateTime()), line.getUnit(), canonicalDecimal(line.getOrderQuantity()), canonicalDecimal(line.getReceivedQuantity())))
             .toList();
 
         CriticalApsInput apsInput = buildCriticalApsInput(scope, context.apsInput());
@@ -2003,7 +2056,10 @@ public class DeliveryContextAssembler {
         CriticalSchedule currentSchedule = buildCriticalSchedule(context.schedule(), context.currentSchedule());
         return new CriticalFreshnessFingerprint(
             root, orders, orderLines, workOrders, workOrderSalesLinks, requirementHeaders, requirements,
-            stocks, materials, purchaseOrders, purchaseLines, apsInput, sourceVersions, currentSchedule);
+            stocks, materials, context.evidenceUnits().stream().sorted(Comparator.comparing(com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId))
+                .map(u -> new CriticalQuantityUnit(u.getUomId(), u.getTenantId(), u.getPrimaryId(), u.getIsBase(), u.getStatus(), u.getDelFlag(),
+                    canonicalDecimal(u.getConversionRate()), u.getQuantityScale(), u.getConversionVersion(), toIsoDateTime(u.getConversionVerifiedAt()))).toList(),
+            purchaseOrders, purchaseLines, apsInput, sourceVersions, currentSchedule);
     }
 
     private CriticalApsInput buildCriticalApsInput(DecisionScope scope, ScheduleInput input) {
@@ -2562,6 +2618,7 @@ public class DeliveryContextAssembler {
         List<RequirementLink> requirementRows,
         List<WmMaterialStock> stockRows,
         List<BdMaterial> materials,
+        List<com.nexus.erp.bd.domain.BdUnitOfMeasure> evidenceUnits,
         List<PuPurchaseOrder> purchaseOrders,
         List<PuPurchaseOrderLine> purchaseLines,
         ScheduleSelection schedule,
@@ -2571,7 +2628,8 @@ public class DeliveryContextAssembler {
         List<LocalDate> holidays,
         Map<String, Object> currentSchedule,
         List<SupplierMetricFact> supplierMetrics,
-        List<String> warnings
+        List<String> warnings,
+        String tenantId, Date observedAt
     ) {
     }
 
@@ -2585,6 +2643,7 @@ public class DeliveryContextAssembler {
         List<CriticalRequirementDetail> requirements,
         List<CriticalStockRow> stocks,
         List<CriticalMaterial> materials,
+        List<CriticalQuantityUnit> quantityUnits,
         List<CriticalPurchaseOrder> purchaseOrders,
         List<CriticalPurchaseLine> purchaseLines,
         CriticalApsInput apsInput,
@@ -2641,7 +2700,7 @@ public class DeliveryContextAssembler {
         Long materialId,
         String requiredDate,
         String netQty,
-        String updateTime
+        String updateTime, String originalUnit
     ) {
     }
 
@@ -2662,6 +2721,10 @@ public class DeliveryContextAssembler {
     ) {
     }
 
+    /** 根单位数量合同进入同一快照指纹；失效或版本变化使来源不再相同。 */
+    private record CriticalQuantityUnit(Long id, String tenant, Long primaryId, Long isBase, Long status, String delFlag,
+            String rate, Integer scale, String version, String verifiedAt) { }
+
     private record CriticalMaterial(Long id, Long baseUomId, Long status, String delFlag, String safetyStock, String updateTime) {
     }
 
@@ -2673,7 +2736,7 @@ public class DeliveryContextAssembler {
         Long orderId,
         Long materialId,
         String remainingQty,
-        String updateTime
+        String updateTime, String originalUnit, String rawOrdered, String rawReceived
     ) {
     }
 

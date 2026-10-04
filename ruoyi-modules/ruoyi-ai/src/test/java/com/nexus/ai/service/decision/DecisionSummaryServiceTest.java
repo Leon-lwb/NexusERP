@@ -307,4 +307,12 @@ class DecisionSummaryServiceTest {
             true, false, List.of(), null);
     }
 
+    @Test
+    void summaryDoesNotPresentMixedUnitAggregateAsComparableKpi() {
+        var prompt = service.renderPrompt(input(null));
+        assertFalse(prompt.contains("totalShortageGap="));
+        assertTrue(prompt.contains("缺口比例未知，不可排名"));
+        verifyNoInteractions(factory);
+    }
+
 }

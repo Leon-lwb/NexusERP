@@ -57,6 +57,7 @@ public final class PrdShortageSimulator {
         BigDecimal balance = input.getStockQty().subtract(input.getSafetyStock());
         LocalDate earliestShortage = null;
         BigDecimal maxGap = BigDecimal.ZERO;
+        LocalDate maxGapDate = null;
         long gapDays = 0;
         List<LocalDate> shortageDemandDates = new ArrayList<>();
 
@@ -76,6 +77,7 @@ public final class PrdShortageSimulator {
                 BigDecimal gap = current.abs();
                 if (gap.compareTo(maxGap) > 0) {
                     maxGap = gap;
+                    maxGapDate = date;
                 }
             }
             // 保留最后一次推演值供建议判断
@@ -84,6 +86,7 @@ public final class PrdShortageSimulator {
 
         result.setEarliestShortageDate(earliestShortage);
         result.setMaxGap(maxGap);
+        result.setMaxGapDate(maxGapDate);
         result.setGapDays(gapDays);
         result.setShortageDemandDates(shortageDemandDates);
 

@@ -37,6 +37,9 @@ public class DecisionAnalysisAssemblyService {
         if (run == null || run.getId() == null || snapshot == null || snapshot.snapshotAt() == null
             || shortage == null || ranked == null || ranked.isEmpty())
             throw new ServiceException("缺少经过 ERP 推演的基线、缺料或方案事实");
+        // 新比例只使用服务端已冻结配置；无比例的旧结论不补写窗口或升级 KPI。
+        int horizonDays = ranked.stream().anyMatch(s -> s != null && s.kpis() != null
+            && s.kpis().shortageGapRatio() != null) ? DecisionFrozenHorizon.requireHorizonDays(run) : 0;
         DecisionScenario baseline = ranked.stream().filter(s -> s != null && "BASELINE_CURRENT".equals(s.scenarioCode()))
             .findFirst().orElse(null);
         if (baseline == null || snapshot.workOrders() == null
@@ -110,6 +113,7 @@ public class DecisionAnalysisAssemblyService {
                 metric(evidence, keys, run, snapshot, scenario.scenarioCode(), "overloaded_resource_count", BigDecimal.valueOf(k.overloadedResourceCount()), parentKeys);
                 metric(evidence, keys, run, snapshot, scenario.scenarioCode(), "changed_work_order_count", BigDecimal.valueOf(k.changedWorkOrderCount()), parentKeys);
                 metric(evidence, keys, run, snapshot, scenario.scenarioCode(), "total_shortage_gap", k.totalShortageGap(), parentKeys);
+                shortageRatioEvidence(evidence, keys, run, snapshot, scenario.scenarioCode(), k, parentKeys, horizonDays);
                 metric(evidence, keys, run, snapshot, scenario.scenarioCode(), "max_resource_utilization", k.maxResourceUtilization(), parentKeys);
                 metric(evidence, keys, run, snapshot, scenario.scenarioCode(), "action_cost", k.actionCost(), parentKeys);
             }
@@ -170,6 +174,38 @@ public class DecisionAnalysisAssemblyService {
         text.put("operatorChecklist", summary.operatorChecklist());
         text.put("summaryMode", summary.mode());
         return java.util.Collections.unmodifiableMap(text);
+    }
+
+    /** 比例只引用逐物料的缺口、需求分母和已核验基础单位，不引用混单位总和。 */
+    private void shortageRatioEvidence(List<EvidenceItem> evidence, List<String> keys, AiDecisionRun run,
+                                      DeliveryContextSnapshot snapshot, String scope, DecisionKpiSet k,
+                                      List<String> rootKeys, int horizonDays) {
+        if (k.shortageGapRatio() == null) return; // 历史口径保持原状，不回填新比例。
+        verifier.assertShortageBasis(run.getId(), k, snapshot, horizonDays);
+        var basis = k.shortageBasis();
+        List<String> parents = new ArrayList<>();
+        for (var row : basis.requirements()) {
+            parents.add("ERP:REQUIREMENT:" + row.detailId() + ":required_qty");
+            parents.add("ERP:REQUIREMENT:" + row.detailId() + ":base_uom_id");
+        }
+        for (var gap : basis.gaps()) {
+            String sourceCode = scope + "_" + gap.materialId();
+            String key = "DERIVED:SHORTAGE:" + sourceCode + ":max_gap";
+            if (!key.equals(gap.sourceEvidenceKey())) throw new ServiceException("物料缺口证据归属与方案不符");
+            var item = new EvidenceItem(run.getId(), key, "DERIVED", "SHORTAGE", null, sourceCode,
+                null, "max_gap", "物料峰值缺口", "NUMBER", gap.maxGap().toPlainString(),
+                "uom:" + gap.baseUomId(), snapshot.snapshotAt(), snapshot.snapshotHash(),
+                BigDecimal.ONE, true, false, rootKeys, null);
+            evidence.add(item); keys.add(key); parents.add(key);
+        }
+        // 完整且明确为空的需求集合仍须绑定已核验快照，不能拿缺失清单当零缺口。
+        if (parents.isEmpty()) parents.addAll(rootKeys);
+        String ratioKey = "DERIVED:CALC:" + scope + ":shortage_gap_ratio";
+        evidence.add(new EvidenceItem(run.getId(), ratioKey, "DERIVED", "CALC", null, scope,
+            null, "shortage_gap_ratio", "逐物料等权缺口比例", "NUMBER", k.shortageGapRatio().toPlainString(),
+            "ratio", snapshot.snapshotAt(), snapshot.snapshotHash(), BigDecimal.ONE, true, false,
+            List.copyOf(new java.util.LinkedHashSet<>(parents)), null));
+        keys.add(ratioKey);
     }
 
     private void metric(List<EvidenceItem> evidence, List<String> keys, AiDecisionRun run,

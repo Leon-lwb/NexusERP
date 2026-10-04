@@ -140,11 +140,27 @@ public class DecisionSummaryService {
             .append(SENSITIVE.matcher(limit(input.userQuestion(), 400)).replaceAll("[敏感信息已过滤]"))
             .append('\n');
         if (input.rootCauseCodes() != null) facts.append("根因代码=").append(input.rootCauseCodes()).append('\n');
-        if (input.scenarios() != null) input.scenarios().stream().limit(4).forEach(s -> facts.append("方案=")
-            .append(s.scenarioCode()).append(",可行=").append(s.feasible()).append(",KPI=")
-            .append(s.kpis() == null ? "未知" : s.kpis().toString()).append('\n'));
+        if (input.scenarios() != null) input.scenarios().stream().limit(4).forEach(s -> {
+            facts.append("方案=").append(s.scenarioCode()).append(",可行=").append(s.feasible());
+            if (s.kpis() == null) facts.append(",KPI=未知");
+            else {
+                var k = s.kpis();
+                facts.append(",延期工单=").append(k.delayedWorkOrderCount())
+                    .append(",拖期天数=").append(k.totalTardinessDays())
+                    .append(",缺料物料=").append(k.shortageMaterialCount())
+                    .append(",资源利用率=").append(k.maxResourceUtilization())
+                    .append(",变更工单=").append(k.changedWorkOrderCount())
+                    .append(",动作成本=").append(k.actionCost());
+                if (k.shortageGapRatio() == null || k.shortageBasis() == null)
+                    facts.append(",缺口比例未知，不可排名");
+                else facts.append(",shortageGapRatio=").append(k.shortageGapRatio())
+                    .append("（逐物料等权无量纲比例；相对归一化零不代表无缺料）");
+            }
+            facts.append('\n');
+        });
         if (input.evidence() != null) input.evidence().stream().limit(30).forEach(e -> {
-            if (e != null && e.evidenceKey() != null && e.evidenceKey().length() <= 120
+            if (e != null && !"total_shortage_gap".equals(e.metricCode())
+                && e.evidenceKey() != null && e.evidenceKey().length() <= 120
                 && !e.evidenceKey().contains("\n") && !e.evidenceKey().contains("\r")
                 && !SENSITIVE.matcher(e.evidenceKey()).find())
                 facts.append("证据=").append(e.evidenceKey()).append('\n');

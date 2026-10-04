@@ -3,6 +3,7 @@ package com.nexus.erp.ai.adapter;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.ai.decision.dto.ApsScenarioCompareResult;
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
+import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.ArrivalFact;
@@ -98,8 +99,29 @@ public class ErpDecisionApsSimulation {
                     "UNSUPPORTED_SCENARIO"));
             }
         }
+        results = results.stream().map(ErpDecisionApsSimulation::scenarioBasis).toList();
         if (results.stream().noneMatch(DecisionScenario::feasible)) warnings.add("ALL_SCENARIOS_INFEASIBLE");
         return new ApsScenarioCompareResult(List.copyOf(results), List.copyOf(warnings));
+    }
+
+    /** 每个实际方案携带独立的推演证据键，复制KPI时不丢逐物料依据。 */
+    private static DecisionScenario scenarioBasis(DecisionScenario scenario) {
+        var k = scenario.kpis();
+        if (k == null || k.shortageBasis() == null) return scenario;
+        var old = k.shortageBasis();
+        var gaps = old.gaps().stream().map(g -> new DecisionShortageBasis.Gap(g.materialId(), g.baseUomId(),
+            g.maxGap(), g.peakDate(), "DERIVED:SHORTAGE:" + scenario.scenarioCode() + "_" + g.materialId() + ":max_gap")).toList();
+        String complete = "DERIVED:SHORTAGE:" + scenario.scenarioCode() + ":complete";
+        var basis = new DecisionShortageBasis(old.runId(), old.snapshotEvidenceKey(), old.windowStart(), old.windowEnd(), old.requirements(), gaps, complete);
+        var keys = new LinkedHashSet<>(scenario.evidenceKeys());
+        keys.remove(old.simulationEvidenceKey()); old.gaps().forEach(g -> keys.remove(g.sourceEvidenceKey()));
+        keys.add(complete); gaps.forEach(g -> keys.add(g.sourceEvidenceKey()));
+        var copy = new DecisionKpiSet(k.impactedOrderCount(), k.delayedWorkOrderCount(), k.totalTardinessDays(), k.maxTardinessDays(),
+            k.makespanDate(), k.shortageMaterialCount(), k.totalShortageGap(), k.earliestShortageDate(), k.maxResourceUtilization(),
+            k.overloadedResourceCount(), k.changedWorkOrderCount(), k.actionCost(), k.shortageGapRatio(), basis);
+        return new DecisionScenario(scenario.scenarioCode(), scenario.scenarioName(), scenario.strategy(), scenario.feasible(),
+            scenario.infeasibleReasons(), copy, scenario.objectiveScore(), scenario.rank(), scenario.overrides(), List.copyOf(keys),
+            scenario.schedulePreview(), scenario.inputHash(), scenario.delayedOrders(), scenario.bottleneckResources());
     }
 
     private static void validate(DeliveryContextSnapshot snapshot, int horizonDays) {
@@ -327,7 +349,7 @@ public class ErpDecisionApsSimulation {
             changed.earliestShortageDate() == null ? null : changed.earliestShortageDate().toString(),
             old.maxResourceUtilization(), old.overloadedResourceCount(), old.changedWorkOrderCount(),
             /** 策略 v1 的代理成本：每条变动采购行计一个单位，不是货币报价。 */
-            BigDecimal.valueOf(datesByLine.size()))
+            BigDecimal.valueOf(datesByLine.size()), changed.kpis().shortageGapRatio(), changed.kpis().shortageBasis())
             : null;
         /** 使用完全相同的输入计算 CR 哈希，仅允许覆盖值变化。 */
         String hash = expediteHash(snapshot, crInput, horizonDays, overrides);
@@ -481,6 +503,7 @@ public class ErpDecisionApsSimulation {
         return Instant.ofEpochMilli(date.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
+    // 合法混物料 totalGap 为 null；来源完整性不能用不合法总量是否存在来判断。
     private static boolean materialKnown(ShortageSimulationResult result) {
         return result != null && result.kpis() != null
             && (result.warnings() == null || !result.warnings().contains("NO_REQUIREMENT_DATA"));
@@ -507,7 +530,9 @@ public class ErpDecisionApsSimulation {
             makespan == null ? null : makespan.toString(), shortage == null ? 0 : shortage.riskMaterialCount(),
             shortage == null || shortage.kpis() == null ? null : shortage.totalGap(),
             shortage == null || shortage.earliestShortageDate() == null ? null : shortage.earliestShortageDate().toString(),
-            maxUtil, overload, changed, null);
+            maxUtil, overload, changed, null,
+            shortage == null || shortage.kpis() == null ? null : shortage.kpis().shortageGapRatio(),
+            shortage == null || shortage.kpis() == null ? null : shortage.kpis().shortageBasis());
     }
 
     private static List<Long> delayedIds(Map<Long, LocalDate> ends, Map<Long, WorkOrderFact> facts) {

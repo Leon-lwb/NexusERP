@@ -26,6 +26,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,7 +65,7 @@ class ErpDecisionShortageSimulationTest {
         assertTrue(base.hasRisk());
         assertEquals(2, base.riskMaterialCount());
         assertEquals(TODAY.plusDays(1), base.earliestShortageDate());
-        assertEquals(new BigDecimal("12"), base.totalGap());
+        assertNull(base.totalGap(), "多物料旧算法未核单位，不再对逐物料缺口求总量");
         assertEquals(List.of(101L, 102L), base.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
         assertEquals(new BigDecimal("7"), base.items().get(0).maxGap());
         assertEquals(new BigDecimal("12"), base.items().get(0).onOrderQty());
@@ -78,19 +79,19 @@ class ErpDecisionShortageSimulationTest {
 
         assertEquals(1, changed.riskMaterialCount());
         assertEquals(TODAY.plusDays(2), changed.earliestShortageDate());
-        assertEquals(new BigDecimal("5"), changed.totalGap());
+        assertNull(changed.totalGap(), "即便仅一个物料有风险，参与集合仍含两个未核单位物料");
         assertEquals(List.of(102L, 101L), changed.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
         assertNull(changed.items().get(1).firstShortageDate());
         assertEquals(new BigDecimal("12"), changed.items().get(1).onOrderQty());
         assertEquals("NO_RISK", changed.items().get(1).recommendationCode());
-        assertEquals(new BigDecimal("5"), changed.kpis().totalShortageGap());
+        assertNull(changed.kpis().totalShortageGap());
         assertEquals(1, changed.kpis().shortageMaterialCount());
         assertEquals(1, changed.kpis().impactedOrderCount());
         assertNull(changed.kpis().makespanDate());
         assertTrue(changed.warnings().stream().anyMatch(w -> w.contains("未计算")));
         assertEquals(TODAY.plusDays(5), snapshot.arrivals().get(0).expectedDate());
         assertEquals(TODAY.plusDays(1), snapshot.arrivals().get(1).expectedDate());
-        assertEquals(new BigDecimal("12"), simulation.simulate(snapshot, 7, Map.of()).totalGap());
+        assertNull(simulation.simulate(snapshot, 7, Map.of()).totalGap());
     }
 
     @Test
@@ -669,6 +670,130 @@ class ErpDecisionShortageSimulationTest {
         assertEquals(0, expedited.kpis().impactedOrderCount());
         assertEquals(TODAY.plusDays(1), snapshot.arrivals().get(0).expectedDate());
     }
+
+    @Test
+    void realSimulationProducesCompleteUnitSafeBasisIncludingZeroGapAndPeakDate() {
+        var requirements = List.of(
+            new RequirementFact(1001L, 101L, "A", "物料A", TODAY, new BigDecimal("4"), 11L, "WO-11", 56L),
+            new RequirementFact(1002L, 101L, "A", "物料A", TODAY.plusDays(2), new BigDecimal("6"), 11L, "WO-11", 56L),
+            new RequirementFact(1003L, 102L, "B", "物料B", TODAY, new BigDecimal("20"), 22L, "WO-22", 57L));
+        var result = simulation.simulate(snapshot(requirements,
+            List.of(stock(101L, "5", "0", "0"), stock(102L, "20", "0", "0")), List.of(), null), 7, null);
+        var basis = result.kpis().shortageBasis();
+        assertNotNull(basis);
+        assertNull(basis.runId(), "ERP 不得使用业务 ID 冒充尚未收到的运行 ID");
+        assertEquals("snapshot:hash", basis.snapshotEvidenceKey());
+        assertEquals(TODAY, basis.windowStart());
+        assertEquals(TODAY.plusDays(6), basis.windowEnd());
+        assertEquals(3, basis.requirements().size());
+        assertEquals(List.of(56L, 56L, 57L), basis.requirements().stream().map(r -> r.baseUomId()).toList());
+        assertEquals(2, basis.gaps().size());
+        var a = basis.gaps().stream().filter(g -> g.materialId().equals(101L)).findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("5").compareTo(a.maxGap()));
+        assertEquals(TODAY.plusDays(2), a.peakDate());
+        assertEquals(0, basis.gaps().stream().filter(g -> g.materialId().equals(102L))
+            .findFirst().orElseThrow().maxGap().signum());
+        assertTrue(result.evidenceRefs().contains("ERP:REQUIREMENT:1001:base_uom_id"));
+    }
+
+    @Test
+    void missingRequirementUnitNeverProducesImplicitZeroRatioOrVerifiedBasis() {
+        var result = simulation.simulate(fixture(), 7, null);
+        assertNotNull(result.kpis());
+        assertNull(result.kpis().shortageBasis());
+        assertNull(result.kpis().shortageGapRatio());
+        assertTrue(result.warnings().contains("SHORTAGE_GAP_RATIO_UNRANKABLE"));
+    }
+
+    @Test
+    void mixedConfirmedUnitsHaveNoAggregateButKeepCompletePerMaterialBasis() {
+        var result = simulation.simulate(unitSafeTwoMaterialSnapshot(56L, 57L), 7, null);
+        assertNull(result.totalGap(), "千克与个不能生成新总量");
+        assertNull(result.kpis().totalShortageGap());
+        var basis = result.kpis().shortageBasis();
+        assertNotNull(basis, "合法混物料不等于来源缺失；逐物料依据必须保留");
+        assertEquals(List.of(56L, 57L), basis.gaps().stream().map(g -> g.baseUomId()).toList());
+        assertEquals(List.of(new BigDecimal("5"), new BigDecimal("10")),
+            basis.gaps().stream().map(g -> g.maxGap()).toList());
+    }
+
+    @Test
+    void sameConfirmedRootUnitAllowsMultiMaterialContextTotal() {
+        var result = simulation.simulate(unitSafeTwoMaterialSnapshot(56L, 56L), 7, null);
+        assertEquals(0, new BigDecimal("15").compareTo(result.totalGap()));
+        assertEquals(result.totalGap(), result.kpis().totalShortageGap());
+        assertNotNull(result.kpis().shortageBasis());
+    }
+
+    @Test
+    void unknownMultiMaterialUnitsNeverProduceAggregate() {
+        var result = simulation.simulate(unitSafeTwoMaterialSnapshot(null, null), 7, null);
+        assertNull(result.totalGap());
+        assertNull(result.kpis().totalShortageGap());
+        assertNull(result.kpis().shortageBasis());
+        assertEquals(2, result.items().size(), "仅撤销不合法总量，不删除旧算法的逐物料结果");
+    }
+
+    @Test
+    void verifiedDemandWithUnknownOrDifferentSupplyUnitCannotPublishFalseZeroRisk() {
+        for (Long supplyUnit : new Long[] {null, 57L}) {
+            var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
+                List.of(stock(101L, "0", "0", "0")),
+                List.of(new ArrivalFact(101L, 5001L, TODAY, new BigDecimal("1000"), 50L, supplyUnit)), null);
+            var failure = assertThrows(ServiceException.class, () -> simulation.simulate(source, 7, null));
+            assertTrue(failure.getMessage().startsWith("SHORTAGE_SIMULATION_INCOMPLETE"));
+        }
+    }
+
+    @Test
+    void confirmedSameUnitSupplyKeepsExplicitZeroGapAndCompleteBasis() {
+        var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
+            List.of(stock(101L, "0", "0", "0")),
+            List.of(new ArrivalFact(101L, 5001L, TODAY, BigDecimal.TEN, 50L, 56L)), null);
+        var result = simulation.simulate(source, 7, null);
+        assertFalse(result.hasRisk());
+        assertNotNull(result.kpis().shortageBasis());
+        assertEquals(0, result.kpis().shortageBasis().gaps().get(0).maxGap().signum());
+    }
+
+    @Test
+    void unknownArrivalMovedIntoWindowByOverrideCannotMintBasis() {
+        var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
+            List.of(stock(101L, "0", "0", "0")),
+            List.of(new ArrivalFact(101L, 5001L, TODAY.plusDays(8), BigDecimal.TEN, 50L)), null);
+        assertNotNull(simulation.simulate(source, 7, null).kpis().shortageBasis(), "窗口外未参与供给不污染窗口内比例");
+        assertThrows(ServiceException.class, () -> simulation.simulate(source, 7,
+            Map.of("purchaseArrivalOverrides", Map.of("5001", TODAY.toString()))));
+    }
+
+    @Test
+    void zeroQuantityOrUnrelatedUnknownArrivalDoesNotTaintVerifiedMaterialBasis() {
+        var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
+            List.of(stock(101L, "5", "0", "0")), List.of(
+                new ArrivalFact(101L, 5001L, TODAY, BigDecimal.ZERO, 50L),
+                new ArrivalFact(999L, 5002L, TODAY, BigDecimal.TEN, 50L)), null);
+        var result = simulation.simulate(source, 7, null);
+        assertNotNull(result.kpis().shortageBasis());
+        assertEquals(0, new BigDecimal("5").compareTo(result.kpis().shortageBasis().gaps().get(0).maxGap()));
+    }
+
+    @Test
+    void legacySingleMaterialAlgorithmKeepsContextGapWithoutUpgradingUnits() {
+        var result = simulation.simulate(fixture(), 7, null);
+        assertEquals(0, BigDecimal.TEN.compareTo(result.totalGap()));
+        assertNull(result.kpis().shortageBasis());
+        assertNull(result.kpis().shortageGapRatio());
+    }
+
+    private static DeliveryContextSnapshot unitSafeTwoMaterialSnapshot(Long firstUnit, Long secondUnit) {
+        return snapshot(List.of(unitRequirement(1001L, 101L, "10", firstUnit), unitRequirement(1002L, 102L, "20", secondUnit)),
+            List.of(stock(101L, "5", "0", "0"), stock(102L, "10", "0", "0")), List.of(), null);
+    }
+
+    private static RequirementFact unitRequirement(Long detail, Long material, String qty, Long baseUnit) {
+        return new RequirementFact(detail, material, "M-" + material, "物料", TODAY, new BigDecimal(qty), 11L, "WO-11", baseUnit);
+    }
+
     private static DeliveryContextSnapshot fixture() {
         return snapshot(List.of(requirement(101L, TODAY, "10", 11L)),
             List.of(stock(101L, "0", "0", "0")),

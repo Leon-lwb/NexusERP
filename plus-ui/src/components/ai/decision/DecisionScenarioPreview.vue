@@ -20,11 +20,21 @@
       />
       <el-descriptions :column="2" border class="mb-4">
         <el-descriptions-item label="预测拖期">{{ scenario.kpis?.totalTardinessDays ?? '—' }} 天</el-descriptions-item>
-        <el-descriptions-item label="预测缺料">{{ displayShortageGap(scenario.kpis) }}</el-descriptions-item>
+        <el-descriptions-item v-if="!hasShortageRatioContract(scenario.kpis)" label="预测缺料">{{
+          displayShortageGap(scenario.kpis)
+        }}</el-descriptions-item>
+        <el-descriptions-item v-if="hasShortageRatioContract(scenario.kpis)" label="缺口比例（无量纲）">{{
+          displayShortageRatio(scenario)
+        }}</el-descriptions-item>
         <el-descriptions-item label="最高资源利用率">{{ scenario.kpis?.maxResourceUtilization ?? '—' }}%</el-descriptions-item>
         <el-descriptions-item label="动作成本">{{ scenario.kpis?.actionCost ?? '—' }}</el-descriptions-item>
       </el-descriptions>
-      <small class="block text-gray-500 mb-4">缺口原值如有返回，因单位待核不能确认可合计；请核对物料主档与来源。</small>
+      <small class="block text-gray-500 mb-4"
+        >历史口径：缺口原值如有返回，因单位待核不能确认可合计；请核对物料主档与来源。旧记录保持原展示，不回填新版比例或结论。</small
+      >
+      <small v-if="hasShortageRatioContract(scenario.kpis)" class="block text-gray-500 mb-4"
+        >v2 为逐物料等权原始比例；归一化零不代表无缺料，不能合计不同单位的原始缺口。</small
+      >
       <div class="flex items-center justify-between mb-2">
         <strong>排程任务预览</strong>
         <span class="text-xs text-gray-500">{{ scenario.schedulePreview?.length || 0 }} 条；最多展示前 20 条</span>
@@ -53,11 +63,21 @@
 import { computed } from 'vue';
 import type { DecisionKpis, DecisionScenario } from '@/api/ai/decision';
 import { previewScheduleRows } from '@/views/ai/decision/decisionViewModel';
+import { decisionShortageRankingDisplay, decisionShortageKpiDisplay, hasShortageRatioContract } from '@/views/ai/decision/decisionDisplay';
 const props = defineProps<{ modelValue: boolean; scenario: DecisionScenario | null }>();
 const emit = defineEmits<{ (event: 'update:modelValue', open: boolean): void }>();
 const rows = computed(() => previewScheduleRows(props.scenario?.schedulePreview));
 const auditJson = computed(() => JSON.stringify(props.scenario?.schedulePreview?.slice(0, 20) || [], null, 2));
+/** 新合同缺 R 是未知，不按旧运行解释；保留后端明确的不可排名原因。 */
+const displayShortageRatio = (scenario: DecisionScenario): string => {
+  const value = scenario.infeasibleReasons?.includes('SHORTAGE_GAP_RATIO_UNRANKABLE')
+    ? decisionShortageRankingDisplay(scenario)
+    : decisionShortageKpiDisplay(scenario.kpis);
+  return value.startsWith('不可排名') ? `未知：${value}` : value;
+};
 const displayShortageGap = (kpis?: DecisionKpis | null): string => {
+  // 新合同不得借用历史聚合量，旧值仅在历史口径区域展示。
+  if (hasShortageRatioContract(kpis)) return '—';
   const gap: unknown = kpis?.totalShortageGap;
   if (gap == null) return '—';
   if (kpis?.shortageMaterialCount === 0 && (gap === 0 || (typeof gap === 'string' && /^0+(?:\.0+)?(?:[eE][+-]?\d+)?$/.test(gap)))) {

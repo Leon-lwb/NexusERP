@@ -241,12 +241,20 @@ public record DeliveryContextSnapshot(
     /** 工单、物料和日期相同的两行必须使用不同的 MRP 明细来源 ID。 */
     public record RequirementFact(Long detailId, Long materialId, String materialCode, String materialName,
                                   LocalDate requiredDate, BigDecimal requiredQty,
-                                  Long workOrderId, String workOrderNo) implements Serializable {
+                                  Long workOrderId, String workOrderNo, Long baseUomId) implements Serializable {
+        /** 基础单位由 ERP 核验后冻结；旧来源没有该证明，不猜测或回填。 */
+        public RequirementFact(Long detailId, Long materialId, String materialCode, String materialName,
+                               LocalDate requiredDate, BigDecimal requiredQty,
+                               Long workOrderId, String workOrderNo) {
+            this(detailId, materialId, materialCode, materialName, requiredDate, requiredQty,
+                workOrderId, workOrderNo, null);
+        }
+
         /** 旧 Java/JSON 快照未携带明细行 ID；发生冲突时仍应拒绝放行。 */
         public RequirementFact(Long materialId, String materialCode, String materialName,
                                LocalDate requiredDate, BigDecimal requiredQty,
                                Long workOrderId, String workOrderNo) {
-            this(null, materialId, materialCode, materialName, requiredDate, requiredQty, workOrderId, workOrderNo);
+            this(null, materialId, materialCode, materialName, requiredDate, requiredQty, workOrderId, workOrderNo, null);
         }
     }
 
@@ -258,8 +266,12 @@ public record DeliveryContextSnapshot(
                             BigDecimal safetyStock) implements Serializable {
     }
 
+    /** 供给只有原采购单位核验一致后才给基础单位身份；旧五参来源保持未知，不补换算。 */
     public record ArrivalFact(Long materialId, Long purchaseLineId, LocalDate expectedDate,
-                              BigDecimal remainingQty, Long vendorId) implements Serializable {
+                              BigDecimal remainingQty, Long vendorId, Long baseUomId) implements Serializable {
+        public ArrivalFact(Long materialId, Long purchaseLineId, LocalDate expectedDate, BigDecimal remainingQty, Long vendorId) {
+            this(materialId, purchaseLineId, expectedDate, remainingQty, vendorId, null);
+        }
     }
 
     public record SupplierMetricFact(Long vendorId, BigDecimal onTimeRate, int sampleCount,

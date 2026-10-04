@@ -103,7 +103,7 @@ class IndustrialDecisionProvidersSmokeTest {
     }
     @Test void rankDelegatesToDeterministicService() throws Exception {
         trusted(); var ranking = mock(DecisionScenarioRankingService.class);
-        when(ranking.rank(any())).thenReturn(List.of());
+        when(ranking.rank(anyLong(), any(), anyInt(), anyList())).thenReturn(List.of());
         var analysis = mock(DecisionAnalysisAssemblyService.class);
         var summaries = mock(DecisionSummaryService.class);
         var facts = new DecisionResult(21L, ref, 50, DecisionRiskLevel.HIGH, "HIGH", List.of("MATERIAL_SHORTAGE"),
@@ -124,12 +124,12 @@ class IndustrialDecisionProvidersSmokeTest {
         assertEquals(facts.rootCauseCodes(), promptInput.getValue().rootCauseCodes());
         assertEquals(facts.evidence(), promptInput.getValue().evidence());
         assertNull(promptInput.getValue().modelId());
-        verify(ranking).rank(any());
+        verify(ranking).rank(eq(21L), any(), eq(30), anyList());
     }
     @Test void unverifiedFactsCannotBecomeModelPromptContext() throws Exception {
         trusted();
         var ranking = mock(DecisionScenarioRankingService.class);
-        when(ranking.rank(any())).thenReturn(List.of());
+        when(ranking.rank(anyLong(), any(), anyInt(), anyList())).thenReturn(List.of());
         var analysis = mock(DecisionAnalysisAssemblyService.class);
         var summaries = mock(DecisionSummaryService.class);
         when(analysis.prepare(any(), any(), any(), anyList(), anyList(), isNull()))

@@ -63,6 +63,11 @@ public class DecisionSourceFactVerifier {
              * 旧快照缺少行 ID 时，相互冲突的值仍会产生键冲突并拒绝放行。
              */
             fact(facts, runId, snapshot, "REQUIREMENT", req.detailId(), code, "required_qty", req.requiredQty());
+            if (req.baseUomId() != null) {
+                if (req.baseUomId() <= 0) throw new ServiceException("需求基础单位来源无效");
+                fact(facts, runId, snapshot, "REQUIREMENT", req.detailId(), code, "base_uom_id",
+                    BigDecimal.valueOf(req.baseUomId()));
+            }
         }
         if (hasLegacyRequirement && hasIdentifiedRequirement)
             throw new ServiceException("物料需求明细来源新旧混杂，不能生成可信证据");
@@ -121,8 +126,17 @@ public class DecisionSourceFactVerifier {
         return List.copyOf(byKey.values());
     }
 
+    /** 旧入口仅保留无新比例的历史结论；不能从被验证的依据反推冻结窗口。 */
     public void assertProvenance(DecisionResult result, DeliveryContextSnapshot snapshot) {
+        assertProvenance(result, snapshot, 0);
+    }
+
+    public void assertProvenance(DecisionResult result, DeliveryContextSnapshot snapshot, int horizonDays) {
         if (result == null || result.evidence() == null) throw new ServiceException("决策结果缺少证据");
+        assertShortageBasis(result.runId(), result.baselineKpis(), snapshot, horizonDays);
+        if (result.scenarios() != null) result.scenarios().forEach(s -> {
+            if (s != null) assertShortageBasis(result.runId(), s.kpis(), snapshot, horizonDays);
+        });
         Map<String, EvidenceItem> trusted = new HashMap<>();
         numericFacts(result.runId(), snapshot).forEach(item -> trusted.put(item.evidenceKey(), item));
         Map<String, EvidenceItem> claimed = new DecisionEvidenceService().indexByKey(result.evidence());
@@ -140,7 +154,13 @@ public class DecisionSourceFactVerifier {
      */
     public void assertProvenance(DecisionResult result, DeliveryContextSnapshot stored,
                                  DeliveryContextSnapshot reread) {
-        assertProvenance(result, stored);
+        assertProvenance(result, stored, reread, 0);
+    }
+
+    public void assertProvenance(DecisionResult result, DeliveryContextSnapshot stored,
+                                 DeliveryContextSnapshot reread, int horizonDays) {
+        // 窗口以运行中已持久化的快照为准，重读时钟变晚不能移动原分析窗口。
+        assertProvenance(result, stored, horizonDays);
         if (reread == null || !Objects.equals(stored.snapshotHash(), reread.snapshotHash())
             || !Objects.equals(stored.rootBusinessRef(), reread.rootBusinessRef()))
             throw new ServiceException("ERP 重读的业务范围或指纹已变化");
@@ -153,6 +173,66 @@ public class DecisionSourceFactVerifier {
                 || !Objects.equals(item.sourceCode(), current.sourceCode())
                 || "SUPPLIER".equals(item.sourceType()) && !Objects.equals(item.observedAt(), current.observedAt());
         })) throw new ServiceException("重读 ERP 数值事实与已持久化快照不一致");
+    }
+
+    /** 新比例必须绑定同运行、同窗口内的全部需求及单位；旧结论不在读路径升级。 */
+    public void assertShortageBasis(Long runId, com.nexus.common.ai.decision.dto.DecisionKpiSet k,
+                                   DeliveryContextSnapshot snapshot) {
+        assertShortageBasis(runId, k, snapshot, 0);
+    }
+
+    /** horizonDays 必须由服务端读取运行冻结配置，不能取自 basis 或客户端。 */
+    public void assertShortageBasis(Long runId, com.nexus.common.ai.decision.dto.DecisionKpiSet k,
+                                   DeliveryContextSnapshot snapshot, int horizonDays) {
+        if (k == null || k.shortageGapRatio() == null) return;
+        if (horizonDays < 1 || horizonDays > 90 || snapshot == null || snapshot.snapshotAt() == null)
+            throw new ServiceException("新缺口比例缺少可信的服务端冻结窗口");
+        var windowStart = snapshot.snapshotAt().toLocalDate();
+        var windowEnd = windowStart.plusDays(horizonDays - 1L);
+        var basis = k.shortageBasis();
+        if (basis == null || !Objects.equals(String.valueOf(runId), basis.runId())
+            || !Objects.equals("snapshot:" + snapshot.snapshotHash(), basis.snapshotEvidenceKey())
+            || !Objects.equals(windowStart, basis.windowStart()) || !Objects.equals(windowEnd, basis.windowEnd())
+            || basis.requirements() == null || snapshot.requirements() == null)
+            throw new ServiceException("缺口比例与同运行、同版本的服务端冻结窗口不符");
+        Map<Long, DeliveryContextSnapshot.RequirementFact> expected = new LinkedHashMap<>();
+        for (var row : snapshot.requirements()) {
+            if (row == null || row.requiredDate() == null || row.requiredQty() == null)
+                throw new ServiceException("缺口比例的需求来源不完整");
+            if (row.requiredQty().signum() <= 0 || row.requiredDate().isBefore(windowStart)
+                || row.requiredDate().isAfter(windowEnd)) continue;
+            if (row.detailId() == null || row.baseUomId() == null || row.baseUomId() <= 0
+                || expected.putIfAbsent(row.detailId(), row) != null)
+                throw new ServiceException("缺口比例缺少已核验的需求明细或基础单位");
+        }
+        Set<Long> seen = new HashSet<>();
+        for (var row : basis.requirements()) {
+            var source = expected.get(row.detailId());
+            if (source == null || !seen.add(row.detailId()) || row.requiredQty() == null
+                || !Objects.equals(row.materialId(), source.materialId())
+                || !Objects.equals(row.requiredDate(), source.requiredDate())
+                || !Objects.equals(row.baseUomId(), source.baseUomId())
+                || row.requiredQty().compareTo(source.requiredQty()) != 0)
+                throw new ServiceException("缺口比例与已冻结的需求数量或单位不符");
+        }
+        if (!seen.equals(expected.keySet())) throw new ServiceException("缺口比例的物料需求来源集合不完整");
+        try {
+            var frozen = new DecisionShortageRatioCalculator.FrozenRun(basis.runId(), windowStart,
+                windowEnd, basis.requirements().stream().map(row ->
+                    new DecisionShortageRatioCalculator.RequirementRow(String.valueOf(row.materialId()),
+                        String.valueOf(row.detailId()), row.requiredDate(), row.requiredQty(),
+                        String.valueOf(row.baseUomId()))).toList(), basis.snapshotEvidenceKey());
+            var scenario = new DecisionShortageRatioCalculator.ScenarioFacts(basis.runId(), "VERIFY",
+                windowStart, windowEnd, basis.gaps().stream().map(gap ->
+                    new DecisionShortageRatioCalculator.GapFact(String.valueOf(gap.materialId()), gap.maxGap(),
+                        String.valueOf(gap.baseUomId()), gap.peakDate(), gap.sourceEvidenceKey())).toList(),
+                basis.simulationEvidenceKey());
+            var calculated = new DecisionShortageRatioCalculator().calculate(frozen, List.of(scenario));
+            if (k.shortageGapRatio().compareTo(calculated.scenarios().get(0).rawRatio()) != 0)
+                throw new ServiceException("缺口比例与逐物料重算结果不符");
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            throw new ServiceException("缺口比例的物料、单位、分母或来源不可比较");
+        }
     }
 
     private void assertRooted(EvidenceItem item, Map<String, EvidenceItem> claimed,

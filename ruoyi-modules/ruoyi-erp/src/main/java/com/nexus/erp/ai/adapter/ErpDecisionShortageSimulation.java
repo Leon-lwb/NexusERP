@@ -1,6 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
+import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.ArrivalFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
@@ -79,6 +80,12 @@ public class ErpDecisionShortageSimulation {
                 warnings.add("IGNORED_ARRIVAL_WITHOUT_DEMAND:" + materialId);
             }
         }
+        // 已核需求不能借用未知或异单位的在途数量；旧纯算法来源没有单位证明，不签发新依据。
+        Set<Long> unknownSupply = unverifiedArrivalMaterials(snapshot, arrivalOverrides, today, end);
+        if (!unknownSupply.isEmpty()) {
+            incompleteEvidence = true;
+            unknownSupply.forEach(id -> warnings.add("UNKNOWN_ARRIVAL_UNIT:" + id));
+        }
         Map<Long, Long> salesOrdersByWorkOrder = parseSalesOrderLinks(snapshot.workOrderSalesLinks());
 
         if (demands.isEmpty()) {
@@ -90,10 +97,12 @@ public class ErpDecisionShortageSimulation {
         }
 
         List<ShortageSimulationResult.Item> items = new ArrayList<>();
+        Map<Long, LocalDate> peakDates = new TreeMap<>();
         int failedMaterials = 0;
         for (Map.Entry<Long, MaterialDemand> entry : demands.entrySet()) {
             Long materialId = entry.getKey();
             MaterialDemand demand = entry.getValue();
+            if (unknownSupply.contains(materialId)) continue; // 不把未核供给模拟出的零缺口当成事实。
             PrdShortageInput input = demand.input();
             StockTotal stock = stocks.get(materialId);
             if (stock == null) {
@@ -129,6 +138,7 @@ public class ErpDecisionShortageSimulation {
                 for (PurchaseArrivalLine line : lines) {
                     evidence.add("erp:purchaseLine:" + line.purchaseLineId());
                 }
+                peakDates.put(materialId, result.getMaxGapDate());
                 LocalDate shortageDate = result.getEarliestShortageDate();
                 if (shortageDate != null && shortageDate.isAfter(end)) shortageDate = null;
                 TreeSet<Long> affectedWorkOrders = new TreeSet<>();
@@ -184,7 +194,7 @@ public class ErpDecisionShortageSimulation {
                 Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(ShortageSimulationResult.Item::materialId));
         int riskCount = 0;
-        BigDecimal totalGap = BigDecimal.ZERO;
+        BigDecimal totalGap = null;
         LocalDate earliest = null;
         Set<Long> impactedOrders = new HashSet<>();
         LinkedHashSet<String> evidenceRefs = new LinkedHashSet<>();
@@ -192,7 +202,6 @@ public class ErpDecisionShortageSimulation {
             evidenceRefs.addAll(item.evidenceKeys());
             if (item.firstShortageDate() != null) {
                 riskCount++;
-                totalGap = totalGap.add(item.maxGap());
                 if (earliest == null) earliest = item.firstShortageDate();
                 impactedOrders.addAll(item.affectedSalesOrderIds());
             }
@@ -200,8 +209,11 @@ public class ErpDecisionShortageSimulation {
         DecisionKpiSet kpis = null;
         if (failedMaterials == 0 && !incompleteEvidence) {
             warnings.add("仅计算缺料/影响订单指标，其余 APS KPI 未计算（0/null 为占位）");
+            var basis = shortageBasis(snapshot, today, end, items, peakDates, evidenceRefs, arrivalOverrides);
+            totalGap = comparableGapTotal(items, basis);
+            if (basis == null) warnings.add("SHORTAGE_GAP_RATIO_UNRANKABLE");
             kpis = new DecisionKpiSet(impactedOrders.size(), 0, 0, 0, null,
-                riskCount, totalGap, earliest == null ? null : earliest.toString(), null, 0, 0, null);
+                riskCount, totalGap, earliest == null ? null : earliest.toString(), null, 0, 0, null, null, basis);
         }
         return new ShortageSimulationResult(riskCount > 0, riskCount, earliest,
             failedMaterials == 0 && !incompleteEvidence ? totalGap : null, List.copyOf(items), kpis,
@@ -220,6 +232,67 @@ public class ErpDecisionShortageSimulation {
         require(snapshot.requirements() != null && snapshot.stocks() != null && snapshot.arrivals() != null,
             "缺少完整的需求、库存或到货事实");
         require(horizonDays >= 1 && horizonDays <= 90, "推演窗口必须在 1..90 天内");
+    }
+
+    /** 单物料旧算法可保留上下文量；多物料仅在全部已核同根单位时才生成总量。 */
+    private static BigDecimal comparableGapTotal(List<ShortageSimulationResult.Item> items, DecisionShortageBasis basis) {
+        if (items.size() > 1 && (basis == null || basis.gaps().stream()
+            .map(DecisionShortageBasis.Gap::baseUomId).distinct().count() != 1)) return null;
+        return items.stream().map(ShortageSimulationResult.Item::maxGap).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** 只核参与本窗口的正供给；日期覆盖不能绕过原始供给单位身份。 */
+    private static Set<Long> unverifiedArrivalMaterials(DeliveryContextSnapshot snapshot,
+            Map<Long, LocalDate> overrides, LocalDate start, LocalDate end) {
+        Map<Long, Long> units = new TreeMap<>();
+        for (var row : snapshot.requirements()) {
+            if (row.requiredQty().signum() > 0 && !row.requiredDate().isBefore(start) && !row.requiredDate().isAfter(end)
+                && positive(row.baseUomId())) units.putIfAbsent(row.materialId(), row.baseUomId());
+        }
+        Set<Long> unknown = new TreeSet<>();
+        for (var arrival : snapshot.arrivals()) {
+            if (!units.containsKey(arrival.materialId()) || arrival.purchaseLineId() == null || arrival.expectedDate() == null
+                || arrival.remainingQty().signum() == 0) continue;
+            LocalDate date = overrides.getOrDefault(arrival.purchaseLineId(), arrival.expectedDate());
+            if (date.isBefore(start) || date.isAfter(end)) continue;
+            if (!units.get(arrival.materialId()).equals(arrival.baseUomId())) unknown.add(arrival.materialId());
+        }
+        return unknown;
+    }
+
+    /** 完整逐物料依据只保留同一冻结窗口内已核单位需求，运行身份由AI持久运行绑定。 */
+    private static DecisionShortageBasis shortageBasis(DeliveryContextSnapshot snapshot, LocalDate start, LocalDate end,
+            List<ShortageSimulationResult.Item> items, Map<Long, LocalDate> peaks, Set<String> evidence,
+            Map<Long, LocalDate> arrivalOverrides) {
+        if (!unverifiedArrivalMaterials(snapshot, arrivalOverrides, start, end).isEmpty()) return null;
+        List<DecisionShortageBasis.Requirement> rows = new ArrayList<>();
+        Map<Long, Long> units = new TreeMap<>();
+        Set<Long> identities = new HashSet<>();
+        for (var row : snapshot.requirements()) {
+            if (row.requiredQty().signum() <= 0 || row.requiredDate().isBefore(start) || row.requiredDate().isAfter(end)) continue;
+            if (row.detailId() == null || row.detailId() <= 0 || row.baseUomId() == null || row.baseUomId() <= 0
+                || !identities.add(row.detailId())) return null;
+            Long old = units.putIfAbsent(row.materialId(), row.baseUomId());
+            if (old != null && !old.equals(row.baseUomId())) return null;
+            rows.add(new DecisionShortageBasis.Requirement(row.detailId(), row.materialId(), row.requiredDate(), row.requiredQty(), row.baseUomId()));
+            evidence.add("ERP:REQUIREMENT:" + row.detailId() + ":required_qty");
+            evidence.add("ERP:REQUIREMENT:" + row.detailId() + ":base_uom_id");
+        }
+        if (rows.isEmpty() || items.size() != units.size()) return null;
+        List<DecisionShortageBasis.Gap> gaps = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        for (var item : items) {
+            if (!units.containsKey(item.materialId()) || !seen.add(item.materialId()) || item.maxGap() == null
+                || item.maxGap().signum() < 0 || item.maxGap().signum() > 0 && peaks.get(item.materialId()) == null) return null;
+            String key = "DERIVED:SHORTAGE:BASE_" + item.materialId() + ":max_gap";
+            gaps.add(new DecisionShortageBasis.Gap(item.materialId(), units.get(item.materialId()), item.maxGap(), peaks.get(item.materialId()), key));
+            evidence.add(key);
+        }
+        rows.sort(Comparator.comparing(DecisionShortageBasis.Requirement::detailId));
+        gaps.sort(Comparator.comparing(DecisionShortageBasis.Gap::materialId));
+        String complete = "DERIVED:SHORTAGE:BASE:complete"; evidence.add(complete);
+        evidence.add("snapshot:" + snapshot.snapshotHash());
+        return new DecisionShortageBasis(null, "snapshot:" + snapshot.snapshotHash(), start, end, rows, gaps, complete);
     }
 
     private static TreeMap<Long, MaterialDemand> collectDemands(List<RequirementFact> requirements,

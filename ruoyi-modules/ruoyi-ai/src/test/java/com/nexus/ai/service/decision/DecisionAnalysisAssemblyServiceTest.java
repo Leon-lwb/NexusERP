@@ -31,8 +31,8 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DeliveryContextSnapshot.WorkOrderFact(2L, "WO-2", 3L,
                 BigDecimal.TEN, LocalDate.of(2026, 9, 28), 1L, 1L)),
             Map.of(3L, List.of(new DeliveryContextSnapshot.RoutingStepFact(4L, 5L, 1, 1L, 1L, BigDecimal.ONE))),
-            List.of(new DeliveryContextSnapshot.RequirementFact(3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
-                BigDecimal.ONE, 2L, "WO-2")),
+            List.of(new DeliveryContextSnapshot.RequirementFact(301L, 3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
+                BigDecimal.ONE, 2L, "WO-2", 1L)),
             List.of(new DeliveryContextSnapshot.StockFact(3L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
             List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("WORKSTATION:1", BigDecimal.valueOf(8))),
             List.of(), savedSchedule("5.6", "5.6", "8"),
@@ -40,8 +40,13 @@ class DecisionAnalysisAssemblyServiceTest {
             "hash", at, List.of());
         AiDecisionRun run = new AiDecisionRun();
         run.setId(5L); run.setBizType("WORK_ORDER"); run.setBizId(2L);
+        run.setScoreConfigJson("{\"horizonDays\":30}");
+        var basis = new DecisionShortageBasis("5", "snapshot:hash", at.toLocalDate(), at.toLocalDate().plusDays(29),
+            List.of(new DecisionShortageBasis.Requirement(301L, 3L, LocalDate.of(2026, 9, 28), BigDecimal.ONE, 1L)),
+            List.of(new DecisionShortageBasis.Gap(3L, 1L, BigDecimal.ZERO, null,
+                "DERIVED:SHORTAGE:BASELINE_CURRENT_3:max_gap")), "DERIVED:SHORTAGE:BASELINE_CURRENT:complete");
         var k = new DecisionKpiSet(0, 0, 0, 0, "2026-09-28", 0, BigDecimal.ZERO, null,
-            BigDecimal.valueOf(70), 0, 0, BigDecimal.ZERO);
+            BigDecimal.valueOf(70), 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, basis);
         var scenario = new DecisionScenario("BASELINE_CURRENT", "基线", "BASELINE_CURRENT", true, List.of(),
             k, BigDecimal.ZERO, 1, Map.of(), List.of("snapshot:hash"), List.of(), "scenario-specific-fingerprint", List.of(), List.of());
         var shortage = new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO, List.of(),
@@ -50,7 +55,15 @@ class DecisionAnalysisAssemblyServiceTest {
         assertNotNull(observed);
         assertEquals(new BigDecimal("70.0"), observed.maxUtilization());
         assertEquals(0, observed.overloadedResources());
-        var result = service.prepare(run, snapshot, shortage, List.of(scenario), List.of(), null);
+        var result = assertDoesNotThrow(() -> service.prepare(run, snapshot, shortage, List.of(scenario), List.of(), null));
+        var ratioEvidence = result.evidence().stream().filter(e -> "shortage_gap_ratio".equals(e.metricCode()))
+            .findFirst().orElseThrow();
+        assertEquals("ratio", ratioEvidence.unit());
+        assertEquals("5", result.baselineKpis().shortageBasis().runId());
+        assertSame(basis, scenario.kpis().shortageBasis(), "Flow 已绑定的来源依据不能在装配阶段被改写");
+        assertTrue(ratioEvidence.derivedFromEvidenceKeys().contains("ERP:REQUIREMENT:301:required_qty"));
+        assertTrue(ratioEvidence.derivedFromEvidenceKeys().contains("ERP:REQUIREMENT:301:base_uom_id"));
+        assertTrue(ratioEvidence.derivedFromEvidenceKeys().contains("DERIVED:SHORTAGE:BASELINE_CURRENT_3:max_gap"));
         assertEquals(0, k.maxResourceUtilization().compareTo(observed.maxUtilization()));
         assertEquals(0d, result.riskScore());
         assertTrue(result.evidence().stream().anyMatch(e -> e.evidenceKey().equals("ERP:STOCK:3:stock_qty")
@@ -409,6 +422,63 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(), "hash", List.of(), List.of());
         assertThrows(ServiceException.class, () -> service.prepare(input.run(), input.snapshot(),
             input.shortage(), List.of(unavailable), List.of(), null));
+    }
+
+    @Test void assemblyRejectsCroppedAndExpandedRatioWindowsUsingFrozenRunConfig() {
+        for (int basisDays : new int[] {1, 31}) {
+            var fixture = ratioEvidenceFixture(basisDays, basisDays == 1);
+            fixture.run().setScoreConfigJson("{\"horizonDays\":30}");
+            var failure = assertThrows(ServiceException.class, () -> service.prepare(fixture.run(), fixture.snapshot(),
+                fixture.shortage(), List.of(fixture.scenario()), List.of(), null));
+            assertTrue(failure.getMessage().contains("窗口"));
+        }
+    }
+
+    @Test void assemblyRejectsNewRatioWithoutTrustedRunHorizonInsteadOfInferringFromBasis() {
+        for (String config : new String[] {null, "{}", "{\"horizonDays\":0}", "{\"horizonDays\":91}",
+            "{\"horizonDays\":30.5}", "{\"horizonDays\":\"30\"}"}) {
+            var fixture = ratioEvidenceFixture(30, false);
+            fixture.run().setScoreConfigJson(config);
+            assertThrows(ServiceException.class, () -> service.prepare(fixture.run(), fixture.snapshot(),
+                fixture.shortage(), List.of(fixture.scenario()), List.of(), null));
+        }
+    }
+
+    @Test void legacyAssemblyWithoutNewRatioDoesNotRequireOrBackfillFrozenHorizon() {
+        var fixture = evidenceFixture();
+        var result = assertDoesNotThrow(() -> service.prepare(fixture.run(), fixture.snapshot(), fixture.shortage(),
+            List.of(fixture.scenario()), List.of(), null));
+        assertNull(fixture.run().getScoreConfigJson());
+        assertSame(fixture.scenario().kpis(), result.baselineKpis());
+        assertNull(result.baselineKpis().shortageGapRatio());
+        assertNull(result.baselineKpis().shortageBasis());
+    }
+
+    private EvidenceFixture ratioEvidenceFixture(int basisDays, boolean omitDemand) {
+        var original = evidenceFixture();
+        var source = original.snapshot();
+        var row = source.requirements().get(0);
+        var snapshot = new DeliveryContextSnapshot(source.rootBusinessRef(), source.salesOrders(), source.workOrders(),
+            source.routingByMaterial(), List.of(new DeliveryContextSnapshot.RequirementFact(301L, row.materialId(),
+                row.materialCode(), row.materialName(), row.requiredDate(), row.requiredQty(), row.workOrderId(), row.workOrderNo(), 1L)),
+            source.stocks(), source.arrivals(), source.capacityByDate(), source.holidays(), source.currentSchedule(),
+            source.supplierMetrics(), source.snapshotHash(), source.snapshotAt(), source.warnings());
+        var start = snapshot.snapshotAt().toLocalDate();
+        var basis = new DecisionShortageBasis("5", "snapshot:" + snapshot.snapshotHash(), start,
+            start.plusDays(basisDays - 1L), omitDemand ? List.of() : List.of(new DecisionShortageBasis.Requirement(
+                301L, row.materialId(), row.requiredDate(), row.requiredQty(), 1L)),
+            omitDemand ? List.of() : List.of(new DecisionShortageBasis.Gap(row.materialId(), 1L, BigDecimal.ZERO, null,
+                "DERIVED:SHORTAGE:BASELINE_CURRENT_" + row.materialId() + ":max_gap")),
+            "DERIVED:SHORTAGE:BASELINE_CURRENT:complete");
+        var k = original.scenario().kpis();
+        var ratioKpi = new DecisionKpiSet(k.impactedOrderCount(), k.delayedWorkOrderCount(), k.totalTardinessDays(),
+            k.maxTardinessDays(), k.makespanDate(), k.shortageMaterialCount(), k.totalShortageGap(), k.earliestShortageDate(),
+            k.maxResourceUtilization(), k.overloadedResourceCount(), k.changedWorkOrderCount(), k.actionCost(), BigDecimal.ZERO, basis);
+        var s = original.scenario();
+        var scenario = new DecisionScenario(s.scenarioCode(), s.scenarioName(), s.strategy(), s.feasible(), s.infeasibleReasons(),
+            ratioKpi, s.objectiveScore(), s.rank(), s.overrides(), s.evidenceKeys(), s.schedulePreview(), s.inputHash(),
+            s.delayedOrders(), s.bottleneckResources());
+        return new EvidenceFixture(original.run(), snapshot, original.shortage(), scenario);
     }
 
     private EvidenceFixture evidenceFixture() {
