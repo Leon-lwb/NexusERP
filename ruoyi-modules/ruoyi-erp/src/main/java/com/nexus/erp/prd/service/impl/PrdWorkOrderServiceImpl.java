@@ -6,9 +6,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdWorkshop;
+import com.nexus.erp.bd.domain.vo.BdBomVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdWorkshopMapper;
 import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
@@ -98,6 +101,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final IBdBomService bomService;
     private final IWmStockReservationService stockReservationService;
     private final BdMaterialMapper bdMaterialMapper;
+    private final BdRoutingMapper bdRoutingMapper;
     private final BdWorkshopMapper bdWorkshopMapper;
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
@@ -290,6 +294,8 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             throw new RuntimeException("仅新建或已批准状态工单可下达,当前状态:" + wo.getWoStatus());
         }
         PrdMaterialRequirement sourceRequirement = resolveSourceRequirementOnRelease(wo);
+        /** 提交前解析并固定专属路线，错绑或冲突不得认领状态及生成MES快照。 */
+        final Long routingId = resolveRoutingIdOnRelease(wo);
         /** 认领下达状态；并发请求即使都读到旧状态，也只有一方能继续生成领料单和 MES 消息。 */
         LambdaUpdateWrapper<PrdWorkOrder> claim = Wrappers.<PrdWorkOrder>lambdaUpdate()
             .eq(PrdWorkOrder::getWoId, woId)
@@ -316,7 +322,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
                  */
                 @Override
                 public void afterCommit() {
-                    sendWorkOrderReleaseMessage(msgEntity);
+                    sendWorkOrderReleaseMessage(msgEntity, routingId);
                 }
             });
     }
@@ -340,6 +346,64 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
                     wo.getWoId(), bomLine.getMaterialId(), requiredQty, available);
             }
         }
+    }
+
+    /**
+     * 仅从实际工单物料、BOM和同租户当前专属路线解析消息路线，不接受客户端路线ID。
+     * 历史工单缺少物料/租户，或未绑定路线且没有专属路线时保留原空值行为；
+     * 不借用通用路线，不另造版本/日期回退策略，也不把空路线视为可制造证明。
+     */
+    private Long resolveRoutingIdOnRelease(PrdWorkOrder wo) {
+        if (wo.getMaterialId() == null || StringUtils.isBlank(wo.getTenantId())) {
+            return null;
+        }
+        Long bomRoutingId = null;
+        if (wo.getBomId() != null) {
+            BdBomVo bom = bomService.selectById(wo.getBomId());
+            if (bom == null) {
+                throw new RuntimeException("工单BOM不存在，禁止下达");
+            }
+            if (!Objects.equals(wo.getBomId(), bom.getBomId())) {
+                throw new RuntimeException("工单BOM关联不一致，禁止下达");
+            }
+            if (!Objects.equals(wo.getMaterialId(), bom.getParentMaterialId())) {
+                throw new RuntimeException("BOM与工单物料不一致，禁止下达");
+            }
+            bomRoutingId = bom.getRoutingId();
+        }
+        List<BdRouting> routings = bdRoutingMapper.selectList(Wrappers.<BdRouting>lambdaQuery()
+            .eq(BdRouting::getMaterialId, wo.getMaterialId())
+            .eq(BdRouting::getTenantId, wo.getTenantId())
+            .eq(BdRouting::getIsCurrent, 1L)
+            .eq(BdRouting::getStatus, 1L)
+            .eq(BdRouting::getDelFlag, "0"));
+        if (routings == null) {
+            throw new RuntimeException("工单专属路线查询结果缺失，禁止下达");
+        }
+        if (routings.size() > 1) {
+            throw new RuntimeException("工单物料存在多个已启用当前专属路线，禁止下达");
+        }
+        if (routings.isEmpty()) {
+            if (bomRoutingId != null) {
+                throw new RuntimeException("BOM绑定路线不是工单物料的已启用当前专属路线，禁止下达");
+            }
+            log.warn("工单未配置当前专属路线，保留历史空路线消息: woId={}, materialId={}",
+                wo.getWoId(), wo.getMaterialId());
+            return null;
+        }
+        BdRouting routing = routings.get(0);
+        if (routing == null || routing.getRoutingId() == null || routing.getRoutingId() <= 0
+            || !Objects.equals(wo.getMaterialId(), routing.getMaterialId())
+            || !Objects.equals(wo.getTenantId(), routing.getTenantId())
+            || !Long.valueOf(1L).equals(routing.getIsCurrent())
+            || !Long.valueOf(1L).equals(routing.getStatus())
+            || !"0".equals(routing.getDelFlag())) {
+            throw new RuntimeException("工单当前专属路线归属或状态无效，禁止下达");
+        }
+        if (bomRoutingId != null && !Objects.equals(bomRoutingId, routing.getRoutingId())) {
+            throw new RuntimeException("BOM绑定路线与工单物料当前专属路线不一致，禁止下达");
+        }
+        return routing.getRoutingId();
     }
 
     /** 下达前核实 MRP 来源；PLAN、销售等来源的 sourceId 不能当作物料需求 ID。 */
@@ -808,7 +872,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
     /**
      * 发送工单下达消息到MES队列
      */
-    private void sendWorkOrderReleaseMessage(PrdWorkOrder entity) {
+    private void sendWorkOrderReleaseMessage(PrdWorkOrder entity, Long routingId) {
         try {
             WorkOrderReleaseMessage message = new WorkOrderReleaseMessage();
             message.setWoId(entity.getWoId());
@@ -821,6 +885,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
             message.setPlannedEndDate(entity.getPlanEndDate());
             message.setWorkshopId(entity.getWorkshopId());
             message.setBomId(entity.getBomId());
+            message.setRoutingId(routingId);
             /** 客户信息透传: MES 按客户+物料(+客户产品代号)匹配客户定制化发布包(mes_release_package) */
             message.setClientId(entity.getClientId());
             message.setClientName(entity.getClientName());
