@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * MES模块MQ消息发送服务
@@ -172,11 +173,12 @@ public class MesMqSendService {
      * @param defectRate    不良率(%)
      * @param inspectorId   检验员ID
      * @param inspectorName 检验员姓名
+     * @param inspectTime   原 IPQC 实际检验时间，与 MES 持久化值一致，非消息发送时间
      * @param tenantId      租户ID
      */
     public void sendIpqcCompleted(Long ipqcId, String ipqcNo, Long mesWoId, Long erpWoId, String woNo,
                                   String inspectResult, BigDecimal defectQty, BigDecimal defectRate,
-                                  Long inspectorId, String inspectorName, String tenantId) {
+                                  Long inspectorId, String inspectorName, Date inspectTime, String tenantId) {
         log.info("异步发送IPQC检验完成消息: ipqcId={}, ipqcNo={}, mesWoId={}, erpWoId={}, result={}",
             ipqcId, ipqcNo, mesWoId, erpWoId, inspectResult);
         IpqcCompletedMessage msg = new IpqcCompletedMessage();
@@ -190,6 +192,7 @@ public class MesMqSendService {
         msg.setDefectRate(defectRate);
         msg.setInspectorId(inspectorId);
         msg.setInspectorName(inspectorName);
+        msg.setInspectTime(inspectTime);
         if (tenantId != null) {
             try {
                 msg.setTenantId(Long.parseLong(tenantId));

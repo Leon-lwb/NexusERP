@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -239,12 +240,12 @@ class QcIpqcServiceImplTest {
 
         service.inspect(1L, "QUALIFIED", null, null, null, null);
 
-        verify(mesMqSendService, never()).sendIpqcCompleted(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(mesMqSendService, never()).sendIpqcCompleted(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(proWorkOrderMapper).selectById(10L);
         clearInvocations(proWorkOrderMapper, baseMapper);
         TransactionSynchronizationManager.getSynchronizations().forEach(sync -> sync.afterCommit());
-        verify(mesMqSendService).sendIpqcCompleted(1L, "IPQC-001", 10L, 999L, "WO-001",
-            "QUALIFIED", null, null, 1L, "tester", "000000");
+        verify(mesMqSendService).sendIpqcCompleted(eq(1L), eq("IPQC-001"), eq(10L), eq(999L), eq("WO-001"),
+            eq("QUALIFIED"), isNull(), isNull(), eq(1L), eq("tester"), any(Date.class), eq("000000"));
         verifyNoInteractions(proWorkOrderMapper, baseMapper);
     }
 

@@ -213,6 +213,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         final Long inspectorId = LoginHelper.getUserId();
         final String inspectorName = LoginHelper.getUsername();
         final String tenantId = TenantHelper.getTenantId();
+        // 两库检验时间列均为 datetime 秒精度，同一次捕获的源值用于写库和不可变通知快照。
+        final long inspectTimeEpochMillis = System.currentTimeMillis() / 1_000L * 1_000L;
 
         int rows = baseMapper.update(null, Wrappers.<QcIpqc>lambdaUpdate()
             .set(QcIpqc::getInspectResult, inspectResult)
@@ -223,7 +225,7 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
             .set(StringUtils.isNotBlank(remark), QcIpqc::getRemark, remark)
             .set(QcIpqc::getInspectorId, inspectorId)
             .set(QcIpqc::getInspectorName, inspectorName)
-            .set(QcIpqc::getInspectTime, new Date())
+            .set(QcIpqc::getInspectTime, new Date(inspectTimeEpochMillis))
             .set(QcIpqc::getStatus, STATUS_COMPLETED)
             .eq(QcIpqc::getIpqcId, ipqcId)
             .in(QcIpqc::getStatus, STATUS_PENDING, STATUS_INSPECTING));
@@ -242,7 +244,7 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         // 仅在实际 MES 事务内读取原工单行；无 ERP 映射时仍按原行为跳过通知。
         ProWorkOrder wo = ipqc.getMesWoId() == null ? null : proWorkOrderMapper.selectById(ipqc.getMesWoId());
         registerNotification(freezeNotification(ipqc, wo, inspectResult, defectQty, defectRate,
-            inspectorId, inspectorName, tenantId));
+            inspectorId, inspectorName, inspectTimeEpochMillis, tenantId));
     }
 
     /**
@@ -279,8 +281,10 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         if (!RESULT_QUALIFIED.equals(ipqc.getInspectResult()) && !RESULT_UNQUALIFIED.equals(ipqc.getInspectResult())) {
             throw new ServiceException("原IPQC检验判定无效，不能恢复通知");
         }
-        if (ipqc.getInspectTime() == null || ipqc.getInspectTime().getTime() <= 0
-            || ipqc.getInspectTime().after(new Date())) {
+        // 从已完成检验的原持久化事实读取一次，快照不持有可变 Date 引用。
+        Date originalInspectTime = ipqc.getInspectTime();
+        final long inspectTimeEpochMillis = originalInspectTime == null ? 0L : originalInspectTime.getTime();
+        if (inspectTimeEpochMillis <= 0 || inspectTimeEpochMillis > System.currentTimeMillis()) {
             throw new ServiceException("原IPQC缺少有效的实际检验时间，不能恢复通知");
         }
         if (ipqc.getMesWoId() == null || ipqc.getMesWoId() <= 0) {
@@ -296,7 +300,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         }
         // 使用原检验员/结果/数量/不良率，绝不以恢复操作者或请求参数造质量事实。
         IpqcNotificationSnapshot snapshot = freezeNotification(ipqc, wo, ipqc.getInspectResult(),
-            ipqc.getDefectQty(), ipqc.getDefectRate(), ipqc.getInspectorId(), ipqc.getInspectorName(), tenantId);
+            ipqc.getDefectQty(), ipqc.getDefectRate(), ipqc.getInspectorId(), ipqc.getInspectorName(),
+            inspectTimeEpochMillis, tenantId);
         registerNotification(snapshot);
         return snapshot == null ? NOTIFICATION_SKIPPED_NO_ERP : NOTIFICATION_ENQUEUED;
     }
@@ -358,7 +363,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
     /** 冻结原消息契约的全部参数；只接收事务内已读取的原行。 */
     private IpqcNotificationSnapshot freezeNotification(QcIpqc ipqc, ProWorkOrder wo, String result,
                                                          BigDecimal defectQty, BigDecimal defectRate,
-                                                         Long inspectorId, String inspectorName, String tenantId) {
+                                                         Long inspectorId, String inspectorName,
+                                                         long inspectTimeEpochMillis, String tenantId) {
         if (ipqc.getMesWoId() == null) {
             log.info("IPQC未关联MES工单, 跳过MQ回传: ipqcNo={}", ipqc.getIpqcNo());
             return null;
@@ -368,7 +374,7 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
             return null;
         }
         return new IpqcNotificationSnapshot(ipqc.getIpqcId(), ipqc.getIpqcNo(), ipqc.getMesWoId(), wo.getErpWoId(),
-            wo.getWoNo(), result, defectQty, defectRate, inspectorId, inspectorName, tenantId);
+            wo.getWoNo(), result, defectQty, defectRate, inspectorId, inspectorName, inspectTimeEpochMillis, tenantId);
     }
 
     /** 提交后只发布已冻结的原通知；不得查询数据库/桥接/租户上下文，也不吞发送异常。 */
@@ -386,14 +392,15 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
 
     /**
      * IPQC 专属不可变通知快照。所有成员均为不可变值，不持有实体、Mapper 或服务上下文。
-     * 保持原 sendIpqcCompleted 参数契约，不新增质量事实或消息字段。
+     * 源检验时间冻结为 epochMillis，提交后只构造日期值发送，不重新查询或生成质量事实。
      */
     private record IpqcNotificationSnapshot(Long ipqcId, String ipqcNo, Long mesWoId, Long erpWoId, String woNo,
                                             String inspectResult, BigDecimal defectQty, BigDecimal defectRate,
-                                            Long inspectorId, String inspectorName, String tenantId) {
+                                            Long inspectorId, String inspectorName,
+                                            long inspectTimeEpochMillis, String tenantId) {
         private void send(MesMqSendService sender) {
             sender.sendIpqcCompleted(ipqcId, ipqcNo, mesWoId, erpWoId, woNo, inspectResult,
-                defectQty, defectRate, inspectorId, inspectorName, tenantId);
+                defectQty, defectRate, inspectorId, inspectorName, new Date(inspectTimeEpochMillis), tenantId);
         }
     }
 

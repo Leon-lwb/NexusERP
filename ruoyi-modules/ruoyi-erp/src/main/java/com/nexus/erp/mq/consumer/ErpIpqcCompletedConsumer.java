@@ -65,6 +65,11 @@ public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedM
      * @param message IPQC检验完成消息
      */
     private void doUpdate(IpqcCompletedMessage message) {
+        Date inspectTime = message.getInspectTime();
+        // 旧消息缺少可靠源时间时明确失败，由现有消费模板重试/死信，禁止以发送或消费时间兜底。
+        if (inspectTime == null || inspectTime.getTime() <= 0 || inspectTime.getTime() > System.currentTimeMillis()) {
+            throw new IllegalArgumentException("IPQC消息缺少有效的原检验时间，不能回写ERP");
+        }
         PrdWorkOrder wo = workOrderService.selectPrdWorkOrderByWoId(message.getErpWoId());
         if (wo == null) {
             log.warn("ERP工单不存在: erpWoId={}", message.getErpWoId());
@@ -88,7 +93,7 @@ public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedM
 
         int rows = workOrderService.updateIpqcStatus(
             message.getErpWoId(), newStatus, message.getIpqcId(), message.getIpqcNo(),
-            message.getInspectorId(), message.getInspectorName(), new Date());
+            message.getInspectorId(), message.getInspectorName(), inspectTime);
         log.info("IPQC回写工单完成: erpWoId={}, woNo={}, ipqcNo={}, result={}, newStatus={}, affectedRows={}",
             message.getErpWoId(), wo.getWoNo(), message.getIpqcNo(), message.getInspectResult(), newStatus, rows);
     }

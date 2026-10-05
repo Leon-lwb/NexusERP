@@ -183,7 +183,7 @@ class QcIpqcNotificationTest {
         prepareInspect(pending(), mapped());
         IllegalStateException failure = new IllegalStateException("模拟原MQ投递失败");
         lenient().doThrow(failure).when(mesMqSendService).sendIpqcCompleted(
-            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         service.inspect(QID, "QUALIFIED", null, null, null, null);
         clearInvocations(baseMapper, proWorkOrderMapper);
 
@@ -316,7 +316,7 @@ class QcIpqcNotificationTest {
         prepareRecovery(ipqc, mapped());
         IllegalStateException failure = new IllegalStateException("模拟恢复MQ失败");
         lenient().doThrow(failure).when(mesMqSendService).sendIpqcCompleted(
-            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         recover(QID);
         clearInvocations(baseMapper, proWorkOrderMapper);
 
@@ -457,7 +457,7 @@ class QcIpqcNotificationTest {
         prepareRecovery(ipqc, mapped());
         IllegalStateException failure = new IllegalStateException("模拟实际提交后发送失败");
         lenient().doThrow(failure).when(mesMqSendService).sendIpqcCompleted(
-            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         service = recoveryTransactionProxy();
 
         assertSame(failure, assertThrows(IllegalStateException.class, () -> recover(QID)));
@@ -552,8 +552,8 @@ class QcIpqcNotificationTest {
     }
 
     private void verifyMessage(String result, BigDecimal qty, BigDecimal rate) {
-        verify(mesMqSendService).sendIpqcCompleted(QID, IPQC_NO, MES_WO_ID, ERP_WO_ID, WO_NO,
-            result, qty, rate, 1L, "原检验员", TENANT);
+        verify(mesMqSendService).sendIpqcCompleted(eq(QID), eq(IPQC_NO), eq(MES_WO_ID), eq(ERP_WO_ID), eq(WO_NO),
+            eq(result), eq(qty), eq(rate), eq(1L), eq("原检验员"), any(Date.class), eq(TENANT));
     }
 
     private static QcIpqc pending() {
