@@ -16,6 +16,10 @@ public interface WmCertifiedReceiptPostingMapper {
     @Select("SELECT line_id,material_id,base_uom_id,quantity FROM wm_certified_receive_command WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY line_id")
     List<FrozenDraftLine> readFrozenDraftLines(@Param("tenant") String tenant,@Param("id") Long id);
     record FrozenDraftLine(Long lineId,Long materialId,String baseUomId,BigDecimal quantity) { }
+    /** 原永久草稿命令的最早数据库创建时刻；仅只读不可变事实，避免头锁后新增反向锁序。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT MIN(UNIX_TIMESTAMP(create_time)*1000) FROM wm_certified_receive_command WHERE tenant_id=#{tenant} AND receive_id=#{id}")
+    BigDecimal readDraftCreatedAt(@Param("tenant") String tenant,@Param("id") Long id);
     @org.apache.ibatis.annotations.Select("SELECT birth_id FROM wm_receipt_iqc_birth WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY birth_id FOR UPDATE")
     java.util.List<Long> lockBirthIdentities(@org.apache.ibatis.annotations.Param("tenant") String tenant, @org.apache.ibatis.annotations.Param("id") Long id);
 

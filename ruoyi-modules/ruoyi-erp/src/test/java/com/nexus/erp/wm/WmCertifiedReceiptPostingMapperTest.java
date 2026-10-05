@@ -48,6 +48,16 @@ class WmCertifiedReceiptPostingMapperTest {
         String source=java.nio.file.Files.readString(root.resolve("ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/service/WmCertifiedReceiptPostingService.java"));
         assertTrue(source.contains("orderWorkflow.requireApprovedLocked(tenant,head.orderId())"),"APPROVED 与正价格都不是实际供应确认/批准来源证明");
     }
+    @Test void permanentDraftClockReadDoesNotAddReverseLocksOrUseBusinessDate() throws Exception {
+        var method=WmCertifiedReceiptPostingMapper.class.getMethod("readDraftCreatedAt",String.class,Long.class);
+        String sql=String.join(" ",method.getAnnotation(org.apache.ibatis.annotations.Select.class).value());
+        assertTrue(sql.contains("MIN(UNIX_TIMESTAMP(create_time)*1000)"));
+        assertTrue(sql.contains("wm_certified_receive_command") && sql.contains("tenant_id=#{tenant}") && sql.contains("receive_id=#{id}"));
+        assertFalse(sql.contains("FOR UPDATE"),"头锁后读取不可变命令，不得新增原键重放的反向锁序");
+        assertFalse(sql.contains("receive_date") || sql.contains("NOW()"),"不使用业务日期或当前时钟替代原创建事实");
+        var options=method.getAnnotation(org.apache.ibatis.annotations.Options.class);
+        assertFalse(options.useCache());assertEquals(org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE,options.flushCache());
+    }
     @Test void lockingReceiptReadUsesTheActualNativeStockReference() throws Exception {
         String sql=String.join(" ",WmCertifiedReceiptPostingMapper.class.getMethod("lockReceiptTransactions",String.class,Long.class).getAnnotation(org.apache.ibatis.annotations.Select.class).value());
         assertTrue(sql.contains("material_stock_id"));assertFalse(sql.contains("CAST("));assertTrue(sql.contains("FOR UPDATE"));

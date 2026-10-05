@@ -24,6 +24,7 @@ import java.util.*;
 @Service
 public class WmCertifiedReceiptPostingService {
     private static final BigDecimal ZERO=new BigDecimal("0.0000");
+    private static final BigDecimal SECOND_MILLIS=new BigDecimal("1000");
     private static final BigDecimal MAX=new BigDecimal("99999999999999.9999");
     private static final Set<String> TABLES=Set.of("wm_certified_receipt_posting","wm_material_stock","wm_material_stock_tx",
         "wm_material_receive","wm_material_receive_line","wm_material_receive_detail","wm_batch","bd_material","bd_unit_of_measure",
@@ -165,6 +166,14 @@ public class WmCertifiedReceiptPostingService {
         need(head.receiveAt()!=null && shelfAt!=null && head.receiveAt().compareTo(shelfAt)<=0
             && shelfAt.compareTo(originalAt)<=0,"真实收货/上架时点缺失或未来");
         need(positive(head.warehouseId()) && positive(head.areaId()) && nullablePositive(head.locationId()),"原始仓储身份缺失");
+        // 业务收货日期可能只表示当天；单位必须在原不可变草稿创建前已经认证，不能借当前时间追认。
+        BigDecimal draftCreatedAt=read(()->mapper.readDraftCreatedAt(tenant,receiveId));
+        // 既有数据库时钟及永久posting只表达秒，原命令保留毫秒；同秒不是可证明的未来。
+        // 重放仍以原posting代表的秒为边界，不能扩大到当前时钟，也不改变下方单位认证的精确时序。
+        BigDecimal originalSecondEnd=originalAt.divideToIntegralValue(SECOND_MILLIS)
+            .add(BigDecimal.ONE).multiply(SECOND_MILLIS);
+        need(draftCreatedAt!=null && draftCreatedAt.signum()>0 && draftCreatedAt.compareTo(originalSecondEnd)<0,
+            "原永久草稿创建时点缺失或晚于原过账所代表秒");
         Material material=read(()->mapper.lockMaterial(tenant,materialId));
         need(material!=null && tenant.equals(material.tenantId()) && materialId.equals(material.materialId())
             && Long.valueOf(1).equals(material.batchManaged()) && Long.valueOf(1).equals(material.status()) && "0".equals(material.delFlag())
@@ -172,7 +181,7 @@ public class WmCertifiedReceiptPostingService {
             && (material.primaryId()==null || material.baseUomId().equals(material.primaryId()))
             && BigDecimal.ONE.equals(material.conversionRate()==null?null:material.conversionRate().stripTrailingZeros())
             && Long.valueOf(1).equals(material.unitStatus()) && "0".equals(material.unitDelFlag()) && text(material.conversionVersion())
-            && material.verifiedAt()!=null && material.verifiedAt().compareTo(head.receiveAt())<=0
+            && material.verifiedAt()!=null && material.verifiedAt().compareTo(draftCreatedAt)<=0
             && material.quantityScale()!=null && material.quantityScale()>=0 && material.quantityScale()<=4,"根单位/批次物料来源不完整");
         String unit=material.baseUomId().toString();int scale=material.quantityScale();
         List<Line> lines=read(()->mapper.lockLines(tenant,receiveId));

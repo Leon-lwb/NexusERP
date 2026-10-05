@@ -31,11 +31,18 @@ class WmCertifiedReceiptPostingServiceTest {
     PuRequirementMaterialLockService locks;WmCertifiedReceiptPostingMapper mapper;ErpPurchaseStockLineageVerifier lineage;
     PuCertifiedPurchaseOrderWorkflowService orderWorkflow;
     WmReceiptIqcEvidenceService iqc;WmMqSendService notifications;WmCertifiedReceiptPostingService service;
+    BigDecimal draftCreatedAt;
     Head head;Batch batch;Posting posting;List<Stock> stocks;List<PostedTx> transactions;List<Line> lines;List<Detail> details;
     @BeforeEach void setup() {
         tenants=mockStatic(TenantHelper.class);tenants.when(TenantHelper::isEnable).thenReturn(true);tenants.when(TenantHelper::getTenantId).thenReturn(TENANT);
         auth=mock(WmCertifiedReceiptPostingAuthorizer.class);tx=mock(PuRequirementErpTransactionExecutor.class);qualification=mock(PuRequirementErpTransactionQualification.class);
-        locks=mock(PuRequirementMaterialLockService.class);mapper=mock(WmCertifiedReceiptPostingMapper.class);lineage=mock(ErpPurchaseStockLineageVerifier.class);
+        draftCreatedAt=NOW.subtract(new BigDecimal("10000"));
+        locks=mock(PuRequirementMaterialLockService.class);
+        // 红阶段旧Mapper没有此读取方法；以名称匹配默认答复，仍执行未修复的实际服务入口。
+        mapper=mock(WmCertifiedReceiptPostingMapper.class, invocation ->
+            "readDraftCreatedAt".equals(invocation.getMethod().getName()) ? draftCreatedAt
+                : org.mockito.Answers.RETURNS_DEFAULTS.answer(invocation));
+        lineage=mock(ErpPurchaseStockLineageVerifier.class);
         iqc=mock(WmReceiptIqcEvidenceService.class);notifications=mock(WmMqSendService.class);
         orderWorkflow=mock(PuCertifiedPurchaseOrderWorkflowService.class);
         service=new WmCertifiedReceiptPostingService(auth,tx,qualification,locks,mapper,lineage,iqc,notifications,orderWorkflow);
@@ -203,6 +210,68 @@ class WmCertifiedReceiptPostingServiceTest {
     }
     @Test void unsupportedMixedMaterialsCannotShrinkToAChosenLine() {
         when(mapper.discoverMaterials(TENANT,ID)).thenReturn(List.of(MATERIAL,202L));assertThrows(ServiceException.class,()->service.post(ID));noWrites();
+    }
+    @Test void calendarReceiptDayDoesNotPretendToBePreciseDraftCreationTime() {
+        // 业务日是午夜，单位当天稍后认证，原永久草稿再创建，不能把日期补成认证时间。
+        BigDecimal calendarDate=NOW.subtract(new BigDecimal("36000000"));
+        BigDecimal verification=NOW.subtract(new BigDecimal("15000"));
+        head=new Head(TENANT,ID,head.receiveCode(),head.orderId(),head.vendorId(),head.status(),
+            head.warehouseId(),head.areaId(),head.locationId(),calendarDate,head.shelfAt(),head.delFlag());
+        when(mapper.lockMaterial(TENANT,MATERIAL)).thenReturn(new Material(TENANT,MATERIAL,4L,1L,1L,"0",TENANT,0,"v1",verification,1L,4L,BigDecimal.ONE,1L,"0"));
+        assertDoesNotThrow(()->service.post(ID));
+        assertEquals(calendarDate,head.receiveAt(),"不能修改原业务日期以绕过单位来源校验");
+    }
+    @ParameterizedTest(name="永久草稿创建时点不可用：{0}")
+    @ValueSource(strings={"missing","negative","zero","future-second"})
+    void unavailablePermanentDraftClockCannotBeReplacedWithBusinessDateOrJvmTime(String state) {
+        draftCreatedAt=switch(state) {
+            case "missing" -> null;
+            case "negative" -> BigDecimal.ONE.negate();
+            case "zero" -> BigDecimal.ZERO;
+            default -> NOW.add(new BigDecimal("1000"));
+        };
+        assertThrows(ServiceException.class,()->service.post(ID));noWrites();verifyNoInteractions(notifications);
+    }
+    @Test void unitCertifiedAfterPermanentDraftCreationCannotRetroactivelyAuthenticateReceipt() {
+        draftCreatedAt=NOW.subtract(new BigDecimal("20000"));
+        BigDecimal verification=NOW.subtract(new BigDecimal("15000"));
+        when(mapper.lockMaterial(TENANT,MATERIAL)).thenReturn(new Material(TENANT,MATERIAL,4L,1L,1L,"0",TENANT,0,"v1",verification,1L,4L,BigDecimal.ONE,1L,"0"));
+        assertThrows(ServiceException.class,()->service.post(ID));noWrites();verifyNoInteractions(iqc,notifications);
+    }
+    @Test void subsecondDraftCreationIsAcceptedInTheSameStoredPostingSecond() {
+        // NOW()/过账字段只有秒，.728创建、同秒稍后操作不能误判成未来。
+        draftCreatedAt=NOW.add(new BigDecimal("728"));
+        head=new Head(TENANT,ID,head.receiveCode(),head.orderId(),head.vendorId(),head.status(),
+            head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),NOW,head.delFlag());
+        assertDoesNotThrow(()->service.post(ID));assertEquals(1,transactions.size());
+    }
+    @Test void sameSecondDraftCreationAlsoPassesTheSharedShelfGate() {
+        draftCreatedAt=NOW.add(new BigDecimal("728"));
+        when(auth.requireShelf()).thenReturn(new DecisionActor(TENANT,9L,"仓储审批员",Set.of("wm:receive:shelf")));
+        head=new Head(TENANT,ID,head.receiveCode(),head.orderId(),head.vendorId(),"APPROVED",
+            head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),null,head.delFlag());
+        when(mapper.markShelved(eq(TENANT),eq(ID),anyString(),eq(9L))).thenReturn(1);
+        assertTrue(assertDoesNotThrow(()->service.shelf(ID)));noWrites();verifyNoInteractions(notifications);
+    }
+    @Test void sameSecondOriginalPostingReplayNeverExpandsToCurrentClock() {
+        draftCreatedAt=NOW.add(new BigDecimal("728"));
+        head=new Head(TENANT,ID,head.receiveCode(),head.orderId(),head.vendorId(),head.status(),
+            head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),NOW,head.delFlag());
+        assertFalse(assertDoesNotThrow(()->service.post(ID)).replay());
+        when(mapper.clock()).thenReturn(new Clock("2026-10-03 10:01:00",NOW.add(new BigDecimal("60000")),"+08:00"));
+        assertTrue(assertDoesNotThrow(()->service.post(ID)).replay());assertEquals(1,transactions.size());
+    }
+    @Test void creationInTheNextStoredSecondCannotReplayAnEarlierPosting() {
+        service.post(ID);clearInvocations(mapper,notifications);
+        draftCreatedAt=NOW.add(new BigDecimal("1000"));
+        when(mapper.clock()).thenReturn(new Clock("2026-10-03 10:01:00",NOW.add(new BigDecimal("60000")),"+08:00"));
+        assertThrows(ServiceException.class,()->service.post(ID));noWrites();verifyNoInteractions(notifications);
+    }
+    @Test void postingSecondPrecisionDoesNotRelaxExactUnitCertificationOrder() {
+        draftCreatedAt=NOW.subtract(new BigDecimal("10000")).add(new BigDecimal("728"));
+        BigDecimal verification=draftCreatedAt.add(BigDecimal.ONE);
+        when(mapper.lockMaterial(TENANT,MATERIAL)).thenReturn(new Material(TENANT,MATERIAL,4L,1L,1L,"0",TENANT,0,"v1",verification,1L,4L,BigDecimal.ONE,1L,"0"));
+        assertThrows(ServiceException.class,()->service.post(ID));noWrites();verifyNoInteractions(iqc,notifications);
     }
     @Test void futureUnitVersionCannotAuthenticateEarlierReceipt() {
         when(mapper.lockMaterial(TENANT,MATERIAL)).thenReturn(new Material(TENANT,MATERIAL,4L,1L,1L,"0",TENANT,4,"v",NOW,1L,null,BigDecimal.ONE,1L,"0"));
