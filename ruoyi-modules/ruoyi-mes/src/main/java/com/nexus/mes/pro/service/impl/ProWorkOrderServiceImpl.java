@@ -1406,6 +1406,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     private Integer toInt(Object obj) {
         if (obj == null) return null;
+        // ERP的TINYINT(1)会被Connector/J读取为Boolean，保留0/1含义，不能解析失败后丢失关键工序门禁。
+        if (obj instanceof Boolean flag) return flag ? 1 : 0;
         if (obj instanceof Integer) return (Integer) obj;
         if (obj instanceof Number) return ((Number) obj).intValue();
         try {

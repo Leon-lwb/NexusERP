@@ -43,6 +43,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -186,6 +188,31 @@ class ProWorkOrderServiceImplTest {
 
     // ==================== 发布包固件覆写 ====================
 
+    @ParameterizedTest(name="原生JDBC布尔关键标志{0}必须保留")
+    @ValueSource(booleans={false,true})
+    void createFromErpMessage_preservesNativeJdbcBooleanCriticalProcess(boolean nativeFlag) {
+        // 相同Connector/J实际将ERP TINYINT(1)返回Boolean；不得解析失败后落库为非关键默认值。
+        Map<String,Object> step=routingStep(54L,20,54L,"QC","质检",null);
+        step.put("is_key_process",nativeFlag);
+        stubBridgeLookups(List.of(step));
+        service.createFromErpMessage(buildMessage());
+        ArgumentCaptor<ProWorkOrderStep> captor=ArgumentCaptor.forClass(ProWorkOrderStep.class);
+        verify(stepMapper).insert(captor.capture());
+        assertEquals(nativeFlag?1:0,captor.getValue().getIsKeyProcess());
+        assertEquals("PENDING",captor.getValue().getStepStatus());
+        assertEquals(BigDecimal.TEN,captor.getValue().getPlannedQty());
+    }
+    @ParameterizedTest(name="原生整型关键标志{0}保持兼容")
+    @ValueSource(ints={0,1})
+    void createFromErpMessage_preservesNumericCriticalProcess(int nativeFlag) {
+        Map<String,Object> step=routingStep(54L,20,54L,"QC","质检",null);
+        step.put("is_key_process",nativeFlag);
+        stubBridgeLookups(List.of(step));
+        service.createFromErpMessage(buildMessage());
+        ArgumentCaptor<ProWorkOrderStep> captor=ArgumentCaptor.forClass(ProWorkOrderStep.class);
+        verify(stepMapper).insert(captor.capture());
+        assertEquals(nativeFlag,captor.getValue().getIsKeyProcess());
+    }
     @Test
     void createFromErpMessage_packageMappingOverridesRoutingFirmware() {
         WorkOrderReleaseMessage msg = buildMessage();
