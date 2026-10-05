@@ -9,6 +9,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
+import java.math.BigInteger;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
@@ -41,6 +42,7 @@ public class DailyCodeSequenceProvider {
      * @param seqKey       含日期的 Redis 序号键，如 erp:batch:seq:20260816
      * @param maxSeqLoader 当天键不存在时，从库中读取当日最大序号（作为自增起点）
      * @return 下一个序号（= max + 1）
+     * @throws ServiceException 序号起点无效、已无法递增或原子自增结果未前进时抛出
      */
     public long next(String seqKey, LongSupplier maxSeqLoader) {
         RLock lock = redissonClient.getLock("erp:code:seq:lock:" + seqKey);
@@ -50,13 +52,22 @@ public class DailyCodeSequenceProvider {
             if (!locked) {
                 throw new ServiceException("序号生成繁忙，请稍后重试");
             }
-            RBucket<Long> bucket = redissonClient.getBucket(seqKey);
-            Long cached = bucket.get();
+            // Object 型 JSON codec 会将小整数解码为 Integer，泛型 Long 不能约束实际返回类型。
+            RBucket<Object> bucket = redissonClient.getBucket(seqKey);
+            Object cached = bucket.get();
+            long current;
             if (cached == null) {
-                bucket.set(maxSeqLoader.getAsLong(), SEQ_TTL);
+                current = parseSequence(maxSeqLoader.getAsLong());
+                bucket.set(current, SEQ_TTL);
+            } else {
+                current = parseSequence(cached);
             }
             RAtomicLong atomic = redissonClient.getAtomicLong(seqKey);
-            return atomic.incrementAndGet();
+            long next = atomic.incrementAndGet();
+            if (next <= current) {
+                throw new ServiceException("序号自增结果异常，请核实后重试");
+            }
+            return next;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ServiceException("序号生成被中断，请重试");
@@ -65,5 +76,36 @@ public class DailyCodeSequenceProvider {
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     * 无损读取可递增的非负整数起点，不对小数、字符串或未知数值类型进行猜测转换。
+     *
+     * <p>原子自增要求整数缓存；仅接受整数包装类型和精确处于 long 范围内的 BigInteger。
+     * Long.MAX_VALUE 已无下一个 long 序号，必须在写缓存或自增之前拒绝。</p>
+     *
+     * @param value 缓存值或历史最大序号
+     * @return 可安全递增的整数起点
+     * @throws ServiceException 类型不支持、负值或超出可递增范围时抛出
+     */
+    private long parseSequence(Object value) {
+        long sequence;
+        if (value instanceof BigInteger integer) {
+            try {
+                sequence = integer.longValueExact();
+            } catch (ArithmeticException e) {
+                throw new ServiceException("序号起点超出可递增范围，请核实后重试");
+            }
+        } else if (value instanceof Byte || value instanceof Short
+            || value instanceof Integer || value instanceof Long) {
+            // 这些整数包装类型转为 long 不会丢失精度；其他 Number 不使用 longValue 截断。
+            sequence = ((Number) value).longValue();
+        } else {
+            throw new ServiceException("序号起点不是有效整数，请核实后重试");
+        }
+        if (sequence < 0 || sequence == Long.MAX_VALUE) {
+            throw new ServiceException("序号起点超出可递增范围，请核实后重试");
+        }
+        return sequence;
     }
 }
