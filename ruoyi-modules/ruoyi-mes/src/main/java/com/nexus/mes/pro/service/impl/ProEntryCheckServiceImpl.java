@@ -1,7 +1,11 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.lt.service.ILtLotService;
@@ -29,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * MES工序进站/出站校验规则引擎 Service 实现(P0-3)
@@ -75,7 +80,7 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
 
     @Override
     public ProCheckResultVo runEntryChecks(Long stepRecordId, ProEntryBo context) {
-        ProFlowCardStep step = loadStep(stepRecordId);
+        ProFlowCardStep step = loadStep(stepRecordId, context == null ? null : context.getCardId());
         ProCheckResultVo result = new ProCheckResultVo();
         result.setStepRecordId(stepRecordId);
         result.setPassed(true);
@@ -95,7 +100,7 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
 
     @Override
     public ProCheckResultVo runExitChecks(Long stepRecordId, ProExitBo context) {
-        ProFlowCardStep step = loadStep(stepRecordId);
+        ProFlowCardStep step = loadStep(stepRecordId, context == null ? null : context.getCardId());
         ProCheckResultVo result = new ProCheckResultVo();
         result.setStepRecordId(stepRecordId);
         result.setPassed(true);
@@ -151,7 +156,7 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
             .eq(ProFlowCardStep::getCardId, step.getCardId())
             .lt(ProFlowCardStep::getSequenceNum, step.getSequenceNum())
             .orderByDesc(ProFlowCardStep::getSequenceNum)
-            .last("LIMIT 1"));
+            .last(lockingContext() ? "LIMIT 1 FOR UPDATE" : "LIMIT 1"));
         if (prev == null) {
             // 没有更小的工序(即当前是第一道工序),跳过门禁
             return;
@@ -322,10 +327,37 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
 
     // ==================== 辅助方法 ====================
 
-    private ProFlowCardStep loadStep(Long stepRecordId) {
-        ProFlowCardStep step = stepMapper.selectById(stepRecordId);
-        if (step == null) {
-            throw new RuntimeException("工序记录不存在: " + stepRecordId);
+    /** 真实进出站写事务按当前读检查前序；查询界面不因校验取得写锁。 */
+    private boolean lockingContext() {
+        return TransactionSynchronizationManager.isActualTransactionActive()
+            && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+            && "mes".equals(DynamicDataSourceContextHolder.peek());
+    }
+
+    private ProFlowCardStep loadStep(Long stepRecordId, Long cardId) {
+        boolean locking = lockingContext();
+        String tenant = locking ? TenantHelper.getTenantId() : null;
+        // 父卡范围必须在锁子行之前进入 SQL 条件，不能等门禁之后的 CAS 才拒绝异父输入。
+        if (locking && (cardId == null || cardId <= 0 || tenant == null || !tenant.matches("[0-9]{6,20}"))) {
+            throw new ServiceException("进出站写入缺少可信租户或入口父卡");
+        }
+        if (locking) {
+            // RR可能锁住WHERE最终不匹配的主键扫描行；先只核非锁定父引用，不使用旧数量或执行状态。
+            ProFlowCardStep reference = stepMapper.selectById(stepRecordId);
+            if (reference == null || !Objects.equals(stepRecordId, reference.getStepRecordId())
+                || !Objects.equals(cardId, reference.getCardId()) || !Objects.equals(tenant, reference.getTenantId())) {
+                throw new ServiceException("工序父引用不属于入口父卡与当前租户");
+            }
+        }
+        ProFlowCardStep step = locking
+            ? stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+                .eq(ProFlowCardStep::getTenantId, tenant)
+                .eq(ProFlowCardStep::getCardId, cardId)
+                .eq(ProFlowCardStep::getStepRecordId, stepRecordId).last("FOR UPDATE"))
+            : stepMapper.selectById(stepRecordId);
+        if (step == null || (cardId != null && !Objects.equals(cardId, step.getCardId()))
+            || (locking && !Objects.equals(tenant, step.getTenantId()))) {
+            throw new ServiceException("工序不存在或不属于入口父卡与当前租户");
         }
         return step;
     }

@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -38,6 +39,7 @@ import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IProEntryCheckService;
 import com.nexus.mes.pro.service.IProFlowCardService;
 import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
@@ -51,6 +53,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -83,6 +86,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final ProFlowCardStepMapper stepMapper;
     private final ProWorkOrderMapper workOrderMapper;
     private final ProWorkOrderStepMapper workOrderStepMapper;
+    /** 执行写链共用工单父锁，步骤投影与原变更同事务提交。 */
+    private final ProWorkOrderStepProgressService progressService;
     /** 程序化分布式锁模板: 卡级锁覆盖整个事务(见 CARD_LOCK_PREFIX 注释) */
     private final LockTemplate lockTemplate;
     private final IProWorkOrderService proWorkOrderService;
@@ -175,6 +180,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProFlowCardVo createFlowCard(Long mesWoId, BigDecimal quantity) {
+        progressService.lockForWorkOrder(mesWoId);
         log.info("创建流转卡: mesWoId={}, quantity={}", mesWoId, quantity);
 
         // 1. 校验工单状态
@@ -222,6 +228,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
 
         // 4. 查工单工序步骤，自动生成流转卡工序记录
         generateCardStepsFromWorkOrder(flowCard, mesWoId);
+        progressService.rebuildForCard(flowCard.getCardId());
 
         return selectById(flowCard.getCardId());
     }
@@ -232,6 +239,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void releaseCard(Long cardId) {
+        progressService.lockForCard(cardId);
         int rows = baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
             .set(ProFlowCard::getCardStatus, STATUS_RELEASED)
             .eq(ProFlowCard::getCardId, cardId)
@@ -239,16 +247,18 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (rows == 0) {
             throw new RuntimeException("流转卡状态已变更或不存在，仅新建状态可下达");
         }
+        progressService.rebuildForCard(cardId);
         log.info("流转卡下达成功: cardId={}", cardId);
     }
 
     /**
      * 开始工序
      */
-    @Lock4j(keys = {"#cardId"})
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void startStep(Long cardId, Long stepRecordId, Long operatorId) {
+        ProFlowCard lockedCard = progressService.lockForCard(cardId);
+        requireStepReferenceForCard(stepRecordId, cardId);
         log.info("开始工序: cardId={}, stepRecordId={}, operatorId={}", cardId, stepRecordId, operatorId);
 
         // 1. CAS更新工序状态 PENDING -> IN_PROGRESS
@@ -271,7 +281,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             .in(ProFlowCard::getCardStatus, STATUS_CREATED, STATUS_RELEASED));
 
         // 3. 工单状态若为RELEASED，更新为IN_PROGRESS
-        ProFlowCard card = baseMapper.selectById(cardId);
+        ProFlowCard card = lockedCard;
         if (card != null) {
             workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
                 .set(ProWorkOrder::getWoStatus, IProWorkOrderService.STATUS_IN_PROGRESS)
@@ -279,17 +289,20 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
                 .eq(ProWorkOrder::getMesWoId, card.getMesWoId())
                 .eq(ProWorkOrder::getWoStatus, IProWorkOrderService.STATUS_RELEASED));
         }
+        progressService.rebuildForCard(cardId);
     }
 
     /**
      * 完成工序
-     * <p>入口不加事务: 先取卡级程序化锁, 再经 AOP 代理调用带事务的实现方法, 使锁覆盖整个事务
-     * (锁在事务提交之后释放)。若锁释放在事务提交前, 并发工序完工时"所有工序是否完成"的判定
+     * <p>入口先在 MES 事务取工单父行锁，再取卡级程序化锁并复用内部实现；父行锁覆盖事务提交
+     * (父行锁在事务提交之后释放)。卡锁可在返回时释放，父行锁仍阻止其他写者提前进入；若没有父锁, 并发工序完工时"所有工序是否完成"的判定
      * 读不到对方未提交的完工记录, 流转卡不会完工(MES-PRO-02)。</p>
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void completeStep(Long cardId, Long stepRecordId,
                              BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+        progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
             throw new ServiceException("该流转卡有工序完工处理进行中, 请稍后重试: cardId=" + cardId);
@@ -308,11 +321,13 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     public void doCompleteStep(Long cardId, Long stepRecordId,
                                BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+        ProFlowCard lockedCard = progressService.lockForCard(cardId);
+        requireStepReferenceForCard(stepRecordId, cardId);
         log.info("完成工序: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
             cardId, stepRecordId, goodQty, defectQty, scrapQty);
 
         // 数量校验：非负且合计等于流转卡计划数量(良品+不良+报废全数分流), 防止少报污染完工数据
-        ProFlowCard cardForCheck = baseMapper.selectById(cardId);
+        ProFlowCard cardForCheck = lockedCard;
         validateReportQuantities(goodQty, defectQty, scrapQty, cardForCheck);
 
         // 刷写门禁: 工单步骤指定 firmware_id 的刷写工序, 完工前须该卡全部在制 SN 均已有对应固件 PASS 刷写记录
@@ -342,11 +357,13 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             .setSql("scrap_qty = scrap_qty + {0}", scrapQty)
             .eq(ProFlowCard::getCardId, cardId));
 
+        progressService.rebuildForCard(cardId);
+
         // 3. 检查是否所有工序完成
         Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, cardId)
             .ne(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
-            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED));
+            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED).last("FOR UPDATE"));
         if (pendingCount == 0) {
             log.info("流转卡所有工序完成，触发completeCard: cardId={}", cardId);
             // 本方法已在 completeStep 的事务与卡级锁内, 直接调用聚合实现(不再重复取锁)
@@ -391,11 +408,15 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 不拦截完工(与 flash 侧 {@code selectPendingTasks} 的语义一致)。</p>
      */
     private void checkFlashStepGate(Long stepRecordId, Long cardId) {
+        requireStepReferenceForCard(stepRecordId, cardId);
         // 门禁模式: FORCE=拦截 / WARN=告警放行 / 其他=关闭
         if (!"FORCE".equals(flashGateMode) && !"WARN".equals(flashGateMode)) {
             return;
         }
-        ProFlowCardStep step = stepMapper.selectById(stepRecordId);
+        ProFlowCardStep step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getStepRecordId, stepRecordId)
+            .eq(ProFlowCardStep::getTenantId, TenantHelper.getTenantId())
+            .eq(ProFlowCardStep::getCardId, cardId).last("FOR UPDATE"));
         if (step == null || step.getWoStepId() == null) {
             return;
         }
@@ -514,7 +535,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 由最后一个工序完工的路径再次触发; UI 手工完工走 {@link #manualCompleteCard} 强校验拒绝。</p>
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void completeCard(Long cardId) {
+        progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
             throw new ServiceException("该流转卡有完工处理进行中, 请稍后重试: cardId=" + cardId);
@@ -533,7 +556,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 工单永久 PARTIAL_COMPLETED、ERP 收不到完工消息。</p>
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void manualCompleteCard(Long cardId) {
+        progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
             throw new ServiceException("该流转卡有完工处理进行中, 请稍后重试: cardId=" + cardId);
@@ -552,7 +577,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void doCompleteCard(Long cardId, boolean strict) {
-        ProFlowCard card = baseMapper.selectById(cardId);
+        ProFlowCard card = progressService.lockForCard(cardId);
         if (card == null) {
             throw new ServiceException("流转卡不存在: " + cardId);
         }
@@ -560,7 +585,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         // 1. 完工门禁: 所有工序必须已完成/已跳过(手工完工不得绕过工序, MES-PRO-01)
         List<ProFlowCardStep> allSteps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, cardId)
-            .orderByAsc(ProFlowCardStep::getSequenceNum));
+            .orderByAsc(ProFlowCardStep::getSequenceNum).last("FOR UPDATE"));
         if (allSteps.isEmpty()) {
             throw new ServiceException("流转卡无工序记录, 不能完工: cardId=" + cardId);
         }
@@ -587,7 +612,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             .in(ProFlowCard::getCardStatus, STATUS_CREATED, STATUS_RELEASED, STATUS_IN_PROGRESS));
         if (rows == 0) {
             // 已完工: 继续走步骤4的幂等入账(自愈: 工序已全完成而卡曾完工但未入账); 其它状态(如CLOSED)直接返回
-            ProFlowCard fresh = baseMapper.selectById(cardId);
+            ProFlowCard fresh = progressService.lockForCard(cardId);
             if (fresh == null || !STATUS_COMPLETED.equals(fresh.getCardStatus())) {
                 log.warn("流转卡状态不满足完工条件，跳过: cardId={}, status={}", cardId,
                     fresh == null ? null : fresh.getCardStatus());
@@ -615,6 +640,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         card.setScrapQty(correctScrapQty);
         log.info("流转卡完工: cardId={}, completedQty={}, scrapQty={}", cardId, correctCompletedQty, correctScrapQty);
 
+        // 步骤投影先于已入账早返回，但不承担再次增加工单头/发MQ的职责。
+        progressService.rebuildForCard(cardId);
+
         // 4. 一次性入账: CAS aggregated_flag 0 -> 1, 成功才向工单聚合(重复完工/自愈重入不重复入账)
         int bookRows = baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
             .set(ProFlowCard::getAggregatedFlag, 1)
@@ -626,7 +654,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         }
 
         // 5. 读取工单(增量前快照, 用于完工数量判定; 本事务首次读 wo, 非缓存旧值)
-        ProWorkOrder wo = workOrderMapper.selectById(card.getMesWoId());
+        ProWorkOrder wo = workOrderMapper.selectOne(Wrappers.<ProWorkOrder>lambdaQuery()
+            .eq(ProWorkOrder::getMesWoId, card.getMesWoId()).last("FOR UPDATE"));
         BigDecimal plannedQty = wo != null && wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
         BigDecimal woCompletedBefore = wo != null && wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
         BigDecimal woScrapBefore = wo != null && wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
@@ -678,6 +707,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void closeCard(Long cardId) {
+        progressService.lockForCard(cardId);
         int rows = baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
             .set(ProFlowCard::getCardStatus, STATUS_CLOSED)
             .eq(ProFlowCard::getCardId, cardId)
@@ -685,6 +715,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (rows == 0) {
             throw new RuntimeException("仅已完工状态的流转卡可关闭");
         }
+        progressService.rebuildForCard(cardId);
         log.info("流转卡关闭: cardId={}", cardId);
     }
 
@@ -704,12 +735,14 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
 
     /**
      * 检查并完成工序(派工完工聚合后调用)
-     * <p>入口不加事务: 卡级程序化锁覆盖整个事务, 经 AOP 代理调用带事务的实现方法。
+     * <p>入口先取工单父行锁，再取卡级程序化锁；父行锁覆盖整个事务提交。
      * 旧实现把 @Lock4j 加在本方法上, 锁在方法返回时释放而外层 doCompleteDispatch 事务尚未提交,
      * 导致"工序是否全完成"的判定读不到并发事务未提交的完工记录, 工序全 COMPLETED 而卡不完工(MES-PRO-02)。</p>
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void checkAndCompleteStep(Long cardId, Long stepRecordId) {
+        progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
             throw new ServiceException("该流转卡有工序完工处理进行中, 请稍后重试: cardId=" + cardId);
@@ -723,12 +756,14 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
 
     /**
      * 检查并完成工序(带事务, 不取锁)。
-     * <p><b>调用方必须已持有 {@code mes:flowcard:{cardId}} 程序化锁, 且锁覆盖自身事务提交</b>
+     * <p><b>调用方必须已在同库事务持有工单父行锁，再取得 {@code mes:flowcard:{cardId}} 程序化锁</b>
      * (如 {@code ProDispatchServiceImpl.completeDispatch}); 否则存在 MES-PRO-02 竞态。</p>
      */
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void checkAndCompleteStepUnderLock(Long cardId, Long stepRecordId) {
+        progressService.lockForCard(cardId);
+        requireStepReferenceForCard(stepRecordId, cardId);
         // 刷写门禁(派工聚合完工路径, 与 completeStep 一致; 覆盖 completeDispatch→本方法路径)
         checkFlashStepGate(stepRecordId, cardId);
         // CAS 工序 IN_PROGRESS -> COMPLETED
@@ -743,11 +778,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         }
         // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工；completeWo 完工门禁校验关键工序 IPQC 必须合格)
         triggerIpqcIfKeyProcess(stepRecordId);
+        progressService.rebuildForCard(cardId);
         // 检查所有工序完成 -> completeCard(直接调用聚合实现, 锁由入口/本方法事务持有)
         Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, cardId)
             .ne(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
-            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED));
+            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED).last("FOR UPDATE"));
         if (pendingCount == 0) {
             doCompleteCard(cardId, false);
         }
@@ -762,6 +798,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ProCheckResultVo entry(ProEntryBo bo) {
+        progressService.lockForCard(bo.getCardId());
         log.info("工序进站: cardId={}, stepRecordId={}, operatorId={}", bo.getCardId(), bo.getStepRecordId(), bo.getOperatorId());
 
         // 1. 执行进站校验(含内置 SERIAL_GATE)
@@ -798,7 +835,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 出站(P0-3): EXIT 校验 -> 通过则 completeStep + 记录出站校验结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ProCheckResultVo exit(ProExitBo bo) {
+        progressService.lockForCard(bo.getCardId());
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + bo.getCardId(), CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
             throw new ServiceException("该流转卡有工序完工处理进行中, 请稍后重试: cardId=" + bo.getCardId());
@@ -815,6 +854,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ProCheckResultVo doExit(ProExitBo bo) {
+        progressService.lockForCard(bo.getCardId());
         log.info("工序出站: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
             bo.getCardId(), bo.getStepRecordId(), bo.getGoodQty(), bo.getDefectQty(), bo.getScrapQty());
 
@@ -849,7 +889,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 跳站(P0-3): 防错校验 -> 置 SKIPPED + 记录原因 + 推进下一工序
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void skip(ProSkipBo bo) {
+        progressService.lockForCard(bo.getCardId());
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + bo.getCardId(), CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
             throw new ServiceException("该流转卡有完工处理进行中, 请稍后重试: cardId=" + bo.getCardId());
@@ -866,9 +908,14 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void doSkip(ProSkipBo bo) {
+        progressService.lockForCard(bo.getCardId());
+        requireStepReferenceForCard(bo.getStepRecordId(), bo.getCardId());
         log.info("工序跳站: cardId={}, stepRecordId={}", bo.getCardId(), bo.getStepRecordId());
 
-        ProFlowCardStep step = stepMapper.selectById(bo.getStepRecordId());
+        ProFlowCardStep step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getStepRecordId, bo.getStepRecordId())
+            .eq(ProFlowCardStep::getTenantId, TenantHelper.getTenantId())
+            .eq(ProFlowCardStep::getCardId, bo.getCardId()).last("FOR UPDATE"));
         if (step == null) {
             throw new RuntimeException("工序记录不存在: " + bo.getStepRecordId());
         }
@@ -899,11 +946,13 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
                 .eq(ProFlowCard::getCardId, bo.getCardId()));
         }
 
+        progressService.rebuildForCard(bo.getCardId());
+
         // 检查是否所有工序完成/跳过 -> completeCard
         Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, bo.getCardId())
             .ne(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
-            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED));
+            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED).last("FOR UPDATE"));
         if (pendingCount == 0) {
             log.info("跳站后流转卡所有工序完成/跳过，触发completeCard: cardId={}", bo.getCardId());
             doCompleteCard(bo.getCardId(), false);
@@ -1026,6 +1075,20 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private String generateCardNo(ProWorkOrder workOrder) {
         long suffix = System.currentTimeMillis() % 10000L;
         return "FC-" + workOrder.getWoNo() + "-" + String.format("%04d", suffix);
+    }
+
+    /** 仅定位不可变父引用；数量/门禁仍须后续当前读，拒绝前不扫描加锁异父步骤。 */
+    private void requireStepReferenceForCard(Long stepRecordId, Long cardId) {
+        String tenant = TenantHelper.getTenantId();
+        if (stepRecordId == null || stepRecordId <= 0 || cardId == null || cardId <= 0
+            || tenant == null || !tenant.matches("[0-9]{6,20}")) {
+            throw new ServiceException("工序写入缺少可信租户或父卡");
+        }
+        ProFlowCardStep reference = stepMapper.selectById(stepRecordId);
+        if (reference == null || !Objects.equals(stepRecordId, reference.getStepRecordId())
+            || !Objects.equals(cardId, reference.getCardId()) || !Objects.equals(tenant, reference.getTenantId())) {
+            throw new ServiceException("工序父引用不属于入口父卡与当前租户");
+        }
     }
 
     private LambdaQueryWrapper<ProFlowCard> buildQueryWrapper(ProFlowCardBo bo) {

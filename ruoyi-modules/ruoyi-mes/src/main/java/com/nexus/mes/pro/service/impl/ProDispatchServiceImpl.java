@@ -21,6 +21,8 @@ import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.service.IProDispatchService;
 import com.nexus.mes.pro.service.IProFlowCardService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.common.core.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +49,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
 
     private final ProDispatchMapper baseMapper;
     private final ProFlowCardStepMapper stepMapper;
+    private final ProWorkOrderStepProgressService progressService;
     private final ProFlowCardMapper flowCardMapper;
     private final IProFlowCardService proFlowCardService;
     private final LockTemplate lockTemplate;
@@ -177,7 +180,13 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void startDispatch(Long dispatchId) {
-        ProDispatch dispatch = baseMapper.selectById(dispatchId);
+        ProDispatch reference = baseMapper.selectById(dispatchId);
+        if (reference == null) throw new ServiceException("派工单不存在");
+        progressService.lockForCard(reference.getCardId());
+        ProDispatch dispatch = baseMapper.selectOne(Wrappers.<ProDispatch>lambdaQuery()
+            .eq(ProDispatch::getDispatchId, dispatchId).last("FOR UPDATE"));
+        if (dispatch != null && !java.util.Objects.equals(reference.getCardId(), dispatch.getCardId()))
+            throw new ServiceException("派工锁定后的父卡发生变化");
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
         }
@@ -197,7 +206,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
         Long operatorId = dispatch.getOperatorId();
 
         // 2. 查工序当前状态
-        ProFlowCardStep step = stepMapper.selectById(stepRecordId);
+        ProFlowCardStep step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery().eq(ProFlowCardStep::getStepRecordId, stepRecordId).last("FOR UPDATE"));
         if (step == null) {
             throw new RuntimeException("工序记录不存在: " + stepRecordId);
         }
@@ -214,6 +223,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
                 .eq(ProFlowCardStep::getStepRecordId, stepRecordId));
         }
 
+        progressService.rebuildForCard(cardId);
         log.info("派工开工成功: dispatchId={}, stepRecordId={}", dispatchId, stepRecordId);
     }
 
@@ -222,17 +232,19 @@ public class ProDispatchServiceImpl implements IProDispatchService {
      */
     /**
      * 完工派工(IN_PROGRESS -> COMPLETED), 累加数量到工序+流转卡, 自动完成工序
-     * <p>入口不加事务: 先按单加载定位工序, 再以「卡锁 + stepRecordId 锁」两级程序化加锁后执行带事务的内部方法。
+     * <p>入口在事务中读取引用并先取工单父行锁，再以「卡锁 + stepRecordId 锁」执行内部方法。
      * 锁必须覆盖整个事务——同工序两张派工单并发完工时, 若锁释放在事务提交前, 后者读不到前者未提交的
      * 状态变更, 会导致 activeCount 判定竞态、工序永不自动完成(M1); 卡锁同时消除卡完工聚合判定的竞态(MES-PRO-02)。</p>
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void completeDispatch(Long dispatchId, BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
         ProDispatch dispatch = baseMapper.selectById(dispatchId);
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
         }
-        // 锁顺序固定为 卡锁 -> 步锁(全模块唯一加锁顺序, 避免死锁)。
+        progressService.lockForCard(dispatch.getCardId());
+        // 锁顺序固定为工单数据库父锁 -> 卡锁 -> 步锁，不能持卡锁再等待父锁。
         // 卡锁必须覆盖 doCompleteDispatch 的整个事务(含卡完工聚合判定): 若卡锁在事务提交前释放,
         // "工序是否全完成"的判定读不到并发事务未提交的完工记录 → 工序全完成而卡不完工(MES-PRO-02)。
         LockInfo cardLock = lockTemplate.lock("mes:flowcard:" + dispatch.getCardId(), 30000L, 5000L);
@@ -260,7 +272,13 @@ public class ProDispatchServiceImpl implements IProDispatchService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void doCompleteDispatch(Long dispatchId, BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
-        ProDispatch dispatch = baseMapper.selectById(dispatchId);
+        ProDispatch reference = baseMapper.selectById(dispatchId);
+        if (reference == null) throw new ServiceException("派工单不存在");
+        progressService.lockForCard(reference.getCardId());
+        ProDispatch dispatch = baseMapper.selectOne(Wrappers.<ProDispatch>lambdaQuery()
+            .eq(ProDispatch::getDispatchId, dispatchId).last("FOR UPDATE"));
+        if (dispatch != null && !java.util.Objects.equals(reference.getCardId(), dispatch.getCardId()))
+            throw new ServiceException("派工锁定后的父卡发生变化");
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
         }
@@ -301,12 +319,13 @@ public class ProDispatchServiceImpl implements IProDispatchService {
         Long activeCount = baseMapper.selectCount(Wrappers.<ProDispatch>lambdaQuery()
             .eq(ProDispatch::getStepRecordId, stepRecordId)
             .ne(ProDispatch::getDispatchStatus, STATUS_COMPLETED)
-            .ne(ProDispatch::getDispatchStatus, STATUS_CANCELLED));
+            .ne(ProDispatch::getDispatchStatus, STATUS_CANCELLED).last("FOR UPDATE"));
         if (activeCount == 0) {
             // completeDispatch 已持有 mes:flowcard:{cardId} 卡锁且覆盖本事务提交, 故走不取锁实现(MES-PRO-02)
             proFlowCardService.checkAndCompleteStepUnderLock(cardId, stepRecordId);
         }
 
+        progressService.rebuildForCard(cardId);
         log.info("派工完工成功: dispatchId={}, goodQty={}, defectQty={}, scrapQty={}",
             dispatchId, goodQty, defectQty, scrapQty);
     }

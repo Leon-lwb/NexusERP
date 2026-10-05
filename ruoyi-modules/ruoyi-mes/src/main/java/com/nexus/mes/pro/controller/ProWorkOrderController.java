@@ -14,6 +14,7 @@ import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
 import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,16 @@ import java.util.List;
 public class ProWorkOrderController extends BaseController {
 
     private final IProWorkOrderService proWorkOrderService;
+    private final ProWorkOrderStepProgressService progressService;
+
+    /** 仅重建工单步骤执行投影，不重复报工、完工、入库或发送消息。 */
+    @SaCheckPermission("mes:pro:work:edit")
+    @Log(title = "工单工序进度重建", businessType = BusinessType.UPDATE)
+    @PostMapping("/{mesWoId}/progress/rebuild")
+    public R<Void> rebuildProgress(@PathVariable Long mesWoId) {
+        progressService.rebuild(mesWoId);
+        return R.ok();
+    }
 
     /**
      * 分页查询MES工单列表

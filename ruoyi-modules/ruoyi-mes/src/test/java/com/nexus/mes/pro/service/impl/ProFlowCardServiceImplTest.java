@@ -25,6 +25,7 @@ import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IProEntryCheckService;
 import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -88,10 +89,14 @@ class ProFlowCardServiceImplTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private ProWorkOrderStepProgressService progressService;
+
     @InjectMocks
     private ProFlowCardServiceImpl service;
 
     private MockedStatic<SpringUtils> aopProxyMock;
+    private MockedStatic<com.nexus.common.tenant.helper.TenantHelper> tenantMock;
 
     @BeforeAll
     static void initTableInfo() {
@@ -107,15 +112,26 @@ class ProFlowCardServiceImplTest {
     @BeforeEach
     void setUp() {
         // 纯单测无容器: SpringUtils.getAopProxy 返回当前实例(等价于经代理调用)
+        tenantMock = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class);
+        tenantMock.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000000");
         aopProxyMock = mockStatic(SpringUtils.class, withSettings().lenient());
         aopProxyMock.when(() -> SpringUtils.getAopProxy(any())).thenReturn(service);
         lenient().when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(mock(LockInfo.class));
+        lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> baseMapper.selectById((Long)i.getArgument(0)));
+        lenient().when(workOrderMapper.selectOne(any())).thenAnswer(i -> workOrderMapper.selectById(100L));
+        lenient().when(stepMapper.selectOne(any())).thenAnswer(i -> {
+            var query=(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProFlowCardStep>)i.getArgument(0);
+            query.getSqlSegment();
+            Long id=query.getParamNameValuePairs().values().stream().filter(Long.class::isInstance).map(Long.class::cast).findFirst().orElse(null);
+            return id == null ? null : stepMapper.selectById(id);
+        });
         // @Value 字段纯单测不注入, 手动置为 FORCE 以便覆盖刷写门禁分支
         ReflectionTestUtils.setField(service, "flashGateMode", "FORCE");
     }
 
     @AfterEach
     void tearDown() {
+        tenantMock.close();
         if (aopProxyMock != null) {
             aopProxyMock.close();
         }
@@ -187,6 +203,20 @@ class ProFlowCardServiceImplTest {
 
         service.completeCard(1L);
 
+        verify(workOrderMapper, never()).update(any(), any());
+        verify(proWorkOrderService, never()).completeWo(any());
+    }
+
+    @Test
+    void bookedCardStillRebuildsStepProjectionWithoutRepeatingWorkOrderQuantity() {
+        when(baseMapper.selectById(1L)).thenReturn(card(1L, "COMPLETED", new BigDecimal("10")));
+        when(stepMapper.selectList(any())).thenReturn(List.of(step(1, "OP10", "COMPLETED", "10")));
+        when(baseMapper.update(any(), any())).thenReturn(0, 1, 0);
+
+        service.completeCard(1L);
+
+        // 已入账不能提前绕过步骤投影，但仍不得再次增加工单头或发送完工事件。
+        verify(progressService).rebuildForCard(1L);
         verify(workOrderMapper, never()).update(any(), any());
         verify(proWorkOrderService, never()).completeWo(any());
     }
@@ -266,6 +296,7 @@ class ProFlowCardServiceImplTest {
         ProFlowCardStep s = new ProFlowCardStep();
         s.setStepRecordId(stepRecordId);
         s.setCardId(1L);
+        s.setTenantId("000000");
         s.setWoStepId(woStepId);
         s.setProcessName(processName);
         s.setStepStatus("IN_PROGRESS");
@@ -327,6 +358,7 @@ class ProFlowCardServiceImplTest {
         ProFlowCardStep s = new ProFlowCardStep();
         s.setStepRecordId((long) seq);
         s.setCardId(1L);
+        s.setTenantId("000000");
         s.setSequenceNum(seq);
         s.setProcessName(processName);
         s.setStepStatus(status);

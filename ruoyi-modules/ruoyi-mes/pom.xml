@@ -134,6 +134,13 @@
             </exclusions>
         </dependency>
 
+        <!-- 工单步骤投影的内存事务并发回归，不打入生产包。 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <properties>
