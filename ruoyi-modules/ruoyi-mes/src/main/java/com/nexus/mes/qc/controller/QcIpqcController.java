@@ -93,6 +93,22 @@ public class QcIpqcController extends BaseController {
     }
 
     /**
+     * 恢复原已完成 IPQC 的通知，不接受请求方的质量事实，不重检或复位状态。
+     *
+     * @param ipqcId 原 IPQC 检验单 ID
+     * @return 原发送链路返回的 ENQUEUED（非消费证明）或纯 MES 工单的 SKIPPED_NO_ERP
+     */
+    @SaCheckPermission("mes:qc:ipqc:inspect")
+    @Log(title = "IPQC通知恢复", businessType = BusinessType.OTHER)
+    @PostMapping("/{ipqcId}/notification/recover")
+    public R<String> recoverNotification(@PathVariable Long ipqcId) {
+        String status = qcIpqcService.recoverNotification(ipqcId);
+        String message = IQcIpqcService.NOTIFICATION_ENQUEUED.equals(status)
+            ? "原通知发送链路已返回，ERP消费结果需另行核验" : "纯MES工单无ERP映射，未发送通知";
+        return R.ok(message, status);
+    }
+
+    /**
      * 查询 IPQC 检验单明细(按检验模板快照生成的检验项目)。
      *
      * @param ipqcId IPQC 检验单 ID

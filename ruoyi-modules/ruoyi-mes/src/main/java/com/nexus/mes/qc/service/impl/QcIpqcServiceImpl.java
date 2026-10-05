@@ -13,8 +13,8 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.ncr.service.INcrOrderService;
-import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
-import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.qc.domain.QcInspectDetail;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
@@ -65,8 +65,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
     private final QcIpqcMapper baseMapper;
     /** MES MQ 发送服务，用于检验完成后异步回传 ERP。 */
     private final MesMqSendService mesMqSendService;
-    /** MES 工单服务，用于经 mesWoId 查询 erpWoId 定位 ERP 工单。 */
-    private final IProWorkOrderService proWorkOrderService;
+    /** 原 MES 工单 Mapper，仅在事务内读取映射，不调用富详情服务或 ERP 桥接。 */
+    private final ProWorkOrderMapper proWorkOrderMapper;
     /** NCR 不合格品服务(P0-4)：检验判定不合格时自动创建 NCR 单。 */
     private final INcrOrderService ncrOrderService;
     /** 检验单明细服务: 建单时按模板(物料/工序/客户维度)生成明细, 判定后回写结果。 */
@@ -209,9 +209,10 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         // 计算不良率 = defectQty / sampleQty * 100 (两位小数)
         BigDecimal defectRate = calcDefectRate(sampleQty, defectQty);
 
-        // 捕获检验员信息(供 MQ 回传, LoginHelper 在 afterCommit 异步线程不可用)
+        // 在事务内冻结检验员与租户上下文，提交回调不再读取登录信息或 Redis
         final Long inspectorId = LoginHelper.getUserId();
         final String inspectorName = LoginHelper.getUsername();
+        final String tenantId = TenantHelper.getTenantId();
 
         int rows = baseMapper.update(null, Wrappers.<QcIpqc>lambdaUpdate()
             .set(QcIpqc::getInspectResult, inspectResult)
@@ -237,31 +238,67 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
                 ipqc.getStepRecordId(), ipqc.getProcessId(), defectQty, defectInfo);
         }
 
-        // 事务提交后异步MQ回传ERP(更新工单聚合质检状态)
-        // 经 mesWoId -> ProWorkOrder.erpWoId 定位 ERP 工单; 无 erpWoId 则为纯 MES 工单, 跳过
-        final Long mesWoId = ipqc.getMesWoId();
-        final String ipqcNo = ipqc.getIpqcNo();
-        final BigDecimal msgDefectQty = defectQty;
-        final BigDecimal msgDefectRate = defectRate;
-        final String result = inspectResult;
-        TransactionSynchronizationManager.registerSynchronization(
-            new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    if (mesWoId == null) {
-                        log.info("IPQC未关联MES工单, 跳过MQ回传: ipqcNo={}", ipqcNo);
-                        return;
-                    }
-                    ProWorkOrderVo wo = proWorkOrderService.selectById(mesWoId);
-                    if (wo == null || wo.getErpWoId() == null) {
-                        log.info("IPQC关联工单无ERP对应, 跳过MQ回传: ipqcNo={}, mesWoId={}", ipqcNo, mesWoId);
-                        return;
-                    }
-                    String tenantId = TenantHelper.getTenantId();
-                    mesMqSendService.sendIpqcCompleted(ipqcId, ipqcNo, mesWoId, wo.getErpWoId(),
-                        wo.getWoNo(), result, msgDefectQty, msgDefectRate, inspectorId, inspectorName, tenantId);
-                }
-            });
+        // 提交后 MES 物理连接可能尚未清理，严禁在回调中调用会跨库富集的工单详情。
+        // 仅在实际 MES 事务内读取原工单行；无 ERP 映射时仍按原行为跳过通知。
+        ProWorkOrder wo = ipqc.getMesWoId() == null ? null : proWorkOrderMapper.selectById(ipqc.getMesWoId());
+        registerNotification(freezeNotification(ipqc, wo, inspectResult, defectQty, defectRate,
+            inspectorId, inspectorName, tenantId));
+    }
+
+    /**
+     * 从已完成检验的持久化事实恢复原通知，不重检、不更新检验/明细/NCR。
+     * <p>只读 MES 事务内校验原单及原工单并冻结快照，提交后同步调用原 MQ 发送方法；
+     * 发送异常继续向调用方传播。ENQUEUED 只表示原发送链路返回，不代表 ERP 已消费。</p>
+     *
+     * @param ipqcId 原 IPQC 检验单 ID
+     * @return ENQUEUED 或纯 MES 工单的 SKIPPED_NO_ERP
+     */
+    @Override
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public String recoverNotification(Long ipqcId) {
+        if (ipqcId == null || ipqcId <= 0) {
+            throw new ServiceException("原IPQC检验单ID无效");
+        }
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId) || !tenantId.matches("[0-9]+")) {
+            throw new ServiceException("当前租户上下文无效，不能恢复通知");
+        }
+        try {
+            Long.parseLong(tenantId);
+        } catch (NumberFormatException e) {
+            throw new ServiceException("当前租户上下文无效，不能恢复通知");
+        }
+        QcIpqc ipqc = baseMapper.selectById(ipqcId);
+        if (ipqc == null || !Objects.equals(ipqcId, ipqc.getIpqcId())
+            || !"0".equals(ipqc.getDelFlag()) || !tenantId.equals(ipqc.getTenantId())) {
+            throw new ServiceException("原IPQC检验单不存在或不属于当前租户");
+        }
+        if (!STATUS_COMPLETED.equals(ipqc.getStatus())) {
+            throw new ServiceException("仅已完成的IPQC检验可恢复通知");
+        }
+        if (!RESULT_QUALIFIED.equals(ipqc.getInspectResult()) && !RESULT_UNQUALIFIED.equals(ipqc.getInspectResult())) {
+            throw new ServiceException("原IPQC检验判定无效，不能恢复通知");
+        }
+        if (ipqc.getInspectTime() == null || ipqc.getInspectTime().getTime() <= 0
+            || ipqc.getInspectTime().after(new Date())) {
+            throw new ServiceException("原IPQC缺少有效的实际检验时间，不能恢复通知");
+        }
+        if (ipqc.getMesWoId() == null || ipqc.getMesWoId() <= 0) {
+            throw new ServiceException("原IPQC未关联有效MES工单，不能恢复通知");
+        }
+        ProWorkOrder wo = proWorkOrderMapper.selectById(ipqc.getMesWoId());
+        if (wo == null || !Objects.equals(ipqc.getMesWoId(), wo.getMesWoId())
+            || !"0".equals(wo.getDelFlag()) || !tenantId.equals(wo.getTenantId())) {
+            throw new ServiceException("原MES工单不存在或不属于当前租户");
+        }
+        if (wo.getErpWoId() != null && wo.getErpWoId() <= 0) {
+            throw new ServiceException("原MES工单的ERP映射无效，不能恢复通知");
+        }
+        // 使用原检验员/结果/数量/不良率，绝不以恢复操作者或请求参数造质量事实。
+        IpqcNotificationSnapshot snapshot = freezeNotification(ipqc, wo, ipqc.getInspectResult(),
+            ipqc.getDefectQty(), ipqc.getDefectRate(), ipqc.getInspectorId(), ipqc.getInspectorName(), tenantId);
+        registerNotification(snapshot);
+        return snapshot == null ? NOTIFICATION_SKIPPED_NO_ERP : NOTIFICATION_ENQUEUED;
     }
 
     /**
@@ -317,6 +354,48 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /** 冻结原消息契约的全部参数；只接收事务内已读取的原行。 */
+    private IpqcNotificationSnapshot freezeNotification(QcIpqc ipqc, ProWorkOrder wo, String result,
+                                                         BigDecimal defectQty, BigDecimal defectRate,
+                                                         Long inspectorId, String inspectorName, String tenantId) {
+        if (ipqc.getMesWoId() == null) {
+            log.info("IPQC未关联MES工单, 跳过MQ回传: ipqcNo={}", ipqc.getIpqcNo());
+            return null;
+        }
+        if (wo == null || wo.getErpWoId() == null) {
+            log.info("IPQC关联工单无ERP对应, 跳过MQ回传: ipqcNo={}, mesWoId={}", ipqc.getIpqcNo(), ipqc.getMesWoId());
+            return null;
+        }
+        return new IpqcNotificationSnapshot(ipqc.getIpqcId(), ipqc.getIpqcNo(), ipqc.getMesWoId(), wo.getErpWoId(),
+            wo.getWoNo(), result, defectQty, defectRate, inspectorId, inspectorName, tenantId);
+    }
+
+    /** 提交后只发布已冻结的原通知；不得查询数据库/桥接/租户上下文，也不吞发送异常。 */
+    private void registerNotification(IpqcNotificationSnapshot snapshot) {
+        if (snapshot == null) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                snapshot.send(mesMqSendService);
+            }
+        });
+    }
+
+    /**
+     * IPQC 专属不可变通知快照。所有成员均为不可变值，不持有实体、Mapper 或服务上下文。
+     * 保持原 sendIpqcCompleted 参数契约，不新增质量事实或消息字段。
+     */
+    private record IpqcNotificationSnapshot(Long ipqcId, String ipqcNo, Long mesWoId, Long erpWoId, String woNo,
+                                            String inspectResult, BigDecimal defectQty, BigDecimal defectRate,
+                                            Long inspectorId, String inspectorName, String tenantId) {
+        private void send(MesMqSendService sender) {
+            sender.sendIpqcCompleted(ipqcId, ipqcNo, mesWoId, erpWoId, woNo, inspectResult,
+                defectQty, defectRate, inspectorId, inspectorName, tenantId);
+        }
+    }
 
     /**
      * 计算不良率 = defectQty / sampleQty * 100, 两位小数; 分母为0或空返回null

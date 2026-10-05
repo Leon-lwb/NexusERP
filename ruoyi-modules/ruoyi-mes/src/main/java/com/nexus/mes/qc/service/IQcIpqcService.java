@@ -27,6 +27,11 @@ public interface IQcIpqcService {
     /** 状态: 已完成 */
     String STATUS_COMPLETED = "COMPLETED";
 
+    /** 原通知发送链路已返回；不代表投递确认或 ERP 已消费。 */
+    String NOTIFICATION_ENQUEUED = "ENQUEUED";
+    /** 原工单为纯 MES 工单，无 ERP 映射，未发送通知。 */
+    String NOTIFICATION_SKIPPED_NO_ERP = "SKIPPED_NO_ERP";
+
     /** 检验结果: 合格 */
     String RESULT_QUALIFIED = "QUALIFIED";
     /** 检验结果: 不合格 */
@@ -97,6 +102,16 @@ public interface IQcIpqcService {
      */
     void inspect(Long ipqcId, String inspectResult, String defectInfo,
                  BigDecimal sampleQty, BigDecimal defectQty, String remark);
+
+    /**
+     * 恢复原已完成检验的通知。仅允许当前租户未删除、合法判定且有实际检验时间的原检验，
+     * 使用原 MES 工单映射及已持久化质量事实；不重检、不修改数量/结果/状态/明细/NCR。
+     * 提交后发送失败向调用方传播，不把 ENQUEUED 当作 ERP 已消费。
+     *
+     * @param ipqcId 原 IPQC 检验单 ID
+     * @return ENQUEUED 或无 ERP 映射的 SKIPPED_NO_ERP
+     */
+    String recoverNotification(Long ipqcId);
 
     /**
      * 按检验明细执行检验(自动判定): 录入各项目实测值, 系统比对标准自动判定

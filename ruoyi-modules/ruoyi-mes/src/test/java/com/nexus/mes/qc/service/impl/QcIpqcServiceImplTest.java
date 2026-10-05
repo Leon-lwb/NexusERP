@@ -6,8 +6,8 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.ncr.service.INcrOrderService;
-import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
-import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.domain.vo.QcIpqcVo;
@@ -41,7 +41,7 @@ class QcIpqcServiceImplTest {
     @Mock
     private MesMqSendService mesMqSendService;
     @Mock
-    private IProWorkOrderService proWorkOrderService;
+    private ProWorkOrderMapper proWorkOrderMapper;
     @Mock
     private INcrOrderService ncrOrderService;
     @Mock
@@ -231,16 +231,21 @@ class QcIpqcServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(ipqc);
         when(baseMapper.update(any(), any())).thenReturn(1);
 
-        ProWorkOrderVo wo = new ProWorkOrderVo();
+        ProWorkOrder wo = new ProWorkOrder();
         wo.setErpWoId(999L);
         wo.setWoNo("WO-001");
-        // selectById 仅在 afterCommit 回调中调用, 单测无事务提交, 用 lenient 避免严格模式误报
-        lenient().when(proWorkOrderService.selectById(10L)).thenReturn(wo);
+        // 原工单映射必须在事务内读取，不能延迟到 afterCommit。
+        when(proWorkOrderMapper.selectById(10L)).thenReturn(wo);
 
         service.inspect(1L, "QUALIFIED", null, null, null, null);
 
-        // afterCommit won't execute in pure unit test
         verify(mesMqSendService, never()).sendIpqcCompleted(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(proWorkOrderMapper).selectById(10L);
+        clearInvocations(proWorkOrderMapper, baseMapper);
+        TransactionSynchronizationManager.getSynchronizations().forEach(sync -> sync.afterCommit());
+        verify(mesMqSendService).sendIpqcCompleted(1L, "IPQC-001", 10L, 999L, "WO-001",
+            "QUALIFIED", null, null, 1L, "tester", "000000");
+        verifyNoInteractions(proWorkOrderMapper, baseMapper);
     }
 
     @Test
@@ -253,11 +258,15 @@ class QcIpqcServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(ipqc);
         when(baseMapper.update(any(), any())).thenReturn(1);
 
-        ProWorkOrderVo wo = new ProWorkOrderVo();
+        ProWorkOrder wo = new ProWorkOrder();
         wo.setErpWoId(null);
-        // selectById 仅在 afterCommit 回调中调用, 单测无事务提交, 用 lenient 避免严格模式误报
-        lenient().when(proWorkOrderService.selectById(10L)).thenReturn(wo);
+        // 原工单映射必须在事务内读取，不能延迟到 afterCommit。
+        when(proWorkOrderMapper.selectById(10L)).thenReturn(wo);
 
         service.inspect(1L, "QUALIFIED", null, null, null, null);
+        verify(proWorkOrderMapper).selectById(10L);
+        clearInvocations(proWorkOrderMapper, baseMapper);
+        TransactionSynchronizationManager.getSynchronizations().forEach(sync -> sync.afterCommit());
+        verifyNoInteractions(mesMqSendService, proWorkOrderMapper, baseMapper);
     }
 }
