@@ -38,8 +38,11 @@ import java.util.function.Supplier;
  *
  * 支持域：从RECEIVE_IN/WM_MATERIAL_RECEIVE明确零起点开始的原始入库头/行/批次分配链；
  * 出库及预留来源须为WM_PRODUCTION_ISSUE，经原始领料行→MRP明细/头→工单核对计划/BOM/母物料归属。
- * 入库/领料单必须单物料、根基本单位、非倒冲、原始数量及履约可完全复算；混物料单据、其他流水类型、
- * 销售预留、未知/删除原始行和缺可证明起点的历史库存一律拒绝。
+ * 入库单须单物料；领料父单可为同一已核验根基本单位的混物料单，所有兄弟原行/MRP/父头均须认证。
+ * 只有目标物料纳入完整库存历史、实际出库及MRP累计已领守恒；兄弟数量保持原始可审计事实，
+ * 不读取兄弟stock/tx锁、不声称其库存已认证，不把跨其他父单的兄弟MRP累计已领硬等本头子集。
+ * 混单位头标量、倒冲、其他流水类型、销售预留、未知/删除原始行和缺可证明起点的历史库存一律拒绝。
+ * 历史DRAFT需求仅在ERP工单明确以MATERIAL_REQUIREMENT/source_id绑定该头且目标全链复算成功时认证。
  * CONSUME_RESERVE须有related_tx_id，一对一关联相邻、同库存/原始领料/时点/前后余额的物理出库；
  * 不根据净额相等、备注、当前单位或显示名称猜测历史消费/所有权。
  *
@@ -260,6 +263,7 @@ public class ErpPurchaseStockLineageVerifier {
         require(tenant.equals(row.tenantId()) && material.equals(row.materialId()) && positive(row.stockId()) && stocks.containsKey(row.stockId())
             && unitId.equals(row.baseUomId()) && "0".equals(row.delFlag()) && positive(row.sourceDocId())
             && positive(row.sourceDocLineId()), "流水租户、物料、库存、单位、原始来源或删除状态不完整");
+        require(dimension(row).equals(dimension(stocks.get(row.stockId()))), "原始流水仓储维度与目标库存身份不符");
         require(quantity(row.txQuantity(), scale).signum() > 0, "原始流水数量必须明确为正");
         quantity(row.beforeQuantity(), scale); quantity(row.afterQuantity(), scale);
         millisInstant(row.txAtEpochMillis());
@@ -302,7 +306,8 @@ public class ErpPurchaseStockLineageVerifier {
                                               String tenant, Long material, String unit, int scale, Instant at, Map<String, String> versions) {
         Map<ReceiptAllocation, BigDecimal> allocated = new TreeMap<>(Comparator.comparing(ReceiptAllocation::toString));
         Map<ReceiptAllocation, BigDecimal> posted = new TreeMap<>(Comparator.comparing(ReceiptAllocation::toString));
-        Map<Long, BigDecimal> receivedByLine = new TreeMap<>(), issuedByLine = new TreeMap<>(), requiredByHead = new TreeMap<>(), issuedByRequirement = new TreeMap<>();
+        Map<Long, BigDecimal> receivedByLine = new TreeMap<>(), issuedByLine = new TreeMap<>(), requiredByHead = new TreeMap<>();
+        Map<Long, BigDecimal> scopedRequiredByRequirement = new TreeMap<>(), scopedIssuedByRequirement = new TreeMap<>();
         for (ReceiveHead head : o.receiveHeads().values()) {
             require(tenant.equals(head.tenantId()) && "0".equals(head.delFlag()) && text(head.receiveCode()) && "FINISHED".equals(head.status())
                 && positive(head.warehouseId()) && positive(head.areaId()) && nullablePositive(head.locationId()), "入库单身份、状态或原始仓储来源无效");
@@ -331,15 +336,16 @@ public class ErpPurchaseStockLineageVerifier {
             quantity(head.totalQty(), scale);
         }
         for (RequirementDetail detail : o.requirements().values()) {
-            require(tenant.equals(detail.tenantId()) && material.equals(detail.materialId()) && unit.equals(detail.unit()) && "0".equals(detail.delFlag())
+            require(tenant.equals(detail.tenantId()) && positive(detail.materialId()) && "0".equals(detail.delFlag())
                 && Long.valueOf(1L).equals(detail.status()) && Integer.valueOf(0).equals(detail.backflushFlag())
                 && member(detail.sourceType(), SOURCE_TYPES) && o.requirementHeads().containsKey(detail.requirementId()), "MRP明细身份、单位、状态或来源未知");
+            require(unit.equals(detail.unit()), "混物料领料只支持同一已核验根基本单位，混单位头总量不能认证");
             require(quantity(detail.issuedQuantity(), scale).compareTo(quantity(detail.requiredQuantity(), scale)) <= 0, "MRP已领超需求");
         }
         for (RequirementHead head : o.requirementHeads().values()) {
             require(tenant.equals(head.tenantId()) && "0".equals(head.delFlag()) && text(head.requirementNo()) && positive(head.planId())
                 && positive(head.bomId()) && positive(head.materialId()) && member(head.sourceType(), SOURCE_TYPES)
-                && member(head.status(), Set.of("CONFIRMED", "ISSUED")), "MRP头原始归属或状态未知");
+                && member(head.status(), Set.of("DRAFT", "CONFIRMED", "ISSUED")), "MRP头原始归属或状态未知");
         }
         for (WorkOrder wo : o.workOrders().values()) {
             require(tenant.equals(wo.tenantId()) && "0".equals(wo.delFlag()) && text(wo.woNo()) && positive(wo.planId()) && positive(wo.bomId())
@@ -348,18 +354,22 @@ public class ErpPurchaseStockLineageVerifier {
         for (IssueLine line : o.issueLines().values()) {
             require(positive(line.issueId()), "领料行原始头身份未知");
             IssueHead head = o.issueHeads().get(line.issueId()); RequirementDetail detail = o.requirements().get(line.requirementDetailId());
-            require(head != null && detail != null && tenant.equals(line.tenantId()) && material.equals(line.materialId()) && unit.equals(line.baseUomId())
+            require(head != null && detail != null && tenant.equals(line.tenantId()) && positive(line.materialId()) && line.materialId().equals(detail.materialId()) && unit.equals(line.baseUomId())
                 && "0".equals(line.delFlag()) && head.warehouseId().equals(line.warehouseId()) && nullablePositive(line.locationId()) && nullablePositive(line.batchId()), "领料原始行租户/物料/单位/需求归属未知");
             RequirementHead requirement = o.requirementHeads().get(detail.requirementId()); WorkOrder wo = o.workOrders().get(head.woId());
             require(requirement != null && wo != null && requirement.planId().equals(wo.planId()) && requirement.bomId().equals(wo.bomId())
                 && requirement.materialId().equals(wo.materialId()), "领料行MRP需求不属于原始工单计划/BOM/母物料");
+            if ("DRAFT".equals(requirement.status())) require("MATERIAL_REQUIREMENT".equals(wo.sourceType())
+                && requirement.requirementId().equals(wo.sourceId()), "历史DRAFT需求缺少ERP工单原始来源类型/ID的明确绑定");
             BigDecimal required = quantity(line.requiredQty(), scale), issued = quantity(line.issuedQty(), scale);
             eq(required, quantity(line.quantity(), scale), "该领料行原数量与应领数量口径尚未支持");
             require(required.signum() > 0 && issued.compareTo(required) <= 0, "领料行原始数量无效");
             eq(required.subtract(issued), quantity(line.shortQty(), scale), "领料行欠领余额不一致");
             String state = issued.signum() == 0 ? "PENDING" : issued.compareTo(required) == 0 ? "ISSUED" : "PARTIAL";
             require(state.equals(line.lineStatus()), "领料行未知状态或数量状态不一致");
-            add(requiredByHead, line.issueId(), required); add(issuedByRequirement, line.requirementDetailId(), issued);
+            add(requiredByHead, line.issueId(), required);
+            add(scopedRequiredByRequirement, line.requirementDetailId(), required);
+            add(scopedIssuedByRequirement, line.requirementDetailId(), issued);
         }
         Map<Long, Instant> latestReceiptByStock = new TreeMap<>();
         for (TransactionRow row : transactions.values()) {
@@ -373,6 +383,7 @@ public class ErpPurchaseStockLineageVerifier {
             } else {
                 IssueHead head = o.issueHeads().get(row.sourceDocId()); IssueLine line = o.issueLines().get(row.sourceDocLineId());
                 require(head != null && line != null && head.issueId().equals(line.issueId()), "原始领料/预留流水不属于所引用的头/行");
+                require(row.materialId().equals(line.materialId()), "原始领料/预留流水物料与原始领料行不符");
                 require(row.sourceDocCode() == null || head.issueCode().equals(row.sourceDocCode()), "领料流水原始单号不符");
                 StockRow stock = stocks.get(row.stockId());
                 require(line.warehouseId().equals(stock.warehouseId()) && (line.locationId() == null || line.locationId().equals(stock.locationId()))
@@ -386,8 +397,21 @@ public class ErpPurchaseStockLineageVerifier {
         for (ReceiveLine line : o.receiveLines().values()) eq(quantity(line.quantityReceived(), scale), receivedByLine.get(line.lineId()), "原始入库行与完整批次明细数量不一致");
         for (ReceiveHead head : o.receiveHeads().values()) require(o.receiveLines().values().stream().anyMatch(line -> head.receiveId().equals(line.receiveId())), "原始入库头缺完整行");
         for (StockRow stock : stocks.values()) eqInstant(latestReceiptByStock.get(stock.stockId()), millisInstant(stock.recptAtEpochMillis()), "库存原入库时点与最后实际入库流水不一致");
-        for (IssueLine line : o.issueLines().values()) eq(quantity(line.issuedQty(), scale), issuedByLine.getOrDefault(line.lineId(), ZERO), "原始领料已领数量未由全量真实出库证明");
-        for (RequirementDetail detail : o.requirements().values()) eq(quantity(detail.issuedQuantity(), scale), issuedByRequirement.getOrDefault(detail.detailId(), ZERO), "MRP原已领数量不能完整归属真实领料流水");
+        // 全物料历史只覆盖目标：所有兄弟已在上方核验原始数量/单位/状态/父归属，但不借其流水或补零。
+        for (IssueLine line : o.issueLines().values()) {
+            if (!material.equals(line.materialId())) continue;
+            BigDecimal actual = issuedByLine.get(line.lineId());
+            if (line.issuedQty().signum() == 0) require(actual == null, "目标未领原始行存在实际出库，禁止补零");
+            else eq(quantity(line.issuedQty(), scale), actual, "原始领料已领数量未由全量真实出库证明");
+        }
+        for (RequirementDetail detail : o.requirements().values()) {
+            BigDecimal scopedRequired = scopedRequiredByRequirement.get(detail.detailId()), scopedIssued = scopedIssuedByRequirement.get(detail.detailId());
+            require(scopedRequired != null && scopedIssued != null, "MRP父来源未被完整原始行覆盖，禁止补零");
+            require(scopedRequired.compareTo(quantity(detail.requiredQuantity(), scale)) <= 0, "父来源声明应领合计超过MRP原需求");
+            BigDecimal cumulativeIssued = quantity(detail.issuedQuantity(), scale);
+            if (material.equals(detail.materialId())) eq(cumulativeIssued, scopedIssued, "MRP原已领数量不能完整归属真实领料流水");
+            else require(scopedIssued.compareTo(cumulativeIssued) <= 0, "兄弟MRP当前父来源已领合计超过累计已领，未覆盖其他父单不能硬做相等");
+        }
         for (IssueHead head : o.issueHeads().values()) {
             eq(quantity(head.totalQty(), scale), requiredByHead.get(head.issueId()), "原领料单头总量与完整单据行不一致");
             List<IssueLine> lines = o.issueLines().values().stream().filter(line -> head.issueId().equals(line.issueId())).toList();
@@ -566,6 +590,9 @@ public class ErpPurchaseStockLineageVerifier {
 
     private static Dimension dimension(StockRow stock) {
         return new Dimension(stock.warehouseId(), stock.areaId(), stock.locationId(), stock.batchId(), stock.snId());
+    }
+    private static Dimension dimension(TransactionRow row) {
+        return new Dimension(row.warehouseId(), row.areaId(), row.locationId(), row.batchId(), row.snId());
     }
     private static Dimension dimension(ReceiveDetail detail) {
         return new Dimension(detail.warehouseId(), detail.areaId(), detail.locationId(), detail.batchId(), detail.snId());

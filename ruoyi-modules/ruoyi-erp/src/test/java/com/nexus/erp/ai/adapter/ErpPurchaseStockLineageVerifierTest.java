@@ -126,6 +126,303 @@ class ErpPurchaseStockLineageVerifierTest {
         assertEquals(Set.of(100L, 101L, 102L, 103L), result.transactionIds());
     }
 
+    /** 复现只读快照：同根单位三材料10/10/20已领，目标物料有入库历史且余额为零。 */
+    @ParameterizedTest(name = "同单位混料已完成，目标行{0}")
+    @MethodSource("mixedTargets")
+    void completedMixedIssueAuthenticatesEveryParentLineWithoutAddingOtherMaterialsToSupply(int target) {
+        Fixture f = new Fixture(); f.mixedCompleted(target);
+        StockLineageSnapshot result = assertDoesNotThrow(f::read, "合法同单位混料父单应由完整来源认证");
+        assertAll(
+            () -> assertEquals(q("0"), result.inventory().quantity()),
+            () -> assertEquals(q("0"), result.inventory().reserved()),
+            () -> assertEquals(Map.of(), result.reservedByRequirementDetail()),
+            () -> assertEquals(1, result.stocks().size()),
+            () -> assertEquals(MATERIAL, result.stocks().get(0).stock().materialId()),
+            () -> assertEquals(Set.of(100L, 103L + target), result.transactionIds()),
+            () -> assertTrue(result.sourceVersions().keySet().containsAll(Set.of(
+                "wm_production_issue_line:611", "wm_production_issue_line:612", "wm_production_issue_line:613",
+                "prd_material_requirement_detail:701", "prd_material_requirement_detail:702", "prd_material_requirement_detail:703"))));
+    }
+
+    static Stream<Integer> mixedTargets() { return Stream.of(0, 1, 2); }
+
+    /** 正常下达和领料只更新明细，历史MRP头仍可保持DRAFT；不能要求修改历史状态。 */
+    @Test
+    void completedActualIssueCanAuthenticateDraftMrpThroughItsBoundErpWorkOrder() {
+        Fixture f = new Fixture();
+        f.transactions.clear();
+        f.transactions.add(rowTx(100L, "RECEIVE_IN", 1, "10", "0", "10", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600));
+        f.transactions.add(rowTx(103L, "PRODUCTION_ISSUE", -1, "10", "10", "0", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -100));
+        f.stock("stockQuantity", q("0")); f.stock("reservedQuantity", q("0"));
+        f.issueLine("quantity", q("10")); f.issueLine("requiredQty", q("10"));
+        f.issueLine("issuedQty", q("10")); f.issueLine("shortQty", q("0")); f.issueLine("lineStatus", "ISSUED");
+        f.issueHead("totalQty", q("10")); f.issueHead("status", "COMPLETED");
+        f.requirement("requiredQuantity", q("10")); f.requirement("issuedQuantity", q("10"));
+        f.requirementHead("status", "DRAFT"); f.workOrder("woStatus", "COMPLETED");
+        f.summary(q("0"), q("0"), q("0"));
+        assertEquals(q("0"), assertDoesNotThrow(f::read, "已绑定ERP工单且完整履约的历史DRAFT需求应可核验").inventory().quantity());
+    }
+
+    /** 快照形状使用根单位26/整数精度，测试身份和单号独立，不拷贝现场数据。 */
+    @ParameterizedTest(name = "原生同单位26混料DRAFT，目标行{0}")
+    @MethodSource("mixedTargets")
+    void nativePieceMixedDraftPreservesAllActualSourcesAndOnlyTargetStock(int target) {
+        Fixture f = new Fixture(); f.mixedCompleted(target); f.nativePiece(); f.requirementHead("status", "DRAFT");
+        StockLineageSnapshot result = assertDoesNotThrow(f::read);
+        assertEquals(26L, result.inventory().baseUomId()); assertEquals(0, result.inventory().quantityScale());
+        assertEquals(q("0"), result.inventory().quantity()); assertEquals(1, result.stocks().size());
+        assertTrue(result.sourceVersions().keySet().containsAll(Set.of(
+            "wm_production_issue_line:611", "wm_production_issue_line:612", "wm_production_issue_line:613",
+            "prd_material_requirement_detail:701", "prd_material_requirement_detail:702", "prd_material_requirement_detail:703")));
+        for (long id = 103L; id <= 105L; id++) assertEquals(id == 103L + target, result.sourceVersions().containsKey("wm_material_stock_tx:" + id));
+        assertEquals(Set.of(100L, 103L + target), result.transactionIds());
+        verify(f.mapper, times(1)).lockStocks(TENANT, MATERIAL);
+        verify(f.coverage).requireGlobalCoverageLocked(TENANT, MATERIAL, Set.of(91L), Set.of(100L, 103L + target));
+        verify(f.inventory, times(2)).verifyLocked(TENANT, MATERIAL);
+    }
+
+    @ParameterizedTest(name = "根单位整数精度拒绝兄弟字段{0}")
+    @MethodSource("fractionalPeerFields")
+    void nativeIntegerUnitRejectsFractionalPeerLineWithoutRoundingOrZero(String field) {
+        Fixture f = new Fixture(); f.mixedCompleted(0); f.nativePiece();
+        assertDoesNotThrow(f::read); f.peerLine(field, new BigDecimal("1.5000"));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("禁止舍入升级"));
+    }
+
+    static Stream<String> fractionalPeerFields() { return Stream.of("quantity", "requiredQty", "issuedQty", "shortQty"); }
+
+    @Test
+    void nativeIntegerUnitRejectsFractionalPeerMrpCumulativeQuantity() {
+        Fixture f = new Fixture(); f.mixedCompleted(0); f.nativePiece();
+        assertDoesNotThrow(f::read); f.peerRequirement("issuedQuantity", new BigDecimal("9.5000"));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("禁止舍入升级"));
+    }
+
+    /** 兄弟MRP累计已领可以来自另一父单，当前头10件不能硬等累计20件。 */
+    @Test
+    void peerMrpCumulativeIssuedAcrossOtherHeadsIsNotEquatedWithThisParentSubset() {
+        Fixture f = new Fixture(); f.mixedCompleted(0);
+        f.peerRequirement("requiredQuantity", q("20")); f.peerRequirement("issuedQuantity", q("20"));
+        StockLineageSnapshot result = assertDoesNotThrow(f::read, "兄弟累计已领跨单不能冒充本次头全集也不能被硬相等误拒");
+        assertEquals(q("0"), result.inventory().quantity());
+        assertTrue(result.sourceVersions().containsKey("prd_material_requirement_detail:702"));
+        assertEquals(Set.of(100L, 103L), result.transactionIds());
+    }
+
+    /** 调用者可能已持目标库存/流水，读取器不能新增兄弟物料流水锁再争共同父头。 */
+    @Test
+    void mixedParentNeverExpandsTransactionLocksBeyondExistingTargetMaterialScope() {
+        Fixture f = new Fixture(); f.mixedCompleted(0);
+        StockLineageSnapshot result = assertDoesNotThrow(f::read);
+        assertEquals(List.of("lockTransactions"), mockingDetails(f.mapper).getInvocations().stream()
+            .map(call -> call.getMethod().getName()).filter(name -> name.toLowerCase().contains("transaction")).toList(), "不得超出目标流水写集锁兄弟物料");
+        verify(f.mapper).lockTransactions(TENANT, MATERIAL, List.of(91L));
+        verify(f.mapper, times(1)).lockStocks(TENANT, MATERIAL);
+        verify(f.inventory, times(2)).verifyLocked(TENANT, MATERIAL);
+        assertEquals(Set.of(100L, 103L), result.transactionIds());
+    }
+
+    @Test
+    void partialMixedParentKeepsTargetReservationSeparateFromPeerPhysicalIssues() {
+        Fixture f = new Fixture(); f.mixedCompleted(0);
+        f.transactions.set(1, rowTx(103L, "RESERVE", 0, "3", "10", "10", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -100));
+        f.stock("stockQuantity", q("10")); f.stock("reservedQuantity", q("3"));
+        f.issueLine("issuedQty", q("0")); f.issueLine("shortQty", q("10")); f.issueLine("lineStatus", "PENDING");
+        f.requirement("issuedQuantity", q("0")); f.issueHead("status", "PARTIAL"); f.summary(q("10"), q("3"), q("0"));
+        StockLineageSnapshot result = assertDoesNotThrow(f::read);
+        assertEquals(q("10"), result.inventory().quantity());
+        assertEquals(Map.of(701L, q("3")), result.reservedByRequirementDetail());
+        assertEquals(Map.of(701L, q("3")), result.stocks().get(0).reservedByRequirementDetail());
+    }
+
+    @Test
+    void peerMrpVersionsAreRetainedEvenWhenOnlyTargetIssuedHistoryIsReplayed() {
+        Fixture f = new Fixture(); f.mixedCompleted(0);
+        StockLineageSnapshot initial = f.read();
+        f.peerRequirement("requiredQuantity", q("20")); f.peerRequirement("issuedQuantity", q("20"));
+        StockLineageSnapshot changed = assertDoesNotThrow(f::read);
+        assertNotEquals(initial.sourceVersions().get("prd_material_requirement_detail:702"), changed.sourceVersions().get("prd_material_requirement_detail:702"));
+        assertEquals(q("0"), changed.inventory().quantity());
+        assertEquals(Set.of(100L, 103L), changed.transactionIds());
+        assertEquals(Set.of(100L, 103L), changed.stocks().get(0).transactions().stream().map(TransactionRow::txId).collect(java.util.stream.Collectors.toSet()));
+    }
+
+    @Test
+    void targetPhysicalIssueMissingFromCompleteHistoryCannotBeMaskedByCompletedPeers() {
+        Fixture f = new Fixture(); f.mixedCompleted(0);
+        f.transactions.set(1, rowTx(103L, "RESERVE", 0, "10", "10", "10", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -100));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("已领数量未由全量真实出库证明"));
+    }
+
+    @Test
+    void twoPeerLinesForOneMrpUseScopedSubtotalAsUpperBoundNotEachLineOrWholeHistory() {
+        Fixture f = new Fixture(); f.mixedCompleted(0);
+        IssueLine peer = f.issueLines.get(1), third = f.issueLines.get(2);
+        f.issueLines.set(2, change(change(third, "materialId", peer.materialId()), "requirementDetailId", 702L));
+        f.requirements.remove(2); f.peerRequirement("requiredQuantity", q("40")); f.peerRequirement("issuedQuantity", q("40"));
+        assertEquals(q("0"), assertDoesNotThrow(f::read).inventory().quantity());
+        f.peerRequirement("issuedQuantity", q("25"));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("兄弟MRP当前父来源已领合计超过累计已领"));
+    }
+
+    @ParameterizedTest(name = "混料父来源拒绝：{0}")
+    @MethodSource("badMixedSources")
+    void incompleteCrossOwnedOrNonConservingPeerSourcesRejectWholeTarget(String name, Consumer<Fixture> corrupt, String reason) {
+        Fixture f = new Fixture(); f.mixedCompleted(0); assertDoesNotThrow(f::read, "基准混料完整父来源应先通过");
+        corrupt.accept(f);
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().startsWith(ERROR)); assertTrue(error.getMessage().contains(reason), error.getMessage());
+    }
+
+    static Stream<Arguments> badMixedSources() {
+        return Stream.of(
+            mixedBad("兄弟原声明数量未知", f -> f.peerLine("quantity", null), "原始数量未知"),
+            mixedBad("兄弟原应领数量未知", f -> f.peerLine("requiredQty", null), "原始数量未知"),
+            mixedBad("兄弟原已领数量未知", f -> f.peerLine("issuedQty", null), "原始数量未知"),
+            mixedBad("兄弟原欠领数量未知", f -> f.peerLine("shortQty", null), "原始数量未知"),
+            mixedBad("兄弟原应领数量不能补零", f -> f.peerLine("requiredQty", q("0")), "原数量与应领数量口径尚未支持"),
+            mixedBad("兄弟原声明数量与应领不符", f -> f.peerLine("quantity", q("9")), "原数量与应领数量口径尚未支持"),
+            mixedBad("兄弟原数量为负", f -> f.peerLine("issuedQty", q("-1")), "原始数量未知"),
+            mixedBad("兄弟原数量超原生精度", f -> f.peerLine("issuedQty", new BigDecimal("10.00001")), "禁止舍入升级"),
+            mixedBad("兄弟MRP累计已领未知", f -> f.peerRequirement("issuedQuantity", null), "原始数量未知"),
+            mixedBad("兄弟MRP原需求未知", f -> f.peerRequirement("requiredQuantity", null), "原始数量未知"),
+            mixedBad("兄弟MRP累计已领不能补零", f -> f.peerRequirement("issuedQuantity", q("0")), "兄弟MRP当前父来源已领合计超过累计已领"),
+            mixedBad("兄弟MRP单位未知", f -> f.peerRequirement("unit", null), "混单位头总量不能认证"),
+            mixedBad("异物料MRP物料与领料不符", f -> f.peerRequirement("materialId", 999L), "领料原始行租户/物料/单位/需求归属未知"),
+            mixedBad("异物料MRP租户", f -> f.peerRequirement("tenantId", "other"), "MRP明细身份"),
+            mixedBad("异物料MRP状态", f -> f.peerRequirement("status", 0L), "MRP明细身份"),
+            mixedBad("异物料MRP倒冲", f -> f.peerRequirement("backflushFlag", 1), "MRP明细身份"),
+            mixedBad("异物料MRP已领不能裁剪为目标子集", f -> f.peerRequirement("issuedQuantity", q("9")), "兄弟MRP当前父来源已领合计超过累计已领"),
+            mixedBad("异物料MRP已领超需求", f -> f.peerRequirement("requiredQuantity", q("9")), "MRP已领超需求"),
+            mixedBad("混单位MRP禁止头标量认证", f -> f.peerRequirement("unit", "28"), "混单位头总量不能认证"),
+            mixedBad("混单位原单行", f -> f.peerLine("baseUomId", "28"), "领料原始行租户/物料/单位/需求归属未知"),
+            mixedBad("异物料原行租户", f -> f.peerLine("tenantId", "other"), "领料原始行租户/物料/单位/需求归属未知"),
+            mixedBad("异物料原行删除", f -> f.peerLine("delFlag", "1"), "领料原始行租户/物料/单位/需求归属未知"),
+            mixedBad("兄弟原行物料未知", f -> f.peerLine("materialId", null), "领料原始行租户/物料/单位/需求归属未知"),
+            mixedBad("兄弟原行单位未知", f -> f.peerLine("baseUomId", null), "领料原始行租户/物料/单位/需求归属未知"),
+            mixedBad("兄弟原行原MRP父缺失", f -> f.peerLine("requirementDetailId", null), "原始父身份缺失或无效"),
+            mixedBad("兄弟原MRP明细未完整返回", f -> f.requirements.remove(1), "MRP明细覆盖不完整"),
+            mixedBad("兄弟原声明超MRP需求", f -> {
+                f.peerLine("quantity", q("11")); f.peerLine("requiredQty", q("11")); f.peerLine("shortQty", q("1"));
+                f.peerLine("lineStatus", "PARTIAL"); f.issueHead("status", "PARTIAL"); f.issueHead("totalQty", q("41"));
+            }, "父来源声明应领合计超过MRP原需求"),
+            mixedBad("异物料原行欠领量", f -> f.peerLine("shortQty", q("1")), "欠领余额不一致"),
+            mixedBad("异物料原行状态", f -> f.peerLine("lineStatus", "PARTIAL"), "数量状态不一致"),
+            mixedBad("整单声明不能改为目标数量", f -> f.issueHead("totalQty", q("10")), "头总量与完整单据行不一致"),
+            mixedBad("整单状态不能裁剪为目标状态", f -> f.issueHead("status", "PARTIAL"), "头状态与完整行履约不一致"),
+            mixedBad("父MRP计划与ERP工单不符", f -> f.requirementHead("planId", 999L), "原始工单计划/BOM/母物料"),
+            mixedBad("父MRP BOM与ERP工单不符", f -> f.requirementHead("bomId", 999L), "原始工单计划/BOM/母物料"),
+            mixedBad("父MRP母物料与ERP工单不符", f -> f.requirementHead("materialId", 999L), "原始工单计划/BOM/母物料"),
+            mixedBad("历史DRAFT工单来源类型不符", f -> { f.requirementHead("status", "DRAFT"); f.workOrder("sourceType", "PLAN"); }, "来源类型/ID的明确绑定"),
+            mixedBad("历史DRAFT工单来源头ID不符", f -> { f.requirementHead("status", "DRAFT"); f.workOrder("sourceId", 999L); }, "来源类型/ID的明确绑定"),
+            mixedBad("历史DRAFT工单来源头ID缺失", f -> { f.requirementHead("status", "DRAFT"); f.workOrder("sourceId", null); }, "来源类型/ID的明确绑定"));
+    }
+
+    private static Arguments mixedBad(String name, Consumer<Fixture> corrupt, String reason) { return Arguments.of(name, corrupt, reason); }
+
+    /** 当前库存/流水与兄弟原行各自合法，不代表二者物料身份可以串接。 */
+    @ParameterizedTest(name = "错引兄弟物料原行：{0}")
+    @MethodSource("crossMaterialSourceCases")
+    void targetTransactionsCannotBorrowCompatiblePeerLineOrMrpOwnership(String scenario) {
+        Fixture f = new Fixture(); f.misboundMixed(scenario);
+        TransactionRow misbound = f.transactions.stream().filter(row -> Long.valueOf(612L).equals(row.sourceDocLineId())).findFirst().orElseThrow();
+        IssueLine peer = f.issueLines.get(1);
+        assertEquals(MATERIAL, misbound.materialId()); assertNotEquals(misbound.materialId(), peer.materialId());
+        assertEquals(misbound.baseUomId(), peer.baseUomId()); assertEquals(misbound.warehouseId(), peer.warehouseId());
+        assertEquals(misbound.locationId(), peer.locationId()); assertNull(peer.batchId(), "合法未指定批次分配不能代替物料身份绑定");
+        ServiceException error = assertThrows(ServiceException.class, f::read, "同单位/相容维度不能把目标流水认证给兄弟MRP");
+        assertTrue(error.getMessage().contains("流水物料与原始领料行不符"), error.getMessage());
+        verify(f.mapper).lockTransactions(TENANT, MATERIAL, List.of(91L));
+        verify(f.mapper, times(1)).lockStocks(TENANT, MATERIAL);
+    }
+
+    static Stream<String> crossMaterialSourceCases() {
+        return Stream.of("预留", "预留及释放", "消费与配对出库", "完成后真实零余额");
+    }
+
+    /** 旧签名可构造DTO，但缺失的真实仓/区不能从当前库存补成证据。 */
+    @Test
+    void legacyTransactionConstructorDoesNotAuthorizeUnknownNativeDimensions() {
+        Fixture f = new Fixture(); assertDoesNotThrow(f::read);
+        TransactionRow legacy = legacyCopy(f.transactions.get(0), 17);
+        assertAll(() -> assertNull(legacy.warehouseId()), () -> assertNull(legacy.areaId()),
+            () -> assertNull(legacy.locationId()), () -> assertNull(legacy.batchId()), () -> assertNull(legacy.snId()));
+        f.transactions.set(0, legacy);
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("原始流水仓储维度与目标库存身份不符"));
+    }
+
+    @Test
+    void legacyWorkOrderConstructorCannotInferDraftSourceBindingFromPlanBomOrMotherMaterial() {
+        Fixture f = new Fixture(); f.requirementHead("status", "DRAFT"); assertDoesNotThrow(f::read);
+        WorkOrder legacy = legacyCopy(f.workOrders.get(0), 8);
+        assertNull(legacy.sourceType()); assertNull(legacy.sourceId());
+        f.workOrders.set(0, legacy);
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("来源类型/ID的明确绑定"));
+    }
+
+    /** 用反射检查旧JVM构造器描述符，使缺旧重载时回归仍能编译并产生真实断言失败。 */
+    @SuppressWarnings("unchecked")
+    private static <T> T legacyCopy(T record, int count) {
+        RecordComponent[] components = record.getClass().getRecordComponents();
+        Class<?>[] types = new Class<?>[count]; Object[] values = new Object[count];
+        for (int i = 0; i < count; i++) {
+            types[i] = components[i].getType();
+            int component = i; values[i] = assertDoesNotThrow(() -> components[component].getAccessor().invoke(record));
+        }
+        var constructor = assertDoesNotThrow(() -> record.getClass().getConstructor(types), "必须保留旧" + count + "参数公开构造器");
+        return (T) assertDoesNotThrow(() -> constructor.newInstance(values));
+    }
+
+    @ParameterizedTest(name = "实际流水五维错配：{0}/{1}={2}")
+    @MethodSource("badTransactionDimensions")
+    void everyNativeTransactionDimensionMustExactlyMatchItsTargetStock(int index, String field, Object value) {
+        Fixture f = new Fixture(); f.withSn(88L); assertDoesNotThrow(f::read);
+        f.transactions.set(index, change(f.transactions.get(index), field, value));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("原始流水仓储维度与目标库存身份不符"));
+    }
+
+    static Stream<Arguments> badTransactionDimensions() {
+        return Stream.of(0, 1).flatMap(index -> Stream.of("warehouseId", "areaId", "locationId", "batchId", "snId")
+            .flatMap(field -> Stream.of(Arguments.of(index, field, 99L), Arguments.of(index, field, (Object) null))));
+    }
+
+    @ParameterizedTest(name = "仓区必有，两端都缺失：{0}")
+    @MethodSource("mandatoryDimensionFields")
+    void warehouseAndAreaCannotBecomeKnownByHavingNullAtBothEnds(String field) {
+        Fixture f = new Fixture();
+        f.stock(field, null); f.transactions.replaceAll(row -> change(row, field, null));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("库存原始维度或冻结标志无效"));
+    }
+
+    static Stream<String> mandatoryDimensionFields() { return Stream.of("warehouseId", "areaId"); }
+    static Stream<String> optionalDimensionFields() { return Stream.of("locationId", "batchId", "snId"); }
+
+    @ParameterizedTest(name = "可选维度真实双方null：{0}")
+    @MethodSource("optionalDimensionFields")
+    void genuinelyAbsentOptionalDimensionsAreExactMatchesNotUnknownMandatoryFacts(String field) {
+        Fixture f = new Fixture(); f.optionalDimensionAbsent(field);
+        StockLineageSnapshot result = assertDoesNotThrow(f::read);
+        assertEquals(q("10"), result.inventory().quantity()); assertEquals(Map.of(701L, q("4")), result.reservedByRequirementDetail());
+        if ("locationId".equals(field)) verify(f.mapper, never()).lockLocations(anyString(), anyList());
+    }
+
+    @ParameterizedTest(name = "可选库存null但实际流水非null：{0}")
+    @MethodSource("optionalDimensionFields")
+    void optionalStockNullIsNotAWildcardForNonNullTransactionDimension(String field) {
+        Fixture f = new Fixture(); f.optionalDimensionAbsent(field); assertDoesNotThrow(f::read);
+        f.transactions.set(1, change(f.transactions.get(1), field, 99L));
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertTrue(error.getMessage().contains("原始流水仓储维度与目标库存身份不符"));
+    }
+
     @Test
     void consumptionReconcilesIssuedMrpWithoutDoubleSubtractingStock() {
         Fixture f = new Fixture(); f.consumption(); StockLineageSnapshot result = f.read();
@@ -237,9 +534,9 @@ class ErpPurchaseStockLineageVerifierTest {
         f.stocks.add(0, second); // SQL lock params must remain stable even if a mapper double returns shuffled rows.
         f.transactions.clear();
         f.transactions.add(rowTx(100L, "RECEIVE_IN", 1, "5", "0", "5", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600));
-        f.transactions.add(change(rowTx(101L, "RECEIVE_IN", 1, "5", "0", "5", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600), "stockId", 92L));
+        f.transactions.add(change(change(rowTx(101L, "RECEIVE_IN", 1, "5", "0", "5", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600), "stockId", 92L), "batchId", 82L));
         f.transactions.add(rowTx(102L, "RESERVE", 0, "2", "5", "5", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -300));
-        f.transactions.add(change(rowTx(103L, "RESERVE", 0, "2", "5", "5", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -300), "stockId", 92L));
+        f.transactions.add(change(change(rowTx(103L, "RESERVE", 0, "2", "5", "5", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -300), "stockId", 92L), "batchId", 82L));
         f.receiveDetail("quantity", q("5"));
         f.receiveDetails.add(change(change(f.receiveDetails.get(0), "detailId", 522L), "batchId", 82L));
         f.issueLine("batchId", null); // Original issue line explicitly permits allocation across the two proven batches.
@@ -296,6 +593,7 @@ class ErpPurchaseStockLineageVerifierTest {
         Fixture f = new Fixture();
         f.stock("locationId", null); f.issueLine("locationId", null);
         f.receiveHead("locationId", null); f.receiveDetail("locationId", null);
+        f.transactions.replaceAll(row -> change(row, "locationId", null));
         f.areas.set(0, change(f.areas.get(0), "locationFlag", 0L)); f.locations.clear();
         assertEquals(Map.of(701L, q("4")), f.read().reservedByRequirementDetail());
         verify(f.mapper, never()).lockLocations(anyString(), anyList());
@@ -408,7 +706,8 @@ class ErpPurchaseStockLineageVerifierTest {
             bad("requirement issuedQuantity variant 4", f -> f.requirement("issuedQuantity", q("1"))),
             bad("requirementHead planId variant 0", f -> f.requirementHead("planId", 999L)),
             bad("requirementHead bomId variant 1", f -> f.requirementHead("bomId", 999L)),
-            bad("requirementHead status variant 2", f -> f.requirementHead("status", "DRAFT")),
+            bad("历史DRAFT头无工单来源绑定", f -> { f.requirementHead("status", "DRAFT"); f.workOrder("sourceId", null); }),
+            bad("MRP头未知状态", f -> f.requirementHead("status", "CANCELLED")),
             bad("workOrder woStatus variant 0", f -> f.workOrder("woStatus", "CLOSED")),
             bad("workOrder materialId variant 1", f -> f.workOrder("materialId", 999L)),
             bad("receive line parent unknown", f -> f.receiveLine("receiveId", null)),
@@ -480,7 +779,7 @@ class ErpPurchaseStockLineageVerifierTest {
     private static TransactionRow rowTx(Long id, String type, Integer flag, String amount, String before, String after,
                                      String source, Long head, Long line, Long related, long seconds) {
         return new TransactionRow(id, TENANT, MATERIAL, 91L, "27", type, flag, q(amount), q(before), q(after), source,
-            head, line, null, related, time(seconds), "0");
+            head, line, null, related, time(seconds), "0", 8L, 18L, 28L, 81L, null);
     }
 
     private static class Fixture {
@@ -507,7 +806,7 @@ class ErpPurchaseStockLineageVerifierTest {
             q("8"), q("8"), q("0"), q("8"), 701L, "PENDING", "0")));
         List<RequirementDetail> requirements = new ArrayList<>(List.of(new RequirementDetail(701L, TENANT, 711L, MATERIAL, "27", q("8"), q("0"), "PROCUREMENT", 1L, 0, "0")));
         List<RequirementHead> requirementHeads = new ArrayList<>(List.of(new RequirementHead(711L, TENANT, "MRP711", 901L, 1001L, 240L, "PROCESS", "CONFIRMED", "0")));
-        List<WorkOrder> workOrders = new ArrayList<>(List.of(new WorkOrder(801L, TENANT, "WO801", 901L, 1001L, 240L, "RELEASED", "0")));
+        List<WorkOrder> workOrders = new ArrayList<>(List.of(new WorkOrder(801L, TENANT, "WO801", 901L, 1001L, 240L, "RELEASED", "0", "MATERIAL_REQUIREMENT", 711L)));
         List<QuantityColumn> columns = new ArrayList<>();
         List<TableEngine> engines = new ArrayList<>(sourceTables().stream().map(table -> new TableEngine(table, "InnoDB")).toList());
 
@@ -563,6 +862,73 @@ class ErpPurchaseStockLineageVerifierTest {
             issueLines.add(change(change(issueLines.get(0), "lineId", 612L), "issueId", 602L));
             issueLines.set(1, change(issueLines.get(1), "requirementDetailId", 702L));
             requirements.add(change(requirements.get(0), "detailId", 702L));
+        }
+        void mixedCompleted(int target) {
+            String amount = target == 2 ? "20" : "10";
+            transactions.clear();
+            transactions.add(rowTx(100L, "RECEIVE_IN", 1, amount, "0", amount, "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600));
+            transactions.add(rowTx(103L + target, "PRODUCTION_ISSUE", -1, amount, amount, "0", "WM_PRODUCTION_ISSUE", 601L, 611L + target, null, -100));
+            stock("stockQuantity", q("0")); stock("reservedQuantity", q("0"));
+            receiveLine("quantityReceived", q(amount)); receiveDetail("quantity", q(amount));
+            issueHead("totalQty", q("40")); issueHead("status", "COMPLETED");
+            issueLines.clear(); requirements.clear();
+            for (int i = 0; i < 3; i++) {
+                Long material = i == target ? MATERIAL : 141L + i;
+                String required = i == 2 ? "20" : "10";
+                issueLines.add(new IssueLine(611L + i, TENANT, 601L, material, "27", 8L, 28L, i == target ? 81L : 82L + i,
+                    q(required), q(required), q(required), q("0"), 701L + i, "ISSUED", "0"));
+                requirements.add(new RequirementDetail(701L + i, TENANT, 711L, material, "27",
+                    q(required), q(required), "PROCUREMENT", 1L, 0, "0"));
+            }
+            workOrder("woStatus", "COMPLETED"); summary(q("0"), q("0"), q("0"));
+        }
+        void misboundMixed(String scenario) {
+            mixedCompleted(0); peerLine("batchId", null);
+            if ("完成后真实零余额".equals(scenario)) {
+                receiveLine("quantityReceived", q("20")); receiveDetail("quantity", q("20"));
+                transactions.clear();
+                transactions.add(rowTx(100L, "RECEIVE_IN", 1, "20", "0", "20", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600));
+                transactions.add(rowTx(103L, "PRODUCTION_ISSUE", -1, "10", "20", "10", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -100));
+                transactions.add(rowTx(104L, "PRODUCTION_ISSUE", -1, "10", "10", "0", "WM_PRODUCTION_ISSUE", 601L, 612L, null, -90));
+                nativePiece(); requirementHead("status", "DRAFT"); return;
+            }
+            issueLine("issuedQty", q("0")); issueLine("shortQty", q("10")); issueLine("lineStatus", "PENDING");
+            requirement("issuedQuantity", q("0"));
+            boolean consumed = "消费与配对出库".equals(scenario);
+            peerLine("issuedQty", q(consumed ? "3" : "0")); peerLine("shortQty", q(consumed ? "7" : "10"));
+            peerLine("lineStatus", consumed ? "PARTIAL" : "PENDING"); peerRequirement("issuedQuantity", q(consumed ? "3" : "0"));
+            issueHead("status", "PARTIAL"); workOrder("woStatus", "IN_PROGRESS");
+            transactions.remove(1);
+            transactions.add(rowTx(101L, "RESERVE", 0, "预留".equals(scenario) ? "3" : "6", "10", "10", "WM_PRODUCTION_ISSUE", 601L, 612L, null, -300));
+            if ("预留及释放".equals(scenario)) transactions.add(rowTx(102L, "UNRESERVE", 0, "2", "10", "10", "WM_PRODUCTION_ISSUE", 601L, 612L, null, -200));
+            if (consumed) {
+                transactions.add(rowTx(103L, "CONSUME_RESERVE", 0, "3", "10", "7", "WM_PRODUCTION_ISSUE", 601L, 612L, 104L, -100));
+                transactions.add(rowTx(104L, "PRODUCTION_ISSUE", -1, "3", "10", "7", "WM_PRODUCTION_ISSUE", 601L, 612L, null, -100));
+            }
+            BigDecimal balance = q(consumed ? "7" : "10"), reserved = q("预留及释放".equals(scenario) ? "4" : "3");
+            stock("stockQuantity", balance); stock("reservedQuantity", reserved); nativePiece(); requirementHead("status", "DRAFT");
+            snapshot = change(change(snapshot, "quantity", balance), "reserved", reserved);
+        }
+        void withSn(Long sn) {
+            stock("snId", sn); receiveDetail("snId", sn); transactions.replaceAll(row -> change(row, "snId", sn));
+        }
+        void optionalDimensionAbsent(String field) {
+            stock(field, null); receiveDetail(field, null); transactions.replaceAll(row -> change(row, field, null));
+            if ("locationId".equals(field)) {
+                receiveHead("locationId", null); issueLine("locationId", null);
+                areas.set(0, change(areas.get(0), "locationFlag", 0L)); locations.clear();
+            }
+            if ("batchId".equals(field)) issueLine("batchId", null);
+        }
+        void peerLine(String name, Object value) { issueLines.set(1, change(issueLines.get(1), name, value)); }
+        void peerRequirement(String name, Object value) { requirements.set(1, change(requirements.get(1), name, value)); }
+        void nativePiece() {
+            stock("baseUomId", "26"); receiveLine("baseUomId", "26"); receiveDetail("baseUomId", "26");
+            unit = change(change(change(change(unit, "uomId", 26L), "primaryId", 26L), "quantityScale", 0), "category", "数量");
+            transactions.replaceAll(row -> change(row, "baseUomId", "26"));
+            issueLines.replaceAll(line -> change(line, "baseUomId", "26")); requirements.replaceAll(detail -> change(detail, "unit", "26"));
+            snapshot = new InventorySnapshot(TENANT, MATERIAL, 26L, 0, NOW, "+08:00", q("0"), q("0"), q("0"), q("0"), Set.of(91L),
+                Map.of("wm_material_stock:91", "version=2;digest", "bd_unit_of_measure:26", "conversionVersion=unit-v1;digest"));
         }
         void consumption() {
             transactions.remove(2);

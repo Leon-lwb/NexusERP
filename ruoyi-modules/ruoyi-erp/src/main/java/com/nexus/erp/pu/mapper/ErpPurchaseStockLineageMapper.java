@@ -121,7 +121,8 @@ public interface ErpPurchaseStockLineageMapper {
                source_doc_type AS sourceDocType, source_doc_id AS sourceDocId,
                source_doc_line_id AS sourceDocLineId, source_doc_code AS sourceDocCode,
                related_tx_id AS relatedTxId, UNIX_TIMESTAMP(tx_date) * 1000 AS txAtEpochMillis,
-               del_flag AS delFlag
+               del_flag AS delFlag, warehouse_id AS warehouseId, area_id AS areaId,
+               location_id AS locationId, batch_id AS batchId, sn_id AS snId
         FROM wm_material_stock_tx
         WHERE (tenant_id = #{tenantId} AND material_id = #{materialId}) OR material_stock_id IN
           <foreach collection="stockIds" item="id" open="(" separator="," close=")">#{id}</foreach>
@@ -252,7 +253,7 @@ public interface ErpPurchaseStockLineageMapper {
 
     @Select("""
         <script>
-        SELECT wo_id AS woId, tenant_id AS tenantId, wo_no AS woNo, plan_id AS planId, bom_id AS bomId, material_id AS materialId, wo_status AS woStatus, del_flag AS delFlag
+        SELECT wo_id AS woId, tenant_id AS tenantId, wo_no AS woNo, plan_id AS planId, bom_id AS bomId, material_id AS materialId, wo_status AS woStatus, del_flag AS delFlag, source_type AS sourceType, source_id AS sourceId
         FROM prd_work_order
         WHERE wo_id IN
           <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
@@ -280,7 +281,17 @@ public interface ErpPurchaseStockLineageMapper {
     record TransactionRow(Long txId, String tenantId, Long materialId, Long stockId, String baseUomId,
         String txType, Integer txFlag, BigDecimal txQuantity, BigDecimal beforeQuantity, BigDecimal afterQuantity,
         String sourceDocType, Long sourceDocId, Long sourceDocLineId, String sourceDocCode, Long relatedTxId,
-        BigDecimal txAtEpochMillis, String delFlag) {}
+        BigDecimal txAtEpochMillis, String delFlag, Long warehouseId, Long areaId, Long locationId, Long batchId, Long snId) {
+        /** 保留旧17参数签名；缺失的原始仓储维度保持未知，不从当前库存补造认证证据。 */
+        public TransactionRow(Long txId, String tenantId, Long materialId, Long stockId, String baseUomId,
+                String txType, Integer txFlag, BigDecimal txQuantity, BigDecimal beforeQuantity, BigDecimal afterQuantity,
+                String sourceDocType, Long sourceDocId, Long sourceDocLineId, String sourceDocCode, Long relatedTxId,
+                BigDecimal txAtEpochMillis, String delFlag) {
+            this(txId, tenantId, materialId, stockId, baseUomId, txType, txFlag, txQuantity, beforeQuantity, afterQuantity,
+                sourceDocType, sourceDocId, sourceDocLineId, sourceDocCode, relatedTxId, txAtEpochMillis, delFlag,
+                null, null, null, null, null);
+        }
+    }
 
     record AreaRow(Long areaId, String tenantId, Long warehouseId, Long frozenFlag, Long enableFlag,
         Long locationFlag, String delFlag) {}
@@ -314,5 +325,11 @@ public interface ErpPurchaseStockLineageMapper {
         Long materialId, String sourceType, String status, String delFlag) {}
 
     record WorkOrder(Long woId, String tenantId, String woNo, Long planId, Long bomId, Long materialId,
-        String woStatus, String delFlag) {}
+        String woStatus, String delFlag, String sourceType, Long sourceId) {
+        /** 保留旧8参数签名；来源类型/ID保持未知，不能由计划/BOM/母物料猜出DRAFT原生绑定。 */
+        public WorkOrder(Long woId, String tenantId, String woNo, Long planId, Long bomId, Long materialId,
+                String woStatus, String delFlag) {
+            this(woId, tenantId, woNo, planId, bomId, materialId, woStatus, delFlag, null, null);
+        }
+    }
 }
