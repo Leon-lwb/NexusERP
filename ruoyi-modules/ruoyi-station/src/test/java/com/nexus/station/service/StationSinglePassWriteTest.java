@@ -12,6 +12,7 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.pro.domain.*;
 import com.nexus.mes.pro.mapper.*;
 import com.nexus.mes.pro.service.IProFlowCardService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
@@ -48,6 +49,7 @@ class StationSinglePassWriteTest {
     @Mock IProSnService proSnService;
     @Mock NcrOrderMapper ncrOrderMapper;
     @Mock StationPassGuardMapper guard;
+    @Mock ProWorkOrderStepProgressService progressService;
     @InjectMocks StationPassService service;
     MockedStatic<TenantHelper> tenant;
     ProSn sn;
@@ -59,6 +61,8 @@ class StationSinglePassWriteTest {
 
     @BeforeEach
     void setup() {
+        lenient().when(progressService.lockForSn(anyString())).thenAnswer(i -> sn.getMesWoId());
+        lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> flowCardMapper.selectById((Long)i.getArgument(0)));
         for (Class<?> entity : List.of(ProSn.class,ProFlowCard.class,ProFlowCardStep.class,
             MesStationReport.class,MesStationDevice.class,TestRecord.class,NcrOrder.class)) {
             TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(),"unit"),entity);

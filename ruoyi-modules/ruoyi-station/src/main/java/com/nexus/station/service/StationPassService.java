@@ -18,6 +18,7 @@ import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProFlowCardService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
@@ -86,6 +87,8 @@ public class StationPassService {
     private final IProSnService proSnService;
     private final NcrOrderMapper ncrOrderMapper;
     private final StationPassGuardMapper passGuardMapper;
+    /** 工单父锁先于SN/卡锁，避免不同SN持锁后互等跨卡投影。 */
+    private final ProWorkOrderStepProgressService progressService;
 
     // ==================== C2 过站四重校验 ====================
 
@@ -169,10 +172,12 @@ public class StationPassService {
 
         String fingerprint = StationSinglePassFingerprint.of(tenant, sn, station, dto.getClientTs(), result,
             dto.getOperatorId(), blankToNull(dto.getOperatorCode()), defects);
+        Long lockedWoId = progressService.lockForSn(sn);
         List<ProSn> sns = passGuardMapper.lockSn(tenant, sn);
         require(sns != null && sns.size() == 1, "SN 不存在或编码归属不唯一");
         ProSn proSn = sns.get(0);
         require(tenant.equals(proSn.getTenantId()) && sn.equals(proSn.getSnCode()) && "0".equals(proSn.getDelFlag()), "SN 租户或来源归属不匹配");
+        require(Objects.equals(lockedWoId, proSn.getMesWoId()), "SN锁定父工单与真实来源不一致");
         List<StationPassGuardMapper.StoredReport> history = passGuardMapper.lockReports(tenant, sn);
         require(history != null, "报工历史来源缺失");
         for (StationPassGuardMapper.StoredReport prior : history) {
@@ -269,6 +274,7 @@ public class StationPassService {
         if (isPass) {
             advanceSn(proSn, step, card, steps);
         }
+        progressService.rebuildForCard(card.getCardId());
         return new HashMap<>();
     }
 
@@ -335,7 +341,10 @@ public class StationPassService {
      * (重查累计值, 避免内存旧值), 全工序完成后复用 completeCard 做卡完工聚合。
      */
     private void completeStepIfQtyReached(ProFlowCardStep step, ProFlowCard card) {
-        ProFlowCardStep fresh = stepMapper.selectById(step.getStepRecordId());
+        ProFlowCardStep fresh = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getTenantId, TenantHelper.getTenantId())
+            .eq(ProFlowCardStep::getCardId, card.getCardId())
+            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()).last("FOR UPDATE"));
         if (fresh == null || !"IN_PROGRESS".equals(fresh.getStepStatus())) {
             return;
         }
@@ -358,7 +367,7 @@ public class StationPassService {
             // 卡上所有工序完成 → 复用既有 completeCard 聚合(卡完工 → 工单数量聚合/完工判定)
             Long pending = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
                 .eq(ProFlowCardStep::getCardId, card.getCardId())
-                .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED"));
+                .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED").last("FOR UPDATE"));
             if (pending == 0) {
                 flowCardService.completeCard(card.getCardId());
             }
@@ -442,7 +451,14 @@ public class StationPassService {
                 processCode, inProgressSteps.size()));
         }
         ProFlowCardStep step = inProgressSteps.get(0);
-        ProFlowCard card = flowCardMapper.selectById(step.getCardId());
+        ProFlowCard card = progressService.lockForCard(step.getCardId());
+        step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()).last("FOR UPDATE"));
+        if (step == null || !"IN_PROGRESS".equals(step.getStepStatus())
+            || !Objects.equals(step.getCardId(), card.getCardId())
+            || !Objects.equals(step.getMesWoId(), card.getMesWoId())) {
+            throw new ServiceException("锁定后的批量工序状态已变更");
+        }
         if (card == null) {
             throw new ServiceException("工序所属流转卡不存在: stepRecordId=" + step.getStepRecordId());
         }
@@ -478,6 +494,7 @@ public class StationPassService {
 
         // 5. 数量达标则收口(与单件路径同一收口逻辑)
         completeStepIfQtyReached(step, card);
+        progressService.rebuildForCard(card.getCardId());
         log.info("批量报工完成: station={}, goodQty={}, defectQty={}, stepRecordId={}",
             station, goodQty, defectTotal, step.getStepRecordId());
         return new HashMap<>();

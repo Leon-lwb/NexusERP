@@ -17,6 +17,7 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.pro.domain.*;
 import com.nexus.mes.pro.mapper.*;
 import com.nexus.mes.pro.service.IProFlowCardService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
@@ -101,7 +102,7 @@ class StationPassTransactionTest {
         when(workers.selectByEmployeeId("EMP-1")).thenAnswer(i->worker.get());
         var target=new StationPassService(sessions.getMapper(StationReportMapper.class),workers,
             sessions.getMapper(StationDeviceMapper.class),sessions.getMapper(ProSnMapper.class),sessions.getMapper(ProFlowCardMapper.class),
-            steps,sessions.getMapper(TestRecordMapper.class),flow,sns,sessions.getMapper(NcrOrderMapper.class),guard);
+            steps,sessions.getMapper(TestRecordMapper.class),flow,sns,sessions.getMapper(NcrOrderMapper.class),guard, progressBoundary());
         var factory=new ProxyFactory(target); factory.setProxyTargetClass(true);
         factory.addAdvisor(new DynamicDataSourceAnnotationAdvisor(new DynamicDataSourceAnnotationInterceptor(true,new DsSpelExpressionProcessor()),DS.class));
         var tx=new TransactionInterceptor(); tx.setTransactionManager(manager); tx.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
@@ -112,6 +113,13 @@ class StationPassTransactionTest {
         db.update("INSERT INTO pro_flow_card_step(step_record_id,tenant_id,del_flag,card_id,sequence_num,process_code,step_status,planned_qty,good_qty,defect_qty,scrap_qty,operator_id,mes_wo_id) VALUES(100,'000000','0',10,10,'ASM','IN_PROGRESS',100,0,0,0,105,20),(200,'000000','0',10,20,'PKG','PENDING',100,0,0,0,105,20)");
         db.update("INSERT INTO mes_station_device(device_id,tenant_id,del_flag,station_code,process_code) VALUES(5,'000000','0',?,'ASM')",STATION);
     }
+    /** 原事务/幂等夹具继续验证报工事务，投影边界由独立服务测试覆盖。 */
+    private ProWorkOrderStepProgressService progressBoundary() {
+        var progress=mock(ProWorkOrderStepProgressService.class);
+        when(progress.lockForSn(anyString())).thenReturn(20L);
+        return progress;
+    }
+
     JdbcDataSource database(String name) {
         var ds=new JdbcDataSource(); ds.setURL("jdbc:h2:mem:"+name+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=5000"); return ds;
     }

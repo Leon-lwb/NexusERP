@@ -13,6 +13,7 @@ import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProFlowCardService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationPassReportDto;
@@ -73,6 +74,7 @@ class StationPassServiceTest {
     private NcrOrderMapper ncrOrderMapper;
     @Mock
     private StationPassGuardMapper guard;
+    @Mock ProWorkOrderStepProgressService progressService;
     @InjectMocks
     private StationPassService service;
 
@@ -81,6 +83,8 @@ class StationPassServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(progressService.lockForSn(anyString())).thenReturn(20L);
+        lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> flowCardMapper.selectById((Long)i.getArgument(0)));
         tenantHelperMock = mockStatic(TenantHelper.class);
         tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("000000");
         tenantHelperMock.when(TenantHelper::isEnable).thenReturn(true);
@@ -336,11 +340,11 @@ class StationPassServiceTest {
         when(reportMapper.insert(any(MesStationReport.class))).thenReturn(1);
         when(stepMapper.update(any(),any())).thenReturn(1);
         when(proSnMapper.update(any(),any())).thenReturn(1);
-        // 收口重查: planned=50, good=51 → 未到 planned 不收口(good 已含本次前值+1)
+        // 收口当前读：计划100、良品51，尚未足量，不触发卡完工。
         ProFlowCardStep fresh = step(3L, 30, "ASM", "IN_PROGRESS");
         fresh.setPlannedQty(java.math.BigDecimal.valueOf(100));
         fresh.setGoodQty(java.math.BigDecimal.valueOf(51));
-        when(stepMapper.selectById(3L)).thenReturn(fresh);
+        when(stepMapper.selectOne(any())).thenReturn(fresh);
 
         StationPassReportDto dto = new StationPassReportDto();
         dto.setSnCode("SN-1");
