@@ -10,6 +10,9 @@ import java.util.Set;
 
 @Component
 public class WmCertifiedReceiptPostingAuthorizer {
+    /** 独立通知沿用到货权限，不借用库存执行权限。 */
+    public DecisionActor requireArrivalCreate() { return require("wm:arrivalnotice:add"); }
+    public DecisionActor requireArrivalSubmit() { return require("wm:arrivalnotice:submit"); }
     /** 创建真实草稿只核创建权限，不借用上架或库存执行权限。 */
     public DecisionActor requireCreate() { return require("wm:receive:add"); }
     public DecisionActor requireUser() { return require("wm:receive:execute"); }

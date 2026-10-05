@@ -82,7 +82,7 @@ class WmCertifiedReceiptPostingServiceTest {
         when(mapper.addStock(eq(TENANT),any(),any(),anyString(),eq(9L),any())).thenAnswer(i->{Stock s=i.getArgument(1);stocks.removeIf(old->old.stockId().equals(s.stockId()));stocks.add(new Stock(TENANT,s.stockId(),MATERIAL,"4",s.warehouseId(),s.areaId(),s.locationId(),s.batchId(),null,i.getArgument(2),s.reserved(),s.version()+1,"0",s.expiryAt(),s.unitCost(),i.getArgument(5)));return 1;});
         when(mapper.insertTransaction(eq(TENANT),anyLong(),anyLong(),eq("4"),any(),any(),any(),any(),anyString(),eq(9L),any(),any())).thenAnswer(i->{Detail d=i.getArgument(5);transactions.add(new PostedTx(i.getArgument(1),i.getArgument(2),d.lineId(),"4",d.quantity(),i.getArgument(6),i.getArgument(7),i.getArgument(10),i.getArgument(11),d.warehouseId(),d.areaId(),d.locationId(),d.batchId(),i.getArgument(8)));return 1;});
         when(mapper.receiveBatch(eq(TENANT),eq(ID),any(),any(),anyString(),eq(9L))).thenAnswer(i->{batch=new Batch(batch.tenantId(),batch.batchId(),batch.batchCode(),batch.materialId(),batch.vendorId(),batch.warehouseId(),batch.quantity(),i.getArgument(3),batch.issued(),batch.status(),batch.sourceType(),batch.sourceId(),batch.expiryAt(),batch.delFlag());return 1;});
-        when(mapper.finish(eq(TENANT),eq(ID),anyString(),eq(9L))).thenAnswer(i->{head=new Head(head.tenantId(),head.receiveId(),head.receiveCode(),head.orderId(),head.vendorId(),"FINISHED",head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),head.shelfAt(),head.delFlag());return 1;});
+        when(mapper.finish(eq(TENANT),eq(ID),anyString(),eq(9L))).thenAnswer(i->{head=new Head(head.tenantId(),head.receiveId(),head.receiveCode(),head.orderId(),head.vendorId(),"FINISHED",head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),head.shelfAt(),head.delFlag(),head.noticeId(),head.noticeCode());return 1;});
         when(mapper.recordPosting(eq(TENANT),eq(ID),eq(MATERIAL),eq(9L),anyString(),any(),anyString())).thenAnswer(i->{posting=new Posting(TENANT,ID,MATERIAL,9L,i.getArgument(4),i.getArgument(5),i.getArgument(6),"PENDING");return 1;});
         when(mapper.acknowledgeEnqueue(TENANT,ID)).thenAnswer(i->{posting=new Posting(TENANT,ID,MATERIAL,9L,posting.sourceFingerprint(),posting.totalQuantity(),posting.postedAt(),"ENQUEUED");return 1;});
     }
@@ -320,4 +320,21 @@ class WmCertifiedReceiptPostingServiceTest {
     @Test void unknownDatabaseClockIsNotReplacedWithJvmTime() {
         when(mapper.clock()).thenReturn(new Clock("2026-10-03 10:00:00",NOW,"SYSTEM"));assertThrows(ServiceException.class,()->service.post(ID));noWrites();
     }
+
+    com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService attachArrival(){
+        var a=mock(com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service,"arrivals",a);
+        head=new Head(head.tenantId(),head.receiveId(),head.receiveCode(),head.orderId(),head.vendorId(),head.status(),head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),head.shelfAt(),head.delFlag(),81L,"AN001");
+        lines=List.of(new Line(TENANT,701L,ID,MATERIAL,"4",Q,801L,"0",82L));
+        when(a.receiptFingerprintLocked(eq(TENANT),any(),any(),anyBoolean())).thenReturn("notice-proof-v1\n");return a;
+    }
+    @Test void boundNoticeAccumulatesOnlyInsideFirstActualPosting(){
+        var a=attachArrival();service.post(ID);assertTrue(service.post(ID).replay());
+        verify(a,times(1)).receiveLocked(TENANT,81L,82L,Q);
+        var ordered=inOrder(mapper,a);ordered.verify(mapper).recordPosting(eq(TENANT),eq(ID),eq(MATERIAL),eq(9L),anyString(),eq(Q),anyString());ordered.verify(a).receiveLocked(TENANT,81L,82L,Q);
+        assertEquals(1,transactions.size());
+    }
+    @Test void unknownPermanentNoticeBindingRejectsBeforePhysicalWrites(){var a=attachArrival();doThrow(new ServiceException("无真实通知绑定")).when(a).receiptFingerprintLocked(any(),any(),any(),anyBoolean());assertThrows(ServiceException.class,()->service.post(ID));noWrites();verifyNoInteractions(notifications);}
+    @Test void counterFailureCannotReportCommittedReceiptOrSendCompletion(){var a=attachArrival();doThrow(new ServiceException("通知累计失败")).when(a).receiveLocked(any(),any(),any(),any());assertThrows(ServiceException.class,()->service.post(ID));verifyNoInteractions(notifications);}
+    @Test void missingNoticeHeadWithAReferencedLineNeverPosts(){lines=List.of(new Line(TENANT,701L,ID,MATERIAL,"4",Q,801L,"0",82L));assertThrows(ServiceException.class,()->service.post(ID));noWrites();}
 }

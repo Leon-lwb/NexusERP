@@ -19,7 +19,11 @@ import java.util.*;
 @Service
 public class WmCertifiedReceiptDraftService {
     public record Request(String requestKey,Long orderId,Integer expectedOrderVersion,Long purchaseLineId,BigDecimal quantity,
-        Long warehouseId,Long areaId,Long locationId,LocalDate actualArrivalDate,String remark) { }
+        Long warehouseId,Long areaId,Long locationId,LocalDate actualArrivalDate,String remark,Long noticeId,Long noticeLineId) {
+        /** 兼容无通知调用，旧规范摘要不增加任何空字段。 */
+        public Request(String requestKey,Long orderId,Integer expectedOrderVersion,Long purchaseLineId,BigDecimal quantity,
+            Long warehouseId,Long areaId,Long locationId,LocalDate actualArrivalDate,String remark){this(requestKey,orderId,expectedOrderVersion,purchaseLineId,quantity,warehouseId,areaId,locationId,actualArrivalDate,remark,null,null);}
+    }
     public record Result(Long receiveId,String receiveCode,Long lineId,Long purchaseLineId,Long materialId,String baseUomId,
         BigDecimal quantity,String status,boolean replayed,String requestHash) { }
     private final WmCertifiedReceiptPostingAuthorizer auth;
@@ -29,6 +33,8 @@ public class WmCertifiedReceiptDraftService {
     private final PuCertifiedPurchaseOrderWorkflowService orders;
     private final WmCertifiedReceiptDraftMapper mapper;
     private final AutoCodeUtil codes;
+    @org.springframework.beans.factory.annotation.Autowired
+    private WmCertifiedArrivalNoticeService arrivals;
     public WmCertifiedReceiptDraftService(WmCertifiedReceiptPostingAuthorizer auth,PuRequirementErpTransactionExecutor tx,
         PuRequirementErpTransactionQualification qualification,PuRequirementMaterialLockService locks,
         PuCertifiedPurchaseOrderWorkflowService orders,WmCertifiedReceiptDraftMapper mapper,AutoCodeUtil codes) {
@@ -57,6 +63,8 @@ public class WmCertifiedReceiptDraftService {
             Command old=mapper.lockCommand(actor.tenantId(),request.requestKey());
             require(old!=null,"已发现的永久请求当前读丢失");
             require(old.requestHash().equals(hash)&&old.actorId().equals(actor.userId())&&old.orderId().equals(request.orderId())&&old.purchaseLineId().equals(request.purchaseLineId())&&old.materialId().equals(material),"请求键已被不同来源或载荷使用");
+            require(Objects.equals(old.noticeId(),request.noticeId())&&Objects.equals(old.noticeLineId(),request.noticeLineId()),"原通知永久绑定不一致");
+            if(old.noticeId()!=null){require(arrivals!=null,"缺少认证通知接线");arrivals.requireBindingLocked(actor.tenantId(),old.noticeId(),old.noticeLineId(),old.orderId(),old.purchaseLineId(),old.materialId(),old.baseUomId(),old.quantity(),true);}
             require(old.equals(mapper.readReceipt(old)),"永久请求引用的原收货行已丢失或漂移");
             qualification.requireSourceChainTransaction();return result(old,true);
         }
@@ -79,17 +87,19 @@ public class WmCertifiedReceiptDraftService {
         Storage storage=mapper.lockStorage(actor.tenantId(),request.warehouseId(),request.areaId(),request.locationId());
         require(storage!=null&&actor.tenantId().equals(storage.tenantId())&&request.warehouseId().equals(storage.warehouseId())&&request.areaId().equals(storage.areaId())&&request.locationId().equals(storage.locationId())&&"1".equals(storage.warehouseStatus())&&"0".equals(storage.warehouseDelFlag())&&"1".equals(storage.areaEnabled())&&"0".equals(storage.areaFrozen())&&"1".equals(storage.locationEnabled())&&"0".equals(storage.locationFrozen()),"仓库库区储位父链未启用或已冻结");
         require(!request.actualArrivalDate().isAfter(LocalDate.parse(mapper.databaseDate())),"实际到货日期不能位于未来");
+        String noticeCode=null;
+        if(request.noticeId()!=null){require(arrivals!=null,"缺少认证通知接线");var n=arrivals.requireBindingLocked(actor.tenantId(),request.noticeId(),request.noticeLineId(),source.orderId(),source.lineId(),material,source.baseUomId().toString(),request.quantity(),false);noticeCode=n.noticeCode();}
         if(code==null)return null;
         DecisionActor beforeWrite=actor();require(actor.userId().equals(beforeWrite.userId())&&actor.tenantId().equals(beforeWrite.tenantId()),"持锁等待期间操作人已变化");
-        Command command=new Command(actor.tenantId(),request.requestKey(),hash,actor.userId(),source.orderId(),source.lineId(),IdWorker.getId(),IdWorker.getId(),code,material,source.baseUomId().toString(),request.quantity(),request.actualArrivalDate().toString(),storage.warehouseId(),storage.areaId(),storage.locationId());
-        require(mapper.insertHead(command,source,storage,request.remark())==1&&mapper.insertLine(command,source,storage)==1&&mapper.insertCommand(command)==1,"收货头行或永久请求落账失败");
+        Command command=new Command(actor.tenantId(),request.requestKey(),hash,actor.userId(),source.orderId(),source.lineId(),IdWorker.getId(),IdWorker.getId(),code,material,source.baseUomId().toString(),request.quantity(),request.actualArrivalDate().toString(),storage.warehouseId(),storage.areaId(),storage.locationId(),request.noticeId(),request.noticeLineId());
+        require(mapper.insertHead(command,source,storage,request.remark(),noticeCode)==1&&mapper.insertLine(command,source,storage)==1&&mapper.insertCommand(command)==1,"收货头行或永久请求落账失败");
         qualification.requireSourceChainTransaction();DecisionActor afterWrite=actor();require(actor.userId().equals(afterWrite.userId())&&actor.tenantId().equals(afterWrite.tenantId()),"提交前操作人已变化");return result(command,false);
     }
     private DecisionActor actor(){DecisionActor actor=auth.requireCreate();require(actor!=null&&TenantHelper.isEnable()&&actor.tenantId()!=null&&actor.tenantId().matches("[0-9]{6,20}")&&actor.tenantId().equals(TenantHelper.getTenantId())&&positive(actor.userId())&&actor.permissions().contains("wm:receive:add"),"当前租户或收货创建权限不一致");return actor;}
     private static Result result(Command c,boolean replay){return new Result(c.receiveId(),c.receiveCode(),c.lineId(),c.purchaseLineId(),c.materialId(),c.baseUomId(),c.quantity(),"DRAFT_CREATED",replay,c.requestHash());}
-    private static void validate(Request r){require(r!=null&&r.requestKey()!=null&&r.requestKey().matches("[A-Za-z0-9:_-]{1,128}")&&positive(r.orderId())&&r.expectedOrderVersion()!=null&&r.expectedOrderVersion()>0&&positive(r.purchaseLineId())&&quantity(r.quantity())&&positive(r.warehouseId())&&positive(r.areaId())&&positive(r.locationId())&&r.actualArrivalDate()!=null&&r.actualArrivalDate().getYear()>=1000&&r.actualArrivalDate().getYear()<=9999&&(r.remark()==null||r.remark().length()<=500),"明确订单行、精确数量、仓储、日期或请求键无效");}
+    private static void validate(Request r){require(r!=null&&(r.noticeId()==null&&r.noticeLineId()==null||positive(r.noticeId())&&positive(r.noticeLineId())),"通知引用必须成对且为真实正ID");require(r!=null&&r.requestKey()!=null&&r.requestKey().matches("[A-Za-z0-9:_-]{1,128}")&&positive(r.orderId())&&r.expectedOrderVersion()!=null&&r.expectedOrderVersion()>0&&positive(r.purchaseLineId())&&quantity(r.quantity())&&positive(r.warehouseId())&&positive(r.areaId())&&positive(r.locationId())&&r.actualArrivalDate()!=null&&r.actualArrivalDate().getYear()>=1000&&r.actualArrivalDate().getYear()<=9999&&(r.remark()==null||r.remark().length()<=500),"明确订单行、精确数量、仓储、日期或请求键无效");}
     private static boolean quantity(BigDecimal n){if(n==null||n.signum()<=0)return false;var v=n.stripTrailingZeros();return v.scale()<=4&&(long)v.precision()-v.scale()<=14;}
     private static boolean positive(Long n){return n!=null&&n>0;}
     private static void require(boolean value,String reason){if(!value)throw new ServiceException("认证收货创建拒绝："+reason);}
-    private static String hash(DecisionActor a,Request r){try{var h=MessageDigest.getInstance("SHA-256");for(String s:List.of(a.tenantId(),a.userId().toString(),r.requestKey(),r.orderId().toString(),r.expectedOrderVersion().toString(),r.purchaseLineId().toString(),r.quantity().stripTrailingZeros().toPlainString(),r.warehouseId().toString(),r.areaId().toString(),r.locationId().toString(),r.actualArrivalDate().toString(),Objects.toString(r.remark(),""))){byte[]b=s.getBytes(StandardCharsets.UTF_8);h.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());h.update(b);}return HexFormat.of().formatHex(h.digest());}catch(java.security.NoSuchAlgorithmException e){throw new ServiceException("请求摘要算法不可用");}}
+    private static String hash(DecisionActor a,Request r){try{var h=MessageDigest.getInstance("SHA-256");for(String s:List.of(a.tenantId(),a.userId().toString(),r.requestKey(),r.orderId().toString(),r.expectedOrderVersion().toString(),r.purchaseLineId().toString(),r.quantity().stripTrailingZeros().toPlainString(),r.warehouseId().toString(),r.areaId().toString(),r.locationId().toString(),r.actualArrivalDate().toString(),Objects.toString(r.remark(),""))){byte[]b=s.getBytes(StandardCharsets.UTF_8);h.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());h.update(b);}if(r.noticeId()!=null){for(String s:List.of("certified-notice-v1",r.noticeId().toString(),r.noticeLineId().toString())){byte[]b=s.getBytes(StandardCharsets.UTF_8);h.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());h.update(b);}}return HexFormat.of().formatHex(h.digest());}catch(java.security.NoSuchAlgorithmException e){throw new ServiceException("请求摘要算法不可用");}}
 }

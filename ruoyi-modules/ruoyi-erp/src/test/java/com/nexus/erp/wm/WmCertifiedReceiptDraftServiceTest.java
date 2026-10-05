@@ -30,7 +30,7 @@ class WmCertifiedReceiptDraftServiceTest {
     Object mapper,service,source,old; List<Object> pending=new ArrayList<>(); boolean sourceInvalid=false;
     final List<String> writes=new ArrayList<>(); final List<String> trace=new ArrayList<>(); Object root; final LocalDate day=LocalDate.of(2026,10,4);
     Class<?> definition(String name){try{return Class.forName(name);}catch(ClassNotFoundException e){throw new AssertionError("缺少实际认证订单收货创建入口："+name,e);}}
-    Object record(String name,Object... values){try{return definition("com.nexus.erp.wm."+name).getConstructors()[0].newInstance(values);}catch(ReflectiveOperationException e){throw new AssertionError(e);}}
+    Object record(String name,Object... values){try{return Arrays.stream(definition("com.nexus.erp.wm."+name).getConstructors()).filter(c->c.getParameterCount()==values.length).findFirst().orElseThrow().newInstance(values);}catch(ReflectiveOperationException e){throw new AssertionError(e);}}
     Object command(BigDecimal qty){return record("service.WmCertifiedReceiptDraftService$Request","local-receipt-1",31L,2,41L,qty,1L,2L,3L,day,"本地测试实际到货");}
     Object field(Object value,String name){try{return value.getClass().getMethod(name).invoke(value);}catch(ReflectiveOperationException e){throw new AssertionError(e);}}
     Object create(Object request){try{return service.getClass().getMethod("create",request.getClass()).invoke(service,request);}catch(InvocationTargetException e){throw (RuntimeException)e.getCause();}catch(ReflectiveOperationException e){throw new AssertionError(e);}}
@@ -78,4 +78,35 @@ class WmCertifiedReceiptDraftServiceTest {
     @Test void currentDisabledRootUnitCannotCreateDraft(){root=record("mapper.WmCertifiedReceiptDraftMapper$RootUnit",26L,26L,1L,BigDecimal.ONE,0,"unit-v1",1L,"0","0");assertThrows(ServiceException.class,()->create(command(BigDecimal.ONE)));assertTrue(writes.isEmpty());}
     @Test void currentDerivedOrDeletedUnitCannotCreateDraft(){for(var r:List.of(record("mapper.WmCertifiedReceiptDraftMapper$RootUnit",26L,27L,0L,BigDecimal.ONE,0,"unit-v1",1L,"1","0"),record("mapper.WmCertifiedReceiptDraftMapper$RootUnit",26L,26L,1L,BigDecimal.ONE,0,"unit-v1",1L,"1","1"))){root=r;assertThrows(ServiceException.class,()->create(command(BigDecimal.ONE)));}assertTrue(writes.isEmpty());}
     @Test void unknownPendingStateNeverTreatedAsZeroBalance(){pending.add(record("mapper.WmCertifiedReceiptDraftMapper$Pending",BigDecimal.ONE,"UNKNOWN","0","0"));assertThrows(ServiceException.class,()->create(command(BigDecimal.ONE)));assertTrue(writes.isEmpty());}
+
+    Object linked(BigDecimal q,Long n,Long l){return record("service.WmCertifiedReceiptDraftService$Request","local-receipt-1",31L,2,41L,q,1L,2L,3L,day,"本地测试实际到货",n,l);}
+    com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService attachNotice(){
+        var a=mock(com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService.class);
+        var n=new com.nexus.erp.wm.mapper.WmCertifiedArrivalNoticeMapper.Notice(T,81L,82L,"AN001",31L,"CGDD202610040001",41L,9L,51L,"26",new BigDecimal("5"),BigDecimal.ZERO,"APPROVED","0","0");
+        when(a.requireBindingLocked(eq(T),eq(81L),eq(82L),eq(31L),eq(41L),eq(51L),eq("26"),any(),anyBoolean())).thenReturn(n);
+        org.springframework.test.util.ReflectionTestUtils.setField(service,"arrivals",a);return a;
+    }
+    @Test void nullReferencesKeepExactOriginalCanonicalHash(){
+        Object first=create(command(BigDecimal.ONE));assertEquals("8d7fc9912f38ccaa8f0d579c48a0bc4a78679bcff13935d2663e207b510c5d5e",field(first,"requestHash"));
+        Object explicitNull=create(linked(BigDecimal.ONE,null,null));assertEquals(field(first,"requestHash"),field(explicitNull,"requestHash"));
+    }
+    @Test void halfNoticeReferenceRejectedBeforeAnyTransaction(){assertThrows(ServiceException.class,()->create(linked(BigDecimal.ONE,81L,null)));verifyNoInteractions(tx);assertTrue(writes.isEmpty());}
+    @Test void referenceIsPersistedInCommandAndChangesHash(){
+        var a=attachNotice();var captured=new java.util.concurrent.atomic.AtomicReference<com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper.Command>();
+        var typed=(com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper)mapper;
+        doAnswer(i->{captured.set(i.getArgument(0));writes.add("insertCommand");return 1;}).when(typed).insertCommand(any());
+        Object normal=create(command(BigDecimal.ONE));writes.clear();Object bound=create(linked(BigDecimal.ONE,81L,82L));
+        assertNotEquals(field(normal,"requestHash"),field(bound,"requestHash"));assertEquals(81L,captured.get().noticeId());assertEquals(82L,captured.get().noticeLineId());
+        verify(typed).insertHead(any(),any(),any(),any(),eq("AN001"));
+        verify(a,times(2)).requireBindingLocked(eq(T),eq(81L),eq(82L),eq(31L),eq(41L),eq(51L),eq("26"),any(),eq(false));
+    }
+    @Test void unapprovedNoticeCannotCreateAnyReceiptRows(){var a=attachNotice();doThrow(new ServiceException("通知未批准")).when(a).requireBindingLocked(eq(T),eq(81L),eq(82L),any(),any(),any(),any(),any(),eq(false));assertThrows(ServiceException.class,()->create(linked(BigDecimal.ONE,81L,82L)));assertTrue(writes.isEmpty());}
+    @Test void originalBoundRequestReplaysWithoutSecondBusinessWrite(){
+        var a=attachNotice();var typed=(com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper)mapper;
+        doAnswer(i->{old=i.getArgument(0);writes.add("insertCommand");return 1;}).when(typed).insertCommand(any());
+        Object first=create(linked(BigDecimal.ONE,81L,82L));writes.clear();Object replay=create(linked(new BigDecimal("1.0000"),81L,82L));
+        assertTrue((boolean)field(replay,"replayed"));assertEquals(field(first,"requestHash"),field(replay,"requestHash"));assertTrue(writes.isEmpty());
+        verify(a).requireBindingLocked(eq(T),eq(81L),eq(82L),any(),any(),any(),any(),any(),eq(true));
+    }
+    @Test void originalRequestKeyCannotBeMovedToAnotherNotice(){attachNotice();var typed=(com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper)mapper;doAnswer(i->{old=i.getArgument(0);return 1;}).when(typed).insertCommand(any());create(linked(BigDecimal.ONE,81L,82L));writes.clear();assertThrows(ServiceException.class,()->create(linked(BigDecimal.ONE,91L,92L)));assertTrue(writes.isEmpty());}
 }

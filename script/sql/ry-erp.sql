@@ -6615,6 +6615,7 @@ CREATE TABLE `wm_material_receive_line`  (
   `receive_id` bigint(20) NULL DEFAULT NULL COMMENT '物料入库单ID',
   `source_doc_line_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据行ID',
   `purchase_line_id` bigint(20) NULL DEFAULT NULL COMMENT '关联采购订单行ID(pu_purchase_order_line.line_id)',
+  `notice_line_id` bigint(20) NULL DEFAULT NULL COMMENT '原认证通知行，历史不回填',
   `material_id` bigint(20) NOT NULL COMMENT '产品物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码',
   `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称',
@@ -8501,8 +8502,38 @@ CREATE TABLE `wm_certified_receive_command` (
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库',
   `area_id` bigint(20) NOT NULL COMMENT '库区',
   `location_id` bigint(20) NOT NULL COMMENT '储位',
+  `notice_id` bigint(20) NULL DEFAULT NULL COMMENT '原认证通知头，空值保留旧请求语义',
+  `notice_line_id` bigint(20) NULL DEFAULT NULL COMMENT '原认证通知行，必须与头成对',
   `create_time` datetime(3) NOT NULL COMMENT '提交创建时间',
   PRIMARY KEY (`tenant_id`,`request_key`),
   UNIQUE KEY `uk_wm_certified_receive` (`tenant_id`,`receive_id`,`line_id`),
+  KEY `idx_wm_certified_arrival_ref` (`tenant_id`,`notice_id`,`notice_line_id`),
   KEY `idx_wm_certified_order_line` (`tenant_id`,`order_id`,`purchase_line_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='认证采购原生收货创建永久请求';
+
+/** 认证独立到货入口：只用于全新安装，存量库用独立增量。 */
+DROP TABLE IF EXISTS `wm_certified_arrival_command`;
+CREATE TABLE `wm_certified_arrival_command` (
+  `tenant_id` varchar(20) NOT NULL COMMENT '原请求租户',
+  `request_key` varchar(128) NOT NULL COMMENT '原请求永久键',
+  `request_hash` char(64) NOT NULL COMMENT '规范化原载荷摘要',
+  `actor_id` bigint(20) NOT NULL COMMENT '服务端原创建操作人',
+  `order_id` bigint(20) NOT NULL COMMENT '真实批准采购订单',
+  `purchase_line_id` bigint(20) NOT NULL COMMENT '原采购订单行',
+  `order_version` int NOT NULL COMMENT '创建时批准版本',
+  `notice_id` bigint(20) NOT NULL COMMENT '原通知业务头',
+  `notice_line_id` bigint(20) NOT NULL COMMENT '原通知业务行',
+  `notice_code` varchar(64) NOT NULL COMMENT '正常编号规则结果',
+  `vendor_id` bigint(20) NOT NULL COMMENT '原采购供应商',
+  `material_id` bigint(20) NOT NULL COMMENT '原正常物料',
+  `base_uom_id` varchar(64) NOT NULL COMMENT '原基本单位',
+  `quantity` decimal(18,4) NOT NULL COMMENT '原通知声明量，不新增采购额度',
+  `arrival_date` date NOT NULL COMMENT '通知计划到货日',
+  `notice_name` varchar(255) NOT NULL COMMENT '原通知名称',
+  `remark` varchar(500) NULL DEFAULT NULL COMMENT '原说明',
+  `create_time` datetime(3) NOT NULL COMMENT '原创建提交时点',
+  PRIMARY KEY (`tenant_id`,`request_key`),
+  UNIQUE KEY `uk_wm_certified_arrival` (`tenant_id`,`notice_id`),
+  UNIQUE KEY `uk_wm_certified_arrival_line` (`tenant_id`,`notice_line_id`),
+  KEY `idx_wm_certified_arrival_source` (`tenant_id`,`order_id`,`purchase_line_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='认证订单独立到货原生创建命令，不补历史';

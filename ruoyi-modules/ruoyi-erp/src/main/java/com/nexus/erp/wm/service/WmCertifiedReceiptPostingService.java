@@ -45,6 +45,8 @@ public class WmCertifiedReceiptPostingService {
     private final WmReceiptIqcEvidenceService iqc;
     private final WmMqSendService notifications;
     private final PuCertifiedPurchaseOrderWorkflowService orderWorkflow;
+    @org.springframework.beans.factory.annotation.Autowired
+    private WmCertifiedArrivalNoticeService arrivals;
 
     public WmCertifiedReceiptPostingService(WmCertifiedReceiptPostingAuthorizer auth,PuRequirementErpTransactionExecutor tx,
         PuRequirementErpTransactionQualification qualification,PuRequirementMaterialLockService locks,
@@ -253,6 +255,8 @@ public class WmCertifiedReceiptPostingService {
                 .append(batch.expiryAt()).append('|').append(batch.quantity().toPlainString()).append('\n');
         }
         iqc.requireLocked(tenant,receiveId,materialId,material.baseUomId(),total);
+        if(head.noticeId()!=null){need(arrivals!=null,"缺少认证通知累计接线");source.append(arrivals.receiptFingerprintLocked(tenant,head,lines,replay));}
+        else need(lines.stream().allMatch(v->v.noticeLineId()==null),"通知头/行引用不成对");
         String fingerprint=sha256(source.toString());
         List<Stock> stocks=read(()->mapper.lockStocks(tenant,materialId));List<Long> txIds=read(()->mapper.lockTransactionIds(tenant,materialId));
         need(stocks!=null && txIds!=null,"原库存及流水范围不完整");
@@ -300,6 +304,8 @@ public class WmCertifiedReceiptPostingService {
         one(mapper.finish(tenant,receiveId,at,actor));
         verifyLineage(tenant,materialId); // 写后独立完整来源复算；失败整个 ERP 事务回滚。
         one(mapper.recordPosting(tenant,receiveId,materialId,actor,fingerprint,total,at));
+        // 重放已在上方返回；首次实际过账的库存/批次/通知与永久结果同事务。
+        if(head.noticeId()!=null)for(Line line:lines)arrivals.receiveLocked(tenant,head.noticeId(),line.noticeLineId(),line.quantity());
         return new Result(receiveId,materialId,total,fingerprint,false,true);
     }
     private void verifyLineage(String tenant,Long materialId) {
