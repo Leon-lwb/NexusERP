@@ -16,6 +16,8 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
+import com.nexus.erp.wm.service.SalesIssueSourceGuard;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -30,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -76,6 +79,11 @@ class WmSalesIssueServiceImplTest {
     @Mock
     private IInventoryValuationService valuationService;
 
+    @Mock
+    private SalesIssueSourceGuard sourceGuard;
+    @Mock
+    private WmBatchMapper batchMapper;
+
     @InjectMocks
     private WmSalesIssueServiceImpl service;
 
@@ -100,13 +108,19 @@ class WmSalesIssueServiceImplTest {
         issue.setIssueCode("SI-001");
         issue.setStatus("CONFIRMED");
         issue.setWarehouseId(5L);
+        issue.setTenantId("000000");
+        issue.setDelFlag("0");
         when(baseMapper.selectById(1L)).thenReturn(issue);
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(sourceGuard.validateAndLock(any(), any())).thenReturn(Map.of());
+        when(stockTxMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
 
         WmSalesIssueLine line = new WmSalesIssueLine();
         line.setLineId(21L);
         line.setIssueId(1L);
+        line.setTenantId("000000");
+        line.setDelFlag("0");
         line.setMaterialId(100L);
         line.setMaterialName("M-001");
         line.setQuantityIssue(new BigDecimal("10"));
@@ -115,6 +129,7 @@ class WmSalesIssueServiceImplTest {
         // 库存恰好等于出库量（整批出库，扣减后余量 0）
         WmMaterialStock stock = new WmMaterialStock();
         stock.setStockId(9L);
+        stock.setTenantId("000000");
         stock.setMaterialId(100L);
         stock.setWarehouseId(5L);
         stock.setStockQuantity(new BigDecimal("10"));

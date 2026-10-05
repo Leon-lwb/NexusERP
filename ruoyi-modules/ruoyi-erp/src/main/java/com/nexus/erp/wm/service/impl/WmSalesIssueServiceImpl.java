@@ -31,6 +31,8 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
+import com.nexus.erp.wm.service.SalesIssueSourceGuard;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
@@ -44,12 +46,14 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -86,6 +90,11 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
     /** 库存计价服务（ERP-WM-01: 出库成本结转，与 SalesOutStrategy 完全同口径） */
     private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+
+    /** 实际出库入口的来源校验与订单悲观锁。 */
+    private final SalesIssueSourceGuard sourceGuard;
+    /** 实际库存批次已发数量的原子累计。 */
+    private final WmBatchMapper batchMapper;
 
     /**
      * 分页查询销售发料列表
@@ -239,6 +248,15 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (!STATUS_CONFIRMED.equals(salesIssue.getStatus())) {
             throw new ServiceException("只有已确认的出库单才能完成");
         }
+        // 已有流水但单据尚未完成时明确拒绝对账，不认领状态、不自动补历史或再次扣库。
+        Long txCount = stockTxMapper.selectCount(Wrappers.<WmMaterialStockTx>lambdaQuery()
+            .eq(WmMaterialStockTx::getTenantId, salesIssue.getTenantId())
+            .eq(WmMaterialStockTx::getSourceDocType, "WM_SALES_ISSUE")
+            .eq(WmMaterialStockTx::getSourceDocId, issueId));
+        if (txCount != null && txCount > 0) {
+            throw new ServiceException("销售出库单已有库存流水但尚未完成，请先对账，禁止重复出库");
+        }
+
         // 并发防重：条件更新抢占（CONFIRMED → EXECUTING），影响行数为 0 说明已被并发执行/已过期
         int claimed = baseMapper.update(null, Wrappers.<WmSalesIssue>lambdaUpdate()
             .set(WmSalesIssue::getStatus, "EXECUTING")
@@ -249,15 +267,6 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             return 1;
         }
 
-        // 幂等检查：已生成过出库事务记录则跳过
-        Long txCount = stockTxMapper.selectCount(Wrappers.<WmMaterialStockTx>lambdaQuery()
-            .eq(WmMaterialStockTx::getSourceDocType, "WM_SALES_ISSUE")
-            .eq(WmMaterialStockTx::getSourceDocId, issueId));
-        if (txCount != null && txCount > 0) {
-            log.warn("销售出库单[{}]已执行过，跳过重复处理", issueId);
-            return 1;
-        }
-
         List<WmSalesIssueLine> lineList = lineMapper.selectList(
             new LambdaQueryWrapper<WmSalesIssueLine>()
                 .eq(WmSalesIssueLine::getIssueId, issueId));
@@ -265,16 +274,16 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             throw new ServiceException("出库单明细为空");
         }
 
+        // 所有明细和关联来源必须先过门禁；原事务失败时会回滚上面的状态认领。
+        Map<Long, SoSalesOrderLine> lockedSources = sourceGuard.validateAndLock(salesIssue, lineList);
         Date now = new Date();
 
         // 扣减库存：按批次效期、收货时间、库存ID排序，跨库存记录 FIFO 扣减
         for (WmSalesIssueLine line : lineList) {
-            BigDecimal issueQty = line.getQuantityIssue() != null ? line.getQuantityIssue() : BigDecimal.ZERO;
-            if (issueQty.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
+            BigDecimal issueQty = line.getQuantityIssue();
 
             LambdaQueryWrapper<WmMaterialStock> stockLqw = Wrappers.lambdaQuery();
+            stockLqw.eq(WmMaterialStock::getTenantId, salesIssue.getTenantId());
             stockLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
             stockLqw.eq(WmMaterialStock::getWarehouseId, salesIssue.getWarehouseId());
             stockLqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
@@ -303,8 +312,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             }
 
             // 预留消耗: SO 行预留量随出库同步释放(与 SalesOutStrategy 口径一致)
-            SoSalesOrderLine soLine = line.getSourceDocLineId() != null
-                ? salesOrderLineMapper.selectById(line.getSourceDocLineId()) : null;
+            SoSalesOrderLine soLine = line.getSourceDocLineId() == null ? null : lockedSources.get(line.getSourceDocLineId());
             BigDecimal soReservedQty = soLine != null && soLine.getReservedQty() != null
                 ? soLine.getReservedQty() : BigDecimal.ZERO;
             BigDecimal totalConsumeReserved = issueQty.min(soReservedQty);
@@ -313,6 +321,11 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             for (WmMaterialStock stock : stockList) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
                     break;
+                }
+                if (!Objects.equals(stock.getTenantId(), salesIssue.getTenantId())
+                    || !Objects.equals(stock.getMaterialId(), line.getMaterialId())
+                    || !Objects.equals(stock.getWarehouseId(), salesIssue.getWarehouseId())) {
+                    throw new ServiceException("实际库存租户、物料或仓库与销售出库不一致");
                 }
                 BigDecimal currentQty = stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO;
                 if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
@@ -346,10 +359,17 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 // 与 SalesOutStrategy 完全同口径（内核批次已把该实现改为原子 SQL 相对扣减，无数量前置校验）。
                 BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), consumeQty);
 
+                // 按实际扣减的库存身份相对累计批次已发量，失败与扣库、成本共用原事务回滚。
+                if (stock.getBatchId() != null && batchMapper.increaseIssuedQty(stock.getBatchId(),
+                    stock.getMaterialId(), stock.getTenantId(), consumeQty) != 1) {
+                    throw new ServiceException("销售出库批次累计失败，批次身份不符或已发数量超过已收数量");
+                }
+
                 // ERP-WM-03: 预留消耗必须记账（与 SalesOutStrategy 口径一致），
                 // 否则订单取消/关闭时 unreserve 会按历史 RESERVE 流水全额释放他人预留
                 if (batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && salesIssue.getSoId() != null) {
                     WmMaterialStockTx consumeTx = new WmMaterialStockTx();
+                    consumeTx.setTenantId(stock.getTenantId());
                     consumeTx.setTxType("CONSUME_RESERVE");
                     consumeTx.setMaterialId(stock.getMaterialId());
                     consumeTx.setMaterialCode(stock.getMaterialCode());
@@ -379,11 +399,14 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                     consumeTx.setSourceDocCode(salesIssue.getSoNo());
                     consumeTx.setSourceDocLineId(line.getSourceDocLineId());
                     consumeTx.setRemark("销售出库消耗预留，出库单号：" + salesIssue.getIssueCode());
-                    stockTxMapper.insert(consumeTx);
+                    if (stockTxMapper.insert(consumeTx) != 1) {
+                        throw new ServiceException("销售出库预留消费流水写入失败");
+                    }
                 }
 
                 // 生成库存事务记录
                 WmMaterialStockTx tx = new WmMaterialStockTx();
+                tx.setTenantId(stock.getTenantId());
                 tx.setTxType("SALES_OUT");
                 tx.setMaterialId(stock.getMaterialId());
                 tx.setMaterialCode(stock.getMaterialCode());
@@ -407,7 +430,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 tx.setTxQuantity(consumeQty);
                 // ERP-WM-01: 出库成本随流水落账（修复前 unit_cost / tx_amount 恒为 null/0，无法核对出库成本）
                 tx.setUnitCost(outUnitCost);
-                tx.setTxAmount(outUnitCost.multiply(consumeQty));
+                tx.setTxAmount(outUnitCost.multiply(consumeQty).setScale(4, RoundingMode.HALF_UP));
                 tx.setBeforeQuantity(currentQty);
                 tx.setAfterQuantity(currentQty.subtract(consumeQty));
                 tx.setTxDate(now);
@@ -416,7 +439,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 tx.setSourceDocCode(salesIssue.getIssueCode());
                 tx.setSourceDocLineId(line.getLineId());
                 tx.setRemark("销售出库扣减库存，单号：" + salesIssue.getIssueCode());
-                stockTxMapper.insert(tx);
+                if (stockTxMapper.insert(tx) != 1) {
+                    throw new ServiceException("销售出库库存流水写入失败");
+                }
 
                 remaining = remaining.subtract(consumeQty);
             }
@@ -439,12 +464,16 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             // 原子扣减 SO 行剩余预留数量(预留已随出库消耗, setSql 原子递减 + 预留充足守卫)
             if (actualConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
                 int reservedRows = salesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getTenantId, salesIssue.getTenantId())
+                    .eq(SoSalesOrderLine::getSoId, salesIssue.getSoId())
                     .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
                     .ge(SoSalesOrderLine::getReservedQty, actualConsumeReserved)
                     .setSql("reserved_qty = reserved_qty - " + actualConsumeReserved.toPlainString()));
                 if (reservedRows == 0) {
                     throw new ServiceException("SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
                 }
+                // 同源多明细复用锁内行，并同步其剩余预留，防止后续明细重复消费旧预留量。
+                soLine.setReservedQty(soReservedQty.subtract(actualConsumeReserved));
             }
 
             // 回写 SO 行已发货/已履行数量（销售出库即对该行的履行交付）
