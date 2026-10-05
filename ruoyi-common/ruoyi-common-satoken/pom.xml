@@ -41,6 +41,13 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- 将认证日志脱敏回归接入正常模块测试，依赖版本沿用根管理。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
