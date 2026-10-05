@@ -10,6 +10,7 @@ import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.domain.WmSalesIssueLine;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -93,8 +95,10 @@ class WmIssueStrategyAvailableGuardTest {
         when(valuationService.issueStockCost(anyLong(), any())).thenReturn(BigDecimal.TEN);
 
         ProductionIssueStrategy strategy =
-            new ProductionIssueStrategy(stockTxMapper, stockMapper, valuationService);
+            new ProductionIssueStrategy(stockTxMapper, stockMapper, valuationService, mock(WmBatchMapper.class));
         /** 需求 70 = 第一行可用量 20 + 第二行可用量 50 */
+        when(stockTxMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
+
         strategy.execute(productionLine(new BigDecimal("70")), new Date());
 
         ArgumentCaptor<BigDecimal> firstQty = ArgumentCaptor.forClass(BigDecimal.class);

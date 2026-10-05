@@ -12,6 +12,7 @@ import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmStorageAreaMapper;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 
 /**
@@ -47,9 +49,13 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
     private static final String SOURCE_DOC_TYPE_WORK_ORDER = "PRD_WORK_ORDER";
     /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
+    /** 库存流水金额精度 */
+    private static final int TX_AMOUNT_SCALE = 4;
 
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 批次数据访问映射器（Mapper） */
+    private final WmBatchMapper batchMapper;
     /** 生产完工数据访问映射器（Mapper） */
     private final BdMaterialMapper bdMaterialMapper;
     /** 仓库数据访问映射器（Mapper） */
@@ -71,6 +77,7 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
      * @param wmStorageLocationMapper  库位Mapper（取库位编码/名称/库区ID）
      * @param wmStorageAreaMapper      库区Mapper（取库区编码/名称）
      * @param bdUnitOfMeasureMapper    计量单位Mapper（取单位名称）
+     * @param batchMapper              批次Mapper（累计生产实际收量）
      */
     public ProductionCompletionStrategy(WmMaterialStockTxMapper stockTxMapper,
                                         WmMaterialStockMapper stockMapper,
@@ -78,9 +85,11 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
                                         WmWarehouseMapper wmWarehouseMapper,
                                         WmStorageLocationMapper wmStorageLocationMapper,
                                         WmStorageAreaMapper wmStorageAreaMapper,
-                                        BdUnitOfMeasureMapper bdUnitOfMeasureMapper) {
+                                        BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
+                                        WmBatchMapper batchMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
+        this.batchMapper = batchMapper;
         this.bdMaterialMapper = bdMaterialMapper;
         this.wmWarehouseMapper = wmWarehouseMapper;
         this.wmStorageLocationMapper = wmStorageLocationMapper;
@@ -138,13 +147,24 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         BigDecimal afterQty = refreshedStock.getStockQuantity();
         BigDecimal beforeQty = afterQty.subtract(quantity);
 
-        // 3. 生成库存流水（buildBaseTxFromStock 从 stock 派生全部维度字段）
+        // 3. 仅对本次明确指定的生产批次累计收量，沿用原库存事务与无批次兼容边界
+        if (batchId != null && batchMapper.increaseProductionReceivedQty(batchId, refreshedStock.getMaterialId(),
+            refreshedStock.getTenantId(), woId, quantity) != 1) {
+            throw new ServiceException("生产入库批次收量更新失败，请核对工单与批次");
+        }
+
+        // 4. 生成库存流水，金额使用本次入库后实际库存单位成本，不从总成本反推
         WmMaterialStockTx tx = buildBaseTxFromStock(refreshedStock, TX_TYPE_PRODUCTION_IN, TX_FLAG_IN,
             quantity, beforeQty, afterQty, now);
+        BigDecimal unitCost = refreshedStock.getUnitCost() != null ? refreshedStock.getUnitCost() : BigDecimal.ZERO;
+        tx.setUnitCost(unitCost);
+        tx.setTxAmount(quantity.multiply(unitCost).setScale(TX_AMOUNT_SCALE, RoundingMode.HALF_UP));
         tx.setSourceDocType(SOURCE_DOC_TYPE_WORK_ORDER);
         tx.setSourceDocId(woId);
         tx.setRemark("工单完工入库");
-        stockTxMapper.insert(tx);
+        if (stockTxMapper.insert(tx) != 1) {
+            throw new ServiceException("生产入库库存流水写入失败");
+        }
 
         log.info("工单[{}]完工入库，物料[{}]，数量[{}]", woId, materialCode, quantity.stripTrailingZeros().toPlainString());
     }

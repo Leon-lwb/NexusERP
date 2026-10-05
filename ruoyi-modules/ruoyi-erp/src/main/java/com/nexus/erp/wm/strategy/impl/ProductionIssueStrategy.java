@@ -8,6 +8,7 @@ import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.vo.AllocatedStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.common.core.exception.ServiceException;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.List;
 
@@ -38,11 +40,15 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
     private static final String SOURCE_DOC_TYPE_PRODUCTION_ISSUE = "WM_PRODUCTION_ISSUE";
     /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
+    /** 金额精度：与库存 total_cost、流水 tx_amount 的 decimal(14,4) 保持一致。 */
+    private static final int TX_AMOUNT_SCALE = 4;
 
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
     /** 库存计价服务(F3-a:出库按移动平均结转成本) */
     private final IInventoryValuationService valuationService;
+    /** 批次累计发料数量的原子更新映射器。 */
+    private final WmBatchMapper batchMapper;
 
     /**
      * 构造生产领料策略实例
@@ -50,13 +56,16 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
      * @param stockTxMapper 库存事务Mapper
      * @param stockMapper   库存Mapper
      * @param valuationService 库存计价服务
+     * @param batchMapper 批次Mapper
      */
     public ProductionIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
                                    WmMaterialStockMapper stockMapper,
-                                   IInventoryValuationService valuationService) {
+                                   IInventoryValuationService valuationService,
+                                   WmBatchMapper batchMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.valuationService = valuationService;
+        this.batchMapper = batchMapper;
     }
 
     /**
@@ -173,13 +182,22 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         }
         /** F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本) */
         BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
+        // 使用实际被扣库存的批次身份；历史无批次库存保留原有兼容行为。
+        if (stock.getBatchId() != null && batchMapper.increaseIssuedQty(stock.getBatchId(), stock.getMaterialId(),
+            stock.getTenantId(), deductQty) != 1) {
+            throw new ServiceException("批次发料累计失败或超过已收数量: 批次【" + stock.getBatchId() + "】");
+        }
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_ISSUE, TX_FLAG_OUT, deductQty,
             beforeQuantity, afterQuantity, now);
         tx.setUnitCost(outUnitCost);
+        // 出库不改变移动平均价；按实际扣量乘该价格结转，不能从扣后总成本反推。
+        tx.setTxAmount(deductQty.multiply(outUnitCost).setScale(TX_AMOUNT_SCALE, RoundingMode.HALF_UP));
         tx.setSourceDocType(SOURCE_DOC_TYPE_PRODUCTION_ISSUE);
         tx.setSourceDocId(issueId);
         tx.setSourceDocLineId(lineId);
         tx.setRemark("生产领料");
-        stockTxMapper.insert(tx);
+        if (stockTxMapper.insert(tx) != 1) {
+            throw new ServiceException("生产领料流水写入失败: 物料【" + stock.getMaterialName() + "】");
+        }
     }
 }
