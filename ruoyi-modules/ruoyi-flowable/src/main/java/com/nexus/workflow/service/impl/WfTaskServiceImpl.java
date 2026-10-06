@@ -38,6 +38,7 @@ import org.flowable.task.api.Task;
 import org.flowable.task.api.history.HistoricTaskInstance;
 import org.flowable.task.service.impl.persistence.entity.TaskEntity;
 import org.flowable.task.service.impl.persistence.entity.TaskEntityImpl;
+import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -162,15 +163,39 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void complete(WfTaskBo taskBo) {
-        // 完成任务并按需处理节点表单数据保存
-
-        // 同一任务只查一次，实体类型直接复用结果（原先重复执行两次引擎查询）
+        if (taskBo == null || StringUtils.isBlank(taskBo.getTaskId())) {
+            throw new ServiceException("任务编号不能为空");
+        }
+        // 先读原任务快照核权限，再在事务内锁定读取；任何校验失败均不剥离变量或执行写入。
         TaskEntity task = (TaskEntity) taskService.createTaskQuery().taskId(taskBo.getTaskId()).singleResult();
         if (Objects.isNull(task)) {
             throw new ServiceException("任务不存在");
         }
-        TaskEntity taskEntity = task;
+        TaskCompletionBindingGuard bindingGuard = new TaskCompletionBindingGuard(taskService, runtimeService,
+            managementService, wfMyBusinessService);
+        bindingGuard.checkRequest(taskBo, task);
         checkTaskHandlePermission(task);
+        TaskCompletionBindingGuard.Binding binding = bindingGuard.lockAndResolve(taskBo, task);
+        task = binding.task();
+        TaskEntity taskEntity = task;
+        // 等待锁期间办理人可能改变，必须复核锁后的任务权限，不扩大候选人或候选组边界。
+        checkTaskHandlePermission(task);
+        WfMyBusiness business = binding.business();
+        WfCallBackServiceI flowCallBackService = null;
+        if (business != null) {
+            Object callback;
+            try {
+                callback = SpringContextHolder.getBean(business.getServiceImplName());
+            } catch (BeansException e) {
+                throw new ServiceException("流程业务回调配置不可用");
+            }
+            if (!(callback instanceof WfCallBackServiceI)) {
+                throw new ServiceException("流程业务回调配置不可用");
+            }
+            flowCallBackService = (WfCallBackServiceI) callback;
+        }
+        // 可选实例编号只在完整校验通过后补齐，评论与抄送统一使用任务自身实例。
+        taskBo.setProcInsId(task.getProcessInstanceId());
 
         // ==================== 电子签章变量快照与剥离（必须在一切消费 variables 的逻辑之前） ====================
         // 三个理由要求在这里一次性做掉：
@@ -224,20 +249,9 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         // 完成前预测下一节点待办人昵称列表。getNextFlowNode 内部按运行时任务查询，
         // 任务一旦 complete 就查不到，因此该预测必须在引擎办结前进行，仅用于业务表展示。
         String predictedTodoUsers = "";
-        boolean hasDataId = StringUtils.isNotBlank(taskBo.getDataId());
-        WfMyBusiness business = null;
-        WfCallBackServiceI flowCallBackService = null;
+        boolean hasDataId = business != null;
         if (hasDataId) {
-            //如果保存数据前未调用必调的FlowCommonService.initActBusiness方法，就会有问题
-        	//业务数据id
-            WfMyBusiness existBusiness = wfMyBusinessService.getByDataId(taskBo.getDataId());
-            if (existBusiness == null || StringUtils.isBlank(existBusiness.getServiceImplName())) {
-                throw new ServiceException("未找到流程业务关联记录或回调配置缺失：" + taskBo.getDataId());
-            }
-            business = existBusiness;
-            //spring容器类名
-            flowCallBackService = (WfCallBackServiceI) SpringContextHolder.getBean(business.getServiceImplName());
-
+            // 仅使用入口按原任务实例核实的业务对象，不再由客户端编号选择另一条回调记录。
         	FlowNextDto flowNextDto = this.getNextFlowNode(taskBo.getTaskId(), taskBo.getVariables());
             if(flowNextDto != null) {
             	//能够处理下个节点的候选人
@@ -302,10 +316,10 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         }
 
         if (DelegationState.PENDING.equals(task.getDelegationState())) {
-            taskService.addComment(taskBo.getTaskId(), taskBo.getProcInsId(), FlowComment.DELEGATE.getType(), taskBo.getComment());
+            taskService.addComment(task.getId(), task.getProcessInstanceId(), FlowComment.DELEGATE.getType(), taskBo.getComment());
             taskService.resolveTask(taskBo.getTaskId());
         } else {
-            taskService.addComment(taskBo.getTaskId(), taskBo.getProcInsId(), FlowComment.NORMAL.getType(), taskBo.getComment());
+            taskService.addComment(task.getId(), task.getProcessInstanceId(), FlowComment.NORMAL.getType(), taskBo.getComment());
             taskService.setAssignee(taskBo.getTaskId(), TaskUtils.getUserName());
             if (ObjectUtil.isNotEmpty(taskBo.getVariables())) {
                 // 获取模型信息
