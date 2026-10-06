@@ -1,5 +1,6 @@
 package com.nexus.erp.prd;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.bo.PrdProductionPlanBo;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
@@ -107,7 +108,7 @@ class PrdProductionPlanBirthDefaultsTest {
         PrdProductionPlanBo bo = newPlan();
         bo.setStatus(status);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        ServiceException exception = assertThrows(ServiceException.class,
             () -> productionPlanService.insertByBo(bo), "客户端不得绕过草稿状态创建计划");
 
         assertEquals("新增生产计划只能为草稿状态", exception.getMessage(), "非法初始状态应给出明确中文错误");

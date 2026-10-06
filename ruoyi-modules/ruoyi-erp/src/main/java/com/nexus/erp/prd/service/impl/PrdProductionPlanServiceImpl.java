@@ -1,5 +1,6 @@
 package com.nexus.erp.prd.service.impl;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.util.BomExplosionCalculator;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -173,7 +174,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     public int insertByBo(PrdProductionPlanBo bo) {
         PrdProductionPlan entity = MapstructUtils.convert(bo, PrdProductionPlan.class);
         if (!StringUtils.isBlank(entity.getStatus()) && !STATUS_DRAFT.equals(entity.getStatus())) {
-            throw new RuntimeException("新增生产计划只能为草稿状态");
+            throw new ServiceException("新增生产计划只能为草稿状态");
         }
         entity.setStatus(STATUS_DRAFT);
         if (entity.getVersion() == null) {
