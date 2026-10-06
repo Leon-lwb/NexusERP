@@ -254,10 +254,37 @@ public class DecisionPersistenceService {
             || !run.getBizType().equals(snapshot.rootBusinessRef().type().name())
             || !Objects.equals(run.getBizId(), snapshot.rootBusinessRef().id()))
             throw new ServiceException("决策快照不属于当前业务运行");
+        // 只为新工单合同首次绑定ERP可信根码，不将已有快照或旧合同补写成新版资格。
+        boolean v2WorkOrder = Integer.valueOf(2).equals(run.getDecisionContractVersion())
+            && DecisionBusinessType.WORK_ORDER.name().equals(run.getBizType());
+        String rootCode = snapshot.rootBusinessRef().code();
+        boolean firstCodeBinding = v2WorkOrder && run.getBizCode() == null;
+        if (v2WorkOrder) {
+            if (rootCode == null || rootCode.isBlank() || rootCode.length() > 64)
+                throw new ServiceException("新版工单快照缺少有效的ERP业务编码");
+            if (firstCodeBinding) {
+                if (run.getInputSnapshotJson() != null || run.getInputSnapshotHash() != null || run.getSnapshotTime() != null)
+                    throw new ServiceException("已有快照缺少冻结业务编码，须重新分析");
+            } else if (!Objects.equals(run.getBizCode(), rootCode)) {
+                throw new ServiceException("ERP快照业务编码与运行根不一致，须重新分析");
+            }
+        }
         var update = baseUpdate(run, tenant).eq(AiDecisionRun::getStatus, DecisionRunStatus.RUNNING.name())
             .set(AiDecisionRun::getInputSnapshotJson, json(snapshot))
             .set(AiDecisionRun::getInputSnapshotHash, snapshot.snapshotHash())
             .set(AiDecisionRun::getSnapshotTime, snapshot.snapshotAt());
+        if (v2WorkOrder) {
+            update.eq(AiDecisionRun::getBizType, DecisionBusinessType.WORK_ORDER.name())
+                .eq(AiDecisionRun::getBizId, run.getBizId());
+            if (firstCodeBinding) {
+                // 编码、快照与时间通过同一主库CAS提交，不能形成一半绑定的采购运行。
+                update.isNull(AiDecisionRun::getBizCode).isNull(AiDecisionRun::getInputSnapshotJson)
+                    .isNull(AiDecisionRun::getInputSnapshotHash).isNull(AiDecisionRun::getSnapshotTime)
+                    .set(AiDecisionRun::getBizCode, rootCode);
+            } else {
+                update.eq(AiDecisionRun::getBizCode, rootCode);
+            }
+        }
         if (runMapper.update(null, update) != 1) throw new ServiceException("保存决策快照发生并发冲突");
     }
 
