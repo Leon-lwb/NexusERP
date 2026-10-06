@@ -2,6 +2,7 @@ package com.nexus.erp.pu.service;
 
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification.ErpTransactionConfiguration;
 import org.apache.ibatis.session.SqlSession;
@@ -27,6 +28,7 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.function.Supplier;
 
 /**
@@ -95,6 +97,7 @@ public class PuRequirementErpTransactionExecutor {
             throw new ServiceException("ERP 专属事务需要内部回调");
         }
         Error[] callbackFatal = new Error[1];
+        OwnedTransaction[] sourceChangeRollback = new OwnedTransaction[1];
         try {
             if (sqlSessionFactory.getClass() != DefaultSqlSessionFactory.class) {
                 throw failed();
@@ -128,6 +131,25 @@ public class PuRequirementErpTransactionExecutor {
                     owned.prepareRollbackSessionCleanup();
                     owned.rememberForeignFactoryBinding();
                     throw fatal;
+                } catch (SourceChangedException difference) {
+                    // 只认本次来源RR内的固定类型，不按文本、cause或普通非RR回调授予分类。
+                    boolean provenOwner = false;
+                    try {
+                        if (sourceChain) {
+                            owned.requireResources(Phase.SOURCE_CHANGE_ROLLBACK);
+                            provenOwner = true;
+                        }
+                    } catch (RuntimeException invalidOwner) {
+                        // 归属或资源漂移时仍走普通安全失败，不能据此宣称来源已证明变化。
+                    }
+                    owned.prepareRollbackSessionCleanup();
+                    owned.rememberForeignFactoryBinding();
+                    if (provenOwner) {
+                        owned.observeSourceChangeRollback();
+                        sourceChangeRollback[0] = owned;
+                    }
+                    // 不将原异常对象交给Spring；其cause/suppressed不得穿过事务边界。
+                    throw failed();
                 } catch (RuntimeException | Error failure) {
                     /** 先移除底层诊断再交给 Spring 回滚，不将 SQL/凭证放入 message/cause/suppressed。 */
                     owned.prepareRollbackSessionCleanup();
@@ -145,6 +167,10 @@ public class PuRequirementErpTransactionExecutor {
             throw fatal;
         } catch (RuntimeException | Error failure) {
             rethrowCallbackFatal(callbackFatal[0]);
+            if (sourceChangeRollback[0] != null) {
+                sourceChangeRollback[0].requireSuccessfulSourceChangeRollback();
+                throw new SourceChangedException();
+            }
             throw failed();
         }
     }
@@ -190,7 +216,7 @@ public class PuRequirementErpTransactionExecutor {
         return new ServiceException("ERP 专属物理事务未成功完成，不能确认提交结果");
     }
 
-    private enum Phase { CALLBACK_RETURN, BEFORE_FLUSH, BEFORE_JDBC }
+    private enum Phase { CALLBACK_RETURN, BEFORE_FLUSH, BEFORE_JDBC, SOURCE_CHANGE_ROLLBACK }
 
     /** 单次调用的真实管理器持有者与生命周期，不提供可被调用方设置的资格标记。 */
     private final class OwnedTransaction {
@@ -205,7 +231,11 @@ public class PuRequirementErpTransactionExecutor {
         private Object foreignFactoryBinding;
         private int completionStatus = TransactionSynchronization.STATUS_UNKNOWN;
         private boolean jdbcCommitted;
+        private boolean jdbcRolledBack;
         private boolean cleaned;
+        private boolean observingSourceChangeRollback;
+        private boolean rollbackCompletionFailed;
+        private List<TransactionSynchronization> sourceChangeSynchronizationSnapshot = List.of();
         private boolean factoryBindingViolation;
 
         private OwnedTransaction(String tenantId, ErpTransactionConfiguration sources, boolean sourceChain) {
@@ -261,8 +291,13 @@ public class PuRequirementErpTransactionExecutor {
 
         /** 只读取管理器已经取得的固定连接，不调用任何 DataSource.getConnection。 */
         private void requireConnection() {
+            requireConnection(false);
+        }
+
+        /** 仅变化信号的异常回滚证明允许MANDATORY代理已标记的rollback-only，不授予读写/提交资格。 */
+        private void requireConnection(boolean sourceChangeAbort) {
             if (holder == null || !(holder.getConnectionHandle() instanceof SimpleConnectionHandle)
-                || !holder.isSynchronizedWithTransaction() || holder.isRollbackOnly()
+                || !holder.isSynchronizedWithTransaction() || (!sourceChangeAbort && holder.isRollbackOnly())
                 || TransactionSynchronizationManager.getResource(sources.physical()) != holder) {
                 throw failed();
             }
@@ -295,14 +330,14 @@ public class PuRequirementErpTransactionExecutor {
         private void requireResources(Phase phase) {
             requireContext();
             requireIdentity();
-            requireConnection();
+            requireConnection(phase == Phase.SOURCE_CHANGE_ROLLBACK);
             // 包括回调出口、flush 前和真实 JDBC commit 前，防止最后一次资格核验后的隔离漂移。
             if (sourceChain) requireRepeatableReadIsolation();
             if (TransactionSynchronizationManager.getResource(sources.routing()) != holder) {
                 throw failed();
             }
             Object currentSession = TransactionSynchronizationManager.getResource(sqlSessionFactory);
-            if (phase == Phase.CALLBACK_RETURN) {
+            if (phase == Phase.CALLBACK_RETURN || phase == Phase.SOURCE_CHANGE_ROLLBACK) {
                 if (currentSession != null) {
                     if (currentSession.getClass() != SqlSessionHolder.class) {
                         throw failed();
@@ -503,7 +538,8 @@ public class PuRequirementErpTransactionExecutor {
             @Override
             public void beforeCompletion() {
                 rememberLateFactoryViolation();
-                delegate.beforeCompletion();
+                if (observingSourceChangeRollback) observeBeforeCompletion(delegate::beforeCompletion);
+                else delegate.beforeCompletion();
             }
 
             @Override
@@ -513,7 +549,8 @@ public class PuRequirementErpTransactionExecutor {
 
             @Override
             public void afterCompletion(int status) {
-                delegate.afterCompletion(status);
+                if (observingSourceChangeRollback) observeCompletion(() -> delegate.afterCompletion(status));
+                else delegate.afterCompletion(status);
             }
         }
 
@@ -567,6 +604,109 @@ public class PuRequirementErpTransactionExecutor {
                 && TransactionSynchronizationManager.getResource(sqlSessionFactory) == null) {
                 TransactionSynchronizationManager.bindResource(sqlSessionFactory, foreignFactoryBinding);
             }
+        }
+
+        /**
+         * 仅在已核内部变化信号的异常回滚路径观察同步清理失败；不修改同步对象或框架私有字段。
+         * 通过公共同步注册API保持原顺序及委托行为，避免Spring吞掉清理异常后误授STALE信号。
+         */
+        private void observeSourceChangeRollback() {
+            List<TransactionSynchronization> original = TransactionSynchronizationManager.getSynchronizations();
+            TransactionSynchronizationManager.clearSynchronization();
+            TransactionSynchronizationManager.initSynchronization();
+            observingSourceChangeRollback = true;
+            for (TransactionSynchronization synchronization : original) {
+                TransactionSynchronizationManager.registerSynchronization(synchronization == guardedSessionSynchronization
+                    ? synchronization : new SourceChangeRollbackSynchronization(synchronization));
+            }
+            sourceChangeSynchronizationSnapshot = TransactionSynchronizationManager.getSynchronizations();
+        }
+
+        /** 透明委托只记录异常回滚的清理不确定性，不捕获或放行原诊断。 */
+        private final class SourceChangeRollbackSynchronization implements TransactionSynchronization {
+            private final TransactionSynchronization delegate;
+            private SourceChangeRollbackSynchronization(TransactionSynchronization delegate) { this.delegate = delegate; }
+            @Override public int getOrder() { return delegate.getOrder(); }
+            @Override public void suspend() { delegate.suspend(); }
+            @Override public void resume() { delegate.resume(); }
+            @Override public void flush() { delegate.flush(); }
+            @Override public void savepoint(Object savepoint) { delegate.savepoint(savepoint); }
+            @Override public void savepointRollback(Object savepoint) { delegate.savepointRollback(savepoint); }
+            @Override public void beforeCommit(boolean readOnly) { delegate.beforeCommit(readOnly); }
+            @Override public void afterCommit() { delegate.afterCommit(); }
+            @Override public void beforeCompletion() { observeBeforeCompletion(delegate::beforeCompletion); }
+            @Override public void afterCompletion(int status) { observeCompletion(() -> delegate.afterCompletion(status)); }
+        }
+
+        /** 在每个初始清理回调返回后检查注册集，不能让迟注册同步逃过失败关闭。 */
+        private void observeBeforeCompletion(Runnable completion) {
+            try { observeCompletion(completion); }
+            finally { checkSourceChangeSynchronizationRegistration(); }
+        }
+
+        /**
+         * 只在变化信号的异常回滚检查完整有序注册集的对象身份，不用equals掩盖替换/迟注册。
+         * 一旦改变，静默成功也保持普通未确认失败；后补包装只为清理诊断脱敏，不恢复可信分类。
+         */
+        private void checkSourceChangeSynchronizationRegistration() {
+            if (!observingSourceChangeRollback) return;
+            try {
+                if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+                    rollbackCompletionFailed = true;
+                    return;
+                }
+                List<TransactionSynchronization> current = TransactionSynchronizationManager.getSynchronizations();
+                boolean same = current.size() == sourceChangeSynchronizationSnapshot.size();
+                for (int i = 0; same && i < current.size(); i++) {
+                    same = current.get(i) == sourceChangeSynchronizationSnapshot.get(i);
+                }
+                if (same) return;
+                rollbackCompletionFailed = true;
+                // 迟回调仍交真正Spring执行，但其原诊断不能直接进入Spring日志或异常链。
+                List<TransactionSynchronization> guarded = new ArrayList<>(current.size());
+                for (TransactionSynchronization synchronization : current) {
+                    guarded.add(synchronization == guardedSessionSynchronization
+                        || synchronization instanceof SourceChangeRollbackSynchronization
+                        ? synchronization : new SourceChangeRollbackSynchronization(synchronization));
+                }
+                TransactionSynchronizationManager.clearSynchronization();
+                TransactionSynchronizationManager.initSynchronization();
+                for (TransactionSynchronization synchronization : guarded) {
+                    TransactionSynchronizationManager.registerSynchronization(synchronization);
+                }
+            } catch (VirtualMachineError | ThreadDeath fatal) {
+                rollbackCompletionFailed = true;
+                throw fatal;
+            } catch (RuntimeException | Error unreadable) {
+                rollbackCompletionFailed = true;
+            }
+        }
+
+        private void observeCompletion(Runnable completion) {
+            try { completion.run(); }
+            catch (VirtualMachineError | ThreadDeath fatal) {
+                rollbackCompletionFailed = true;
+                throw fatal;
+            } catch (RuntimeException | Error failure) {
+                rollbackCompletionFailed = true;
+                throw failed();
+            }
+        }
+
+        /** 只有实际JDBC回滚成功、同步清理无失败、连接已关闭且线程归属清空才保留变化类型。 */
+        private void requireSuccessfulSourceChangeRollback() {
+            requireTenant(tenantId);
+            requireIdentity();
+            if (!sourceChain || !observingSourceChangeRollback || !jdbcRolledBack || jdbcCommitted || !cleaned
+                || rollbackCompletionFailed || factoryBindingViolation || foreignFactoryBinding != null
+                || completionStatus != TransactionSynchronization.STATUS_ROLLED_BACK
+                || TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()
+                || !TransactionSynchronizationManager.getResourceMap().isEmpty() || TransactionContext.getXID() != null
+                || SOURCE_CHAIN_OWNER.get() != null) throw failed();
+            try {
+                if (connection == null || !connection.isClosed()) throw failed();
+            } catch (SQLException unreadable) { throw failed(); }
         }
 
         private void requireSuccessfulCompletion() {
@@ -648,6 +788,13 @@ public class PuRequirementErpTransactionExecutor {
             owned.requireResources(Phase.BEFORE_JDBC);
             super.doCommit(status);
             owned.jdbcCommitted = true;
+        }
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
+            super.doRollback(status);
+            owned.jdbcRolledBack = true;
+            if (owned.observingSourceChangeRollback) owned.checkSourceChangeSynchronizationRegistration();
         }
 
         @Override

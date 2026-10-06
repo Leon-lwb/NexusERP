@@ -174,6 +174,27 @@ public class DeliveryContextAssembler {
     }
 
     /**
+     * 采购永久恢复专用的对象可见性：只允许本租户未删除的明确工单，可认领其后来的终态。
+     * 不授予新分析、新建采购或来源额度，普通exists和核心快照算法保持原终态拒绝。
+     */
+    public boolean existsForPurchaseRecovery(DecisionBusinessRef ref, DecisionActor actor) {
+        try {
+            if (!TenantHelper.isEnable() || actor == null || actor.tenantId() == null
+                || !actor.tenantId().equals(TenantHelper.getTenantId()) || ref == null
+                || ref.type() != DecisionBusinessType.WORK_ORDER || ref.id() == null || ref.id() <= 0) return false;
+            validateAccess(ref, actor, true);
+            PrdWorkOrder workOrder = workOrderMapper.selectById(ref.id());
+            return workOrder != null && Objects.equals(ref.id(), workOrder.getWoId())
+                && actor.tenantId().equals(workOrder.getTenantId()) && "0".equals(workOrder.getDelFlag())
+                && workOrder.getWoStatus() != null
+                && Set.of("CREATED", "APPROVING", "APPROVED", "RELEASED", "IN_PROGRESS", "COMPLETED", "CLOSED")
+                    .contains(workOrder.getWoStatus().trim().toUpperCase(Locale.ROOT));
+        } catch (RuntimeException unreadable) {
+            return false;
+        }
+    }
+
+    /**
      * 按调用方 horizon 装配展示快照；snapshotHash 始终使用固定 90 天关键指纹重算。
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ, readOnly = true)

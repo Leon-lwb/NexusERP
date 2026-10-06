@@ -6,6 +6,7 @@ import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.bo.PuCertifiedPurchaseCommand;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
@@ -16,17 +17,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.DateTimeException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.HexFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,18 +39,6 @@ import java.util.Set;
 public class ErpCertifiedPurchaseDecisionAdapter {
     private static final DecisionActionType TYPE = DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT;
     private static final String BUSINESS_TYPE = "PU_PURCHASE_REQUISITION";
-    private static final Set<String> PAYLOAD_FIELDS = Set.of(
-        "purchase_payload_version", "runId", "materialId", "vendorId", "windowEnd",
-        "materialVersion", "vendorVersion", "supplierTermsId", "supplierTermsVersion",
-        "baseUomId", "baseUomVersion", "orderUomId", "orderUomVersion", "conversionVersion",
-        "requirement_detail_ids", "frozenLines", "expectedSourceFingerprint");
-    private static final List<String> VERSION_FIELDS = List.of("materialVersion", "vendorVersion",
-        "supplierTermsVersion", "baseUomVersion", "orderUomVersion", "conversionVersion");
-    private static final List<String> CONTRACT_METADATA_FIELDS = List.of("materialVersion", "vendorVersion",
-        "supplierTermsId", "supplierTermsVersion", "baseUomId", "baseUomVersion", "orderUomId", "orderUomVersion",
-        "conversionVersion");
-    private static final Set<String> FROZEN_FIELDS = Set.of("detailId", "baseUomId", "coveredDemandBase",
-        "orderUomId", "requestedOrderQty", "requiredDate");
     private static final Set<String> RESULT_FIELDS = Set.of("purchase_payload_version", "runId", "actionId",
         "tenantId", "requestKey", "materialId", "vendorId", "sourceType", "sourceFingerprint",
         "payloadFingerprint", "status", "versionMarker", "beforeState", "afterState", "replayed", "lines");
@@ -80,6 +63,23 @@ public class ErpCertifiedPurchaseDecisionAdapter {
         }
         return new DecisionActionExecutionResult(true, false, BUSINESS_TYPE, committed.requisitionId(),
             committed.requisitionNo(), resultDetails(action, actor, intent, committed, committed.replayed()), null, null);
+    }
+
+    /** 不依赖AI结果信封的只恢复入口；冲突及未知读取均传播，不伪装MISS。 */
+    public DecisionActionExecutionResult recover(DecisionActionProposal action, DecisionActor actor) {
+        Intent intent = requireIntent(action, actor);
+        PuCertifiedPurchaseResult committed = writer.recoverForDecision(intent.command(), actor,
+            intent.runId(), action.actionId(), intent.lines(), intent.contract());
+        if (committed == null) return null;
+        requireReceipt(intent, committed);
+        require(committed.replayed(), "永久提交恢复必须返回真实重放结果");
+        if (!"DRAFT".equals(committed.status()) || !Integer.valueOf(0).equals(committed.version())) {
+            return new DecisionActionExecutionResult(false, false, BUSINESS_TYPE, committed.requisitionId(),
+                committed.requisitionNo(), Map.of("status", committed.status(), "versionMarker", "v" + committed.version(),
+                    "replayed", committed.replayed()), "VERIFY_STATE_MISMATCH", "原采购单据已变更，不能重新创建或声称新草稿执行成功");
+        }
+        return new DecisionActionExecutionResult(true, false, BUSINESS_TYPE, committed.requisitionId(),
+            committed.requisitionNo(), resultDetails(action, actor, intent, committed, true), null, null);
     }
 
     /** 只恢复已提交 command；缺记录绝不能为了验证而创建单据或分配新编号。 */
@@ -133,58 +133,19 @@ public class ErpCertifiedPurchaseDecisionAdapter {
             && action.approvalRequired() && action.target() != null && action.target().type() != null
             && (action.target().type() == DecisionBusinessType.SHORTAGE_HORIZON ? action.target().id() == null
                 : positive(action.target().id())), "采购动作身份、目标或固定元数据无效");
-        require(action.idempotencyKey() != null && action.idempotencyKey().matches("[A-Za-z0-9:_-]{16,128}"),
-            "采购永久请求键无效");
-        Map<String, Object> payload = action.payload();
-        requireFields(payload, PAYLOAD_FIELDS, "采购 v2 载荷字段缺失或含旧版/额外字段");
-        require(Integer.valueOf(2).equals(payload.get("purchase_payload_version")), "采购载荷必须为显式整数 v2，旧动作不可升级");
-        Long runId = id(payload.get("runId"));
-        Long materialId = id(payload.get("materialId"));
-        Long vendorId = id(payload.get("vendorId"));
-        Long baseUomId = id(payload.get("baseUomId"));
-        Long orderUomId = id(payload.get("orderUomId"));
-        id(payload.get("supplierTermsId"));
-        for (String field : VERSION_FIELDS) version(payload.get(field));
-        // 当前统一 writer 只支持已核根基本单位且无超额；不能先用展示名称或派生换算放行。
-        require(baseUomId.equals(orderUomId) && payload.get("baseUomVersion").equals(payload.get("orderUomVersion"))
-            && payload.get("baseUomVersion").equals(payload.get("conversionVersion")),
-            "当前仅支持同根基本单位、同版本、无超额的采购");
-        LocalDate windowEnd = date(payload.get("windowEnd"));
-        Object expectedFingerprint = payload.get("expectedSourceFingerprint");
-        require(expectedFingerprint instanceof String hash && hash.matches("[0-9a-f]{64}"), "冻结来源指纹缺失或格式无效");
-        require(payload.get("requirement_detail_ids") instanceof List<?> ids && !ids.isEmpty() && ids.size() <= 1000,
-            "逐 MRP 冻结来源集合缺失或超限");
-        List<Long> detailIds = new ArrayList<>();
-        long previous = 0;
-        for (Object rawId : (List<?>) payload.get("requirement_detail_ids")) {
-            Long detailId = id(rawId);
-            require(detailId > previous, "逐 MRP 来源必须唯一并按身份排序");
-            detailIds.add(detailId); previous = detailId;
-        }
-        require(payload.get("frozenLines") instanceof List<?> lines && lines.size() == detailIds.size(),
-            "冻结来源行必须与 MRP 来源集合逐项一致");
-        List<FrozenLine> frozen = new ArrayList<>();
-        int index = 0;
-        for (Object rawLine : (List<?>) payload.get("frozenLines")) {
-            require(rawLine instanceof Map<?, ?>, "冻结来源行必须为对象");
-            Map<?, ?> line = (Map<?, ?>) rawLine;
-            requireFields(line, FROZEN_FIELDS, "冻结来源行字段不完整或含客户端数量/其他物料");
-            Long detailId = id(line.get("detailId"));
-            require(detailIds.get(index++).equals(detailId) && baseUomId.equals(id(line.get("baseUomId")))
-                && orderUomId.equals(id(line.get("orderUomId"))), "冻结来源行身份或基本/订购单位不一致");
-            BigDecimal covered = quantity(line.get("coveredDemandBase"));
-            BigDecimal ordered = quantity(line.get("requestedOrderQty"));
-            LocalDate required = date(line.get("requiredDate"));
-            require(covered.compareTo(ordered) == 0 && !required.isAfter(windowEnd), "冻结覆盖量/订购量有超额或来源日期超出窗口");
-            frozen.add(new FrozenLine(detailId, baseUomId, covered, orderUomId, ordered, required));
-        }
-        var command = new PuCertifiedPurchaseCommand(action.idempotencyKey(), materialId, vendorId,
-            windowEnd, detailIds, (String) expectedFingerprint);
-        Map<String, String> metadata = new HashMap<>();
-        // 仅提取已通过上方严格解析的字段，不补造版本或以原始 payload 的可变容器作为永久合同。
-        CONTRACT_METADATA_FIELDS.forEach(field -> metadata.put(field, (String) payload.get(field)));
-        var contract = new FrozenContract(payloadFingerprint(action, actor, payload, frozen), Map.copyOf(metadata));
-        return new Intent(command, runId, List.copyOf(frozen), contract);
+        var purchase = DecisionPurchaseContractCodec.parse(action.payload(), null);
+        Long runId = Long.valueOf((String) action.payload().get("runId"));
+        require(action.target().type() == DecisionBusinessType.WORK_ORDER,
+            "首包采购仅支持明确工单根，不能降级旧来源路径");
+        require(DecisionPurchaseContractCodec.idempotencyKey(actor.tenantId(), runId, action.target(), purchase)
+            .equals(action.idempotencyKey()), "采购动作幂等键与完整合同身份不一致");
+        List<FrozenLine> frozen = purchase.frozenLines().stream().map(line -> new FrozenLine(line.detailId(), line.baseUomId(),
+            line.coveredDemandBase(), line.orderUomId(), line.requestedOrderQty(), line.requiredDate())).toList();
+        var command = new PuCertifiedPurchaseCommand(action.idempotencyKey(), purchase.materialId(), purchase.vendorId(),
+            purchase.windowEnd(), purchase.requirementDetailIds(), purchase.expectedSourceFingerprint());
+        var contract = new FrozenContract(DecisionPurchaseContractCodec.payloadFingerprint(action, actor),
+            DecisionPurchaseContractCodec.contractMetadata(purchase), action.target().id());
+        return new Intent(command, runId, frozen, contract);
     }
 
     private static boolean requireEnvelope(DecisionActionProposal action, DecisionActor actor, Intent intent,
@@ -270,39 +231,10 @@ public class ErpCertifiedPurchaseDecisionAdapter {
             "requestedOrderQty", decimalText(line.orderQuantity()), "requiredDate", line.requiredDate().toString());
     }
 
-    private static String payloadFingerprint(DecisionActionProposal action, DecisionActor actor,
-                                             Map<String, Object> payload, List<FrozenLine> lines) {
-        List<String> values = new ArrayList<>(List.of("certified-purchase:v2", actor.tenantId(), actor.userId().toString(),
-            action.actionId().toString(), action.idempotencyKey(), action.target().type().name(),
-            Objects.toString(action.target().id(), "")));
-        PAYLOAD_FIELDS.stream().filter(field -> !field.equals("frozenLines") && !field.equals("requirement_detail_ids"))
-            .sorted().forEach(field -> { values.add(field); values.add(payload.get(field).toString()); });
-        for (FrozenLine line : lines) {
-            values.add(line.detailId().toString()); values.add(line.baseUomId().toString());
-            values.add(decimalText(line.coveredDemandBase())); values.add(line.orderUomId().toString());
-            values.add(decimalText(line.orderQuantity())); values.add(line.requiredDate().toString());
-        }
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            for (String value : values) {
-                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                digest.update(ByteBuffer.allocate(4).putInt(bytes.length).array()); digest.update(bytes);
-            }
-            return HexFormat.of().formatHex(digest.digest());
-        } catch (NoSuchAlgorithmException impossible) {
-            throw new ServiceException("可信采购结果合同摘要不可用");
-        }
-    }
-
     private static Long id(Object value) {
         require(value instanceof String text && text.matches("[1-9][0-9]{0,18}"), "标识必须为正十进制 ID 字符串，不接受单位名称");
         try { return Long.valueOf((String) value); }
         catch (NumberFormatException invalid) { throw new ServiceException("可信采购标识超出有效范围"); }
-    }
-
-    private static void version(Object value) {
-        require(value instanceof String text && !text.isBlank() && text.equals(text.trim()) && text.length() <= 256
-            && text.chars().noneMatch(Character::isISOControl), "物料、供应商、条款或 UOM 冻结版本缺失");
     }
 
     private static LocalDate date(Object value) {

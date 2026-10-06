@@ -10,6 +10,9 @@ import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
+import java.util.Set;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.p6spy.engine.spy.P6DataSource;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper;
@@ -203,6 +206,154 @@ class PuRequirementErpTransactionExecutorTest {
         verify(fixture.erpJdbc.connection).commit();
     }
 
+    private PuRequirementErpTransactionExecutor sourceExecutor(Fixture fixture) throws SQLException {
+        AtomicInteger isolation=new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
+        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call->isolation.get());
+        doAnswer(call->{isolation.set(call.getArgument(0));return null;}).when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        return new PuRequirementErpTransactionExecutor(fixture.sessionFactory);
+    }
+    @Test void provenSourceChangeSurvivesRealOwnedRrOnlyAfterSuccessfulRollbackAndCleanup() throws SQLException {
+        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
+        var original=new SourceChangedException();original.initCause(new IllegalStateException(PRIVATE_DIAGNOSTIC));
+        original.addSuppressed(new IllegalStateException(PRIVATE_DIAGNOSTIC));
+        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
+            var error=assertThrows(SourceChangedException.class,()->executor.executeRepeatableRead(TENANT,()->{
+                fixture.qualification.requireSourceChainTransaction();fixture.stageBatch();throw original;
+            }),"真实executor须在正常回滚清理后保留唯一可信来源变化类型");
+            assertEquals("采购冻结来源已变化，须重新分析",error.getMessage(),"只允许固定中文信号通过事务边界");
+            assertNull(error.getCause(),"不得带出原始cause或SQL诊断");
+            assertEquals(0,error.getSuppressed().length,"不得带出原始suppressed诊断");
+            fixture.assertRolledBack();verify(fixture.erpJdbc.statement,never()).executeBatch();assertCleanThread();
+            assertThrows(ServiceException.class,fixture.qualification::requireSourceChainTransaction,"异常收尾不得遗留owned许可");
+        }
+        fixture.assertOnlyErpBorrowed(1);
+    }
+    @Test void mandatoryScopeBeanSignalCrossesRealProxyAndOwnedRrRollbackBoundary() throws SQLException {
+        String tenantId="000000";
+        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
+        var mapper=mock(com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper.class);
+        var locks=mock(PuRequirementMaterialLockService.class);
+        var terminal=new com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper.WorkSource(
+            11L,tenantId,31L,"MATERIAL_REQUIREMENT",51L,"COMPLETED","0");
+        when(mapper.pinScopeDefinition()).thenReturn(List.of());when(mapper.scopeTableEngine()).thenReturn("InnoDB");
+        when(mapper.findRootWorkOrder(tenantId,11L)).thenReturn(terminal);when(mapper.lockPlanWorkOrders(tenantId,31L)).thenReturn(List.of(terminal));
+        var target=new com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard(mapper,fixture.qualification,locks);
+        var proxyFactory=new org.springframework.aop.framework.ProxyFactory(target);proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(
+            new DataSourceTransactionManager(fixture.erp),new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
+        var proxy=(com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard)proxyFactory.getProxy();
+        try(MockedStatic<TenantHelper> ignored=tenant(true,tenantId)) {
+            var error=assertThrows(SourceChangedException.class,()->executor.executeRepeatableRead(tenantId,()->{
+                fixture.stageBatch();
+                try {
+                    proxy.requireRootSourcesLocked(tenantId,
+                        new com.nexus.common.ai.decision.dto.DecisionBusinessRef(com.nexus.common.ai.decision.enums.DecisionBusinessType.WORK_ORDER,11L,null),
+                        MATERIAL,Set.of(21L),WINDOW_END);
+                } catch(SourceChangedException proven) {
+                    verify(mapper).lockPlanWorkOrders(tenantId,31L);
+                    assertTrue(fixture.holder(fixture.erp).isRollbackOnly(),"必须实际经过MANDATORY代理标记的同一物理holder");
+                    throw proven;
+                }
+                throw new AssertionError("代理必须取得终态根事实并抛出可信变化信号");
+            }),"真实MANDATORY Bean标记回滚不能让来源类型在owned RR中消失");
+            assertEquals("采购冻结来源已变化，须重新分析",error.getMessage(),"事务外只能收到固定安全信号");
+            assertNull(error.getCause(),"Bean代理原异常链不能泄露");assertEquals(0,error.getSuppressed().length,"Bean代理诊断不能泄露");
+            fixture.assertRolledBack();assertCleanThread();
+        }
+        fixture.assertOnlyErpBorrowed(1);
+    }
+    @ParameterizedTest @ValueSource(strings={"ROLLBACK","CLOSE","BEFORE_COMPLETION","AFTER_COMPLETION"})
+    void failedRollbackOrCleanupNeverClaimsProvenSourceChange(String failurePoint) throws SQLException {
+        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
+        if("ROLLBACK".equals(failurePoint))doThrow(new SQLException(PRIVATE_DIAGNOSTIC)).when(fixture.erpJdbc.connection).rollback();
+        if("CLOSE".equals(failurePoint))doThrow(new SQLException(PRIVATE_DIAGNOSTIC)).when(fixture.erpJdbc.connection).close();
+        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
+            var error=assertThrows(ServiceException.class,()->executor.executeRepeatableRead(TENANT,()->{
+                fixture.qualification.requireSourceChainTransaction();fixture.stageBatch();
+                if(failurePoint.endsWith("COMPLETION"))TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
+                    @Override public void beforeCompletion(){if("BEFORE_COMPLETION".equals(failurePoint))throw new IllegalStateException(PRIVATE_DIAGNOSTIC);}
+                    @Override public void afterCompletion(int status){if("AFTER_COMPLETION".equals(failurePoint))throw new IllegalStateException(PRIVATE_DIAGNOSTIC);}
+                });
+                throw new SourceChangedException();
+            }),"回滚或清理故障不得被解释为可标STALE的已证明来源变化");
+            assertNull(error.getCause(),"事务未知失败仍须脱敏");assertEquals(0,error.getSuppressed().length,"不能携带底层诊断");
+            assertFalse(error.getMessage().contains(PRIVATE_DIAGNOSTIC),"不能暴露底层错误文本");
+            verify(fixture.erpJdbc.connection,never()).commit();assertCleanThread();
+        }
+        fixture.assertOnlyErpBorrowed(1);
+    }
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void synchronizationRegisteredDuringBeforeCompletionCannotClaimSafeSourceChange(boolean lateFails) throws SQLException {
+        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
+        AtomicBoolean lateRegistered=new AtomicBoolean(),lateCompleted=new AtomicBoolean();
+        // 只隔离本测试的日志输出，真正Spring注册、回调、吞异常路径照常执行；模拟敏感文本不写控制台。
+        var logger=(ch.qos.logback.classic.Logger)org.slf4j.LoggerFactory.getLogger(
+            org.springframework.transaction.support.TransactionSynchronizationUtils.class);
+        var captured=new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        boolean additive=logger.isAdditive();captured.start();logger.addAppender(captured);logger.setAdditive(false);
+        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
+            RuntimeException failure=assertThrows(RuntimeException.class,()->executor.executeRepeatableRead(TENANT,()->{
+                fixture.qualification.requireSourceChainTransaction();fixture.stageBatch();
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
+                    @Override public void beforeCompletion() {
+                        assertTrue(TransactionSynchronizationManager.isSynchronizationActive(),"必须在真实beforeCompletion注册新同步");
+                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
+                            @Override public void afterCompletion(int status) {
+                                assertEquals(TransactionSynchronization.STATUS_ROLLED_BACK,status,"迟同步必须确实收到真实Spring回滚完成回调");
+                                lateCompleted.set(true);
+                                if(lateFails)throw new IllegalStateException(PRIVATE_DIAGNOSTIC);
+                            }
+                        });
+                        lateRegistered.set(true);
+                    }
+                });
+                throw new SourceChangedException();
+            }),"已确认来源变化仍必须经过完整回滚清理证明");
+            assertTrue(lateRegistered.get(),"夹具必须实际迟注册同步，而非提前包装的普通同步");
+            assertTrue(lateCompleted.get(),"Spring必须实际执行迟注册afterCompletion，不能跳过清理来制造通过");
+            assertEquals(ServiceException.class,failure.getClass(),"未被初始观察覆盖的迟同步即使静默成功也只返回普通未确认安全失败");
+            assertNull(failure.getCause(),"不得带出迟同步原始cause");assertEquals(0,failure.getSuppressed().length,"不得带出迟同步suppressed");
+            assertFalse(failure.getMessage().contains(PRIVATE_DIAGNOSTIC),"返回异常不能暴露模拟敏感诊断");
+            for(var event:captured.list) {
+                assertFalse(event.getFormattedMessage().contains(PRIVATE_DIAGNOSTIC),"Spring日志不能直接打印迟同步敏感模拟文本");
+                for(var error=event.getThrowableProxy();error!=null;error=error.getCause())
+                    assertFalse(java.util.Objects.toString(error.getMessage(),"").contains(PRIVATE_DIAGNOSTIC),"迟同步日志异常链必须同样脱敏");
+            }
+            fixture.assertRolledBack();assertCleanThread();
+            verify(fixture.erpJdbc.statement,never()).executeBatch();
+        } finally {
+            logger.detachAppender(captured);logger.setAdditive(additive);captured.stop();
+        }
+        fixture.assertOnlyErpBorrowed(1);
+    }
+    @Test void sourceNamedRuntimeOrNonRrSignalCannotBypassSanitizedFailureBoundary() throws SQLException {
+        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
+        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
+            var error=assertThrows(ServiceException.class,()->executor.executeRepeatableRead(TENANT,()->{
+                fixture.stageBatch();var unknown=new IllegalStateException("采购冻结来源已变化，须重新分析");
+                unknown.initCause(new SourceChangedException());throw unknown;
+            }),"不可按文本或异常链内嵌类型放行普通Runtime");
+            assertNull(error.getCause(),"普通Runtime仍必须无cause");assertEquals(0,error.getSuppressed().length,"普通Runtime仍必须无suppressed");
+            assertCleanThread();
+        }
+        Fixture ordinary=new Fixture();
+        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
+            assertThrows(ServiceException.class,()->new PuRequirementErpTransactionExecutor(ordinary.sessionFactory).execute(TENANT,()->{
+                throw new SourceChangedException();
+            }),"普通非来源RR入口不能转授来源变化许可");assertCleanThread();
+        }
+    }
+    @Test void sourceSignalAfterCommittedJdbcIsNotReadDifferenceOrRollbackSuccess() throws SQLException {
+        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
+        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
+            var error=assertThrows(ServiceException.class,()->executor.executeRepeatableRead(TENANT,()->{
+                fixture.stageBatch();TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
+                    @Override public void afterCommit(){throw new SourceChangedException();}
+                });return "已返回正常读结果";
+            }),"提交后同步抛信号不能伪装正常回滚的来源变化");
+            assertNull(error.getCause(),"提交结果异常仍保持安全失败");verify(fixture.erpJdbc.connection).commit();assertCleanThread();
+        }
+    }
     @Test
     void callbackFailureCannotLeakRepeatableReadChainOwnership() throws Exception {
         Fixture fixture = new Fixture();

@@ -45,8 +45,58 @@ class ErpIndustrialDecisionDataAdapterTest {
     @Mock private ErpDecisionFreshnessChecker freshness;
     @Mock private ErpDecisionActionExecutor executor;
     @Mock private ErpCertifiedPurchaseDecisionAdapter purchase;
+    @Mock private ErpDecisionPurchaseContractService contracts;
     @InjectMocks private ErpIndustrialDecisionDataAdapter adapter;
 
+    @Test void freezeUsesPersistedSnapshotOnlyAfterOrdinaryFreshnessAndReadAccess() {
+        withTenant(()->{
+            when(assembler.exists(REF,ACTOR)).thenReturn(true);
+            when(freshness.check(REF,"old-hash",ACTOR)).thenReturn(new DecisionFreshnessResult(true,"old-hash",List.of()));
+            when(contracts.freeze(SNAPSHOT,7,ACTOR)).thenAnswer(call->{
+                assertEquals("TENANT-B",TenantHelper.getDynamic(),"冻结必须在已核身份的租户上下文");return List.of();
+            });
+            assertTrue(adapter.freezePurchaseContracts(SNAPSHOT,7,ACTOR).isEmpty(),"只有服务端冻结结果能成为采购候选");
+            var order=inOrder(freshness,contracts);order.verify(freshness).check(REF,"old-hash",ACTOR);order.verify(contracts).freeze(SNAPSHOT,7,ACTOR);
+            verifyNoInteractions(executor,purchase);
+        });
+    }
+    @Test void purchaseFreshnessDoesNotRecheckGlobalHashChangedByCommittedSibling() {
+        withTenant(()->{
+            when(assembler.exists(REF,ACTOR)).thenReturn(true);
+            assertDoesNotThrow(()->adapter.requireFreshPurchaseContract(purchaseAction(),SNAPSHOT,7,ACTOR),
+                "逐物料采购复核不得被兄弟采购引起的普通全局hash变化阻断");
+            verify(contracts).requireFresh(purchaseAction(),SNAPSHOT,7,ACTOR);verifyNoInteractions(freshness,shortage,purchase);
+        });
+    }
+    @Test void readonlyApprovalUsesExistingQueryRightsNotPurchaseWriteGrant() {
+        var approver=actor(Set.of("ai:decision:approve","ai:decision:query","prd:work:query"));
+        withTenant(()->{
+            when(assembler.exists(REF,approver)).thenReturn(true);
+            assertDoesNotThrow(()->adapter.requireFreshPurchaseContract(purchaseAction(),SNAPSHOT,7,approver),
+                "可信审批身份仅复读来源，不额外授予采购写权限");
+            verify(contracts).requireFresh(purchaseAction(),SNAPSHOT,7,approver);
+            verifyNoInteractions(freshness,purchase,executor);
+        });
+    }
+    @Test void recoverDelegatesWithoutSourceFreshnessOrCreationAndRestoresTenant() {
+        withTenant(()->{
+            TenantHelper.setDynamic("TENANT-A");when(assembler.existsForPurchaseRecovery(REF,ACTOR)).thenReturn(true);
+            when(purchase.recover(purchaseAction(),ACTOR)).thenAnswer(call->{
+                assertEquals("TENANT-B",TenantHelper.getDynamic(),"恢复使用原执行人的受控租户");return success();
+            });
+            assertEquals(success(),adapter.recoverPurchaseAction(purchaseAction(),ACTOR),"只恢复原实际提交");
+            assertEquals("TENANT-A",TenantHelper.getDynamic(),"恢复后不能遗留调用方租户");
+            verifyNoInteractions(freshness,contracts,shortage,executor);verify(purchase,never()).execute(any(),any());
+        });
+    }
+    @Test void recoverRequiresRealtimeExecuteAndPurchasePermissionsBeforeAnyDelegate() {
+        var missingExecute=actor(Set.of("ai:decision:run","prd:work:query","pu:requisition:add"));
+        withTenant(()->{
+            assertThrows(ServiceException.class,()->adapter.recoverPurchaseAction(purchaseAction(),missingExecute),
+                "恢复认领仍需实时决策执行和采购写权限");
+            verifyNoInteractions(assembler,purchase,contracts,freshness);
+        });
+    }
     @Test
     void facadeExposesPortOnErpDatasource() {
         assertInstanceOf(IndustrialDecisionDataPort.class, adapter);
@@ -226,6 +276,7 @@ class ErpIndustrialDecisionDataAdapterTest {
                 assertEquals("TENANT-B", TenantHelper.getDynamic());
                 return result;
             });
+            when(assembler.existsForPurchaseRecovery(REF, ACTOR)).thenReturn(true);
             when(purchase.verify(action, result, ACTOR)).thenAnswer(call -> {
                 assertEquals("TENANT-B", TenantHelper.getDynamic());
                 return result;

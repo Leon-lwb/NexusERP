@@ -8,6 +8,7 @@ import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.bo.PuCertifiedPurchaseCommand;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
@@ -48,13 +49,13 @@ import static org.mockito.Mockito.*;
 class ErpCertifiedPurchaseDecisionAdapterTest {
     private static final String TENANT = "000001";
     private static final String FINGERPRINT = "a".repeat(64);
-    private static final String KEY = "purchase-v2:run-10:material-100:action-101";
     private static final Long MATERIAL = 9007199254740993L;
     private static final Long DETAIL = 9007199254741001L;
     private static final DecisionActor ACTOR = new DecisionActor(TENANT, 7L, "tester",
         Set.of("ai:decision:execute", "pu:requisition:add"));
     private static final DecisionBusinessRef TARGET =
         new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11");
+    private static final String KEY=DecisionPurchaseContractCodec.idempotencyKey(TENANT,10L,TARGET,DecisionPurchaseContractCodec.parse(payload(),10L));
     @Mock private PuCertifiedPurchaseWriteService writer;
     private ErpCertifiedPurchaseDecisionAdapter adapter;
     private MockedStatic<TenantHelper> tenant;
@@ -75,6 +76,51 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
         assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
     }
 
+    private DecisionActionExecutionResult recoverExisting(DecisionActionProposal action) {
+        return adapter.recover(action,ACTOR);
+    }
+    @Test void v2KeyIsRecomputedAndNonWorkOrderTargetNeverReachesWriter() {
+        var original=action(payload());
+        var wrongKey=new DecisionActionProposal(original.actionId(),original.actionType(),original.title(),original.displayReason(),TARGET,
+            original.payload(),original.riskLevel(),true,original.permissionCode(),"AI_PURCHASE_V2:"+"f".repeat(64),original.executorCode(),1,List.of());
+        assertThrows(ServiceException.class,()->adapter.execute(wrongKey,ACTOR),"新v2键必须与完整身份前像一致");
+        var otherTarget=new DecisionActionProposal(original.actionId(),original.actionType(),original.title(),original.displayReason(),
+            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER,11L,null),original.payload(),original.riskLevel(),true,original.permissionCode(),
+            KEY,original.executorCode(),1,List.of());
+        assertThrows(ServiceException.class,()->adapter.execute(otherTarget,ACTOR),"首包不扩展非工单根");
+        verifyNoInteractions(writer);
+    }
+    @Test void recoverMissDoesNotCallExistingCreationWriter() throws Exception {
+        assertNull(recoverExisting(action(payload())),"只有确定无永久提交才可返回空结果");
+        verify(writer).recoverForDecision(eq(command()),eq(ACTOR),eq(10L),eq(101L),eq(frozenLines()),any(FrozenContract.class));
+        verify(writer,never()).createForDecision(any(),any(),any(),any(),any(),any());
+    }
+    @Test void recoverCommittedDraftUsesActualReceiptAndFullOriginalContract() throws Exception {
+        when(writer.recoverForDecision(any(),eq(ACTOR),eq(10L),eq(101L),anyList(),any(FrozenContract.class))).thenReturn(receipt(true));
+        var result=recoverExisting(action(payload()));
+        assertTrue(result.success(),"草稿恢复应返回真实成功结果信封");
+        assertEquals(receipt(true).requisitionId(),result.resultBizId(),"只能认领原实际单据");
+        var captured=org.mockito.ArgumentCaptor.forClass(FrozenContract.class);
+        verify(writer).recoverForDecision(any(),eq(ACTOR),eq(10L),eq(101L),anyList(),captured.capture());
+        assertEquals(11L,captured.getValue().rootWorkOrderId(),"恢复仍须绑定持久化动作的根身份");
+        verify(writer,never()).createForDecision(any(),any(),any(),any(),any(),any());
+    }
+    @Test void recoverAdvancedDocumentReturnsActualBusinessIdWithoutRecreation() throws Exception {
+        var old=receipt(true);
+        when(writer.recoverForDecision(any(),eq(ACTOR),eq(10L),eq(101L),anyList(),any(FrozenContract.class))).thenReturn(
+            new PuCertifiedPurchaseResult(old.requisitionId(),old.requisitionNo(),"ORDERED",1,true,FINGERPRINT,old.lines()));
+        var result=recoverExisting(action(payload()));
+        assertFalse(result.success(),"原单已变更不能声称创建新草稿成功");
+        assertEquals("VERIFY_STATE_MISMATCH",result.errorCode(),"状态不匹配须明确报告");
+        assertEquals(old.requisitionId(),result.resultBizId(),"失败结果仍保留实际业务单据身份");
+        verify(writer,never()).createForDecision(any(),any(),any(),any(),any(),any());
+    }
+    @Test void recoverConflictIsNotCaughtAsMissing() throws Exception {
+        when(writer.recoverForDecision(any(),eq(ACTOR),eq(10L),eq(101L),anyList(),any(FrozenContract.class)))
+            .thenThrow(new ServiceException("永久请求键已被不同合同占用"));
+        assertThrows(ServiceException.class,()->recoverExisting(action(payload())),"冲突必须传播而不是空结果");
+        verify(writer,never()).createForDecision(any(),any(),any(),any(),any(),any());
+    }
     @Test
     void certifiedPurchaseHasSeparateNonTransactionalComponent() {
         assertNotNull(ErpCertifiedPurchaseDecisionAdapter.class.getAnnotation(Component.class));
@@ -524,17 +570,13 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
         changes.add(action(changed("frozenLines", List.of(quantities))));
         changes.add(action(changedLine("requiredDate", "2026-10-16")));
         var original = action(payload());
-        for (DecisionBusinessRef target : List.of(new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 12L, "WO-12"),
-            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 11L, "SO-11"))) {
+        for (DecisionBusinessRef target : List.of(new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 12L, "WO-12"))) {
             changes.add(new DecisionActionProposal(original.actionId(), original.actionType(), original.title(),
                 original.displayReason(), target, original.payload(), original.riskLevel(), original.approvalRequired(),
-                original.permissionCode(), KEY, original.executorCode(), 1, List.of()));
+                original.permissionCode(), key(original.payload(),target), original.executorCode(), 1, List.of()));
         }
         changes.add(new DecisionActionProposal(102L, original.actionType(), original.title(), original.displayReason(), TARGET,
             original.payload(), original.riskLevel(), true, original.permissionCode(), KEY, original.executorCode(), 1, List.of()));
-        changes.add(new DecisionActionProposal(original.actionId(), original.actionType(), original.title(), original.displayReason(),
-            TARGET, original.payload(), original.riskLevel(), true, original.permissionCode(), KEY + "-other",
-            original.executorCode(), 1, List.of()));
         return changes.stream();
     }
 
@@ -574,7 +616,15 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
     private static DecisionActionProposal action(Map<String, Object> payload) {
         return new DecisionActionProposal(101L, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
             "draft", "reason", TARGET, payload, DecisionRiskLevel.HIGH, true,
-            "pu:requisition:add", KEY, "purchaseRequisitionDraft", 1, List.of());
+            "pu:requisition:add", key(payload,TARGET), "purchaseRequisitionDraft", 1, List.of());
+    }
+
+    /** 合成合法动作重算统一键；畸形载荷留给被测codec拒绝，不在夹具提前失败。 */
+    private static String key(Map<String,Object> payload,DecisionBusinessRef target) {
+        try {
+            var contract=DecisionPurchaseContractCodec.parse(payload,null);
+            return DecisionPurchaseContractCodec.idempotencyKey(TENANT,Long.valueOf((String)payload.get("runId")),target,contract);
+        } catch(ServiceException invalid) {return KEY;}
     }
 
     private static Map<String, Object> changed(String key, Object value) {

@@ -5,6 +5,8 @@ import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
+import com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedLine;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
@@ -39,12 +41,25 @@ public class PuCertifiedPurchaseWriteService {
     private final PuRequirementAllocationEventMapper events;
     private final PuCertifiedPurchaseNumberReservation numbers;
     private final PuCertifiedPurchaseLifecycleSourceGate allocationDefinitions;
+    private final ErpDecisionPurchaseScopeGuard scopeGuard;
 
+    /** 旧Java调用方仅兼容人工入口；没有归属守卫的新版AI新建仍失败关闭。 */
     public PuCertifiedPurchaseWriteService(PuCertifiedPurchaseAuthorizer authorizer,
         PuRequirementErpTransactionExecutor executor,PuRequirementErpTransactionQualification qualification,
         PuRequirementMaterialLockService locks,ErpPurchaseSourceCertificationService certification,
         PuCertifiedPurchaseWriteMapper mapper,PuRequirementAllocationLedgerMapper ledger,
         PuRequirementAllocationEventMapper events,PuCertifiedPurchaseNumberReservation numbers,PuCertifiedPurchaseLifecycleMapper lifecycleMapper) {
+        this(authorizer,executor,qualification,locks,certification,mapper,ledger,events,numbers,lifecycleMapper,null);
+    }
+
+    @Autowired
+    public PuCertifiedPurchaseWriteService(PuCertifiedPurchaseAuthorizer authorizer,
+        PuRequirementErpTransactionExecutor executor,PuRequirementErpTransactionQualification qualification,
+        PuRequirementMaterialLockService locks,ErpPurchaseSourceCertificationService certification,
+        PuCertifiedPurchaseWriteMapper mapper,PuRequirementAllocationLedgerMapper ledger,
+        PuRequirementAllocationEventMapper events,PuCertifiedPurchaseNumberReservation numbers,PuCertifiedPurchaseLifecycleMapper lifecycleMapper,
+        ErpDecisionPurchaseScopeGuard scopeGuard) {
+        this.scopeGuard=scopeGuard;
         this.authorizer=Objects.requireNonNull(authorizer);this.executor=Objects.requireNonNull(executor);
         this.qualification=Objects.requireNonNull(qualification);this.locks=Objects.requireNonNull(locks);
         this.certification=Objects.requireNonNull(certification);this.mapper=Objects.requireNonNull(mapper);
@@ -72,8 +87,10 @@ public class PuCertifiedPurchaseWriteService {
         BigDecimal orderQuantity,LocalDate requiredDate) { }
 
     /** 完整冻结合同由ERP adapter从已批准payload生成，不能作为数量或认证事实。 */
-    public record FrozenContract(String payloadFingerprint,Map<String,String> metadata) {
+    public record FrozenContract(String payloadFingerprint,Map<String,String> metadata,Long rootWorkOrderId) {
         public FrozenContract { if(metadata!=null) metadata=Map.copyOf(metadata); }
+        /** 仅保留Java兼容，缺根合同不授予新版AI新建授权。 */
+        public FrozenContract(String payloadFingerprint,Map<String,String> metadata) {this(payloadFingerprint,metadata,null);}
     }
     public PuCertifiedPurchaseResult createForDecision(PuCertifiedPurchaseCommand command,DecisionActor actor,
         Long runId,Long actionId,List<FrozenLine> frozenLines,FrozenContract contract) {
@@ -87,7 +104,7 @@ public class PuCertifiedPurchaseWriteService {
         validateContract(contract);validate(command,actor);
         String requestHash=requestHash(command,actor,"AI_DECISION",runId,actionId,frozen,contract);
         return executor.executeRepeatableRead(actor.tenantId(),()-> {
-            prepareStore(actor.tenantId(),command.materialId());
+            prepareStore(actor.tenantId(),command.materialId(),true);
             return recover(command,actor,"AI_DECISION",requestHash,runId,actionId);
         });
     }
@@ -123,18 +140,25 @@ public class PuCertifiedPurchaseWriteService {
         // 冻结输入以免调用方在编号或事务等待期间改动；record已对来源集合防御复制。
         String requestHash=requestHash(command,actor,entryType,runId,actionId,frozenLines,contract);
         PuCertifiedPurchaseResult recovered=executor.executeRepeatableRead(actor.tenantId(),()-> {
-            prepareStore(actor.tenantId(),command.materialId());
+            prepareStore(actor.tenantId(),command.materialId(),"AI_DECISION".equals(entryType));
             return recover(command,actor,entryType,requestHash,runId,actionId);
         });
         if(recovered!=null)return recovered;
+        if("AI_DECISION".equals(entryType))require(contract!=null&&positive(contract.rootWorkOrderId())&&scopeGuard!=null,
+            "完整AI冻结合同缺少可核验的工单根守卫");
         // 这里已经真实退出并清理前一个ERP事务；AutoCode的master事务不混入ERP原子性。
         String number=numbers.reserveRequisitionNumber();
         require(number!=null&&number.matches("[A-Za-z0-9_-]{1,64}"),"编号保留结果无效");
         return executor.executeRepeatableRead(actor.tenantId(),()-> {
             validate(command,actor);
-            prepareStore(actor.tenantId(),command.materialId());
+            prepareStore(actor.tenantId(),command.materialId(),"AI_DECISION".equals(entryType));
             PuCertifiedPurchaseResult race=recover(command,actor,entryType,requestHash,runId,actionId);
             if(race!=null)return race;
+            if("AI_DECISION".equals(entryType)) {
+                require(contract!=null&&positive(contract.rootWorkOrderId())&&scopeGuard!=null,"完整AI冻结合同缺少可核验的工单根守卫");
+                scopeGuard.requireWorkOrderSourcesLocked(actor.tenantId(),contract.rootWorkOrderId(),command.materialId(),
+                    command.vendorId(),Set.copyOf(command.requirementDetailIds()),command.windowEnd());
+            }
             CertifiedPurchaseScope scope=certification.prepareLocked(actor.tenantId(),command.materialId(),command.vendorId(),
                 command.windowEnd(),Set.copyOf(command.requirementDetailIds()));
             validateScope(scope,command,actor);
@@ -175,11 +199,13 @@ public class PuCertifiedPurchaseWriteService {
         });
     }
 
-    private void prepareStore(String tenantId,Long materialId) {
+    /** 恢复仅锁已有guard，既有人工创建仍保留原初始化行为。 */
+    private void prepareStore(String tenantId,Long materialId,boolean existingOnly) {
         qualification.requireSourceChainTransaction();
         allocationDefinitions.requireAllocationDefinitions();
         // 物料guard在command读取前保持统一锁次序；同来源并发不会凭应用快照创建第二次占用。
-        locks.lock(tenantId,List.of(materialId));
+        if(existingOnly) locks.lockExisting(tenantId,List.of(materialId));
+        else locks.lock(tenantId,List.of(materialId));
         List<String> pinned=mapper.pinCommandDefinition();
         require(pinned!=null&&pinned.isEmpty(),"永久采购请求表定义缺失或空查询合同异常");
         require("InnoDB".equalsIgnoreCase(mapper.commandTableEngine()),"永久采购请求表不是已认证事务引擎");
@@ -305,7 +331,10 @@ public class PuCertifiedPurchaseWriteService {
     private static String contractFingerprint(FrozenContract contract) {
         if(contract==null)return "";
         List<String> fields=new ArrayList<>();fields.add(contract.payloadFingerprint());
-        new TreeMap<>(contract.metadata()).forEach((k,v)->{fields.add(k);fields.add(v);});return hash(fields.toArray(String[]::new));
+        new TreeMap<>(contract.metadata()).forEach((k,v)->{fields.add(k);fields.add(v);});
+        // 缺根旧构造器保持旧摘要兼容；新版根以类型与ID绑定，不纳入展示编号。
+        if(contract.rootWorkOrderId()!=null) {fields.add("WORK_ORDER");fields.add(contract.rootWorkOrderId().toString());}
+        return hash(fields.toArray(String[]::new));
     }
     private static void matchContract(CertifiedPurchaseScope scope,FrozenContract contract) {
         if(contract==null)return;

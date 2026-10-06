@@ -4,6 +4,7 @@ import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
+import com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedLine;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
@@ -35,6 +36,7 @@ class PuCertifiedPurchaseWriteServiceTest {
     private PuCertifiedPurchaseNumberReservation numbers;
     private PuCertifiedPurchaseLifecycleMapper definitions;
     private PuCertifiedPurchaseWriteService service;
+    private ErpDecisionPurchaseScopeGuard scopeGuard;
     private MockedStatic<TenantHelper> tenants;
 
     @BeforeEach void setup() {
@@ -68,7 +70,8 @@ class PuCertifiedPurchaseWriteServiceTest {
             new PuCertifiedPurchaseWriteMapper.CommandUniqueKeyColumn("uk_certified_purchase_requisition",0,1,"tenant_id",null),
             new PuCertifiedPurchaseWriteMapper.CommandUniqueKeyColumn("uk_certified_purchase_requisition",0,2,"requisition_id",null)));
         when(numbers.reserveRequisitionNumber()).thenReturn("CGSQ202610030001");
-        service=new PuCertifiedPurchaseWriteService(auth,tx,qualification,locks,certification,mapper,ledger,events,numbers,definitions);
+        scopeGuard=mock(ErpDecisionPurchaseScopeGuard.class);
+        service=new PuCertifiedPurchaseWriteService(auth,tx,qualification,locks,certification,mapper,ledger,events,numbers,definitions,scopeGuard);
     }
     @AfterEach void close() { tenants.close(); }
     private PuCertifiedPurchaseCommand command() { return new PuCertifiedPurchaseCommand(KEY,139L,9L,DAY,List.of(21L,22L),HASH); }
@@ -240,12 +243,139 @@ class PuCertifiedPurchaseWriteServiceTest {
         metadata.put("supplierTermsId","700");metadata.put("supplierTermsVersion",termsVersion);
         metadata.put("baseUomId","4");metadata.put("baseUomVersion","unit-v1");metadata.put("orderUomId","4");
         metadata.put("orderUomVersion","unit-v1");metadata.put("conversionVersion","unit-v1");
-        return new PuCertifiedPurchaseWriteService.FrozenContract(fingerprint,metadata);
+        return new PuCertifiedPurchaseWriteService.FrozenContract(fingerprint,metadata,11L);
     }
     private void aiReady() {
         ready();when(mapper.insertDocument(anyLong(),eq(TENANT),anyString(),anyString(),eq(7L),anyString(),anyString(),eq("AI_DECISION"),
             eq(100L),eq(200L),eq(KEY))).thenReturn(1);
 
+    }
+    @Test void recoverNeverReservesNumberOrEnsuresGuardOnConfirmedMiss() {
+        var result=service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
+        assertNull(result,"确定无永久提交时只能返回空结果，不能补建采购");
+        verify(locks).lockExisting(TENANT,List.of(139L));
+        verify(locks,never()).lock(any(),any());
+        verifyNoInteractions(numbers,certification,ledger,events);
+        verify(mapper,never()).insertCommand(any(),any(),any());
+        verify(mapper,never()).insertDocument(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+    @Test void internalFrozenContractCarriesExplicitRootButKeepsTwoArgumentCompatibility() {
+        var names=Arrays.stream(PuCertifiedPurchaseWriteService.FrozenContract.class.getRecordComponents()).map(c->c.getName()).toList();
+        assertEquals(List.of("payloadFingerprint","metadata","rootWorkOrderId"),names,"完整内部合同须有可重读的工单根，不能反解摘要");
+        assertDoesNotThrow(()->PuCertifiedPurchaseWriteService.FrozenContract.class.getConstructor(String.class,Map.class),
+            "保留旧两参构造，但缺根不能新建新版采购");
+    }
+    @Test void checksOwnershipInsideCreationRrBeforeCertificationAndAllInserts() {
+        aiReady();final boolean[] inside={false};final int[] count={0};
+        when(tx.executeRepeatableRead(eq(TENANT),any())).thenAnswer(invocation->{
+            count[0]++;inside[0]=true;
+            try{return ((Supplier<?>)invocation.getArgument(1)).get();}finally{inside[0]=false;}
+        });
+        doAnswer(invocation->{
+            assertTrue(inside[0],"根归属只能在writer拥有的ERP RR内检查");
+            assertEquals(2,count[0],"永久结果MISS后必须在最后落账事务复核来源");return null;
+        }).when(scopeGuard).requireWorkOrderSourcesLocked(TENANT,11L,139L,9L,Set.of(21L,22L),DAY);
+        service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
+        var order=inOrder(scopeGuard,certification,mapper,ledger,events);
+        order.verify(scopeGuard).requireWorkOrderSourcesLocked(TENANT,11L,139L,9L,Set.of(21L,22L),DAY);
+        order.verify(certification).prepareLocked(TENANT,139L,9L,DAY,Set.of(21L,22L));
+        order.verify(mapper).insertDocument(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(locks,never()).lock(any(),any());
+    }
+    @Test void missingRootCompatibilityContractCannotCreateNewAiPurchase() {
+        aiReady();var complete=contract("c".repeat(64),"terms-v1");
+        var noRoot=new PuCertifiedPurchaseWriteService.FrozenContract(complete.payloadFingerprint(),complete.metadata());
+        assertThrows(ServiceException.class,()->service.createForDecision(command(),aiActor(),100L,200L,aiLines(),noRoot),
+            "保留两参构造不代表缺根的新合同可创建采购");
+        verifyNoInteractions(numbers,certification,ledger,events);
+    }
+    @Test void ownershipRaceStopsBeforeAllBusinessRows() {
+        aiReady();doThrow(new ServiceException("根归属已变化")).when(scopeGuard)
+            .requireWorkOrderSourcesLocked(TENANT,11L,139L,9L,Set.of(21L,22L),DAY);
+        assertThrows(ServiceException.class,()->service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1")),
+            "冻结后的工单归属竞态不得落头行、占用、事件或command");
+        verifyNoInteractions(certification,ledger,events);
+        verify(mapper,never()).insertDocument(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(mapper,never()).insertCommand(any(),any(),any());
+    }
+    @Test void existingManualMrpAndLowStockEntriesDoNotAcquireAiRootGuard() {
+        ready();assertNotNull(service.createManual(command()),"原人工入口继续复用认证writer");
+        assertNotNull(service.createMrp(command()),"原MRP入口继续复用认证writer");
+        assertNotNull(service.createLowStock(command()),"原低库存入口继续保持逐MRP认证");
+        verifyNoInteractions(scopeGuard);
+        verify(certification,times(3)).prepareLocked(TENANT,139L,9L,DAY,Set.of(21L,22L));
+    }
+    @Test void allAiHeadRowsLedgerEventsAndPermanentCommandRemainInSameFinalRr() {
+        aiReady();final boolean[] inside={false};final int[] count={0};
+        when(tx.executeRepeatableRead(eq(TENANT),any())).thenAnswer(invocation->{
+            count[0]++;inside[0]=true;
+            try{return ((Supplier<?>)invocation.getArgument(1)).get();}finally{inside[0]=false;}
+        });
+        when(numbers.reserveRequisitionNumber()).thenAnswer(invocation->{assertFalse(inside[0],"master编号必须在ERP事务外保留");return "PR-OFFLINE-001";});
+        org.mockito.stubbing.Answer<Integer> written=invocation->{
+            assertTrue(inside[0],"头、行、占用、事件、command都必须在最后ERP事务内写");
+            assertEquals(2,count[0],"所有业务写入须加入相同最后ERP RR");return 1;
+        };
+        when(mapper.insertDocument(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any())).thenAnswer(written);
+        when(mapper.insertLine(any(),any(),any(),any(),any(),any(),any(),any(),any())).thenAnswer(written);
+        when(ledger.insert(any())).thenAnswer(written);when(events.insert(any())).thenAnswer(written);
+        when(mapper.insertCommand(any(),any(),any())).thenAnswer(written);
+        var result=service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
+        assertEquals("DRAFT",result.status(),"原子创建只返回实际初始草稿");assertEquals(0,result.version(),"原子创建版本为零");
+        assertEquals(2,count[0],"恢复查只读与创建事务必须真实分开");
+    }
+    private PuCertifiedPurchaseResult commitAiAndPrepareReplay() {
+        aiReady();var first=service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
+        ArgumentCaptor<PuCertifiedPurchaseWriteMapper.CommandReceipt> saved=ArgumentCaptor.forClass(PuCertifiedPurchaseWriteMapper.CommandReceipt.class);
+        verify(mapper).insertCommand(eq(TENANT),saved.capture(),any());when(mapper.lockCommand(TENANT,KEY)).thenReturn(saved.getValue());
+        when(mapper.lockDocument(TENANT,first.requisitionId())).thenReturn(new PuCertifiedPurchaseWriteMapper.DocumentReceipt(
+            first.requisitionId(),first.requisitionNo(),"DRAFT",0,KEY,"0","AI_DECISION",7L,100L,200L));
+        when(mapper.lockLines(TENANT,first.requisitionId())).thenReturn(first.lines().stream().map(l->new PuCertifiedPurchaseWriteMapper.LineReceipt(
+            l.lineId(),l.materialId(),l.requirementDetailId(),l.baseUomId().toString(),l.applyQuantity(),DAY+" 00:00:00","MRP","0")).toList());
+        ArgumentCaptor<PuRequirementAllocationLedger> allocations=ArgumentCaptor.forClass(PuRequirementAllocationLedger.class);
+        verify(ledger,times(2)).insert(allocations.capture());
+        ArgumentCaptor<PuRequirementAllocationEvent> creates=ArgumentCaptor.forClass(PuRequirementAllocationEvent.class);
+        verify(events,times(2)).insert(creates.capture());
+        for(var row:allocations.getAllValues()) {
+            row.setCreateTime(new Date(1));row.setVersion(5);when(ledger.lockByKey(TENANT,row.getAllocationKey())).thenReturn(row);
+            var initial=creates.getAllValues().stream().filter(e->e.getAllocationId().equals(row.getAllocationId())).findFirst().orElseThrow();
+            initial.setOccurredAt(new Date(1));when(mapper.lockCreationEvents(TENANT,row.getAllocationId())).thenReturn(List.of(initial));
+        }
+        clearInvocations(mapper,certification,numbers,ledger,events,scopeGuard,locks);return first;
+    }
+    @Test void committedRequestRecoversAfterOwnOccupationChangedWithoutSourceRecertification() {
+        var first=commitAiAndPrepareReplay();
+        when(certification.prepareLocked(any(),any(),any(),any(),any())).thenThrow(new ServiceException("自己的占用已改变全局来源指纹"));
+        var result=service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
+        assertEquals(first.requisitionId(),result.requisitionId(),"恢复必须认领原始永久提交");
+        assertTrue(result.replayed(),"恢复必须标识为真实重放");
+        verify(locks).lockExisting(TENANT,List.of(139L));verify(locks,never()).lock(any(),any());
+        verifyNoInteractions(numbers,certification,scopeGuard);verify(ledger,never()).insert(any());verify(events,never()).insert(any());
+    }
+    @Test void completedRootDoesNotEraseExistingReceiptOrAllocateAgain() {
+        var first=commitAiAndPrepareReplay();
+        doThrow(new ServiceException("根工单后来已完工")).when(scopeGuard).requireWorkOrderSourcesLocked(any(),any(),any(),any(),any(),any());
+        var result=service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
+        assertEquals(first.requisitionId(),result.requisitionId(),"已有永久提交不能被后续根状态抹去");
+        verifyNoInteractions(numbers,certification,scopeGuard);verify(locks,never()).lock(any(),any());
+    }
+    @Test void recoveryConflictingActorRootRunActionOrContractIsNeverMiss() {
+        commitAiAndPrepareReplay();var full=contract("c".repeat(64),"terms-v1");
+        var other=new DecisionActor(TENANT,8L,"另一执行人",aiActor().permissions());
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),other,100L,200L,aiLines(),full),"其他执行人不能认领原提交");
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),101L,200L,aiLines(),full),"运行冲突不得返回空结果");
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),100L,201L,aiLines(),full),"动作冲突不得返回空结果");
+        var otherRoot=new PuCertifiedPurchaseWriteService.FrozenContract(full.payloadFingerprint(),full.metadata(),12L);
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),otherRoot),"根身份必须进入永久请求摘要");
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v2")),
+            "合同变化不得catch成MISS");
+        verifyNoInteractions(numbers,certification,scopeGuard);
+    }
+    @Test void recoveryRequiresOriginalCreationEventAndUnmodifiedLineFingerprint() {
+        commitAiAndPrepareReplay();when(mapper.lockCreationEvents(any(),any())).thenReturn(List.of());
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1")),
+            "没有原始CREATE事件不能仅凭结果缓存认领单据");
+        verifyNoInteractions(numbers,certification,scopeGuard);
     }
     private void savedAiContract() {
         aiReady();service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
