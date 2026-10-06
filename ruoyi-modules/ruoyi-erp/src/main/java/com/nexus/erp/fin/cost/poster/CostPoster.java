@@ -112,6 +112,7 @@ public class CostPoster {
     private boolean isIn(String txType) {
         return CostConstants.TX_RECEIVE_IN.equals(txType)
             || CostConstants.TX_MISC_IN.equals(txType)
+            || "PRODUCTION_IN".equals(txType)
             || "TARGET_IN".equals(txType);
     }
 
