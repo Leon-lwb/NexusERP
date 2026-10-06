@@ -402,7 +402,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             }
             line.setIssuedQty(newIssued);
             line.setShortQty(newShort);
-            line.setCurrentQty(null);
+            line.setCurrentQty(BigDecimal.ZERO);
             if (requiredQty.compareTo(BigDecimal.ZERO) > 0 && newShort.compareTo(BigDecimal.ZERO) <= 0) {
                 line.setLineStatus(LINE_ISSUED);
             } else {
@@ -474,7 +474,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             line.setShortQty(gap);
             line.setShortageReason(StringUtils.isNotBlank(s.getReason()) ? s.getReason() : "缺货");
             line.setLineStatus(LINE_SHORT_CLOSED);
-            line.setCurrentQty(null);
+            line.setCurrentQty(BigDecimal.ZERO);
             lineMapper.updateById(line);
         }
         if (!declared.isEmpty()) {
@@ -696,9 +696,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     }
 
     /**
-     * 汇总单头总数量与总金额：按本次领料数量汇总，未执行或待执行时反映本次计划量。
+     * 汇总单头总数量与总金额：优先按正数本次领料数量汇总，反映本次计划量。
      * 执行后 current_qty 已清零，此时按已领数量 issued_qty 反映累计已发量。
-     * 金额同理，取 amount 与单价乘已领数量的较大者。
+     * 金额优先取已有 amount，为空时才按汇总数量乘单价兜底。
      *
      * @param issueId 待汇总的生产发料单头 ID
      */
@@ -709,8 +709,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         BigDecimal totalQty = BigDecimal.ZERO;
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (WmProductionIssueLine line : lines) {
-            /** 优先取本次领料量；执行后为空则取已领量 */
-            BigDecimal qty = line.getCurrentQty() != null ? line.getCurrentQty() : zeroIfNull(line.getIssuedQty());
+            /** 优先取正数本次领料量；本次量清零或为空时取累计已领量 */
+            BigDecimal qty = line.getCurrentQty() != null && line.getCurrentQty().signum() > 0
+                ? line.getCurrentQty() : zeroIfNull(line.getIssuedQty());
             BigDecimal price = zeroIfNull(line.getUnitPrice());
             BigDecimal amt = line.getAmount() != null ? line.getAmount() : qty.multiply(price);
             totalQty = totalQty.add(qty);
