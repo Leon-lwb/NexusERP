@@ -603,6 +603,8 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     /**
      * 增量同步领料单行（保留 line_id，保证库存流水 source_doc_line_id 可追溯）：
      * <ul>
+     *   <li>未提供明细列表（{@code null}）→ 仅编辑头表，保留全部原行，汇总由调用方重算</li>
+     *   <li>显式空列表 → 删除全部未领行，存在已领行则拒绝；非空列表仍表示客户端明确编辑的行全集</li>
      *   <li>前端传来且有 lineId 的行 → 更新可编辑字段，<b>保留后端维护的</b>
      *       issued_qty/short_qty/line_status/required_qty/bom_qty/loss_rate/requirement_detail_id</li>
      *   <li>前端传来但无 lineId 的行 → 新增</li>
@@ -610,7 +612,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
      * </ul>
      */
     private void syncLines(Long issueId, List<WmProductionIssueLine> lineList) {
-        if (issueId == null) {
+        if (issueId == null || lineList == null) {
             return;
         }
         /** 后端现有行 */
