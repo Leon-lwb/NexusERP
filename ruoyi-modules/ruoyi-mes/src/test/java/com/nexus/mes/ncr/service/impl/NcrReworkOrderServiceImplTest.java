@@ -1,6 +1,7 @@
 package com.nexus.mes.ncr.service.impl;
 
 import com.nexus.mes.ncr.domain.NcrReworkOrder;
+import com.nexus.mes.ncr.domain.vo.NcrReworkOrderVo;
 import com.nexus.mes.ncr.mapper.NcrReworkOrderMapper;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
@@ -60,6 +61,19 @@ class NcrReworkOrderServiceImplTest {
             ((ProWorkOrderBo) inv.getArgument(0)).setMesWoId(777L);
             return 1;
         });
+
+        // 关联插入回写真实主键，回读返回本次派生的完整身份与数量。
+        when(baseMapper.insert(any(NcrReworkOrder.class))).thenAnswer(inv -> {
+            ((NcrReworkOrder) inv.getArgument(0)).setReworkId(888L);
+            return 1;
+        });
+        NcrReworkOrderVo persisted = new NcrReworkOrderVo();
+        persisted.setReworkId(888L);
+        persisted.setNcrId(1L);
+        persisted.setOriginalWoId(10L);
+        persisted.setReworkWoId(777L);
+        persisted.setReworkQty(new BigDecimal("5"));
+        when(baseMapper.selectVoById(888L)).thenReturn(persisted);
 
         service.deriveReworkOrder(1L, 10L, new BigDecimal("5"), "E2E返工");
 

@@ -5,6 +5,7 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -96,7 +97,7 @@ public class NcrReworkOrderServiceImpl implements INcrReworkOrderService {
      * <p>
      * 1. 查询原工单信息(materialId/routingId/workshopId/bomId/unitId/materialCode/materialName);
      * 2. 构造 ProWorkOrderBo 创建返工工单(复制物料/工艺/车间,plannedQty=reworkQty);
-     * 3. 按 woNo 查回返工工单ID,记录返工关联(ncr_rework_order)。
+     * 3. 确认新增方法回写的工单主键，插入并回读返工关联，核对本次来源、工单与数量。
      * 注意: 本方法不修改 NcrOrder 状态,由调用方 NcrOrderServiceImpl 负责 CAS 流转。
      * </p>
      */
@@ -104,10 +105,20 @@ public class NcrReworkOrderServiceImpl implements INcrReworkOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public NcrReworkOrderVo deriveReworkOrder(Long ncrId, Long originalWoId, BigDecimal reworkQty, String reason) {
+        if (ncrId == null || ncrId <= 0) {
+            throw new ServiceException("NCR单主键必须为正数");
+        }
+        if (originalWoId == null || originalWoId <= 0) {
+            throw new ServiceException("原工单主键必须为正数");
+        }
+        if (reworkQty == null || reworkQty.signum() <= 0) {
+            throw new ServiceException("返工数量必须大于零");
+        }
+
         // 1. 查询原工单(直调 Mapper 取原始实体, 避免 selectById 的 VO 富集触发 bridge 跨库查 bd_routing 在 @Transactional mes 内失效)
         ProWorkOrder originalWo = proWorkOrderMapper.selectById(originalWoId);
         if (originalWo == null) {
-            throw new RuntimeException("原工单不存在: " + originalWoId);
+            throw new ServiceException("原工单不存在: " + originalWoId);
         }
 
         // 2. 构造返工工单BO
@@ -127,14 +138,14 @@ public class NcrReworkOrderServiceImpl implements INcrReworkOrderService {
         reworkBo.setRoutingId(originalWo.getRoutingId());
         reworkBo.setRemark("NCR返工: " + (reason != null ? reason : ""));
         int rows = proWorkOrderService.insertByBo(reworkBo);
-        if (rows <= 0) {
-            throw new RuntimeException("返工工单创建失败");
+        if (rows != 1) {
+            throw new ServiceException("返工工单创建失败：受影响行数必须为一行，实际为 " + rows);
         }
 
-        // 3. insertByBo 已回写雪花ID到BO,直接取用(避免 selectList 触发 VO 富集查 bd_ 跨库)
+        // 3. 新增方法已回写工单主键，直接取用，避免富集查询触发跨库访问。
         Long reworkWoId = reworkBo.getMesWoId();
-        if (reworkWoId == null) {
-            throw new RuntimeException("返工工单创建后未获取到ID, woNo=" + reworkWoNo);
+        if (reworkWoId == null || reworkWoId <= 0) {
+            throw new ServiceException("返工工单创建后未获取到有效正主键，工单编号：" + reworkWoNo);
         }
 
         // 4. 构建返工关联记录
@@ -148,11 +159,30 @@ public class NcrReworkOrderServiceImpl implements INcrReworkOrderService {
         reworkOrder.setReworkQty(reworkQty);
         reworkOrder.setReworkReason(reason);
         reworkOrder.setStatus(STATUS_OPEN);
-        baseMapper.insert(reworkOrder);
+        int linkRows = baseMapper.insert(reworkOrder);
+        if (linkRows != 1) {
+            throw new ServiceException("返工关联创建失败：受影响行数必须为一行，实际为 " + linkRows);
+        }
+        Long reworkId = reworkOrder.getReworkId();
+        if (reworkId == null || reworkId <= 0) {
+            throw new ServiceException("返工关联创建后未获取到有效正主键");
+        }
+        NcrReworkOrderVo persisted = baseMapper.selectVoById(reworkId);
+        if (persisted == null) {
+            throw new ServiceException("返工关联创建后无法读回，关联主键：" + reworkId);
+        }
+        if (!reworkId.equals(persisted.getReworkId())
+            || !ncrId.equals(persisted.getNcrId())
+            || !originalWoId.equals(persisted.getOriginalWoId())
+            || !reworkWoId.equals(persisted.getReworkWoId())
+            || persisted.getReworkQty() == null
+            || reworkQty.compareTo(persisted.getReworkQty()) != 0) {
+            throw new ServiceException("返工关联回读身份或数量与本次派生不一致，关联主键：" + reworkId);
+        }
 
         log.info("派生返工单: ncrId={}, originalWoId={}, reworkWoId={}, reworkWoNo={}",
             ncrId, originalWoId, reworkWoId, reworkWoNo);
-        return baseMapper.selectVoById(reworkOrder.getReworkId());
+        return persisted;
     }
 
     /**
