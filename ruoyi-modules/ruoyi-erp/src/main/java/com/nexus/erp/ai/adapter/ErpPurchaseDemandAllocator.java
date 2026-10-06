@@ -16,7 +16,7 @@ import java.util.Set;
  * 尤其要注意，核验标志是 ERP 调用方提供的声明，并非数据库证据。
  */
 public final class ErpPurchaseDemandAllocator {
-    public enum OrderStatus { DRAFT, APPROVED, PARTIALLY_RECEIVED }
+    public enum OrderStatus { DRAFT, APPROVED, PARTIALLY_RECEIVED, RECEIVED }
     public enum CommitmentKind { PENDING, LEGACY_OPEN }
     public enum RejectionReason { INCOMPLETE_POOL, UNVERIFIED_SOURCE, INVALID_QUANTITY, DUPLICATE_SOURCE, OVERCOMMITTED }
 
@@ -171,7 +171,9 @@ public final class ErpPurchaseDemandAllocator {
             if (order.receivedBase().compareTo(order.orderedBase()) > 0
                 || (order.status() == OrderStatus.PARTIALLY_RECEIVED
                     && (order.receivedBase().signum() == 0 || order.receivedBase().compareTo(order.orderedBase()) == 0))
-                || (order.status() != OrderStatus.PARTIALLY_RECEIVED && order.receivedBase().signum() > 0)) {
+                || (order.status() == OrderStatus.RECEIVED && order.receivedBase().compareTo(order.orderedBase()) != 0)
+                || ((order.status() == OrderStatus.DRAFT || order.status() == OrderStatus.APPROVED)
+                    && order.receivedBase().signum() > 0)) {
                 throw reject(RejectionReason.INVALID_QUANTITY, "Inconsistent order receipt and status");
             }
             if (!orderLineIds.add(order.orderLineId()) || !sourceKeys.add(order.sourceKey())) {

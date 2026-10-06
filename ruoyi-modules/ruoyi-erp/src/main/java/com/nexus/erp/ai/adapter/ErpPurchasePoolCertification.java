@@ -90,9 +90,9 @@ final class ErpPurchasePoolCertification {
             require(baseId.equals(canonicalId(row.getUnit())), "历史订单换算没有冻结基本单位归属");
             quantity(row.getOrderQuantity(), scale); quantity(row.getReceivedQuantity(), scale);
             quantity(row.getReturnedQuantity(), scale); quantity(row.getInvoicedQty(), scale);
-            require(row.getOrderQuantity().signum() > 0 && row.getReceivedQuantity().signum() == 0
+            require(row.getOrderQuantity().signum() > 0 && row.getReceivedQuantity().compareTo(row.getOrderQuantity()) <= 0
                 && row.getReturnedQuantity().signum() == 0 && row.getInvoicedQty().signum() == 0,
-                "订单履约生命周期尚未完整认证");
+                "订单退货、发票或超收生命周期尚未完整认证");
             var head = orderHeads.get(row.getOrderId());
             require(head != null && tenant.equals(head.getTenantId()) && "0".equals(head.getDelFlag()), "订单头来源不完整");
         }
@@ -115,6 +115,8 @@ final class ErpPurchasePoolCertification {
                 && Objects.equals(locked.getAllocationKey(), ledger.allocationKey()), "锁定占用与独立账本归属不一致");
             quantity(ledger.coveredDemandBaseQty(), scale); quantity(ledger.occupiedBaseQty(), scale);
             quantity(ledger.fulfilledBaseQty(), scale); quantity(ledger.releasedBaseQty(), scale);
+            require(ledger.fulfilledBaseQty().signum() > 0 || binding.receiptFulfillment() == null,
+                "无履约账本不能携带原收货证明");
             require(equal(locked.getCoveredDemandBaseQty(), ledger.coveredDemandBaseQty())
                 && equal(locked.getOccupiedBaseQty(), ledger.occupiedBaseQty())
                 && equal(locked.getFulfilledBaseQty(), ledger.fulfilledBaseQty())
@@ -152,7 +154,13 @@ final class ErpPurchasePoolCertification {
                     && order.getRequisitionLineId().equals(application.getLineId())
                     && equal(order.getOrderQuantity(), ledger.coveredDemandBaseQty())
                     && equal(order.getOrderQuantity(), binding.orderLine().orderQuantity())
-                    && baseId.equals(canonicalId(binding.orderLine().unit())), "订单承接或冻结单位未闭合");
+                    && equal(order.getReceivedQuantity(), binding.orderLine().receivedQuantity())
+                    && equal(order.getReturnedQuantity(), binding.orderLine().returnedQuantity())
+                    && equal(order.getInvoicedQty(), binding.orderLine().invoicedQty())
+                    && equal(order.getReceivedQuantity(), ledger.fulfilledBaseQty())
+                    && equal(order.getOrderQuantity().subtract(order.getReceivedQuantity()), ledger.occupiedBaseQty())
+                    && ledger.releasedBaseQty().signum() == 0
+                    && baseId.equals(canonicalId(binding.orderLine().unit())), "订单承接、已收履约或冻结单位未闭合");
                 var orderHead = orderHeads.get(order.getOrderId());
                 require(orderHead.getOrderId().equals(binding.orderHead().orderId())
                     && Objects.equals(orderHead.getStatus(), binding.orderHead().status())
@@ -161,9 +169,27 @@ final class ErpPurchasePoolCertification {
                         ||(orderHead.getExpectedArrivalDate()!=null&&binding.orderHead().expectedArrivalDate()!=null
                         &&day(orderHead.getExpectedArrivalDate()).equals(day(binding.orderHead().expectedArrivalDate())))), "订单供应日重读不一致");
                 OrderStatus status;
-                if ("DRAFT".equals(orderHead.getStatus())) status = OrderStatus.DRAFT;
-                else if ("APPROVED".equals(orderHead.getStatus())) status = OrderStatus.APPROVED;
-                else throw failed("订单状态未覆盖完整承接生命周期");
+                if ("DRAFT".equals(orderHead.getStatus()) || "APPROVED".equals(orderHead.getStatus())) {
+                    require(order.getReceivedQuantity().signum() == 0 && binding.receiptFulfillment() == null,
+                        "未收货订单含未知履约来源");
+                    status = "DRAFT".equals(orderHead.getStatus()) ? OrderStatus.DRAFT : OrderStatus.APPROVED;
+                } else if (Set.of("PARTIALLY_RECEIVED", "PARTIAL_RECEIVED").contains(orderHead.getStatus())) {
+                    // 头表示整单进度，不能要求同头每条行都严格部分收货；原行按实收独立分类。
+                    if (order.getReceivedQuantity().signum() == 0) {
+                        require(binding.receiptFulfillment() == null
+                            && "PENDING".equals(order.getReceiveStatus())
+                            && Objects.equals(order.getReceiveStatus(), binding.orderLine().receiveStatus()),
+                            "部分收货头下待收原行含未知履约或错误行状态");
+                        status = OrderStatus.APPROVED;
+                    } else {
+                        requireReceiptFulfillment(lineage, binding, order, orderHead, materialId, baseId, scale);
+                        status = equal(order.getReceivedQuantity(), order.getOrderQuantity()) ? OrderStatus.RECEIVED : OrderStatus.PARTIALLY_RECEIVED;
+                    }
+                } else if ("RECEIVED".equals(orderHead.getStatus())) {
+                    require(equal(order.getReceivedQuantity(), order.getOrderQuantity()), "全收货状态与原行数量不一致");
+                    requireReceiptFulfillment(lineage, binding, order, orderHead, materialId, baseId, scale);
+                    status = OrderStatus.RECEIVED;
+                } else throw failed("订单状态未覆盖完整承接生命周期");
                 orderFacts.add(new OrderLine(order.getLineId().toString(), ledger.allocationKey(), ledger.detailId().toString(), status,
                     (orderHead.getExpectedArrivalDate()==null?null:day(orderHead.getExpectedArrivalDate())), order.getOrderQuantity(), order.getReceivedQuantity(), baseId.toString(), true));
             } else if ("RELEASED".equals(ledger.allocationStatus())) {
@@ -181,6 +207,49 @@ final class ErpPurchasePoolCertification {
         return new AllocationInput(new Scope(tenant, materialId.toString(), baseId.toString(), today, windowEnd, true, requested),
             stock, demands, orderFacts, commitments);
     }
+
+    /** 原收货只能抵减同一原行的未收量，当前库存另计一次，不能将履约再次变成未来供给。 */
+    private static void requireReceiptFulfillment(LineageSnapshot lineage, AllocationBinding binding,
+            RawOrderLine order, RawOrderHead head, Long material, Long unit, int scale) {
+        var proof = binding.receiptFulfillment();
+        var ledger = binding.ledger();
+        require(proof != null && Objects.equals(proof.allocationId(), ledger.allocationId())
+            && Objects.equals(proof.orderId(), head.getOrderId()) && Objects.equals(proof.orderLineId(), order.getLineId())
+            && Objects.equals(proof.materialId(), material) && Objects.equals(proof.baseUomId(), unit)
+            && Objects.equals(head.getVendorId(), binding.orderHead().vendorId())
+            && Objects.equals(head.getRequisitionId(), binding.orderHead().requisitionId())
+            && Objects.equals(order.getReceiveStatus(), binding.orderLine().receiveStatus())
+            && (equal(order.getReceivedQuantity(), order.getOrderQuantity())
+                ? "FULL_RECEIVED".equals(order.getReceiveStatus()) : "PARTIAL_RECEIVED".equals(order.getReceiveStatus()))
+            && equal(proof.fulfilledBaseQty(), ledger.fulfilledBaseQty())
+            && equal(proof.fulfilledBaseQty(), order.getReceivedQuantity()) && proof.fulfilledBaseQty().signum() > 0
+            && fingerprint(proof.sourceFingerprint())
+            && Objects.equals(lineage.sourceVersions().get("receipt-fulfillment:" + ledger.allocationId()), proof.sourceFingerprint())
+            && proof.receipts() != null && !proof.receipts().isEmpty(), "原收货履约证明身份、数量或来源版本不完整");
+        Set<Long> receiptLines = new HashSet<>(); Set<String> receiptIdentities = new HashSet<>();
+        BigDecimal sum = BigDecimal.ZERO;
+        for (var receipt : proof.receipts()) {
+            require(receipt != null && positive(receipt.receiveId()) && positive(receipt.receiveLineId())
+                && receiptLines.add(receipt.receiveLineId())
+                && receiptIdentities.add(receipt.receiveId() + "|" + receipt.receiveLineId())
+                && fingerprint(receipt.sourceFingerprint())
+                && Objects.equals(lineage.sourceVersions().get("receipt-posting:" + receipt.receiveId()), receipt.sourceFingerprint()),
+                "履约原收货头行重复、缺失或永久过账摘要不一致");
+            quantity(receipt.quantity(), scale); require(receipt.quantity().signum() > 0, "原收货数量不是有效正数量");
+            require(receipt.postedAt() != null && receipt.postedAt().matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"),
+                "原过账时点不符合数据库秒精度合同");
+            try {
+                Instant at = LocalDateTime.parse(receipt.postedAt().replace(' ', 'T')).toInstant(DATABASE_ZONE);
+                require(at.isAfter(Instant.EPOCH) && !at.isAfter(lineage.snapshotAt()), "原过账时点未知或在来源快照之后");
+            } catch (java.time.format.DateTimeParseException invalid) { throw failed("原过账时点不是有效日期"); }
+            sum = sum.add(receipt.quantity());
+        }
+        require(equal(sum, proof.fulfilledBaseQty()), "逐原收货数量与账本履约净额不守恒");
+        require(proof.sourceFingerprint().equals(ErpPurchaseAllocationReceiptSourceReader.fulfillmentFingerprint(proof)),
+            "履约证明字段与独立复算摘要不一致");
+    }
+
+    private static boolean fingerprint(String value) { return value != null && value.matches("[0-9a-f]{64}"); }
 
     private static <T> Map<Long, T> index(List<T> rows, Function<T, Long> identity) {
         Map<Long, T> result = new LinkedHashMap<>();
