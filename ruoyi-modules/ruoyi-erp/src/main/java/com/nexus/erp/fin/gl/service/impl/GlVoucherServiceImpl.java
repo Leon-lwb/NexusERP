@@ -274,14 +274,25 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public GlVoucherVo createAndPost(VoucherBuildRequest req) {
-        // 幂等:同来源+同来源单据已制单则返回既有
+        // 幂等只能认领唯一且真正已过账的来源；当前读锁住状态，第二条用于检出重复。
         if (req.getSourceId() != null && !GlConstants.SOURCE_MANUAL.equals(req.getVoucherSource())) {
-            GlVoucher existing = baseMapper.selectOne(new LambdaQueryWrapper<GlVoucher>()
+            List<GlVoucher> existingVouchers = baseMapper.selectList(new LambdaQueryWrapper<GlVoucher>()
                 .eq(GlVoucher::getVoucherSource, req.getVoucherSource())
                 .eq(GlVoucher::getSourceId, req.getSourceId())
-                .last("limit 1"));
-            if (existing != null) {
-                return queryById(existing.getVoucherId());
+                .last("LIMIT 2 FOR UPDATE"));
+            if (CollUtil.isNotEmpty(existingVouchers)) {
+                if (existingVouchers.size() != 1) {
+                    throw new ServiceException("同一来源存在多张凭证，不能幂等认领");
+                }
+                GlVoucher existing = existingVouchers.get(0);
+                if (!GlConstants.VOUCHER_STATUS_POSTED.equals(existing.getStatus())) {
+                    throw new ServiceException("来源凭证非已过账状态，不能幂等认领");
+                }
+                GlVoucherVo existingVo = queryById(existing.getVoucherId());
+                if (existingVo == null || !GlConstants.VOUCHER_STATUS_POSTED.equals(existingVo.getStatus())) {
+                    throw new ServiceException("来源凭证未返回有效已过账状态，不能幂等认领");
+                }
+                return existingVo;
             }
         }
         List<GlVoucherLine> lines = req.getLines();

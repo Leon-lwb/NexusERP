@@ -9,6 +9,7 @@ import com.nexus.erp.fin.gl.constant.GlConstants;
 import com.nexus.erp.fin.gl.domain.GlAccount;
 import com.nexus.erp.fin.gl.domain.GlPeriod;
 import com.nexus.erp.fin.gl.domain.GlVoucherLine;
+import com.nexus.erp.fin.gl.domain.vo.GlVoucherVo;
 import com.nexus.erp.fin.gl.mapper.GlAccountMapper;
 import com.nexus.erp.fin.gl.mapper.GlPeriodMapper;
 import com.nexus.erp.fin.gl.service.IGlPeriodService;
@@ -21,6 +22,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -57,8 +59,12 @@ public class CostPoster {
      *
      * @param txId 库存流水ID
      */
+    @Transactional(rollbackFor = Exception.class)
     public void postTx(Long txId) {
-        WmMaterialStockTx tx = stockTxMapper.selectById(txId);
+        // 锁定当前流水直到整个 ERP 事务结束；同 tx 的并发调用必须先等待再读取 posted。
+        WmMaterialStockTx tx = stockTxMapper.selectOne(Wrappers.<WmMaterialStockTx>lambdaQuery()
+            .eq(WmMaterialStockTx::getTxId, txId)
+            .last("FOR UPDATE"));
         if (tx == null) {
             throw new ServiceException("库存流水不存在: {}", txId);
         }
@@ -93,11 +99,20 @@ public class CostPoster {
         req.setSourceNo("COST-" + tx.getTxId());
         req.setSummary(summary);
         req.setLines(lines);
-        voucherService.createAndPost(req);
-        stockTxMapper.update(null, Wrappers.<WmMaterialStockTx>lambdaUpdate()
+        GlVoucherVo voucher = voucherService.createAndPost(req);
+        if (voucher == null || !GlConstants.VOUCHER_STATUS_POSTED.equals(voucher.getStatus())) {
+            throw new ServiceException("成本过账未返回已过账凭证，不能标记库存流水");
+        }
+        // 保留旧 null 未过账标记兼容性，但必须恰好认领一行；失败回滚期间、GL 与余额。
+        int rows = stockTxMapper.update(null, Wrappers.<WmMaterialStockTx>lambdaUpdate()
             .set(WmMaterialStockTx::getPosted, 1)
             .set(WmMaterialStockTx::getPostedVoucherNo, req.getSourceNo())
-            .eq(WmMaterialStockTx::getTxId, txId));
+            .eq(WmMaterialStockTx::getTxId, txId)
+            .and(pending -> pending.eq(WmMaterialStockTx::getPosted, 0)
+                .or().isNull(WmMaterialStockTx::getPosted)));
+        if (rows != 1) {
+            throw new ServiceException("库存流水过账标记回写必须恰好一行，实际 {} 行", rows);
+        }
         log.info("存货成本过账: txId={}, type={}, amount={}", txId, txType, amount);
     }
 
