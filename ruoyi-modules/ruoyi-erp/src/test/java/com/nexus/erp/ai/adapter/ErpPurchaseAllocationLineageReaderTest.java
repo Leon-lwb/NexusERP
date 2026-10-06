@@ -114,6 +114,64 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 @Execution(ExecutionMode.SAME_THREAD)
 class ErpPurchaseAllocationLineageReaderTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"4", "10", "full-with-zero-sibling"})
+    void lockedFulfillmentRequiresAndCarriesTypedReceiptSourceProof(String scenario) {
+        boolean siblings=scenario.equals("full-with-zero-sibling");String received=siblings?"10":scenario;
+        var sourceFixture=new ErpPurchaseAllocationReceiptSourceReaderTest.Fixture(received);
+        if(siblings)sourceFixture.orderHead=ErpPurchaseAllocationReceiptSourceReaderTest.replace(sourceFixture.orderHead,"status","PARTIALLY_RECEIVED");
+        var sources=mock(ErpPurchaseAllocationReceiptSourceReader.class);
+        var qualification=mock(PuRequirementErpTransactionQualification.class);
+        var mapper=mock(com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper.class);
+        BigDecimal qty=bd(received),left=bd("10").subtract(qty);
+        var material=new BdMaterial();material.setTenantId("000000");material.setMaterialId(140L);material.setBaseUomId(26L);material.setStatus(1L);material.setDelFlag("0");
+        var ledger=new PuRequirementAllocationLedger();
+        ledger.setAllocationId(71L);ledger.setTenantId("000000");ledger.setMaterialId(140L);ledger.setSourceType("MRP_DETAIL");ledger.setDetailId(61L);
+        ledger.setRequisitionLineId(72L);ledger.setAllocationNo(1);ledger.setOrderLineId(82L);ledger.setBaseUomId(26L);ledger.setCoveredDemandBaseQty(bd("10"));
+        ledger.setOccupiedBaseQty(left);ledger.setFulfilledBaseQty(qty);ledger.setReleasedBaseQty(bd("0"));ledger.setAllocationStatus(ORDER_COMMITTED);
+        ledger.setAllocationKey("allocation-key");ledger.setDecisionIdempotencyKey("request-key");ledger.setVersion(4);
+        ledger.setCreateTime(Date.from(ErpPurchaseAllocationReceiptSourceReaderTest.AT.minusSeconds(100)));
+        ledger.setTransferTime(Date.from(ErpPurchaseAllocationReceiptSourceReaderTest.AT.minusSeconds(98)));
+        var reqLine=new RawRequisitionLine();reqLine.setLineId(72L);reqLine.setTenantId("000000");reqLine.setRequisitionId(73L);reqLine.setMaterialId(140L);reqLine.setUnit("26");reqLine.setDelFlag("0");
+        var reqHead=new RawRequisitionHead();reqHead.setRequisitionId(73L);reqHead.setTenantId("000000");reqHead.setStatus("ORDERED");reqHead.setVersion(2);reqHead.setDelFlag("0");
+        var poLine=new RawOrderLine();poLine.setLineId(82L);poLine.setTenantId("000000");poLine.setOrderId(81L);poLine.setRequisitionLineId(72L);poLine.setMaterialId(140L);poLine.setUnit("26");
+        poLine.setOrderQuantity(bd("10"));poLine.setReceivedQuantity(qty);poLine.setReturnedQuantity(bd("0"));poLine.setInvoicedQty(bd("0"));poLine.setReceiveStatus(left.signum()==0?"FULL_RECEIVED":"PARTIAL_RECEIVED");poLine.setDelFlag("0");
+        var poHead=new RawOrderHead();poHead.setOrderId(81L);poHead.setTenantId("000000");poHead.setRequisitionId(73L);poHead.setVendorId(2L);poHead.setStatus(!siblings&&left.signum()==0?"RECEIVED":"PARTIALLY_RECEIVED");poHead.setDelFlag("0");
+        var detail=new RawRequirementDetail();detail.setDetailId(61L);detail.setTenantId("000000");detail.setMaterialId(140L);detail.setRequirementId(62L);detail.setStatus(1L);detail.setDelFlag("0");
+        var head=new RawRequirementHead();head.setRequirementId(62L);head.setTenantId("000000");head.setStatus("DRAFT");head.setDelFlag("0");
+        when(mapper.lockDatabaseClock()).thenReturn(new com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper.DatabaseClock(new BigDecimal("1791181611"),"+08:00"));
+        when(mapper.lockMaterial("000000",140L)).thenReturn(material);when(mapper.lockAllocations("000000",140L)).thenReturn(List.of(ledger));
+        when(mapper.lockRequisitionLines("000000",140L)).thenReturn(List.of(reqLine));when(mapper.lockRequisitionHeads("000000",List.of(73L))).thenReturn(List.of(reqHead));
+        when(mapper.lockOrderLines("000000",140L)).thenReturn(List.of(poLine));when(mapper.lockOrderHeads("000000",List.of(81L))).thenReturn(List.of(poHead));
+        when(mapper.lockRequirementDetails("000000",List.of(61L))).thenReturn(List.of(detail));when(mapper.lockRequirementHeads("000000",List.of(62L))).thenReturn(List.of(head));
+        if(siblings) {
+            var second=new PuRequirementAllocationLedger();org.springframework.beans.BeanUtils.copyProperties(ledger,second);
+            second.setAllocationId(75L);second.setDetailId(63L);second.setRequisitionLineId(74L);second.setOrderLineId(83L);
+            second.setAllocationKey("allocation-b");second.setOccupiedBaseQty(bd("10"));second.setFulfilledBaseQty(bd("0"));second.setVersion(3);
+            var secondReq=new RawRequisitionLine();org.springframework.beans.BeanUtils.copyProperties(reqLine,secondReq);secondReq.setLineId(74L);
+            var secondPo=new RawOrderLine();org.springframework.beans.BeanUtils.copyProperties(poLine,secondPo);
+            secondPo.setLineId(83L);secondPo.setRequisitionLineId(74L);secondPo.setReceivedQuantity(bd("0"));secondPo.setReceiveStatus("PENDING");
+            var secondDetail=new RawRequirementDetail();org.springframework.beans.BeanUtils.copyProperties(detail,secondDetail);secondDetail.setDetailId(63L);
+            when(mapper.lockAllocations("000000",140L)).thenReturn(List.of(ledger,second));
+            when(mapper.lockRequisitionLines("000000",140L)).thenReturn(List.of(reqLine,secondReq));
+            when(mapper.lockOrderLines("000000",140L)).thenReturn(List.of(poLine,secondPo));
+            when(mapper.lockRequirementDetails("000000",List.of(61L,63L))).thenReturn(List.of(detail,secondDetail));
+        }
+        try(MockedStatic<TenantHelper> tenant=mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::isEnable).thenReturn(true);tenant.when(TenantHelper::getTenantId).thenReturn("000000");
+            var actual=assertDoesNotThrow(()->sourceFixture.reader.readLocked("000000",sourceFixture.allocation,sourceFixture.orderLine,sourceFixture.orderHead));
+            when(sources.readLocked(org.mockito.ArgumentMatchers.eq("000000"),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any())).thenReturn(actual);
+            var reader=new ErpPurchaseAllocationLineageReader(mapper,qualification,sources);
+            var result=assertDoesNotThrow(()->reader.readLocked("000000",140L));
+            assertEquals(actual.proof(),result.allocations().get(0).receiptFulfillment());
+            if(siblings)assertNull(result.allocations().get(1).receiptFulfillment());
+            assertEquals(actual.sourceVersions().get("receipt-fulfillment:71"),result.sourceVersions().get("receipt-fulfillment:71"));
+            assertEquals(actual.sourceVersions().get("receipt-posting:91"),result.sourceVersions().get("receipt-posting:91"));
+            org.mockito.Mockito.verify(sources).readLocked(org.mockito.ArgumentMatchers.eq("000000"),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any());
+            assertThrows(ServiceException.class,()->new ErpPurchaseAllocationLineageReader(mapper,qualification).readLocked("000000",140L));
+        }
+    }
+
     private static final String READER = "com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader";
     private static final String MAPPER = "com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper";
     private static final String TENANT = "000001";
@@ -177,9 +235,10 @@ class ErpPurchaseAllocationLineageReaderTest {
         assertEquals(List.of("read", "readLocked"), Arrays.stream(reader.getDeclaredMethods())
             .filter(method -> Modifier.isPublic(method.getModifiers()) && !method.isSynthetic())
             .map(Method::getName).sorted().toList(), "不得接受外部事实、now、verified 或授权旁路");
-        assertEquals(2, reader.getConstructors().length);
+        assertEquals(3, reader.getConstructors().length);
+        assertDoesNotThrow(() -> reader.getConstructor(mapper, PuRequirementErpTransactionQualification.class));
         assertDoesNotThrow(() -> reader.getConstructor(mapper));
-        assertEquals(Set.of(mapper, PuRequirementErpTransactionQualification.class), Arrays.stream(reader.getDeclaredFields())
+        assertEquals(Set.of(mapper, PuRequirementErpTransactionQualification.class, ErpPurchaseAllocationReceiptSourceReader.class), Arrays.stream(reader.getDeclaredFields())
             .filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getType).collect(Collectors.toSet()),
             "不能注入写入口、应用时钟、供应条款认证或 allocator");
         Transactional transaction = entry().getAnnotation(Transactional.class);

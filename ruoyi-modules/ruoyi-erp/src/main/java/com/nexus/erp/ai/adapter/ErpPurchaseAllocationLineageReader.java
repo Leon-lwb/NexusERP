@@ -59,8 +59,8 @@ import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_SUBM
  * readLocked 仅在调用方已核验的同连接可写 ERP 事务内当前读，不自行补绑或开启事务。
  * 只接租户与物料身份，不接受调用方事实、核验布尔或时钟；不从旧 source_id 推断
  * MRP 明细，不将物料汇总或空结果当作可靠来源、库存零值或可采购额度。
- * 仅支持现有未转单意图、未履约订单承接和完整未转单释放；部分收货、退货、履约
- * 及订单关闭后的释放仍未认证。MRP 头的物料是成品，不与子项材料强制相等。
+ * read仅支持未转单意图、未履约承接及完整未转单释放；readLocked的部分/全收履约
+ * 必须有永久过账完整重放与同账本全事件证明。退货、发票及订单关闭释放仍拒绝。MRP头物料是成品。
  * 日期沿既有明确 +08:00 墙上 DATETIME 合同立即复制为 Instant，不变更任何时区。
  * 快照只描述绑定、原始数量/单位和实际版本，不认证旧量纲、供应条款、全池库存、
  * 净需求或权限，不生成 allocator 可信 DTO，不接 controller 或新版业务写入门禁。
@@ -84,6 +84,9 @@ public class ErpPurchaseAllocationLineageReader {
 
     private final ErpPurchaseAllocationLineageMapper mapper;
     private final PuRequirementErpTransactionQualification transactionQualification;
+    /** 可选内部来源；旧Spring组合缺少该Bean时仍不能签发任何正履约证明。 */
+    @Autowired(required = false)
+    private ErpPurchaseAllocationReceiptSourceReader receiptSources;
 
     /** 构造只保存固定 SELECT Mapper，不读取数据库或自动补全业务事实。 */
     public ErpPurchaseAllocationLineageReader(ErpPurchaseAllocationLineageMapper mapper) {
@@ -94,8 +97,16 @@ public class ErpPurchaseAllocationLineageReader {
     @Autowired
     public ErpPurchaseAllocationLineageReader(ErpPurchaseAllocationLineageMapper mapper,
         PuRequirementErpTransactionQualification transactionQualification) {
+        this(mapper, transactionQualification, null);
+    }
+
+    /** 显式离线组合入口；旧两参构造保持Spring兼容，可选来源绝非外部授权旗号。 */
+    public ErpPurchaseAllocationLineageReader(ErpPurchaseAllocationLineageMapper mapper,
+        PuRequirementErpTransactionQualification transactionQualification,
+        ErpPurchaseAllocationReceiptSourceReader receiptSources) {
         this.mapper = Objects.requireNonNull(mapper);
         this.transactionQualification = transactionQualification;
+        this.receiptSources = receiptSources;
     }
 
     /**
@@ -131,7 +142,7 @@ public class ErpPurchaseAllocationLineageReader {
         Set<AllocationIdentity> identities = new HashSet<>();
         Set<Long> inheritedOrderIds = new HashSet<>();
         for (AllocationSource allocation : allocationRows) {
-            checkAllocation(allocation, tenantId, materialId, material.baseUomId());
+            checkAllocation(allocation, tenantId, materialId, material.baseUomId(), locked && receiptSources != null);
             require(allocationKeys.add(allocation.allocationKey()), "占用来源键重复");
             require(identities.add(new AllocationIdentity(allocation.requisitionLineId(), allocation.detailId(), allocation.allocationNo())),
                 "同申请行和需求明细的占用序号重复");
@@ -155,9 +166,15 @@ public class ErpPurchaseAllocationLineageReader {
         for (OrderLineSource line : orderRows) {
             checkMaterialRow(line.tenantId(), line.materialId(), line.delFlag(), tenantId, materialId);
             require(positive(line.orderId()) && positive(line.requisitionLineId()), "订单行父键或申请来源键未核验");
-            require(PurchaseOrderLineReceiveStatus.PENDING.getCode().equals(line.receiveStatus())
-                && zero(line.receivedQuantity()) && zero(line.returnedQuantity()) && zero(line.invoicedQty()),
-                "订单行收货、退货或下游履约事实未认证");
+            require(zero(line.returnedQuantity()) && zero(line.invoicedQty()), "订单行收货、退货或下游履约事实未认证");
+            boolean pending = PurchaseOrderLineReceiveStatus.PENDING.getCode().equals(line.receiveStatus()) && zero(line.receivedQuantity());
+            boolean received = locked && receiptSources != null && decimal184(line.receivedQuantity())
+                && line.receivedQuantity().signum() > 0 && decimal184(line.orderQuantity()) && line.orderQuantity().signum() > 0
+                && line.receivedQuantity().compareTo(line.orderQuantity()) <= 0
+                && (line.receivedQuantity().compareTo(line.orderQuantity()) == 0
+                    ? PurchaseOrderLineReceiveStatus.FULL_RECEIVED.getCode().equals(line.receiveStatus())
+                    : PurchaseOrderLineReceiveStatus.PARTIAL_RECEIVED.getCode().equals(line.receiveStatus()));
+            require(pending || received, "订单行收货、退货或下游履约事实未认证");
             require(orderByRequisitionLine.putIfAbsent(line.requisitionLineId(), line.lineId()) == null,
                 "同申请行被多个订单行承接");
         }
@@ -180,8 +197,10 @@ public class ErpPurchaseAllocationLineageReader {
         requireReferences(orderHeads, orderIds);
         for (OrderHeadSource head : orderHeadRows) {
             checkHead(head.tenantId(), head.delFlag(), tenantId);
-            require(positive(head.requisitionId()) && head.status() != null && PRE_RECEIPT_ORDER_STATES.contains(head.status()),
-                "订单来源或下游生命周期未认证");
+            boolean receiving = locked && receiptSources != null && head.status() != null
+                && Set.of("PARTIALLY_RECEIVED", "PARTIAL_RECEIVED", "RECEIVED").contains(head.status());
+            require(positive(head.requisitionId()) && head.status() != null
+                && (PRE_RECEIPT_ORDER_STATES.contains(head.status()) || receiving), "订单来源或下游生命周期未认证");
         }
 
         List<Long> detailIds = ids(allocationRows, AllocationSource::detailId);
@@ -219,6 +238,7 @@ public class ErpPurchaseAllocationLineageReader {
             require(requisitionHead != null, "申请行的真实父头缺失");
             OrderLineSource orderLine = null;
             OrderHeadSource orderHead = null;
+            ReceiptFulfillmentProof receiptFulfillment = null;
             if (ORDER_COMMITTED.equals(allocation.allocationStatus())) {
                 orderLine = orderLines.get(allocation.orderLineId());
                 require(orderLine != null && requisitionLine.lineId().equals(orderLine.requisitionLineId()), "订单行与申请行归属不一致");
@@ -227,6 +247,28 @@ public class ErpPurchaseAllocationLineageReader {
                 require(STATUS_ORDERED.equals(requisitionHead.status()) || STATUS_CLOSED.equals(requisitionHead.status()),
                     "申请状态与实际订单承接不一致");
                 require(boundOrderLines.add(orderLine.lineId()), "同订单行重复绑定");
+                if (allocation.fulfilledBaseQty().signum() > 0) {
+                    require(locked && receiptSources != null, "正履约缺少同ERP永久过账来源提供者");
+                    transactionQualification.requireSourceChainTransaction();
+                    var receipt = receiptSources.readLocked(tenantId, allocation, orderLine, orderHead);
+                    require(receipt != null && receipt.proof() != null, "完整履约认证没有返回逐原行证明");
+                    receiptFulfillment = receipt.proof();
+                    require(allocation.allocationId().equals(receiptFulfillment.allocationId())
+                        && orderHead.orderId().equals(receiptFulfillment.orderId()) && orderLine.lineId().equals(receiptFulfillment.orderLineId())
+                        && materialId.equals(receiptFulfillment.materialId()) && material.baseUomId().equals(receiptFulfillment.baseUomId())
+                        && allocation.fulfilledBaseQty().compareTo(receiptFulfillment.fulfilledBaseQty()) == 0
+                        && receiptFulfillment.sourceFingerprint().equals(receipt.sourceVersions().get("receipt-fulfillment:" + allocation.allocationId())),
+                        "履约证明与当前账本/订单/单位或来源版本不同源");
+                    for (var version : receipt.sourceVersions().entrySet()) {
+                        String old = versions.putIfAbsent(version.getKey(), version.getValue());
+                        require(old == null || old.equals(version.getValue()), "共享收货来源在同认证链中发生摘要漂移");
+                    }
+                } else {
+                    boolean partialSiblingHead = locked && receiptSources != null
+                        && Set.of("PARTIALLY_RECEIVED", "PARTIAL_RECEIVED").contains(orderHead.status());
+                    require(zero(orderLine.receivedQuantity()) && (PRE_RECEIPT_ORDER_STATES.contains(orderHead.status()) || partialSiblingHead),
+                        "零履约账本不能解释真实已收或已收货订单头");
+                }
             } else {
                 require(!orderByRequisitionLine.containsKey(requisitionLine.lineId()), "未转单意图或释放存在真实订单承接");
                 if (REQUEST_INTENT.equals(allocation.allocationStatus())) {
@@ -237,9 +279,18 @@ public class ErpPurchaseAllocationLineageReader {
                 }
             }
             boundRequisitionLines.add(requisitionLine.lineId());
-            bindings.add(new AllocationBinding(allocation, detail, requirementHead, requisitionLine, requisitionHead, orderLine, orderHead));
+            bindings.add(new AllocationBinding(allocation, detail, requirementHead, requisitionLine, requisitionHead, orderLine, orderHead, receiptFulfillment));
             versions.put("allocation:" + allocation.allocationId(), allocation.version().toString());
             versions.put("requisition:" + requisitionHead.requisitionId(), requisitionHead.version().toString());
+        }
+        // partial头允许合法待收兄弟，但必须由本同材全集内另一原行的完整履约证明解释；不能仅信头状态。
+        for (AllocationBinding binding : bindings) {
+            OrderHeadSource head = binding.orderHead();
+            if (head != null && Set.of("PARTIALLY_RECEIVED", "PARTIAL_RECEIVED").contains(head.status())) {
+                require(bindings.stream().anyMatch(other -> other.orderHead() != null
+                    && head.orderId().equals(other.orderHead().orderId()) && other.receiptFulfillment() != null),
+                    "部分收货头缺少同材全池内已证明的真实已收兄弟");
+            }
         }
         for (RequisitionLineSource line : requisitionRows) {
             RequisitionHeadSource head = requisitionHeads.get(line.requisitionId());
@@ -284,7 +335,24 @@ public class ErpPurchaseAllocationLineageReader {
     /** 一个账本到真实头行的引用；未转单或已完整释放的意图没有订单头行。 */
     public record AllocationBinding(AllocationSource ledger, RequirementDetailSource requirementDetail,
                                     RequirementHeadSource requirementHead, RequisitionLineSource requisitionLine,
-                                    RequisitionHeadSource requisitionHead, OrderLineSource orderLine, OrderHeadSource orderHead) { }
+                                    RequisitionHeadSource requisitionHead, OrderLineSource orderLine, OrderHeadSource orderHead,
+                                    ReceiptFulfillmentProof receiptFulfillment) {
+        public AllocationBinding(AllocationSource ledger, RequirementDetailSource requirementDetail,
+                RequirementHeadSource requirementHead, RequisitionLineSource requisitionLine,
+                RequisitionHeadSource requisitionHead, OrderLineSource orderLine, OrderHeadSource orderHead) {
+            this(ledger, requirementDetail, requirementHead, requisitionLine, requisitionHead, orderLine, orderHead, null);
+        }
+    }
+
+    /** 同事务原过账重放及全部履约事件的逐账本证明，不接受外部核验旗号。 */
+    public record ReceiptFulfillmentProof(Long allocationId, Long orderId, Long orderLineId, Long materialId,
+            Long baseUomId, BigDecimal fulfilledBaseQty, List<ReceiptProof> receipts, String sourceFingerprint) {
+        public ReceiptFulfillmentProof { receipts = List.copyOf(receipts); }
+    }
+
+    /** 数量来自真实收货原行，摘要与时点来自永久过账的完整当前重放。 */
+    public record ReceiptProof(Long receiveId, Long receiveLineId, BigDecimal quantity,
+            String sourceFingerprint, String postedAt) { }
 
     /** 四量只校验账本局部守恒，不证明历史数量的单位换算、需求覆盖资格或剩余额度。 */
     public record AllocationSource(Long allocationId, String tenantId, Long materialId, String sourceType,
@@ -376,9 +444,9 @@ public class ErpPurchaseAllocationLineageReader {
     /** 先核原始会话 +08:00 合同，再精确解码十进制秒；不借用 JVM 日期或舍入。 */
     /** 当前读的固定 SQL 产生至多六位小数秒；不把更高精度的未知来源升级为真实数据库时钟。 */
     private static Instant lockedDatabaseInstant(DatabaseClock clock) {
-        Instant instant = databaseInstant(clock);
-        require(clock.epochSeconds().stripTrailingZeros().scale() <= 6, "数据库时钟精度超出固定六位小数秒合同");
-        return instant;
+        require(clock != null && clock.epochSeconds() != null && clock.epochSeconds().stripTrailingZeros().scale() <= 6,
+            "数据库时钟精度超出固定六位小数秒合同");
+        return databaseInstant(clock);
     }
 
     private static Instant databaseInstant(DatabaseClock clock) {
@@ -393,7 +461,8 @@ public class ErpPurchaseAllocationLineageReader {
         }
     }
 
-    private static void checkAllocation(AllocationSource row, String tenantId, Long materialId, Long baseUomId) {
+    private static void checkAllocation(AllocationSource row, String tenantId, Long materialId, Long baseUomId,
+            boolean lockedReceiptSources) {
         require(tenantId.equals(row.tenantId()) && materialId.equals(row.materialId()) && "MRP_DETAIL".equals(row.sourceType())
             && positive(row.detailId()) && positive(row.requisitionLineId()) && positive(row.baseUomId())
             && baseUomId.equals(row.baseUomId()) && row.allocationNo() != null && row.allocationNo() > 0
@@ -404,14 +473,15 @@ public class ErpPurchaseAllocationLineageReader {
             && row.coveredDemandBaseQty().signum() > 0
             && row.coveredDemandBaseQty().compareTo(row.occupiedBaseQty().add(row.fulfilledBaseQty()).add(row.releasedBaseQty())) == 0,
             "账本四量不符合DECIMAL(18,4)非负及覆盖守恒");
-        require(zero(row.fulfilledBaseQty()), "账本履约事实未认证");
+        require(zero(row.fulfilledBaseQty()) || (lockedReceiptSources && ORDER_COMMITTED.equals(row.allocationStatus())),
+            "账本履约事实未认证");
         if (REQUEST_INTENT.equals(row.allocationStatus())) {
             require(noOrderOrRelease(row) && zero(row.releasedBaseQty())
                 && row.coveredDemandBaseQty().compareTo(row.occupiedBaseQty()) == 0, "申请意图含订单、释放或非完整占用");
         } else if (ORDER_COMMITTED.equals(row.allocationStatus())) {
             require(positive(row.orderLineId()) && row.transferTime() != null && row.releasedAt() == null && row.releaseReason() == null
-                && zero(row.releasedBaseQty()) && row.coveredDemandBaseQty().compareTo(row.occupiedBaseQty()) == 0,
-                "订单承接身份或占用事实不完整");
+                && zero(row.releasedBaseQty()) && row.coveredDemandBaseQty().compareTo(row.occupiedBaseQty().add(row.fulfilledBaseQty())) == 0,
+                "订单承接身份或占用/真实履约事实不完整");
         } else if (RELEASED.equals(row.allocationStatus())) {
             require(row.orderLineId() == null && row.transferTime() == null && row.releasedAt() != null
                 && text(row.releaseReason(), 255) && zero(row.occupiedBaseQty())
