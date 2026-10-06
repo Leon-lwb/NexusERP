@@ -42,6 +42,9 @@ public class PuCertifiedPurchaseWriteService {
     private final PuCertifiedPurchaseNumberReservation numbers;
     private final PuCertifiedPurchaseLifecycleSourceGate allocationDefinitions;
     private final ErpDecisionPurchaseScopeGuard scopeGuard;
+    private final PuCertifiedPurchaseLifecycleService lifecycle;
+    private final PuCertifiedPurchaseOrderWorkflowService orderWorkflow;
+    private final PuCertifiedPurchaseOrderWorkflowMapper orderReceipts;
 
     /** 旧Java调用方仅兼容人工入口；没有归属守卫的新版AI新建仍失败关闭。 */
     public PuCertifiedPurchaseWriteService(PuCertifiedPurchaseAuthorizer authorizer,
@@ -52,14 +55,34 @@ public class PuCertifiedPurchaseWriteService {
         this(authorizer,executor,qualification,locks,certification,mapper,ledger,events,numbers,lifecycleMapper,null);
     }
 
-    @Autowired
+    /** 旧构造仅兼容既有写入口；原创建恢复缺少生命周期核验时失败关闭。 */
     public PuCertifiedPurchaseWriteService(PuCertifiedPurchaseAuthorizer authorizer,
         PuRequirementErpTransactionExecutor executor,PuRequirementErpTransactionQualification qualification,
         PuRequirementMaterialLockService locks,ErpPurchaseSourceCertificationService certification,
         PuCertifiedPurchaseWriteMapper mapper,PuRequirementAllocationLedgerMapper ledger,
         PuRequirementAllocationEventMapper events,PuCertifiedPurchaseNumberReservation numbers,PuCertifiedPurchaseLifecycleMapper lifecycleMapper,
         ErpDecisionPurchaseScopeGuard scopeGuard) {
-        this.scopeGuard=scopeGuard;
+        this(authorizer,executor,qualification,locks,certification,mapper,ledger,events,numbers,lifecycleMapper,scopeGuard,null);
+    }
+
+    public PuCertifiedPurchaseWriteService(PuCertifiedPurchaseAuthorizer authorizer,
+        PuRequirementErpTransactionExecutor executor,PuRequirementErpTransactionQualification qualification,
+        PuRequirementMaterialLockService locks,ErpPurchaseSourceCertificationService certification,
+        PuCertifiedPurchaseWriteMapper mapper,PuRequirementAllocationLedgerMapper ledger,
+        PuRequirementAllocationEventMapper events,PuCertifiedPurchaseNumberReservation numbers,PuCertifiedPurchaseLifecycleMapper lifecycleMapper,
+        ErpDecisionPurchaseScopeGuard scopeGuard,PuCertifiedPurchaseLifecycleService lifecycle) {
+        this(authorizer,executor,qualification,locks,certification,mapper,ledger,events,numbers,lifecycleMapper,scopeGuard,lifecycle,null,null);
+    }
+
+    @Autowired
+    public PuCertifiedPurchaseWriteService(PuCertifiedPurchaseAuthorizer authorizer,
+        PuRequirementErpTransactionExecutor executor,PuRequirementErpTransactionQualification qualification,
+        PuRequirementMaterialLockService locks,ErpPurchaseSourceCertificationService certification,
+        PuCertifiedPurchaseWriteMapper mapper,PuRequirementAllocationLedgerMapper ledger,
+        PuRequirementAllocationEventMapper events,PuCertifiedPurchaseNumberReservation numbers,PuCertifiedPurchaseLifecycleMapper lifecycleMapper,
+        ErpDecisionPurchaseScopeGuard scopeGuard,PuCertifiedPurchaseLifecycleService lifecycle,
+        PuCertifiedPurchaseOrderWorkflowService orderWorkflow,PuCertifiedPurchaseOrderWorkflowMapper orderReceipts) {
+        this.scopeGuard=scopeGuard;this.lifecycle=lifecycle;this.orderWorkflow=orderWorkflow;this.orderReceipts=orderReceipts;
         this.authorizer=Objects.requireNonNull(authorizer);this.executor=Objects.requireNonNull(executor);
         this.qualification=Objects.requireNonNull(qualification);this.locks=Objects.requireNonNull(locks);
         this.certification=Objects.requireNonNull(certification);this.mapper=Objects.requireNonNull(mapper);
@@ -98,6 +121,7 @@ public class PuCertifiedPurchaseWriteService {
         validateContract(contract);
         return execute(command,actor,"AI_DECISION",runId,actionId,frozen,contract);
     }
+    /** 完整认证原创建和当前生命周期后恢复不可变 DRAFT/v0；不重新创建、不重分配来源。 */
     public PuCertifiedPurchaseResult recoverForDecision(PuCertifiedPurchaseCommand command,DecisionActor actor,
         Long runId,Long actionId,List<FrozenLine> frozenLines,FrozenContract contract) {
         List<FrozenLine> frozen=validateDecision(command,actor,runId,actionId,frozenLines);
@@ -105,7 +129,11 @@ public class PuCertifiedPurchaseWriteService {
         String requestHash=requestHash(command,actor,"AI_DECISION",runId,actionId,frozen,contract);
         return executor.executeRepeatableRead(actor.tenantId(),()-> {
             prepareStore(actor.tenantId(),command.materialId(),true);
-            return recover(command,actor,"AI_DECISION",requestHash,runId,actionId);
+            PuCertifiedPurchaseResult current=recover(command,actor,"AI_DECISION",requestHash,runId,actionId);
+            if(current==null)return null;
+            // 仅只恢复入口投影已认证的原创建；execute 的当前物理状态语义保持不变。
+            return new PuCertifiedPurchaseResult(current.requisitionId(),current.requisitionNo(),"DRAFT",0,true,
+                current.sourceFingerprint(),current.lines());
         });
     }
 
@@ -256,7 +284,16 @@ public class PuCertifiedPurchaseWriteService {
         require(resultFingerprint(lines).equals(old.resultFingerprint()),"已提交采购行与冻结结果摘要不一致");
         for(Line line:lines) validateRecoveredAllocation(command,actor,doc,line);
         qualification.requireSourceChainTransaction();
-        return new PuCertifiedPurchaseResult(doc.requisitionId(),doc.requisitionNo(),doc.status(),doc.version(),true,old.sourceFingerprint(),lines);
+        PuCertifiedPurchaseResult current=new PuCertifiedPurchaseResult(doc.requisitionId(),doc.requisitionNo(),doc.status(),doc.version(),true,old.sourceFingerprint(),lines);
+        if("AI_DECISION".equals(entryType)) {
+            require(lifecycle!=null,"原创建回执恢复缺少完整生命周期核验");
+            var observations=lifecycle.verifyOriginalCreationLocked(actor.tenantId(),command.materialId(),command.requestKey(),current);
+            require(observations!=null,"当前订单完整核验结果未知");
+            for(var observation:observations)PuCertifiedPurchaseOriginalOrderReceiptSupport.verify(actor.tenantId(),observation,orderWorkflow,orderReceipts);
+            qualification.requireSourceChainTransaction();
+        }
+        // 创建入口的真实重放仍返回当前状态；只恢复入口才能投影原创建回执。
+        return current;
     }
 
     private void validateRecoveredAllocation(PuCertifiedPurchaseCommand c,DecisionActor actor,DocumentReceipt doc,Line line) {

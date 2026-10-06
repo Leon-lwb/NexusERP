@@ -8,6 +8,7 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.PuRequirementAllocationEvent;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
+import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
 import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
 import org.springframework.stereotype.Service;
@@ -117,6 +118,173 @@ public class PuCertifiedPurchaseLifecycleService {
         }
         qualification.requireSourceChainTransaction();return List.copyOf(closed);
     }
+    /** 当前物理观察仅在本包核验链内部传递，不成为 AI 持久字段。 */
+    record OriginalOrderObservation(Long orderId,Long requisitionId,Long vendorId,boolean approved,String status,List<EventReceipt> terminalEvents,
+        Date now,Date transferAt,Date approvalAt,Date latestHistoryAt,Date terminalAt,Date casAt,Long casActor,Date orderCreatedAt,List<Date> transferParameterTimes,List<Date> releaseParameterTimes) {
+        OriginalOrderObservation {terminalEvents=List.copyOf(terminalEvents);now=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(now);transferAt=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(transferAt);
+            approvalAt=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(approvalAt);latestHistoryAt=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(latestHistoryAt);terminalAt=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(terminalAt);casAt=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(casAt);orderCreatedAt=PuCertifiedPurchaseOriginalReceiptHistory.Time.copy(orderCreatedAt);
+            transferParameterTimes=transferParameterTimes.stream().map(PuCertifiedPurchaseOriginalReceiptHistory.Time::copy).toList();
+            releaseParameterTimes=releaseParameterTimes.stream().map(PuCertifiedPurchaseOriginalReceiptHistory.Time::copy).toList();}
+    }
+    /** 只核原创建及完整后续史；当前观察不进入 AI 信封，不授予生命周期写权限。 */
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public List<OriginalOrderObservation> verifyOriginalCreationLocked(String tenantId,Long materialId,String requestKey,PuCertifiedPurchaseResult current) {
+        requireTenant(tenantId);qualification.requireSourceChainTransaction();
+        require(positive(materialId)&&text(requestKey,128)&&current!=null&&positive(current.requisitionId())
+            &&text(current.requisitionNo(),64)&&digest(current.sourceFingerprint())&&current.status()!=null&&current.version()!=null
+            &&current.lines()!=null&&!current.lines().isEmpty(),"原创建核验身份或冻结行未知");
+        List<PuRequirementAllocationLedger> commandRows=io(()->mapper.lockCommandAllocations(tenantId,requestKey));
+        List<PuRequirementAllocationLedger> requisitionRows=io(()->mapper.lockRequisitionAllocations(tenantId,current.requisitionId()));
+        require(commandRows!=null&&requisitionRows!=null&&commandRows.size()==current.lines().size()
+            &&commandRows.size()==requisitionRows.size()&&commandRows.stream().allMatch(Objects::nonNull)
+            &&requisitionRows.stream().allMatch(Objects::nonNull),"原创建永久请求与申请占额全集未覆盖");
+        Set<Long> allocations=new HashSet<>(),lines=new HashSet<>();List<Context> contexts=new ArrayList<>();
+        Set<Long> approvedOrders=new HashSet<>(),settledOrders=new HashSet<>(),orders=new HashSet<>();
+        for(var row:commandRows) {
+            require(positive(row.getAllocationId())&&allocations.add(row.getAllocationId())&&positive(row.getRequisitionLineId())
+                &&lines.add(row.getRequisitionLineId())&&positive(row.getDetailId())
+                &&hash(tenantId,requestKey,row.getDetailId().toString()).equals(row.getAllocationKey()),"原创建占额来源身份重复或键不符");
+            Context c=readContext(tenantId,materialId,row.getAllocationKey(),requestKey,true);
+            require(row.equals(c.row())&&current.requisitionId().equals(c.head().requisitionId())
+                &&current.requisitionNo().equals(c.head().requisitionNo())&&Objects.equals(current.status(),c.head().status())
+                &&Objects.equals(current.version(),c.head().version())&&"AI_DECISION".equals(c.command().entryType())
+                &&current.sourceFingerprint().equals(c.command().sourceFingerprint()),"当前物理观察与原创建归属不一致");
+            var proof=PuCertifiedPurchaseOriginalReceiptHistory.prove(c.row(),c.history(),c.now());
+            require(proof.requisitionStatus().equals(c.head().status())&&Integer.valueOf(proof.requisitionVersion()).equals(c.head().version()),
+                "申请当前状态或版本缺少完整相应历史");
+            if(proof.approved())requireApproved(c);
+            else require(decimal(c.line().approvedQuantity())&&c.line().approvedQuantity().signum()==0,"未批准历史出现真实批准量");
+            for(var e:c.history()) {
+                if("CREATE".equals(e.getEventType())||"RECEIPT_POSTED".equals(e.getEventType())||"RETURN_POSTED".equals(e.getEventType()))continue;
+                Operation op=Operation.valueOf(e.getEventType());
+                require(eventKey(c,op,op==Operation.TRANSFER_TO_ORDER?e.getOrderLineId():null).equals(e.getEventKey()),"追加历史事件键与真实父绑定不符");
+            }
+            if(c.orderLine()==null)require(!"ORDERED".equals(proof.requisitionStatus()),"转单历史缺少真实订单承接");
+            else {
+                require("ORDERED".equals(proof.requisitionStatus())&&c.row().getOrderLineId()!=null,"真实订单缺少合法转单历史");
+                orders.add(c.orderHead().orderId());reconcileCounters(c);requireNoUnprocessedMovements(c);
+                String lineState=c.orderLine().receivedQuantity().compareTo(c.orderLine().orderQuantity())==0?"FULL_RECEIVED"
+                    :c.orderLine().receivedQuantity().signum()>0?"PARTIAL_RECEIVED":"PENDING";
+                require(lineState.equals(c.orderLine().receiveStatus()),"订单行收货状态与永久逐项计数不一致");
+                String expected=proof.orderTerminal()!=null?proof.orderTerminal():!proof.orderApproved()?"DRAFT":null;
+                if(expected!=null)require(expected.equals(c.orderHead().status()),"真实订单状态缺少对应原批准或终态历史");
+                else require(RECEIVING.contains(c.orderHead().status()),"已批准订单状态缺少相应永久物理来源");
+                if(proof.orderApproved())approvedOrders.add(c.orderHead().orderId());
+                if(proof.orderTerminal()!=null)settledOrders.add(c.orderHead().orderId());
+            }
+            contexts.add(c);
+        }
+        require(allocations.equals(requisitionRows.stream().map(PuRequirementAllocationLedger::getAllocationId).collect(java.util.stream.Collectors.toSet()))
+            &&lines.equals(current.lines().stream().map(PuCertifiedPurchaseResult.Line::lineId).collect(java.util.stream.Collectors.toSet())),"永久占额或冻结申请行存在额外/缺失来源");
+        require(orders.size()<=1,"原创建暂不支持拆分或多个订单承接");
+        verifyRequisitionSubmissions(contexts);
+        verifyPolicyDateSources(contexts);
+        List<OriginalOrderObservation> observations=new ArrayList<>();
+        for(Long orderId:orders) {
+            Map<String,Integer> versions=new LinkedHashMap<>();for(Context c:contexts)versions.put(c.row().getAllocationKey(),c.row().getVersion());
+            var group=orderContexts(tenantId,materialId,requestKey,orderId,versions,true);
+            boolean complete=group.stream().allMatch(c->c.orderLine().receivedQuantity().compareTo(c.orderLine().orderQuantity())==0);
+            boolean received=group.stream().anyMatch(c->c.orderLine().receivedQuantity().signum()>0);
+            String state=group.get(0).orderHead().status();
+            if(!settledOrders.contains(orderId))require(received?(complete?"RECEIVED".equals(state)
+                :Set.of("PARTIALLY_RECEIVED","PARTIAL_RECEIVED").contains(state))
+                :(approvedOrders.contains(orderId)?"APPROVED":"DRAFT").equals(state),"整订单当前收货状态与全部真实行不一致");
+            if(approvedOrders.contains(orderId))approvedOrderEventsLocked(tenantId,materialId,requestKey,orderId);
+            List<EventReceipt> terminal=settledOrders.contains(orderId)?settledOrderEventsLocked(tenantId,materialId,requestKey,orderId):List.of();
+            var audit=orderAudit(group.get(0));
+            observations.add(new OriginalOrderObservation(orderId,current.requisitionId(),group.get(0).command().vendorId(),approvedOrders.contains(orderId),state,terminal,group.get(0).now(),
+                latestEventAt(group,Set.of("TRANSFER_TO_ORDER")),latestEventAt(group,Set.of("APPROVE_ORDER")),latestEventAt(group,null),
+                earliestEventAt(group,Set.of("CLOSE_ORDER","CANCEL_ORDER")),audit.updateTime(),audit.updateBy(),audit.createTime(),
+                group.stream().map(c->c.row().getTransferTime()).toList(),group.stream().map(c->c.row().getReleasedAt()).filter(Objects::nonNull).toList()));
+        }
+        qualification.requireSourceChainTransaction();return List.copyOf(observations);
+    }
+
+    /** 整申请提交必须由统一事件集合和独立头/行/订单审计认证，后续操作人可不同于创建人。 */
+    private void verifyRequisitionSubmissions(List<Context> contexts) {
+        Context first=contexts.get(0);var audit=io(()->mapper.lockRequisitionStateAudit(first.tenantId(),first.head().requisitionId()));
+        require(audit!=null&&first.tenantId().equals(audit.tenantId())&&first.head().requisitionId().equals(audit.requisitionId())
+            &&first.command().requestKey().equals(audit.requestKey())&&first.head().status().equals(audit.status())&&first.head().version().equals(audit.version())
+            &&audit.selectFlowId()==null&&"0".equals(audit.delFlag()),"原申请真实整头 CAS 审计或原生审批边界未知");
+        var rows=io(()->mapper.lockRequisitionApprovalAudits(first.tenantId(),first.head().requisitionId()));
+        require(rows!=null&&rows.size()==contexts.size(),"原申请逐行批准审计未覆盖全集");
+        Map<Long,RequisitionApprovalAudit> byLine=new HashMap<>();
+        for(var row:rows)require(row!=null&&first.tenantId().equals(row.tenantId())&&first.head().requisitionId().equals(row.requisitionId())
+            &&positive(row.lineId())&&byLine.putIfAbsent(row.lineId(),row)==null&&"0".equals(row.delFlag()),"原申请批准审计行身份重复或错误");
+        Set<String> requestOps=Set.of("APPROVE","TRANSFER_TO_ORDER","CLOSE_REQUISITION","CANCEL_REQUISITION","REJECT_REQUISITION");
+        Map<String,List<PuRequirementAllocationEvent>> submissions=new LinkedHashMap<>();
+        for(var e:first.history())if(requestOps.contains(e.getEventType()))submissions.put(e.getEventType(),new ArrayList<>());
+        for(Context c:contexts) {
+            require(byLine.containsKey(c.line().lineId()),"真实整申请批准审计缺少冻结行");
+            for(String op:submissions.keySet()) {
+                var matches=c.history().stream().filter(e->op.equals(e.getEventType())).toList();require(matches.size()==1,"整申请原操作未覆盖每一冻结来源");
+                submissions.get(op).add(matches.get(0));
+            }
+            require(c.history().stream().filter(e->requestOps.contains(e.getEventType())).count()==submissions.size(),"整申请各行原操作集合不一致");
+        }
+        for(var submission:submissions.values())require(submission.size()==contexts.size()
+            &&submission.stream().allMatch(e->submission.get(0).getActorId().equals(e.getActorId())),"整申请原生提交存在混合操作人");
+        for(Context c:contexts) {
+            var row=byLine.get(c.line().lineId());var approve=c.history().stream().filter(e->"APPROVE".equals(e.getEventType())).findFirst().orElse(null);
+            require(decimal(row.approvedQuantity())&&row.approvedQuantity().compareTo(c.line().approvedQuantity())==0,"独立批准审计数量与真实冻结行不一致");
+            if(approve!=null)require(approve.getActorId().equals(row.updateBy())&&PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(approve.getOccurredAt(),row.updateTime())
+                &&PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(row.updateTime(),c.history().get(0).getOccurredAt()),"原批准 actor/时间缺少保留的独立行更新证据");
+            else require(row.approvedQuantity().signum()==0&&row.updateBy()==null
+                &&(row.updateTime()==null||PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(c.history().get(0).getOccurredAt(),row.updateTime())),"未批准行出现无法认证的更新事实");
+        }
+        var last=first.history().stream().filter(e->requestOps.contains(e.getEventType())).reduce((a,b)->b).orElse(null);
+        if(last==null) {
+            require(audit.updateBy()==null&&(audit.updateTime()==null||PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(first.history().get(0).getOccurredAt(),audit.updateTime())),"原零版本头出现无提交来源的 CAS 更新");return;
+        }
+        require(last.getActorId().equals(audit.updateBy())&&PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(first.now(),audit.updateTime()),"当前申请最后 CAS 操作人/业务时间与原整提交不一致");
+        for(var e:submissions.get(last.getEventType()))require(PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(e.getOccurredAt(),audit.updateTime()),"原整申请事件早于真实头 CAS");
+        if("APPROVE".equals(last.getEventType()))for(var row:rows)require(PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(row.updateTime(),audit.updateTime()),"批准行更新早于原整头 CAS");
+        if("TRANSFER_TO_ORDER".equals(last.getEventType())) {
+            var order=orderAudit(first);
+            require(last.getActorId().equals(order.createBy())&&PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(order.createTime(),audit.updateTime()),"原转单人/时间未绑定整申请 CAS 与真实订单创建");
+            for(var e:submissions.get("TRANSFER_TO_ORDER"))require(PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(e.getOccurredAt(),order.createTime()),"逐来源转单事件早于真实订单创建");
+            for(var e:submissions.get("APPROVE"))require(PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(audit.updateTime(),e.getOccurredAt()),"转单头 CAS 早于原批准提交");
+        } else if(!"APPROVE".equals(last.getEventType())) {
+            Date previous=latestEventAt(contexts,Set.of("CREATE","APPROVE"));
+            require(PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(audit.updateTime(),previous),"申请终态 CAS 早于原创建/批准");
+        }
+    }
+    /** 参数Date在锁读context捕获，SQL默认事件在UPDATE后INSERT；两个来源只核因果区间，不要求同秒。 */
+    private void verifyPolicyDateSources(List<Context> contexts) {
+        for(Context c:contexts) {
+            var transfer=c.history().stream().filter(e->"TRANSFER_TO_ORDER".equals(e.getEventType())).findFirst().orElse(null);
+            if(transfer!=null) {
+                var order=orderAudit(c);
+                require(PuCertifiedPurchaseOriginalReceiptHistory.Time.parameterWithinCommit(c.row().getTransferTime(),order.createTime(),transfer.getOccurredAt(),c.now()),
+                    "参数转单Date缺少真实订单创建到对应默认事件之间的同提交来源区间");
+            } else require(c.row().getTransferTime()==null,"无转单事件却出现参数转单Date");
+            var release=c.history().stream().filter(e->Set.of("CLOSE_REQUISITION","CANCEL_REQUISITION","REJECT_REQUISITION","CLOSE_ORDER","CANCEL_ORDER").contains(e.getEventType())).findFirst().orElse(null);
+            if(release!=null) {
+                Date cas;
+                if(c.orderHead()==null) {
+                    var audit=io(()->mapper.lockRequisitionStateAudit(c.tenantId(),c.head().requisitionId()));
+                    require(audit!=null,"参数释放Date缺少独立申请头CAS时钟");cas=audit.updateTime();
+                }
+                else cas=orderAudit(c).updateTime();
+                require(PuCertifiedPurchaseOriginalReceiptHistory.Time.parameterWithinCommit(c.row().getReleasedAt(),cas,release.getOccurredAt(),c.now()),
+                    "参数释放Date缺少真实头CAS到对应默认事件之间的同提交来源区间");
+            } else require(c.row().getReleasedAt()==null,"无释放事件却出现参数释放Date");
+        }
+    }
+    private OrderStateAudit orderAudit(Context c) {
+        require(c.orderHead()!=null,"订单审计缺少物理承接");var audit=io(()->mapper.lockOrderStateAudit(c.tenantId(),c.orderHead().orderId()));
+        require(audit!=null&&c.tenantId().equals(audit.tenantId())&&c.orderHead().orderId().equals(audit.orderId())&&c.head().requisitionId().equals(audit.requisitionId())
+            &&positive(audit.createBy())&&PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(c.now(),audit.createTime())&&"0".equals(audit.delFlag()),"真实订单创建审计缺失或父绑定错误");return audit;
+    }
+    private static Date latestEventAt(List<Context> contexts,Set<String> types) {
+        return contexts.stream().flatMap(c->c.history().stream()).filter(e->types==null||types.contains(e.getEventType()))
+            .map(PuRequirementAllocationEvent::getOccurredAt).max(Date::compareTo).map(PuCertifiedPurchaseOriginalReceiptHistory.Time::copy).orElse(null);
+    }
+    private static Date earliestEventAt(List<Context> contexts,Set<String> types) {
+        return contexts.stream().flatMap(c->c.history().stream()).filter(e->types.contains(e.getEventType()))
+            .map(PuRequirementAllocationEvent::getOccurredAt).min(Date::compareTo).map(PuCertifiedPurchaseOriginalReceiptHistory.Time::copy).orElse(null);
+    }
+
     private static void validateOrderCommand(OrderCommand c) {
         require(c!=null&&positive(c.actorId())&&positive(c.materialId())&&positive(c.orderId())&&text(c.requestKey(),128)
             &&Set.of(Operation.APPROVE_ORDER,Operation.CLOSE_ORDER,Operation.CANCEL_ORDER).contains(c.operation())

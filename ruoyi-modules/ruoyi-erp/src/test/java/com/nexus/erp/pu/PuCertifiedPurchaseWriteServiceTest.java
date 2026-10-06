@@ -35,6 +35,8 @@ class PuCertifiedPurchaseWriteServiceTest {
     private PuRequirementAllocationEventMapper events;
     private PuCertifiedPurchaseNumberReservation numbers;
     private PuCertifiedPurchaseLifecycleMapper definitions;
+    private PuCertifiedPurchaseLifecycleService lifecycle;
+    private List<PuRequirementAllocationLedger> recoveryRows;
     private PuCertifiedPurchaseWriteService service;
     private ErpDecisionPurchaseScopeGuard scopeGuard;
     private MockedStatic<TenantHelper> tenants;
@@ -71,7 +73,9 @@ class PuCertifiedPurchaseWriteServiceTest {
             new PuCertifiedPurchaseWriteMapper.CommandUniqueKeyColumn("uk_certified_purchase_requisition",0,2,"requisition_id",null)));
         when(numbers.reserveRequisitionNumber()).thenReturn("CGSQ202610030001");
         scopeGuard=mock(ErpDecisionPurchaseScopeGuard.class);
-        service=new PuCertifiedPurchaseWriteService(auth,tx,qualification,locks,certification,mapper,ledger,events,numbers,definitions,scopeGuard);
+        lifecycle=new PuCertifiedPurchaseLifecycleService(tx,qualification,locks,mock(PuRequirementMaterialGuardMapper.class),ledger,events,definitions);
+        when(locks.lockExisting(TENANT,List.of(139L))).thenReturn(Map.of(139L,0));
+        service=new PuCertifiedPurchaseWriteService(auth,tx,qualification,locks,certification,mapper,ledger,events,numbers,definitions,scopeGuard,lifecycle);
     }
     @AfterEach void close() { tenants.close(); }
     private PuCertifiedPurchaseCommand command() { return new PuCertifiedPurchaseCommand(KEY,139L,9L,DAY,List.of(21L,22L),HASH); }
@@ -157,7 +161,8 @@ class PuCertifiedPurchaseWriteServiceTest {
         verify(ledger,times(2)).insert(allocations.capture());
         ArgumentCaptor<PuRequirementAllocationEvent> creates=ArgumentCaptor.forClass(PuRequirementAllocationEvent.class);
         verify(events,times(2)).insert(creates.capture());
-        for(var row:allocations.getAllValues()) {
+        recoveryRows=allocations.getAllValues();
+        for(var row:recoveryRows) {
             row.setCreateTime(new Date(1));when(ledger.lockByKey(TENANT,row.getAllocationKey())).thenReturn(row);
             var initial=creates.getAllValues().stream().filter(e->e.getAllocationId().equals(row.getAllocationId())).findFirst().orElseThrow();
             initial.setOccurredAt(new Date(1));when(mapper.lockCreationEvents(TENANT,row.getAllocationId())).thenReturn(List.of(initial));
@@ -336,12 +341,40 @@ class PuCertifiedPurchaseWriteServiceTest {
         verify(ledger,times(2)).insert(allocations.capture());
         ArgumentCaptor<PuRequirementAllocationEvent> creates=ArgumentCaptor.forClass(PuRequirementAllocationEvent.class);
         verify(events,times(2)).insert(creates.capture());
-        for(var row:allocations.getAllValues()) {
-            row.setCreateTime(new Date(1));row.setVersion(5);when(ledger.lockByKey(TENANT,row.getAllocationKey())).thenReturn(row);
+        recoveryRows=allocations.getAllValues();
+        for(var row:recoveryRows) {
+            row.setCreateTime(new Date(1));row.setVersion(0);when(ledger.lockByKey(TENANT,row.getAllocationKey())).thenReturn(row);
             var initial=creates.getAllValues().stream().filter(e->e.getAllocationId().equals(row.getAllocationId())).findFirst().orElseThrow();
             initial.setOccurredAt(new Date(1));when(mapper.lockCreationEvents(TENANT,row.getAllocationId())).thenReturn(List.of(initial));
+            when(events.lockByAllocation(TENANT,row.getAllocationId())).thenReturn(List.of(initial));
         }
+        prepareRealLifecycleReplay(first,saved.getValue());
         clearInvocations(mapper,certification,numbers,ledger,events,scopeGuard,locks);return first;
+    }
+    /** 完整 CREATE/v0 实际持久边界替身，生命周期服务本体不 mock。 */
+    private void prepareRealLifecycleReplay(PuCertifiedPurchaseResult first,PuCertifiedPurchaseWriteMapper.CommandReceipt saved) {
+        when(definitions.commandTableEngine()).thenReturn("InnoDB");when(definitions.pinCommandDefinition()).thenReturn(List.of());
+        when(definitions.databaseNow()).thenReturn(new Date(1));
+        when(definitions.lockMaterial(TENANT,139L)).thenReturn(new PuCertifiedPurchaseLifecycleMapper.Material(TENANT,139L,4L,1L,"0"));
+        when(definitions.lockRootUnit(TENANT,4L)).thenReturn(new PuCertifiedPurchaseLifecycleMapper.RootUnit(TENANT,4L,"根单位",1L,4L,BigDecimal.ONE,4,"unit-v1",new Date(1),1L,"0"));
+        var head=new PuCertifiedPurchaseLifecycleMapper.RequisitionHead(TENANT,first.requisitionId(),first.requisitionNo(),"AI_DECISION","DRAFT",KEY,0,"0");
+        when(definitions.lockRequisitionHead(TENANT,first.requisitionId())).thenReturn(head);
+        when(definitions.lockRequisitionStateAudit(TENANT,first.requisitionId())).thenReturn(new PuCertifiedPurchaseLifecycleMapper.RequisitionStateAudit(TENANT,first.requisitionId(),KEY,"DRAFT",0,null,new Date(1),null,"0"));
+        when(definitions.lockCommand(TENANT,KEY)).thenReturn(new PuCertifiedPurchaseLifecycleMapper.CommandSource(TENANT,KEY,saved.requestHash(),7L,"AI_DECISION",139L,9L,first.requisitionId(),first.requisitionNo(),saved.sourceFingerprint(),saved.resultFingerprint(),"COMMITTED",saved.catalogFingerprint(),DAY.toString()));
+        List<PuCertifiedPurchaseLifecycleMapper.RequisitionLine> lines=new ArrayList<>();List<PuCertifiedPurchaseLifecycleMapper.RequisitionApprovalAudit> audits=new ArrayList<>();
+        for(var line:first.lines()) {
+            var source=new PuCertifiedPurchaseLifecycleMapper.RequisitionLine(TENANT,line.lineId(),first.requisitionId(),139L,"4",line.applyQuantity(),BigDecimal.ZERO,"MRP",line.requirementDetailId(),DAY.toString(),"0");lines.add(source);
+            audits.add(new PuCertifiedPurchaseLifecycleMapper.RequisitionApprovalAudit(TENANT,line.lineId(),first.requisitionId(),BigDecimal.ZERO,null,new Date(1),"0"));
+            when(definitions.lockRequisitionLine(TENANT,line.lineId())).thenReturn(source);
+            when(definitions.lockDemandDetail(TENANT,line.requirementDetailId())).thenReturn(new PuCertifiedPurchaseLifecycleMapper.DemandDetail(TENANT,line.requirementDetailId(),31L,139L,1L,"0"));
+            when(definitions.lockOrdersForRequisitionLine(TENANT,line.lineId())).thenReturn(List.of());
+            var allocation=recoveryRows.stream().filter(row->line.lineId().equals(row.getRequisitionLineId())).findFirst().orElseThrow();
+            when(definitions.lockRelatedAllocations(TENANT,line.lineId(),null)).thenReturn(List.of(allocation));
+        }
+        when(definitions.lockDemandHead(TENANT,31L)).thenReturn(new PuCertifiedPurchaseLifecycleMapper.DemandHead(TENANT,31L,"CONFIRMED","0"));
+        when(definitions.lockRequisitionLines(TENANT,first.requisitionId())).thenReturn(lines);
+        when(definitions.lockRequisitionApprovalAudits(TENANT,first.requisitionId())).thenReturn(audits);
+        when(definitions.lockCommandAllocations(TENANT,KEY)).thenReturn(recoveryRows);when(definitions.lockRequisitionAllocations(TENANT,first.requisitionId())).thenReturn(recoveryRows);
     }
     @Test void committedRequestRecoversAfterOwnOccupationChangedWithoutSourceRecertification() {
         var first=commitAiAndPrepareReplay();
@@ -349,7 +382,11 @@ class PuCertifiedPurchaseWriteServiceTest {
         var result=service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1"));
         assertEquals(first.requisitionId(),result.requisitionId(),"恢复必须认领原始永久提交");
         assertTrue(result.replayed(),"恢复必须标识为真实重放");
-        verify(locks).lockExisting(TENANT,List.of(139L));verify(locks,never()).lock(any(),any());
+        assertFalse(mockingDetails(lifecycle).isMock(),"完整历史认证必须走真实生命周期，不以委托调用计数代替");
+        verify(events,times(2)).lockByAllocation(eq(TENANT),any());
+        assertEquals("DRAFT",result.status(),"恢复回执必须仍为原创建草稿");
+        assertEquals(0,result.version(),"恢复回执必须仍为原创建零版本");
+        verify(locks,times(first.lines().size()+1)).lockExisting(TENANT,List.of(139L));verify(locks,never()).lock(any(),any());
         verifyNoInteractions(numbers,certification,scopeGuard);verify(ledger,never()).insert(any());verify(events,never()).insert(any());
     }
     @Test void completedRootDoesNotEraseExistingReceiptOrAllocateAgain() {
@@ -359,6 +396,23 @@ class PuCertifiedPurchaseWriteServiceTest {
         assertEquals(first.requisitionId(),result.requisitionId(),"已有永久提交不能被后续根状态抹去");
         verifyNoInteractions(numbers,certification,scopeGuard);verify(locks,never()).lock(any(),any());
     }
+    @Test void r5RealWriterMustRejectVersionFiveWithOnlyCreationInsteadOfEmptyMockProof() {
+        commitAiAndPrepareReplay();recoveryRows.forEach(row->row.setVersion(5));
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1")),
+            "R5 版本五仅 CREATE 的历史必须经真实 writer 和生命周期门禁拒绝，不能以空 mock List 通过");
+        verifyNoInteractions(numbers,certification,scopeGuard);
+    }
+
+    @Test void incompleteLifecycleProofCannotBeProjectedOrBecomeANewCreation() {
+        commitAiAndPrepareReplay();
+        when(events.lockByAllocation(any(),any())).thenThrow(new IllegalStateException("离线完整生命周期读取不可确认"));
+        assertThrows(ServiceException.class,()->service.recoverForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1")),
+            "未知完整历史必须传播，不得投影原草稿或转换为未命中");
+        assertThrows(ServiceException.class,()->service.createForDecision(command(),aiActor(),100L,200L,aiLines(),contract("c".repeat(64),"terms-v1")),
+            "创建入口的已有请求也必须使用完整历史核验，不能绕过");
+        verifyNoInteractions(numbers,certification,scopeGuard);verify(ledger,never()).insert(any());verify(events,never()).insert(any());
+    }
+
     @Test void recoveryConflictingActorRootRunActionOrContractIsNeverMiss() {
         commitAiAndPrepareReplay();var full=contract("c".repeat(64),"terms-v1");
         var other=new DecisionActor(TENANT,8L,"另一执行人",aiActor().permissions());

@@ -65,7 +65,7 @@ public class ErpCertifiedPurchaseDecisionAdapter {
             committed.requisitionNo(), resultDetails(action, actor, intent, committed, committed.replayed()), null, null);
     }
 
-    /** 不依赖AI结果信封的只恢复入口；冲突及未知读取均传播，不伪装MISS。 */
+    /** 不依赖 AI 信封恢复原创建；writer 在同一 ERP RR 认证完整生命周期，当前观察不写回信封。 */
     public DecisionActionExecutionResult recover(DecisionActionProposal action, DecisionActor actor) {
         Intent intent = requireIntent(action, actor);
         PuCertifiedPurchaseResult committed = writer.recoverForDecision(intent.command(), actor,
@@ -82,26 +82,26 @@ public class ErpCertifiedPurchaseDecisionAdapter {
             committed.requisitionNo(), resultDetails(action, actor, intent, committed, true), null, null);
     }
 
-    /** 只恢复已提交 command；缺记录绝不能为了验证而创建单据或分配新编号。 */
+    /** 独立核验不可变创建回执并原样保留成功信封；正常推进不改写原结论，缺记录不重建。 */
     public DecisionActionExecutionResult verify(DecisionActionProposal action,
                                                DecisionActionExecutionResult result, DecisionActor actor) {
         Intent intent = requireIntent(action, actor);
         boolean replayed = requireEnvelope(action, actor, intent, result);
-        PuCertifiedPurchaseResult current = writer.recoverForDecision(intent.command(), actor,
+        PuCertifiedPurchaseResult original = writer.recoverForDecision(intent.command(), actor,
             intent.runId(), action.actionId(), intent.lines(), intent.contract());
-        if (current == null) return failure(result, "VERIFY_NOT_FOUND", "未找到该冻结动作的永久采购提交");
+        if (original == null) return failure(result, "VERIFY_NOT_FOUND", "未找到该冻结动作的永久采购提交");
         try {
-            requireReceipt(intent, current);
+            requireReceipt(intent, original);
         } catch (ServiceException conflict) {
             return failure(result, "VERIFY_CONFLICT", "真实采购来源或申请行与冻结动作不一致");
         }
-        if (!"DRAFT".equals(current.status())) {
-            return failure(result, "VERIFY_STATE_MISMATCH", "采购申请已不再是草稿状态");
+        if (!"DRAFT".equals(original.status())) {
+            return failure(result, "VERIFY_STATE_MISMATCH", "已认证原创建回执不是草稿初态");
         }
-        if (!current.replayed() || !Integer.valueOf(0).equals(current.version())
-            || !current.requisitionId().equals(result.resultBizId())
-            || !current.requisitionNo().equals(result.resultBizCode())
-            || !resultDetails(action, actor, intent, current, replayed).equals(result.result())) {
+        if (!original.replayed() || !Integer.valueOf(0).equals(original.version())
+            || !original.requisitionId().equals(result.resultBizId())
+            || !original.requisitionNo().equals(result.resultBizCode())
+            || !resultDetails(action, actor, intent, original, replayed).equals(result.result())) {
             return failure(result, "VERIFY_CONFLICT", "采购永久结果、版本或前后状态与冻结结果不一致");
         }
         return result;

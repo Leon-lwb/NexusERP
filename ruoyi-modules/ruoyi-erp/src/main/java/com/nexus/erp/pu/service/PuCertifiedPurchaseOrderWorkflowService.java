@@ -119,6 +119,7 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         OperationRecord terminal=io(()->mapper.lockTerminalOperation(tenantId,orderId));
         require(terminal!=null&&positive(terminal.commandId())&&tenantId.equals(terminal.tenantId())&&orderId.equals(terminal.orderId())&&positive(terminal.actorId())&&op.name().equals(terminal.operation())
             &&d.head().status().equals(terminal.resultStatus())&&terminal.expectedVersion()!=null&&terminal.expectedVersion()>0&&terminal.expectedVersion()<Integer.MAX_VALUE
+            &&Integer.valueOf(1).equals(terminal.expectedVersion())&&Integer.valueOf(2).equals(terminal.resultVersion())
             &&d.head().version().equals(terminal.resultVersion())&&terminal.resultVersion()==terminal.expectedVersion()+1&&q.quoteId().equals(terminal.quoteId())&&q.quoteHash().equals(terminal.quoteHash())
             &&q.promisedArrivalDate().equals(terminal.expectedArrivalDate())&&equal(d.head().totalAmount(),terminal.totalAmount())&&equal(d.head().amountExcludingTax(),terminal.amountExcludingTax())&&equal(d.head().taxAmount(),terminal.taxAmount())
             &&requestKey(terminal.requestKey())&&digest(terminal.resultFingerprint())&&Objects.equals(terminal.requestHash(),operationHash(new Actor(tenantId,terminal.actorId(),""),orderId,terminal.expectedVersion(),null,terminal.requestKey(),op))
@@ -128,6 +129,14 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         Result original=new Result(orderId,d.head().orderNo(),terminal.requestKey(),terminal.resultStatus(),terminal.resultVersion(),terminal.quoteId(),terminal.quoteHash(),terminal.expectedArrivalDate(),terminal.totalAmount(),terminal.amountExcludingTax(),terminal.taxAmount(),true,events);
         require(terminal.resultFingerprint().equals(resultFingerprint(tenantId,original)),"终态ERP结果与全部释放/履约事件不一致");qualification.requireSourceChainTransaction();
     }
+    /** 未批准草稿/终态只读门禁；完整金额行读取不能被空报价头代替。 */
+    public void requireUnpricedReplayLocked(String tenantId,Long orderId) {
+        requireTenant(tenantId);qualification.requireSourceChainTransaction();validateId(orderId);Document d=load(tenantId,orderId,true);
+        require(Set.of("DRAFT","CLOSED","CANCELLED").contains(d.head().status()),"未定价原创建订单状态不支持");
+        require("CNY".equals(d.head().currency())&&equal(BigDecimal.ONE,d.head().exchangeRate()),"未定价原始币种/汇率不一致");
+        requireUnpricedTermsAndMoney(d,true);qualification.requireSourceChainTransaction();
+    }
+
     private Result change(Actor actor,Long id,Integer version,Long quoteId,String key,Operation operation) {
         String requestHash=operationHash(actor,id,version,quoteId,key,operation);
         return executor.executeRepeatableRead(actor.tenantId(),()->{
@@ -190,8 +199,8 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         }
         OperationRecord op=io(()->mapper.lockApprovalOperation(d.head().tenantId(),d.head().orderId()));
         require(op!=null&&positive(op.commandId())&&d.head().tenantId().equals(op.tenantId())&&d.head().orderId().equals(op.orderId())&&positive(op.actorId())&&"APPROVE_ORDER".equals(op.operation())&&"APPROVED".equals(op.resultStatus())
-            &&op.expectedVersion()!=null&&op.expectedVersion()>=0&&op.expectedVersion()<Integer.MAX_VALUE&&op.resultVersion()!=null&&op.resultVersion()==op.expectedVersion()+1
-            &&(allowTerminal?d.head().version()>=op.resultVersion():d.head().version().equals(op.resultVersion()))&&q.quoteId().equals(op.quoteId())&&q.quoteHash().equals(op.quoteHash())&&q.promisedArrivalDate().equals(op.expectedArrivalDate())
+            &&Integer.valueOf(0).equals(op.expectedVersion())&&Integer.valueOf(1).equals(op.resultVersion())
+            &&(allowTerminal?Integer.valueOf(1).equals(d.head().version())||Integer.valueOf(2).equals(d.head().version()):d.head().version().equals(op.resultVersion()))&&q.quoteId().equals(op.quoteId())&&q.quoteHash().equals(op.quoteHash())&&q.promisedArrivalDate().equals(op.expectedArrivalDate())
             &&equal(total.gross(),op.totalAmount())&&equal(total.net(),op.amountExcludingTax())&&equal(total.tax(),op.taxAmount())&&digest(op.resultFingerprint())&&requestKey(op.requestKey())
             &&Objects.equals(op.requestHash(),operationHash(new Actor(op.tenantId(),op.actorId(),"pu:order:approve"),op.orderId(),op.expectedVersion(),q.quoteId(),op.requestKey(),Operation.APPROVE_ORDER))
             &&op.occurredAt()!=null&&!op.occurredAt().before(confirmation.confirmedAt())&&!op.occurredAt().after(databaseNow()),"缺少真实ERP定价批准永久提交合同");
@@ -242,11 +251,19 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         return new Document(head,command,List.copyOf(reqLines),List.copyOf(lines),List.copyOf(rows),List.copyOf(money));
     }
     private void requireDraft(Document d,Integer version) {
-        require("DRAFT".equals(d.head().status())&&d.head().version().equals(version)&&d.head().quoteId()==null&&d.head().expectedArrivalDate()==null&&absentOrZero(d.head().totalAmount())&&absentOrZero(d.head().taxAmount())
-            &&absentOrZero(d.head().amountExcludingTax())&&absentOrZero(d.head().discountAmount())&&absentOrZero(d.head().freightAmount())&&absentOrZero(d.head().discountRate())&&d.head().paymentTerms()==null&&d.head().deliveryTerms()==null,"订单不是完整未定价可信草稿，不能覆盖旧条款");
+        require("DRAFT".equals(d.head().status())&&d.head().version().equals(version),"订单不是原版本未定价草稿");
+        requireUnpricedTermsAndMoney(d,false);
         for(var row:d.rows())require("ORDER_COMMITTED_NOT_TIMELY_SUPPLY".equals(row.getAllocationStatus())&&equal(row.getCoveredDemandBaseQty(),row.getOccupiedBaseQty())&&zero(row.getFulfilledBaseQty())&&zero(row.getReleasedBaseQty()),"草稿出现已履约/释放占额");
         for(var l:d.lines())require(zero(l.receivedQuantity())&&zero(l.returnedQuantity())&&"PENDING".equals(l.receiveStatus()),"草稿出现收货/退货事实");
-        for(var m:d.money())require(absentOrZero(m.unitPrice())&&absentOrZero(m.unitPriceExcludingTax())&&absentOrZero(m.taxRate())&&absentOrZero(m.lineAmount())&&absentOrZero(m.lineAmountExcludingTax())&&absentOrZero(m.lineTaxAmount())&&zero(m.invoicedQty()),"草稿已有未经独立确认的价格/税/发票事实");
+    }
+    /** 头条款与全行价税/金额只读事实；不把终态头/账本伪装为草稿。 */
+    private static void requireUnpricedTermsAndMoney(Document d,boolean nullableInvoice) {
+        require(d.head().quoteId()==null&&d.head().expectedArrivalDate()==null&&absentOrZero(d.head().totalAmount())&&absentOrZero(d.head().taxAmount())
+            &&absentOrZero(d.head().amountExcludingTax())&&absentOrZero(d.head().discountAmount())&&absentOrZero(d.head().freightAmount())&&absentOrZero(d.head().discountRate())
+            &&d.head().paymentTerms()==null&&d.head().deliveryTerms()==null,"订单不是完整未定价合同，不能覆盖旧条款");
+        for(var m:d.money())require(absentOrZero(m.unitPrice())&&absentOrZero(m.unitPriceExcludingTax())&&absentOrZero(m.taxRate())&&absentOrZero(m.lineAmount())
+            &&absentOrZero(m.lineAmountExcludingTax())&&absentOrZero(m.lineTaxAmount())&&(nullableInvoice?absentOrZero(m.invoicedQty()):zero(m.invoicedQty())),
+            "未批准订单已有未经独立确认的价格/税/金额/发票事实");
     }
     private void requireCurrentCapacityAndCatalog(Document d) {
         qualification.requireSourceChainTransaction();LocalDate end=date(d.source().windowEnd());Set<Long> details=new HashSet<>();for(var l:d.reqLines())require(details.add(l.sourceId()),"冻结MRP来源重复");

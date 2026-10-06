@@ -277,6 +277,28 @@ public interface PuCertifiedPurchaseLifecycleMapper {
     record Material(String tenantId, Long materialId, Long baseUomId, Long status, String delFlag) { }
     record RootUnit(String tenantId, Long uomId, String uomName, Long isBase, Long primaryId,
         BigDecimal conversionRate, Integer quantityScale, String conversionVersion, Date verifiedAt, Long status, String delFlag) { }
+    /** 只读既有整申请 CAS 审计列；不从待认证追加事件构造操作人。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT tenant_id,requisition_id,decision_idempotency_key AS request_key,status,version,update_by,update_time,select_flow_id,del_flag "
+        +"FROM pu_purchase_requisition WHERE tenant_id=#{tenantId} AND requisition_id=#{id} FOR UPDATE")
+    RequisitionStateAudit lockRequisitionStateAudit(@Param("tenantId") String tenantId,@Param("id") Long id);
+    /** 原生批准写入的逐行更新人/时间由转单保留，独立于事件 actor。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT tenant_id,line_id,requisition_id,approved_quantity,update_by,update_time,del_flag FROM pu_purchase_requisition_line "
+        +"WHERE tenant_id=#{tenantId} AND requisition_id=#{id} ORDER BY line_id FOR UPDATE")
+    List<RequisitionApprovalAudit> lockRequisitionApprovalAudits(@Param("tenantId") String tenantId,@Param("id") Long id);
+    /** 订单创建审计认证转单人；终态更新审计认证最后一次订单 CAS。 */
+    @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
+    @Select("SELECT tenant_id,order_id,requisition_id,create_by,create_time,update_by,update_time,del_flag FROM pu_purchase_order "
+        +"WHERE tenant_id=#{tenantId} AND order_id=#{id} FOR UPDATE")
+    OrderStateAudit lockOrderStateAudit(@Param("tenantId") String tenantId,@Param("id") Long id);
+    record RequisitionStateAudit(String tenantId,Long requisitionId,String requestKey,String status,Integer version,
+        Long updateBy,Date updateTime,Long selectFlowId,String delFlag) { }
+    record RequisitionApprovalAudit(String tenantId,Long lineId,Long requisitionId,BigDecimal approvedQuantity,
+        Long updateBy,Date updateTime,String delFlag) { }
+    record OrderStateAudit(String tenantId,Long orderId,Long requisitionId,Long createBy,Date createTime,
+        Long updateBy,Date updateTime,String delFlag) { }
+
     record DemandDetail(String tenantId, Long detailId, Long requirementId, Long materialId, Long status, String delFlag) { }
     record DemandHead(String tenantId, Long requirementId, String status, String delFlag) { }
     record RequisitionLine(String tenantId, Long lineId, Long requisitionId, Long materialId, String unit,
