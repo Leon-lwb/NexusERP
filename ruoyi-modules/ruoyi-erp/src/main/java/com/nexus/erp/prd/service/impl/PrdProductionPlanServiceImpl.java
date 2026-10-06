@@ -162,7 +162,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     /**
      * 新增生产计划（通过 BO）
      * <p>
-     * 自动生成生产计划编号，默认版本号为 1，计划状态设为 DRAFT（草稿）。
+     * 自动生成生产计划编号，缺失的版本号及当前版本标记初始化为 1。
+     * 计划仅能以 DRAFT（草稿）状态新建，非空白且非草稿的客户端状态将被拒绝。
      *
      * @param bo 生产计划业务对象
      * @return 影响的行数
@@ -171,6 +172,16 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdProductionPlanBo bo) {
         PrdProductionPlan entity = MapstructUtils.convert(bo, PrdProductionPlan.class);
+        if (!StringUtils.isBlank(entity.getStatus()) && !STATUS_DRAFT.equals(entity.getStatus())) {
+            throw new RuntimeException("新增生产计划只能为草稿状态");
+        }
+        entity.setStatus(STATUS_DRAFT);
+        if (entity.getVersion() == null) {
+            entity.setVersion(VERSION_INIT);
+        }
+        if (entity.getIsCurrent() == null) {
+            entity.setIsCurrent(VERSION_INIT);
+        }
         if (StringUtils.isBlank(entity.getPlanNo())) {
             entity.setPlanNo(autoCodeUtil.genSerialCode("PRD_PLAN_CODE", null));
         }
