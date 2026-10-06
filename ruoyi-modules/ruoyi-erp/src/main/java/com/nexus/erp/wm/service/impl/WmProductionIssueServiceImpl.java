@@ -11,12 +11,15 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
+import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
@@ -89,6 +92,8 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     private final AutoCodeUtil autoCodeUtil;
     /** 生产发料数据访问映射器（Mapper） */
     private final PrdWorkOrderMapper workOrderMapper;
+    /** 原生产计划数据访问映射器 */
+    private final PrdProductionPlanMapper planMapper;
     /** 生产发料数据访问映射器（Mapper） */
     private final PrdMaterialRequirementMapper requirementMapper;
     /** 明细数据访问映射器（Mapper） */
@@ -157,6 +162,8 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         }
         WmProductionIssue entity = MapstructUtils.convert(bo, WmProductionIssue.class);
         entity.setStatus(STATUS_CREATED);
+        /** 新增来源在单头和明细持久化前核验，不能由客户端任意认领需求ID。 */
+        validateNewRequirementSources(entity, bo.getWmProductionIssueLineList());
         if (StringUtils.isBlank(entity.getIssueCode())) {
             entity.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
         }
@@ -214,7 +221,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             throw new ServiceException("领料状态已变化，请刷新后重试");
         }
         /** 增量同步行保留原ID；总额最后由后端重算，不接受页面回传总额。 */
-        syncLines(entity.getIssueId(), bo.getWmProductionIssueLineList());
+        syncLines(current, bo.getWmProductionIssueLineList());
         recalcHeaderTotals(entity.getIssueId());
         return rows;
     }
@@ -537,43 +544,45 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
      */
     @Override
     public List<WmProductionIssueLine> buildLinesFromWorkOrder(Long woId) {
-        PrdWorkOrder wo = workOrderMapper.selectById(woId);
-        if (wo == null || wo.getPlanId() == null) {
+        if (woId == null) {
             return Collections.emptyList();
         }
-        List<PrdMaterialRequirement> reqs = requirementMapper.selectList(
-            Wrappers.lambdaQuery(PrdMaterialRequirement.class)
-                .eq(PrdMaterialRequirement::getPlanId, wo.getPlanId()));
-        if (reqs.isEmpty()) {
+        String tenantId = requireSourceTenant(null);
+        PrdWorkOrder wo = selectActiveSourceWorkOrder(woId, tenantId);
+        /** 无MRP来源的工单保留独立手工路径，计划ID或同数值来源ID不能代替需求归属。 */
+        if (wo == null || !"MATERIAL_REQUIREMENT".equals(wo.getSourceType())) {
             return Collections.emptyList();
         }
+        PrdMaterialRequirement requirement = resolveSourceRequirement(wo, tenantId);
+        List<PrdMaterialRequirementDetail> details = detailMapper.selectList(
+            Wrappers.<PrdMaterialRequirementDetail>lambdaQuery()
+                .eq(PrdMaterialRequirementDetail::getRequirementId, requirement.getRequirementId())
+                .eq(PrdMaterialRequirementDetail::getTenantId, tenantId)
+                .eq(PrdMaterialRequirementDetail::getDelFlag, "0"));
         List<WmProductionIssueLine> lines = new ArrayList<>();
-        for (PrdMaterialRequirement req : reqs) {
-            List<PrdMaterialRequirementDetail> details = detailMapper.selectList(
-                Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
-                    .eq(PrdMaterialRequirementDetail::getRequirementId, req.getRequirementId()));
-            for (PrdMaterialRequirementDetail detail : details) {
-                /** 倒冲物料不进领料单（完工时自动倒冲） */
-                if (detail.getBackflushFlag() != null && detail.getBackflushFlag() == 1) {
-                    continue;
-                }
-                BigDecimal required = zeroIfNull(detail.getRequiredQuantity());
-                WmProductionIssueLine line = new WmProductionIssueLine();
-                line.setMaterialId(detail.getMaterialId());
-                line.setMaterialCode(detail.getMaterialCode());
-                line.setMaterialName(detail.getMaterialName());
-                line.setMaterialSpec(detail.getMaterialSpec());
-                line.setBaseUomId(detail.getUnit());
-                line.setBomQty(detail.getBomQuantity());
-                line.setLossRate(detail.getLossRate());
-                line.setRequiredQty(required);
-                line.setIssuedQty(BigDecimal.ZERO);
-                line.setCurrentQty(required);
-                line.setShortQty(required);
-                line.setRequirementDetailId(detail.getDetailId());
-                line.setLineStatus(LINE_PENDING);
-                lines.add(line);
+        for (PrdMaterialRequirementDetail detail : details) {
+            /** 倒冲物料不进普通领料单，仍由完工倒冲处理。 */
+            if (Integer.valueOf(1).equals(detail.getBackflushFlag())) {
+                continue;
             }
+            validateSourceDetail(requirement, detail, tenantId);
+            BigDecimal required = sourceUnissuedQuantity(detail);
+            WmProductionIssueLine line = new WmProductionIssueLine();
+            line.setMaterialId(detail.getMaterialId());
+            line.setMaterialCode(detail.getMaterialCode());
+            line.setMaterialName(detail.getMaterialName());
+            line.setMaterialSpec(detail.getMaterialSpec());
+            line.setBaseUomId(detail.getUnit());
+            line.setQuantity(required);
+            line.setBomQty(detail.getBomQuantity());
+            line.setLossRate(detail.getLossRate());
+            line.setRequiredQty(required);
+            line.setIssuedQty(BigDecimal.ZERO);
+            line.setCurrentQty(required);
+            line.setShortQty(required);
+            line.setRequirementDetailId(detail.getDetailId());
+            line.setLineStatus(LINE_PENDING);
+            lines.add(line);
         }
         return lines;
     }
@@ -589,9 +598,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 if (line.getIssuedQty() == null) {
                     line.setIssuedQty(BigDecimal.ZERO);
                 }
-                if (StringUtils.isBlank(line.getLineStatus())) {
-                    line.setLineStatus(LINE_PENDING);
-                }
+                line.setLineStatus(LINE_PENDING);
                 if (line.getRequiredQty() != null && line.getShortQty() == null) {
                     line.setShortQty(line.getRequiredQty().subtract(line.getIssuedQty()));
                 }
@@ -611,7 +618,8 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
      *   <li>后端已有但前端未传的行 → 删除（仅当未领料 {@code issued_qty<=0} 时才删，避免误删已领料行）</li>
      * </ul>
      */
-    private void syncLines(Long issueId, List<WmProductionIssueLine> lineList) {
+    private void syncLines(WmProductionIssue issue, List<WmProductionIssueLine> lineList) {
+        Long issueId = issue.getIssueId();
         if (issueId == null || lineList == null) {
             return;
         }
@@ -647,6 +655,8 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 }
             }
         }
+        /** 父单条件更新已取得既有编辑锁，全部新增来源通过后才允许明细增改删。 */
+        validateNewRequirementSources(issue, lineList);
         for (WmProductionIssueLine existing : existLines) {
             if (zeroIfNull(existing.getIssuedQty()).signum() > 0 && !requestedIds.contains(existing.getLineId())) {
                 throw new ServiceException("已领料行不可通过编辑删除");
@@ -658,6 +668,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                     /** 更新：以后端现值为准保留领料执行结果字段，以前端为准更新可编辑字段 */
                     WmProductionIssueLine db = existMap.get(line.getLineId());
                     line.setIssueId(issueId);
+                    line.setTenantId(db.getTenantId());
                     line.setIssuedQty(db.getIssuedQty());
                     line.setShortQty(db.getShortQty());
                     line.setLineStatus(db.getLineStatus());
@@ -687,6 +698,129 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 lineMapper.deleteById(db.getLineId());
             }
         }
+    }
+
+    /** 仅认证新行的MRP来源；已有行身份仍由增量同步守卫维护，无来源手工行不走此路径。 */
+    private void validateNewRequirementSources(WmProductionIssue issue, List<WmProductionIssueLine> lineList) {
+        if (lineList == null || lineList.isEmpty()) {
+            return;
+        }
+        List<WmProductionIssueLine> sourcedLines = lineList.stream()
+            .filter(line -> (issue.getIssueId() == null || line.getLineId() == null)
+                && line.getRequirementDetailId() != null).toList();
+        if (sourcedLines.isEmpty()) {
+            return;
+        }
+        String tenantId = requireSourceTenant(issue);
+        for (WmProductionIssueLine line : sourcedLines) {
+            if (StringUtils.isNotBlank(line.getTenantId()) && !tenantId.equals(line.getTenantId())) {
+                throw new ServiceException("新增领料行租户与当前租户不一致");
+            }
+        }
+        PrdWorkOrder wo = selectActiveSourceWorkOrder(issue.getWoId(), tenantId);
+        PrdMaterialRequirement requirement = resolveSourceRequirement(wo, tenantId);
+        for (WmProductionIssueLine line : sourcedLines) {
+            PrdMaterialRequirementDetail detail = detailMapper.selectOne(
+                Wrappers.<PrdMaterialRequirementDetail>lambdaQuery()
+                    .eq(PrdMaterialRequirementDetail::getDetailId, line.getRequirementDetailId())
+                    .eq(PrdMaterialRequirementDetail::getRequirementId, requirement.getRequirementId())
+                    .eq(PrdMaterialRequirementDetail::getTenantId, tenantId)
+                    .eq(PrdMaterialRequirementDetail::getDelFlag, "0"));
+            validateSourceDetail(requirement, detail, tenantId);
+            if (!Objects.equals(line.getRequirementDetailId(), detail.getDetailId())
+                || !Objects.equals(line.getMaterialId(), detail.getMaterialId())
+                || !Objects.equals(line.getBaseUomId(), detail.getUnit())) {
+                throw new ServiceException("新增领料行的需求来源、物料或基本单位不一致");
+            }
+            BigDecimal remaining = sourceUnissuedQuantity(detail);
+            BigDecimal currentQty = zeroIfNull(line.getCurrentQty());
+            if (currentQty.signum() < 0 || currentQty.compareTo(remaining) > 0) {
+                throw new ServiceException("新增MRP领料行的本次量不得为负数或超过来源未领余额");
+            }
+            /** 新行定额及欠领量由可信需求余额维护，客户端不得扩大执行上限。 */
+            line.setQuantity(remaining);
+            line.setRequiredQty(remaining);
+            line.setShortQty(remaining);
+            line.setBomQty(detail.getBomQuantity());
+            line.setLossRate(detail.getLossRate());
+            /** 租户由真实上下文维护，不能透传客户端提供的租户字段。 */
+            line.setTenantId(tenantId);
+        }
+    }
+
+    /** 来源读取不忽略租户，也不使用客户端行中的租户作为查询范围。 */
+    private String requireSourceTenant(WmProductionIssue issue) {
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId) || (issue != null && issue.getIssueId() != null
+            && !Objects.equals(tenantId, issue.getTenantId()))) {
+            throw new ServiceException("无法核验当前租户与领料单来源，请刷新后重试");
+        }
+        return tenantId;
+    }
+
+    /** 真实租户与有效行条件均显式限定，保留既有多租户拦截器。 */
+    private PrdWorkOrder selectActiveSourceWorkOrder(Long woId, String tenantId) {
+        if (woId == null) {
+            throw new ServiceException("携带MRP需求来源的领料行必须关联有效工单");
+        }
+        return workOrderMapper.selectOne(Wrappers.<PrdWorkOrder>lambdaQuery()
+            .eq(PrdWorkOrder::getWoId, woId)
+            .eq(PrdWorkOrder::getTenantId, tenantId)
+            .eq(PrdWorkOrder::getDelFlag, "0"));
+    }
+
+    /** 工单直接来源需求及原计划必须一致，不能以同计划其他MRP替代。 */
+    private PrdMaterialRequirement resolveSourceRequirement(PrdWorkOrder wo, String tenantId) {
+        if (wo == null || !tenantId.equals(wo.getTenantId()) || !"0".equals(wo.getDelFlag())
+            || !"MATERIAL_REQUIREMENT".equals(wo.getSourceType()) || wo.getSourceId() == null
+            || wo.getPlanId() == null || wo.getMaterialId() == null) {
+            throw new ServiceException("领料工单的MRP来源不完整或无效，请核查原工单");
+        }
+        if (Integer.valueOf(1).equals(wo.getBackflushFlag())) {
+            throw new ServiceException("倒冲工单不得认领普通MRP领料来源");
+        }
+        PrdProductionPlan plan = planMapper.selectOne(Wrappers.<PrdProductionPlan>lambdaQuery()
+            .eq(PrdProductionPlan::getPlanId, wo.getPlanId())
+            .eq(PrdProductionPlan::getTenantId, tenantId)
+            .eq(PrdProductionPlan::getDelFlag, "0"));
+        if (plan == null || !tenantId.equals(plan.getTenantId()) || !"0".equals(plan.getDelFlag())
+            || !Objects.equals(wo.getPlanId(), plan.getPlanId())) {
+            throw new ServiceException("工单原生产计划不存在、已删除或租户不一致");
+        }
+        PrdMaterialRequirement requirement = requirementMapper.selectOne(
+            Wrappers.<PrdMaterialRequirement>lambdaQuery()
+                .eq(PrdMaterialRequirement::getRequirementId, wo.getSourceId())
+                .eq(PrdMaterialRequirement::getTenantId, tenantId)
+                .eq(PrdMaterialRequirement::getDelFlag, "0"));
+        if (requirement == null || !tenantId.equals(requirement.getTenantId()) || !"0".equals(requirement.getDelFlag())
+            || !Objects.equals(wo.getSourceId(), requirement.getRequirementId())
+            || !Objects.equals(wo.getPlanId(), requirement.getPlanId())
+            || !Objects.equals(wo.getMaterialId(), requirement.getMaterialId())) {
+            throw new ServiceException("工单来源需求不存在或与原计划、成品、租户不一致");
+        }
+        return requirement;
+    }
+
+    /** 有效需求头的直接明细、物料与基本单位必须完整，不为历史缺失单位伪造默认值。 */
+    private void validateSourceDetail(PrdMaterialRequirement requirement, PrdMaterialRequirementDetail detail, String tenantId) {
+        if (detail == null || detail.getDetailId() == null || !tenantId.equals(detail.getTenantId())
+            || !"0".equals(detail.getDelFlag()) || !Objects.equals(requirement.getRequirementId(), detail.getRequirementId())
+            || detail.getMaterialId() == null || StringUtils.isBlank(detail.getUnit())) {
+            throw new ServiceException("工单需求明细不存在、归属无效或物料基本单位缺失");
+        }
+        if (Integer.valueOf(1).equals(detail.getBackflushFlag())) {
+            throw new ServiceException("倒冲需求明细不得用于普通生产领料");
+        }
+    }
+
+    /** 来源应领与已发数量须有效；空已发沿用原零值语义，已领满的余额为零。 */
+    private BigDecimal sourceUnissuedQuantity(PrdMaterialRequirementDetail detail) {
+        BigDecimal required = detail.getRequiredQuantity();
+        BigDecimal issued = zeroIfNull(detail.getIssuedQuantity());
+        if (required == null || required.signum() < 0 || issued.signum() < 0) {
+            throw new ServiceException("MRP来源需求数量缺失或已发数量异常，请核查原需求");
+        }
+        return required.subtract(issued).max(BigDecimal.ZERO);
     }
 
     private void deleteLinesByIssueId(Long issueId) {
