@@ -102,6 +102,8 @@ export interface DecisionEvidence {
 export interface DecisionAction {
   id: DecisionId;
   runId: DecisionId;
+  /** 服务端动作版本标记；旧动作缺失或为空时不得升级。 */
+  purchasePayloadVersion?: number | null;
   actionType: string;
   title: string;
   displayReason?: string;
@@ -137,6 +139,8 @@ export interface DecisionOutcome {
 }
 export interface DecisionRunSummary {
   id: DecisionId;
+  /** 服务端运行合同版本标记，不代表来源认证或审批授权。 */
+  decisionContractVersion?: number | null;
   bizId?: DecisionId | null;
   bizCode?: string;
   bizType: DecisionBusinessType;

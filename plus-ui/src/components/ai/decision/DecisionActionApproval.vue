@@ -19,7 +19,7 @@
           <el-descriptions-item label="动作内容">{{ summarize(action) }}</el-descriptions-item>
         </el-descriptions>
         <el-alert
-          v-if="isPurchaseDraft(action)"
+          v-if="isPurchaseDraft(action) && !canApproveAction(action)"
           class="mt-2"
           title="当前采购动作不可批准"
           type="error"
@@ -34,7 +34,7 @@
           type="warning"
           :closable="false"
           show-icon
-          description="缺口为来源基本单位，不是已核准采购量；当前采购合同门禁仍关闭，不会创建采购草稿。请核对计量/包装、供应商起订量、同一 MRP 需求已有关联的未结申请及需求日期，核验后重新分析。"
+          :description="purchaseApprovalReminder(action)"
         />
       </div>
     </el-checkbox-group>
@@ -57,7 +57,7 @@
 import { computed, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { DecisionAction, DecisionRunSummary, DecisionId } from '@/api/ai/decision';
-import { decisionRiskLabel, summarizeActionPayload } from '@/views/ai/decision/decisionViewModel';
+import { canApproveRun, canInspectPurchaseAction, decisionRiskLabel, summarizeActionPayload } from '@/views/ai/decision/decisionViewModel';
 const props = defineProps<{
   actions: DecisionAction[];
   run: DecisionRunSummary;
@@ -70,12 +70,14 @@ const emit = defineEmits<{
 }>();
 const selected = ref<DecisionId[]>([]);
 const comment = ref('');
-const staticPurchaseBlockReason =
-  '历史口径、来源计量未核，需重新分析；当前所有采购草稿动作（包括标称新版）均不可批准，服务端仍会拒绝。可驳回本次决策；其他合法动作可单独审批。';
+const staticPurchaseBlockReason = '来源/合同尚未核验，需重新分析；只有服务端确认的新合同可申请审批';
 const pending = computed(() => props.actions.filter((a) => a.approvalStatus === 'PROPOSED' || a.approvalStatus === 'PENDING_APPROVAL'));
-watch(pending, () => {
-  selected.value = selected.value.filter((id) => pending.value.some((a) => String(a.id) === id && canApproveAction(a)));
-});
+watch(
+  () => pending.value.filter(canApproveAction).map((action) => String(action.id)),
+  (ids) => {
+    selected.value = selected.value.filter((id) => ids.includes(id));
+  }
+);
 function summarize(action: DecisionAction) {
   return summarizeActionPayload(action.payloadJson);
 }
@@ -89,8 +91,30 @@ function purchaseBlockReason(action: DecisionAction) {
   const reason = props.actionBlockReasons?.[String(action.id)];
   return typeof reason === 'string' && reason.trim() ? reason.trim() : staticPurchaseBlockReason;
 }
+function isNewPurchaseContract(action: DecisionAction) {
+  return props.run.decisionContractVersion === 2 && action.purchasePayloadVersion === 2 && canInspectPurchaseAction(action, props.run);
+}
+function purchaseApprovalReminder(action: DecisionAction) {
+  return isNewPurchaseContract(action)
+    ? '当前展示为冻结意图，审批和执行仍由ERP重新核验；勾选仅申请审批，不代表已执行或已创建采购草稿。'
+    : '缺口为来源基本单位，不是已核准采购量；当前采购合同门禁仍关闭，不会创建采购草稿。请核对计量/包装、供应商起订量、同一 MRP 需求已有关联的未结申请及需求日期，核验后重新分析。';
+}
 function canApproveAction(action: DecisionAction) {
-  return !isPurchaseDraft(action) && canInspect(action);
+  if (!isPurchaseDraft(action)) return canInspect(action);
+  if (
+    !isNewPurchaseContract(action) ||
+    !canApproveRun(props.run) ||
+    (action.approvalStatus !== 'PROPOSED' && action.approvalStatus !== 'PENDING_APPROVAL') ||
+    action.executionStatus !== 'NOT_STARTED'
+  )
+    return false;
+  const reasons = props.actionBlockReasons;
+  if (!reasons || typeof reasons !== 'object' || Array.isArray(reasons)) return false;
+  const prototype = Object.getPrototypeOf(reasons);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  if (!Object.prototype.hasOwnProperty.call(reasons, action.id)) return true;
+  const reason = reasons[action.id];
+  return typeof reason === 'string' && !reason.trim();
 }
 const approvableSelection = computed(() =>
   pending.value.filter((action) => canApproveAction(action) && selected.value.includes(String(action.id))).map((action) => String(action.id))

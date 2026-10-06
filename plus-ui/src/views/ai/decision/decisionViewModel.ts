@@ -186,6 +186,184 @@ export function sortScenarios<T extends { rank?: number; scenarioCode: string }>
   return [...items].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999) || a.scenarioCode.localeCompare(b.scenarioCode));
 }
 
+const purchasePayloadFields = new Set([
+  'purchase_payload_version',
+  'runId',
+  'materialId',
+  'vendorId',
+  'windowEnd',
+  'materialVersion',
+  'vendorVersion',
+  'supplierTermsId',
+  'supplierTermsVersion',
+  'baseUomId',
+  'baseUomVersion',
+  'orderUomId',
+  'orderUomVersion',
+  'conversionVersion',
+  'requirement_detail_ids',
+  'frozenLines',
+  'expectedSourceFingerprint'
+]);
+const purchaseLineFields = new Set(['detailId', 'baseUomId', 'coveredDemandBase', 'orderUomId', 'requestedOrderQty', 'requiredDate']);
+const purchaseVersionFields = ['materialVersion', 'vendorVersion', 'supplierTermsVersion', 'baseUomVersion', 'orderUomVersion', 'conversionVersion'];
+const purchaseIdFields = ['runId', 'materialId', 'vendorId', 'supplierTermsId', 'baseUomId', 'orderUomId'];
+const invalidPurchaseSummary = '载荷不可验证，请勿批准';
+const maxPurchaseSources = 1000;
+const maxDisplayedPurchaseSources = 20;
+
+function hasExactPurchaseFields(value: unknown, fields: ReadonlySet<string>): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  return keys.length === fields.size && keys.every((key) => fields.has(key));
+}
+
+function isPurchaseId(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length <= 19 &&
+    value.trim() === value &&
+    /^[1-9][0-9]{0,18}$/.test(value) &&
+    (value.length < 19 || value <= '9223372036854775807')
+  );
+}
+
+function isPurchaseVersion(value: unknown): boolean {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= 256 &&
+    value.trim() === value &&
+    Array.from(value).every((character) => {
+      const code = character.charCodeAt(0);
+      return code >= 32 && (code < 127 || code > 159);
+    })
+  );
+}
+
+function isPurchaseDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}$/.test(value)) return false;
+  const date = new Date(value + 'T00:00:00.000Z');
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+/** 数量只按十进制字符串去尾零，不取整、不经浮点数，也不推算采购量。 */
+function canonicalPurchaseQuantity(value: unknown): string | null {
+  if (typeof value !== 'string' || value.trim() !== value || !/^(0|[1-9][0-9]{0,13})(\.[0-9]+)?$/.test(value)) return null;
+  const [whole, fraction = ''] = value.split('.');
+  let end = fraction.length;
+  while (end > 0 && fraction[end - 1] === '0') end--;
+  if (end > 4 || (whole === '0' && end === 0)) return null;
+  return end > 0 ? whole + '.' + fraction.slice(0, end) : whole;
+}
+
+/** 仅核验冻结摘要结构，不验证后台签发、来源真实性或授予审批权限。 */
+function summarizePurchasePayload(payload: Record<string, unknown>): string {
+  if (!hasExactPurchaseFields(payload, purchasePayloadFields)) return invalidPurchaseSummary;
+  if (purchaseIdFields.some((field) => !isPurchaseId(payload[field]))) return invalidPurchaseSummary;
+  if (purchaseVersionFields.some((field) => !isPurchaseVersion(payload[field]))) return invalidPurchaseSummary;
+  if (
+    payload.baseUomId !== payload.orderUomId ||
+    payload.baseUomVersion !== payload.orderUomVersion ||
+    payload.baseUomVersion !== payload.conversionVersion ||
+    !isPurchaseDate(payload.windowEnd)
+  )
+    return invalidPurchaseSummary;
+  if (
+    typeof payload.expectedSourceFingerprint !== 'string' ||
+    payload.expectedSourceFingerprint.length !== 64 ||
+    !/^[0-9a-f]{64}$/.test(payload.expectedSourceFingerprint)
+  )
+    return invalidPurchaseSummary;
+  if (
+    !Array.isArray(payload.requirement_detail_ids) ||
+    payload.requirement_detail_ids.length === 0 ||
+    payload.requirement_detail_ids.length > maxPurchaseSources ||
+    !Array.isArray(payload.frozenLines) ||
+    payload.frozenLines.length !== payload.requirement_detail_ids.length
+  )
+    return invalidPurchaseSummary;
+
+  const sourceIds = new Set<string>();
+  for (const id of payload.requirement_detail_ids) {
+    if (!isPurchaseId(id) || sourceIds.has(id)) return invalidPurchaseSummary;
+    sourceIds.add(id);
+  }
+  const seenIds = new Set<string>();
+  const output = ['物料ID ' + payload.materialId, '供应商ID ' + payload.vendorId, '冻结来源 ' + payload.frozenLines.length + ' 条'];
+  for (const line of payload.frozenLines) {
+    if (!hasExactPurchaseFields(line, purchaseLineFields)) return invalidPurchaseSummary;
+    if (
+      !isPurchaseId(line.detailId) ||
+      !sourceIds.has(line.detailId) ||
+      seenIds.has(line.detailId) ||
+      line.baseUomId !== payload.baseUomId ||
+      line.orderUomId !== payload.orderUomId ||
+      !isPurchaseDate(line.requiredDate) ||
+      line.requiredDate > payload.windowEnd
+    )
+      return invalidPurchaseSummary;
+    const covered = canonicalPurchaseQuantity(line.coveredDemandBase);
+    const ordered = canonicalPurchaseQuantity(line.requestedOrderQty);
+    if (covered === null || ordered === null || covered !== ordered) return invalidPurchaseSummary;
+    seenIds.add(line.detailId);
+    // 省略只影响展示；未展示的来源同样逐行核验，任何错误都失败关闭。
+    if (seenIds.size <= maxDisplayedPurchaseSources) {
+      output.push(
+        '需求来源ID ' +
+          line.detailId +
+          '：需求日 ' +
+          line.requiredDate +
+          '，冻结覆盖量 ' +
+          covered +
+          '（基本单位ID ' +
+          line.baseUomId +
+          '），订购量 ' +
+          ordered +
+          '（订购单位ID ' +
+          line.orderUomId +
+          '）'
+      );
+    }
+  }
+  if (payload.frozenLines.length > maxDisplayedPurchaseSources) {
+    output.push('仅展示前 20 条，另有 ' + (payload.frozenLines.length - maxDisplayedPurchaseSources) + ' 条未展示；摘要不完整，请勿仅据此批准');
+  }
+  output.push('冻结意图，审批和执行仍由ERP重新核验');
+  return output.join(' · ');
+}
+
+/** 仅检查新版采购展示结构与运行工单身份绑定，服务端仍须重新认证。 */
+export function canInspectPurchaseAction(
+  action: { id?: unknown; runId?: unknown; targetBizType?: string; targetBizId?: unknown; payloadJson?: string },
+  run: { id?: unknown; bizType?: string; bizId?: unknown }
+): boolean {
+  if (
+    !isPurchaseId(action.id) ||
+    !isPurchaseId(action.runId) ||
+    !isPurchaseId(run.id) ||
+    action.runId !== run.id ||
+    run.bizType !== 'WORK_ORDER' ||
+    action.targetBizType !== 'WORK_ORDER' ||
+    !isPurchaseId(run.bizId) ||
+    !isPurchaseId(action.targetBizId) ||
+    run.bizId !== action.targetBizId ||
+    !action.payloadJson
+  )
+    return false;
+  try {
+    const payload: unknown = JSON.parse(action.payloadJson);
+    return (
+      hasExactPurchaseFields(payload, purchasePayloadFields) &&
+      payload.purchase_payload_version === 2 &&
+      payload.runId === run.id &&
+      summarizePurchasePayload(payload) !== invalidPurchaseSummary
+    );
+  } catch {
+    return false;
+  }
+}
+
 const allowedPayloadFields = new Set([
   'runId',
   'scenarioCode',
@@ -208,6 +386,7 @@ export function summarizeActionPayload(payloadJson?: string): string {
     const value: unknown = JSON.parse(payloadJson);
     if (!value || typeof value !== 'object' || Array.isArray(value)) return '载荷不可验证，请勿批准';
     const payload = value as Record<string, unknown>;
+    if (payload.purchase_payload_version === 2) return summarizePurchasePayload(payload);
     if (Object.keys(payload).some((key) => !allowedPayloadFields.has(key))) return '载荷不可验证，请勿批准';
     const output: string[] = [];
     for (const [key, item] of Object.entries(payload)) {
