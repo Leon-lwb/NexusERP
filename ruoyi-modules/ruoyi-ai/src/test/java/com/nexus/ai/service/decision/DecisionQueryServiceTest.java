@@ -21,6 +21,27 @@ class DecisionQueryServiceTest {
     private final DecisionQueryService query = new DecisionQueryService(store, runs, nodes,
         new com.fasterxml.jackson.databind.ObjectMapper());
 
+    @Test void completeV2ViewHasNoBlockReasonAndDoesNotWriteOrReadErp() {
+        var run = DecisionPurchaseContractGuardTest.v2Run();
+        var purchase = DecisionPurchaseContractGuardTest.v2Action();
+        when(store.requireRun(10L, "000000")).thenReturn(run);
+        when(store.listActions(10L)).thenReturn(java.util.List.of(purchase));
+        when(store.listEvidence(10L)).thenReturn(java.util.List.of());
+        var vo = new com.nexus.common.ai.domain.vo.AiDecisionRunVo(); vo.setId(10L); vo.setTenantId("000000"); vo.setSceneCode("DELIVERY_RISK");
+        when(runs.selectVoById(10L)).thenReturn(vo);
+        try (var spring = mockStatic(cn.hutool.extra.spring.SpringUtil.class);
+             var login = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
+            spring.when(() -> com.nexus.common.core.utils.SpringUtils.getProperty("tenant.enable")).thenReturn("true");
+            login.when(com.nexus.common.satoken.utils.LoginHelper::isLogin).thenReturn(false);
+            var value = com.nexus.common.tenant.helper.TenantHelper.dynamic("000000", () -> query.view(10L, "000000"));
+            assertTrue(value.containsKey("actionBlockReasons"), "新合同必须收到服务端明确完成的结构检查结果");
+            assertEquals(java.util.Map.of(), value.get("actionBlockReasons"), "完整新版合同应返回明确空阻断表，不访问ERP或补版本");
+        }
+        verify(store, never()).transition(anyLong(), any(), any());
+        verify(store, never()).setActionApproval(any(), any(), any(), any(), any());
+        verify(store, never()).saveActionResult(any(), any(), anyInt());
+    }
+
     @Test void viewMarksHistoricalPurchaseAsUnapprovableWithoutLeakingPayload() {
         var run = viewRun();
         var purchase = purchaseAction("{\"runId\":\"99\",\"note\":\"sensitive-payload-marker\"}");
@@ -58,7 +79,8 @@ class DecisionQueryServiceTest {
         notice.setActionType("SEND_MANAGER_NOTIFICATION"); notice.setExecutorCode("managerNotification");
         notice.setPayloadJson("not-json");
         var onlyNotice = viewFor(run, java.util.List.of(notice));
-        assertEquals(java.util.Set.of("run", "actions", "evidence"), onlyNotice.keySet());
+        assertEquals(java.util.Set.of("run", "actions", "evidence", "actionBlockReasons"), onlyNotice.keySet());
+        assertEquals(java.util.Map.of(), onlyNotice.get("actionBlockReasons"), "非采购也返回明确已检查空表，原动作本身不变");
         assertEquals(java.util.List.of(notice), onlyNotice.get("actions"));
 
         var mixed = viewFor(run, java.util.List.of(notice, purchaseAction("{}")));

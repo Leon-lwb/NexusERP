@@ -179,12 +179,12 @@ public class DecisionQueryService {
             try {
                 DecisionPurchaseContractGuard.requireExecutable(persistedRun, action);
             } catch (ServiceException blocked) {
-                /** P0 只读提示：不把异常或冻结 payload 原文带到客户端，也不更改审批/运行状态。 */
+                /** 采购结构只读提示：不暴露冻结载荷原文；来源新鲜度仍由正式审批重新核验，不改运行状态。 */
                 blockReasons.put(String.valueOf(action.getId()), "采购动作合同尚未启用，当前不可批准或执行，须重新分析");
             }
         }
         var evidences = persistence.listEvidence(runId);
-        if (blockReasons.isEmpty()) return Map.of("run", run, "actions", actions, "evidence", evidences);
+        // 明确返回已经完成的结构检查表；缺字段代表未知，不能被页面当作新合同允许审批。
         return Map.of("run", run, "actions", actions, "evidence", evidences,
             "actionBlockReasons", Map.copyOf(blockReasons));
     }

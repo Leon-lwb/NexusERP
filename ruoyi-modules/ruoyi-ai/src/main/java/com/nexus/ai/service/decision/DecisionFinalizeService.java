@@ -19,6 +19,8 @@ public class DecisionFinalizeService {
     public void finalizeRun(Long runId, DecisionActor actor) {
         TenantHelper.dynamic(actor.tenantId(), () -> {
             var status = persistence.requireRun(runId, actor.tenantId()).getStatus();
+            if (status == null || !java.util.Set.of("SUCCEEDED", "PARTIAL_SUCCESS", "FAILED", "ROLLED_BACK").contains(status))
+                return; // 未完成不测量、不写 outcome，也不把待确认断点作为失败关闭。
             var outcome = outcomes.measure(runId, actor);
             persistence.saveOutcome(runId, outcome);
             events.sendOutcome(actor.userId(), runId, outcome);

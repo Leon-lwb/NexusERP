@@ -2,6 +2,8 @@ package com.nexus.ai.service.decision;
 
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.dto.DecisionPurchaseContractV2;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
@@ -26,7 +28,22 @@ public class DecisionActionProposalService {
     private static final BigDecimal MAX_DECIMAL = new BigDecimal("99999999999999.9999");
     private static final Set<String> SUPPORTED_SCHEDULES = Set.of("APS_EDD", "APS_CR", "APS_CR_EXPEDITE");
 
+    /** 旧接口只保留通知和排程，不以旧缺口签发采购。 */
     public List<DecisionActionProposal> propose(ProposalInput input) {
+        if (input != null && input.rootCauses() != null && input.rootCauses().contains("MATERIAL_SHORTAGE")
+            && input.target() != null && input.target().type() != DecisionBusinessType.SHORTAGE_HORIZON
+            && input.materialLines() != null) {
+            for (Map<String, Object> row : input.materialLines()) {
+                if (row == null) throw new IllegalArgumentException("缺料明细不可为空");
+                positiveId(row.get("materialId"), "materialId");
+                positiveDecimal(row.get("gap")); parseDate(row.get("requiredDate"));
+            }
+        }
+        return propose(input, List.of());
+    }
+
+    /** 采购动作只消费服务端冻结的完整强类型合同。 */
+    public List<DecisionActionProposal> propose(ProposalInput input, List<DecisionPurchaseContractV2> contracts) {
         if (input == null || input.runId() == null || input.runId() <= 0 || input.tenantId() == null
             || !input.tenantId().matches("[A-Za-z0-9_-]{1,20}") || input.target() == null
             || input.target().type() == null || input.riskLevel() == null || input.rootCauses() == null) {
@@ -50,21 +67,25 @@ public class DecisionActionProposalService {
             actions.add(build(input, DecisionActionType.SEND_EXPEDITE_NOTICE, "通知采购负责人核实到货承诺",
                 Map.of("runId", String.valueOf(input.runId()), "purchaseLineIds", purchaseLineIds)));
         }
-        if (input.rootCauses().contains("MATERIAL_SHORTAGE") && executableTarget && !lines.isEmpty()) {
-            List<Map<String, Object>> safe = new ArrayList<>();
-            for (Map<String, Object> row : lines) {
-                if (row == null) throw new IllegalArgumentException("缺料明细不可为空");
-                String id = positiveId(row.get("materialId"), "materialId");
-                String gap = positiveDecimal(row.get("gap"));
-                LocalDate date = parseDate(row.get("requiredDate"));
-                safe.add(Map.of("materialId", id, "gap", gap, "requiredDate", date.toString()));
-            }
-            safe.sort(Comparator.comparing(row -> (String) row.get("materialId")));
-            String firstDate = safe.stream().map(row -> (String) row.get("requiredDate"))
-                .min(String::compareTo).orElseThrow();
-            actions.add(build(input, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
-                "创建待审批采购申请草稿", Map.of("runId", String.valueOf(input.runId()),
-                    "requiredDate", firstDate, "materialLines", safe)));
+        if (contracts == null || contracts.stream().anyMatch(java.util.Objects::isNull))
+            throw new IllegalArgumentException("冻结采购合同集合不可为空或包含空行");
+        if (!contracts.isEmpty() && (target.type() != DecisionBusinessType.WORK_ORDER
+            || !input.rootCauses().contains("MATERIAL_SHORTAGE")))
+            throw new IllegalArgumentException("采购合同只能用于明确工单的缺料风险");
+        Set<String> purchaseKeys = new HashSet<>();
+        List<DecisionPurchaseContractV2> ordered = new ArrayList<>(contracts);
+        // 先交唯一编解码器验证，再按数值标识稳定排序，不能靠旗号补足缺失事实。
+        ordered.forEach(contract -> DecisionPurchaseContractCodec.toPayload(input.runId(), contract));
+        ordered.sort(Comparator.comparing(DecisionPurchaseContractV2::materialId)
+            .thenComparing(DecisionPurchaseContractV2::vendorId));
+        for (DecisionPurchaseContractV2 contract : ordered) {
+            String key = DecisionPurchaseContractCodec.idempotencyKey(input.tenantId(), input.runId(), target, contract);
+            if (!purchaseKeys.add(key)) throw new IllegalArgumentException("物料供应商冻结合同重复");
+            actions.add(new DecisionActionProposal(null, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+                "创建待审批采购申请草稿", "依据服务端逐来源冻结合同创建草稿", target,
+                DecisionPurchaseContractCodec.toPayload(input.runId(), contract), input.riskLevel(), true,
+                DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.permissionCode(), key,
+                DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.executorCode(), 0, List.of()));
         }
         if (input.rootCauses().contains("SCHEDULE_DELAY") && executableTarget
             && input.recommendedScenarioCode() != null

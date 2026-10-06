@@ -27,6 +27,44 @@ class DecisionPolicyGuardServiceTest {
             "APS_CR", Map.of(), evidence, List.of(), List.of());
     }
 
+    @Test void policyAcceptsCompleteV2ButRejectsOldPurchaseSchema() {
+        var payload = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(10L,
+            DecisionPurchaseProposalServiceTest.contract(100L, 200L));
+        var complete = Map.<String, Object>of("actionType", "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approvalRequired", true, "payload", payload);
+        assertTrue(service.validateActions(List.of(complete)).passed(), "完整新版合同应接入精确白名单");
+        var old = Map.<String, Object>of("actionType", "CREATE_PURCHASE_REQUISITION_DRAFT", "approvalRequired", true,
+            "payload", Map.of("runId", "10", "requiredDate", "2026-10-03", "materialLines",
+                List.of(Map.of("materialId", "100", "gap", "3", "requiredDate", "2026-10-03"))));
+        assertFalse(service.validateActions(List.of(old)).passed(), "旧缺口结构不能继续通过采购策略");
+        var forged = new java.util.LinkedHashMap<>(payload); forged.put("verified", true);
+        assertFalse(service.validateActions(List.of(Map.of("actionType", "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approvalRequired", true, "payload", forged))).passed(), "白名单不能放宽任意核验旗号");
+    }
+
+    @Test void policyRejectsPurchaseKeyThatDoesNotMatchTheUniqueHelper() {
+        var target = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11");
+        var contract = DecisionPurchaseProposalServiceTest.contract(100L, 200L);
+        var payload = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(10L, contract);
+        var key = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.idempotencyKey("000001", 10L, target, contract);
+        var action = new DecisionActionProposal(null, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+            "采购草稿", "真实来源", target, payload, DecisionRiskLevel.HIGH, true, "pu:requisition:add",
+            key, "purchaseRequisitionDraft", 1, List.of());
+        var scored = result(List.of());
+        var result = new DecisionResult(10L, target, scored.riskScore(), scored.riskLevel(), scored.confidenceLevel(),
+            scored.rootCauseCodes(), scored.baselineKpis(), scored.scenarios(), scored.recommendedScenarioCode(),
+            scored.narrative(), scored.evidence(), List.of(action), scored.warnings());
+        try (var tenant = org.mockito.Mockito.mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
+            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getDynamic).thenReturn("000001");
+            assertTrue(service.validate(result, narrative("请人工审批", null), List.of(action)).passed(),
+                "真实新版键必须由同一个公共 helper 核对");
+            var changed = new DecisionActionProposal(null, action.actionType(), action.title(), action.displayReason(),
+                target, payload, action.riskLevel(), true, action.permissionCode(), "旧键", action.executorCode(), 1, List.of());
+            assertFalse(service.validate(result, narrative("请人工审批", null), List.of(changed)).passed(),
+                "载荷完整也不能放行另造的采购键");
+        }
+    }
+
     @Test void missingEvidenceCitationIsBlocked() {
         var verdict = service.validate(result(List.of()), narrative("高风险", "missing-key"), List.of());
         assertFalse(verdict.passed());

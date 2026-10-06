@@ -5,6 +5,8 @@ import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.enums.DecisionActionType;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.decision.enums.DecisionRunStatus;
 import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
@@ -86,6 +88,26 @@ public class DeliveryRiskDecisionOrchestrator {
                 || !stored.snapshotHash().equals(reread.snapshotHash()))
                 throw new ServiceException("ERP 重读事实与已持久化快照不一致");
             new DecisionSourceFactVerifier().assertProvenance(result, stored, reread, horizonDays);
+            List<DecisionActionProposal> purchases = result.actions() == null ? List.of() : result.actions().stream()
+                .filter(action -> action != null && action.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT).toList();
+            if (!purchases.isEmpty()) {
+                if (!Integer.valueOf(2).equals(run.getDecisionContractVersion()))
+                    throw new ServiceException("采购运行合同版本缺失或无效，须重新分析");
+                DecisionActor analysisActor = persistence.trustedActor(runId, actor.tenantId());
+                if (analysisActor == null || !actor.tenantId().equals(analysisActor.tenantId())
+                    || !actor.userId().equals(analysisActor.userId()))
+                    throw new ServiceException("采购定稿必须使用持久化分析身份");
+                for (DecisionActionProposal action : purchases) {
+                    var contract = DecisionPurchaseContractCodec.parse(action.payload(), runId);
+                    if (!ref.equals(action.target()) || !DecisionPurchaseContractCodec.idempotencyKey(
+                        run.getTenantId(), runId, ref, contract).equals(action.idempotencyKey()))
+                        throw new ServiceException("采购动作业务根或永久键不匹配");
+                    try { dataPort.requireFreshPurchaseContract(action, stored, horizonDays, analysisActor); }
+                    catch (RuntimeException unavailable) {
+                        throw new ServiceException("采购冻结来源无法通过定稿复核，须重新分析");
+                    }
+                }
+            }
             persistence.completeAnalysis(runId, result, summaryMode);
         });
     }

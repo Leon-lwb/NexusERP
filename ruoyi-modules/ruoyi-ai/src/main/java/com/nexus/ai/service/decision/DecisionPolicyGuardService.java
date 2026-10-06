@@ -6,10 +6,11 @@ import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.EvidenceItem;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.tenant.helper.TenantHelper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -118,7 +119,8 @@ public class DecisionPolicyGuardService {
                     || action.target() == null || !action.target().equals(result.businessRef())
                     || !Objects.equals(action.permissionCode(), action.actionType().permissionCode())
                     || !Objects.equals(action.executorCode(), action.actionType().executorCode())
-                    || !validPayload(action.actionType(), action.payload(), result.runId())) {
+                    || !validPayload(action.actionType(), action.payload(), result.runId())
+                    || !validPurchaseIdentity(action, result.runId())) {
                     errors.add(block("ACTION_NOT_ALLOWED", "actions", "决策动作/业务对象不属于白名单"));
                 }
                 if (action != null && action.riskLevel() != result.riskLevel()) {
@@ -159,11 +161,27 @@ public class DecisionPolicyGuardService {
         return new PolicyResult(violations.isEmpty(), List.copyOf(violations), null, !violations.isEmpty(), false);
     }
 
+    private static boolean validPurchaseIdentity(DecisionActionProposal action, Long runId) {
+        if (action.actionType() != DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT) return true;
+        try {
+            var contract = DecisionPurchaseContractCodec.parse(action.payload(), runId);
+            return DecisionPurchaseContractCodec.idempotencyKey(TenantHelper.getDynamic(), runId,
+                action.target(), contract).equals(action.idempotencyKey());
+        } catch (RuntimeException invalid) { return false; }
+    }
+
+    @SuppressWarnings("unchecked")
     private static boolean validPayload(DecisionActionType type, Object candidate, Long runId) {
         if (!(candidate instanceof Map<?, ?> payload) || payload.isEmpty()) return false;
+        if (type == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT) {
+            try {
+                DecisionPurchaseContractCodec.parse((Map<String, Object>) payload, runId);
+                return true;
+            } catch (RuntimeException invalid) { return false; }
+        }
         Set<String> allowed = switch (type) {
             case SEND_EXPEDITE_NOTICE -> Set.of("runId", "purchaseLineIds");
-            case CREATE_PURCHASE_REQUISITION_DRAFT -> Set.of("runId", "requiredDate", "materialLines");
+            case CREATE_PURCHASE_REQUISITION_DRAFT -> Set.of();
             case CREATE_SCHEDULE_PLAN_DRAFT -> Set.of("runId", "scenarioCode", "strategy", "startDate",
                 "horizonDays", "workOrderIds", "workshopId");
             case SEND_MANAGER_NOTIFICATION -> Set.of("runId", "targetUserId");
@@ -178,17 +196,7 @@ public class DecisionPolicyGuardService {
             case SEND_EXPEDITE_NOTICE -> {
                 return validIds(payload.get("purchaseLineIds"));
             }
-            case CREATE_PURCHASE_REQUISITION_DRAFT -> {
-                if (!date(payload.get("requiredDate"))
-                    || !(payload.get("materialLines") instanceof List<?> lines) || lines.isEmpty()) return false;
-                for (Object row : lines) {
-                    if (!(row instanceof Map<?, ?> map) || !map.keySet().stream().allMatch(
-                        Set.of("materialId", "materialCode", "materialName", "gap", "quantity", "requiredDate")::contains)
-                        || !positiveId(map.get("materialId")) || !date(map.get("requiredDate"))
-                        || !amount(map.get("gap") != null ? map.get("gap") : map.get("quantity"))) return false;
-                }
-                return true;
-            }
+            case CREATE_PURCHASE_REQUISITION_DRAFT -> { return false; }
             case CREATE_SCHEDULE_PLAN_DRAFT -> {
                 Object code = payload.get("scenarioCode");
                 String strategy = "APS_EDD".equals(code) ? "EDD"
@@ -219,15 +227,6 @@ public class DecisionPolicyGuardService {
         if (!(raw instanceof String text) || !text.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) return false;
         try { LocalDate.parse(text); return true; }
         catch (RuntimeException e) { return false; }
-    }
-
-    private static boolean amount(Object raw) {
-        if (!(raw instanceof String text) || text.length() > 64) return false;
-        try {
-            BigDecimal decimal = new BigDecimal(text);
-            return decimal.signum() > 0 && decimal.stripTrailingZeros().scale() <= 4
-                && decimal.compareTo(new BigDecimal("99999999999999.9999")) <= 0;
-        } catch (NumberFormatException e) { return false; }
     }
 
     private static List<String> textFields(DecisionNarrative n) {

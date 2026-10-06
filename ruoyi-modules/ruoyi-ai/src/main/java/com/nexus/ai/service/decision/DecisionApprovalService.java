@@ -1,6 +1,11 @@
 package com.nexus.ai.service.decision;
 
 import com.nexus.common.ai.decision.dto.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionRunStatus;
@@ -30,6 +35,8 @@ import java.util.Map;
 @Service
 @Slf4j
 public class DecisionApprovalService {
+    /** 仅解析已持久化动作，不接受客户端合同，也不序列化雪花 ID。 */
+    private static final ObjectMapper PAYLOAD_READER = new ObjectMapper();
     private final DecisionPersistenceService persistence;
     private final IndustrialDecisionDataPort dataPort;
     private final DecisionWorkflowPort workflow;
@@ -81,15 +88,22 @@ public class DecisionApprovalService {
         if (actions == null) throw new ServiceException("审批动作不存在，须重新分析");
         for (AiDecisionAction action : actions) {
             if (action == null) throw new ServiceException("审批动作不存在，须重新分析");
-            if (request.getApprovedActionIds().contains(action.getId()))
+            if (request.getApprovedActionIds().contains(action.getId())) {
                 DecisionPurchaseContractGuard.requireExecutable(run, action);
+                if (DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.name().equals(action.getActionType())) {
+                    if (permissionService == null || dataPort == null)
+                        throw new ServiceException("新版采购审批缺少可信来源端口或实时权限依赖");
+                    requirePermission(actor, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.permissionCode());
+                }
+            }
         }
         DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.valueOf(run.getBizType()),
             run.getBizId(), run.getBizCode());
         if (!dataPort.canAccess(ref, actor)) throw new ServiceException("业务访问权限已失效");
         var freshness = dataPort.checkFreshness(ref, run.getInputSnapshotHash(), actor);
-        if (freshness == null || !freshness.fresh()
-            || !run.getInputSnapshotHash().equals(freshness.currentHash())) {
+        if (freshness == null || freshness.currentHash() == null || freshness.currentHash().isBlank())
+            throw new ServiceException("无法证明当前源业务快照，审批状态保持不变");
+        if (!freshness.fresh() || !run.getInputSnapshotHash().equals(freshness.currentHash())) {
             persistence.transition(id, DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.STALE);
             throw new ServiceException("源业务数据已变化，须重新分析后审批");
         }
@@ -109,6 +123,21 @@ public class DecisionApprovalService {
             throw new ServiceException("审批动作归属、权限或选择范围无效");
         for (AiDecisionAction action : actions) {
             if (approved.contains(action.getId())) requireTrustedAction(action);
+        }
+        List<AiDecisionAction> purchases = actions.stream().filter(action -> approved.contains(action.getId())
+            && DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.name().equals(action.getActionType())).toList();
+        if (!purchases.isEmpty()) {
+            DeliveryContextSnapshot frozen = persistence.requireSnapshot(id, actor.tenantId());
+            if (frozen == null) throw new ServiceException("采购审批缺少可信冻结快照");
+            int horizon = DecisionFrozenHorizon.requireHorizonDays(run);
+            for (AiDecisionAction action : purchases) {
+                try { dataPort.requireFreshPurchaseContract(purchaseProposal(run, action), frozen, horizon, actor); }
+                catch (SourceChangedException changed) {
+                    // 仅可信端口证明的差异信号可按现有 CAS 失效；未知读取或认证异常不改状态。
+                    persistence.transition(id, DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.STALE);
+                    throw new ServiceException("采购冻结来源已变化，须重新分析");
+                }
+            }
         }
         atomic(() -> {
             persistence.bindExecutionActor(id, actor);
@@ -154,6 +183,20 @@ public class DecisionApprovalService {
             try { events.sendApprovalStatus(actor.userId(), id, "APPROVED"); }
             catch (RuntimeException notifyError) { log.warn("Failed to publish execution approval: runId={}", id, notifyError); }
         }
+    }
+
+    private DecisionActionProposal purchaseProposal(AiDecisionRun run, AiDecisionAction row) {
+        try {
+            Map<String, Object> fields = PAYLOAD_READER.readValue(row.getPayloadJson(), new TypeReference<Map<String, Object>>() { });
+            var contract = DecisionPurchaseContractCodec.parse(fields, run.getId());
+            List<Long> dependencies = row.getDependencyIdsJson() == null ? List.of()
+                : PAYLOAD_READER.readValue(row.getDependencyIdsJson(), new TypeReference<List<Long>>() { });
+            var type = DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT;
+            return new DecisionActionProposal(row.getId(), type, row.getTitle(), row.getDisplayReason(),
+                new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, row.getTargetBizId(), row.getTargetBizCode()),
+                DecisionPurchaseContractCodec.toPayload(run.getId(), contract), DecisionRiskLevel.valueOf(row.getRiskLevel()),
+                true, type.permissionCode(), row.getIdempotencyKey(), type.executorCode(), row.getSequenceNo(), dependencies);
+        } catch (Exception invalid) { throw new ServiceException("采购审批冻结动作不可解析，须重新分析"); }
     }
 
     private void requireTrustedAction(AiDecisionAction action) {

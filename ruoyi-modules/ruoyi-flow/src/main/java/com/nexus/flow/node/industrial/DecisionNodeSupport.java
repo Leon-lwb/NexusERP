@@ -3,6 +3,10 @@ package com.nexus.flow.node.industrial;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.service.decision.DecisionPersistenceService;
+import com.nexus.ai.service.decision.DecisionPurchaseContractGuard;
+import com.nexus.ai.service.decision.DecisionActionExecutionService.PurchaseExecutionPendingException;
+import com.nexus.ai.service.decision.DecisionActionExecutionService.InitialExecutionCheckUnavailableException;
+import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
@@ -113,11 +117,45 @@ public class DecisionNodeSupport {
                 if (!tenant.equals(run.getTenantId())) return; // 不得修改其他租户的运行。
                 if (DecisionRunStatus.RUNNING.name().equals(run.getStatus()))
                     persistence.fail(runId, "DECISION_NODE_FAILED", "工业决策节点执行失败");
-                else if (DecisionRunStatus.APPROVED.name().equals(run.getStatus()))
+                else if (DecisionRunStatus.APPROVED.name().equals(run.getStatus())
+                    && !(isExecutionNode(ctx) && Integer.valueOf(2).equals(run.getDecisionContractVersion())))
                     persistence.transition(runId, DecisionRunStatus.APPROVED, DecisionRunStatus.STALE);
             });
         } catch (RuntimeException concurrent) {
             log.warn("Cannot close decision run after worker identity denial: runId={}", runId, concurrent);
+        }
+    }
+
+    private boolean isExecutionNode(FlowExecutionContext ctx) {
+        return ctx != null && "industrial.executeApprovedActions".equals(ctx.getNodeType());
+    }
+
+    /** 只认明确的执行边界信号与持久化新版状态，不按错误消息猜测，也不豁免普通分析或非采购错误。 */
+    private boolean preserveExecutionCheckpoint(FlowExecutionContext ctx, long runId, DecisionActor actor, RuntimeException error) {
+        if (!isExecutionNode(ctx) || !(error instanceof PurchaseExecutionPendingException
+            || error instanceof InitialExecutionCheckUnavailableException)) return false;
+        try {
+            AiDecisionRun run = persistence.requireRun(runId, actor.tenantId());
+            if (!Integer.valueOf(2).equals(run.getDecisionContractVersion())) return false;
+            if (error instanceof InitialExecutionCheckUnavailableException && DecisionRunStatus.APPROVED.name().equals(run.getStatus()))
+                return true;
+            if (!(error instanceof PurchaseExecutionPendingException || error instanceof InitialExecutionCheckUnavailableException)
+                || !DecisionRunStatus.EXECUTING.name().equals(run.getStatus()))
+                return false;
+            var actions = persistence.listActions(runId);
+            if (actions == null) return true; // 已有明确待确认信号，诊断读取未知不能被解释为业务失败。
+            boolean found = false;
+            for (var action : actions) {
+                if (action == null) return true;
+                if (!"APPROVED".equals(action.getApprovalStatus())
+                    || !DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.name().equals(action.getActionType())) continue;
+                DecisionPurchaseContractGuard.requireExecutable(run, action);
+                found = true;
+            }
+            return found;
+        } catch (RuntimeException unavailable) {
+            // 这里只处理真实执行服务的有限信号；包装层诊断失败只停节点，不能另写终态。
+            return true;
         }
     }
 
@@ -149,8 +187,10 @@ public class DecisionNodeSupport {
                 var reason = error instanceof DecisionEvidenceException rejected ? rejected.reason() : null;
                 String failureCode = reason == null ? "DECISION_NODE_FAILED" : reason.code();
                 String failureMessage = reason == null ? "工业决策节点执行失败" : reason.publicMessage();
-                try { persistence.fail(runId, failureCode, failureMessage); }
-                catch (RuntimeException ignored) { /* 其他节点可能已将运行置为终态。 */ }
+                if (!preserveExecutionCheckpoint(ctx, runId, actor, error)) {
+                    try { persistence.fail(runId, failureCode, failureMessage); }
+                    catch (RuntimeException ignored) { /* 其他节点可能已将运行置为终态。 */ }
+                }
                 if (events != null) {
                     try { events.sendNodeEnd(actor.userId(), runId, 0, code, name, "FAILED",
                         java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), failureMessage); }

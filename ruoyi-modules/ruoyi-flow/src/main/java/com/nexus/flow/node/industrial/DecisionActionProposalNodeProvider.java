@@ -1,6 +1,7 @@
 package com.nexus.flow.node.industrial;
 
 import com.nexus.ai.service.decision.DecisionActionProposalService;
+import com.nexus.ai.service.decision.DecisionPurchaseProposalService;
 import com.nexus.ai.service.decision.DecisionPersistenceService;
 import com.nexus.ai.service.decision.DecisionPolicyGuardService;
 import com.nexus.ai.service.decision.DeliveryRiskDecisionOrchestrator;
@@ -9,6 +10,7 @@ import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.flow.node.FlowExecutionContext;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -25,16 +27,27 @@ import java.util.Objects;
 @Component
 public class DecisionActionProposalNodeProvider extends AbstractIndustrialNodeProvider {
     private final DecisionPersistenceService persistence;
-    private final DecisionActionProposalService proposals;
+    private final java.util.function.Supplier<DecisionPurchaseProposalService> proposals;
     private final DecisionPolicyGuardService guard;
     private final ObjectProvider<DeliveryRiskDecisionOrchestrator> orchestrator;
     private final AiDecisionSseMessageHelper events;
+    /** 延迟取得冻结服务，注册受保护节点时不引入流程适配器的装配环。 */
+    @Autowired
     public DecisionActionProposalNodeProvider(DecisionNodeSupport support, DecisionPersistenceService persistence,
-                                              DecisionActionProposalService proposals,
+                                              ObjectProvider<DecisionPurchaseProposalService> proposals,
                                               DecisionPolicyGuardService guard,
                                               ObjectProvider<DeliveryRiskDecisionOrchestrator> orchestrator,
                                               AiDecisionSseMessageHelper events) {
-        super(support); this.persistence = persistence; this.proposals = proposals;
+        super(support); this.persistence = persistence; this.proposals = proposals::getObject;
+        this.guard = guard; this.orchestrator = orchestrator; this.events = events;
+    }
+
+    public DecisionActionProposalNodeProvider(DecisionNodeSupport support, DecisionPersistenceService persistence,
+                                              DecisionPurchaseProposalService proposals,
+                                              DecisionPolicyGuardService guard,
+                                              ObjectProvider<DeliveryRiskDecisionOrchestrator> orchestrator,
+                                              AiDecisionSseMessageHelper events) {
+        super(support); this.persistence = persistence; this.proposals = () -> proposals;
         this.guard = guard; this.orchestrator = orchestrator; this.events = events;
     }
     @Override public String getNodeType() { return "industrial.actionProposal"; }
@@ -55,7 +68,7 @@ public class DecisionActionProposalNodeProvider extends AbstractIndustrialNodePr
         var workshops = snapshot.workOrders() == null ? List.<Long>of() : snapshot.workOrders().stream()
             .map(DeliveryContextSnapshot.WorkOrderFact::workshopId).filter(Objects::nonNull).distinct().toList();
         Long workshopId = workshops.size() == 1 ? workshops.get(0) : null;
-        var planned = proposals.propose(new DecisionActionProposalService.ProposalInput(id, actor.tenantId(),
+        var planned = proposals.get().propose(id, new DecisionActionProposalService.ProposalInput(id, actor.tenantId(),
             result.businessRef(), result.riskLevel(), Set.copyOf(actionCauses),
             result.recommendedScenarioCode(), scope.hasConfirmedLateArrival(), scope.materialLines(), null,
             workIds, snapshot.snapshotAt().toLocalDate(), persistence.requireHorizonDays(
@@ -84,7 +97,7 @@ public class DecisionActionProposalNodeProvider extends AbstractIndustrialNodePr
     }
 
     /**
-     * 采购草稿或催交仅能来自限定范围的 ERP 缺料及真实延期采购行。
+     * 缺料范围及延期催交只依据限定 ERP 事实；采购合同另由持久化冻结服务取得。
      */
     private ProposalScope verifiedProposalScope(DeliveryContextSnapshot snapshot, ShortageSimulationResult shortage) {
         if (!shortage.hasRisk()) return new ProposalScope(false, List.of());

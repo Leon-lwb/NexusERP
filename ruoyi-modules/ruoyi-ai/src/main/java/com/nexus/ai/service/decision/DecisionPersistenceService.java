@@ -2,6 +2,10 @@ package com.nexus.ai.service.decision;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
@@ -29,6 +33,14 @@ public class DecisionPersistenceService {
         DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.APPROVED, DecisionRunStatus.EXECUTING,
         DecisionRunStatus.ROLLING_BACK);
     private static final Pattern SECRETS = Pattern.compile("(?i)(?:bearer\\s+\\S+|sk-[a-z0-9_-]+|api[_-]?key\\s*[:=]\\s*\\S+|jdbc:(?:mysql|postgresql):\\S+)");
+
+    private static final Set<String> PURCHASE_RESULT_FIELDS = Set.of("purchase_payload_version", "runId", "actionId",
+        "tenantId", "requestKey", "materialId", "vendorId", "sourceType", "sourceFingerprint", "payloadFingerprint",
+        "status", "versionMarker", "beforeState", "afterState", "replayed", "lines");
+    private static final Set<String> PURCHASE_RESULT_LINE_FIELDS = Set.of("lineId", "requirementDetailId", "materialId",
+        "baseUomId", "orderUomId", "coveredDemandBase", "requestedOrderQty", "requiredDate");
+    private static final Set<String> EXECUTION_RESULT_FIELDS = Set.of("success", "retryable", "resultBizType", "resultBizId",
+        "resultBizCode", "result", "errorCode", "errorMessage");
 
     private final AiDecisionRunMapper runMapper;
     private final AiDecisionEvidenceMapper evidenceMapper;
@@ -75,6 +87,7 @@ public class DecisionPersistenceService {
         run.setTriggerType((request.getTriggerType() == null ? DecisionTriggerType.MANUAL
             : request.getTriggerType()).name());
         run.setStatus(DecisionRunStatus.CREATED.name()); run.setVersion(0);
+        run.setDecisionContractVersion(2);
         run.setCreateBy(actor.userId()); run.setUpdateBy(actor.userId());
         run.setScoreConfigJson(json(Map.of("horizonDays", request.getHorizonDays(),
             "scenarioCodes", request.getScenarioCodes(), "userName", actor.userName(),
@@ -249,13 +262,7 @@ public class DecisionPersistenceService {
     }
 
     public int requireHorizonDays(AiDecisionRun run) {
-        try {
-            int days = objectMapper.readTree(run.getScoreConfigJson()).path("horizonDays").asInt(0);
-            if (days >= 1 && days <= 90) return days;
-        } catch (JsonProcessingException | IllegalArgumentException e) {
-            // 旧运行缺少冻结范围时拒绝处理，不能独立核验即不执行。
-        }
-        throw new ServiceException("决策运行缺少可复核的分析时段");
+        return DecisionFrozenHorizon.requireHorizonDays(run);
     }
 
     public DeliveryContextSnapshot requireSnapshot(Long runId, String tenantId) {
@@ -323,10 +330,14 @@ public class DecisionPersistenceService {
                 || !Objects.equals(proposal.target().id(), run.getBizId())
                 || proposal.idempotencyKey() == null || proposal.idempotencyKey().isBlank()
                 || proposal.idempotencyKey().length() > 128 || !keys.add(proposal.idempotencyKey())
-                || !proposal.permissionCode().equals(proposal.actionType().permissionCode())
-                || !proposal.executorCode().equals(proposal.actionType().executorCode()))
+                || !Objects.equals(proposal.permissionCode(), proposal.actionType().permissionCode())
+                || !Objects.equals(proposal.executorCode(), proposal.actionType().executorCode()))
                 throw new ServiceException("决策动作来源、元数据或幂等键无效");
+            if (proposal.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT)
+                requirePurchaseContract(run, proposal, tenant);
             AiDecisionAction row = new AiDecisionAction();
+            if (proposal.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT)
+                row.setPurchasePayloadVersion(2);
             row.setTenantId(tenant); row.setRunId(runId); row.setActionType(proposal.actionType().name());
             row.setTitle(proposal.title()); row.setDisplayReason(proposal.displayReason());
             row.setTargetBizType(proposal.target().type().name()); row.setTargetBizId(proposal.target().id());
@@ -398,6 +409,207 @@ public class DecisionPersistenceService {
         if (Set.of("SUCCEEDED", "FAILED", "SKIPPED").contains(target))
             update.set(AiDecisionAction::getFinishedAt, LocalDateTime.now());
         if (actionMapper.update(null, update) != 1) throw new ServiceException("动作执行并发冲突");
+    }
+
+    /**
+     * 仅补回已独立核验的永久采购结果，不重新创建、不回填旧合同。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    void saveRecoveredPurchaseResult(Long actionId, int expectedVersion, DecisionActionExecutionResult result) {
+        String tenant = currentTenant();
+        if (expectedVersion < 0) throw new ServiceException("采购恢复动作版本无效");
+        AiDecisionAction row = requireAction(actionId, tenant);
+        AiDecisionRun run = requireRun(row.getRunId(), tenant);
+        RecoveryPurchaseContract contract = requireRecoverablePurchase(row, run, result);
+        requireExistingRecoveredResult(row, result, contract, "SUCCEEDED".equals(row.getExecutionStatus()));
+        if ("SUCCEEDED".equals(row.getExecutionStatus())) return;
+        if (expectedVersion < 0 || !Objects.equals(row.getVersion(), expectedVersion)
+            || !Set.of("EXECUTING", "FAILED").contains(row.getExecutionStatus()))
+            throw new ServiceException("采购恢复动作状态或版本发生冲突");
+        DecisionActionExecutionResult sanitized = new DecisionActionExecutionResult(true, false,
+            result.resultBizType(), result.resultBizId(), result.resultBizCode(), sanitizeResult(result.result()), null, null);
+        var update = actionUpdate(row, tenant)
+            .eq(AiDecisionAction::getApprovalStatus, "APPROVED")
+            .eq(AiDecisionAction::getExecutionStatus, row.getExecutionStatus())
+            .eq(AiDecisionAction::getActionType, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.name())
+            .eq(AiDecisionAction::getPurchasePayloadVersion, 2)
+            .apply("EXISTS (SELECT 1 FROM ai_decision_run recovery_run WHERE recovery_run.id = {0} "
+                + "AND recovery_run.tenant_id = {1} AND recovery_run.scene_code = {2} "
+                + "AND recovery_run.status = {3} AND recovery_run.decision_contract_version = {4} "
+                + "AND recovery_run.version = {5})", run.getId(), tenant, SCENE_CODE, "EXECUTING", 2, run.getVersion())
+            .set(AiDecisionAction::getExecutionStatus, "SUCCEEDED")
+            .set(AiDecisionAction::getResultBizType, sanitized.resultBizType())
+            .set(AiDecisionAction::getResultBizId, sanitized.resultBizId())
+            .set(AiDecisionAction::getResultBizCode, sanitized.resultBizCode())
+            .set(AiDecisionAction::getResultJson, json(sanitized))
+            .set(AiDecisionAction::getLastErrorCode, null).set(AiDecisionAction::getLastErrorMessage, null)
+            .set(AiDecisionAction::getFinishedAt, LocalDateTime.now());
+        int affected = actionMapper.update(null, update);
+        if (affected == 1) return;
+        if (affected > 1) throw new ServiceException("采购恢复更新影响多行动作，必须回滚");
+        // 锁定读取得并发执行者的最新结果，不用可重复读的旧快照判定另一笔采购。
+        AiDecisionAction latest = actionMapper.selectOne(Wrappers.<AiDecisionAction>lambdaQuery()
+            .eq(AiDecisionAction::getId, actionId).eq(AiDecisionAction::getTenantId, tenant)
+            .eq(AiDecisionAction::getRunId, run.getId()).last("FOR UPDATE"));
+        AiDecisionRun current = runMapper.selectOne(Wrappers.<AiDecisionRun>lambdaQuery()
+            .eq(AiDecisionRun::getId, run.getId()).eq(AiDecisionRun::getTenantId, tenant)
+            .eq(AiDecisionRun::getSceneCode, SCENE_CODE).last("FOR UPDATE"));
+        if (current == null) throw new ServiceException("采购恢复运行不存在或状态已变化");
+        if (latest == null) throw new ServiceException("采购恢复回写发生并发冲突");
+        RecoveryPurchaseContract currentContract = requireRecoverablePurchase(latest, current, result);
+        if (!"SUCCEEDED".equals(latest.getExecutionStatus()))
+            throw new ServiceException("采购恢复回写发生并发冲突");
+        requireExistingRecoveredResult(latest, result, currentContract, true);
+    }
+
+    /**
+     * 全部已批准动作都成功时才收敛；混合运行的未决动作保持执行中。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    boolean finishRecoveredExecution(Long runId, int expectedVersion) {
+        String tenant = currentTenant();
+        AiDecisionRun run = requireRun(runId, tenant);
+        if (expectedVersion < 0 || !Objects.equals(run.getVersion(), expectedVersion)
+            || !"EXECUTING".equals(run.getStatus()) || !Integer.valueOf(2).equals(run.getDecisionContractVersion()))
+            return false;
+        List<AiDecisionAction> all = actionMapper.selectList(Wrappers.<AiDecisionAction>lambdaQuery()
+            .eq(AiDecisionAction::getTenantId, tenant).eq(AiDecisionAction::getRunId, runId)
+            .orderByAsc(AiDecisionAction::getId).last("FOR UPDATE"));
+        if (all == null || all.stream().anyMatch(row -> row == null
+            || !runId.equals(row.getRunId()) || !tenant.equals(row.getTenantId()))) return false;
+        List<AiDecisionAction> approved = all.stream().filter(row -> "APPROVED".equals(row.getApprovalStatus())).toList();
+        if (approved.isEmpty() || approved.stream().anyMatch(row -> !"SUCCEEDED".equals(row.getExecutionStatus())))
+            return false;
+        stateMachine.requireTransition(DecisionRunStatus.EXECUTING, DecisionRunStatus.SUCCEEDED);
+        int affected = runMapper.update(null, baseUpdate(run, tenant).eq(AiDecisionRun::getStatus, "EXECUTING")
+            .eq(AiDecisionRun::getDecisionContractVersion, 2)
+            .set(AiDecisionRun::getStatus, "SUCCEEDED").set(AiDecisionRun::getFinishedAt, LocalDateTime.now()));
+        if (affected != 0 && affected != 1) throw new ServiceException("采购恢复运行更新行数异常，必须回滚");
+        return affected == 1;
+    }
+
+    private RecoveryPurchaseContract requireRecoverablePurchase(AiDecisionAction row, AiDecisionRun run,
+                                                                DecisionActionExecutionResult result) {
+        if (!"EXECUTING".equals(run.getStatus()) || !Integer.valueOf(2).equals(run.getDecisionContractVersion())
+            || !"APPROVED".equals(row.getApprovalStatus())
+            || !DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.name().equals(row.getActionType())
+            || !Integer.valueOf(2).equals(row.getPurchasePayloadVersion())
+            || !Objects.equals(row.getRunId(), run.getId()) || !Objects.equals(row.getTenantId(), run.getTenantId())
+            || !Objects.equals(row.getTargetBizType(), run.getBizType())
+            || !Objects.equals(row.getTargetBizId(), run.getBizId()))
+            throw new ServiceException("采购恢复合同、批准状态或业务归属无效");
+        try {
+            Map<String, Object> payload = objectMapper.readerFor(new TypeReference<Map<String, Object>>() { })
+                .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION).readValue(row.getPayloadJson());
+            var frozen = DecisionPurchaseContractCodec.parse(payload, run.getId());
+            DecisionBusinessRef target = new DecisionBusinessRef(DecisionBusinessType.valueOf(row.getTargetBizType()),
+                row.getTargetBizId(), row.getTargetBizCode());
+            if (!DecisionPurchaseContractCodec.idempotencyKey(run.getTenantId(), run.getId(), target, frozen)
+                .equals(row.getIdempotencyKey())) throw new ServiceException("采购恢复永久键与冻结合同不一致");
+            DecisionActor actor = trustedExecutionActor(run.getId(), run.getTenantId());
+            if (!run.getTenantId().equals(actor.tenantId()) || !actor.permissions().contains("pu:requisition:add")
+                && !actor.permissions().contains("*:*:*")
+                || row.getApprovedBy() != null && !row.getApprovedBy().equals(actor.userId()))
+                throw new ServiceException("采购恢复缺少原绑定执行身份或采购权限");
+            // 只重建摘要实际使用的持久化字段，不签发新的动作或业务事实。
+            DecisionActionProposal proposal = new DecisionActionProposal(row.getId(), DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+                row.getTitle(), row.getDisplayReason(), target, payload, null, "Y".equals(row.getApprovalRequired()),
+                row.getPermissionCode(), row.getIdempotencyKey(), row.getExecutorCode(),
+                row.getSequenceNo() == null ? 0 : row.getSequenceNo(), List.of());
+            RecoveryPurchaseContract contract = new RecoveryPurchaseContract(run.getId(), row.getId(), run.getTenantId(),
+                row.getIdempotencyKey(), frozen, DecisionPurchaseContractCodec.payloadFingerprint(proposal, actor));
+            requireRecoveredEnvelope(result, contract);
+            return contract;
+        } catch (JsonProcessingException | IllegalArgumentException invalid) {
+            throw new ServiceException("采购恢复缺少完整冻结合同或绑定身份");
+        }
+    }
+
+    /** 每次更新及竞争重读都独立验证完整信封，不能靠上游核验或成功旗号放行。 */
+    private void requireRecoveredEnvelope(DecisionActionExecutionResult result, RecoveryPurchaseContract contract) {
+        if (result == null || !result.success() || result.retryable() || result.errorCode() != null || result.errorMessage() != null
+            || !"PU_PURCHASE_REQUISITION".equals(result.resultBizType()) || result.resultBizId() == null || result.resultBizId() <= 0
+            || result.resultBizCode() == null || !result.resultBizCode().matches("[A-Za-z0-9_-]{1,64}"))
+            throw new ServiceException("采购恢复必须具有真实原稿业务引用和成功信封");
+        Map<String, Object> details = result.result();
+        if (details == null || !PURCHASE_RESULT_FIELDS.equals(details.keySet()) || !(details.get("replayed") instanceof Boolean replayed)
+            || !Integer.valueOf(2).equals(details.get("purchase_payload_version"))
+            || !contract.runId().toString().equals(details.get("runId"))
+            || !contract.actionId().toString().equals(details.get("actionId"))
+            || !contract.tenantId().equals(details.get("tenantId")) || !contract.requestKey().equals(details.get("requestKey"))
+            || !contract.frozen().materialId().toString().equals(details.get("materialId"))
+            || !contract.frozen().vendorId().toString().equals(details.get("vendorId"))
+            || !"AI_DECISION".equals(details.get("sourceType"))
+            || !contract.frozen().expectedSourceFingerprint().equals(details.get("sourceFingerprint"))
+            || !contract.payloadFingerprint().equals(details.get("payloadFingerprint"))
+            || !"DRAFT".equals(details.get("status")) || !"DRAFT".equals(details.get("afterState"))
+            || !"v0".equals(details.get("versionMarker"))
+            || !(replayed ? "COMMITTED" : "ABSENT").equals(details.get("beforeState")))
+            throw new ServiceException("采购恢复信封的来源、合同、版本或观察状态不一致");
+        if (!(details.get("lines") instanceof List<?> lines) || lines.size() != contract.frozen().frozenLines().size())
+            throw new ServiceException("采购恢复逐来源行缺失或数量不一致");
+        Set<Long> ids = new HashSet<>();
+        for (int index = 0; index < lines.size(); index++) {
+            if (!(lines.get(index) instanceof Map<?, ?> row) || !PURCHASE_RESULT_LINE_FIELDS.equals(row.keySet()))
+                throw new ServiceException("采购恢复结果行缺少字段或含未知字段");
+            Long lineId = requireResultLineId(row.get("lineId"));
+            var line = contract.frozen().frozenLines().get(index);
+            Map<String, Object> expected = Map.of("lineId", lineId.toString(), "requirementDetailId", line.detailId().toString(),
+                "materialId", contract.frozen().materialId().toString(), "baseUomId", line.baseUomId().toString(),
+                "orderUomId", line.orderUomId().toString(), "coveredDemandBase", line.coveredDemandBase().stripTrailingZeros().toPlainString(),
+                "requestedOrderQty", line.requestedOrderQty().stripTrailingZeros().toPlainString(), "requiredDate", line.requiredDate().toString());
+            if (!ids.add(lineId) || !expected.equals(row))
+                throw new ServiceException("采购恢复行标识、单位、数量或日期与冻结合同不一致");
+        }
+    }
+
+    private static Long requireResultLineId(Object raw) {
+        if (!(raw instanceof String id) || !id.matches("[1-9][0-9]{0,18}"))
+            throw new ServiceException("采购恢复行标识必须为规范正十进制字符串");
+        try { return Long.valueOf(id); }
+        catch (NumberFormatException invalid) { throw new ServiceException("采购恢复行标识超出有效范围"); }
+    }
+
+    /** 有任何历史引用或结果就必须完整证明同一笔采购，不清空、不覆盖残缺记录。 */
+    private void requireExistingRecoveredResult(AiDecisionAction row, DecisionActionExecutionResult result,
+                                               RecoveryPurchaseContract contract, boolean required) {
+        boolean existing = row.getResultBizType() != null || row.getResultBizId() != null
+            || row.getResultBizCode() != null || row.getResultJson() != null;
+        if (!existing && !required) return;
+        if (!Objects.equals(row.getResultBizType(), result.resultBizType())
+            || !Objects.equals(row.getResultBizId(), result.resultBizId()) || !Objects.equals(row.getResultBizCode(), result.resultBizCode())
+            || row.getResultJson() == null)
+            throw new ServiceException("采购已有业务引用不完整或不是同一永久单据");
+        try {
+            JsonNode tree = objectMapper.reader().with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION).readTree(row.getResultJson());
+            Set<String> fields = new HashSet<>();
+            if (tree == null || !tree.isObject()) throw new ServiceException("采购已有结果缺少完整可复核回执");
+            tree.fieldNames().forEachRemaining(fields::add);
+            if (!EXECUTION_RESULT_FIELDS.equals(fields) || !tree.path("success").isBoolean() || !tree.path("retryable").isBoolean()
+                || !tree.path("resultBizType").isTextual() || !tree.path("resultBizCode").isTextual()
+                || !(tree.path("resultBizId").isTextual() || tree.path("resultBizId").isIntegralNumber()))
+                throw new ServiceException("采购已有结果字段未知、不完整或类型无效");
+            DecisionActionExecutionResult stored = objectMapper.treeToValue(tree, DecisionActionExecutionResult.class);
+            requireRecoveredEnvelope(stored, contract);
+            if (!Objects.equals(stored.resultBizType(), result.resultBizType())
+                || !Objects.equals(stored.resultBizId(), result.resultBizId()) || !Objects.equals(stored.resultBizCode(), result.resultBizCode())
+                || !sameJson(json(stablePurchaseResult(stored.result())), json(stablePurchaseResult(result.result()))))
+                throw new ServiceException("采购已有信封不是同一永久单据的稳定结果");
+            if (tree.path("resultBizId").isTextual() && !stored.resultBizId().toString().equals(tree.path("resultBizId").asText()))
+                throw new ServiceException("采购已有业务标识不是规范十进制");
+        } catch (JsonProcessingException | IllegalArgumentException invalid) {
+            throw new ServiceException("采购已有结果缺少完整可复核回执");
+        }
+    }
+
+    private record RecoveryPurchaseContract(Long runId, Long actionId, String tenantId, String requestKey,
+                                            DecisionPurchaseContractV2 frozen, String payloadFingerprint) { }
+
+    private Map<String, Object> stablePurchaseResult(Map<String, Object> source) {
+        if (source == null || source.isEmpty()) throw new ServiceException("永久采购结果缺少稳定合同字段");
+        Map<String, Object> stable = new LinkedHashMap<>(source);
+        stable.remove("replayed"); stable.remove("beforeState");
+        return stable;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -503,9 +715,19 @@ public class DecisionPersistenceService {
         return left == null || right == null ? left == right : left.compareTo(right) == 0;
     }
 
+    private void requirePurchaseContract(AiDecisionRun run, DecisionActionProposal proposal, String tenant) {
+        if (!Integer.valueOf(2).equals(run.getDecisionContractVersion()) || proposal.target() == null
+            || proposal.target().type() != DecisionBusinessType.WORK_ORDER || !proposal.approvalRequired())
+            throw new ServiceException("采购合同版本、工单目标或审批约束无效，须重新分析");
+        var contract = DecisionPurchaseContractCodec.parse(proposal.payload(), run.getId());
+        if (!DecisionPurchaseContractCodec.idempotencyKey(tenant, run.getId(), proposal.target(), contract)
+            .equals(proposal.idempotencyKey())) throw new ServiceException("采购永久键与冻结合同不一致");
+    }
+
     private boolean sameAction(AiDecisionAction old, AiDecisionAction desired) {
         return Objects.equals(old.getRunId(), desired.getRunId())
             && Objects.equals(old.getActionType(), desired.getActionType())
+            && Objects.equals(old.getPurchasePayloadVersion(), desired.getPurchasePayloadVersion())
             && Objects.equals(old.getTitle(), desired.getTitle())
             && Objects.equals(old.getDisplayReason(), desired.getDisplayReason())
             && Objects.equals(old.getTargetBizType(), desired.getTargetBizType())
@@ -524,6 +746,8 @@ public class DecisionPersistenceService {
         return proposal != null && proposal.target() != null && proposal.actionType() != null
             && proposal.riskLevel() != null && Objects.equals(row.getRunId(), runId)
             && Objects.equals(row.getActionType(), proposal.actionType().name())
+            && (proposal.actionType() != DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT
+                || Integer.valueOf(2).equals(row.getPurchasePayloadVersion()))
             && Objects.equals(row.getTargetBizType(), proposal.target().type().name())
             && Objects.equals(row.getTargetBizId(), proposal.target().id())
             && Objects.equals(row.getTargetBizCode(), proposal.target().code())
@@ -574,6 +798,8 @@ public class DecisionPersistenceService {
             if (action == null || action.idempotencyKey() == null
                 || byKey.putIfAbsent(action.idempotencyKey(), action) != null)
                 throw new ServiceException("决策动作键无效或重复");
+            if (action.actionType() == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT)
+                requirePurchaseContract(run, action, tenant);
         }
         List<AiDecisionAction> persistedActions = listActions(runId);
         if (persistedActions.size() != byKey.size() || persistedActions.stream().anyMatch(row ->

@@ -284,6 +284,69 @@ class DeliveryRiskDecisionOrchestratorTest {
         });
     }
 
+    @Test void completeAnalysisRechecksFrozenPurchaseSources() {
+        withTenant(() -> {
+            var result = configurePurchaseCompletion();
+            orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor());
+            var snapshot = store.requireSnapshot(99L, "000000");
+            var ordered = inOrder(data, store);
+            ordered.verify(data).requireFreshPurchaseContract(result.actions().get(0), snapshot, 30, actor());
+            ordered.verify(store).completeAnalysis(99L, result, "TEMPLATE_FALLBACK");
+            verify(store).trustedActor(99L, "000000");
+            return null;
+        });
+    }
+
+    @Test void changedFrozenPurchaseSourcePreventsCompletionWithoutMarkerBackfill() {
+        withTenant(() -> {
+            var result = configurePurchaseCompletion();
+            doThrow(new com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException())
+                .when(data).requireFreshPurchaseContract(any(), any(), eq(30), eq(actor()));
+            assertThrows(ServiceException.class, () -> orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor()),
+                "定稿前采购来源变化不能继续进入审批");
+            verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
+            return null;
+        });
+    }
+
+    @Test void legacyPurchaseRunCannotBeCompletedByNewPayload() {
+        withTenant(() -> {
+            var result = configurePurchaseCompletion();
+            var run = store.requireRun(99L, "000000"); run.setDecisionContractVersion(null);
+            assertThrows(ServiceException.class, () -> orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor()),
+                "完整新载荷不得替旧运行回填版本");
+            assertNull(run.getDecisionContractVersion(), "旧版本必须保持为空");
+            verify(data, never()).requireFreshPurchaseContract(any(), any(), anyInt(), any());
+            verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
+            return null;
+        });
+    }
+
+    private DecisionResult configurePurchaseCompletion() {
+        var ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11");
+        var snapshot = DecisionPurchaseProposalServiceTest.workSnapshot(ref);
+        var running = run(99L, DecisionRunStatus.RUNNING); running.setDecisionContractVersion(2);
+        running.setBizType(ref.type().name()); running.setBizId(ref.id()); running.setBizCode(ref.code());
+        running.setInputSnapshotHash(snapshot.snapshotHash()); running.setScoreConfigJson("{\"horizonDays\":30}");
+        when(store.requireRun(99L, "000000")).thenReturn(running);
+        when(store.requireSnapshot(99L, "000000")).thenReturn(snapshot);
+        when(store.requireHorizonDays(running)).thenReturn(30);
+        when(store.trustedActor(99L, "000000")).thenReturn(actor());
+        when(data.canAccess(ref, actor())).thenReturn(true);
+        when(data.checkFreshness(ref, snapshot.snapshotHash(), actor()))
+            .thenReturn(new DecisionFreshnessResult(true, snapshot.snapshotHash(), List.of()));
+        when(data.loadDeliveryContext(ref, 30, actor())).thenReturn(snapshot);
+        var contract = DecisionPurchaseProposalServiceTest.contract(100L, 200L);
+        var action = new DecisionActionProposal(501L, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+            "采购草稿", "真实逐来源合同", ref,
+            com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(99L, contract),
+            DecisionRiskLevel.LOW, true, "pu:requisition:add",
+            com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.idempotencyKey("000000", 99L, ref, contract),
+            "purchaseRequisitionDraft", 1, List.of());
+        return new DecisionResult(99L, ref, 0, DecisionRiskLevel.LOW, "HIGH", List.of(), null, List.of(), null,
+            Map.of(), new DecisionSourceFactVerifier().numericFacts(99L, snapshot), List.of(action), List.of());
+    }
+
     @Test void completionRejectsSpoofedErpFactEvenWhenMarkedVerifiable() {
         withTenant(() -> {
             DeliveryContextSnapshot snapshot = stockSnapshot("hash-1");
