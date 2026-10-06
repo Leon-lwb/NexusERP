@@ -38,6 +38,9 @@ public class AiDecisionRunVo implements Serializable {
 
     private String status;
 
+    /** 真实运行的采购合同版本；旧运行保持空值，不由视图补写新版标记。 */
+    private Integer decisionContractVersion;
+
     private BigDecimal riskScore;
 
     private String riskLevel;
