@@ -115,7 +115,7 @@ public class ProductionCompletionPostingService {
             if ("0".equals(row.getDelFlag())) {
                 receipts.add(row);
             } else {
-                require("2".equals(row.getDelFlag()) && "DRAFT".equals(row.getStatus())
+                require(("1".equals(row.getDelFlag()) || "2".equals(row.getDelFlag())) && "DRAFT".equals(row.getStatus())
                     && row.getBatchId() == null && row.getBatchCode() == null,
                     "被删除生产入库不是明确零效果草稿，不能另造入库");
             }

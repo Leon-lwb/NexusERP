@@ -68,8 +68,8 @@ public class WmProductionRecptWriteGuard {
             if ("0".equals(row.getDelFlag())) {
                 active.add(row);
             } else {
-                // 普通删除只允许零效果草稿；已执行、未知状态或已生成批次的删除历史仍然阻断。
-                require("2".equals(row.getDelFlag()) && "DRAFT".equals(row.getStatus())
+                // 兼容 Mapper 默认删除值 1 与历史 2；已执行、未知状态或已有批次的删除历史仍然阻断。
+                require(("1".equals(row.getDelFlag()) || "2".equals(row.getDelFlag())) && "DRAFT".equals(row.getStatus())
                     && row.getBatchId() == null && row.getBatchCode() == null,
                     "被删除生产入库凭据不是明确零效果草稿，不能隐藏后另造入库");
             }
