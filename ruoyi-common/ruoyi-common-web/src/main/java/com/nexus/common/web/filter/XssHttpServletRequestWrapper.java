@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * XSS过滤处理
@@ -38,7 +39,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
         if (value == null) {
             return null;
         }
-        return HtmlUtil.cleanHtmlTag(value).trim();
+        return cleanHtmlTagPreservingComparisons(value).trim();
     }
 
     @Override
@@ -57,7 +58,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
                 String[] escapseValues = new String[length];
                 for (int i = 0; i < length; i++) {
                     // 防xss攻击和过滤前后空格
-                    escapseValues[i] = HtmlUtil.cleanHtmlTag(values[i]).trim();
+                    escapseValues[i] = cleanHtmlTagPreservingComparisons(values[i]).trim();
                 }
                 map.put(entry.getKey(), escapseValues);
             }
@@ -75,7 +76,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
         String[] escapseValues = new String[length];
         for (int i = 0; i < length; i++) {
             // 防xss攻击和过滤前后空格
-            escapseValues[i] = HtmlUtil.cleanHtmlTag(values[i]).trim();
+            escapseValues[i] = cleanHtmlTagPreservingComparisons(values[i]).trim();
         }
         return escapseValues;
     }
@@ -94,7 +95,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
         }
 
         // xss过滤
-        json = HtmlUtil.cleanHtmlTag(json).trim();
+        json = cleanHtmlTagPreservingComparisons(json).trim();
         byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
         final ByteArrayInputStream bis = IoUtil.toStream(jsonBytes);
         return new ServletInputStream() {
@@ -122,6 +123,28 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
                 return bis.read();
             }
         };
+    }
+
+    /**
+     * 仅保留不可能是合法 HTML 标签的精确比较符 <> 和 <=>。
+     * 先临时保护比较符，再对完整原文执行既有标签过滤，避免分段清洗绕过跨段标签。
+     * 不解析或重序列化 JSON，中文、大 ID 与高精度数量字面量保持原样。
+     */
+    private static String cleanHtmlTagPreservingComparisons(String value) {
+        if (!value.contains("<>") && !value.contains("<=>")) {
+            return HtmlUtil.cleanHtmlTag(value);
+        }
+        // 每次生成且检查原文不存在的标记，不能把用户原有文本误还原成比较符。
+        String marker;
+        do {
+            marker = "__XSS_COMPARE_" + UUID.randomUUID() + "__";
+        } while (value.contains(marker));
+        String notEqual = marker + "NE";
+        String nullSafeEqual = marker + "NSE";
+        String protectedValue = value.replace("<=>", nullSafeEqual).replace("<>", notEqual);
+        return HtmlUtil.cleanHtmlTag(protectedValue)
+            .replace(nullSafeEqual, "<=>")
+            .replace(notEqual, "<>");
     }
 
     /**
