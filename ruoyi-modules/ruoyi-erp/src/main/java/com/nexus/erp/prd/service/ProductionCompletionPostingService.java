@@ -54,7 +54,10 @@ public class ProductionCompletionPostingService {
         // 首次持久读取即锁住真实工单，后续验账、扣料和入库共用该锁及同一 ERP 事务。
         PrdWorkOrder wo = postingMapper.lockWorkOrder(tenantId, message.getWoId());
         BigDecimal quantity = validateCompletion(wo, message, tenantId);
-        if (verifiedReceiptId(wo, quantity, tenantId) != null) {
+        Long originalReceipt = verifiedReceiptId(wo, quantity, tenantId);
+        if (originalReceipt != null) {
+            // 原结果仍需经统一入口核物料根单位和完整库存/批次来源；该分支只验原凭据，不再倒冲或入库。
+            productionRecptService.execute(originalReceipt);
             return;
         }
         require(postingMapper.countExistingBackflushIssues(tenantId, wo.getWoId()) == 0,
@@ -102,9 +105,21 @@ public class ProductionCompletionPostingService {
      * <p>既有 complete 只允许一次终态，单张生产单对应唯一库存流水；不进入旧累计补差额分支。</p>
      */
     private Long verifiedReceiptId(PrdWorkOrder wo, BigDecimal quantity, String tenantId) {
-        List<WmProductionRecpt> receipts = postingMapper.selectReceipts(tenantId, wo.getWoId());
+        List<WmProductionRecpt> allReceipts = postingMapper.selectReceipts(tenantId, wo.getWoId());
         List<WmMaterialStockTx> transactions = postingMapper.selectCompletionTransactions(tenantId, wo.getWoId());
-        require(receipts != null && transactions != null, "无法读取工单成品过账凭据");
+        require(allReceipts != null && transactions != null, "无法读取工单成品过账凭据");
+        List<WmProductionRecpt> receipts = new java.util.ArrayList<>();
+        for (WmProductionRecpt row : allReceipts) {
+            require(row != null && tenantId.equals(row.getTenantId()) && wo.getWoId().equals(row.getWoId()),
+                "工单入库凭据租户或父来源不一致");
+            if ("0".equals(row.getDelFlag())) {
+                receipts.add(row);
+            } else {
+                require("2".equals(row.getDelFlag()) && "DRAFT".equals(row.getStatus())
+                    && row.getBatchId() == null && row.getBatchCode() == null,
+                    "被删除生产入库不是明确零效果草稿，不能另造入库");
+            }
+        }
         if (receipts.isEmpty() && transactions.isEmpty()) {
             return null;
         }

@@ -128,10 +128,9 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         String batchCode = (String) args[9];
         Date now = (Date) args[10];
 
-        // 幂等检查：同一工单不重复入库
+        // 已有流水不授权另一张单据成功；原结果恢复只能由上层完整凭据守卫确认。
         if (hasPosted(SOURCE_DOC_TYPE_WORK_ORDER, woId)) {
-            log.warn("工单[{}]已入库，跳过重复处理", woId);
-            return;
+            throw new ServiceException("工单已有生产入库流水，必须核验原单结果，不能再次过账");
         }
 
         // 1. 查询或创建库存记录（新建时完整填充维度字段）

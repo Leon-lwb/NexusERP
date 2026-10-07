@@ -299,12 +299,13 @@ class ProductionCompletionCostAndBatchStrategyTest {
     }
 
     @Test
-    void repeatedWorkOrderReturnsEarlyEvenForLargerLegacyIncrement() {
+    void repeatedWorkOrderRejectsLargerLegacyIncrementWithoutNewEffects() {
         ProductionCompletionStrategy strategy = strategy();
         strategy.execute(arguments(decimal("10.0000"), BATCH_ID));
         Snapshot posted = ledger.snapshot();
 
-        strategy.execute(arguments(decimal("20.0000"), BATCH_ID));
+        assertThrows(ServiceException.class, () -> strategy.execute(arguments(decimal("20.0000"), BATCH_ID)),
+            "旧工单级幂等不能给更大累计量返回伪成功");
 
         assertEquals(posted, ledger.snapshot(), "保持原 hasPosted 工单语义，不新增旧增量支持");
         assertEquals(1, batchCalls.size());
@@ -318,7 +319,8 @@ class ProductionCompletionCostAndBatchStrategyTest {
         postedCount = 1L;
         Snapshot before = ledger.snapshot();
 
-        strategy().execute(arguments(decimal("10.0000"), BATCH_ID));
+        assertThrows(ServiceException.class, () -> strategy().execute(arguments(decimal("10.0000"), BATCH_ID)),
+            "已有流水须交由原单完整回执恢复，不能静默成功");
 
         assertEquals(before, ledger.snapshot());
         verifyNoInteractions(stockMapper, batchMapper, materialMapper);

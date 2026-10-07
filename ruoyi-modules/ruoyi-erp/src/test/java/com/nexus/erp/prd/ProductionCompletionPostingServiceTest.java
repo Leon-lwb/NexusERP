@@ -328,7 +328,34 @@ class ProductionCompletionPostingServiceTest {
     void currentStockCanBeConsumedLaterAndCostPostingZeroIsNotAnInventoryFailure() {
         evidence(TEN); stock.setStockQuantity(new BigDecimal("2"));
         assertDoesNotThrow(() -> service.postCompletion(message));
-        verifyNoInteractions(backflush, receipt, putaway);
+        verifyNoInteractions(backflush, putaway);
+        verify(receipt).execute(900L);
+        verify(receipt,never()).createAndExecute(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
+    void originalAutomaticReplayMustInvokeCompleteSourceVerificationOnly(){
+        evidence(TEN);
+        service.postCompletion(message);
+        verify(receipt).execute(900L);
+        verify(receipt,never()).createAndExecute(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verifyNoInteractions(backflush,putaway);
+    }
+
+    @Test
+    void automaticReplayRejectsNewGuardConflictWithoutRepeatingBackflush(){
+        evidence(TEN);
+        doThrow(new ServiceException("原基本单位来源冲突")).when(receipt).execute(900L);
+        assertThrows(ServiceException.class,() -> service.postCompletion(message),"原上层也应遵守新增完整来源恢复守卫");
+        verifyNoInteractions(backflush,putaway);
+    }
+
+    @Test
+    void retiredZeroEffectDraftDoesNotBlockAutomaticProductionEntry(){
+        WmProductionRecpt retired=new WmProductionRecpt();retired.setRecptId(899L);retired.setTenantId(TENANT);
+        retired.setWoId(100L);retired.setDelFlag("2");retired.setStatus("DRAFT");receipts.add(retired);
+        assertDoesNotThrow(() -> service.postCompletion(message),"合法删除的零效果草稿不应阻断实际自动完工入库");
+        assertEquals(1,transactions.size());assertEquals(10,committedDebits);
     }
 
     @Test

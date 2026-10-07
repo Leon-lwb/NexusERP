@@ -101,12 +101,13 @@ class PrdWorkReportServiceImplTest {
         old.setReportStatus("SUBMITTED");
         old.setReportedQty(new BigDecimal("60"));
         when(baseMapper.selectById(1L)).thenReturn(old);
+        when(baseMapper.selectOne(any())).thenReturn(old);
 
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoId(9L);
         wo.setPlannedQty(new BigDecimal("100"));
         wo.setCompletedQty(new BigDecimal("50"));
-        when(workOrderMapper.selectById(9L)).thenReturn(wo);
+        when(workOrderMapper.selectOne(any())).thenReturn(wo);
 
         PrdWorkReportBo bo = new PrdWorkReportBo();
         bo.setReportId(1L);
@@ -127,12 +128,13 @@ class PrdWorkReportServiceImplTest {
         old.setReportStatus("APPROVED");
         old.setReportedQty(new BigDecimal("10"));
         when(baseMapper.selectById(1L)).thenReturn(old);
+        when(baseMapper.selectOne(any())).thenReturn(old);
 
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoId(9L);
         wo.setPlannedQty(new BigDecimal("1000"));
         wo.setCompletedQty(BigDecimal.ZERO);
-        when(workOrderMapper.selectById(9L)).thenReturn(wo);
+        when(workOrderMapper.selectOne(any())).thenReturn(wo);
         when(baseMapper.update(any(), any())).thenReturn(0);
 
         PrdWorkReportBo bo = new PrdWorkReportBo();
@@ -152,12 +154,13 @@ class PrdWorkReportServiceImplTest {
         old.setReportStatus("SUBMITTED");
         old.setReportedQty(new BigDecimal("10"));
         when(baseMapper.selectById(1L)).thenReturn(old);
+        when(baseMapper.selectOne(any())).thenReturn(old);
 
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoId(9L);
         wo.setPlannedQty(new BigDecimal("100"));
         wo.setCompletedQty(BigDecimal.ZERO);
-        when(workOrderMapper.selectById(9L)).thenReturn(wo);
+        when(workOrderMapper.selectOne(any())).thenReturn(wo);
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(workOrderMapper.update(any(), any())).thenReturn(1);
 
@@ -178,12 +181,13 @@ class PrdWorkReportServiceImplTest {
         old.setReportStatus("SUBMITTED");
         old.setReportedQty(new BigDecimal("10"));
         when(baseMapper.selectById(1L)).thenReturn(old);
+        when(baseMapper.selectOne(any())).thenReturn(old);
 
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoId(9L);
         wo.setPlannedQty(new BigDecimal("100"));
         wo.setCompletedQty(BigDecimal.ZERO);
-        when(workOrderMapper.selectById(9L)).thenReturn(wo);
+        when(workOrderMapper.selectOne(any())).thenReturn(wo);
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(workOrderMapper.update(any(), any())).thenReturn(1);
 

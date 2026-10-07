@@ -24,6 +24,7 @@ import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 生产报工 Service 业务层实现
@@ -140,7 +141,7 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     /**
      * 修改生产报工记录（通过 BO）
      * <p>
-     * 状态从非 APPROVED 变为 APPROVED 时，先以 CAS 抢占状态，成功后再回写工单累计产量，
+     * 状态从非 APPROVED 变为 APPROVED 时，先锁父工单、再锁读报工，CAS 成功后回写工单累计产量，
      * 防止并发双审核导致 completed_qty 双倍累加（ERP-PRD-02）。
      *
      * @param bo 生产报工业务对象
@@ -157,7 +158,7 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     }
 
     /**
-     * 审核报工并回写工单产量：CAS 抢占「非 APPROVED → APPROVED」后才累加，保证只累加一次。
+     * 审核报工并回写工单产量：父工单锁→报工当前锁读→CAS→累计回写，保证只累加一次。
      *
      * @param entity 报工实体（至少含 reportId）
      * @return 影响的行数；已被审核过则返回 0（幂等）
@@ -166,12 +167,25 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
         if (entity.getReportId() == null) {
             throw new ServiceException("报工记录ID不能为空");
         }
-        PrdWorkReport old = baseMapper.selectById(entity.getReportId());
-        if (old == null) {
-            throw new ServiceException("报工记录不存在");
+        // 普通读只发现父编号；不能用其数量或状态授权审核。
+        PrdWorkReport discovered = baseMapper.selectById(entity.getReportId());
+        if (discovered == null || discovered.getWoId() == null) {
+            throw new ServiceException("报工记录或来源工单不存在");
         }
-        // 超报工守卫：completed_qty + 本次报工 <= 计划数量 × (1 + 容差)
-        assertNotOverReport(old);
+        // 与生产入库统一先父后子；禁止先 CAS 锁子行再等待入库已持有的父锁。
+        PrdWorkOrder wo = workOrderMapper.selectOne(Wrappers.<PrdWorkOrder>lambdaQuery()
+            .eq(PrdWorkOrder::getWoId, discovered.getWoId()).last("FOR UPDATE"));
+        if (wo == null) {
+            throw new ServiceException("报工来源工单不存在");
+        }
+        PrdWorkReport old = baseMapper.selectOne(Wrappers.<PrdWorkReport>lambdaQuery()
+            .eq(PrdWorkReport::getReportId, entity.getReportId()).last("FOR UPDATE"));
+        if (old == null || !Objects.equals(entity.getReportId(), old.getReportId())
+            || !Objects.equals(discovered.getWoId(), old.getWoId()) || !Objects.equals(wo.getWoId(), old.getWoId())) {
+            throw new ServiceException("报工来源已变化，请重试");
+        }
+        // 父子事实均来自当前锁读，再沿用原超报工守卫和原 CAS 回写。
+        assertNotOverReport(old, wo);
         int rows = baseMapper.update(null, Wrappers.<PrdWorkReport>lambdaUpdate()
             .set(PrdWorkReport::getReportStatus, STATUS_APPROVED)
             .eq(PrdWorkReport::getReportId, entity.getReportId())
@@ -187,14 +201,14 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     /**
      * 超报工上限校验（ERP-PRD-02）。
      *
-     * @param report 待审核的报工记录
+     * @param report 当前锁读的待审核报工记录
+     * @param wo 已锁定的来源工单
      */
-    private void assertNotOverReport(PrdWorkReport report) {
+    private void assertNotOverReport(PrdWorkReport report, PrdWorkOrder wo) {
         if (report.getWoId() == null || report.getReportedQty() == null) {
             return;
         }
-        PrdWorkOrder wo = workOrderMapper.selectById(report.getWoId());
-        if (wo == null || wo.getPlannedQty() == null) {
+        if (wo.getPlannedQty() == null) {
             return;
         }
         BigDecimal completed = wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
