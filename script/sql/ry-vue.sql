@@ -4605,7 +4605,7 @@ CREATE TABLE `ai_tool`  (
   `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工具描述（AI 理解用途）',
   `tool_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型: BUILTIN/LOCAL/REMOTE',
   `config_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '工具配置（JSON 格式，LOCAL/REMOTE 类型使用）',
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态: ENABLED/DISABLED',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态: 0启用/1停用，默认停用',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
@@ -4617,7 +4617,7 @@ CREATE TABLE `ai_tool`  (
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tool_name`(`tool_name`) USING BTREE
+  UNIQUE INDEX `uk_tenant_tool_name`(`tenant_id`, `tool_name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = DYNAMIC;
 
 /** ---------------------------- */
@@ -4631,8 +4631,8 @@ INSERT INTO `ai_tool` VALUES (2065501197141528580, '000000', 'erp_inventory', '�
 INSERT INTO `ai_tool` VALUES (2065501197204443138, '000000', 'erp_sales', '销售查询工具', '查询月度销售趋势、客户排行、退货统计、订单履行率', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_tool` VALUES (2065501197204443139, '000000', 'query_table_schema', '查询表结构', '查询指定表的 CREATE TABLE DDL（优先从缓存获取）', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_tool` VALUES (2071627193573928962, '000000', 'query_knowledge_graph', '知识图谱查询', '查询当前知识库知识图谱的实体关系（1-2跳）或执行基于社区摘要的全局检索', 'BUILTIN', NULL, '0', -1, -1, '2026-06-30 00:09:47', -1, '2026-06-30 00:09:47', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2092000000000000110, '0', 'aps_schedule', '智能排产查询工具', '查询APS排产方案、拖期工单、瓶颈资源利用率、工单工序排程明细，支撑\'哪些订单会拖期/瓶颈在哪\'等决策问答', 'BUILTIN', NULL, 'ENABLED', 103, 1, '2026-09-02 19:32:44', -1, '2026-09-02 19:49:13', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2092000000000000111, '0', 'erp_shortage_risk', '缺料风险预测工具', '查询未来N天供应链缺料风险清单（MRP毛需求+库存+在途采购推演），返回物料/最早缺料日/缺口/建议动作，支撑\'未来两周哪些物料会缺料/要不要催货\'等供应链决策问答', 'BUILTIN', NULL, 'ENABLED', 103, 1, '2026-09-02 19:32:44', -1, '2026-09-02 19:49:13', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2092000000000000110, '000000', 'aps_schedule', '智能排产查询工具', '查询APS排产方案、拖期工单、瓶颈资源利用率、工单工序排程明细，支撑\'哪些订单会拖期/瓶颈在哪\'等决策问答', 'BUILTIN', NULL, '1', 103, 1, '2026-09-02 19:32:44', -1, '2026-09-02 19:49:13', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2092000000000000111, '000000', 'erp_shortage_risk', '缺料风险预测工具', '查询未来N天供应链缺料风险清单（MRP毛需求+库存+在途采购推演），返回物料/最早缺料日/缺口/建议动作，支撑\'未来两周哪些物料会缺料/要不要催货\'等供应链决策问答', 'BUILTIN', NULL, '1', 103, 1, '2026-09-02 19:32:44', -1, '2026-09-02 19:49:13', '0', NULL, NULL, NULL, NULL);
 
 /** ---------------------------- */
 /** app_user_agreement 表结构定义。 */
