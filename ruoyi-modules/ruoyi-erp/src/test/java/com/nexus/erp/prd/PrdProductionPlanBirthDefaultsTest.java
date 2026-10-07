@@ -55,7 +55,7 @@ class PrdProductionPlanBirthDefaultsTest {
     @BeforeEach
     void setUp() {
         productionPlanService = new PrdProductionPlanServiceImpl(
-            baseMapper, null, null, null, null, null, null, null, null, autoCodeUtil, null, null);
+            baseMapper, null, null, null, null, null, null, null, null, autoCodeUtil, null, null, null);
     }
 
     @DisplayName("未提供或空白状态的新计划由服务端补齐草稿及初始版本")

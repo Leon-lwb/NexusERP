@@ -2,11 +2,13 @@ package com.nexus.erp.prd;
 
 import com.nexus.erp.bd.domain.BdBom;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
 import com.nexus.erp.bd.mapper.BdBomDetailMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialCategoryMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
@@ -57,6 +59,8 @@ class PrdProductionPlanServiceImplTest {
     private BdBomMapper bdBomMapper;
     @Mock
     private BdMaterialMapper bdMaterialMapper;
+    @Mock
+    private BdUnitOfMeasureMapper bdUnitOfMeasureMapper;
     @Mock
     private BdMaterialCategoryMapper bdMaterialCategoryMapper;
     @Mock
@@ -111,6 +115,30 @@ class PrdProductionPlanServiceImplTest {
             .thenReturn(rootRequirement);
         when(prdWorkOrderMapper.selectCount(any())).thenReturn(0L);
         when(autoCodeUtil.genSerialCode("PRD_WORK_ORDER_CODE", null)).thenReturn("WO202609290001");
+        // 正常出生用明确合法的同租户根物料与真实主键单位夹具，不放宽旧拒绝场景。
+        BdMaterial product = new BdMaterial();
+        product.setMaterialId(3001L);
+        product.setTenantId("000000");
+        product.setMaterialCode("FG-CONTROL-CABINET");
+        product.setMaterialName("精密控制柜");
+        product.setBaseUomId(7001L);
+        product.setStatus(1L);
+        product.setDelFlag("0");
+        BdUnitOfMeasure unit = new BdUnitOfMeasure();
+        unit.setUomId(7001L);
+        unit.setTenantId("000000");
+        unit.setUomName("套");
+        unit.setPrimaryId(7001L);
+        unit.setIsBase(1L);
+        unit.setConversionRate(BigDecimal.ONE);
+        unit.setStatus(1L);
+        unit.setDelFlag("0");
+        unit.setQuantityScale(4);
+        unit.setConversionVersion("测试基本单位-v1");
+        unit.setConversionVerifiedAt(new Date(1759276800000L));
+        when(bdMaterialMapper.selectById(3001L)).thenReturn(product);
+        when(bdUnitOfMeasureMapper.selectById(7001L)).thenReturn(unit);
+        when(prdWorkOrderMapper.insert(any(PrdWorkOrder.class))).thenReturn(1);
 
         assertEquals(1, productionPlanService.generateWorkOrders(1001L, List.of(2001L)));
 

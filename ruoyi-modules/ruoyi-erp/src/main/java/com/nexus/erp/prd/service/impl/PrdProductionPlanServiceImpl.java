@@ -19,6 +19,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.bd.domain.BdBom;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.BdMaterialCategory;
 import com.nexus.erp.bd.domain.BdBomDetail;
 import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
@@ -26,6 +27,7 @@ import com.nexus.erp.bd.mapper.BdBomDetailMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialCategoryMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
@@ -80,6 +82,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private final AutoCodeUtil autoCodeUtil;
     private final PrdWorkOrderMapper prdWorkOrderMapper;
     private final IPrdWorkOrderService prdWorkOrderService;
+    private final BdUnitOfMeasureMapper bdUnitOfMeasureMapper;
 
     /** 状态常量（从 NexusConstants 迁移） */
     private static final String STATUS_DRAFT = "DRAFT";
@@ -718,8 +721,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             PrdMaterialRequirement requirement = prdMaterialRequirementService
                     .selectPrdMaterialRequirementByRequirementId(requirementId);
             if (requirement == null) {
-                log.warn("物料需求单不存在, requirementId={}", requirementId);
-                continue;
+                throw new ServiceException("所选物料需求单不存在，整批禁止生成工单");
             }
             if (!Objects.equals(plan.getPlanId(), requirement.getPlanId())) {
                 throw new RuntimeException("所选物料需求单不属于当前生产计划，禁止跨计划生成工单");
@@ -728,8 +730,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 throw new RuntimeException("所选物料需求单与生产计划租户不一致，禁止生成工单");
             }
             if (requirement.getMaterialId() == null) {
-                log.warn("物料需求单未关联物料, requirementId={}", requirementId);
-                continue;
+                throw new ServiceException("所选物料需求单缺少根物料，整批禁止生成工单");
             }
             if (requirement.getParentRequirementId() != null || plan.getBomId() == null
                 || !Objects.equals(plan.getBomId(), requirement.getBomId())) {
@@ -753,7 +754,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             validatedRequirements.put(requirementId, requirement);
         }
 
-        int count = 0;
+        /** 先跳过既有来源，再整批核验待出生工单的根物料/单位，新增检查不追写历史工单。 */
+        Map<Long, WorkOrderRootSource> rootSources = new LinkedHashMap<>();
         for (Map.Entry<Long, PrdMaterialRequirement> entry : validatedRequirements.entrySet()) {
             Long requirementId = entry.getKey();
             PrdMaterialRequirement requirement = entry.getValue();
@@ -767,7 +769,16 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 continue;
             }
 
-            /** 生成工单号 */
+            rootSources.put(requirementId, resolveWorkOrderRootSource(
+                plan.getTenantId(), requirement.getMaterialId(), plan.getTotalQuantity()));
+        }
+
+        int count = 0;
+        for (Map.Entry<Long, WorkOrderRootSource> entry : rootSources.entrySet()) {
+            Long requirementId = entry.getKey();
+            PrdMaterialRequirement requirement = validatedRequirements.get(requirementId);
+            WorkOrderRootSource rootSource = entry.getValue();
+            /** 所有待出生来源均已通过校验，才允许消耗编号和写入。 */
             String woNo = autoCodeUtil.genSerialCode("PRD_WORK_ORDER_CODE", null);
 
             /** 创建工单 */
@@ -778,10 +789,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             wo.setSourceType("MATERIAL_REQUIREMENT");
             wo.setSourceId(requirementId);
             wo.setSourceNo(requirement.getRequirementNo());
-            wo.setMaterialId(requirement.getMaterialId());
-            wo.setMaterialCode(requirement.getMaterialCode());
-            wo.setMaterialName(requirement.getMaterialName());
-            wo.setMaterialSpec(requirement.getMaterialSpec());
+            wo.setMaterialId(rootSource.material().getMaterialId());
+            wo.setMaterialCode(rootSource.material().getMaterialCode());
+            wo.setMaterialName(rootSource.material().getMaterialName());
+            wo.setMaterialSpec(rootSource.material().getMaterialSpec());
+            wo.setUnitId(rootSource.material().getBaseUomId());
+            wo.setUnitName(rootSource.unit().getUomName());
             /** 仅允许已核验的计划根成品，组件合计不能代表根/子装配的应产数量。 */
             wo.setPlannedQty(plan.getTotalQuantity());
             wo.setCompletedQty(BigDecimal.ZERO);
@@ -793,12 +806,52 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             wo.setWoStatus(IPrdWorkOrderService.STATUS_CREATED);
             wo.setPlanStartDate(new Date());
 
-            prdWorkOrderMapper.insert(wo);
+            if (prdWorkOrderMapper.insert(wo) != 1) {
+                throw new ServiceException("生产工单写入失败，必须且只能新增一行");
+            }
             log.info("从物料需求单生成工单, requirementId={}, woNo={}, woId={}", requirementId, woNo, wo.getWoId());
             count++;
         }
 
         return count;
+    }
+
+    /** 已核验的新工单根物料/单位快照，仅用于本次出生，不修补历史工单。 */
+    private record WorkOrderRootSource(BdMaterial material, BdUnitOfMeasure unit) { }
+
+    /** 按根物料真实主键读取基本单位，不能按需求单缓存文本或同名单位推断。 */
+    private WorkOrderRootSource resolveWorkOrderRootSource(String tenantId, Long materialId, BigDecimal plannedQty) {
+        if (materialId == null || materialId <= 0) {
+            throw new ServiceException("生产工单根物料身份无效");
+        }
+        BdMaterial material = bdMaterialMapper.selectById(materialId);
+        if (material == null || !Objects.equals(materialId, material.getMaterialId())
+            || !Objects.equals(tenantId, material.getTenantId()) || !Long.valueOf(1).equals(material.getStatus())
+            || !"0".equals(material.getDelFlag()) || StringUtils.isBlank(material.getMaterialCode())
+            || StringUtils.isBlank(material.getMaterialName())) {
+            throw new ServiceException("生产工单根物料不存在、已删除、停用或租户归属不符");
+        }
+        Long baseUomId = material.getBaseUomId();
+        if (baseUomId == null || baseUomId <= 0) {
+            throw new ServiceException("生产工单根物料未关联有效基本单位");
+        }
+        BdUnitOfMeasure unit = bdUnitOfMeasureMapper.selectById(baseUomId);
+        if (unit == null || !Objects.equals(baseUomId, unit.getUomId())
+            || !Objects.equals(tenantId, unit.getTenantId()) || !Long.valueOf(1).equals(unit.getStatus())
+            || !"0".equals(unit.getDelFlag()) || StringUtils.isBlank(unit.getUomName())) {
+            throw new ServiceException("生产工单基本单位不存在、已删除、停用或租户归属不符");
+        }
+        if (!Objects.equals(baseUomId, unit.getPrimaryId()) || !Long.valueOf(1).equals(unit.getIsBase())
+            || unit.getConversionRate() == null || unit.getConversionRate().compareTo(BigDecimal.ONE) != 0) {
+            throw new ServiceException("生产工单基本单位身份、归属或换算率未核验");
+        }
+        Integer quantityScale = unit.getQuantityScale();
+        if (quantityScale == null || quantityScale < 0 || quantityScale > 4
+            || StringUtils.isBlank(unit.getConversionVersion()) || unit.getConversionVerifiedAt() == null
+            || plannedQty.stripTrailingZeros().scale() > quantityScale) {
+            throw new ServiceException("生产工单基本单位数量精度未核验或计划数量超过精度");
+        }
+        return new WorkOrderRootSource(material, unit);
     }
 
     private BdBom getCurrentBom(Long materialId, Long specifiedBomId) {
