@@ -8,11 +8,27 @@ import com.nexus.common.ai.mapper.AiKnowledgeMapper;
 import com.nexus.common.ai.mapper.AiModelMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -35,7 +51,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * 知识库向量索引重建生命周期单元测试（纯 Java 构造 + Mockito 桩注入，无 Milvus 无 Spring）
+ * 知识库向量索引重建生命周期单元测试（轻量真实事务代理 + Mockito，无 Milvus 无数据库）
  * <p>覆盖：REBUILD_INDEX_REQUIRED 确认门、REBUILDING 条件抢占先于异步提交落库、
  * 并发抢占失败拒绝、重建端点强制重启、线程池拒绝转 FAILED、失败/重嵌入不完整转 FAILED、
  * 成功 READY/100/完成时间、无片段/同配置直通。</p>
@@ -56,9 +72,47 @@ class KnowledgeIndexRebuildServiceTest {
     private final VectorStoreService vectorStoreService = mock(VectorStoreService.class);
     private final Executor aiIndexRebuildExecutor = mock(Executor.class);
 
+    private ApplicationContext previousContext;
+    private GenericApplicationContext tenantContext;
+
+    @BeforeEach
+    void bindExplicitFixtureTenant() {
+        // 原17例只补真实明确的000000身份，不能让单测null成为生产异步兜底。
+        previousContext = SpringUtils.context();
+        tenantContext = new GenericApplicationContext();
+        tenantContext.getEnvironment().getPropertySources().addFirst(
+            new MapPropertySource("重建测试租户", Map.of("tenant.enable", "true")));
+        tenantContext.refresh();
+        new SpringUtils().setApplicationContext(tenantContext);
+        TenantHelper.setDynamic("000000");
+    }
+
+    @AfterEach
+    void restoreFixtureTenant() {
+        TenantHelper.clearDynamic();
+        new SpringUtils().setApplicationContext(previousContext);
+        tenantContext.close();
+    }
+
     private KnowledgeIndexRebuildService newService() {
-        return new KnowledgeIndexRebuildService(knowledgeMapper, chunkMapper, modelMapper,
-            aiKnowledgeService, vectorStoreService, aiIndexRebuildExecutor);
+        // 保留原17例的业务断言，入口使用真实事务代理，不能以裸构造绕过提交边界。
+        DataSource dataSource = mock(DataSource.class);
+        try {
+            org.mockito.Mockito.when(dataSource.getConnection()).thenAnswer(invocation -> {
+                Connection connection = mock(Connection.class);
+                org.mockito.Mockito.when(connection.getAutoCommit()).thenReturn(true);
+                return connection;
+            });
+        } catch (SQLException e) {
+            throw new AssertionError("事务连接替身初始化失败", e);
+        }
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(dataSource);
+        KnowledgeIndexRebuildService target = new KnowledgeIndexRebuildService(knowledgeMapper, chunkMapper, modelMapper,
+            aiKnowledgeService, vectorStoreService, aiIndexRebuildExecutor, transactionManager);
+        ProxyFactory proxy = new ProxyFactory(target);
+        proxy.setProxyTargetClass(true);
+        proxy.addAdvice(new TransactionInterceptor(transactionManager, new AnnotationTransactionAttributeSource()));
+        return (KnowledgeIndexRebuildService) proxy.getProxy();
     }
 
     // ------------------------------------------------------------------
@@ -242,6 +296,27 @@ class KnowledgeIndexRebuildServiceTest {
         verify(knowledgeMapper, never()).updateById(any(AiKnowledge.class));
         verify(knowledgeMapper, never()).update(any(AiKnowledge.class), any());
         verifyNoInteractions(aiIndexRebuildExecutor);
+    }
+
+    @Test
+    void sameConfigWithExplicitRebuildActuallyRebuildsExistingChunks() {
+        when(knowledgeMapper.selectById(KNOWLEDGE_ID)).thenReturn(persistedKnowledge());
+        when(chunkMapper.selectCount(any())).thenReturn(2L);
+        when(aiKnowledgeService.updateByBo(any(AiKnowledgeBo.class))).thenReturn(1);
+        when(knowledgeMapper.update(any(AiKnowledge.class), any())).thenReturn(1);
+
+        AiKnowledgeBo bo = changedEmbeddingBo(true);
+        bo.setEmbeddingModel("text-embedding-old");
+        bo.setVectorStore("milvus");
+
+        newService().updateConfiguration(bo);
+
+        verify(aiKnowledgeService).updateByBo(any(AiKnowledgeBo.class));
+        verify(knowledgeMapper).update(
+            org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
+                KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(k.getVectorIndexStatus())
+                    && Integer.valueOf(0).equals(k.getVectorIndexProgress())), any());
+        verify(aiIndexRebuildExecutor).execute(any(Runnable.class));
     }
 
     @Test
