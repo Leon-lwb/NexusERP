@@ -7,7 +7,8 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.wm.domain.WmBatch;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaIssueFinishBo;
@@ -17,19 +18,23 @@ import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaIssueDetailVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaTodoItemVo;
-import com.nexus.erp.wm.mapper.WmBatchMapper;
+import com.nexus.erp.wm.mapper.PdaIssueSourceMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.service.IPdaIssueService;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
 import com.nexus.system.service.ISysConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * PDA 备料发料作业实现
@@ -53,8 +58,9 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
 
     private final IWmProductionIssueService issueService;
     private final WmProductionIssueLineMapper lineMapper;
-    private final WmBatchMapper batchMapper;
     private final ISysConfigService configService;
+    private final PdaIssueSourceMapper sourceMapper;
+    private final PdaIssueSourceGuard sourceGuard;
 
     @Override
     public TableDataInfo<PdaTodoItemVo> todo(String keyword, PageQuery pageQuery) {
@@ -117,90 +123,85 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.REPEATABLE_READ)
     public PdaActionResultVo pick(Long issueId, PdaPickBo bo) {
-        WmProductionIssueVo head = issueService.selectById(issueId);
+        if (issueId == null || issueId <= 0 || bo == null || bo.getLineId() == null || bo.getLineId() <= 0
+            || bo.getQty() == null || bo.getQty().signum() <= 0) {
+            return PdaActionResultVo.fail("单据、行标识无效或拣货数量必须大于零");
+        }
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            return PdaActionResultVo.fail("当前租户未知，禁止领料");
+        }
+        // 当前头锁在任何数量、来源查询之前取得，并一直持有到原事务完成。
+        WmProductionIssue head = sourceMapper.lockHead(tenantId, issueId);
         if (head == null) {
             throw new ServiceException("发料单不存在");
+        }
+        if (!tenantId.equals(head.getTenantId()) || !Objects.equals(issueId, head.getIssueId())
+            || !"0".equals(head.getDelFlag())) {
+            return PdaActionResultVo.fail("发料单租户或有效性不符");
         }
         if (!STATUS_CREATED.equals(head.getStatus()) && !STATUS_PARTIAL.equals(head.getStatus())) {
             return PdaActionResultVo.fail("单据当前状态不允许拣货");
         }
-        List<WmProductionIssueLine> lines = lineMapper.selectList(
-            Wrappers.<WmProductionIssueLine>lambdaQuery().eq(WmProductionIssueLine::getIssueId, issueId));
-        WmProductionIssueLine target = lines.stream()
-            .filter(l -> l.getLineId().equals(bo.getLineId())).findFirst().orElse(null);
+        List<WmProductionIssueLine> lines = sourceMapper.lockLines(tenantId, issueId);
+        if (lines == null || lines.isEmpty()) {
+            return PdaActionResultVo.fail("单据行不存在");
+        }
+        WmProductionIssueLine target = null;
+        Set<Long> lineIds = new HashSet<>();
+        for (WmProductionIssueLine line : lines) {
+            if (line == null || line.getLineId() == null || line.getLineId() <= 0 || !lineIds.add(line.getLineId())
+                || !tenantId.equals(line.getTenantId()) || !Objects.equals(issueId, line.getIssueId())
+                || !"0".equals(line.getDelFlag())) {
+                return PdaActionResultVo.fail("领料行租户、单据归属或有效性不符");
+            }
+            if (line.getLineId().equals(bo.getLineId())) {
+                target = line;
+            }
+        }
         if (target == null) {
             return PdaActionResultVo.fail("单据行不存在");
         }
-
-        BigDecimal required = target.getRequiredQty() == null ? BigDecimal.ZERO : target.getRequiredQty();
-        BigDecimal issued = target.getIssuedQty() == null ? BigDecimal.ZERO : target.getIssuedQty();
-        if (bo.getQty().add(issued).compareTo(required) > 0) {
-            return PdaActionResultVo.fail("拣货数量超出应领数量");
+        if (target.getRequiredQty() == null || target.getIssuedQty() == null) {
+            return PdaActionResultVo.fail("应领或已领数量未知，禁止拣货");
         }
-        if (StringUtils.isNotBlank(target.getLocationCode())
-            && !target.getLocationCode().equals(bo.getLocationCode())) {
-            return PdaActionResultVo.fail("库位不符，请扫 " + target.getLocationCode());
-        }
-
-        // 发料批次质检门禁(M3 批次5; 口径对齐 MES-QC-01/MES-X-01 的**白名单**):
-        // 开关开启时拣货批次必须 qc_status=QUALIFIED 才允许发料 ——
-        // UNQUALIFIED / PENDING / NULL(回写丢失或批次未登记) 一律拦截。
-        // 仅"阻断 UNQUALIFIED"会让回写丢失(PENDING/NULL)与"已判定不合格"不可区分而被静默放行。
-        // 注意: 未扫批次码时门禁不生效(批次未知无从判定), 开关开启场景建议配套批次码必填。
-        if (StringUtils.isNotBlank(bo.getBatchCode())
-            && "true".equalsIgnoreCase(StringUtils.trimToEmpty(configService.selectConfigByKey(QC_GATE_CONFIG_KEY)))) {
-            String blockReason = batchQcBlockReason(bo.getBatchCode(), target.getMaterialId());
-            if (blockReason != null) {
-                return PdaActionResultVo.fail("批次 " + bo.getBatchCode() + " " + blockReason + "，禁止发料");
-            }
+        BigDecimal required = target.getRequiredQty();
+        BigDecimal issued = target.getIssuedQty();
+        if (issued.signum() < 0 || bo.getQty().add(issued).compareTo(required) > 0
+            || (target.getShortQty() != null && bo.getQty().compareTo(target.getShortQty()) > 0)
+            || "SHORT_CLOSED".equals(target.getLineStatus()) || "ISSUED".equals(target.getLineStatus())) {
+            return PdaActionResultVo.fail("拣货数量超出应领/欠领数量或行已关闭");
         }
 
-        // 仅目标行置本次领料数量, 其余行清零后调用既有执行过账
+        PdaIssueSourceGuard.Source source;
+        try {
+            source = sourceGuard.resolve(tenantId, head, target, bo);
+        } catch (PdaIssueSourceGuard.SourceRejectedException rejected) {
+            // 只有未写入阶段的业务拒绝可返回失败；写行和实际扣库异常必须向外传播以回滚。
+            return PdaActionResultVo.fail(rejected.getMessage());
+        }
+        if (source.batch() != null
+            && "true".equalsIgnoreCase(StringUtils.trimToEmpty(configService.selectConfigByKey(QC_GATE_CONFIG_KEY)))
+            && !QC_QUALIFIED.equals(source.batch().getQcStatus())) {
+            String qc = StringUtils.isBlank(source.batch().getQcStatus()) ? "待检/未回写" : source.batch().getQcStatus();
+            return PdaActionResultVo.fail("批次 " + source.batch().getBatchCode() + " IQC质检状态为 " + qc + "，禁止发料");
+        }
+
+        // 仅在完整验证通过后绑定真实标识和编码，清零其余锁内行，再沿原事务调用过账。
         for (WmProductionIssueLine line : lines) {
             boolean isTarget = line.getLineId().equals(bo.getLineId());
             line.setCurrentQty(isTarget ? bo.getQty() : BigDecimal.ZERO);
             if (isTarget) {
-                if (StringUtils.isBlank(line.getLocationCode())) {
-                    line.setLocationCode(bo.getLocationCode());
-                }
-                if (StringUtils.isNotBlank(bo.getBatchCode())) {
-                    line.setBatchCode(bo.getBatchCode());
-                }
+                source.bindTo(line);
             }
-            lineMapper.updateById(line);
+            if (lineMapper.updateById(line) != 1) {
+                throw new ServiceException("领料行写入失败，请刷新后重试");
+            }
         }
         issueService.execute(issueId);
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_SCAN_MATERIAL);
-    }
-
-    /**
-     * 批次是否不允许发料 (M3 批次5 门禁, 白名单口径)
-     * <p>
-     * 仅 {@code qc_status=QUALIFIED} 放行; UNQUALIFIED / PENDING / NULL(含批次记录缺失) 一律拦截。
-     * 与 MES-QC-01 的 OQC 硬门禁口径一致(fail-closed): 质检状态未知不等于合格。
-     *
-     * @param batchCode  批次号
-     * @param materialId 物料ID
-     * @return null 表示允许发料; 否则返回拦截原因(供前端展示)
-     */
-    private String batchQcBlockReason(String batchCode, Long materialId) {
-        if (materialId == null) {
-            return "物料未知，无法确认质检状态";
-        }
-        WmBatch batch = batchMapper.selectOne(Wrappers.<WmBatch>lambdaQuery()
-            .eq(WmBatch::getBatchCode, batchCode)
-            .eq(WmBatch::getMaterialId, materialId)
-            .last("LIMIT 1"));
-        if (batch == null) {
-            return "无质检记录(批次未登记)";
-        }
-        if (!QC_QUALIFIED.equals(batch.getQcStatus())) {
-            String qc = StringUtils.isBlank(batch.getQcStatus()) ? "待检/未回写" : batch.getQcStatus();
-            return "IQC质检状态为 " + qc;
-        }
-        return null;
     }
 
     @Override
