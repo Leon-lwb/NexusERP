@@ -1,6 +1,13 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { ProductionIssueQuery, ProductionIssueVO, ProductionIssueForm, ProductionIssueLineForm, AvailableStockVO } from './types';
+import {
+  ProductionIssueQuery,
+  ProductionIssueVO,
+  ProductionIssueForm,
+  ProductionIssueLineForm,
+  AvailableStockVO,
+  ProductionIssueDecimal
+} from './types';
 
 export const listProductionIssue = (query: ProductionIssueQuery): AxiosPromise<ProductionIssueVO[]> => {
   return request({
@@ -58,7 +65,7 @@ export const getAvailableStock = (materialId: number, warehouseId?: number): Axi
 };
 
 /** 批量查询多个物料的总可用库存（汇总所有仓库/批次/库位） */
-export const getAvailableStockBatch = (materialIds: (string | number)[]): AxiosPromise<Record<string, number>> => {
+export const getAvailableStockBatch = (materialIds: (string | number)[]): AxiosPromise<Record<string, ProductionIssueDecimal | null>> => {
   return request({
     url: '/erp/wm/productionissue/availableStockBatch',
     method: 'get',

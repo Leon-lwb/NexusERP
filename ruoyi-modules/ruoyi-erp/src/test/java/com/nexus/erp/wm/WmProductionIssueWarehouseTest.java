@@ -98,6 +98,9 @@ class WmProductionIssueWarehouseTest {
         WmProductionIssueLine line = prepare(55L, null);
         enabledWarehouse(55L);
         stock(55L, new BigDecimal("4"), BigDecimal.ZERO);
+        /** 正控真实写回必须成功，不能依赖未设返回值的默认零行。 */
+        when(lineMapper.updateById(any(WmProductionIssueLine.class))).thenReturn(1);
+        when(baseMapper.updateById(any(WmProductionIssue.class))).thenReturn(1);
         service.execute(1L);
         assertEquals(55L, line.getWarehouseId());
         assertEquals("RAW55", line.getWarehouseCode());
@@ -123,6 +126,9 @@ class WmProductionIssueWarehouseTest {
         WmProductionIssueLine line = prepare(55L, 66L);
         enabledWarehouse(66L);
         stock(66L, BigDecimal.ONE, BigDecimal.ZERO);
+        /** 正控真实写回必须成功，不能依赖未设返回值的默认零行。 */
+        when(lineMapper.updateById(any(WmProductionIssueLine.class))).thenReturn(1);
+        when(baseMapper.updateById(any(WmProductionIssue.class))).thenReturn(1);
         service.execute(1L);
         verifyWarehouseScopedAtp(66L);
         verify(stockOperationService).postProductionIssue(same(line), any());

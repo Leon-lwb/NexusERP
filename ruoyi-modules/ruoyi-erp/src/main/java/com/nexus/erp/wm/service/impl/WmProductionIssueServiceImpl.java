@@ -34,6 +34,7 @@ import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.helper.WmProductionIssueReferenceAmounts;
 import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 /**
  * 生产发料服务实现
  * <p>
@@ -110,6 +112,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     public TableDataInfo<WmProductionIssueVo> selectPageList(WmProductionIssueBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmProductionIssue> lqw = buildQueryWrapper(bo);
         Page<WmProductionIssueVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        applyReferenceTotals(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -121,7 +124,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
      */
     @Override
     public List<WmProductionIssueVo> selectList(WmProductionIssueBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<WmProductionIssueVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        applyReferenceTotals(list);
+        return list;
     }
 
     /**
@@ -136,7 +141,12 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         if (vo != null && vo.getIssueId() != null) {
             LambdaQueryWrapper<WmProductionIssueLine> lineLqw = Wrappers.lambdaQuery();
             lineLqw.eq(WmProductionIssueLine::getIssueId, vo.getIssueId());
-            vo.setWmProductionIssueLineList(lineMapper.selectList(lineLqw));
+            List<WmProductionIssueLine> lines = lineMapper.selectList(lineLqw);
+            vo.setWmProductionIssueLineList(lines);
+            applyReferenceAmount(vo, lines);
+        } else if (vo != null) {
+            vo.setTotalAmount(null);
+            vo.setReferenceAmountKnown(false);
         }
         return vo;
     }
@@ -416,7 +426,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 line.setLineStatus(LINE_PARTIAL);
                 allIssued = false;
             }
-            lineMapper.updateById(line);
+            if (lineMapper.updateById(line) != 1) {
+                throw new ServiceException("领料明细回写失败，已扣库存必须回滚，请刷新后重试");
+            }
 
             /** 回写工单物料需求明细的已发量/欠料量 */
             updateRequirementDetail(line.getRequirementDetailId(), currentQty);
@@ -430,7 +442,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         WmProductionIssue statusUpdate = new WmProductionIssue();
         statusUpdate.setIssueId(issueId);
         statusUpdate.setStatus(issue.getStatus());
-        baseMapper.updateById(statusUpdate);
+        if (baseMapper.updateById(statusUpdate) != 1) {
+            throw new ServiceException("领料单头状态回写失败，已扣库存必须回滚，请刷新后重试");
+        }
         recalcHeaderTotals(issueId);
         log.info("生产领料单执行完成, issueId={}, status={}", issueId, issue.getStatus());
     }
@@ -505,14 +519,17 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
      */
     @Override
     public List<WmMaterialStockVo> selectAvailableStock(Long materialId, Long warehouseId) {
-        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<WmMaterialStock> lqw = eligibleStockQuery();
         lqw.eq(WmMaterialStock::getMaterialId, materialId);
         lqw.eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId);
-        /** 仅查未冻结库存：frozen_flag 字典 sys_true_or_false，0=否(未冻结/可用)，1=是(已冻结) */
-        lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
-        lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
-        lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
-        return stockMapper.selectVoList(lqw);
+        /** 数量缺失无法证明可用，候选仅包含已知正 ATP；空效期放在 FEFO 最后。 */
+        lqw.apply("(stock_quantity - reserved_quantity) > 0");
+        lqw.last("ORDER BY expire_date IS NULL ASC, expire_date ASC, recpt_date ASC, stock_id ASC");
+        List<WmMaterialStockVo> list = stockMapper.selectVoList(lqw);
+        for (WmMaterialStockVo stock : list) {
+            stock.setAvailableQuantity(atpQuantity(stock.getStockQuantity(), stock.getReservedQuantity()));
+        }
+        return list;
     }
 
     /**
@@ -525,13 +542,21 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         if (materialIds == null || materialIds.isEmpty()) {
             return result;
         }
-        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+        for (Long materialId : materialIds) {
+            result.put(materialId, BigDecimal.ZERO);
+        }
+        LambdaQueryWrapper<WmMaterialStock> lqw = eligibleStockQuery();
         lqw.in(WmMaterialStock::getMaterialId, materialIds);
-        lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
-        lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
         List<WmMaterialStock> list = stockMapper.selectList(lqw);
-        for (WmMaterialStock s : list) {
-            result.merge(s.getMaterialId(), zeroIfNull(s.getStockQuantity()), BigDecimal::add);
+        for (WmMaterialStock stock : list) {
+            Long materialId = stock.getMaterialId();
+            BigDecimal available = atpQuantity(stock.getStockQuantity(), stock.getReservedQuantity());
+            /** 任一有效库存数量未知即令本物料总量未知，不返回残缺的部分汇总。 */
+            if (available == null) {
+                result.put(materialId, null);
+            } else if (result.get(materialId) != null) {
+                result.put(materialId, result.get(materialId).add(available));
+            }
         }
         return result;
     }
@@ -676,13 +701,37 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                     line.setBomQty(db.getBomQty());
                     line.setLossRate(db.getLossRate());
                     line.setRequirementDetailId(db.getRequirementDetailId());
+                    boolean clearPrice = Boolean.TRUE.equals(line.getClearReferencePrice());
+                    if (clearPrice) {
+                        line.setUnitPrice(null);
+                        line.setAmount(null);
+                    } else {
+                        /** 省略价格只表示未编辑该字段，不得因保存批次把既有参考价清空。 */
+                        if (line.getUnitPrice() == null) line.setUnitPrice(db.getUnitPrice());
+                        if (line.getAmount() == null) line.setAmount(db.getAmount());
+                    }
                     lineMapper.updateById(line);
+                    if (clearPrice) {
+                        /** 只在已通过原单状态和归属守卫的合法编辑事务内显式清价。 */
+                        int cleared = lineMapper.update(null, Wrappers.<WmProductionIssueLine>lambdaUpdate()
+                            .eq(WmProductionIssueLine::getIssueId, issueId)
+                            .eq(WmProductionIssueLine::getLineId, db.getLineId())
+                            .set(WmProductionIssueLine::getUnitPrice, null)
+                            .set(WmProductionIssueLine::getAmount, null));
+                        if (cleared != 1) {
+                            throw new ServiceException("参考价格清空失败，请刷新领料单后重试");
+                        }
+                    }
                     keepIds.add(line.getLineId());
                 } else {
                     /** 新增行 */
                     line.setLineId(null);
                     line.setIssueId(issueId);
                     line.setIssuedQty(BigDecimal.ZERO);
+                    if (Boolean.TRUE.equals(line.getClearReferencePrice())) {
+                        line.setUnitPrice(null);
+                        line.setAmount(null);
+                    }
                     line.setLineStatus(LINE_PENDING);
                     if (line.getRequiredQty() != null && line.getShortQty() == null) {
                         line.setShortQty(line.getRequiredQty().subtract(line.getIssuedQty()));
@@ -834,7 +883,8 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     /**
      * 汇总单头总数量与总金额：优先按正数本次领料数量汇总，反映本次计划量。
      * 执行后 current_qty 已清零，此时按已领数量 issued_qty 反映累计已发量。
-     * 金额优先取已有 amount，为空时才按汇总数量乘单价兜底。
+     * 参考金额优先取已知明细金额，否则按已知参考价计算；任一行未知则总额为空。
+     * 不使用真实库存成本追认参考价格，也不跳过未计价明细。
      *
      * @param issueId 待汇总的生产发料单头 ID
      */
@@ -843,21 +893,54 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             Wrappers.lambdaQuery(WmProductionIssueLine.class)
                 .eq(WmProductionIssueLine::getIssueId, issueId));
         BigDecimal totalQty = BigDecimal.ZERO;
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal totalAmount = WmProductionIssueReferenceAmounts.totalAmount(lines);
         for (WmProductionIssueLine line : lines) {
             /** 优先取正数本次领料量；本次量清零或为空时取累计已领量 */
             BigDecimal qty = line.getCurrentQty() != null && line.getCurrentQty().signum() > 0
                 ? line.getCurrentQty() : zeroIfNull(line.getIssuedQty());
-            BigDecimal price = zeroIfNull(line.getUnitPrice());
-            BigDecimal amt = line.getAmount() != null ? line.getAmount() : qty.multiply(price);
             totalQty = totalQty.add(qty);
-            totalAmount = totalAmount.add(amt);
         }
         WmProductionIssue update = new WmProductionIssue();
         update.setIssueId(issueId);
         update.setTotalQty(totalQty);
         update.setTotalAmount(totalAmount);
-        baseMapper.updateById(update);
+        if (baseMapper.updateById(update) != 1) {
+            throw new ServiceException("领料汇总回写失败，请刷新后重试");
+        }
+        if (totalAmount == null) {
+            /** 默认非空更新策略会忽略空值，需在既有事务内显式清除旧参考总额。 */
+            int affected = baseMapper.update(null, Wrappers.<WmProductionIssue>lambdaUpdate()
+                .eq(WmProductionIssue::getIssueId, issueId)
+                .set(WmProductionIssue::getTotalAmount, null));
+            if (affected != 1) {
+                throw new ServiceException("领料未计价汇总回写失败，请刷新后重试");
+            }
+        }
+    }
+
+    /** 列表批量读取有效明细重算参考金额，不把旧单头零视为已计价，也不写历史表。 */
+    private void applyReferenceTotals(List<WmProductionIssueVo> headers) {
+        if (headers.isEmpty()) {
+            return;
+        }
+        List<Long> issueIds = headers.stream().map(WmProductionIssueVo::getIssueId)
+            .filter(Objects::nonNull).distinct().toList();
+        Map<Long, List<WmProductionIssueLine>> linesByIssue = new HashMap<>();
+        if (!issueIds.isEmpty()) {
+            List<WmProductionIssueLine> lines = lineMapper.selectList(Wrappers.<WmProductionIssueLine>lambdaQuery()
+                .in(WmProductionIssueLine::getIssueId, issueIds));
+            linesByIssue = lines.stream().collect(Collectors.groupingBy(WmProductionIssueLine::getIssueId));
+        }
+        for (WmProductionIssueVo header : headers) {
+            applyReferenceAmount(header, linesByIssue.getOrDefault(header.getIssueId(), Collections.emptyList()));
+        }
+    }
+
+    /** 明确贯通已知状态；无有效明细或任一数量价格未知时不能证明已知零。 */
+    private void applyReferenceAmount(WmProductionIssueVo header, List<WmProductionIssueLine> lines) {
+        BigDecimal amount = WmProductionIssueReferenceAmounts.totalAmount(lines);
+        header.setTotalAmount(amount);
+        header.setReferenceAmountKnown(amount != null);
     }
 
     /** 行是否已领满：行状态为 ISSUED，或有应领定额且已领 >= 应领 */
@@ -876,21 +959,35 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
 
     /** 按物料+仓库(必选)+批次(可空)+库位(可空)汇总可用库存，与策略扣减范围一致 */
     private BigDecimal sumAvailable(Long materialId, Long warehouseId, Long batchId, Long locationId) {
-        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<WmMaterialStock> lqw = eligibleStockQuery();
         lqw.eq(WmMaterialStock::getMaterialId, materialId);
         lqw.eq(WmMaterialStock::getWarehouseId, warehouseId);
         lqw.eq(batchId != null, WmMaterialStock::getBatchId, batchId);
         lqw.eq(locationId != null, WmMaterialStock::getLocationId, locationId);
-        /** 仅查未冻结库存：frozen_flag 0=未冻结/可用，1=已冻结 */
-        lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
-        lqw.apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0");
-        lqw.apply("(expire_date IS NULL OR expire_date >= CURDATE())");
         List<WmMaterialStock> list = stockMapper.selectList(lqw);
         BigDecimal sum = BigDecimal.ZERO;
-        for (WmMaterialStock s : list) {
-            sum = sum.add(zeroIfNull(s.getStockQuantity()).subtract(zeroIfNull(s.getReservedQuantity())).max(BigDecimal.ZERO));
+        for (WmMaterialStock stock : list) {
+            BigDecimal available = atpQuantity(stock.getStockQuantity(), stock.getReservedQuantity());
+            if (available == null) {
+                throw new ServiceException("库存账面数量或预留数量未知，无法确认可用库存");
+            }
+            sum = sum.add(available);
         }
         return sum;
+    }
+
+    /** 所有领料可用库存读取统一使用数据库日期，显式限定有效未删库存。 */
+    private LambdaQueryWrapper<WmMaterialStock> eligibleStockQuery() {
+        return Wrappers.<WmMaterialStock>lambdaQuery()
+            .eq(WmMaterialStock::getFrozenFlag, 0L)
+            .eq(WmMaterialStock::getDelFlag, "0")
+            .apply("(expire_date IS NULL OR expire_date >= CURDATE())");
+    }
+
+    /** ATP 逐库存截零；未知账面量或未知预留量均不能通过零兜底证明可用。 */
+    private BigDecimal atpQuantity(BigDecimal stockQuantity, BigDecimal reservedQuantity) {
+        return stockQuantity == null || reservedQuantity == null
+            ? null : stockQuantity.subtract(reservedQuantity).max(BigDecimal.ZERO);
     }
 
     /**

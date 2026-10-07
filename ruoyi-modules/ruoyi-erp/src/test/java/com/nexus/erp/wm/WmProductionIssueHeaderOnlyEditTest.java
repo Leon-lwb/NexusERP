@@ -2,6 +2,7 @@ package com.nexus.erp.wm;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
@@ -10,6 +11,7 @@ import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
+import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
@@ -111,20 +113,29 @@ class WmProductionIssueHeaderOnlyEditTest {
     }
 
     @Test
-    @DisplayName("显式空列表仍逻辑删除全部未领行并清空汇总")
+    @DisplayName("显式空列表仍删除全部未领行，数量归零而无参考金额证据")
     void explicitEmptyListStillDeletesUnissuedRows() {
         prepare("CREATED", line(42L, "2", "0", "2"), line(43L, "3", "0", "3"),
             line(44L, "4", "0", "4"));
         WmProductionIssueBo bo = headerEdit();
         bo.setWmProductionIssueLineList(List.of());
+        storedIssue.setTotalAmount(new BigDecimal("18"));
+        when(issueMapper.selectVoById(ISSUE_ID)).thenAnswer(invocation -> {
+            WmProductionIssueVo view = new WmProductionIssueVo();
+            BeanUtils.copyProperties(storedIssue, view);
+            return view;
+        });
 
         service.updateByBo(bo);
+        WmProductionIssueVo view = service.selectById(ISSUE_ID);
 
         assertAll(
             () -> assertTrue(activeLines().isEmpty(), "明确提交空全集仍表示删除全部未领行"),
             () -> assertTrue(storedLines.stream().allMatch(row -> "1".equals(row.getDelFlag())), "原行应按逻辑删除保留身份"),
             () -> assertEquals(BigDecimal.ZERO, storedIssue.getTotalQty(), "删除后汇总数量应为零"),
-            () -> assertEquals(BigDecimal.ZERO, storedIssue.getTotalAmount(), "删除后汇总金额应为零"));
+            () -> assertNull(storedIssue.getTotalAmount(), "无有效明细不能证明完整零参考金额，旧金额须显式清空"),
+            () -> assertNull(view.getTotalAmount(), "读端无有效明细时参考总额仍应为空"),
+            () -> assertFalse(view.isReferenceAmountKnown(), "空明细必须明确表达未计价，而非已知零"));
         verify(lineMapper).deleteById(42L);
         verify(lineMapper).deleteById(43L);
         verify(lineMapper).deleteById(44L);
@@ -222,6 +233,16 @@ class WmProductionIssueHeaderOnlyEditTest {
             copyNonNullProperties(invocation.getArgument(0), storedIssue);
             return 1;
         });
+        /** 显式字段更新与默认非空更新分开模拟，真实空金额不能由读副本代替持久清空。 */
+        lenient().doAnswer(invocation -> {
+            LambdaUpdateWrapper<WmProductionIssue> update = invocation.getArgument(1);
+            assertTrue(update.getSqlSet().contains("total_amount="), "参考总額清空必须明确更新金额字段");
+            assertTrue(update.getSqlSegment().contains("issue_id"), "清空参考金额必须限定当前单据");
+            assertTrue(update.getParamNameValuePairs().containsValue(ISSUE_ID), "清空条件只能指向当前单头");
+            assertTrue(update.getParamNameValuePairs().containsValue(null), "没有参考证据时必须明确持久化空值");
+            storedIssue.setTotalAmount(null);
+            return 1;
+        }).when(issueMapper).update(isNull(), any(Wrapper.class));
         when(lineMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> activeLines());
         // 更新和删除只修改持久快照；查询始终返回副本，不能把内存变更误当成已保存。
         lenient().doAnswer(invocation -> {

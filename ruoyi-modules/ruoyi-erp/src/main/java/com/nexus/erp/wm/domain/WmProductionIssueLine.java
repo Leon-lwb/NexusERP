@@ -1,6 +1,8 @@
 package com.nexus.erp.wm.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -161,6 +163,11 @@ public class WmProductionIssueLine extends TenantEntity {
      * 金额
      */
     private BigDecimal amount;
+
+    /** 仅请求主动清价使用；省略不清既有参考价，不持久化或返回为业务事实。 */
+    @TableField(exist = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Boolean clearReferencePrice;
 
     /**
      * 备注

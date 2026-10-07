@@ -100,10 +100,13 @@ public class WmProductionIssueVo implements Serializable {
     private BigDecimal totalQty;
 
     /**
-     * 总金额
+     * 参考总金额；任一明细未计价时为空，不代表实际库存成本。
      */
-    @ExcelProperty("总金额")
+    @ExcelProperty("参考总金额")
     private BigDecimal totalAmount;
+
+    /** 有效明细完整计价才为真，合法零金额仍属于已知；非数据库字段。 */
+    private boolean referenceAmountKnown;
 
     /**
      * 备注

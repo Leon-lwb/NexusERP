@@ -58,7 +58,7 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
      * 原子扣减库存（可用量守卫，ERP-WM-02）
      * <p>与 {@link #deductStock} 的区别：扣减上限按「可用量 = stock_quantity - reserved_quantity」判定。
      * 供生产领料 / 杂项出库 / 库位转储 / 委外发料等「不得扣穿他人预留」的出库路径使用；
-     * 同时保留 {@code frozen_flag = 0} 守卫（ERP-WM-09）。</p>
+     * 同时保留冻结守卫，排除已删行和未知预留量，防止读取后删除竞态或未知量兜底。</p>
      *
      * @param stockId   库存ID
      * @param deductQty 扣减数量
@@ -69,6 +69,7 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
             "version = version + 1, update_time = NOW() " +
             "WHERE stock_id = #{stockId} " +
             "AND (stock_quantity - IFNULL(reserved_quantity, 0)) >= #{deductQty} " +
+            "AND del_flag = '0' AND reserved_quantity IS NOT NULL " +
             "AND frozen_flag = 0 AND version = #{version}")
     int deductStockAvailable(@Param("stockId") Long stockId,
                              @Param("deductQty") BigDecimal deductQty,

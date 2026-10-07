@@ -2,6 +2,7 @@ package com.nexus.erp.wm;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -158,6 +159,16 @@ class WmProductionIssueSourceAffiliationTest {
         lenient().when(issueMapper.selectById(ISSUE_ID)).thenAnswer(invocation -> copy(storedIssue, new WmProductionIssue()));
         lenient().when(issueMapper.update(any(WmProductionIssue.class), any(Wrapper.class))).thenAnswer(invocation -> {
             copyNonNullProperties(invocation.getArgument(0), storedIssue);
+            return 1;
+        });
+        /** 单独模拟成功的显式参考金额写空，保留普通非空更新的原持久化语义。 */
+        lenient().when(issueMapper.update(isNull(), any(Wrapper.class))).thenAnswer(invocation -> {
+            LambdaUpdateWrapper<WmProductionIssue> update = invocation.getArgument(1);
+            assertTrue(update.getSqlSet().contains("total_amount="), "来源正控只能显式清空参考金额");
+            assertTrue(update.getSqlSegment().contains("issue_id"), "清空参考金额必须限定当前来源单头");
+            assertTrue(update.getParamNameValuePairs().containsValue(ISSUE_ID), "清空条件必须对应当前单头");
+            assertTrue(update.getParamNameValuePairs().containsValue(null), "未知参考金额必须明确写空");
+            storedIssue.setTotalAmount(null);
             return 1;
         });
         lenient().when(issueMapper.updateById(any(WmProductionIssue.class))).thenAnswer(invocation -> {

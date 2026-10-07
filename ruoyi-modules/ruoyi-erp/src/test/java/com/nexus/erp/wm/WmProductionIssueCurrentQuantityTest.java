@@ -3,6 +3,7 @@ package com.nexus.erp.wm;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
@@ -12,6 +13,7 @@ import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.bo.pda.PdaIssueShortageBo;
+import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
@@ -171,12 +173,28 @@ class WmProductionIssueCurrentQuantityTest {
         row.setCurrentQty(currentQty);
         row.setIssuedQty(issuedQty);
         prepareTotals(row);
+        storedIssue.setTotalAmount(new BigDecimal("999"));
+        boolean referenceKnown = currentQty != null && currentQty.signum() > 0 || issuedQty != null;
+        when(issueMapper.selectVoById(ISSUE_ID)).thenAnswer(invocation -> {
+            WmProductionIssueVo view = new WmProductionIssueVo();
+            BeanUtils.copyProperties(storedIssue, view);
+            return view;
+        });
 
         recalcTotals();
+        WmProductionIssueVo view = service.selectById(ISSUE_ID);
 
         assertAll(
             () -> assertDecimal(expectedQty.toPlainString(), storedIssue.getTotalQty()),
-            () -> assertDecimal(expectedQty.multiply(new BigDecimal("3")).toPlainString(), storedIssue.getTotalAmount()));
+            () -> {
+                if (referenceKnown) {
+                    assertDecimal(expectedQty.multiply(new BigDecimal("3")).toPlainString(), storedIssue.getTotalAmount());
+                } else {
+                    assertNull(storedIssue.getTotalAmount(), "未知参考数量不能继承总数量的零兜底，旧金额须显式清空");
+                }
+            },
+            () -> assertEquals(referenceKnown, view.isReferenceAmountKnown(), "读端必须明确表达参考金额是否完整已知"),
+            () -> assertEquals(storedIssue.getTotalAmount(), view.getTotalAmount(), "持久汇总与读端参考金额应保持相同未知口径"));
     }
 
     @Test
@@ -270,6 +288,16 @@ class WmProductionIssueCurrentQuantityTest {
             copyNonNullProperties(invocation.getArgument(0), storedIssue);
             return 1;
         }).when(issueMapper).updateById(any(WmProductionIssue.class));
+        /** 单独模拟显式字段写空，不能把非空属性更新误当成会清除旧值。 */
+        lenient().doAnswer(invocation -> {
+            LambdaUpdateWrapper<WmProductionIssue> update = invocation.getArgument(1);
+            assertTrue(update.getSqlSet().contains("total_amount="), "参考总额清空必须明确更新金额字段");
+            assertTrue(update.getSqlSegment().contains("issue_id"), "参考总额清空必须限定当前单据");
+            assertTrue(update.getParamNameValuePairs().containsValue(ISSUE_ID), "清空条件只能指向当前单头");
+            assertTrue(update.getParamNameValuePairs().containsValue(null), "未知参考总額的持久值必须为空");
+            storedIssue.setTotalAmount(null);
+            return 1;
+        }).when(issueMapper).update(isNull(), any(Wrapper.class));
     }
 
     private void recalcTotals() {

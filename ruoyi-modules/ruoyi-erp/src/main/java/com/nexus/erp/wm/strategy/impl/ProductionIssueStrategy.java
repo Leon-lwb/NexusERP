@@ -104,6 +104,10 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
         /** 仅扣减未冻结且未预留库存：frozen_flag 0=未冻结/可用，1=已冻结；排除已预留量防止绕穿销售预留承诺 */
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
+        /** 库存未启用逻辑删除，实际扣料与候选必须显式排除已删及未知数量。 */
+        lqw.eq(WmMaterialStock::getDelFlag, "0");
+        lqw.isNotNull(WmMaterialStock::getStockQuantity);
+        lqw.isNotNull(WmMaterialStock::getReservedQuantity);
         lqw.apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0");
         /** ERP-WM-06: 效期拦截 —— 已过期批次不得参与生产领料 */
         lqw.apply(NOT_EXPIRED_SQL);

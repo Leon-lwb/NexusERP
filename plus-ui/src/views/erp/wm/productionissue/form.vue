@@ -9,7 +9,7 @@
               type="success"
               @click="handleExecute"
               v-if="!isViewMode && canExecute"
-              :disabled="!executionWarehouseReady"
+              :disabled="!executionWarehouseReady || !executionAtpReady"
               :loading="executeLoading"
               >执行领料</el-button
             >
@@ -95,6 +95,10 @@
           </el-col>
         </el-row>
 
+        <el-form-item label="参考总金额">
+          <span>{{ formatReferenceAmount(referenceTotal, referenceKnown) }}</span>
+          <span class="ml4">参考金额不代表实际库存成本；任一行未计价时总额未知</span>
+        </el-form-item>
         <el-divider content-position="center">领料明细</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
@@ -126,6 +130,8 @@
               <el-input-number
                 v-if="!isViewMode && canEditLine"
                 v-model="row.currentQty"
+                :max="scopedAvailableQuantity(row) ?? undefined"
+                :disabled="scopedAvailableQuantity(row) == null"
                 :min="0"
                 :precision="4"
                 :controls="false"
@@ -139,13 +145,18 @@
           <el-table-column prop="availableQty" label="可用库存" width="90" align="center">
             <template #default="{ row }">
               <span
-                v-if="row.availableQty != null"
-                :class="{ 'text-red': row.currentQty != null && row.currentQty > 0 && row.currentQty > row.availableQty }"
+                v-if="scopedAvailableQuantity(row) != null"
+                :class="{ 'text-red': readDecimalNumber(row.currentQty) != null && !quantityWithinAtp(row.currentQty, scopedAvailableQuantity(row)) }"
               >
-                {{ row.availableQty }}
+                {{ scopedAvailableQuantity(row) }}
               </span>
-              <span v-else>-</span>
+              <span v-else>未知</span>
             </template>
+          </el-table-column>
+          <el-table-column prop="referenceAvailableQty" label="全仓参考" width="100" align="center">
+            <template #default="{ row }"
+              ><span>{{ row.referenceAvailableQty ?? '未知' }}</span></template
+            >
           </el-table-column>
           <el-table-column prop="warehouseName" label="本行仓库" min-width="175">
             <template #default="{ row, $index }">
@@ -166,21 +177,26 @@
               </el-input>
             </template>
           </el-table-column>
-          <el-table-column prop="unitPrice" label="单价" width="100" align="center">
+          <el-table-column prop="unitPrice" label="参考单价" width="100" align="center">
             <template #default="{ row }">
               <el-input-number
                 v-if="!isViewMode && canEditLine"
                 v-model="row.unitPrice"
+                placeholder="未计价"
                 :min="0"
                 :precision="4"
                 :controls="false"
                 style="width: 100%"
-                @change="recalcRow(row)"
+                @change="handleReferencePriceChange(row)"
               />
-              <span v-else>{{ row.unitPrice ?? '' }}</span>
+              <span v-else>{{ formatReferenceAmount(row.unitPrice, readDecimalNumber(row.unitPrice) != null) }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="amount" label="金额" width="100" align="center" />
+          <el-table-column prop="amount" label="参考金额" width="100" align="center">
+            <template #default="{ row }">
+              <span>{{ formatReferenceAmount(referenceLineAmount(row), referenceLineAmount(row) != null) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="120">
             <template #default="{ row }">
               <el-input v-if="!isViewMode && canEditLine" v-model="row.remark" placeholder="备注" />
@@ -257,22 +273,45 @@
     <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" :warehouse-id="form.warehouseId" @select="handleMaterialSelected" />
 
     <!-- 选择可用库存（批次/库位） -->
-    <el-dialog title="选择库存（批次/库位）" v-model="stockSelectOpen" width="960px" append-to-body>
+    <el-dialog title="选择库存（批次/库位）" v-model="stockSelectOpen" width="1120px" append-to-body>
       <el-alert title="列出该物料在所有仓库的可用库存，请选择具体批次/库位" type="info" :closable="false" show-icon class="mb8" />
       <el-table v-loading="stockLoading" :data="stockList" highlight-current-row height="420">
         <el-table-column label="批次号" align="center" prop="batchCode" />
         <el-table-column label="仓库" align="center" prop="warehouseName" />
         <el-table-column label="库区" align="center" prop="areaCode" />
         <el-table-column label="库位" align="center" prop="locationCode" />
-        <el-table-column label="可用数量" align="center" prop="stockQuantity" />
-        <el-table-column label="单位成本" align="center" prop="unitCost" />
+        <el-table-column label="账面数量" align="center" prop="stockQuantity" />
+        <el-table-column label="预留数量" align="center" prop="reservedQuantity" />
+        <el-table-column label="可用数量" align="center" prop="availableQuantity">
+          <template #default="{ row }"
+            ><span>{{ row.availableQuantity ?? '未知' }}</span></template
+          >
+        </el-table-column>
+        <el-table-column label="库存单位成本" align="center" prop="unitCost">
+          <template #default="{ row }"
+            ><span>{{ row.unitCost ?? '未知' }}</span></template
+          >
+        </el-table-column>
         <el-table-column label="有效期" align="center" prop="expireDate" width="110">
           <template #default="scope"
             ><span>{{ parseTime(scope.row.expireDate, '{y}-{m}-{d}') }}</span></template
           >
         </el-table-column>
         <el-table-column label="操作" align="center" width="100"
-          ><template #default="scope"><el-button link type="primary" @click="selectStock(scope.row)">选择</el-button></template></el-table-column
+          ><template #default="scope"
+            ><el-button
+              link
+              type="primary"
+              :disabled="
+                scope.row.stockQuantity == null ||
+                scope.row.reservedQuantity == null ||
+                scope.row.availableQuantity == null ||
+                scope.row.availableQuantity <= 0
+              "
+              @click="selectStock(scope.row)"
+              >选择</el-button
+            ></template
+          ></el-table-column
         >
       </el-table>
       <template #footer
@@ -298,6 +337,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useUserStore } from '@/store/modules/user';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import { formatReferenceAmount, referenceLineAmount, referenceAmountState } from './referenceAmount';
+import { readDecimalNumber, quantityWithinAtp, normalizeIssueLine, normalizeStockCandidate, stockCandidateIdentity } from './quantity';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { parseTime } = proxy;
@@ -310,6 +351,13 @@ const autoGenFlag = ref(false);
 const isViewMode = ref(false);
 const title = ref('');
 const lineList = ref<any[]>([]);
+/** 参考总额从当前明细计算，不信任历史单头的零金额。 */
+const referenceKnown = computed(() => {
+  const explicitlyKnown =
+    form.value.referenceAmountKnown === true || !form.value.issueId || lineList.value.some((line) => line.referenceEdited === true);
+  return explicitlyKnown && referenceAmountState(lineList.value).referenceAmountKnown;
+});
+const referenceTotal = computed(() => (referenceKnown.value ? referenceAmountState(lineList.value).amount : null));
 const executeLoading = ref(false);
 
 /** 物料选择 */
@@ -334,6 +382,9 @@ const workOrderQueryParams = ref({ pageNum: 1, pageSize: 10, woNo: null });
 const stockSelectOpen = ref(false);
 const stockList = ref([]);
 const stockLoading = ref(false);
+/** 当前查询的成功标记与候选身份快照；新的打开请求立即使旧候选失效。 */
+const stockQuery = ref<any>(null);
+const stockRequestId = ref(0);
 
 const rules = {
   issueCode: [{ required: true, message: '领料单编号不能为空', trigger: 'blur' }]
@@ -355,6 +406,19 @@ const executionWarehouseReady = computed(() => {
   return pickedLines.length > 0 ? pickedLines.every((line: any) => !!line.warehouseId || headerReady) : headerReady;
 });
 
+/** 未知或超过 ATP 的本次量不可执行，字符串数量必须先归一。 */
+const executionAtpReady = computed(() => {
+  let hasPick = false;
+  for (const line of lineList.value) {
+    const quantity = readDecimalNumber(line.currentQty);
+    if (quantity == null || quantity < 0) return false;
+    if (quantity === 0) continue;
+    hasPick = true;
+    if (!quantityWithinAtp(quantity, scopedAvailableQuantity(line))) return false;
+  }
+  return hasPick;
+});
+
 onMounted(() => {
   const id = route.query.id;
   const action = route.query.action as string;
@@ -373,13 +437,11 @@ onMounted(() => {
 
 function getInfo(id: any) {
   getProductionIssue(id).then((response: any) => {
-    form.value = response.data;
+    form.value = { ...response.data, referenceAmountKnown: response.data.referenceAmountKnown === true };
     const lines = response.data.wmProductionIssueLineList || [];
-    /** 已领/欠领兜底，便于旧数据显示 */
+    /** 旧行数量缺失时保持未知，不能据此推算可靠欠领量或参考金额。 */
     lineList.value = lines.map((l: any) => ({
-      ...l,
-      issuedQty: l.issuedQty ?? 0,
-      shortQty: l.shortQty ?? (l.requiredQty != null ? l.requiredQty - (l.issuedQty ?? 0) : null),
+      ...normalizeIssueLine(l),
       lineStatus: l.lineStatus || 'PENDING',
       displayLocationBatch: (l.locationCode ? l.locationCode + '/' : '') + (l.batchCode || '')
     }));
@@ -405,6 +467,7 @@ function reset() {
     issuerName: userStore.nickname,
     totalQty: null,
     totalAmount: null,
+    referenceAmountKnown: false,
     remark: null
   };
   lineList.value = [];
@@ -445,6 +508,10 @@ function handleExecute() {
   }
   if (!executionWarehouseReady.value) {
     proxy.$modal.msgWarning('请先选择实际领料仓库：单头选仓或为本次领料的每行选库存仓库');
+    return;
+  }
+  if (!executionAtpReady.value) {
+    proxy.$modal.msgWarning('本次领料数量超过 ATP 或可用库存未知，请刷新库存后核对');
     return;
   }
   let hasPick = false;
@@ -500,7 +567,7 @@ async function handleAutoFillFromWorkOrder() {
       proxy.$modal.msgWarning('该工单无非倒冲物料需求，无法带出');
       return;
     }
-    lineList.value = lines;
+    lineList.value = lines.map((line: any) => normalizeIssueLine(line));
     proxy.$modal.msgSuccess('已根据工单BOM带出领料明细');
     /** 加载各行物料的总可用库存供参考 */
     loadAvailableStocks();
@@ -563,13 +630,16 @@ function canCheckLine(row: any) {
   return row.lineStatus !== 'ISSUED' && !(Number(row.issuedQty) > 0);
 }
 
-/** 下一次选料与删除守卫分离：PARTIAL 行可换批次，已领数量和原行ID保持不变。 */
+/** 选范围与删除、执行数量守卫分离：零量或未填量可恢复库存来源，已领数量和原行ID不变。 */
 function canSelectStock(row: any) {
-  if (isViewMode.value || !canEditLine.value || !row?.materialId || ['ISSUED', 'COMPLETED', 'EXECUTED'].includes(row.lineStatus)) {
+  if (isViewMode.value || !canEditLine.value || !row?.materialId || ['ISSUED', 'SHORT_CLOSED', 'COMPLETED', 'EXECUTED'].includes(row.lineStatus)) {
     return false;
   }
-  const currentQty = Number(row.currentQty);
-  if (!Number.isFinite(currentQty) || currentQty <= 0) return false;
+  /** 未填或零本次量可建立范围；已提供的非法、负量仍不能选择。 */
+  if (row.currentQty != null && row.currentQty !== '') {
+    const currentQty = readDecimalNumber(row.currentQty);
+    if (currentQty == null || currentQty < 0) return false;
+  }
   const issuedQty = Number(row.issuedQty ?? 0);
   const requiredQty = Number(row.requiredQty);
   if (requiredQty > 0) {
@@ -583,11 +653,19 @@ function canSelectStock(row: any) {
   return row.lineStatus !== 'PARTIAL' && issuedQty === 0;
 }
 
-/** 重算行金额，并在应领已定时同步欠领 */
+/** 重新计算参考金额，清除参考价时同时清除旧金额，不以库存成本兜底。 */
 function recalcRow(row: any) {
-  if (row.currentQty != null && row.unitPrice != null) {
-    row.amount = Number((Number(row.currentQty) * Number(row.unitPrice)).toFixed(4));
-  }
+  row.currentQty = readDecimalNumber(row.currentQty);
+  row.amount = referenceLineAmount({ ...row, amount: null });
+  row.referenceEdited = true;
+}
+
+/** 只在用户主动清价时标记显式清空，保存批次不得隐式清价。 */
+function handleReferencePriceChange(row: any) {
+  row.unitPrice = readDecimalNumber(row.unitPrice);
+  row.clearReferencePrice = row.unitPrice == null;
+  row.amount = referenceLineAmount({ ...row, amount: null });
+  row.referenceEdited = true;
 }
 
 function openMaterialSelect(rowIndex: number) {
@@ -609,29 +687,93 @@ function handleMaterialSelected(row: any) {
   refreshLineAvailableStock(row.materialId, idx);
 }
 
-/** 批量加载行物料的总可用库存（汇总所有仓库/批次/库位），写入各行 availableQty 字段 */
+/** 当前可执行范围：行仓优先于单头仓，批次和库位缺省时保留仓内汇总语义。 */
+function lineStockScope(line: any) {
+  const warehouseId = line.warehouseId ?? form.value.warehouseId;
+  if (line.materialId == null || warehouseId == null || warehouseId === '') return null;
+  const key = [line.materialId, warehouseId, line.batchId ?? '', line.locationId ?? ''].map(String).join('/');
+  return { key, materialId: line.materialId, warehouseId, batchId: line.batchId, locationId: line.locationId };
+}
+
+/** 只有当前范围已确认的独立 ATP 才是可靠上限，身份变化后立即视为未知。 */
+function scopedAvailableQuantity(line: any): number | null {
+  const scope = lineStockScope(line);
+  return scope != null && line.atpScopeKey === scope.key ? readDecimalNumber(line.availableQty) : null;
+}
+
+/** 使用既有库存候选接口按仓查询，再按本行批次/库位核对；旧响应不得恢复上限。 */
+function loadLineAvailableStock(line: any) {
+  const requestId = (line.atpRequestId ?? 0) + 1;
+  line.atpRequestId = requestId;
+  line.availableQty = null;
+  line.atpScopeKey = null;
+  const scope = lineStockScope(line);
+  if (scope == null) return;
+  getAvailableStock(scope.materialId, scope.warehouseId)
+    .then((response: any) => {
+      if (!lineList.value.includes(line) || line.atpRequestId !== requestId || lineStockScope(line)?.key !== scope.key) return;
+      if (!Array.isArray(response.data)) return;
+      const matching = response.data.filter(
+        (stock: any) =>
+          String(stock.materialId) === String(scope.materialId) &&
+          String(stock.warehouseId) === String(scope.warehouseId) &&
+          (scope.batchId == null || String(stock.batchId) === String(scope.batchId)) &&
+          (scope.locationId == null || String(stock.locationId) === String(scope.locationId))
+      );
+      /** 候选接口仅返回已知正 ATP；无匹配记录不能用全仓参考量证明本行可靠上限。 */
+      if (!matching.length) return;
+      let available = 0;
+      for (const stock of matching) {
+        const quantity = readDecimalNumber(stock.availableQuantity);
+        if (readDecimalNumber(stock.stockQuantity) == null || readDecimalNumber(stock.reservedQuantity) == null || quantity == null || quantity < 0)
+          return;
+        available += quantity;
+      }
+      if (!Number.isFinite(available)) return;
+      line.availableQty = available;
+      line.atpScopeKey = scope.key;
+    })
+    .catch(() => {
+      if (line.atpRequestId !== requestId) return;
+      line.availableQty = null;
+      line.atpScopeKey = null;
+    });
+}
+
+/** 全仓总量仅供参考，绝不写入实际领料范围上限。 */
 function loadAvailableStocks() {
-  const ids = lineList.value.map((l: any) => l.materialId).filter(Boolean);
+  const rows = lineList.value.map((line: any) => {
+    line.referenceAvailableQty = null;
+    line.summaryRequestId = (line.summaryRequestId ?? 0) + 1;
+    loadLineAvailableStock(line);
+    return { line, materialId: line.materialId, requestId: line.summaryRequestId };
+  });
+  const ids = rows.map((row) => row.materialId).filter(Boolean);
   if (!ids.length) return;
   getAvailableStockBatch(ids)
     .then((res: any) => {
       const map = res.data || {};
-      lineList.value.forEach((l: any) => {
-        l.availableQty = l.materialId && map[l.materialId] != null ? map[l.materialId] : null;
-      });
+      for (const { line, materialId, requestId } of rows) {
+        if (!lineList.value.includes(line) || line.summaryRequestId !== requestId || String(line.materialId) !== String(materialId)) continue;
+        line.referenceAvailableQty = materialId == null ? null : readDecimalNumber(map[materialId]);
+      }
     })
     .catch(() => {});
 }
 
-/** 刷新单行可用库存：以传入的 materialId 查询总量，写入指定行的 availableQty */
+/** 切换物料后独立刷新范围上限，全仓参考量不能替代未确认的行仓范围。 */
 function refreshLineAvailableStock(materialId: number | null, rowIndex: number) {
-  if (!materialId) return;
+  const line = lineList.value[rowIndex];
+  if (!line) return;
+  line.referenceAvailableQty = null;
+  line.summaryRequestId = (line.summaryRequestId ?? 0) + 1;
+  const requestId = line.summaryRequestId;
+  loadLineAvailableStock(line);
+  if (materialId == null) return;
   getAvailableStockBatch([materialId])
     .then((res: any) => {
-      const map = res.data || {};
-      if (rowIndex >= 0 && lineList.value[rowIndex]) {
-        lineList.value[rowIndex].availableQty = map[materialId] ?? null;
-      }
+      if (!lineList.value.includes(line) || line.summaryRequestId !== requestId || String(line.materialId) !== String(materialId)) return;
+      line.referenceAvailableQty = readDecimalNumber((res.data || {})[materialId]);
     })
     .catch(() => {});
 }
@@ -659,6 +801,10 @@ function handleWarehouseSelect(row: any) {
   form.value.warehouseId = row.warehouseId;
   form.value.warehouseCode = row.warehouseCode;
   form.value.warehouseName = row.warehouseName;
+  /** 单头仓改变后仅重查依赖单头仓的行，已绑定行仓不可被隐式改绑。 */
+  for (const line of lineList.value) {
+    if (line.warehouseId == null) loadLineAvailableStock(line);
+  }
   warehouseSelectOpen.value = false;
 }
 
@@ -686,59 +832,106 @@ function selectWorkOrder(row: any) {
   if (!preserveLines) handleAutoFillFromWorkOrder();
 }
 
-/** 可用库存选择（批次/库位） */
+/** 可用库存选择：新请求立即清旧候选，只有最新成功响应允许选择。 */
 function openStockSelect(rowIndex: number) {
+  const requestId = ++stockRequestId.value;
+  stockList.value = [];
+  stockQuery.value = null;
+  stockLoading.value = false;
   const row = lineList.value[rowIndex];
   if (!row || !row.materialId) {
     proxy.$modal.msgWarning('请先选择物料');
     return;
   }
   if (!canSelectStock(row)) {
-    proxy.$modal.msgWarning('仅未完成且有待领数量的明细可选择库存，请填写正数本次领料数量');
+    proxy.$modal.msgWarning('仅未完成且有待领数量的明细可选择库存');
     return;
   }
+  /** 查询待确认或失败时不能继续把本行旧 ATP 视为可靠执行上限。 */
+  row.availableQty = null;
+  row.atpScopeKey = null;
+  row.atpRequestId = (row.atpRequestId ?? 0) + 1;
   currentRowIndex.value = rowIndex;
   stockSelectOpen.value = true;
   stockLoading.value = true;
-  /** 不按头部仓库过滤：物料可能存放在其他仓库，弹窗已展示仓库列供用户选择具体批次/库位 */
+  const materialId = String(row.materialId);
+  stockQuery.value = { requestId, row, materialId, successful: false, identities: new Map() };
+  /** 保留跨仓选择，候选自己的真实仓库进入查询身份快照，不能被选择前改写。 */
   getAvailableStock(row.materialId)
     .then((response: any) => {
-      stockList.value = response.data || [];
-      stockLoading.value = false;
+      if (stockRequestId.value !== requestId || !stockQuery.value || stockQuery.value.row !== row) return;
+      if (!Array.isArray(response.data)) throw new Error('库存响应缺少有效候选集合');
+      const candidates = response.data
+        .map((stock: any) => normalizeStockCandidate(stock))
+        .filter(
+          (stock: any) =>
+            String(stock.materialId) === materialId &&
+            stock.stockId != null &&
+            stock.warehouseId != null &&
+            stock.stockQuantity != null &&
+            stock.reservedQuantity != null &&
+            stock.availableQuantity != null &&
+            stock.availableQuantity > 0
+        );
+      stockList.value = candidates;
+      stockQuery.value.identities = new Map(candidates.map((stock: any) => [stock, stockCandidateIdentity(stock)]));
+      stockQuery.value.successful = true;
     })
     .catch(() => {
-      stockLoading.value = false;
+      if (stockRequestId.value !== requestId) return;
+      stockList.value = [];
+      stockQuery.value = null;
+    })
+    .finally(() => {
+      if (stockRequestId.value === requestId) stockLoading.value = false;
     });
 }
 
 function selectStock(row: any) {
-  if (!row?.warehouseId) {
-    proxy.$modal.msgWarning('库存记录没有真实仓库，请重新选择');
+  const query = stockQuery.value;
+  const line = lineList.value[currentRowIndex.value];
+  if (
+    !query?.successful ||
+    stockLoading.value ||
+    !stockSelectOpen.value ||
+    query.requestId !== stockRequestId.value ||
+    !line ||
+    query.row !== line ||
+    !stockList.value.includes(row) ||
+    String(line.materialId) !== query.materialId ||
+    String(row?.materialId) !== query.materialId ||
+    row.stockId == null ||
+    row.warehouseId == null ||
+    query.identities.get(row) !== stockCandidateIdentity(row) ||
+    readDecimalNumber(row.stockQuantity) == null ||
+    readDecimalNumber(row.reservedQuantity) == null ||
+    !(readDecimalNumber(row.availableQuantity) > 0) ||
+    (readDecimalNumber(line.currentQty) != null &&
+      readDecimalNumber(line.currentQty) !== 0 &&
+      !quantityWithinAtp(line.currentQty, row.availableQuantity))
+  ) {
+    proxy.$modal.msgWarning('当前库存候选未成功读取、身份已变化或 ATP 不足，请重新查询');
     return;
   }
-  const idx = currentRowIndex.value;
-  if (idx >= 0 && lineList.value[idx]) {
-    const line = lineList.value[idx];
-    /** 弹窗期间可能切换只读状态或清零本次领料量，选中时再次校验。 */
-    if (!canSelectStock(line)) {
-      proxy.$modal.msgWarning('当前明细已不可选料，请关闭弹窗并核对状态和本次领料数量');
-      return;
-    }
-    /** 选定库存时一并绑定该行所属仓库，不能把其他仓库的批次隐式记在单头仓下。 */
-    line.warehouseId = row.warehouseId;
-    line.warehouseCode = row.warehouseCode;
-    line.warehouseName = row.warehouseName;
-    line.batchId = row.batchId;
-    line.batchCode = row.batchCode;
-    line.locationId = row.locationId;
-    line.locationCode = row.locationCode;
-    line.locationName = row.locationName;
-    /** 拼接库位+批次号用于展示，如 L016/B202606050002 */
-    line.displayLocationBatch = (row.locationCode ? row.locationCode + '/' : '') + (row.batchCode || '');
-    if (row.unitCost && line.unitPrice == null) line.unitPrice = row.unitCost;
-    recalcRow(line);
+  if (!canSelectStock(line)) {
+    proxy.$modal.msgWarning('当前明细已不可选料，请核对单据和明细状态');
+    return;
   }
+  line.warehouseId = row.warehouseId;
+  line.warehouseCode = row.warehouseCode;
+  line.warehouseName = row.warehouseName;
+  line.batchId = row.batchId;
+  line.batchCode = row.batchCode;
+  line.locationId = row.locationId;
+  line.locationCode = row.locationCode;
+  line.locationName = row.locationName;
+  line.displayLocationBatch = (row.locationCode ? row.locationCode + '/' : '') + (row.batchCode || '');
+  /** 库存单位成本不得填参考价，独立 ATP 上限必须使用归一数值。 */
+  line.availableQty = readDecimalNumber(row.availableQuantity);
+  line.atpScopeKey = lineStockScope(line)?.key ?? null;
+  line.atpRequestId = (line.atpRequestId ?? 0) + 1;
   stockSelectOpen.value = false;
+  stockQuery.value = null;
   currentRowIndex.value = -1;
 }
 </script>

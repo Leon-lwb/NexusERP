@@ -109,6 +109,9 @@ class WmProductionIssueLifecycleGuardTest {
         when(issueMapper.selectById(41L)).thenReturn(issue("CREATED"));
         when(issueMapper.update(any(WmProductionIssue.class), any(Wrapper.class))).thenReturn(1);
         when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+        /** 正控完整汇总与显式未计价写空均返回一行，失败路径另由事务反例覆盖。 */
+        when(issueMapper.updateById(any(WmProductionIssue.class))).thenReturn(1);
+        when(issueMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
         service.updateByBo(bo);
         ArgumentCaptor<WmProductionIssue> captured = ArgumentCaptor.forClass(WmProductionIssue.class);
         verify(issueMapper, atLeastOnce()).updateById(captured.capture());
@@ -168,6 +171,9 @@ class WmProductionIssueLifecycleGuardTest {
         requested.setIssuedQty(new BigDecimal("99"));
         bo.setWmProductionIssueLineList(List.of(requested));
         when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(stored));
+        /** 正控完整汇总与显式未计价写空均返回一行，失败路径另由事务反例覆盖。 */
+        when(issueMapper.updateById(any(WmProductionIssue.class))).thenReturn(1);
+        when(issueMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
         service.updateByBo(bo);
         ArgumentCaptor<WmProductionIssueLine> row = ArgumentCaptor.forClass(WmProductionIssueLine.class);
         verify(lineMapper).updateById(row.capture());
@@ -229,6 +235,9 @@ class WmProductionIssueLifecycleGuardTest {
         stock.setStockQuantity(BigDecimal.TEN);
         stock.setReservedQuantity(BigDecimal.ZERO);
         when(stockMapper.selectList(any(Wrapper.class))).thenReturn(List.of(stock));
+        /** 正控明细与单头必须持久成功，不能把默认零行当作过账成功。 */
+        when(lineMapper.updateById(any(WmProductionIssueLine.class))).thenReturn(1);
+        when(issueMapper.updateById(any(WmProductionIssue.class))).thenReturn(1);
         service.execute(41L);
         ArgumentCaptor<WmProductionIssue> updates = ArgumentCaptor.forClass(WmProductionIssue.class);
         verify(issueMapper, atLeastOnce()).updateById(updates.capture());

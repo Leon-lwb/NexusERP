@@ -7,21 +7,41 @@ import ts from 'typescript';
 /** 执行实际 SFC 处理函数，不挂载 Vue，也不调用在线服务。 */
 const source = readFileSync(new URL('../src/views/erp/wm/productionissue/form.vue', import.meta.url), 'utf8');
 const { descriptor, errors } = parse(source, { filename: 'form.vue' });
-assert.deepEqual(errors, []);
+assert.deepEqual(errors, [], '领料页面应能正确解析');
 const script = ts.createSourceFile('form.ts', descriptor.scriptSetup.content, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
 const template = descriptor.template.content;
 const transpile = (code) => ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
+/** 注入实际纯工具，而非伪造其结果；非空更新、数量比较及身份校验仍由生产代码执行。 */
+const utilities = {};
+for (const file of ['quantity.ts', 'referenceAmount.ts']) {
+  const code = readFileSync(new URL('../src/views/erp/wm/productionissue/' + file, import.meta.url), 'utf8');
+  const compiled = ts.transpileModule(code, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
+  }).outputText;
+  new Function('exports', 'require', compiled)(utilities, () => utilities);
+}
+const drain = () => new Promise((resolve) => setImmediate(resolve));
+/** 提取实际范围函数并注入其真实依赖，不模拟或放宽范围校验结果。 */
+function scopeDependencies(context) {
+  const dependencies = { ...utilities, ...context };
+  for (const name of ['lineStockScope', 'scopedAvailableQuantity', 'loadLineAvailableStock']) {
+    if (!(name in dependencies)) dependencies[name] = (...args) => handler(name, dependencies)(...args);
+  }
+  return dependencies;
+}
 function handler(name, context) {
   const fn = script.statements.find((statement) => ts.isFunctionDeclaration(statement) && statement.name?.text === name);
-  assert.ok(fn, `SFC handler ${name} should exist`);
-  return new Function(...Object.keys(context), `${transpile(fn.getText(script))}\nreturn ${name};`)(...Object.values(context));
+  assert.ok(fn, `页面应提供${name}处理函数`);
+  const dependencies = scopeDependencies(context);
+  return new Function(...Object.keys(dependencies), `${transpile(fn.getText(script))}\nreturn ${name};`)(...Object.values(dependencies));
 }
 function scriptComputed(name, context) {
   const declarations = script.statements.filter(ts.isVariableStatement).flatMap((statement) => statement.declarationList.declarations);
   const declaration = declarations.find((entry) => ts.isIdentifier(entry.name) && entry.name.text === name);
-  assert.ok(declaration?.initializer, `SFC computed ${name} should exist`);
-  return new Function(...Object.keys(context), `${transpile(`const ${name} = ${declaration.initializer.getText(script)};`)}\nreturn ${name};`)(
-    ...Object.values(context)
+  assert.ok(declaration?.initializer, `页面应提供${name}计算属性`);
+  const dependencies = scopeDependencies(context);
+  return new Function(...Object.keys(dependencies), `${transpile(`const ${name} = ${declaration.initializer.getText(script)};`)}\nreturn ${name};`)(
+    ...Object.values(dependencies)
   );
 }
 const computed = (fn) => ({
@@ -111,7 +131,7 @@ test('opening an existing issue preserves real header and line warehouse from th
 test('header warehouse must be selected from the active warehouse picker', () => {
   const form = { value: { warehouseId: null } };
   const warehouseSelectOpen = { value: true };
-  handler('handleWarehouseSelect', { form, warehouseSelectOpen, proxy: { $modal: modal() } })({
+  handler('handleWarehouseSelect', { form, lineList: { value: [] }, warehouseSelectOpen, proxy: { $modal: modal() } })({
     warehouseId: '7',
     warehouseCode: 'WH007',
     warehouseName: '原料仓',
@@ -192,18 +212,20 @@ function stockPickerContext(line, status = 'PARTIAL', readOnly = false) {
     currentRowIndex: { value: -1 },
     stockLoading: { value: false },
     stockList: { value: [] },
+    stockQuery: { value: null },
+    stockRequestId: { value: 0 },
     isViewMode: { value: readOnly },
     proxy: { $modal: modal() },
     recalcRow: handler('recalcRow', {}),
     getAvailableStock: (materialId) => {
       queried.push(materialId);
-      return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: [nextBatch()] });
     },
     queried
   };
   context.canEditLine = scriptComputed('canEditLine', { computed, form: context.form });
   context.canCheckLine = handler('canCheckLine', {});
-  /** 延迟绑定让红灯阶段执行旧版库存选择逻辑，复现其实际拒绝行为。 */
+  /** 延迟绑定实际守卫，查询和选择阶段都读取当前只读及单据状态。 */
   context.canSelectStock = (row) => handler('canSelectStock', context)(row);
   return context;
 }
@@ -224,6 +246,11 @@ const partialPick = () => ({
   lineStatus: 'PARTIAL'
 });
 const nextBatch = () => ({
+  stockId: '100',
+  materialId: '23',
+  stockQuantity: '10.0000',
+  reservedQuantity: '4.0000',
+  availableQuantity: '6.0000',
   warehouseId: '9',
   warehouseCode: 'WH009',
   warehouseName: '二号原料仓',
@@ -248,8 +275,9 @@ test('PARTIAL row can pick batch B after batch A is consumed without changing it
   handler('openStockSelect', context)(0);
   assert.equal(context.stockSelectOpen.value, true, 'remaining 6 units must be allowed to select a new batch');
   assert.deepEqual(context.queried, ['23']);
-  await Promise.resolve();
-  handler('selectStock', context)(nextBatch());
+  await drain();
+  assert.equal(context.stockQuery.value.successful, true, '只允许成功读取的最新候选进入选择');
+  handler('selectStock', context)(context.stockList.value[0]);
   assert.deepEqual([line.warehouseId, line.batchId, line.locationId], ['9', '56', '65']);
   assert.deepEqual(
     {
@@ -294,7 +322,7 @@ test('stock picker keeps terminal rows, terminal documents and readonly pages lo
   }
 });
 
-test('stock selection requires a finite positive current pick and rejects exhausted demand', () => {
+test('库存范围恢复允许未填和零量，仍拒绝非法数量或已无欠领需求', () => {
   const rows = [
     ...[null, 0, -1, 'invalid', Infinity].map((currentQty) => ({ materialId: '23', currentQty, issuedQty: 0, lineStatus: 'PENDING' })),
     { ...partialPick(), issuedQty: 10, shortQty: 6 } /** 过期的 shortQty 不能重新开放已完成的需求。 */,
@@ -304,9 +332,10 @@ test('stock selection requires a finite positive current pick and rejects exhaus
   for (const line of rows) {
     const context = stockPickerContext(line);
     handler('openStockSelect', context)(0);
-    assert.equal(context.stockSelectOpen.value, false, 'no positive pick or no outstanding demand must not open picker');
-    assert.deepEqual(context.queried, []);
-    assert.equal(context.proxy.$modal.warnings.length, 1);
+    const recovery = line.lineStatus === 'PENDING' && (line.currentQty == null || line.currentQty === 0);
+    assert.equal(context.stockSelectOpen.value, recovery, '仅合法未填或零量可先恢复来源，非法量与无欠领仍关闭');
+    assert.deepEqual(context.queried, recovery ? ['23'] : [], '恢复范围仍从真实候选查询建立');
+    assert.equal(context.proxy.$modal.warnings.length, recovery ? 0 : 1, '错误数量或需求应给出明确提示');
   }
 });
 
@@ -322,7 +351,7 @@ test('legacy partial row can use trustworthy outstanding shortQty, and a new man
   }
 });
 
-test('stock choice rechecks readonly or completion after opening and never overwrites issued facts', () => {
+test('选择时重核只读与终态，清零恢复只建立范围且保持已领事实', async () => {
   const changes = [
     (context) => {
       context.isViewMode.value = true;
@@ -339,54 +368,62 @@ test('stock choice rechecks readonly or completion after opening and never overw
   ];
   for (const change of changes) {
     const context = stockPickerContext(partialPick());
-    context.stockSelectOpen.value = true;
-    context.currentRowIndex.value = 0;
+    handler('openStockSelect', context)(0);
+    await drain();
+    assert.equal(context.stockQuery.value.successful, true, '先建立真实成功读取，才能证明选择时重核守卫');
+    const candidate = context.stockList.value[0];
     change(context);
     const before = { ...context.lineList.value[0] };
-    handler('selectStock', context)(nextBatch());
-    assert.deepEqual(context.lineList.value[0], before, 'a stale selection must not mutate the row');
-    assert.equal(context.proxy.$modal.warnings.length, 1);
+    handler('selectStock', context)(candidate);
+    if (before.currentQty === 0 && !context.isViewMode.value && context.form.value.status === 'PARTIAL' && before.lineStatus === 'PARTIAL') {
+      assert.equal(context.lineList.value[0].batchId, candidate.batchId, '清零后仍能确认下一真实批次');
+      assert.equal(context.lineList.value[0].currentQty, 0, '选范围不擅自填写本次量');
+      assert.equal(context.lineList.value[0].issuedQty, before.issuedQty, '选范围不能重置已领事实');
+      assert.equal(context.lineList.value[0].lineId, before.lineId, '选范围不能另造明细身份');
+      assert.equal(context.proxy.$modal.warnings.length, 0, '合法恢复不能误报数量错误');
+    } else {
+      assert.deepEqual(context.lineList.value[0], before, '只读或终态仍不得被旧候选改写');
+      assert.equal(context.proxy.$modal.warnings.length, 1, '只读或终态应明确拒绝');
+    }
   }
 });
 
-test('stock selection sets actual line warehouse and keeps header warehouse and stock batch intact', () => {
+test('stock selection sets actual line warehouse and keeps header warehouse and stock batch intact', async () => {
   const line = { warehouseId: '7', warehouseName: '原料仓', materialId: '23', currentQty: 2 };
   const context = stockPickerContext(line, 'CREATED');
-  context.stockSelectOpen.value = true;
-  context.currentRowIndex.value = 0;
-  handler(
-    'selectStock',
-    context
-  )({
-    warehouseId: '9',
-    warehouseCode: 'WH009',
-    warehouseName: '二号原料仓',
-    batchId: '55',
-    batchCode: 'B26092901',
-    locationId: '64',
-    locationCode: 'A12'
-  });
+  context.getAvailableStock = (materialId) => {
+    context.queried.push(materialId);
+    return Promise.resolve({ data: [{ ...nextBatch(), batchId: '55', batchCode: 'B26092901', locationId: '64', locationCode: 'A12' }] });
+  };
+  handler('openStockSelect', context)(0);
+  await drain();
+  assert.equal(context.stockQuery.value.successful, true, '必须通过本次真实成功读取，而非手工伪造成功标记');
+  handler('selectStock', context)(context.stockList.value[0]);
   assert.deepEqual([line.warehouseId, line.warehouseCode, line.warehouseName], ['9', 'WH009', '二号原料仓']);
   assert.equal(context.form.value.warehouseId, '7');
   assert.equal(line.batchId, '55');
   assert.equal(context.stockSelectOpen.value, false);
 });
 
-test('stock without a warehouse is rejected before mutating a line', () => {
-  const lineList = { value: [{ warehouseId: null, materialId: '23' }] },
-    stockSelectOpen = { value: true };
-  const notice = modal();
-  handler('selectStock', { lineList, stockSelectOpen, currentRowIndex: { value: 0 }, recalcRow: () => {}, proxy: { $modal: notice } })({
-    batchId: '55',
-    batchCode: 'B26092901'
-  });
-  assert.equal(lineList.value[0].batchId, undefined);
-  assert.equal(stockSelectOpen.value, true);
-  assert.equal(notice.warnings.length, 1);
+test('stock without a warehouse is rejected before mutating a line', async () => {
+  const line = { warehouseId: null, materialId: '23', currentQty: 2 };
+  const context = stockPickerContext(line, 'CREATED');
+  const unidentified = { ...nextBatch(), warehouseId: null };
+  context.getAvailableStock = (materialId) => {
+    context.queried.push(materialId);
+    return Promise.resolve({ data: [unidentified] });
+  };
+  handler('openStockSelect', context)(0);
+  await drain();
+  assert.deepEqual(context.stockList.value, [], '缺少真实仓库的记录不得成为本次合法候选');
+  handler('selectStock', context)(unidentified);
+  assert.equal(line.batchId, undefined, '拒绝后不得绑定库存批次');
+  assert.equal(context.stockSelectOpen.value, true, '无效选择不得冒充选料成功');
+  assert.equal(context.proxy.$modal.warnings.length, 1, '应明确提示无效候选');
 });
 
 test('template disables unsafe posting, explains why, and shows each row warehouse', () => {
-  assert.match(template, /:disabled="!executionWarehouseReady"/);
+  assert.match(template, /:disabled="!executionWarehouseReady \|\| !executionAtpReady"/, '仓库及 ATP 任一不可靠均须关闭执行按钮');
   assert.match(template, /v-if="!isViewMode && canExecute && !executionWarehouseReady"[^>]*title="[^"]*仓库[^"]*"/);
   assert.match(template, /<el-table-column[^>]*label="本行仓库"/);
   assert.match(template, /@click="openStockSelect\(\$index\)"/);

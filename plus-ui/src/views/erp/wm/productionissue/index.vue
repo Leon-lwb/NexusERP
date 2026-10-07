@@ -66,6 +66,11 @@
           <dict-tag :options="wm_production_issue_status" :value="scope.row.status" />
         </template>
       </el-table-column>
+      <el-table-column label="参考总金额" align="center" prop="totalAmount" width="120">
+        <template #default="{ row }"
+          ><span>{{ formatReferenceAmount(row.totalAmount, row.referenceAmountKnown) }}</span></template
+        >
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
@@ -101,6 +106,7 @@ import {
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import { useRouter } from 'vue-router';
+import { formatReferenceAmount } from './referenceAmount';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
