@@ -14,6 +14,14 @@ const { descriptor, errors } = parse(viewSource);
 const template = descriptor.template?.content ?? '';
 const script = descriptor.scriptSetup?.content ?? '';
 let policyPromise;
+let executionViewPromise;
+function loadExecutionView() {
+  executionViewPromise ??= transform(readFileSync(resolve(uiRoot, 'src/views/ai/decision/decisionActionExecutionView.ts'), 'utf8'), {
+    loader: 'ts',
+    format: 'esm'
+  }).then(({ code }) => import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`));
+  return executionViewPromise;
+}
 
 function loadPolicy() {
   policyPromise ??= build({
@@ -165,6 +173,8 @@ test('list and Gantt flag legacy without rewriting stored status or chart data',
   assert.ok(/ganttPlan\?\.capacityCalcVersion === 2/.test(template), 'displayed plan supplies the v2 badge');
 });
 async function mountScheduleView(overrides = {}) {
+  /** 新增只读深链依赖接线，保留原发布/拒绝断言与真实处理函数。 */
+  const { decisionScheduleResultQuery, decisionScheduleResultRows } = await loadExecutionView();
   const { isLegacySchedulePlan, isPublishableSchedulePlan, isDecisionReadySchedulePlan, scheduleCapacityLabel, formatScheduleGanttTooltip } =
     await loadPolicy();
   const requests = [];
@@ -193,6 +203,9 @@ async function mountScheduleView(overrides = {}) {
       }
     }),
     useRouter: () => ({ push: async () => {} }),
+    useRoute: () => ({ query: {} }),
+    decisionScheduleResultQuery,
+    decisionScheduleResultRows,
     onMounted: () => {},
     onBeforeUnmount: (callback) => unmountCallbacks.push(callback),
     watch: (source, callback) => watchers.push({ source, callback }),

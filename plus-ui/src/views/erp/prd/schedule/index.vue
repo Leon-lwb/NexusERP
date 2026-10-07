@@ -266,10 +266,12 @@ import {
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import { runDeliveryRisk } from '@/api/ai/decision';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { decisionScheduleResultQuery, decisionScheduleResultRows } from '@/views/ai/decision/decisionActionExecutionView';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
+const route = useRoute();
 
 const loading = ref(false);
 const running = ref(false);
@@ -347,8 +349,11 @@ const getList = async () => {
   try {
     const res = await listSchedule({ ...queryParams.value });
     if (requestSeq !== listRequestSeq) return;
-    planList.value = res.rows;
-    total.value = res.total;
+    /** 决策结果深链只定位真实行；编号模糊匹配不能替代结果身份。 */
+    const resultQuery = decisionScheduleResultQuery(route.query);
+    const locatingResult = resultQuery && queryParams.value.planNo === resultQuery.code ? resultQuery : null;
+    planList.value = decisionScheduleResultRows(res.rows, locatingResult);
+    total.value = locatingResult ? planList.value.length : res.total;
     clearListSelection();
   } catch (error) {
     if (requestSeq === listRequestSeq) {
@@ -570,9 +575,26 @@ const renderGantt = () => {
   ganttChart.resize();
 };
 
+const applyDecisionResultQuery = () => {
+  const resultQuery = decisionScheduleResultQuery(route.query);
+  if (resultQuery) {
+    /** 仅合法结果深链重置无关筛选，旧状态/策略不能排除真实结果；普通查询不改。 */
+    queryParams.value = { ...initQuery, planNo: resultQuery.code };
+  }
+};
+
 onMounted(() => {
+  applyDecisionResultQuery();
   getList();
 });
+/** 同页跳转仍只触发只读列表查询，不自动发布或执行排程。 */
+watch(
+  () => [route.query.decisionResultPlanId, route.query.planNo],
+  () => {
+    applyDecisionResultQuery();
+    getList();
+  }
+);
 
 onBeforeUnmount(() => {
   listRequestSeq++;

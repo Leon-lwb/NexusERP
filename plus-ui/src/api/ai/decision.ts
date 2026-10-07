@@ -125,7 +125,13 @@ export interface DecisionAction {
     | 'COMPENSATE_FAILED';
   permissionCode: string;
   sequenceNo: number;
-  resultBizId?: DecisionId;
+  /** 与实际运行详情返回的持久化动作字段对齐，仅用于展示/只读回查。 */
+  resultBizType?: string | null;
+  resultBizId?: DecisionId | null;
+  approvedAt?: string | null;
+  approvalComment?: string | null;
+  finishedAt?: string | null;
+  lastErrorCode?: string | null;
 }
 export interface DecisionOutcome {
   beforeKpis?: DecisionKpis;

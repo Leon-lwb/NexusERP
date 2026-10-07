@@ -50,6 +50,7 @@
       >
         无可执行动作：驳回并重新分析
       </el-button>
+      <DecisionActionExecutionResults :actions="detail.actions" :run-status="detail.run.status" class="mb-4" @navigate="navigateResult" />
       <DecisionRunTimeline :items="timeline" />
       <DecisionEvidenceDrawer v-model="evidenceOpen" :evidence="evidence" :status="detail.run.status" @navigate="navigateEvidence" />
       <DecisionScenarioPreview v-model="previewOpen" :scenario="preview" />
@@ -85,6 +86,8 @@ import DecisionKpiCompare from '@/components/ai/decision/DecisionKpiCompare.vue'
 import DecisionScenarioTable from '@/components/ai/decision/DecisionScenarioTable.vue';
 import DecisionEvidenceDrawer from '@/components/ai/decision/DecisionEvidenceDrawer.vue';
 import DecisionActionApproval from '@/components/ai/decision/DecisionActionApproval.vue';
+import DecisionActionExecutionResults from '@/components/ai/decision/DecisionActionExecutionResults.vue';
+import type { DecisionErpDestination } from './decisionActionExecutionView';
 import DecisionRunTimeline from '@/components/ai/decision/DecisionRunTimeline.vue';
 import DecisionProgressPanel from '@/components/ai/decision/DecisionProgressPanel.vue';
 import DecisionScenarioPreview from '@/components/ai/decision/DecisionScenarioPreview.vue';
@@ -195,6 +198,9 @@ function previewScenario(scenario: DecisionScenario) {
 }
 function navigateEvidence(path: string) {
   void router.push(path);
+}
+function navigateResult(destination: DecisionErpDestination) {
+  void router.push(destination);
 }
 async function approve(selection: { approvedActionIds: string[]; rejectedActionIds: string[]; comment: string }) {
   if (!detail.value || !runId.value) return;

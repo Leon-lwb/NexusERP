@@ -238,6 +238,7 @@ import { getProcesss } from '@/api/workflow/process/index';
 /** 导入路由相关功能 */
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
+import { decisionPurchaseResultQuery, verifiedDecisionErpResult } from '@/views/ai/decision/decisionActionExecutionView';
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -331,38 +332,128 @@ watch(
   { deep: true, immediate: true }
 );
 
-/** 组件挂载后的初始化逻辑 */
-onMounted(() => {
-  /** 获取路由参数 */
-  const id = route.query.id as any;
-  const action = route.query.action as string;
-
-  /** 设置页面模式和标题 */
-  isViewMode.value = action === 'view';
-  title.value = action === 'add' ? '新增采购申请' : action === 'edit' ? '修改采购申请' : '查看采购申请';
-
-  /** 根据操作类型初始化页面 */
+/** 仅承接决策结果只读深链，普通编辑/新增及流程嵌入不走此分支。 */
+const isDecisionResultRoute = () =>
+  route.path === '/erp/pu/requisition/form' &&
+  route.query.decisionResultRequisitionId !== undefined &&
+  !props.disabled &&
+  !Object.prototype.hasOwnProperty.call(props.customFormData, 'requisitionId');
+let detailRequestSeq = 0;
+let loadedOrdinaryIdentity = '';
+let pendingOrdinaryIdentity = '';
+const detailRouteIdentity = () => JSON.stringify([route.path, route.query.id, route.query.action, route.query.decisionResultRequisitionId]);
+/** 恢复只属于当前普通表单页的合法身份，不抢占流程props或误用其他页面的ID。 */
+function restoreOrdinaryRoute() {
+  if (
+    route.path !== '/erp/pu/requisition/form' ||
+    route.query.decisionResultRequisitionId !== undefined ||
+    props.disabled ||
+    Object.prototype.hasOwnProperty.call(props.customFormData, 'requisitionId')
+  )
+    return;
+  const identity = detailRouteIdentity();
+  const action = route.query.action;
   if (action === 'add') {
-    reset(); /** 新增操作：重置表单 */
-    loadFlows();
-  } else if (id) {
-    getInfo(id); /** 编辑/查看操作：获取详情数据 */
-    loadFlows();
+    isViewMode.value = false;
+    title.value = '新增采购申请';
+    if (loadedOrdinaryIdentity !== identity) {
+      reset();
+      loadedOrdinaryIdentity = identity;
+      loadFlows();
+    }
+    return;
   }
+  const id = route.query.id;
+  if (
+    (action !== 'view' && action !== 'edit') ||
+    typeof id !== 'string' ||
+    !/^[1-9][0-9]{0,18}$/.test(id) ||
+    (id.length === 19 && id > '9223372036854775807')
+  ) {
+    isViewMode.value = true;
+    title.value = '采购申请';
+    return;
+  }
+  isViewMode.value = action === 'view';
+  title.value = action === 'edit' ? '修改采购申请' : '查看采购申请';
+  /** 已载入的编辑表单保留未保存修改；仅空白/失效身份恢复只读加载。 */
+  if (loadedOrdinaryIdentity === identity || pendingOrdinaryIdentity === identity) return;
+  loadedOrdinaryIdentity = '';
+  form.value = {};
+  lineList.value = [];
+  getInfo(id);
+  loadFlows();
+}
+async function loadDecisionResult() {
+  const requestSeq = ++detailRequestSeq;
+  loadedOrdinaryIdentity = '';
+  pendingOrdinaryIdentity = '';
+  isViewMode.value = true;
+  title.value = '采购申请（决策结果只读）';
+  form.value = {};
+  lineList.value = [];
+  const id = decisionPurchaseResultQuery(route.query);
+  if (!id) {
+    proxy.$modal.msgWarning('决策结果只读参数无效，未查询任何单据');
+    return;
+  }
+  try {
+    const response = await getPurchaseRequisition(id);
+    if (requestSeq !== detailRequestSeq || !isDecisionResultRoute() || decisionPurchaseResultQuery(route.query) !== id) return;
+    if (!verifiedDecisionErpResult({ kind: 'requisition', id }, response.data)) throw new Error('RESULT_NOT_VERIFIED');
+    form.value = response.data;
+    lineList.value = response.data.puPurchaseRequisitionLineList || [];
+  } catch {
+    if (requestSeq === detailRequestSeq) proxy.$modal.msgError('回查未完成，请检查查询权限及真实结果身份');
+  }
+}
+/** 布局按 path 缓存，第二张结果必须重新只读查询；旧响应不得覆盖新单。 */
+watch(
+  () => [route.path, route.query.id, route.query.action, route.query.decisionResultRequisitionId],
+  () => {
+    if (isDecisionResultRoute()) void loadDecisionResult();
+    else {
+      detailRequestSeq++;
+      pendingOrdinaryIdentity = '';
+      restoreOrdinaryRoute();
+    }
+  }
+);
+onBeforeUnmount(() => {
+  detailRequestSeq++;
 });
 
+/** 挂载及缓存返回共用路由初始化，不移除原失效序列/身份守卫。 */
+onMounted(() => {
+  if (isDecisionResultRoute()) void loadDecisionResult();
+  else restoreOrdinaryRoute();
+});
 /**
  * 根据ID获取采购请购单详情
  * @param id 采购请购单ID
  */
 function getInfo(id: any) {
-  getPurchaseRequisition(id).then((res: any) => {
-    form.value = res.data;
-    lineList.value = res.data.puPurchaseRequisitionLineList || [];
-    tryAutoSelect();
-  });
+  /** 普通详情和决策结果共享失效序列；缓存路由变化前后的旧单不能回写。 */
+  const requestSeq = ++detailRequestSeq;
+  const routeIdentity = detailRouteIdentity();
+  pendingOrdinaryIdentity = routeIdentity;
+  getPurchaseRequisition(id)
+    .then((res: any) => {
+      if (requestSeq !== detailRequestSeq || routeIdentity !== detailRouteIdentity() || isDecisionResultRoute()) return;
+      if (res.data?.requisitionId == null) throw new Error('DETAIL_NOT_FOUND');
+      form.value = res.data;
+      lineList.value = res.data.puPurchaseRequisitionLineList || [];
+      tryAutoSelect();
+      loadedOrdinaryIdentity = routeIdentity;
+      pendingOrdinaryIdentity = '';
+    })
+    .catch(() => {
+      if (requestSeq !== detailRequestSeq || routeIdentity !== detailRouteIdentity() || isDecisionResultRoute()) return;
+      /** 加载失败不标记已载入，下次合法返回可重试；不输出原始异常正文。 */
+      pendingOrdinaryIdentity = '';
+      proxy.$modal.msgError('采购详情加载未完成，请检查查询权限及单据是否存在');
+    });
 }
-
 /**
  * 重置表单数据
  */
