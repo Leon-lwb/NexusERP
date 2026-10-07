@@ -30,6 +30,8 @@ export function sendAiMessage(data: {
   content: string;
   model?: string;
   mode?: string;
+  /** 知识库模式的明确范围，雪花ID按字符串无损透传。 */
+  knowledgeId?: string;
   /** 是否开启推理（Thinking）模式 */
   enableThinking?: boolean;
   /** 是否开启联网搜索 */

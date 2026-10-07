@@ -140,6 +140,25 @@
               </el-tooltip>
             </div>
           </div>
+          <div v-if="chatMode === 'rag'" class="mb-2 flex flex-wrap items-center gap-2">
+            <el-select
+              v-model="selectedKnowledgeId"
+              filterable
+              remote
+              clearable
+              :remote-method="loadChatKnowledge"
+              :debounce="0"
+              :loading="knowledgeLoading"
+              :disabled="loading || !canListKnowledge"
+              placeholder="选择索引就绪的知识库，可按名称搜索"
+              style="width: 320px"
+            >
+              <el-option v-for="knowledge in knowledgeOptions" :key="knowledge.id" :label="knowledge.label" :value="knowledge.id" />
+            </el-select>
+            <el-button :loading="knowledgeLoading" :disabled="loading || !canListKnowledge" @click="loadChatKnowledge()">刷新列表</el-button>
+            <span v-if="knowledgeLoadError" class="text-red-500">{{ knowledgeLoadError }}</span>
+            <span v-else class="text-gray-500">仅显示匹配的前100项；选库不等于已命中资料</span>
+          </div>
           <el-input
             v-model="inputText"
             type="textarea"
@@ -208,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, getCurrentInstance, type Component } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, getCurrentInstance, type Component } from 'vue';
 import {
   Promotion,
   Loading,
@@ -238,6 +257,9 @@ import {
   type AiSession
 } from '@/api/ai/chat';
 import { getAvailableMcpTools } from '@/api/ai/mcpTool';
+import { listKnowledge } from '@/api/ai/knowledge';
+import { checkPermi } from '@/utils/permission';
+import { chatKnowledgeChoices, prepareChatKnowledgeRequest, type ChatKnowledgeChoice } from './knowledgeSelection';
 import { marked } from 'marked';
 import * as echarts from 'echarts';
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers';
@@ -282,6 +304,45 @@ const messageListRef = ref<HTMLElement>();
 const sessions = ref<AiSession[]>([]);
 const currentSessionId = ref<number | string | null>(null);
 const chatMode = ref('auto');
+/** 只使用已授权列表中的明确知识库，不自动选首项或回退跨库检索。 */
+const selectedKnowledgeId = ref('');
+const knowledgeOptions = ref<ChatKnowledgeChoice[]>([]);
+const knowledgeLoading = ref(false);
+const knowledgeLoadError = ref('');
+const canListKnowledge = computed(() => checkPermi(['ai:knowledge:list']));
+let knowledgeRequestVersion = 0;
+
+async function loadChatKnowledge(query = '') {
+  const version = ++knowledgeRequestVersion;
+  knowledgeLoading.value = true;
+  knowledgeLoadError.value = '';
+  if (!canListKnowledge.value) {
+    knowledgeOptions.value = [];
+    selectedKnowledgeId.value = '';
+    knowledgeLoading.value = false;
+    knowledgeLoadError.value = '当前账号没有知识库列表权限';
+    return;
+  }
+  try {
+    // 保留现有列表权限；仅显示匹配的前100项，可通过名称搜索，不假定全库完整。
+    const response: any = await listKnowledge({ pageNum: 1, pageSize: 100, status: '0', knowledgeName: query || undefined });
+    if (version !== knowledgeRequestVersion) return;
+    knowledgeOptions.value = chatKnowledgeChoices(response?.rows);
+    if (!knowledgeOptions.value.some((choice) => choice.id === selectedKnowledgeId.value)) selectedKnowledgeId.value = '';
+  } catch {
+    if (version !== knowledgeRequestVersion) return;
+    knowledgeOptions.value = [];
+    selectedKnowledgeId.value = '';
+    knowledgeLoadError.value = '知识库加载失败，请点击重试';
+  } finally {
+    if (version === knowledgeRequestVersion) knowledgeLoading.value = false;
+  }
+}
+
+watch(chatMode, (mode) => {
+  if (mode === 'rag') void loadChatKnowledge();
+});
+
 /** 选中模型名称（为空使用默认模型），ModelSelect 组件会预选默认模型 */
 const selectedModel = ref('');
 const enableThinking = ref(false);
@@ -580,6 +641,16 @@ async function sendMessage() {
   const text = inputText.value.trim();
   if (!text || loading.value) return;
 
+  const knowledgeRequest = prepareChatKnowledgeRequest(chatMode.value, selectedKnowledgeId.value, knowledgeOptions.value, {
+    loading: knowledgeLoading.value,
+    error: knowledgeLoadError.value,
+    canList: canListKnowledge.value
+  });
+  if (knowledgeRequest.error) {
+    proxy?.$modal.msgWarning(knowledgeRequest.error);
+    return;
+  }
+
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
@@ -592,6 +663,7 @@ async function sendMessage() {
       content: text,
       sessionId: currentSessionId.value ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
+      knowledgeId: knowledgeRequest.knowledgeId,
       model: selectedModel.value || undefined,
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined,
@@ -804,6 +876,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  knowledgeRequestVersion++;
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   window.removeEventListener('click', onGlobalClick);
   // 清理 ECharts 实例和 ResizeObserver，防止内存泄漏
