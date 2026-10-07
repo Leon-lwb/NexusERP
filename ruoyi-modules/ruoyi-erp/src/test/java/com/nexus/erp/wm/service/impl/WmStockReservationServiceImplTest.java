@@ -81,6 +81,7 @@ class WmStockReservationServiceImplTest {
         stock.setVersion(3);
         when(stockMapper.selectById(9L)).thenReturn(stock);
         when(stockMapper.releaseReserved(anyLong(), any(), any())).thenReturn(1);
+        when(txMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
 
         BigDecimal released = service.unreserve("SALES_ORDER", 777L, null);
 
@@ -122,6 +123,7 @@ class WmStockReservationServiceImplTest {
         stock10.setVersion(1);
         when(stockMapper.selectById(10L)).thenReturn(stock10);
         when(stockMapper.releaseReserved(anyLong(), any(), any())).thenReturn(1);
+        when(txMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
 
         BigDecimal released = service.unreserve("SALES_ORDER", 777L, null);
 

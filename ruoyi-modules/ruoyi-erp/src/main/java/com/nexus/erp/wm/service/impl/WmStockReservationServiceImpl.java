@@ -3,6 +3,7 @@ package com.nexus.erp.wm.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
@@ -192,8 +193,29 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
     private void recordStockTx(WmMaterialStock stock, BigDecimal qty, String txType,
                                String sourceDocType, Long sourceDocId, Long sourceDocLineId) {
         WmMaterialStockTx tx = new WmMaterialStockTx();
+        // 流水身份完整继承真实库存，不从请求拼接仓库或臆造批次、单位。
+        tx.setTenantId(stock.getTenantId());
         tx.setMaterialStockId(stock.getStockId());
         tx.setMaterialId(stock.getMaterialId());
+        tx.setMaterialCode(stock.getMaterialCode());
+        tx.setMaterialName(stock.getMaterialName());
+        tx.setMaterialSpec(stock.getMaterialSpec());
+        tx.setBaseUomId(stock.getBaseUomId());
+        tx.setBaseUomName(stock.getBaseUomName());
+        tx.setBatchId(stock.getBatchId());
+        tx.setBatchCode(stock.getBatchCode());
+        tx.setSnId(stock.getSnId());
+        tx.setSnCode(stock.getSnCode());
+        tx.setWarehouseId(stock.getWarehouseId());
+        tx.setWarehouseCode(stock.getWarehouseCode());
+        tx.setWarehouseName(stock.getWarehouseName());
+        tx.setAreaId(stock.getAreaId());
+        tx.setAreaCode(stock.getAreaCode());
+        tx.setAreaName(stock.getAreaName());
+        tx.setLocationId(stock.getLocationId());
+        tx.setLocationCode(stock.getLocationCode());
+        tx.setLocationName(stock.getLocationName());
+        tx.setRecptDate(stock.getRecptDate());
         tx.setTxType(txType);
         tx.setTxFlag(0); // 预留/释放不改变在库数量, flag=0
         tx.setTxQuantity(qty);
@@ -203,6 +225,8 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         tx.setSourceDocId(sourceDocId);
         tx.setSourceDocLineId(sourceDocLineId);
         tx.setTxDate(new Date());
-        txMapper.insert(tx);
+        if (txMapper.insert(tx) != 1) {
+            throw new ServiceException("库存预留流水写入失败，预留或释放操作已回滚");
+        }
     }
 }
