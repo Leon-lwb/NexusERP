@@ -60,9 +60,7 @@ public class LlmNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("modelId") == null || !config.get("modelId").canConvertToLong()) {
-            throw new IllegalArgumentException("LLM 节点缺少 modelId 配置");
-        }
+        AiNodeEntityIdReader.read(config, "modelId", "LLM");
         if (config.get("promptTemplate") == null || config.get("promptTemplate").asText().isBlank()) {
             throw new IllegalArgumentException("LLM 节点缺少 promptTemplate 配置");
         }
@@ -71,7 +69,7 @@ public class LlmNodeProvider implements FlowNodeProvider {
     @Override
     public JsonNode execute(FlowExecutionContext ctx) {
         JsonNode config = ctx.getConfig();
-        Long modelId = config.get("modelId").asLong();
+        Long modelId = AiNodeEntityIdReader.read(config, "modelId", "LLM");
 
         // 渲染提示词模板
         String promptTemplate = config.get("promptTemplate").asText();
@@ -103,7 +101,8 @@ public class LlmNodeProvider implements FlowNodeProvider {
         // 组装输出
         ObjectNode output = MAPPER.createObjectNode();
         output.put("content", content);
-        output.put("modelId", modelId);
+        // 文本节点避免绕过全局 Long 序列化器后丢失精度。
+        output.put("modelId", modelId.toString());
 
         TokenUsage usage = response.tokenUsage();
         if (usage != null) {

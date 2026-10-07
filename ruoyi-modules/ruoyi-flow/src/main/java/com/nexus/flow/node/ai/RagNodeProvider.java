@@ -53,9 +53,7 @@ public class RagNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("knowledgeId") == null || !config.get("knowledgeId").canConvertToLong()) {
-            throw new IllegalArgumentException("RAG 节点缺少 knowledgeId 配置");
-        }
+        AiNodeEntityIdReader.read(config, "knowledgeId", "RAG");
         if (config.get("queryTemplate") == null || config.get("queryTemplate").asText().isBlank()) {
             throw new IllegalArgumentException("RAG 节点缺少 queryTemplate 配置");
         }
@@ -64,7 +62,7 @@ public class RagNodeProvider implements FlowNodeProvider {
     @Override
     public JsonNode execute(FlowExecutionContext ctx) {
         JsonNode config = ctx.getConfig();
-        Long knowledgeId = config.get("knowledgeId").asLong();
+        Long knowledgeId = AiNodeEntityIdReader.read(config, "knowledgeId", "RAG");
 
         // 渲染查询模板
         String queryTemplate = config.get("queryTemplate").asText();

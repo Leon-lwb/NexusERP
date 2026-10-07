@@ -59,9 +59,7 @@ public class AgentNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("modelId") == null || !config.get("modelId").canConvertToLong()) {
-            throw new IllegalArgumentException("Agent 节点缺少 modelId 配置");
-        }
+        AiNodeEntityIdReader.read(config, "modelId", "Agent");
         if (config.get("queryTemplate") == null || config.get("queryTemplate").asText().isBlank()) {
             throw new IllegalArgumentException("Agent 节点缺少 queryTemplate 配置");
         }
@@ -70,7 +68,7 @@ public class AgentNodeProvider implements FlowNodeProvider {
     @Override
     public JsonNode execute(FlowExecutionContext ctx) {
         JsonNode config = ctx.getConfig();
-        Long modelId = config.get("modelId").asLong();
+        Long modelId = AiNodeEntityIdReader.read(config, "modelId", "Agent");
 
         // 渲染问题模板
         String queryTemplate = config.get("queryTemplate").asText();
@@ -99,7 +97,7 @@ public class AgentNodeProvider implements FlowNodeProvider {
         // 组装输出（Token 用量从 AiRequestContext 暂存读取，由 AiChatModelListener 写入）
         ObjectNode output = MAPPER.createObjectNode();
         output.put("content", result);
-        output.put("modelId", modelId);
+        output.put("modelId", Long.toString(modelId));
         Integer inputTokens = AiRequestContext.getLastInputTokens();
         Integer outputTokens = AiRequestContext.getLastOutputTokens();
         if (inputTokens != null || outputTokens != null) {

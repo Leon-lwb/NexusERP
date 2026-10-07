@@ -7,6 +7,7 @@ import { listModelOptions } from '@/api/ai/model';
 import { useVariablePicker, buildVariableCandidates, evaluateExpression, parseExpressionSegments, type VariableCandidate } from './useVariablePicker';
 import type { FlowCanvasNode } from './useFlowStore';
 import KeyValueEditor from './KeyValueEditor.vue';
+import { normalizeFlowEntityId } from './flowEntityId';
 
 /**
  * 通用参数表单：按 NodeParamSchema 渲染（对齐 n8n ParameterInputFull）
@@ -193,17 +194,17 @@ async function loadEntityOptions() {
     if (source === 'aiModel') {
       const res = await listModelOptions('TEXT');
       const list = res.data ?? res.rows ?? [];
-      entityOptions.value = (Array.isArray(list) ? list : []).map((m: any) => ({
-        name: `${m.modelName ?? m.name ?? m.id}（${m.providerName ?? ''}）`,
-        value: String(m.id)
-      }));
+      entityOptions.value = (Array.isArray(list) ? list : []).flatMap((m: any) => {
+        const id = normalizeFlowEntityId(m.id);
+        return id === undefined ? [] : [{ name: `${m.modelName ?? m.name ?? id}（${m.providerName ?? ''}）`, value: id }];
+      });
     } else if (source === 'aiKnowledge') {
       const res = await listKnowledge({ pageNum: 1, pageSize: 100 });
       const list = res.rows ?? [];
-      entityOptions.value = (Array.isArray(list) ? list : []).map((k: any) => ({
-        name: k.knowledgeName ?? String(k.id),
-        value: String(k.id)
-      }));
+      entityOptions.value = (Array.isArray(list) ? list : []).flatMap((k: any) => {
+        const id = normalizeFlowEntityId(k.id);
+        return id === undefined ? [] : [{ name: k.knowledgeName ?? id, value: id }];
+      });
     }
   } catch (e) {
     console.warn('[Flow] 加载实体选项失败:', e);
@@ -290,8 +291,8 @@ onMounted(loadEntityOptions);
       <!-- optionsSource=aiModel/aiKnowledge：实体下拉 -->
       <el-select
         v-else-if="schema.optionsSource"
-        :model-value="String(value ?? '')"
-        @update:model-value="(v) => (value = v ? Number(v) : undefined)"
+        :model-value="normalizeFlowEntityId(value) ?? ''"
+        @update:model-value="(v) => (value = normalizeFlowEntityId(v))"
         :loading="entityLoading"
         :placeholder="'选择' + schema.label"
         clearable
