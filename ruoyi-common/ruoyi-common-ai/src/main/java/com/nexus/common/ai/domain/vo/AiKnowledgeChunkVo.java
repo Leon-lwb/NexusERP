@@ -28,8 +28,8 @@ public class AiKnowledgeChunkVo implements Serializable {
     @ExcelProperty(value = "主键")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，必须保留前导零） */
+    private String tenantId;
 
     /** 文档ID */
     @ExcelProperty(value = "文档ID")

@@ -48,12 +48,16 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
      * 避免并发场景下 select-then-insert 导致唯一索引冲突丢统计（S2-D R1 修复）</p>
      */
     @Override
-    public void incrementDailyUsage(Long tenantId, Long userId, String userName, Long modelId,
+    public void incrementDailyUsage(String tenantId, Long userId, String userName, Long modelId,
                                     String modelName, int inputTokens, int outputTokens, BigDecimal cost) {
+        // 统计只能归属于明确的请求租户，不能将缺失身份静默落到全局0。
+        if (tenantId == null || !tenantId.matches("[A-Za-z0-9_-]+")) {
+            throw new IllegalArgumentException("用量统计缺少有效的租户身份");
+        }
         long totalTokens = inputTokens + outputTokens;
         aiTokenUsageMapper.upsertDailyUsage(
             com.baomidou.mybatisplus.core.toolkit.IdWorker.getId(),
-            tenantId != null ? tenantId : 0,
+            tenantId,
             userId,
             userName,
             modelId,
@@ -125,7 +129,7 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
                 BigDecimal cost = calculateCost(modelId, (int) totalTokens, 0);
 
                 AiTokenUsage usage = new AiTokenUsage();
-                usage.setTenantId(0L);
+                usage.setTenantId(group.get(0).getTenantId());
                 usage.setUserId(userId);
                 usage.setUserName(String.valueOf(userId));
                 usage.setModelId(modelId);

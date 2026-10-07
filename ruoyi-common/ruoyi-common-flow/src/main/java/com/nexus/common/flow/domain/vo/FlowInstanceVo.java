@@ -27,8 +27,8 @@ public class FlowInstanceVo implements Serializable {
     @ExcelProperty(value = "实例ID")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，保留前导零；历史0不自动升级） */
+    private String tenantId;
 
     /** 流程ID */
     @ExcelProperty(value = "流程ID")

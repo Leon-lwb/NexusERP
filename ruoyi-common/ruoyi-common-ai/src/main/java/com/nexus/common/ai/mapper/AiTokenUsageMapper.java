@@ -37,7 +37,7 @@ public interface AiTokenUsageMapper extends BaseMapperPlus<AiTokenUsage, AiToken
             total_cost = IFNULL(total_cost, 0) + VALUES(total_cost),
             update_time = NOW()
         """)
-    int upsertDailyUsage(@Param("id") Long id, @Param("tenantId") Long tenantId, @Param("userId") Long userId,
+    int upsertDailyUsage(@Param("id") Long id, @Param("tenantId") String tenantId, @Param("userId") Long userId,
                          @Param("userName") String userName, @Param("modelId") Long modelId,
                          @Param("modelName") String modelName, @Param("usageDate") LocalDate usageDate,
                          @Param("inputTokens") long inputTokens, @Param("outputTokens") long outputTokens,

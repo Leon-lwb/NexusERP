@@ -1,6 +1,5 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -29,7 +28,7 @@ public class ErpShortageRiskTool extends ErpToolHelper {
         int range = (days == null || days <= 0) ? 14 : Math.min(days, 90);
         log.info("[AI-Shortage] 查询缺料风险: 未来{}天", range);
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             // 与 PrdShortageRiskServiceImpl 同口径:
             // 毛需求 = MRP明细(需求日在窗口内, 未发料余量 = required_quantity - issued_quantity)
             // 库存 = SUM(stock_quantity - reserved_quantity)

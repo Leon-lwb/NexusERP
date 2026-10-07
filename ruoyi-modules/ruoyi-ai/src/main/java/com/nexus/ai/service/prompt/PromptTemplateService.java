@@ -6,6 +6,7 @@ import com.nexus.ai.service.query.SqlExampleService;
 import com.nexus.common.ai.domain.entity.AiPromptTemplate;
 import com.nexus.common.ai.domain.vo.AiSqlExampleVo;
 import com.nexus.common.ai.service.IAiPromptTemplateService;
+import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -43,8 +45,12 @@ public class PromptTemplateService {
     /** SQL 示例匹配服务，提供 Few-Shot 示例 */
     private final SqlExampleService sqlExampleService;
 
-    /** 模板内容缓存：templateKey -> content（变更时清除） */
-    private final ConcurrentHashMap<String, String> templateCache = new ConcurrentHashMap<>();
+    /** 模板内容缓存：原始租户 String + templateKey -> content（变更时清除） */
+    private final ConcurrentHashMap<TemplateCacheKey, String> templateCache = new ConcurrentHashMap<>();
+
+    /** 结构化键不拼接分隔符，避免租户标识与模板标识碰撞。 */
+    private record TemplateCacheKey(String tenantId, String templateKey) {
+    }
 
     /**
      * 渲染 Prompt 模板
@@ -73,6 +79,7 @@ public class PromptTemplateService {
      * @return 渲染后的上下文文本
      */
     public String renderQueryAgentContext() {
+        requireTenantId();
         Map<String, String> variables = new HashMap<>();
         variables.put("schemaSummary", schemaManager.getOptimizedSchemaSummary(4000));
         variables.put("date", LocalDate.now().toString());
@@ -90,6 +97,7 @@ public class PromptTemplateService {
      * @return 渲染后的上下文文本
      */
     public String renderReportAgentContext() {
+        requireTenantId();
         Map<String, String> variables = new HashMap<>();
         variables.put("schemaSummary", schemaManager.getOptimizedSchemaSummary(4000));
         variables.put("date", LocalDate.now().toString());
@@ -103,19 +111,21 @@ public class PromptTemplateService {
      * @return 渲染后的上下文文本
      */
     public String renderSupervisorContext() {
+        requireTenantId();
         Map<String, String> variables = new HashMap<>();
         variables.put("date", LocalDate.now().toString());
         return render("supervisor", variables);
     }
 
     /**
-     * 清除指定模板的缓存（模板变更时调用）
+     * 清除当前租户指定模板的缓存（模板变更时调用）
      *
      * @param templateKey 模板标识
      */
     public void evictCache(String templateKey) {
-        templateCache.remove(templateKey);
-        log.info("[PromptTemplate] 已清除模板缓存: {}", templateKey);
+        TemplateCacheKey key = new TemplateCacheKey(requireTenantId(), Objects.requireNonNull(templateKey));
+        templateCache.remove(key);
+        log.info("[PromptTemplate] 已清除租户 {} 的模板缓存: {}", key.tenantId(), templateKey);
     }
 
     /**
@@ -133,16 +143,28 @@ public class PromptTemplateService {
      * @return 模板内容
      */
     private String getTemplate(String templateKey) {
-        return templateCache.computeIfAbsent(templateKey, key -> {
-            AiPromptTemplate template = promptTemplateService.selectByTemplateKey(key);
+        // 必须在读热缓存前确认租户，缺上下文时不查询、不落入共享默认租户。
+        TemplateCacheKey cacheKey = new TemplateCacheKey(requireTenantId(), Objects.requireNonNull(templateKey));
+        return templateCache.computeIfAbsent(cacheKey, key -> {
+            AiPromptTemplate template = promptTemplateService.selectByTemplateKey(key.templateKey());
             if (template != null) {
                 return template.getContent();
             }
-            log.warn("[PromptTemplate] 数据库中未找到模板: {}", key);
+            log.warn("[PromptTemplate] 数据库中未找到模板: {}", key.templateKey());
             return "";
         });
     }
 
+    /**
+     * 复用生产租户 getter 的原始 String，不转 Long、不补默认租户。
+     */
+    private String requireTenantId() {
+        String tenantId = TenantHelper.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalStateException("租户上下文缺失，拒绝访问 Prompt 模板缓存。");
+        }
+        return tenantId;
+    }
     /**
      * 获取可用工具描述文本（用于注入到 Prompt 上下文）
      *

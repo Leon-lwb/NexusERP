@@ -1,12 +1,15 @@
 package com.nexus.ai.mcp.service.impl;
 
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.mcp.AiToolStatusContract;
+import com.nexus.ai.mcp.McpEndpointPolicy;
+import com.nexus.ai.mcp.McpPinnedHttpClientBuilder;
+import dev.langchain4j.http.client.HttpMethod;
+import dev.langchain4j.http.client.HttpRequest;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.ai.mcp.service.IMcpMarketService;
 import com.nexus.common.ai.domain.entity.AiMcpMarket;
 import com.nexus.common.ai.domain.entity.AiMcpMarketTool;
@@ -17,6 +20,7 @@ import com.nexus.common.ai.mapper.AiToolMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,6 +39,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class McpMarketServiceImpl implements IMcpMarketService {
 
+    /** 仅来自运维/启动参数的精确本地 URI 白名单，默认不授权任何本地地址。 */
+    @Value("${nexus.ai.mcp.allowed-local-endpoints:}")
+    private String allowedLocalEndpoints = "";
+
     /** MCP 市场源表 Mapper，负责市场源读写。 */
     private final AiMcpMarketMapper marketMapper;
     /** MCP 市场工具表 Mapper，负责市场工具 upsert 与状态更新。 */
@@ -51,16 +59,17 @@ public class McpMarketServiceImpl implements IMcpMarketService {
             throw new IllegalArgumentException("市场不存在: " + marketId);
         }
 
-        // HTTP GET 市场 URL，获取工具列表 JSON
-        HttpResponse resp = HttpRequest.get(market.getUrl())
-            .timeout(30000)
-            .execute();
-        if (!resp.isOk()) {
-            throw new IllegalArgumentException("市场请求失败: HTTP " + resp.getStatus());
-        }
-
+        // 禁止跳转；HTTP 和解析异常统一收口，不能把含凭证的 URL 或响应原文透传。
         try {
-            JsonNode root = objectMapper.readTree(resp.body());
+            // Hutool/URLConnection没有请求级DNS绑定入口；市场GET改用同一受控HTTP SPI。
+            String url = McpEndpointPolicy.validate(market.getUrl(), allowedLocalEndpoints);
+            JsonNode root;
+            try (var client = new McpPinnedHttpClientBuilder(url, allowedLocalEndpoints)
+                .connectTimeout(java.time.Duration.ofSeconds(30))
+                .readTimeout(java.time.Duration.ofSeconds(30)).build()) {
+                var response = client.execute(HttpRequest.builder().method(HttpMethod.GET).url(url).build());
+                root = objectMapper.readTree(response.body());
+            }
             // 兼容 {data:[...]}、{tools:[...]}、{servers:[...]} 或裸数组
             JsonNode tools = root.isArray() ? root : root.path("data");
             if (!tools.isArray()) {
@@ -70,7 +79,7 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                 tools = root.path("servers");
             }
             if (!tools.isArray()) {
-                log.warn("[MCP市场] 响应格式异常，无 data/tools/servers 数组: {}", market.getUrl());
+                log.warn("[MCP市场] 响应格式异常，无 data/tools/servers 数组: marketId={}", marketId);
                 return new McpMarketRefreshResult(0, 0);
             }
 
@@ -113,8 +122,11 @@ public class McpMarketServiceImpl implements IMcpMarketService {
 
             log.info("[MCP市场] 刷新完成: marketId={}, 新增={}, 更新={}", marketId, added, updated);
             return new McpMarketRefreshResult(added, updated);
+        } catch (ServiceException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("解析市场响应失败: " + e.getMessage(), e);
+            log.warn("[MCP市场] 刷新失败: marketId={}, errorType={}", marketId, e.getClass().getSimpleName());
+            throw new ServiceException("MCP 市场刷新失败，请检查服务或目录格式");
         }
     }
 
@@ -142,9 +154,12 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                 : metadata.has("url") ? metadata.path("url").asText(null) : null;
 
             if (baseUrl != null && !baseUrl.isBlank()) {
+                // 市场导入是配置写入边界，不能把未授权的内网/环回地址先落入 ai_tool；
+                // 连接时的二次校验仍保留，避免并发或手工修改绕过最终守卫。
+                String validatedBaseUrl = McpEndpointPolicy.validateRemoteTransport(baseUrl, allowedLocalEndpoints);
                 tool.setToolType("REMOTE");
                 tool.setConfigJson(objectMapper.writeValueAsString(
-                    java.util.Map.of("baseUrl", baseUrl)));
+                    java.util.Map.of("baseUrl", validatedBaseUrl)));
             } else {
                 tool.setToolType("LOCAL");
                 // 市场元数据通常只含 package（npm 包名），而 McpClientManager.createStdioClient 只认 command/args，
@@ -164,7 +179,7 @@ public class McpMarketServiceImpl implements IMcpMarketService {
             log.info("[MCP市场] 工具已加载: toolName={}, toolId={}", mt.getToolName(), tool.getId());
             return tool.getId();
         } catch (Exception e) {
-            throw new RuntimeException("加载市场工具失败: " + e.getMessage(), e);
+            throw new ServiceException("加载市场工具失败，请检查工具配置");
         }
     }
 
@@ -216,7 +231,7 @@ public class McpMarketServiceImpl implements IMcpMarketService {
             try {
                 loadedIds.add(loadToolToLocal(id));
             } catch (Exception e) {
-                log.warn("[MCP市场] 批量加载跳过 {}: {}", id, e.getMessage());
+                log.warn("[MCP市场] 批量加载跳过 {}: {}", id, e.getClass().getSimpleName());
             }
         }
         return loadedIds;

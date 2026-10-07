@@ -1,6 +1,5 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -33,7 +32,7 @@ public class ErpInventoryTool extends ErpToolHelper {
     public String queryLowStockMaterials() {
         log.info("[AI-Inventory] 查询低库存物料");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT m.material_code AS 物料编码,
                        m.material_name AS 名称,
@@ -41,7 +40,7 @@ public class ErpInventoryTool extends ErpToolHelper {
                        m.safety_stock AS 安全库存,
                        (m.safety_stock - s.stock_quantity) AS 缺口
                 FROM wm_material_stock s
-                JOIN bd_material m ON s.material_id = m.material_id
+                JOIN bd_material m ON s.material_id = m.material_id AND m.tenant_id = s.tenant_id
                 WHERE s.stock_quantity < m.safety_stock
                 ORDER BY (m.safety_stock - s.stock_quantity) DESC
                 """;
@@ -68,13 +67,13 @@ public class ErpInventoryTool extends ErpToolHelper {
             return "参数错误：查询月数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT DATE_FORMAT(tx.tx_date, '%Y-%m') AS 月份,
                        SUM(tx.tx_quantity) AS 出库数量,
                        SUM(tx.tx_quantity * tx.unit_cost) AS 出库金额
                 FROM wm_material_stock_tx tx
-                JOIN bd_material m ON tx.material_id = m.material_id
+                JOIN bd_material m ON tx.material_id = m.material_id AND m.tenant_id = tx.tenant_id
                 WHERE m.material_code = ?
                   AND tx.tx_flag = -1
                   AND tx.tx_date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
@@ -99,14 +98,13 @@ public class ErpInventoryTool extends ErpToolHelper {
     public String queryInventoryValue() {
         log.info("[AI-Inventory] 查询库存金额分布");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT w.warehouse_name AS 仓库名称,
-                       SUM(s.stock_quantity) AS 库存数量,
                        SUM(s.stock_quantity * s.unit_cost) AS 库存金额
                 FROM wm_material_stock s
-                JOIN wm_warehouse w ON s.warehouse_id = w.warehouse_id
-                GROUP BY w.warehouse_name
+                JOIN wm_warehouse w ON s.warehouse_id = w.warehouse_id AND w.tenant_id = s.tenant_id
+                GROUP BY w.warehouse_id, w.warehouse_name
                 ORDER BY 库存金额 DESC
                 """;
             sql = injectTenantCondition(sql, tenantId);
@@ -118,21 +116,24 @@ public class ErpInventoryTool extends ErpToolHelper {
     }
 
     /**
-     * 按仓库维度统计库存数量和金额
+     * 按仓库及单位维度统计库存数量和金额；未知单位不合计数量。
      */
-    @Tool("按仓库维度统计库存数量和金额")
+    @Tool("按仓库及单位统计库存数量和金额；单位标识未知时数量不可合计")
     public String queryStockByWarehouse() {
         log.info("[AI-Inventory] 按仓库统计库存");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT w.warehouse_name AS 仓库名称,
+                       s.base_uom_id AS 单位ID,
+                       COALESCE(NULLIF(TRIM(s.base_uom_name), ''), '未知单位') AS 单位,
                        COUNT(DISTINCT s.material_id) AS 物料种类数,
-                       SUM(s.stock_quantity) AS 总库存数量,
+                       CASE WHEN NULLIF(TRIM(s.base_uom_id), '') IS NULL THEN NULL
+                            ELSE SUM(s.stock_quantity) END AS 总库存数量,
                        SUM(s.stock_quantity * s.unit_cost) AS 总库存金额
                 FROM wm_material_stock s
-                JOIN wm_warehouse w ON s.warehouse_id = w.warehouse_id
-                GROUP BY w.warehouse_name
+                JOIN wm_warehouse w ON s.warehouse_id = w.warehouse_id AND w.tenant_id = s.tenant_id
+                GROUP BY w.warehouse_id, w.warehouse_name, s.base_uom_id, s.base_uom_name
                 ORDER BY 总库存金额 DESC
                 """;
             sql = injectTenantCondition(sql, tenantId);
@@ -157,7 +158,7 @@ public class ErpInventoryTool extends ErpToolHelper {
             return "参数错误：库龄天数阈值必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT s.material_code AS 物料编码,
                        s.material_name AS 物料名称,
@@ -197,9 +198,9 @@ public class ErpInventoryTool extends ErpToolHelper {
             return "参数错误：统计月数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             // 注意：SQL 中已预置 s.tenant_id 和 tx.tenant_id 条件（使用参数化占位符），
-            // injectTenantCondition 检测到 TENANT_ID 关键字后会跳过处理，
+            // injectTenantCondition 检测到预置租户参数比较后会跳过处理，
             // 避免将外层别名 s 的条件误注入到子查询 WHERE 中
             String sql = """
                 SELECT s.warehouse_name AS 仓库名称,

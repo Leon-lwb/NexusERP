@@ -55,6 +55,9 @@ class McpToolServiceImplTest {
     @Test
     void toggleMustAcceptActiveAndDisabledCodesOnly() {
         McpToolServiceImpl service = newService();
+        AiTool visible = new AiTool();
+        visible.setId(1L);
+        when(aiToolMapper.selectById(1L)).thenReturn(visible);
         when(aiToolMapper.updateById(any(AiTool.class))).thenReturn(1);
 
         assertEquals(1, service.toggleToolStatus(1L, AiToolStatusContract.ACTIVE));

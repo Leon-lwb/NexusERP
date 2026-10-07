@@ -31,7 +31,7 @@ public class AiProviderVo implements Serializable {
     /**
      * 租户编号
      */
-    private Long tenantId;
+    private String tenantId;
 
     /**
      * 厂商名称

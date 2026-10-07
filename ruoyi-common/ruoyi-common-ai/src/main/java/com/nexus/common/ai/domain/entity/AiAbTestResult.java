@@ -20,8 +20,8 @@ public class AiAbTestResult {
     @TableId(value = "id")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，必须保留前导零） */
+    private String tenantId;
 
     /** 测试ID */
     private Long testId;

@@ -1,18 +1,41 @@
 package com.nexus.ai.service.query;
 
+import com.baomidou.mybatisplus.extension.plugins.inner.BaseMultiTableInnerInterceptor;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import net.sf.jsqlparser.expression.CaseExpression;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.MultiPartName;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.ParenthesedFromItem;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.WithItem;
+import net.sf.jsqlparser.util.TablesNamesFinder;
+
 import java.util.List;
+import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * SQL 只读安全校验器（公共，ExecuteSqlQueryTool 与 flow 的 sql 节点复用）
- * <p>安全链路：SELECT 白名单 + 注释清洗 + 危险关键词黑名单 + 表名白名单（前缀/动态查库）+ 租户隔离注入 + LIMIT 强加 + EXPLAIN 语法预校验</p>
+ * <p>安全链路：SELECT 白名单 + 注释清洗 + 危险关键词黑名单 + AST 物理表前缀白名单+ 租户隔离注入 + LIMIT 强加 + EXPLAIN 语法预校验</p>
  *
  * @author NexusERP
  */
@@ -21,7 +44,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class SqlSafetyValidator {
 
-    /** ERP 查询服务（执行只读 SQL，@DS("erp") 数据源；表存在性动态校验） */
+    /** ERP 查询服务（只读 SQL/EXPLAIN，@DS("erp") 数据源）；表存在性不是授权依据。 */
     private final ErpQueryService erpQueryService;
     /** AI 配置属性（表前缀白名单 + 行数/超时限制） */
     private final AiProperties aiProperties;
@@ -38,17 +61,11 @@ public class SqlSafetyValidator {
     private static final Pattern FORBIDDEN_UNION = Pattern.compile(
         "\\bUNION\\b", Pattern.CASE_INSENSITIVE);
 
-    /** 表名提取正则（匹配 FROM/JOIN 后的表名） */
-    private static final Pattern TABLE_NAME_PATTERN =
-        Pattern.compile("(?:FROM|JOIN)\\s+`?([a-zA-Z_][a-zA-Z0-9_]*)`?", Pattern.CASE_INSENSITIVE);
+    /** 租户字面量的窄字符白名单：拒绝引号、反斜杠、空白及 SQL/正则替换元字符。 */
+    private static final Pattern TENANT_ID_PATTERN = Pattern.compile("[a-zA-Z0-9_-]+");
 
-    /** SQL 子句关键词正则（用于在正确位置插入 WHERE 条件） */
-    private static final Pattern CLAUSE_PATTERN = Pattern.compile(
-        "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
-
-    /** 子句关键字（FROM 别名提取时排除，防止无别名表把 WHERE 当别名吞掉） */
-    private static final java.util.Set<String> CLAUSE_KEYWORDS = java.util.Set.of(
-        "WHERE", "GROUP", "ORDER", "LIMIT", "HAVING", "JOIN", "UNION", "ON", "AND", "OR", "SET", "VALUES");
+    /** 当前仅支持简单物理表标识符；授权只看显式配置的非空前缀。 */
+    private static final Pattern SIMPLE_TABLE_IDENTIFIER = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     /**
      * 校验并净化 SQL（只读 SELECT）
@@ -61,7 +78,7 @@ public class SqlSafetyValidator {
      */
     public String validateAndSanitize(String sql, Integer maxRows) {
         // 无显式租户（AI 对话链路）：从 AiRequestContext 获取（对话线程 ThreadLocal 可达）
-        return validateAndSanitize(sql, maxRows, AiRequestContext.getTenantId());
+        return validateAndSanitize(sql, maxRows, null);
     }
 
     /**
@@ -71,10 +88,10 @@ public class SqlSafetyValidator {
      *
      * @param sql     原始 SQL
      * @param maxRows 行数上限（null 时取配置 nexus.ai.sql-max-rows）
-     * @param tenantId 显式租户（null 时回退 AiRequestContext）
+     * @param tenantId 精确字符串租户（null 时回退 AiRequestContext；缺失或格式非法则拒绝）
      * @return 可安全执行的 SQL
      */
-    public String validateAndSanitize(String sql, Integer maxRows, Long tenantId) {
+    public String validateAndSanitize(String sql, Integer maxRows, String tenantId) {
         if (sql == null || sql.trim().isEmpty()) {
             throw new IllegalArgumentException("SQL 不能为空");
         }
@@ -106,27 +123,24 @@ public class SqlSafetyValidator {
             throw new IllegalArgumentException("SQL 包含禁止的 UNION，请拆分为多条简单查询");
         }
 
-        // 3. 表名白名单校验（动态查库，确保与实际 ERP 表一致）
-        Matcher matcher = TABLE_NAME_PATTERN.matcher(cleanedSql);
-        while (matcher.find()) {
-            String tableName = matcher.group(1);
-            if (!isTableAllowed(tableName)) {
-                log.warn("[AI-SQL] 表名 '{}' 不在白名单中", tableName);
-                throw new IllegalArgumentException("表 '" + tableName + "' 不存在或不在允许列表中，可用表: "
-                    + getAvailableTablesHint());
-            }
-        }
+        // 3. 显式前缀配置必须完整有效；后续 AST 访问器检查每个物理表，不能扫描原文猜表名。
+        List<String> allowedPrefixes = requireAllowedTablePrefixes();
 
         // 4. 注入租户隔离条件（显式租户优先，回退 AiRequestContext）
         // 安全：先重写用户书写的 tenant_id 等值条件为服务端租户（防伪造租户值），
         // 再无条件追加服务端条件兜底
-        Long effectiveTenantId = tenantId != null ? tenantId : AiRequestContext.getTenantId();
-        if (effectiveTenantId != null) {
-            cleanedSql = rewriteTenantValues(cleanedSql, effectiveTenantId);
-            cleanedSql = injectTenantCondition(cleanedSql, effectiveTenantId);
-        } else {
-            log.warn("[AI-SQL] 无法获取租户ID，跳过租户隔离");
+        String effectiveTenantId = tenantId;
+        if (effectiveTenantId == null) {
+            var contextTenantId = AiRequestContext.getTenantId();
+            effectiveTenantId = contextTenantId == null ? null : contextTenantId.toString();
         }
+        if (effectiveTenantId == null || !TENANT_ID_PATTERN.matcher(effectiveTenantId).matches()) {
+            throw new IllegalArgumentException("租户ID缺失或格式非法，禁止无租户或不安全的 SQL 查询");
+        }
+        // 仅对白名单校验通过的身份构造字符串字面量；不转数字、不补零、不裁剪。
+        String tenantLiteral = "'" + effectiveTenantId + "'";
+        cleanedSql = rewriteTenantValues(cleanedSql, tenantLiteral);
+        cleanedSql = injectTenantCondition(cleanedSql, effectiveTenantId, allowedPrefixes);
 
         // 5. 追加行数限制（移除已有的 LIMIT，强制使用安全限制）
         cleanedSql = cleanedSql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(?:\\s*,\\s*\\d+)?\\s*;?\\s*$", "");
@@ -141,42 +155,35 @@ public class SqlSafetyValidator {
         return cleanedSql;
     }
 
-    /**
-     * 检查表名是否在白名单中
-     * <p>优先前缀匹配（配置项），失败则动态查库验证（结果缓存）</p>
-     *
-     * @param tableName 表名
-     * @return 是否允许
-     */
-    private boolean isTableAllowed(String tableName) {
-        boolean prefixMatch = aiProperties.getAllowedTablePrefixes().stream()
-            .anyMatch(tableName::startsWith);
-        if (prefixMatch) {
-            return true;
+    /** 配置为空或含空/非法前缀时整体拒绝，禁止空串前缀意外授权所有表。 */
+    private List<String> requireAllowedTablePrefixes() {
+        List<String> prefixes = aiProperties.getAllowedTablePrefixes();
+        if (prefixes == null || prefixes.isEmpty()
+            || prefixes.stream().anyMatch(prefix -> prefix == null
+                || !SIMPLE_TABLE_IDENTIFIER.matcher(prefix).matches())) {
+            throw new IllegalArgumentException("表名前缀白名单未配置或格式非法，禁止查询");
         }
-        try {
-            return erpQueryService.tableExists(tableName);
-        } catch (Exception e) {
-            log.warn("[AI-SQL] 动态查库验证失败，回退到前缀匹配: {}", e.getMessage());
-            return false;
-        }
+        // 使用当前请求的不可变快照；大小写只影响授权匹配，不改写实际 SQL 表标识符。
+        return prefixes.stream().map(prefix -> prefix.toLowerCase(Locale.ROOT)).toList();
     }
 
-    /**
-     * 获取可用表名提示（前 30 张表，帮助选择正确的表）
-     *
-     * @return 可用表名提示
-     */
-    private String getAvailableTablesHint() {
-        try {
-            List<String> tables = erpQueryService.queryErpTables();
-            if (tables.isEmpty()) {
-                return "ERP 库中无可用表";
-            }
-            int limit = Math.min(tables.size(), 30);
-            return String.join(", ", tables.subList(0, limit));
-        } catch (Exception e) {
-            return "请调用查询全部表接口获取可用表";
+    /** 只做显式前缀匹配；数据库中存在的表绝不能自动取得查询权限。 */
+    private boolean isTableAllowed(String tableName, List<String> prefixes) {
+        String normalized = tableName.toLowerCase(Locale.ROOT);
+        return prefixes.stream().anyMatch(normalized::startsWith);
+    }
+
+    /** 检查真实物理表，而不是列限定符、派生表别名或字符串常量中的伪 FROM/JOIN。 */
+    private void validatePhysicalTable(Table table, List<String> prefixes) {
+        if (table.getNameParts().size() != 1) {
+            throw new IllegalArgumentException("暂不支持限定 schema/catalog 的表名，请使用当前 ERP 数据源的简单表名");
+        }
+        String tableName = MultiPartName.unquote(table.getNameParts().get(0));
+        if (tableName == null || !SIMPLE_TABLE_IDENTIFIER.matcher(tableName).matches()) {
+            throw new IllegalArgumentException("暂不支持特殊或含限定符的物理表名");
+        }
+        if (!isTableAllowed(tableName, prefixes)) {
+            throw new IllegalArgumentException("表 '" + tableName + "' 不在允许的前缀白名单中");
         }
     }
 
@@ -190,81 +197,158 @@ public class SqlSafetyValidator {
         "(?i)((?:[a-zA-Z_][a-zA-Z0-9_]*\\.)?tenant_id\\s*=\\s*)('[^']*'|[0-9]+)");
 
     /**
-     * 注入租户隔离条件
-     * <p>从 SQL 提取主表别名（如 FROM wm_material_stock s），使用 "s.tenant_id = X" 避免多表 JOIN 列歧义</p>
-     * <p>安全：调用方须先经 {@link #rewriteTenantValues} 把用户条件值重写为服务端租户，
-     * 本方法无条件追加服务端条件兜底（原"包含 TENANT_ID 字样即跳过"可被 SELECT tenant_id FROM ... 绕过）</p>
+     * 注入租户隔离条件。
+     * <p>使用 MyBatis-Plus 同版本 JSqlParser 的多表处理器，而不是字符串拼接：
+     * 对支持的 SELECT/JOIN/子查询按 AST 追加条件；未证明安全的 CASE/HAVING/ON 子查询、
+     * 内嵌 WITH 和括号 JOIN 先拒绝，不能以语法解析成功代替租户隔离证明。</p>
      *
-     * @param sql      原始 SQL（已清洗注释）
-     * @param tenantId 租户ID
-     * @return 注入租户条件后的 SQL
+     * @param sql SQL（已清洗注释并重写用户租户条件）
+     * @param tenantId 已通过窄字符白名单校验的原始租户文本
+     * @return 追加所有可见表租户条件的 SQL
      */
-    private String injectTenantCondition(String sql, Long tenantId) {
-        String tenantCol = extractOuterTenantColumn(sql);
-        // 租户值按 RuoYi 6 位字符串格式注入（Long.valueOf("000000")=0 会丢失前导零，
-        // 且数字字面量依赖 MySQL 隐式转换才能匹配 varchar 列——统一字符串+引号）
-        String tenantValue = String.format("%06d", tenantId);
-        String tenantCondition = tenantCol + " = '" + tenantValue + "'";
-        String upperSql = sql.toUpperCase();
-
-        if (upperSql.contains("WHERE")) {
-            int whereIndex = upperSql.indexOf("WHERE");
-            sql = sql.substring(0, whereIndex + 5) +
-                  " " + tenantCondition + " AND" +
-                  sql.substring(whereIndex + 5);
-        } else {
-            Matcher clauseMatcher = CLAUSE_PATTERN.matcher(sql);
-            if (clauseMatcher.find()) {
-                int insertPos = clauseMatcher.start();
-                sql = sql.substring(0, insertPos) +
-                      " WHERE " + tenantCondition + " " +
-                      sql.substring(insertPos);
-            } else {
-                sql = sql + " WHERE " + tenantCondition;
-            }
-        }
-        return sql;
+    private String injectTenantCondition(String sql, String tenantId, List<String> allowedPrefixes) {
+        return new TenantIsolationParser(tenantId, table -> validatePhysicalTable(table, allowedPrefixes)).append(sql);
     }
 
     /**
-     * 提取最外层 FROM 子句的表名/别名（跳过括号内子查询/CTE）
-     * <p>别名组排除子句关键字（无别名表 + WHERE 时，原正则把 WHERE 当别名吞掉 → WHERE.tenant_id）</p>
-     *
-     * @param sql SQL
-     * @return 租户列名（如 s.tenant_id）
+     * 复用项目实际依赖的 JSqlParser 版本，为每张业务表构建精确文本租户条件。
+     * 每次调用创建实例，避免请求之间共享租户值。
      */
-    private String extractOuterTenantColumn(String sql) {
-        Pattern fromPattern = Pattern.compile(
-            "FROM\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:AS\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)?",
-            Pattern.CASE_INSENSITIVE);
-        Matcher matcher = fromPattern.matcher(sql);
-        while (matcher.find()) {
-            if (!isInsideParentheses(sql, matcher.start())) {
-                String alias = matcher.group(2);
-                // 别名不得是 SQL 子句关键字（无别名表时 group(2) 会吞掉 WHERE/GROUP/ORDER 等）
-                if (alias != null && CLAUSE_KEYWORDS.contains(alias.toUpperCase())) {
-                    alias = null;
-                }
-                if (alias != null) {
-                    return alias + ".tenant_id";
-                }
-                return matcher.group(1) + ".tenant_id";
-            }
+    private static final class TenantIsolationParser extends BaseMultiTableInnerInterceptor {
+        private final String tenantId;
+        private final Consumer<Table> tableValidator;
+
+        private TenantIsolationParser(String tenantId, Consumer<Table> tableValidator) {
+            this.tenantId = tenantId;
+            this.tableValidator = tableValidator;
         }
-        return "tenant_id";
+
+        private String append(String sql) {
+            return parserSingle(sql, null);
+        }
+
+        @Override
+        protected void processSelect(net.sf.jsqlparser.statement.select.Select select,
+                                     int index, String sql, Object obj) {
+            // 先检查完整查询树的未支持结构，确保在租户改写及后续 EXPLAIN 前 fail-closed。
+            try {
+                new UnsupportedStructureGuard(tableValidator).getTables((Statement) select);
+            } catch (UnsupportedOperationException e) {
+                throw new IllegalArgumentException("SQL 包含不支持的结构，请简化查询", e);
+            }
+            // JsqlParserSupport 的默认实现只为具体拦截器留扩展点；这里复用多表处理器的
+            // SelectBody 遍历，确保顶层、JOIN 和嵌套查询全部进入 buildTableExpression。
+            processSelectBody(select, sql);
+        }
+
+        @Override
+        protected void processPlainSelect(PlainSelect select, String whereSegment) {
+            super.processPlainSelect(select, whereSegment);
+            // MyBatis-Plus 对普通/外连接已把右表条件放到适当的 ON/WHERE 位置。
+            // CROSS JOIN 没有 ON，且部分版本不会把右表交给多表列表；只对 CROSS JOIN
+            // 在当前 WHERE 追加右表条件。判断基于AST节点，不扫描原文，避免字符串常量
+            // "m.tenant_id" 冒充真正的租户列。
+            Expression where = select.getWhere();
+            if (select.getJoins() != null) {
+                for (Join join : select.getJoins()) {
+                    if (join.isCross() && join.getRightItem() instanceof Table table) {
+                        Expression tenantCondition = buildTableExpression(table, where, whereSegment);
+                        // INNER JOIN可能把主表租户条件放在ON中，当前WHERE仍是裸OR；追加AND前必须保留括号。
+                        Expression protectedWhere = where instanceof OrExpression
+                            ? new ParenthesedExpressionList<>(where) : where;
+                        where = protectedWhere == null ? tenantCondition
+                            : new AndExpression(protectedWhere, tenantCondition);
+                    }
+                }
+            }
+            select.setWhere(where);
+        }
+
+        @Override
+        public Expression buildTableExpression(Table table, Expression where, String whereSegment) {
+            String tableName = table.getAlias() != null && table.getAlias().getName() != null
+                ? table.getAlias().getName() : table.getName();
+            Column tenantColumn = new Column(tableName + ".tenant_id");
+            return new EqualsTo(tenantColumn, new StringValue(tenantId));
+        }
     }
 
     /**
-     * 判断给定位置是否在括号内（子查询/CTE 内）
+     * 校验物理表白名单并拒绝当前多表拦截器未完整处理的结构，不重新实现 SQL 租户注入框架。
+     * <p>复用 JSqlParser 的树访问器定位节点，避免字符串常量、大小写或嵌套包装绕过。</p>
      */
-    private boolean isInsideParentheses(String sql, int position) {
-        int depth = 0;
-        for (int i = 0; i < position; i++) {
-            char c = sql.charAt(i);
-            if (c == '(') depth++;
-            else if (c == ')') depth--;
+    private static final class UnsupportedStructureGuard extends TablesNamesFinder<Void> {
+        private final Consumer<Table> tableValidator;
+
+        private UnsupportedStructureGuard(Consumer<Table> tableValidator) {
+            this.tableValidator = tableValidator;
         }
-        return depth > 0;
+
+        @Override
+        public <S> Void visit(Table table, S context) {
+            // 每个物理 Table 节点独立授权，包含逗号 JOIN、JOIN 右表与所有已支持的嵌套 SELECT。
+            tableValidator.accept(table);
+            return null;
+        }
+
+        @Override
+        public <S> Void visit(WithItem<?> item, S context) {
+            throw new IllegalArgumentException("暂不支持 WITH/CTE 查询，请拆分为简单 SELECT");
+        }
+
+        @Override
+        public <S> Void visit(ParenthesedFromItem item, S context) {
+            // 括号 FROM/JOIN 分组与普通 (SELECT ...) 派生表是不同 AST 节点。
+            throw new IllegalArgumentException("暂不支持括号 FROM/JOIN 分组，请使用普通 JOIN");
+        }
+
+        @Override
+        public <S> Void visit(CaseExpression expression, S context) {
+            if (containsSubquery(expression)) {
+                throw new IllegalArgumentException("暂不支持含子查询的 CASE 表达式");
+            }
+            return super.visit(expression, context);
+        }
+
+        @Override
+        public <S> Void visit(PlainSelect select, S context) {
+            if (containsSubquery(select.getHaving())) {
+                throw new IllegalArgumentException("暂不支持含子查询的 HAVING 条件");
+            }
+            if (select.getJoins() != null) {
+                for (Join join : select.getJoins()) {
+                    for (Expression on : join.getOnExpressions()) {
+                        if (containsSubquery(on)) {
+                            throw new IllegalArgumentException("暂不支持 JOIN ON 条件中的子查询");
+                        }
+                    }
+                }
+            }
+            super.visit(select, context);
+            // TablesNamesFinder 默认不遍历 ORDER/GROUP 表达式，在此补查其中的嵌套禁用节点。
+            if (select.getOrderByElements() != null) {
+                select.getOrderByElements().forEach(order -> order.getExpression().accept(this, context));
+            }
+            if (select.getGroupBy() != null && select.getGroupBy().getGroupByExpressionList() != null) {
+                select.getGroupBy().getGroupByExpressionList().accept(this, context);
+            }
+            return null;
+        }
+
+        private static boolean containsSubquery(Expression expression) {
+            if (expression == null) {
+                return false;
+            }
+            boolean[] found = {false};
+            expression.accept(new ExpressionVisitorAdapter<Void>() {
+                @Override
+                public <S> Void visit(Select select, S context) {
+                    found[0] = true;
+                    return null;
+                }
+            }, null);
+            return found[0];
+        }
     }
 
     /**
@@ -273,8 +357,8 @@ public class SqlSafetyValidator {
      * → {@code WHERE tenant_id=<服务端租户>}。等值条件被重写后，再由
      * {@link #injectTenantCondition} 无条件追加服务端条件兜底（拦截 !=/IN 等绕过变体）。</p>
      */
-    private String rewriteTenantValues(String sql, Long tenantId) {
-        return USER_TENANT_CONDITION.matcher(sql).replaceAll("$1" + tenantId);
+    private String rewriteTenantValues(String sql, String tenantLiteral) {
+        return USER_TENANT_CONDITION.matcher(sql).replaceAll("$1" + Matcher.quoteReplacement(tenantLiteral));
     }
 
     /**

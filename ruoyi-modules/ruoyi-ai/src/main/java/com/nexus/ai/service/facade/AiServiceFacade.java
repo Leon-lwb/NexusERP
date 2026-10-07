@@ -2,6 +2,7 @@ package com.nexus.ai.service.facade;
 
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
+import com.nexus.ai.agent.McpDocumentAgent;
 import com.nexus.ai.agent.WebSearchAgent;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.context.SearchSourceHolder;
@@ -22,6 +23,9 @@ import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiSessionMapper;
+import com.nexus.common.ai.mapper.AiToolMapper;
+import com.nexus.common.ai.domain.entity.AiTool;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiTokenUsageService;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -39,6 +43,7 @@ import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.service.tool.ToolProvider;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -92,6 +97,9 @@ public class AiServiceFacade {
 
     /** 联网搜索工具，供 WebSearchAgent 调用 */
     private final WebSearchTool webSearchTool;
+
+    /** 只读查询当前租户所选工具身份；资料能力只识别本次已审部署，不改写工具权限。 */
+    private final AiToolMapper aiToolMapper;
 
     /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */
     private static final ObjectMapper DRAIN_MAPPER = new ObjectMapper();
@@ -193,16 +201,9 @@ public class AiServiceFacade {
         aiMessageMapper.insert(userMsg);
 
         // 4. 捕获请求上下文（tenantIdStr 透传给异步路径，TenantHelper.dynamic 恢复，避免 ai_message insert 时 tenant_id 落 0）
-        Long tenantId = null;
-        String tenantIdStr = null;
-        try {
-            tenantIdStr = LoginHelper.getTenantId();
-            if (tenantIdStr != null && !tenantIdStr.isEmpty()) {
-                tenantId = Long.parseLong(tenantIdStr);
-            }
-        } catch (NumberFormatException e) {
-            log.warn("租户ID格式异常: {}", LoginHelper.getTenantId());
-        }
+        // 租户是文本身份，异步上下文与数据库条件均保留原始前导零。
+        String tenantIdStr = LoginHelper.getTenantId();
+        String tenantId = tenantIdStr;
         String userName = null;
         try {
             userName = LoginHelper.getUsername();
@@ -274,7 +275,7 @@ public class AiServiceFacade {
      * 普通流式对话：StreamingChatModel → 逐 Token 推送
      */
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
-                                     Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
+                                     Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
         StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
 
         // 使用 MessageWindowChatMemory 加载历史消息，限制最近 20 条（约 10 轮对话），避免超出 token 限制
@@ -349,7 +350,7 @@ public class AiServiceFacade {
      * <p>将检索到的知识片段注入提示词，让 LLM 基于知识库内容回答</p>
      */
     private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
-                               Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
+                               Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
         StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
 
         // 加载历史消息
@@ -443,7 +444,7 @@ public class AiServiceFacade {
      * </p>
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
-                                 Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
+                                 Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
         // Agent 模式使用低 temperature（0.1），提高 SQL 生成准确性
         ChatModel chatModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
 
@@ -456,7 +457,7 @@ public class AiServiceFacade {
         List<Object> reportTools = toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("ALL");
 
         // 会话级 MCP 工具选择：优先使用请求中的 enabledToolIds，其次使用会话保存的配置
-        ToolProvider mcpToolProvider = resolveMcpToolProvider(request, sessionId);
+        McpDocumentCapability mcpCapability = resolveMcpDocumentCapability(request, sessionId);
 
         // 注入 PromptTemplateService 渲染的动态上下文
         // 由于 LangChain4j Supervisor 模式下 SubAgent 的 @UserMessage 由框架填充，
@@ -479,16 +480,11 @@ public class AiServiceFacade {
             enhancedSb.append("【业务上下文】\n").append(truncateContext(bizCtx)).append("\n\n");
         }
         enhancedSb.append("【用户问题】\n").append(contextualQuery);
-        String enhancedQuery = enhancedSb.toString();
-
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
         var queryAgentBuilder = AgenticServices.agentBuilder(ErpQueryAgent.class)
             .chatModel(chatModel);
         if (!queryTools.isEmpty()) {
             queryAgentBuilder.tools(queryTools.toArray());
-        }
-        if (mcpToolProvider != null) {
-            queryAgentBuilder.toolProvider(mcpToolProvider);
         }
         ErpQueryAgent queryAgent = queryAgentBuilder.build();
 
@@ -498,15 +494,30 @@ public class AiServiceFacade {
         if (!reportTools.isEmpty()) {
             reportAgentBuilder.tools(reportTools.toArray());
         }
-        if (mcpToolProvider != null) {
-            reportAgentBuilder.toolProvider(mcpToolProvider);
-        }
         ErpReportAgent reportAgent = reportAgentBuilder.build();
 
-        // 构建 Supervisor（增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数）
+        // 构建 Supervisor。外部 MCP 工具只挂独立角色，不注入 ERP 查询/报表 Agent。
+        // 泛化 Provider 不自称只读资料；只有选中已审资料服务且有资料意图时才启用资料过滤与证据闸门。
+        List<Object> subAgents = new ArrayList<>();
+        subAgents.add(queryAgent);
+        subAgents.add(reportAgent);
+        if (mcpCapability.hasTools()) {
+            McpDocumentAgent documentAgent = AgenticServices.agentBuilder(McpDocumentAgent.class)
+                .chatModel(chatModel)
+                .toolProvider(mcpCapability.provider())
+                .description(mcpCapability.description())
+                .systemMessage(mcpCapability.instructions())
+                .maxToolCallingRoundTrips(8)
+                .build();
+            subAgents.add(documentAgent);
+            enhancedSb.insert(0, "【当前请求外部工具能力】\n" + mcpCapability.description() + "\n"
+                + mcpCapability.instructions() + "\n\n");
+        }
+        final String enhancedQuery = enhancedSb.toString();
+        // 增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数。
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(chatModel)
-            .subAgents(queryAgent, reportAgent)
+            .subAgents(subAgents)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .maxAgentsInvocations(20)
             .build();
@@ -533,6 +544,8 @@ public class AiServiceFacade {
                 AgentStreamHelper.sendThinking(channel, "SupervisorAgent", "开始分析您的问题...");
 
                 String result = supervisor.invoke(enhancedQuery);
+                // 先验证正文与本请求的真实读取证据；失败不得落库、推送 content/done 或正常 complete。
+                mcpCapability.requireSuccessfulResult(result);
 
                 long duration = System.currentTimeMillis() - startTime;
                 aiAgentListener.onAgentComplete("SupervisorAgent", duration, 0);
@@ -721,7 +734,7 @@ public class AiServiceFacade {
      * @param modelName 模型名称
      */
     private void saveAiMessageFromContext(Long sessionId, String content,
-                                           Long tenantId, Long userId,
+                                           String tenantId, Long userId,
                                            String userName, String modelName, String tenantIdStr) {
         AiMessage aiMsg = new AiMessage();
         aiMsg.setSessionId(sessionId);
@@ -767,7 +780,7 @@ public class AiServiceFacade {
      * @param thinkingContent 推理过程内容（可为 null）
      */
     private void saveAiMessageWithTokens(Long sessionId, String content, Long modelId,
-                                          ChatResponse response, Long tenantId, Long userId,
+                                          ChatResponse response, String tenantId, Long userId,
                                           String userName, String modelName, String thinkingContent, String tenantIdStr) {
         AiMessage aiMsg = new AiMessage();
         aiMsg.setSessionId(sessionId);
@@ -815,9 +828,45 @@ public class AiServiceFacade {
      *
      * @param request   聊天请求
      * @param sessionId 会话ID
-     * @return MCP ToolProvider（可能为 null，表示不使用 MCP 工具）
+     * @return 本请求的工具包装与结果闸门，不以 Provider 存在宣称只读或连接成功
      */
-    private ToolProvider resolveMcpToolProvider(AiChatRequest request, Long sessionId) {
+    private McpDocumentCapability resolveMcpDocumentCapability(AiChatRequest request, Long sessionId) {
+        List<Long> toolIds = resolveMcpToolIds(request, sessionId);
+        List<Long> auditedDocumentIds = new ArrayList<>();
+        if (McpDocumentCapability.isDocumentQuestion(request.getContent())) {
+            if (toolIds == null) {
+                // 缺省“全部启用”也是本请求实际工具集，不能绕过资料身份识别与真实读取闸门。
+                List<AiTool> enabled = aiToolMapper.selectList(new LambdaQueryWrapper<AiTool>()
+                    .eq(AiTool::getStatus, "0"));
+                if (enabled != null) {
+                    for (AiTool stored : enabled) {
+                        if (McpDocumentCapability.isAuditedDocumentService(stored)) auditedDocumentIds.add(stored.getId());
+                    }
+                }
+            } else {
+                for (Long id : toolIds) {
+                    // Mapper 保留当前租户可见性；精确已审名称与端点共同识别，不能只凭工具名/prompt 自称只读。
+                    if (McpDocumentCapability.isAuditedDocumentService(aiToolMapper.selectById(id))) {
+                        auditedDocumentIds.add(id);
+                    }
+                }
+            }
+        }
+        boolean documentRequest = !auditedDocumentIds.isEmpty();
+        ToolProvider source;
+        if (documentRequest) {
+            source = toolProviderFactory.getMcpToolProvidersByIds(auditedDocumentIds);
+        } else if (toolIds != null) {
+            source = toolIds.isEmpty() ? null : toolProviderFactory.getMcpToolProvidersByIds(toolIds);
+        } else {
+            source = toolProviderFactory.getAllEnabledMcpToolProviders();
+        }
+        ToolProviderRequest discoveryRequest = new ToolProviderRequest(sessionId,
+            dev.langchain4j.data.message.UserMessage.from(request.getContent()));
+        return McpDocumentCapability.prepare(source, discoveryRequest, documentRequest);
+    }
+
+    private List<Long> resolveMcpToolIds(AiChatRequest request, Long sessionId) {
         List<Long> toolIds = null;
 
         // 1. 优先使用请求中指定的工具 ID
@@ -834,16 +883,7 @@ public class AiServiceFacade {
             // 3. toolIds 为 null 时，使用全部已启用工具
         }
 
-        if (toolIds != null) {
-            if (toolIds.isEmpty()) {
-                // 空列表表示不使用任何 MCP 工具
-                return null;
-            }
-            return toolProviderFactory.getMcpToolProvidersByIds(toolIds);
-        }
-
-        // 默认：加载全部已启用的 MCP 工具
-        return toolProviderFactory.getAllEnabledMcpToolProviders();
+        return toolIds;
     }
 
     /**
@@ -942,7 +982,7 @@ public class AiServiceFacade {
      * 检索来源经 SearchSourceHolder 收集后仍走来源卡片推送；检索失败不阻断对话，降级为普通流式回答。</p>
      */
     private void invokeWithWebSearchStreaming(AiModel modelConfig, AiChatRequest request,
-                                              Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
+                                              Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
         AiSseMessageHelper.sendThinking(userId);
 
         CompletableFuture.runAsync(() -> {
@@ -994,7 +1034,7 @@ public class AiServiceFacade {
      * 联网搜索模式：WebSearchAgent + WebSearchTool → SSE 推送结果
      */
     private void invokeWithWebSearch(AiModel modelConfig, AiChatRequest request,
-                                      Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
+                                      Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
         CompletableFuture.runAsync(() -> {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,

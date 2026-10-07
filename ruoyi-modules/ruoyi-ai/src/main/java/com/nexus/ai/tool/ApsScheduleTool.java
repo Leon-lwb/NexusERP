@@ -1,6 +1,5 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
 import com.nexus.common.json.utils.JsonUtils;
 import dev.langchain4j.agent.tool.P;
@@ -44,7 +43,7 @@ public class ApsScheduleTool extends ErpToolHelper {
         int range = (days == null || days <= 0) ? 30 : days;
         log.info("[AI-APS] 查询排产方案列表: 最近{}天", range);
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT plan_no AS 方案编号,
                        plan_name AS 方案名称,
@@ -81,7 +80,7 @@ public class ApsScheduleTool extends ErpToolHelper {
     public String queryDelayedWorkOrders() {
         log.info("[AI-APS] 查询拖期工单");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT t.wo_no AS 工单编号,
                        t.material_name AS 产品,
@@ -120,7 +119,7 @@ public class ApsScheduleTool extends ErpToolHelper {
     public String queryResourceUtilization() {
         log.info("[AI-APS] 查询资源利用率");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT plan_no AS 方案编号, utilization_json AS 利用率明细
                 FROM prd_schedule_plan
@@ -168,7 +167,7 @@ public class ApsScheduleTool extends ErpToolHelper {
             return "参数错误：工单编号不能为空";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT t.wo_no AS 工单编号,
                        t.seq_num AS 工序序号,

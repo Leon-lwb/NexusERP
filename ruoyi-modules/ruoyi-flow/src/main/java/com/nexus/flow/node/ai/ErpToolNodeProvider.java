@@ -198,6 +198,12 @@ public class ErpToolNodeProvider implements FlowNodeProvider {
         // 反射调用
         log.info("[Flow] ERP 工具节点 {} 调用: {} args={}", ctx.getNodeName(), toolName, MAPPER.valueToTree(paramValues));
         Object result = toolMethod.invoke(toolBean, paramValues);
+        // 内置工具供Agent使用时可能将异常转为中文文本；Flow不能把明确错误或空返回包装成成功。
+        // 明确的“查询成功，但未返回数据”仍是有效零行结果；拒绝消息不透传底层SQL或连接详情。
+        if (result == null || result instanceof String text
+            && (text.isBlank() || text.stripLeading().matches("(?s)^(查询失败|参数错误|错误)[：:].*"))) {
+            throw new IllegalStateException("ERP工具未返回有效业务结果，请检查参数或后端日志");
+        }
 
         ObjectNode output = MAPPER.createObjectNode();
         output.put("toolName", toolName);

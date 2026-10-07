@@ -28,6 +28,13 @@ public abstract class ErpToolHelper {
     /** ERP 查询服务（@DS("erp") 数据源） */
     protected final ErpQueryService erpQueryService;
 
+    /** 租户ID按系统 varchar(20) 标识符处理，禁止引号、反斜杠和控制符进入SQL字面量。 */
+    private static final Pattern TENANT_ID_PATTERN = Pattern.compile("[a-zA-Z0-9_-]{1,20}");
+
+    /** 仅识别工具预置的租户参数比较；表间租户相等不代表已限定当前请求租户。 */
+    private static final Pattern PARAMETERIZED_TENANT_PATTERN = Pattern.compile(
+        "\\btenant_id\\s*=\\s*\\?", Pattern.CASE_INSENSITIVE);
+
     /** SQL 子句关键词正则（用于在正确位置插入 WHERE 条件） */
     private static final Pattern CLAUSE_PATTERN = Pattern.compile(
         "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
@@ -49,17 +56,18 @@ public abstract class ErpToolHelper {
      * </p>
      * <p>
      * 注意：本类服务于硬编码 SQL 的业务工具（SQL 文本不含用户输入的 tenant_id 条件），
-     * 因此保留"含 TENANT_ID 字样即跳过"逻辑——工具自身预置的 tenant_id 参数化条件（如
-     * ErpInventoryTool.queryInventoryTurnover 的 tx.tenant_id = ?）无需重复注入。
+     * 因此仅对工具自身预置的 tenant_id 参数化条件（如tx.tenant_id = ?）跳过重复注入。
+     * JOIN中的两表tenant_id相等不算请求级隔离，仍须注入精确请求租户。
      * 用户可控 SQL 必须走 SqlSafetyValidator（剥离用户条件后强制重写）。
      * </p>
      *
      * @param sql      原始 SQL
-     * @param tenantId 租户ID（可为 null，为 null 时不注入）
+     * @param tenantId 精确租户字符串；缺失或非法时拒绝查询
      * @return 注入租户条件后的 SQL
      */
-    protected String injectTenantCondition(String sql, Long tenantId) {
-        if (tenantId == null || sql.toUpperCase().contains("TENANT_ID")) {
+    protected String injectTenantCondition(String sql, String tenantId) {
+        requireTenantId(tenantId);
+        if (PARAMETERIZED_TENANT_PATTERN.matcher(sql).find()) {
             return sql;
         }
         // 跳过 CTE 定义部分，定位主查询的 FROM
@@ -97,9 +105,9 @@ public abstract class ErpToolHelper {
             tenantCol = "tenant_id";
         }
 
-        // 注意：tenantId 为服务端 Long 值（来自 AiRequestContext），不存在 SQL 注入风险，
-        // 因此直接拼接而非参数化。若后续需要参数化，需配合 executeParameterizedQuery 使用。
-        String tenantCondition = tenantCol + " = " + tenantId;
+        // 严格校验标识符后以字符串字面量比较，保留000000、前导零和字母租户；
+        // 不使用数值比较，不补零，也不把旧0数据自动归属到000000。
+        String tenantCondition = tenantCol + " = '" + tenantId + "'";
         String upperMain = mainQuery.toUpperCase();
 
         String modifiedMain;
@@ -160,7 +168,24 @@ public abstract class ErpToolHelper {
      * 从 AiRequestContext 获取租户ID并注入条件（便捷方法）
      */
     protected String injectTenantCondition(String sql) {
-        return injectTenantCondition(sql, AiRequestContext.getTenantId());
+        return injectTenantCondition(sql, currentTenantId());
+    }
+
+    /**
+     * 获取必需的请求租户，兼容旧Long基线与主线程迁移后的String上下文。
+     * 只做原值转字符串，不擅自补回已经丢失的前导零，不把null转为字面量null。
+     * 参数化SQL也必须通过此入口，缺失上下文不能查询全库或绑定空租户。
+     */
+    protected String currentTenantId() {
+        Object tenantId = AiRequestContext.getTenantId();
+        return requireTenantId(tenantId == null ? null : tenantId.toString());
+    }
+
+    private String requireTenantId(String tenantId) {
+        if (tenantId == null || !TENANT_ID_PATTERN.matcher(tenantId).matches()) {
+            throw new IllegalArgumentException("租户上下文缺失或租户标识无效，拒绝查询");
+        }
+        return tenantId;
     }
 
     /**

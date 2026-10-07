@@ -100,9 +100,9 @@ public class NotifyNodeProvider implements FlowNodeProvider {
         UserNotificationEvent event = new UserNotificationEvent();
         String tenantId = ctx.getTenantId();
         if (tenantId == null) {
-            Long ctxTenant = AiRequestContext.getTenantId();
+            String ctxTenant = AiRequestContext.getTenantId();
             if (ctxTenant != null) {
-                tenantId = String.valueOf(ctxTenant);
+                tenantId = ctxTenant;
             }
         }
         if (tenantId != null) {

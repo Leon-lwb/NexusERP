@@ -4,11 +4,13 @@ import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.common.ai.domain.bo.AiSqlExampleBo;
 import com.nexus.common.ai.domain.vo.AiSqlExampleVo;
 import com.nexus.common.ai.service.IAiSqlExampleService;
+import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,8 +30,12 @@ public class SqlExampleService {
     /** SQL 示例持久化服务 */
     private final IAiSqlExampleService sqlExampleService;
 
-    /** 示例缓存：key="all" 或 category */
-    private final ConcurrentHashMap<String, List<AiSqlExampleVo>> exampleCache = new ConcurrentHashMap<>();
+    /** 示例缓存按原始租户 String 与分类隔离，不能复用其他租户的热缓存。 */
+    private final ConcurrentHashMap<ExampleCacheKey, List<AiSqlExampleVo>> exampleCache = new ConcurrentHashMap<>();
+
+    /** category=null 专用于全部示例，避免与实际分类文本 "all" 碰撞。 */
+    private record ExampleCacheKey(String tenantId, String category) {
+    }
 
     /**
      * 获取所有已启用的 SQL 示例
@@ -38,7 +44,8 @@ public class SqlExampleService {
      * @return SQL 示例列表
      */
     public List<AiSqlExampleVo> getAllEnabledExamples() {
-        return exampleCache.computeIfAbsent("all", k -> {
+        ExampleCacheKey cacheKey = new ExampleCacheKey(requireTenantId(), null);
+        return exampleCache.computeIfAbsent(cacheKey, k -> {
             AiSqlExampleBo bo = new AiSqlExampleBo();
             // 已启用 = status 0（字典 sys_normal_disable，2026-08-28 迁移后语义）
             bo.setStatus(AiToolStatusContract.ACTIVE);
@@ -53,9 +60,10 @@ public class SqlExampleService {
      * @return SQL 示例列表
      */
     public List<AiSqlExampleVo> getExamplesByCategory(String category) {
-        return exampleCache.computeIfAbsent(category, k -> {
+        ExampleCacheKey cacheKey = new ExampleCacheKey(requireTenantId(), Objects.requireNonNull(category));
+        return exampleCache.computeIfAbsent(cacheKey, k -> {
             AiSqlExampleBo bo = new AiSqlExampleBo();
-            bo.setCategory(k);
+            bo.setCategory(k.category());
             bo.setStatus(AiToolStatusContract.ACTIVE);
             return sqlExampleService.selectList(bo);
         });
@@ -82,11 +90,31 @@ public class SqlExampleService {
     }
 
     /**
-     * 清除全部缓存
-     * <p>在 SQL 示例增删改后调用，确保 Agent 使用最新数据</p>
+     * 清除当前租户的全部分类缓存
+     * <p>在 SQL 示例增删改后调用，不影响其他租户的热缓存</p>
      */
     public void evictCache() {
+        String tenantId = requireTenantId();
+        exampleCache.keySet().removeIf(key -> tenantId.equals(key.tenantId()));
+        log.info("[AI-SqlExample] 已清除租户 {} 的示例缓存", tenantId);
+    }
+
+    /**
+     * 显式全局清理入口，不要求调用线程携带租户，可用于全局缓存失效通知。
+     */
+    public void evictAllCache() {
         exampleCache.clear();
-        log.info("[AI-SqlExample] 缓存已清除");
+        log.info("[AI-SqlExample] 已清除全部示例缓存");
+    }
+
+    /**
+     * 租户缺失时先拒绝，不能查库或命中某个共享默认租户的缓存。
+     */
+    private String requireTenantId() {
+        String tenantId = TenantHelper.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalStateException("租户上下文缺失，拒绝访问 SQL 示例缓存。");
+        }
+        return tenantId;
     }
 }

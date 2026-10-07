@@ -166,6 +166,14 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- 仅供SQL租户隔离的真实结果集回归，不进入运行时依赖。 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 测试依赖（测试作用域，不打入生产包；参照 ruoyi-im 模式） -->
         <!-- spring-boot-starter-test 已包含 JUnit 5 + Mockito 5 + AssertJ + Spring 测试支持 -->
         <dependency>

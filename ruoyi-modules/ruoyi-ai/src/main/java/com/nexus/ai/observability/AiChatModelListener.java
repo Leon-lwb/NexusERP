@@ -66,7 +66,7 @@ public class AiChatModelListener implements ChatModelListener {
         String userName = AiRequestContext.getUserName();
         Long modelId = AiRequestContext.getModelId();
         String modelName = AiRequestContext.getModelName();
-        Long tenantId = AiRequestContext.getTenantId();
+        String tenantId = AiRequestContext.getTenantId();
 
         if (chatResponse == null) {
             log.debug("[ChatModel] 响应为空: provider={}", provider);

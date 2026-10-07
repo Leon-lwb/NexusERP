@@ -104,7 +104,7 @@ public class AiSqlExampleInitializer implements ApplicationRunner {
      */
     private void insertExample(String category, String question, String sqlTemplate, int sortOrder) {
         AiSqlExample example = new AiSqlExample();
-        example.setTenantId(0L);
+        example.setTenantId("0");
         example.setCategory(category);
         example.setQuestion(question);
         example.setSqlTemplate(sqlTemplate);

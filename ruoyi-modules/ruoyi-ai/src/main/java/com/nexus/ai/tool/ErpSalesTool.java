@@ -1,6 +1,5 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -41,7 +40,7 @@ public class ErpSalesTool extends ErpToolHelper {
             return "参数错误：查询月数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT DATE_FORMAT(h.order_date, '%Y-%m') AS 月份,
                        SUM(l.ordered_qty) AS 销售数量,
@@ -80,7 +79,7 @@ public class ErpSalesTool extends ErpToolHelper {
             return "参数错误：Top N必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             int limitN = Math.min(topN, 100);
             String sql = """
                 SELECT c.client_name AS 客户名称,
@@ -115,7 +114,7 @@ public class ErpSalesTool extends ErpToolHelper {
             return "参数错误：查询天数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT r.return_reason AS 退货原因,
                        COUNT(r.return_id) AS 退货单数,
@@ -143,7 +142,7 @@ public class ErpSalesTool extends ErpToolHelper {
     public String querySalesOrderFulfillmentRate() {
         log.info("[AI-Sales] 查询销售订单履行率");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT h.so_no AS 订单编号,
                        c.client_name AS 客户名称,
@@ -180,7 +179,7 @@ public class ErpSalesTool extends ErpToolHelper {
             return "参数错误：统计天数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT mc.category_name AS 品类名称,
                        SUM(l.line_amount) AS 销售金额,
@@ -225,7 +224,7 @@ public class ErpSalesTool extends ErpToolHelper {
             return "参数错误：Top N必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             int limitN = Math.min(topN, 100);
             String sql = """
                 SELECT m.material_code AS 物料编码,

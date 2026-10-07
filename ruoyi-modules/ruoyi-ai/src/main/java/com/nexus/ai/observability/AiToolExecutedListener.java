@@ -17,6 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AiToolExecutedListener implements ToolExecutedEventListener {
 
+    /** 兼容long字段的未知耗时标识；不是测得耗时，不能以调用链时间戳推算工具耗时。 */
+    private static final long UNKNOWN_DURATION_MS = -1L;
+    private static final String COMPLETED_SNAPSHOT = "【完成后补发，非实时开始/进度；执行耗时未知（unknown）】";
+
     /** 请求级 OutputChannel，Agent 执行前设置，执行后清除 */
     private static final ThreadLocal<OutputChannel> CURRENT_CHANNEL = new ThreadLocal<>();
 
@@ -62,11 +66,14 @@ public class AiToolExecutedListener implements ToolExecutedEventListener {
         // 推送工具调用事件到 OutputChannel（如果存在）
         OutputChannel channel = CURRENT_CHANNEL.get();
         if (channel != null) {
-            // 先发送 TOOL_START（因为 observability API 没有工具执行前的事件，
-            // 在工具执行完成时补发 TOOL_START + TOOL_END，确保前端能完整展示工具调用过程）
-            AgentStreamHelper.sendToolStart(channel, toolName, request.arguments());
-            // 再发送 TOOL_END
-            AgentStreamHelper.sendToolEnd(channel, toolName, 0, resultText);
+            // 1.18.0的ToolExecutedEvent不提供工具开始时间或耗时；invocationContext.timestamp()
+            // 属于整个AI Service调用，不能冒充工具计时。旧前端依赖配对建卡，因此仅补发
+            // 明确标注的完成快照，保留原参数/结果摘要，不宣称实时开始、实时进度或0毫秒执行。
+            String arguments = request.arguments();
+            AgentStreamHelper.sendToolStart(channel, toolName,
+                COMPLETED_SNAPSHOT + (arguments == null ? "" : arguments));
+            AgentStreamHelper.sendToolEnd(channel, toolName, UNKNOWN_DURATION_MS,
+                COMPLETED_SNAPSHOT + (resultText == null ? "" : resultText));
         }
     }
 }

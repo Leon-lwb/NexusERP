@@ -29,7 +29,7 @@ public interface IAiTokenUsageService {
      * @param outputTokens 输出 Token 数
      * @param cost         本次成本
      */
-    void incrementDailyUsage(Long tenantId, Long userId, String userName, Long modelId,
+    void incrementDailyUsage(String tenantId, Long userId, String userName, Long modelId,
                              String modelName, int inputTokens, int outputTokens, BigDecimal cost);
 
     /**

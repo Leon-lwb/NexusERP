@@ -125,7 +125,7 @@ public class AiPromptTemplateInitializer implements ApplicationRunner {
             return;
         }
         AiPromptTemplate template = new AiPromptTemplate();
-        template.setTenantId(0L);  // 默认模板使用全局租户ID，确保多租户环境下可访问
+        template.setTenantId("0");  // 默认模板使用全局租户ID，确保多租户环境下可访问
         template.setTemplateName(templateName);
         template.setTemplateKey(templateKey);
         template.setContent(content);

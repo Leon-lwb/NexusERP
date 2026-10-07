@@ -2,6 +2,8 @@ package com.nexus.ai.mcp.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.ai.mcp.AiToolStatusContract;
+import com.nexus.ai.mcp.McpConfigSanitizer;
+import com.nexus.ai.mcp.McpEndpointPolicy;
 import com.nexus.ai.tool.BuiltinToolProvider;
 import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.ai.domain.dto.McpToolTestResult;
@@ -10,8 +12,11 @@ import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.core.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -25,6 +30,10 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class McpToolServiceImpl {
+
+    /** 仅来自运维/启动参数的精确本地 URI 白名单，默认不授权任何本地地址。 */
+    @Value("${nexus.ai.mcp.allowed-local-endpoints:}")
+    private String allowedLocalEndpoints = "";
 
     /** AI 工具表 Mapper，负责工具 CRUD 与查询。 */
     private final AiToolMapper aiToolMapper;
@@ -61,26 +70,39 @@ public class McpToolServiceImpl {
      */
     @Transactional(rollbackFor = Exception.class)
     public int addTool(AiTool tool) {
+        validateTool(tool);
+        // 不接受客户端租户编号，避免绕过租户插件的 INSERT 注入。
+        tool.setTenantId(null);
         return aiToolMapper.insert(tool);
     }
 
     /**
      * 更新工具
      * <p>安全：查询接口出参已对 configJson 敏感值脱敏为 ****，编辑回显原样提交会把
-     * 掩码写回库破坏连接——含掩码值时保留库内原 configJson（参照 AiProvider 的 apiKey 保护模式）。</p>
+     * 掩码写回库破坏连接——按 JSON 树恢复掩码叶子，保留真正修改的非敏感字段。</p>
      */
     @Transactional(rollbackFor = Exception.class)
     public int updateTool(AiTool tool) {
-        if (tool.getConfigJson() != null && tool.getConfigJson().contains("\":\"****\"")) {
-            AiTool existing = aiToolMapper.selectById(tool.getId());
-            if (existing != null) {
-                tool.setConfigJson(existing.getConfigJson());
-            }
+        AiTool existing = aiToolMapper.selectById(tool.getId());
+        if (existing == null) {
+            throw new ServiceException("工具不存在或无权访问");
+        }
+        tool.setTenantId(null);
+        if (tool.getConfigJson() != null) {
+            tool.setConfigJson(McpConfigSanitizer.restoreMasks(tool.getConfigJson(), existing.getConfigJson()));
+        }
+        if (tool.getToolType() == null) {
+            tool.setToolType(existing.getToolType());
+        }
+        validateStatus(tool.getStatus());
+        if (tool.getConfigJson() != null || !tool.getToolType().equals(existing.getToolType())) {
+            validateTool(tool);
         }
         int result = aiToolMapper.updateById(tool);
         // 如果是 MCP 外部工具且配置变更，刷新连接
-        if (!BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
-            mcpClientManager.refreshClient(tool.getId());
+        if (result > 0 && (!BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())
+            || !BuiltinToolRegistry.TYPE_BUILTIN.equals(existing.getToolType()))) {
+            refreshAfterCommit(tool.getId());
         }
         return result;
     }
@@ -94,7 +116,7 @@ public class McpToolServiceImpl {
         List<Long> deletableIds = ids.stream()
             .filter(id -> {
                 AiTool tool = aiToolMapper.selectById(id);
-                return tool == null || !BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType());
+                return tool != null && !BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType());
             })
             .toList();
 
@@ -102,9 +124,12 @@ public class McpToolServiceImpl {
             return 0;
         }
 
-        // 刷新 MCP 连接
-        deletableIds.forEach(id -> mcpClientManager.refreshClient(id));
-        return aiToolMapper.deleteBatchIds(deletableIds);
+        int result = aiToolMapper.deleteBatchIds(deletableIds);
+        // 仅当前租户确实删除了记录时才失效连接，不能触碰不可见 ID 的缓存。
+        if (result > 0) {
+            deletableIds.forEach(this::refreshAfterCommit);
+        }
+        return result;
     }
 
     /**
@@ -123,12 +148,16 @@ public class McpToolServiceImpl {
         if (!AiToolStatusContract.ACTIVE.equals(status) && !AiToolStatusContract.DISABLED.equals(status)) {
             throw new ServiceException("非法的工具状态值: " + status + "，仅支持 0=启用 / 1=停用");
         }
+        if (aiToolMapper.selectById(id) == null) {
+            throw new ServiceException("工具不存在或无权访问");
+        }
         AiTool tool = new AiTool();
         tool.setId(id);
         tool.setStatus(status);
         int result = aiToolMapper.updateById(tool);
-        // 刷新 MCP 连接
-        mcpClientManager.refreshClient(id);
+        if (result > 0) {
+            refreshAfterCommit(id);
+        }
         return result;
     }
 
@@ -194,7 +223,10 @@ public class McpToolServiceImpl {
                     addedCount++;
                 }
             } catch (Exception e) {
-                log.error("[MCP] 同步内置工具失败: {}", provider.getToolName(), e);
+                // 任一提供者失败都中止整次同步，由外层事务回滚此前成功的写入，不能误报成功。
+                // 不附带原异常、cause或提供者属性，避免泄漏SQL、凭据及其他租户信息。
+                log.error("[MCP] 同步内置工具失败，本次事务将回滚");
+                throw new ServiceException("内置工具同步失败，本次同步未完成，请联系管理员");
             }
         }
 
@@ -202,6 +234,48 @@ public class McpToolServiceImpl {
     }
 
     // ==================== 私有方法 ====================
+
+    /** 事务内只登记提交后失效；回滚保留旧连接，不让未提交配置窗口重新填充旧缓存。 */
+    private void refreshAfterCommit(Long toolId) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            mcpClientManager.refreshClient(toolId);
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new ServiceException("MCP事务同步不可用，配置修改未完成");
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                mcpClientManager.refreshClient(toolId);
+            }
+        });
+    }
+
+    private void validateStatus(String status) {
+        if (status != null && !AiToolStatusContract.ACTIVE.equals(status) && !AiToolStatusContract.DISABLED.equals(status)) {
+            throw new ServiceException("工具状态仅支持 0=启用 / 1=停用");
+        }
+    }
+
+    private void validateTool(AiTool tool) {
+        validateStatus(tool.getStatus());
+        if (BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
+            return;
+        }
+        var config = McpConfigSanitizer.parseObject(tool.getConfigJson());
+        McpConfigSanitizer.stringMap(config.path("headers"), "headers");
+        McpConfigSanitizer.stringMap(config.path("env"), "env");
+        if ("REMOTE".equals(tool.getToolType())) {
+            McpEndpointPolicy.validateRemoteTransport(config.path("baseUrl").asText(null), allowedLocalEndpoints);
+        } else if ("LOCAL".equals(tool.getToolType())) {
+            if (!config.path("command").isTextual() || config.path("command").asText().isBlank()) {
+                throw new ServiceException("LOCAL 工具的 command 不能为空");
+            }
+        } else {
+            throw new ServiceException("工具类型仅支持 BUILTIN/LOCAL/REMOTE");
+        }
+    }
 
     /**
      * 测试内置工具
@@ -221,8 +295,8 @@ public class McpToolServiceImpl {
                 );
             }
         } catch (Exception e) {
-            log.error("[MCP] 测试内置工具失败: {} - {}", tool.getToolName(), e.getMessage());
-            return McpToolTestResult.fail("测试失败: " + e.getMessage());
+            log.error("[MCP] 测试内置工具失败: {} - {}", tool.getToolName(), e.getClass().getSimpleName());
+            return McpToolTestResult.fail("测试失败: " + e.getClass().getSimpleName());
         }
     }
 
@@ -231,12 +305,12 @@ public class McpToolServiceImpl {
      */
     private McpToolTestResult testMcpTool(AiTool tool) {
         try {
-            boolean isHealthy = mcpClientManager.checkToolHealth(tool.getId());
-            if (isHealthy) {
+            List<String> discovered = mcpClientManager.discoverToolNames(tool.getId());
+            if (discovered != null) {
                 return McpToolTestResult.success(
                     String.format("MCP工具 [%s] 连接测试成功", tool.getToolName()),
-                    1,
-                    List.of(tool.getToolName())
+                    discovered.size(),
+                    discovered
                 );
             } else {
                 return McpToolTestResult.fail(
@@ -244,8 +318,8 @@ public class McpToolServiceImpl {
                 );
             }
         } catch (Exception e) {
-            log.error("[MCP] 测试MCP工具失败: {} - {}", tool.getToolName(), e.getMessage());
-            return McpToolTestResult.fail("测试失败: " + e.getMessage());
+            log.error("[MCP] 测试MCP工具失败: {} - {}", tool.getToolName(), e.getClass().getSimpleName());
+            return McpToolTestResult.fail("测试失败: " + e.getClass().getSimpleName());
         }
     }
 }

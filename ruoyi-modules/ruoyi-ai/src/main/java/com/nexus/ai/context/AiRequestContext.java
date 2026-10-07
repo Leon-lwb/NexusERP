@@ -17,7 +17,7 @@ package com.nexus.ai.context;
  */
 public final class AiRequestContext {
 
-    private static final ThreadLocal<Long> TENANT_ID = new InheritableThreadLocal<>();
+    private static final ThreadLocal<String> TENANT_ID = new InheritableThreadLocal<>();
     private static final ThreadLocal<Long> USER_ID = new InheritableThreadLocal<>();
     private static final ThreadLocal<String> USER_NAME = new InheritableThreadLocal<>();
     private static final ThreadLocal<Long> SESSION_ID = new InheritableThreadLocal<>();
@@ -38,10 +38,10 @@ public final class AiRequestContext {
     /**
      * 设置请求上下文（基础）
      *
-     * @param tenantId 租户ID
+     * @param tenantId 租户文本ID（保留前导零）
      * @param userId   用户ID
      */
-    public static void set(Long tenantId, Long userId) {
+    public static void set(String tenantId, Long userId) {
         TENANT_ID.set(tenantId);
         USER_ID.set(userId);
     }
@@ -56,7 +56,7 @@ public final class AiRequestContext {
      * @param modelId   模型ID
      * @param modelName 模型名称
      */
-    public static void set(Long tenantId, Long userId, String userName,
+    public static void set(String tenantId, Long userId, String userName,
                            Long sessionId, Long modelId, String modelName) {
         TENANT_ID.set(tenantId);
         USER_ID.set(userId);
@@ -71,7 +71,7 @@ public final class AiRequestContext {
      *
      * @return 租户ID，可能为 null
      */
-    public static Long getTenantId() {
+    public static String getTenantId() {
         return TENANT_ID.get();
     }
 

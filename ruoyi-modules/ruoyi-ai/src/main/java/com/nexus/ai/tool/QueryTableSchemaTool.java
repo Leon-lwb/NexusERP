@@ -1,5 +1,6 @@
 package com.nexus.ai.tool;
 
+import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.service.query.ErpQueryService;
 import com.nexus.ai.service.query.ErpTableSchemaManager;
 import dev.langchain4j.agent.tool.P;
@@ -23,6 +24,8 @@ public class QueryTableSchemaTool {
     private final ErpTableSchemaManager erpTableSchemaManager;
     /** ERP 查询服务，验证表存在性与回退 DDL */
     private final ErpQueryService erpQueryService;
+    /** 与表目录和SQL查询共用的配置白名单，所有缓存及DDL回退路径都必须遵守。 */
+    private final AiProperties aiProperties;
 
     /**
      * 查询指定 ERP 表的结构信息
@@ -38,8 +41,15 @@ public class QueryTableSchemaTool {
         if (tableName == null || tableName.trim().isEmpty()) {
             return "错误：表名不能为空";
         }
-        if (!tableName.matches("^[a-zA-Z0-9_]+$")) {
+        if (!tableName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$")) {
             return "错误：表名格式无效";
+        }
+
+        // 在缓存读取、存在性查询、刷新和DDL降级前统一校验，不能靠缓存未命中绕过白名单。
+        var allowedPrefixes = aiProperties.getAllowedTablePrefixes();
+        if (allowedPrefixes == null || allowedPrefixes.stream().noneMatch(prefix ->
+            prefix != null && !prefix.isBlank() && tableName.startsWith(prefix))) {
+            return "错误：不允许访问表 '" + tableName + "'。请先调用 queryAllTables 查看所有可用表。";
         }
 
         try {

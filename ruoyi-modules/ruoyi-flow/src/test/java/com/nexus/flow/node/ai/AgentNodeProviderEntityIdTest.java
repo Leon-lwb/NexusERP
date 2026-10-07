@@ -110,7 +110,7 @@ class AgentNodeProviderEntityIdTest {
         }).when(model).doChat(any(ChatRequest.class));
         when(factory.getAgentChatModel(MODEL_ID)).thenReturn(model);
         when(tools.getEnabledBuiltinToolObjectsByCategories("QUERY,ALL")).thenReturn(List.of());
-        AiRequestContext.set(100L, 200L);
+        AiRequestContext.set("100", 200L);
         ObjectNode config = config(id);
 
         assertDoesNotThrow(() -> provider.validateConfig(config), "离线编排前应允许有效模型 ID");
@@ -124,7 +124,7 @@ class AgentNodeProviderEntityIdTest {
         assertTrue(output.at("/tokenUsage/inputTokens").isIntegralNumber(), "令牌用量仍为普通数值");
         assertEquals(13, output.at("/tokenUsage/inputTokens").intValue(), "保留输入令牌用量");
         assertEquals(5, output.at("/tokenUsage/outputTokens").intValue(), "保留输出令牌用量");
-        assertEquals(100L, AiRequestContext.getTenantId(), "节点不能覆盖流程级租户上下文");
+        assertEquals("100", AiRequestContext.getTenantId(), "节点不能覆盖流程级租户上下文");
         assertEquals(200L, AiRequestContext.getUserId(), "节点不能覆盖流程级用户上下文");
         ArgumentCaptor<ChatRequest> request = ArgumentCaptor.forClass(ChatRequest.class);
         verify(model).doChat(request.capture());

@@ -1905,10 +1905,12 @@ class DeliveryContextAssemblerTest {
         assertTrue(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
         assertEquals(new BigDecimal("2"), snapshot.arrivals().stream()
             .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow().remainingQty());
-        ServiceException failure = assertThrows(ServiceException.class,
+        // 缺失事实由专属证据拒绝类型表达，不再用已废弃的通用消息字符串判断。
+        var failure = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
             () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
                 .simulate(snapshot, 14, null));
-        assertTrue(failure.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE,
+            failure.reason());
     }
 
     @Test
@@ -1931,8 +1933,10 @@ class DeliveryContextAssemblerTest {
         assertNull(stock.safetyStock());
         assertFalse(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
         assertTrue(snapshot.warnings().contains("UNKNOWN_STOCK_SOURCE:501"));
-        assertThrows(ServiceException.class, () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
-            .simulate(snapshot, 14, null));
+        var failure = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
+            () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService()).simulate(snapshot, 14, null));
+        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE,
+            failure.reason());
     }
 
 
@@ -2034,7 +2038,9 @@ class DeliveryContextAssemblerTest {
     private void stubSingleMaterialDemandAndArrival(PrdWorkOrder workOrder) {
         when(workOrderMapper.selectById(11L)).thenReturn(workOrder);
         when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(301L, 201L)));
-        LocalDate businessDay = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+        // 装配器已在 fixedBusinessDate 固定到 TODAY；夹具日期必须使用同一业务日，
+        // 否则自然日推进后到货会落在半开分析窗口之外，导致历史回归随日历失效。
+        LocalDate businessDay = TODAY;
         when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
             requirementDetail(901L, 301L, 501L, "1", "0", businessDay)));
         when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(

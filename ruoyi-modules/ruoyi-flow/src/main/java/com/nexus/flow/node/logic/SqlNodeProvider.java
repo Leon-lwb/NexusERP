@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.ai.service.query.ErpQueryService;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
@@ -30,11 +33,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SqlNodeProvider implements FlowNodeProvider {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    /** JavaScript 安全整数上限；超出范围的动态整数必须以字符串输出，避免前端精度丢失。 */
+    private static final BigInteger JS_MAX_SAFE_INTEGER = BigInteger.valueOf(9007199254740991L);
 
     private final SqlSafetyValidator sqlSafetyValidator;
     private final ErpQueryService erpQueryService;
     private final AiProperties aiProperties;
+    /** 注入生产全局 ObjectMapper，沿用 BigNumberSerializer 等统一序列化规则。 */
+    private final ObjectMapper objectMapper;
 
     @Override
     public String getNodeType() {
@@ -61,6 +67,24 @@ public class SqlNodeProvider implements FlowNodeProvider {
         }
     }
 
+    /**
+     * 将 JDBC 数值转换为 JSON 节点。
+     * <p>Long 的大小判断交给生产全局 ObjectMapper 的 BigNumberSerializer；
+     * BigInteger 不在该全局注册范围内，单独按同一 JS 安全整数边界处理。
+     * BigDecimal 使用精确文本字符串，避免动态结果被 JSON/前端再次舍入；
+     * 普通整数、浮点数仍按全局序列化规则输出为数字，不会把所有 Number 盲目字符串化。</p>
+     */
+    private JsonNode toJsonNumber(Object value) {
+        if (value instanceof BigDecimal decimal) {
+            return TextNode.valueOf(decimal.toString());
+        }
+        if (value instanceof BigInteger integer
+            && integer.abs().compareTo(JS_MAX_SAFE_INTEGER) > 0) {
+            return TextNode.valueOf(integer.toString());
+        }
+        return objectMapper.valueToTree(value);
+    }
+
     @Override
     public JsonNode execute(FlowExecutionContext ctx) {
         JsonNode config = ctx.getConfig();
@@ -74,7 +98,7 @@ public class SqlNodeProvider implements FlowNodeProvider {
         // 显式传租户：节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达
         int maxRows = config.has("maxRows") && config.get("maxRows").canConvertToInt()
             ? config.get("maxRows").asInt() : 50;
-        Long tenantId = ctx.getTenantId() == null ? null : Long.valueOf(ctx.getTenantId());
+        String tenantId = ctx.getTenantId();
         String safeSql = sqlSafetyValidator.validateAndSanitize(rawSql, maxRows, tenantId);
 
         // 执行（@DS("erp") 数据源）
@@ -82,7 +106,7 @@ public class SqlNodeProvider implements FlowNodeProvider {
             safeSql, maxRows, aiProperties.getSqlTimeout() / 1000);
 
         // 组装结构化输出
-        ObjectNode output = MAPPER.createObjectNode();
+        ObjectNode output = objectMapper.createObjectNode();
         ArrayNode columnsNode = output.putArray("columns");
         ArrayNode rowsNode = output.putArray("rows");
         if (!rows.isEmpty()) {
@@ -93,8 +117,8 @@ public class SqlNodeProvider implements FlowNodeProvider {
             row.forEach((k, v) -> {
                 if (v == null) {
                     rowNode.putNull(k);
-                } else if (v instanceof Number num) {
-                    rowNode.put(k, num.doubleValue());
+                } else if (v instanceof Number) {
+                    rowNode.set(k, toJsonNumber(v));
                 } else if (v instanceof Boolean b) {
                     rowNode.put(k, b);
                 } else {

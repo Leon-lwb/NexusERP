@@ -1,6 +1,5 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -41,7 +40,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
             return "参数错误：结束日期不能为空";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT v.vendor_name AS 供应商名称,
                        COUNT(o.order_id) AS 采购订单数,
@@ -75,7 +74,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
             return "参数错误：供应商ID必须为正整数";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT v.vendor_name AS 供应商名称,
                        e.total_orders AS 订单总数,
@@ -110,7 +109,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
             return "参数错误：查询天数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT o.order_no AS 订单编号,
                        v.vendor_name AS 供应商名称,
@@ -151,7 +150,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
             return "参数错误：查询月数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT DATE_FORMAT(o.order_date, '%Y-%m') AS 月份,
                        AVG(l.unit_price) AS 平均采购单价,
@@ -187,7 +186,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
     public String queryVendorDeliveryPerformance() {
         log.info("[AI-Purchase] 查询供应商交货准时率排行");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT v.vendor_name AS 供应商名称,
                        e.total_orders AS 订单总数,
@@ -221,7 +220,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
             return "参数错误：统计月数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT DATE_FORMAT(o.order_date, '%Y-%m') AS 月份,
                        COUNT(o.order_id) AS 采购订单数,

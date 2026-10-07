@@ -2,6 +2,9 @@ package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.ai.mcp.service.IMcpMarketService;
+import com.nexus.ai.mcp.McpConfigSanitizer;
+import com.nexus.ai.mcp.McpEndpointPolicy;
+import com.nexus.common.core.exception.ServiceException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.ai.domain.entity.AiMcpMarket;
 import com.nexus.common.ai.domain.entity.AiMcpMarketTool;
@@ -13,6 +16,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +36,10 @@ import java.util.List;
 @RequestMapping("/ai/mcp/market")
 public class McpMarketController extends BaseController {
 
+    /** 仅来自运维/启动参数的精确本地 URI 白名单，默认不授权任何本地地址。 */
+    @Value("${nexus.ai.mcp.allowed-local-endpoints:}")
+    private String allowedLocalEndpoints = "";
+
     /** MCP 市场源表 Mapper，负责市场源 CRUD 与分页。 */
     private final AiMcpMarketMapper marketMapper;
     /** MCP 市场工具表 Mapper，负责市场工具列表查询。 */
@@ -49,6 +57,7 @@ public class McpMarketController extends BaseController {
         lqw.like(query.getName() != null, AiMcpMarket::getName, query.getName());
         lqw.orderByDesc(AiMcpMarket::getCreateTime);
         Page<AiMcpMarket> page = marketMapper.selectPage(pageQuery.build(), lqw);
+        page.setRecords(page.getRecords().stream().map(McpConfigSanitizer::maskMarket).toList());
         return TableDataInfo.build(page);
     }
 
@@ -58,7 +67,7 @@ public class McpMarketController extends BaseController {
     @SaCheckPermission("ai:mcp:market:query")
     @GetMapping("/{id}")
     public R<AiMcpMarket> getInfo(@PathVariable Long id) {
-        return R.ok(marketMapper.selectById(id));
+        return R.ok(McpConfigSanitizer.maskMarket(marketMapper.selectById(id)));
     }
 
     /**
@@ -67,6 +76,9 @@ public class McpMarketController extends BaseController {
     @SaCheckPermission("ai:mcp:market:add")
     @PostMapping
     public R<Void> add(@Validated @RequestBody AiMcpMarket market) {
+        McpEndpointPolicy.validate(market.getUrl(), allowedLocalEndpoints);
+        // 请求体不能指定租户，由当前租户上下文和 SQL 插件填充。
+        market.setTenantId(null);
         marketMapper.insert(market);
         return R.ok();
     }
@@ -77,6 +89,18 @@ public class McpMarketController extends BaseController {
     @SaCheckPermission("ai:mcp:market:edit")
     @PutMapping
     public R<Void> edit(@Validated @RequestBody AiMcpMarket market) {
+        AiMcpMarket existing = marketMapper.selectById(market.getId());
+        if (existing == null) {
+            throw new ServiceException("市场不存在或无权访问");
+        }
+        market.setTenantId(null);
+        if (McpConfigSanitizer.MASK.equals(market.getAuthConfig())) {
+            market.setAuthConfig(existing.getAuthConfig());
+        }
+        if (market.getUrl() != null && market.getUrl().contains(McpConfigSanitizer.MASK)) {
+            market.setUrl(McpConfigSanitizer.restoreMaskedUrl(market.getUrl(), existing.getUrl()));
+        }
+        McpEndpointPolicy.validate(market.getUrl() == null ? existing.getUrl() : market.getUrl(), allowedLocalEndpoints);
         marketMapper.updateById(market);
         return R.ok();
     }
@@ -94,12 +118,14 @@ public class McpMarketController extends BaseController {
     /**
      * 查询市场工具列表
      */
+    @SaCheckPermission("ai:mcp:market:query")
     @GetMapping("/{marketId}/tools")
     public TableDataInfo<AiMcpMarketTool> getMarketTools(@PathVariable Long marketId, PageQuery pageQuery) {
         LambdaQueryWrapper<AiMcpMarketTool> lqw = new LambdaQueryWrapper<>();
         lqw.eq(AiMcpMarketTool::getMarketId, marketId);
         lqw.orderByDesc(AiMcpMarketTool::getCreateTime);
         Page<AiMcpMarketTool> page = marketToolMapper.selectPage(pageQuery.build(), lqw);
+        page.setRecords(page.getRecords().stream().map(McpConfigSanitizer::maskMarketTool).toList());
         return TableDataInfo.build(page);
     }
 

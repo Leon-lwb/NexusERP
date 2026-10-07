@@ -35,6 +35,12 @@
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-excel</artifactId>
         </dependency>
+        <!-- 流程租户文本契约：仅测试使用，不进入生产运行依赖。 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

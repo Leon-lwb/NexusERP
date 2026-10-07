@@ -27,8 +27,8 @@ public class FlowVo implements Serializable {
     @ExcelProperty(value = "流程ID")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，保留前导零；历史0不自动升级） */
+    private String tenantId;
 
     /** 流程名称 */
     @ExcelProperty(value = "流程名称")

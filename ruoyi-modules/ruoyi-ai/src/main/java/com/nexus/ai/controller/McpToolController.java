@@ -2,6 +2,7 @@ package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.ai.domain.dto.McpToolTestResult;
+import com.nexus.ai.mcp.McpConfigSanitizer;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.ai.mcp.service.McpToolServiceImpl;
 import com.nexus.common.core.domain.R;
@@ -9,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * MCP 工具管理控制器
@@ -25,32 +25,12 @@ public class McpToolController {
     private final McpToolServiceImpl mcpToolService;
 
     /**
-     * configJson 中的敏感字段值脱敏正则（REMOTE 的 baseUrl 内嵌 token / STDIO 的 env 凭证等）。
-     * <p>configJson 原样出参会把 MCP 服务器连接凭证泄露给持有列表权限的用户，
-     * 出参统一替换敏感字段值为 ****（入库与内部连接逻辑不受影响）。</p>
-     */
-    private static final Pattern CONFIG_SENSITIVE_VALUE = Pattern.compile(
-        "(\"(?:apiKey|api_key|token|secret|password|authorization|key)\"\\s*:\\s*\")([^\"]*)(\")",
-        Pattern.CASE_INSENSITIVE);
-
-    /**
-     * 脱敏工具实体的 configJson（返回前端前的最后一道处理）。
-     */
-    private static AiTool maskTool(AiTool tool) {
-        if (tool != null && tool.getConfigJson() != null) {
-            tool.setConfigJson(CONFIG_SENSITIVE_VALUE.matcher(tool.getConfigJson())
-                .replaceAll("$1****$3"));
-        }
-        return tool;
-    }
-
-    /**
      * 查询所有工具列表
      */
     @SaCheckPermission("ai:mcp:list")
     @GetMapping("/list")
     public R<List<AiTool>> list() {
-        return R.ok(mcpToolService.getAllTools().stream().map(McpToolController::maskTool).toList());
+        return R.ok(mcpToolService.getAllTools().stream().map(McpConfigSanitizer::maskTool).toList());
     }
 
     /**
@@ -59,7 +39,7 @@ public class McpToolController {
     @SaCheckPermission("ai:mcp:list")
     @GetMapping("/enabled")
     public R<List<AiTool>> listEnabled() {
-        return R.ok(mcpToolService.getAllEnabledTools().stream().map(McpToolController::maskTool).toList());
+        return R.ok(mcpToolService.getAllEnabledTools().stream().map(McpConfigSanitizer::maskTool).toList());
     }
 
     /**
@@ -68,7 +48,7 @@ public class McpToolController {
     @SaCheckPermission("ai:mcp:query")
     @GetMapping("/{id}")
     public R<AiTool> getInfo(@PathVariable Long id) {
-        return R.ok(maskTool(mcpToolService.getToolById(id)));
+        return R.ok(McpConfigSanitizer.maskTool(mcpToolService.getToolById(id)));
     }
 
     /**
@@ -143,7 +123,7 @@ public class McpToolController {
         // 过滤掉内置工具，只返回 MCP 外部工具
         List<AiTool> mcpTools = allEnabled.stream()
             .filter(t -> !"BUILTIN".equals(t.getToolType()))
-            .map(McpToolController::maskTool)
+            .map(McpConfigSanitizer::maskTool)
             .toList();
         return R.ok(mcpTools);
     }

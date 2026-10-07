@@ -3,6 +3,8 @@ package com.nexus.ai.mcp.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.mcp.AiToolStatusContract;
+import com.nexus.ai.mcp.McpEndpointPolicy;
+import com.nexus.ai.mcp.McpConfigSanitizer;
 import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
@@ -16,8 +18,13 @@ import dev.langchain4j.service.tool.ToolProvider;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +45,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class McpClientManager {
 
+    /** 仅来自运维/启动参数的精确本地 URI 白名单，默认不授权任何本地地址。 */
+    @Value("${nexus.ai.mcp.allowed-local-endpoints:}")
+    private String allowedLocalEndpoints = "";
+
     /** 连续失败达到该次数后触发熔断禁用。 */
     private static final int MAX_FAILURE_COUNT = 3;
     /** 熔断禁用持续时间（毫秒），到期自动重新启用。 */
@@ -50,6 +61,10 @@ public class McpClientManager {
 
     /** 客户端缓存：toolId -> McpClient */
     private final Map<Long, McpClient> activeClients = new ConcurrentHashMap<>();
+    /** 只保存配置摘要，不保存或打印认证原文；租户、类型、状态及完整配置均参与版本判断。 */
+    private final Map<Long, String> clientFingerprints = new ConcurrentHashMap<>();
+    /** 失效代数先递增再取锁，正在创建/发现的旧候选也不能重新发布。 */
+    private final Map<Long, AtomicLong> clientGenerations = new ConcurrentHashMap<>();
     /** 健康状态：toolId -> boolean */
     private final Map<Long, Boolean> toolHealthStatus = new ConcurrentHashMap<>();
     /** 失败计数：toolId -> count */
@@ -82,7 +97,7 @@ public class McpClientManager {
                     clients.add(client);
                 }
             } catch (Exception e) {
-                log.error("[MCP] 创建客户端失败: toolId={}, error={}", tool.getId(), e.getMessage());
+                log.error("[MCP] 创建客户端失败: toolId={}, error={}", tool.getId(), e.getClass().getSimpleName());
             }
         }
 
@@ -160,7 +175,7 @@ public class McpClientManager {
                     clients.add(client);
                 }
             } catch (Exception e) {
-                log.error("[MCP] 创建客户端失败: toolId={}, error={}", tool.getId(), e.getMessage());
+                log.error("[MCP] 创建客户端失败: toolId={}, error={}", tool.getId(), e.getClass().getSimpleName());
             }
         }
 
@@ -177,52 +192,36 @@ public class McpClientManager {
      * 获取或创建 MCP Client（含健康检查和重试逻辑）
      */
     public McpClient getOrCreateClient(Long toolId) {
-        // 检查工具是否被禁用
-        if (isToolDisabled(toolId)) {
-            log.warn("[MCP] 工具 {} 因连续失败被暂时禁用", toolId);
+        // 缓存命中也必须经过当前租户查询；锁内再核对权限、状态及配置版本。
+        AiTool tool = aiToolMapper.selectById(toolId);
+        if (!eligible(tool) || isToolDisabled(toolId)) {
             return null;
         }
-
-        // 尝试从缓存获取
-        McpClient cachedClient = activeClients.get(toolId);
-        if (cachedClient != null && isToolHealthy(toolId)) {
-            return cachedClient;
-        }
-
-        // 使用 per-toolId 锁替代 ConcurrentHashMap.compute() 的全局锁，
-        // 避免数据库查询和进程启动在 compute 锁内执行时阻塞其他工具的操作
         synchronized (("mcp-tool-" + toolId).intern()) {
-            // 双重检查
-            cachedClient = activeClients.get(toolId);
-            if (cachedClient != null && isToolHealthy(toolId)) {
-                return cachedClient;
-            }
-
-            AiTool tool = aiToolMapper.selectById(toolId);
-            if (tool == null || !AiToolStatusContract.ACTIVE.equals(tool.getStatus())) {
-                closeQuietly(cachedClient);
-                activeClients.remove(toolId);
+            tool = aiToolMapper.selectById(toolId);
+            if (!eligible(tool) || isToolDisabled(toolId)) {
                 return null;
             }
-
-            if (BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
-                closeQuietly(cachedClient);
-                activeClients.remove(toolId);
-                return null;
+            String fingerprint = configurationFingerprint(tool);
+            McpClient cached = activeClients.get(toolId);
+            if (cached != null && isToolHealthy(toolId)
+                && fingerprint.equals(clientFingerprints.get(toolId))) {
+                return cached;
             }
-
+            closeClient(toolId);
+            long generation = generation(toolId);
+            McpClient candidate = null;
             try {
-                McpClient client = createMcpClient(tool);
-                markToolHealthy(toolId);
-                closeQuietly(cachedClient);
-                activeClients.put(toolId, client);
-                log.info("[MCP] 成功创建客户端: toolName={}", tool.getToolName());
-                return client;
+                candidate = createMcpClient(tool);
+                if (!publishCurrent(toolId, candidate, fingerprint, generation)) {
+                    closeQuietly(candidate);
+                    return null;
+                }
+                return candidate;
             } catch (Exception e) {
-                log.error("[MCP] 创建客户端失败: toolName={}, error={}", tool.getToolName(), e.getMessage());
+                closeQuietly(candidate);
+                log.warn("[MCP] 创建客户端失败: toolId={}, errorType={}", toolId, e.getClass().getSimpleName());
                 handleToolFailure(toolId);
-                closeQuietly(cachedClient);
-                activeClients.remove(toolId);
                 return null;
             }
         }
@@ -232,27 +231,45 @@ public class McpClientManager {
      * 健康检查
      */
     public boolean checkToolHealth(Long toolId) {
-        AiTool tool = aiToolMapper.selectById(toolId);
-        if (tool == null || !AiToolStatusContract.ACTIVE.equals(tool.getStatus())) {
-            return false;
-        }
+        return discoverToolNames(toolId) != null;
+    }
 
-        try {
-            McpClient client = createMcpClient(tool);
-            if (client != null) {
-                markToolHealthy(toolId);
-                // 先关闭旧客户端再替换
-                McpClient oldClient = activeClients.put(toolId, client);
-                if (oldClient != null) {
-                    try { oldClient.close(); } catch (Exception e) { log.warn("[MCP] 关闭旧客户端异常: {}", e.getMessage()); }
-                }
-                return true;
+    /**
+     * 对当前租户可见且启用的 MCP 服务实际执行 tools/list。
+     * 返回 null 表示失败；空列表表示连接成功但服务器没有可用工具，绝不伪造配置名。
+     */
+    public List<String> discoverToolNames(Long toolId) {
+        AiTool tool = aiToolMapper.selectById(toolId);
+        if (tool == null || !AiToolStatusContract.ACTIVE.equals(tool.getStatus())
+            || BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
+            return null;
+        }
+        synchronized (("mcp-tool-" + toolId).intern()) {
+            // discovery 与正常客户端创建使用同一锁内复核，防止停用/删除/熔断竞态下
+            // 仍使用锁外旧实体建立连接并执行 tools/list。
+            tool = aiToolMapper.selectById(toolId);
+            if (tool == null || !AiToolStatusContract.ACTIVE.equals(tool.getStatus())
+                || BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())
+                || isToolDisabled(toolId)) {
+                return null;
             }
-            return false;
-        } catch (Exception e) {
-            log.error("[MCP] 健康检查失败: toolName={}, error={}", tool.getToolName(), e.getMessage());
-            handleToolFailure(toolId);
-            return false;
+            String fingerprint = configurationFingerprint(tool);
+            long generation = generation(toolId);
+            McpClient candidate = null;
+            try {
+                candidate = createMcpClient(tool);
+                List<String> names = candidate.listTools().stream().map(spec -> spec.name()).toList();
+                if (!publishCurrent(toolId, candidate, fingerprint, generation)) {
+                    closeQuietly(candidate);
+                    return null;
+                }
+                return names;
+            } catch (Exception e) {
+                closeQuietly(candidate);
+                log.warn("[MCP] 工具发现失败: toolId={}, errorType={}", toolId, e.getClass().getSimpleName());
+                handleToolFailure(toolId);
+                return null;
+            }
         }
     }
 
@@ -260,11 +277,13 @@ public class McpClientManager {
      * 刷新指定工具的客户端连接
      */
     public void refreshClient(Long toolId) {
-        closeClient(toolId);
-        // 重置熔断状态，使管理员改配置/重启后可立即重试，而非被禁用 5 分钟（S2-C-3 修复）
-        toolHealthStatus.remove(toolId);
-        toolFailureCount.remove(toolId);
-        toolDisabledUntil.remove(toolId);
+        clientGenerations.computeIfAbsent(toolId, ignored -> new AtomicLong()).incrementAndGet();
+        synchronized (("mcp-tool-" + toolId).intern()) {
+            closeClient(toolId);
+            toolHealthStatus.remove(toolId);
+            toolFailureCount.remove(toolId);
+            toolDisabledUntil.remove(toolId);
+        }
         log.info("[MCP] 刷新客户端: toolId={}", toolId);
     }
 
@@ -276,6 +295,55 @@ public class McpClientManager {
     }
 
     // ==================== 私有方法 ====================
+
+    private boolean eligible(AiTool tool) {
+        return tool != null && AiToolStatusContract.ACTIVE.equals(tool.getStatus())
+            && !BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType());
+    }
+
+    private long generation(Long toolId) {
+        return clientGenerations.computeIfAbsent(toolId, ignored -> new AtomicLong()).get();
+    }
+
+    /** 权限/指纹/失效代数在发布前复核；发布与失效共享锁，代数复核封住等待锁的提交回调。 */
+    private boolean publishCurrent(Long toolId, McpClient candidate, String fingerprint, long expectedGeneration) {
+        AiTool latest = aiToolMapper.selectById(toolId);
+        if (!eligible(latest) || isToolDisabled(toolId) || generation(toolId) != expectedGeneration
+            || !fingerprint.equals(configurationFingerprint(latest))) {
+            return false;
+        }
+        McpClient old = activeClients.put(toolId, candidate);
+        clientFingerprints.put(toolId, fingerprint);
+        if (generation(toolId) != expectedGeneration) {
+            activeClients.remove(toolId, candidate);
+            clientFingerprints.remove(toolId);
+            closeQuietly(old);
+            return false;
+        }
+        closeQuietly(old);
+        markToolHealthy(toolId);
+        return true;
+    }
+
+    private String configurationFingerprint(AiTool tool) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            // 长度前缀避免字段连接歧义；不数字化租户，不输出摘要或认证内容。
+            for (Object field : new Object[]{tool.getId(), tool.getTenantId(), tool.getToolType(), tool.getStatus(), tool.getConfigJson()}) {
+                // 空值用独立标记，不能与长度为0的已配置文本共享同一个版本。
+                if (field == null) {
+                    digest.update(java.nio.ByteBuffer.allocate(4).putInt(-1).array());
+                } else {
+                    byte[] bytes = field.toString().getBytes(StandardCharsets.UTF_8);
+                    digest.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.length).array());
+                    digest.update(bytes);
+                }
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (Exception e) {
+            throw new IllegalStateException("MCP配置版本无法校验");
+        }
+    }
 
     private McpClient createMcpClient(AiTool tool) throws Exception {
         if ("LOCAL".equals(tool.getToolType())) {
@@ -325,11 +393,12 @@ public class McpClientManager {
         fullCommand.add(command);
         fullCommand.addAll(args);
 
-        log.info("[MCP] 创建 STDIO 客户端: toolName={}, command={}", tool.getToolName(), fullCommand);
+        log.info("[MCP] 创建 STDIO 客户端: toolId={}", tool.getId());
 
         McpTransport transport = StdioMcpTransport.builder()
             .command(fullCommand)
-            .logEvents(true)
+            .environment(McpConfigSanitizer.stringMap(configNode.path("env"), "env"))
+            .logEvents(false)
             .build();
 
         return new DefaultMcpClient.Builder()
@@ -352,12 +421,15 @@ public class McpClientManager {
             throw new IllegalArgumentException("configJson 中 baseUrl 不能为空");
         }
 
-        String baseUrl = configNode.get("baseUrl").asText();
-        log.info("[MCP] 创建 HTTP/SSE 客户端: toolName={}, baseUrl={}", tool.getToolName(), baseUrl);
+        String baseUrl = McpEndpointPolicy.validateRemoteTransport(configNode.get("baseUrl").asText(), allowedLocalEndpoints);
+        log.info("[MCP] 创建 HTTP/SSE 客户端: toolId={}", tool.getId());
 
         McpTransport transport = StreamableHttpMcpTransport.builder()
             .url(baseUrl)
-            .logRequests(true)
+            .customHeaders(McpConfigSanitizer.stringMap(configNode.path("headers"), "headers"))
+            .followRedirects(false)
+            .logRequests(false)
+            .logResponses(false)
             .build();
 
         return new DefaultMcpClient.Builder()
@@ -377,9 +449,7 @@ public class McpClientManager {
         if (isWindows) {
             String lowerCommand = command.toLowerCase();
             if (lowerCommand.equals("npx") || lowerCommand.equals("npm") ||
-                lowerCommand.equals("node") || lowerCommand.equals("pnpm") ||
-                lowerCommand.equals("yarn") || lowerCommand.equals("uvx") ||
-                lowerCommand.equals("uv")) {
+                lowerCommand.equals("pnpm") || lowerCommand.equals("yarn")) {
                 String resolvedCommand = command + ".cmd";
                 log.debug("[MCP] Windows 环境，命令解析: {} -> {}", command, resolvedCommand);
                 return resolvedCommand;
@@ -403,7 +473,7 @@ public class McpClientManager {
             }
             return process.exitValue() == 0;
         } catch (Exception e) {
-            log.debug("[MCP] 命令 '{}' 不可用: {}", command, e.getMessage());
+            log.debug("[MCP] 命令 '{}' 不可用: {}", command, e.getClass().getSimpleName());
             return false;
         }
     }
@@ -447,6 +517,7 @@ public class McpClientManager {
 
     private void closeClient(Long toolId) {
         McpClient client = activeClients.remove(toolId);
+        clientFingerprints.remove(toolId);
         closeQuietly(client);
         if (client != null) {
             log.info("[MCP] 关闭客户端: toolId={}", toolId);
@@ -458,7 +529,7 @@ public class McpClientManager {
             try {
                 client.close();
             } catch (Exception e) {
-                log.warn("[MCP] 关闭客户端异常: {}", e.getMessage());
+                log.warn("[MCP] 关闭客户端异常: {}", e.getClass().getSimpleName());
             }
         }
     }

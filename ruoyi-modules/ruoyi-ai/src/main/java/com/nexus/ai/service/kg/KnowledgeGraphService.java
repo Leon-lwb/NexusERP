@@ -115,8 +115,8 @@ public class KnowledgeGraphService {
 
         try {
             // AiRequestContext 的 tenantId 给 AiChatModelListener 用（token 统计按租户），parse 回 Long
-            Long tenantIdLong = (tenantIdStr != null && !tenantIdStr.isEmpty()) ? Long.parseLong(tenantIdStr) : null;
-            AiRequestContext.set(tenantIdLong, userId, userName, null, finalModelId, modelName);
+            String tenantId = (tenantIdStr != null && !tenantIdStr.isEmpty()) ? tenantIdStr : null;
+            AiRequestContext.set(tenantId, userId, userName, null, finalModelId, modelName);
 
             // 阶段一：实体关系抽取
             ChatModel chatModel = chatModelFactory.getChatModel(finalModelId);

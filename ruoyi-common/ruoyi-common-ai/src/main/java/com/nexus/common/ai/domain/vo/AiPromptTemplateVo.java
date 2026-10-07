@@ -26,8 +26,8 @@ public class AiPromptTemplateVo implements Serializable {
     @ExcelProperty(value = "模板ID")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，必须保留前导零） */
+    private String tenantId;
 
     /** 模板名称 */
     @ExcelProperty(value = "模板名称")

@@ -27,8 +27,8 @@ public class AiTokenUsage implements Serializable {
     @TableId(value = "id")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，必须保留前导零） */
+    private String tenantId;
 
     /** 用户ID */
     private Long userId;

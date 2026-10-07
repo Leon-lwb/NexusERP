@@ -1,6 +1,5 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -33,7 +32,7 @@ public class ErpProductionTool extends ErpToolHelper {
     public String queryActiveWorkOrders() {
         log.info("[AI-Production] 查询在产工单");
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT wo.wo_no AS 工单编号,
                        m.material_name AS 产品名称,
@@ -66,7 +65,7 @@ public class ErpProductionTool extends ErpToolHelper {
             return "参数错误：车间ID必须为正整数";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT ws.workstation_name AS 工位名称,
                        COUNT(DISTINCT wo.wo_id) AS 工单数,
@@ -102,7 +101,7 @@ public class ErpProductionTool extends ErpToolHelper {
             return "参数错误：产品物料编码不能为空";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 WITH RECURSIVE bom_tree AS (
                     SELECT b.bom_id AS bom_id,
@@ -163,7 +162,7 @@ public class ErpProductionTool extends ErpToolHelper {
             return "参数错误：查询天数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT DATE(wo.plan_end_date) AS 日期,
                        COUNT(wo.wo_id) AS 工单总数,
@@ -202,7 +201,7 @@ public class ErpProductionTool extends ErpToolHelper {
             return "参数错误：查询天数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT wo.wo_no AS 工单编号,
                        m.material_name AS 产品名称,
@@ -244,7 +243,7 @@ public class ErpProductionTool extends ErpToolHelper {
             return "参数错误：统计天数必须大于0";
         }
         try {
-            Long tenantId = AiRequestContext.getTenantId();
+            String tenantId = currentTenantId();
             String sql = """
                 SELECT wo.workshop_name AS 车间名称,
                        COUNT(wo.wo_id) AS 工单数,

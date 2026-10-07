@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * BFS 就绪队列 + 单线程串行执行。节点成功 → 按 IF 结果/边路由扇出下游（入度-1，为 0 入队）；
  * 未选中分支节点标记 SKIPPED；任一节点最终失败（onError=STOP）→ 后续全部 SKIPPED，实例 FAILED</p>
  * <p>租户安全（本项目已知坑）：所有写库包 TenantHelper.dynamic；
- * AiRequestContext 流程级 set，节点内禁止 clear，finally 统一 clear</p>
+ * 调度线程与节点工作线程分别绑定 AiRequestContext，实际执行结束时分别清理</p>
  *
  * @author NexusERP
  */
@@ -178,7 +178,7 @@ public class FlowEngineImpl implements FlowEngine {
     private void runFlowToNode(Flow flow, FlowGraph graph, Long instanceId, JsonNode input,
                                String tenantIdStr, Long userId, String userName,
                                String destinationNodeId, Set<String> closure) {
-        AiRequestContext.set(Long.valueOf(tenantIdStr), userId, userName, null, null, null);
+        AiRequestContext.set(tenantIdStr, userId, userName, null, null, null);
         try {
             // 闭包子图入度（以闭包内入边为准）
             Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
@@ -656,7 +656,7 @@ public class FlowEngineImpl implements FlowEngine {
         final Long userIdF = userId;
         aiExecutor.execute(() -> {
             try {
-                AiRequestContext.set(Long.valueOf(tenantIdStr), userIdF, null, null, null, null);
+                AiRequestContext.set(tenantIdStr, userIdF, null, null, null, null);
                 java.util.concurrent.atomic.AtomicBoolean stoppedHolder = new java.util.concurrent.atomic.AtomicBoolean(false);
                 java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder = new java.util.concurrent.atomic.AtomicReference<>();
                 // 循环场景强制串行
@@ -705,7 +705,7 @@ public class FlowEngineImpl implements FlowEngine {
     private void runFlow(Flow flow, FlowGraph graph, Long instanceId, JsonNode input,
                          String tenantIdStr, Long userId, String userName) {
         // AiRequestContext 流程级设置（LLM 的 token 采集与工具租户隔离依赖它）
-        AiRequestContext.set(Long.valueOf(tenantIdStr), userId, userName, null, null, null);
+        AiRequestContext.set(tenantIdStr, userId, userName, null, null, null);
         try {
             // 动态入度（初始化为静态入度；fanOut 时递减，为 0 时入队）
             Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
@@ -953,6 +953,30 @@ public class FlowEngineImpl implements FlowEngine {
     }
 
     /**
+     * 每次节点尝试独立绑定AI与数据库租户上下文，并在成功、异常和超时后的实际退出时清理。
+     * <p>本方法只在节点工作线程执行，不能清理调度线程的流程上下文；不继承旧会话、知识库和用量。</p>
+     */
+    JsonNode executeNodeInRequestScope(FlowNodeProvider provider, FlowExecutionContext ctx, String userName) {
+        AiRequestContext.clear();
+        String tenantId = ctx.getTenantId();
+        if (tenantId == null || !tenantId.matches("[a-zA-Z0-9_-]{1,20}")) {
+            throw new IllegalArgumentException("节点租户上下文缺失或无效，拒绝执行");
+        }
+        AiRequestContext.set(tenantId, ctx.getUserId(), userName, null, null, null);
+        try {
+            return TenantHelper.dynamic(tenantId, () -> {
+                try {
+                    return provider.execute(ctx);
+                } catch (Exception e) {
+                    throw new java.util.concurrent.CompletionException(e);
+                }
+            });
+        } finally {
+            AiRequestContext.clear();
+        }
+    }
+
+    /**
      * 执行节点（带重试 + 超时）
      */
     private JsonNode runNodeWithRetry(FlowNodeDef nodeDef, FlowNodeProvider provider, FlowState state,
@@ -981,15 +1005,10 @@ public class FlowEngineImpl implements FlowEngine {
                 ctx.setTenantId(tenantIdStr);
                 ctx.setGraph(graph);
 
-                // 带超时执行（Future.get）
+                // 在真正执行节点的工作线程绑定身份；线程创建时继承的上下文可能来自其他请求。
+                // 此调用链仅显式提供租户与用户ID，用户名保持未知，不能采信并行调度线程继承的旧名称。
                 java.util.concurrent.Future<JsonNode> future = java.util.concurrent.CompletableFuture
-                    .supplyAsync(() -> {
-                        try {
-                            return provider.execute(ctx);
-                        } catch (Exception e) {
-                            throw new java.util.concurrent.CompletionException(e);
-                        }
-                    });
+                    .supplyAsync(() -> executeNodeInRequestScope(provider, ctx, null));
                 return future.get(timeoutSeconds, TimeUnit.SECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
                 lastError = new IllegalStateException("节点 " + nodeName + " 执行超时（" + timeoutSeconds + "s）");

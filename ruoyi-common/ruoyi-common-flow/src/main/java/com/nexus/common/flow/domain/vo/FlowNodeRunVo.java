@@ -26,8 +26,8 @@ public class FlowNodeRunVo implements Serializable {
     /** 主键 */
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（文本身份，保留前导零；历史0不自动升级） */
+    private String tenantId;
 
     /** 实例ID */
     @ExcelProperty(value = "实例ID")
