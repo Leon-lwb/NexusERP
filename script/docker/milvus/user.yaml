@@ -1,0 +1,4 @@
+# 本地小规模向量存储；不修改ERP、RabbitMQ、Redis或现有MinIO服务。
+# Milvus的存储类型由COMMON_STORAGETYPE=local显式选择，数据写入持久化目录。
+log:
+  level: warn

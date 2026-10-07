@@ -1,0 +1,28 @@
+# 与当前Java SDK 2.5.9配套的2.5系列稳定补丁，固定版本，不使用latest。
+services:
+  milvus:
+    image: milvusdb/milvus:v2.5.27
+    container_name: nexus-milvus
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+    volumes:
+      - ./data:/var/lib/milvus
+      - ./embedEtcd.yaml:/milvus/configs/embedEtcd.yaml:ro
+      - ./user.yaml:/milvus/configs/user.yaml:ro
+    ports:
+      # 只允许本机访问；现有MinIO占用9091，健康检查改用宿主19531。
+      - "127.0.0.1:19530:19530"
+      - "127.0.0.1:19531:9091"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      start_period: 45s
+      retries: 12
