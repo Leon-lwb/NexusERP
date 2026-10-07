@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts" name="Pickingrule">
-import { listPickingRule, getPickingRule, delPickingRule, addPickingRule, updatePickingRule } from '@/api/erp/wm/pickingrule';
+import { listPickingRule, getPickingRule, delPickingRule, addPickingRule, updatePickingRule } from '@/api/erp/wm/pickingRule';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import type { FormInstance } from 'element-plus';
