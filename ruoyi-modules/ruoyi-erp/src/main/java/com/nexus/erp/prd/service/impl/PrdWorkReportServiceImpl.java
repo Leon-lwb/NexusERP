@@ -16,6 +16,7 @@ import com.nexus.erp.prd.domain.bo.PrdWorkReportBo;
 import com.nexus.erp.prd.domain.vo.PrdWorkReportVo;
 import com.nexus.erp.prd.mapper.PrdWorkReportMapper;
 import com.nexus.erp.prd.service.IPrdWorkReportService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
 
     private final PrdWorkReportMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     /** 报工状态：已提交 */
     private static final String STATUS_SUBMITTED = "SUBMITTED";
@@ -133,9 +135,20 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdWorkReportBo bo) {
         PrdWorkReport entity = MapstructUtils.convert(bo, PrdWorkReport.class);
+        // 复用现有 master 独立编号事务；ERP 写入失败可留下编号空档，不自行生成或回退流水号。
+        if (StringUtils.isBlank(entity.getReportNo())) {
+            entity.setReportNo(autoCodeUtil.genSerialCode("PRD_REPORT_CODE", null));
+        }
+        if (StringUtils.isBlank(entity.getReportNo())) {
+            throw new ServiceException("生产报工编号生成失败，编码规则未返回有效编号");
+        }
         // ★ ERP-PRD-02: 服务端强制状态机，报工新增只能落 SUBMITTED，不能由客户端直接落 APPROVED
         entity.setReportStatus(STATUS_SUBMITTED);
-        return baseMapper.insert(entity);
+        // 单据出生必须恰好写入一行，不能把零效果或异常影响行数当作新增成功。
+        if (baseMapper.insert(entity) != 1) {
+            throw new ServiceException("生产报工新增写入失败，影响行数必须为1");
+        }
+        return 1;
     }
 
     /**

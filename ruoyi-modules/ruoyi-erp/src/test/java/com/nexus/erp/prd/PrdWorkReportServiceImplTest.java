@@ -11,6 +11,7 @@ import com.nexus.erp.prd.domain.bo.PrdWorkReportBo;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.mapper.PrdWorkReportMapper;
 import com.nexus.erp.prd.service.impl.PrdWorkReportServiceImpl;
+import com.nexus.system.strategy.AutoCodeUtil;
 import io.github.linpeilie.Converter;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
@@ -47,6 +48,8 @@ class PrdWorkReportServiceImplTest {
     private PrdWorkReportMapper baseMapper;
     @Mock
     private PrdWorkOrderMapper workOrderMapper;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
 
     @InjectMocks
     private PrdWorkReportServiceImpl workReportService;
@@ -83,6 +86,8 @@ class PrdWorkReportServiceImplTest {
         PrdWorkReportBo bo = new PrdWorkReportBo();
         bo.setReportStatus("APPROVED");
         bo.setWoId(9L);
+        // 编号出生依赖用 mock 隔离，既有强制 SUBMITTED 断言保持不变。
+        when(autoCodeUtil.genSerialCode("PRD_REPORT_CODE", null)).thenReturn("BG261007001");
         when(baseMapper.insert(any(PrdWorkReport.class))).thenReturn(1);
 
         assertEquals(1, workReportService.insertByBo(bo));

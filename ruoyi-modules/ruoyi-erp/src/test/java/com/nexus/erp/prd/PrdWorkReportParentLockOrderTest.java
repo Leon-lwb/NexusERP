@@ -9,6 +9,7 @@ import com.nexus.erp.prd.domain.PrdWorkReport;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.mapper.PrdWorkReportMapper;
 import com.nexus.erp.prd.service.impl.PrdWorkReportServiceImpl;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
@@ -39,7 +40,8 @@ class PrdWorkReportParentLockOrderTest {
     @BeforeEach
     void before() {
         reports = mock(PrdWorkReportMapper.class); orders = mock(PrdWorkOrderMapper.class);
-        service = new PrdWorkReportServiceImpl(reports, orders);
+        // 仅适配编号器构造依赖，审核锁序与拒绝断言不作调整。
+        service = new PrdWorkReportServiceImpl(reports, orders, mock(AutoCodeUtil.class));
         old = report("1"); current = report("2");
         wo = new PrdWorkOrder(); wo.setWoId(201L); wo.setPlannedQty(new BigDecimal("6")); wo.setCompletedQty(BigDecimal.ZERO);
         when(reports.selectById(701L)).thenReturn(old);
