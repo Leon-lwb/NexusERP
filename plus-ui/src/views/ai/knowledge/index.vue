@@ -47,9 +47,17 @@
             @current-change="handleCurrentChange"
           >
             <el-table-column type="selection" width="55" align="center" />
-            <el-table-column label="知识库名称" align="center" prop="knowledgeName" :show-overflow-tooltip="true" />
-            <el-table-column label="描述" align="center" prop="description" :show-overflow-tooltip="true" />
-            <el-table-column label="Embedding模型" align="center" prop="embeddingModel" :show-overflow-tooltip="true" />
+            <el-table-column label="知识库名称" align="center" prop="knowledgeName" min-width="160">
+              <template #default="scope">
+                <span class="knowledge-readable-cell" :title="scope.row.knowledgeName">{{ scope.row.knowledgeName }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="描述" align="center" prop="description" min-width="140" :show-overflow-tooltip="true" />
+            <el-table-column label="Embedding模型" align="center" prop="embeddingModel" min-width="200">
+              <template #default="scope">
+                <span class="knowledge-readable-cell" :title="scope.row.embeddingModel">{{ scope.row.embeddingModel }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="文档数" align="center" prop="documentCount" width="80" />
             <el-table-column label="状态" align="center" prop="status" width="80">
               <template #default="scope">
@@ -134,7 +142,11 @@
               </template>
 
               <el-table v-loading="docLoading" border :data="documentList">
-                <el-table-column label="文件名" align="center" prop="fileName" :show-overflow-tooltip="true" />
+                <el-table-column label="文件名" align="center" prop="fileName" min-width="260">
+                  <template #default="scope">
+                    <span class="knowledge-readable-cell" :title="scope.row.fileName">{{ scope.row.fileName }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="文件大小" align="center" prop="fileSize" width="100">
                   <template #default="scope">
                     <span>{{ formatFileSize(scope.row.fileSize) }}</span>
@@ -146,7 +158,7 @@
                     <dict-tag :options="ai_knowledge_document_status" :value="scope.row.status" />
                   </template>
                 </el-table-column>
-                <el-table-column label="错误信息" align="center" prop="errorMessage" :show-overflow-tooltip="true" />
+                <el-table-column label="错误信息" align="center" prop="errorMessage" min-width="200" :show-overflow-tooltip="true" />
                 <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
                   <template #default="scope">
                     <el-tooltip content="查看片段" placement="top">
@@ -199,7 +211,8 @@
                   <el-button type="primary" icon="Search" :loading="retrievalLoading" @click="handleRetrievalTest">测试</el-button>
                 </el-form-item>
               </el-form>
-              <div v-if="retrievalResults.length > 0" class="retrieval-results">
+              <el-alert v-if="retrievalError" :title="retrievalError" type="error" :closable="false" show-icon />
+              <div v-else-if="retrievalResults.length > 0" class="retrieval-results">
                 <div v-for="(item, index) in retrievalResults" :key="index" class="retrieval-result-item">
                   <div class="result-header">
                     <el-tag size="small" type="info">#{{ index + 1 }}</el-tag>
@@ -350,6 +363,9 @@ const retrievalQuery = ref('');
 const retrievalResults = ref<any[]>([]);
 const retrievalLoading = ref(false);
 const retrievalQueried = ref(false);
+const retrievalError = ref('');
+/** 仅当前检索可写入面板；切库和卸载也使已发请求失效。 */
+let retrievalRequestSeq = 0;
 const testParams = reactive({
   topK: 5,
   threshold: 0.5,
@@ -380,6 +396,7 @@ function loadEmbeddingModels() {
 }
 
 onUnmounted(() => {
+  retrievalRequestSeq++;
   stopRebuildPolling();
 });
 
@@ -587,9 +604,12 @@ function handleCurrentChange(row: any) {
   // 切换选中行时停掉旧行的索引重建轮询
   stopRebuildPolling();
   selectedKnowledge.value = row;
-  // 切换知识库时清空检索结果，重置测试参数为知识库配置
+  // 切库使旧检索失效，不能把旧响应或加载态带到新库。
+  retrievalRequestSeq++;
   retrievalResults.value = [];
   retrievalQueried.value = false;
+  retrievalError.value = '';
+  retrievalLoading.value = false;
   retrievalQuery.value = '';
   if (row) {
     testParams.topK = row.retrieveLimit || 5;
@@ -689,10 +709,15 @@ function handleRetrievalTest() {
     return;
   }
   if (!selectedKnowledge.value) return;
+  const requestSeq = ++retrievalRequestSeq;
+  const knowledgeId = selectedKnowledge.value.id;
+  const isCurrentRequest = () => requestSeq === retrievalRequestSeq && selectedKnowledge.value?.id === knowledgeId;
   retrievalLoading.value = true;
-  retrievalQueried.value = true;
-  knowledgeRetrieval({
-    knowledgeId: selectedKnowledge.value.id,
+  retrievalQueried.value = false;
+  retrievalError.value = '';
+  retrievalResults.value = [];
+  return knowledgeRetrieval({
+    knowledgeId,
     query: retrievalQuery.value,
     topK: testParams.topK,
     threshold: testParams.threshold,
@@ -702,13 +727,19 @@ function handleRetrievalTest() {
     hybridAlpha: selectedKnowledge.value.hybridAlpha || 0.5
   })
     .then((res: any) => {
-      retrievalResults.value = res.data || [];
+      if (!isCurrentRequest()) return;
+      // 只有合法数组才是成功结果，缺失或异常信封不能降级为“无命中”。
+      if (!Array.isArray(res.data)) throw new Error('检索响应格式异常');
+      retrievalResults.value = res.data;
+      retrievalQueried.value = true;
     })
     .catch(() => {
+      if (!isCurrentRequest()) return;
       retrievalResults.value = [];
+      retrievalError.value = '检索失败，请稍后重试';
     })
     .finally(() => {
-      retrievalLoading.value = false;
+      if (isCurrentRequest()) retrievalLoading.value = false;
     });
 }
 
@@ -729,6 +760,15 @@ getList();
 </script>
 
 <style scoped>
+/* 正式名称与模型标识完整展示；半屏表格保留最小列宽，长文本自然换行。 */
+.knowledge-readable-cell {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
 .retrieval-results {
   max-height: 400px;
   overflow-y: auto;

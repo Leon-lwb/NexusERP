@@ -79,7 +79,7 @@
                     <el-icon v-if="tc.status === 'running'" class="is-loading"><Loading /></el-icon>
                     <el-icon v-else><CircleCheck /></el-icon>
                     <span class="tool-name">{{ tc.toolName }}</span>
-                    <span v-if="tc.status === 'completed' && tc.duration" class="tool-duration">{{ tc.duration }}ms</span>
+                    <span v-if="tc.status === 'completed'" class="tool-duration">{{ formatToolDuration(tc.duration) }}</span>
                   </div>
                   <div v-if="tc.resultSummary && tc.status === 'completed'" class="tool-result">
                     {{ truncateText(tc.resultSummary, 200) }}
@@ -260,6 +260,7 @@ import { getAvailableMcpTools } from '@/api/ai/mcpTool';
 import { listKnowledge } from '@/api/ai/knowledge';
 import { checkPermi } from '@/utils/permission';
 import { chatKnowledgeChoices, prepareChatKnowledgeRequest, type ChatKnowledgeChoice } from './knowledgeSelection';
+import { formatToolDuration } from './toolDuration';
 import { marked } from 'marked';
 import * as echarts from 'echarts';
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers';

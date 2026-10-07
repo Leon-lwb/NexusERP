@@ -1,0 +1,3 @@
+# 本机验证证据和带绝对声明路径的临时配置不纳入提交。
+*.log
+.typecheck.tsconfig.json

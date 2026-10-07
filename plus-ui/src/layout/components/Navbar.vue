@@ -91,7 +91,7 @@
       <div class="avatar-container">
         <el-dropdown class="right-menu-item hover-effect" trigger="click" @command="handleCommand">
           <div class="avatar-wrapper">
-            <img :src="userStore.avatar" class="user-avatar" alt="avatar" />
+            <img :src="avatarSrc" class="user-avatar" alt="用户头像" @error="handleAvatarError" />
             <el-icon><caret-bottom /></el-icon>
           </div>
           <template #dropdown>
@@ -119,6 +119,7 @@
 import SearchMenu from './TopBar/search.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
+import defaultAvatar from '@/assets/images/profile.jpg';
 import { useSettingsStore } from '@/store/modules/settings';
 import { useThemeStore } from '@/store/modules/theme';
 import { useNoticeStore } from '@/store/modules/notice';
@@ -135,6 +136,29 @@ import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
 
 const appStore = useAppStore();
 const userStore = useUserStore();
+// 只加载本站头像；远端或非法来源直接使用现有默认资源，避免额外网络请求。
+const avatarLoadFailed = ref(false);
+const avatarSrc = computed(() => {
+  const candidate = userStore.avatar;
+  if (avatarLoadFailed.value || typeof candidate !== 'string' || !candidate.trim()) return defaultAvatar;
+  try {
+    const url = new URL(candidate, window.location.origin);
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== window.location.origin || url.username || url.password) return defaultAvatar;
+    return url.href;
+  } catch {
+    return defaultAvatar;
+  }
+});
+// 失败仅改变展示状态，不写回用户头像；默认资源重复失败时不循环替换src。
+const handleAvatarError = () => {
+  avatarLoadFailed.value = true;
+};
+watch(
+  () => userStore.avatar,
+  () => {
+    avatarLoadFailed.value = false;
+  }
+);
 const settingsStore = useSettingsStore();
 const themeStore = useThemeStore();
 const noticeStore = useNoticeStore();
