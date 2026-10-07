@@ -17,6 +17,8 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.datasource.JdbcTransactionObjectSupport;
 import org.springframework.jdbc.datasource.SimpleConnectionHandle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionStatus;
@@ -98,6 +100,8 @@ public class PuRequirementErpTransactionExecutor {
         }
         Error[] callbackFatal = new Error[1];
         OwnedTransaction[] sourceChangeRollback = new OwnedTransaction[1];
+        // 仅按对象身份去重诊断；不读取异常内容，不参与原事务或错误分类。
+        ServiceException[] diagnosedCallbackFailure = new ServiceException[1];
         try {
             if (sqlSessionFactory.getClass() != DefaultSqlSessionFactory.class) {
                 throw failed();
@@ -151,10 +155,13 @@ public class PuRequirementErpTransactionExecutor {
                     // 不将原异常对象交给Spring；其cause/suppressed不得穿过事务边界。
                     throw failed();
                 } catch (RuntimeException | Error failure) {
+                    diagnoseFailure(FailureDiagnosticStage.CALLBACK_SCOPE, failure);
                     /** 先移除底层诊断再交给 Spring 回滚，不将 SQL/凭证放入 message/cause/suppressed。 */
                     owned.prepareRollbackSessionCleanup();
                     owned.rememberForeignFactoryBinding();
-                    throw failed();
+                    ServiceException sanitized = failed();
+                    diagnosedCallbackFailure[0] = sanitized;
+                    throw sanitized;
                 } finally {
                     if (sourceChain) SOURCE_CHAIN_OWNER.remove();
                 }
@@ -170,6 +177,9 @@ public class PuRequirementErpTransactionExecutor {
             if (sourceChangeRollback[0] != null) {
                 sourceChangeRollback[0].requireSuccessfulSourceChangeRollback();
                 throw new SourceChangedException();
+            }
+            if (failure != diagnosedCallbackFailure[0]) {
+                diagnoseFailure(FailureDiagnosticStage.TRANSACTION_SCOPE, failure);
             }
             throw failed();
         }
@@ -214,6 +224,68 @@ public class PuRequirementErpTransactionExecutor {
 
     private static ServiceException failed() {
         return new ServiceException("ERP 专属物理事务未成功完成，不能确认提交结果");
+    }
+
+    /** 仅作排错位置提示，不认证来源、不修改事务，也不构成性能或超时修复。 */
+    private enum FailureDiagnosticStage { CALLBACK_SCOPE, TRANSACTION_SCOPE }
+
+    /** 仅诊断级防再入；不作为事务资格，也不让内层退出清除外层哨兵。 */
+    private static final ThreadLocal<Boolean> FAILURE_DIAGNOSTIC_ACTIVE = new ThreadLocal<>();
+
+    /** 延迟初始化日志设施；成功、可信变化和原致命错误分支不加载此日志持有者。 */
+    private static final class FailureDiagnosticLogger {
+        private static final Logger LOG = LoggerFactory.getLogger(PuRequirementErpTransactionExecutor.class);
+    }
+
+    /**
+     * 原普通失败净化前只提取类型与位置：最多扫描64帧，输出至多3个业务帧。
+     * 不读取message/cause/suppressed，不输出文件名/模块/类加载器，不向logger传Throwable。
+     * 提取、初始化或日志设施自身的任何失败均不得替代原安全异常；原致命分支不调用本方法。
+     */
+    private static void diagnoseFailure(FailureDiagnosticStage stage, Throwable failure) {
+        boolean entered = false;
+        try {
+            if (Boolean.TRUE.equals(FAILURE_DIAGNOSTIC_ACTIVE.get())) return;
+            FAILURE_DIAGNOSTIC_ACTIVE.set(Boolean.TRUE);
+            entered = true;
+            String type = failure.getClass().getName();
+            if (!diagnosticBinaryName(type)) type = "UNAVAILABLE";
+            List<String> positions = new ArrayList<>(3);
+            StackTraceElement[] trace = failure.getStackTrace();
+            if (trace != null) {
+                for (int i = 0; i < Math.min(trace.length, 64) && positions.size() < 3; i++) {
+                    StackTraceElement frame = trace[i];
+                    if (frame == null) continue;
+                    String owner = frame.getClassName();
+                    String method = frame.getMethodName();
+                    if (owner.startsWith("com.nexus.") && diagnosticBinaryName(owner) && diagnosticMethodName(method)) {
+                        positions.add(owner + "#" + method + ":" + frame.getLineNumber());
+                    }
+                }
+            }
+            FailureDiagnosticLogger.LOG.error("ERP 专属事务安全失败位置 stage={} type={} frames={}",
+                stage.name(), type, positions.toString());
+        } catch (Throwable ignored) {
+            // 诊断只能尽力完成；不重试、不传播，不给原异常添加cause或suppressed。
+        } finally {
+            if (entered) {
+                try {
+                    FAILURE_DIAGNOSTIC_ACTIVE.remove();
+                } catch (Throwable ignored) {
+                    // 清理诊断设施失败也不能替换原安全异常。
+                }
+            }
+        }
+    }
+
+    private static boolean diagnosticBinaryName(String name) {
+        return name != null && name.length() <= 240
+            && name.matches("[A-Za-z_$][A-Za-z0-9_$]*(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)*");
+    }
+
+    private static boolean diagnosticMethodName(String name) {
+        return name != null && name.length() <= 80
+            && (name.matches("[A-Za-z_$][A-Za-z0-9_$]*") || "<init>".equals(name) || "<clinit>".equals(name));
     }
 
     private enum Phase { CALLBACK_RETURN, BEFORE_FLUSH, BEFORE_JDBC, SOURCE_CHANGE_ROLLBACK }
