@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useFlowStore } from '../designer/useFlowStore';
@@ -17,6 +17,7 @@ import { getFlow, getInstance, listNodeRuns, retryInstance } from '@/api/ai/flow
 const route = useRoute();
 const router = useRouter();
 const store = useFlowStore();
+const canvasRef = ref<InstanceType<typeof FlowCanvas>>();
 
 const loading = ref(false);
 const instance = ref<AiFlowInstance | null>(null);
@@ -206,13 +207,16 @@ async function loadDetail(instanceId: string) {
 
     // 2. 加载画布配置：实例快照优先（改版后重放旧实例不错位），无快照回退当前流程配置
     if (instance.value?.configSnapshot) {
-      store.fromConfigJson(instance.value.configSnapshot);
+      store.fromConfigJson(instance.value.configSnapshot, { displayOnlyLayout: true });
     } else {
       const flowRes = await getFlow(String(instance.value?.flowId ?? route.query.flowId));
       if (flowRes.data?.configJson) {
-        store.fromConfigJson(flowRes.data.configJson);
+        store.fromConfigJson(flowRes.data.configJson, { displayOnlyLayout: true });
       }
     }
+
+    await nextTick();
+    canvasRef.value?.fitAllNodes();
 
     // 3. 加载节点运行记录并着色
     const runsRes = await listNodeRuns(instanceId);
@@ -262,7 +266,7 @@ onMounted(async () => {
 
       <!-- 中部：只读画布（重放 + 播放小球） -->
       <div class="instance-detail__canvas">
-        <FlowCanvas :nodes="store.nodes" :edges="store.edges" readonly :playing-node-id="store.playingNodeId" />
+        <FlowCanvas ref="canvasRef" :nodes="store.nodes" :edges="store.edges" readonly :playing-node-id="store.playingNodeId" />
       </div>
 
       <!-- 底部：节点运行记录（拓扑序） -->
