@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 仅基于源码的合同检查：历史记录保持 NULL；不连接数据库，也不执行迁移。 */
@@ -38,9 +39,7 @@ class AiDecisionP1VersionMappingContractTest {
         throws Exception {
         assertEquals(table, entity.getAnnotation(TableName.class).value());
         String sql = tableDefinition(table);
-        Matcher ddl = Pattern.compile("(?im)^\\s*`" + column
-            + "`\\s+tinyint\\(4\\)\\s+NULL\\s+DEFAULT\\s+NULL").matcher(sql);
-        assertTrue(ddl.find(), "P1 column must be nullable, without historical default: " + column);
+        assertNullableVersionColumn(sql, column);
         Field field = entity.getDeclaredField(fieldName);
         assertEquals(Integer.class, field.getType());
         assertNotNull(field.getAnnotation(TableField.class));
@@ -50,6 +49,36 @@ class AiDecisionP1VersionMappingContractTest {
             "Absent persisted version denotes a legacy record, not v2");
         assertTrue(sql.contains("PRIMARY KEY (`id`)"));
         assertTrue(Pattern.compile("(?i)ENGINE\\s*=\\s*InnoDB").matcher(sql).find());
+    }
+
+    @Test
+    void nullableVersionColumnsAcceptOldAndMysql57DumpSyntax() {
+        for (String column : new String[]{"decision_contract_version", "purchase_payload_version"}) {
+            for (String definition : new String[]{"tinyint(4) NULL DEFAULT NULL", "tinyint(4) DEFAULT NULL",
+                "tinyint NULL DEFAULT NULL", "tinyint DEFAULT NULL"}) {
+                assertNullableVersionColumn("  `" + column + "` " + definition + " COMMENT 'legacy version',", column);
+            }
+        }
+    }
+
+    @Test
+    void nullableVersionColumnsRejectWrongTypesNullabilityAndHistoricalDefaults() {
+        for (String column : new String[]{"decision_contract_version", "purchase_payload_version"}) {
+            for (String definition : new String[]{"tinyint(4) NOT NULL DEFAULT NULL", "tinyint NOT NULL DEFAULT 0",
+                "tinyint(4) NULL DEFAULT 1", "tinyint(4) NULL DEFAULT 2", "tinyint DEFAULT '1'",
+                "tinyint DEFAULT '2'", "int(11) DEFAULT NULL", "varchar(20) DEFAULT NULL",
+                "tinyint(4) DEFAULT NULL NOT NULL", "tinyint DEFAULT NULL DEFAULT 2"}) {
+                assertThrows(AssertionError.class,
+                    () -> assertNullableVersionColumn("  `" + column + "` " + definition + ",", column), definition);
+            }
+            String duplicate = "  `" + column + "` tinyint DEFAULT NULL,\n  `" + column + "` tinyint DEFAULT NULL,";
+            assertThrows(AssertionError.class, () -> assertNullableVersionColumn(duplicate, column));
+        }
+    }
+
+    private static void assertNullableVersionColumn(String ddl, String column) {
+        assertEquals("tinyint DEFAULT NULL", DecisionSqlTestSupport.columnDefinition(ddl, column),
+            "P1 column must be nullable, without historical default: " + column);
     }
 
     @Test
