@@ -9,7 +9,7 @@ mes:
 --- # 验证码配置
 # PC登录需要图形验证码，APP短信登录无需，APP密码登录在提交时弹出验证码
 captcha:
-  enable: true
+  enable: false
 
 --- # 监控中心配置
 spring.boot.admin.client:
@@ -360,3 +360,10 @@ spring.rabbitmq:
 app:
   auth:
     sms-code-echo: true
+
+# 开发环境本机MCP端点配置
+nexus:
+  ai:
+    mcp:
+      # 仅允许这两个完整URI；不开放其他本机路径、端口或内网地址。
+      allowed-local-endpoints: "http://127.0.0.1:19540/mcp,http://127.0.0.1:19540/catalog"

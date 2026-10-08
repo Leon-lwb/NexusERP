@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 public class DecisionFlowDefinitionFactory {
     public static final String ANALYSIS_KEY = "system_delivery_risk_analysis_v1";
     public static final String EXECUTION_KEY = "system_delivery_risk_execution_v1";
+    public static final String ANALYSIS_NAME = "工业交付风险分析";
+    public static final String EXECUTION_NAME = "工业交付风险执行";
     private final ObjectMapper mapper;
     private final AiProperties properties;
 
@@ -96,20 +98,20 @@ public class DecisionFlowDefinitionFactory {
         if (modelId != null && modelId > 0) { edge(edges, last, "llm"); last = "llm"; }
         edge(edges, last, "guard");
         edge(edges, "guard", "actionProposal");
-        return flow(ANALYSIS_KEY, graph);
+        return flow(ANALYSIS_KEY, ANALYSIS_NAME, graph);
     }
 
     public Flow executionFlow() {
         ObjectNode graph = mapper.createObjectNode();
         node(graph.putArray("nodes"), "execute", "industrial.executeApprovedActions", false, mapper.createObjectNode());
         graph.putArray("edges");
-        return flow(EXECUTION_KEY, graph);
+        return flow(EXECUTION_KEY, EXECUTION_NAME, graph);
     }
 
-    private Flow flow(String key, ObjectNode graph) {
+    private Flow flow(String key, String name, ObjectNode graph) {
         Flow flow = new Flow();
         flow.setFlowKey(key);
-        flow.setFlowName(key);
+        flow.setFlowName(name);
         flow.setStatus("PUBLISHED");
         flow.setVersion(1);
         flow.setTriggerType("MANUAL");

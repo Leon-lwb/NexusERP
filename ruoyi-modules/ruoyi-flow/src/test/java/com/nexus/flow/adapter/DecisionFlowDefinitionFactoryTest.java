@@ -70,4 +70,24 @@ class DecisionFlowDefinitionFactoryTest {
         assertEquals("industrial.executeApprovedActions", FlowGraph.parse(factory.executionFlow().getConfigJson())
             .getNode("execute").getType());
     }
+    @Test void analysisDisplayNameIsChineseWithoutChangingSystemIdentity() {
+        var flow = factory.analysisFlow(10L, 20L);
+        assertEquals("工业交付风险分析", flow.getFlowName());
+        assertEquals("system_delivery_risk_analysis_v1", flow.getFlowKey());
+        assertEquals("PUBLISHED", flow.getStatus());
+        assertEquals(1, flow.getVersion());
+        assertEquals("MANUAL", flow.getTriggerType());
+        assertEquals(1, flow.getMaxRetry());
+    }
+
+    @Test void executionDisplayNameIsChineseWithoutChangingProtectedAction() {
+        var flow = factory.executionFlow();
+        assertEquals("工业交付风险执行", flow.getFlowName());
+        assertEquals("system_delivery_risk_execution_v1", flow.getFlowKey());
+        assertEquals(1, flow.getVersion());
+        assertEquals("PUBLISHED", flow.getStatus());
+        var graph = FlowGraph.parse(flow.getConfigJson());
+        assertEquals(1, graph.getNodes().size());
+        assertEquals("industrial.executeApprovedActions", graph.getNode("execute").getType());
+    }
 }

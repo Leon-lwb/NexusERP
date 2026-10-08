@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import type { AiFlow, AiFlowInstance } from '@/api/ai/flow';
 import { listFlow, listInstance, retryInstance } from '@/api/ai/flow';
+import { FLOW_TRIGGER_OPTIONS, flowTriggerLabel } from '../flowDisplay';
 
 /**
  * 流程运行历史列表页
@@ -91,12 +92,6 @@ const statusMap: Record<string, { label: string; type: string }> = {
   FAILED: { label: '失败', type: 'danger' },
   STOPPED: { label: '已停止', type: 'info' }
 };
-
-/** 触发方式标签 */
-function triggerLabel(t?: string) {
-  const m: Record<string, string> = { MANUAL: '手动', SCHEDULE: '定时', TEST: '测试', WEBHOOK: 'Webhook' };
-  return t ? (m[t] ?? t) : '-';
-}
 
 /** RUNNING 行自动刷新（3s，仅当列表存在运行中实例） */
 let refreshTimer: number | null = null;
@@ -203,10 +198,7 @@ onBeforeUnmount(stopRefresh);
         <el-col :span="6">
           <el-form-item label="触发方式" prop="triggerType">
             <el-select v-model="query.triggerType" placeholder="请选择触发方式" clearable style="width: 100%" @change="handleQuery">
-              <el-option label="手动" value="MANUAL" />
-              <el-option label="定时" value="SCHEDULE" />
-              <el-option label="测试" value="TEST" />
-              <el-option label="Webhook" value="WEBHOOK" />
+              <el-option v-for="option in FLOW_TRIGGER_OPTIONS" :key="option.value" :label="option.label" :value="option.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -256,7 +248,7 @@ onBeforeUnmount(stopRefresh);
       <el-table-column label="流程名称" prop="flowName" min-width="140" show-overflow-tooltip />
       <el-table-column label="版本" prop="flowVersion" width="70" align="center" />
       <el-table-column label="触发方式" width="100" align="center">
-        <template #default="{ row }">{{ triggerLabel(row.triggerType) }}</template>
+        <template #default="{ row }">{{ flowTriggerLabel(row.triggerType) }}</template>
       </el-table-column>
       <el-table-column label="状态" width="100" align="center">
         <template #default="{ row }">

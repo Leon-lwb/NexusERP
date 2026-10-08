@@ -7,6 +7,7 @@ import FlowCanvas from '../designer/FlowCanvas.vue';
 import JsonViewer from '../components/JsonViewer.vue';
 import type { AiFlowInstance, AiFlowNodeRun } from '@/api/ai/flow';
 import { getFlow, getInstance, listNodeRuns, retryInstance } from '@/api/ai/flow';
+import { flowTriggerLabel } from '../flowDisplay';
 
 /**
  * 流程实例详情页（只读画布重放）
@@ -246,8 +247,7 @@ onMounted(async () => {
             {{ statusMap[instance.status]?.label ?? instance.status }}
           </el-tag>
           <span class="instance-detail__sub">
-            实例 {{ instance.id }} · 版本 v{{ instance.flowVersion }} ·
-            {{ instance.triggerType === 'SCHEDULE' ? '定时触发' : instance.triggerType === 'TEST' ? '测试运行' : '手动触发' }} ·
+            实例 {{ instance.id }} · 版本 v{{ instance.flowVersion }} · {{ flowTriggerLabel(instance.triggerType, true) }} ·
             {{ formatDuration(instance.durationMs) }} · 节点 {{ instance.nodeSuccess ?? 0 }}/{{ instance.nodeTotal ?? 0 }}
           </span>
         </div>

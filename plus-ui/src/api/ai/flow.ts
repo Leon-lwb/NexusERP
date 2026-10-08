@@ -18,13 +18,16 @@ export interface AiFlow {
   updateTime?: string;
 }
 
+/** 运行实例的实际触发来源，与流程定义的可选触发配置区分。 */
+export type AiFlowTriggerType = 'MANUAL' | 'SCHEDULE' | 'TEST' | 'WEBHOOK' | 'DECISION';
+
 /** AI 流程运行实例类型 */
 export interface AiFlowInstance {
   id: number | string;
   flowId: number | string;
   flowName?: string;
   flowVersion: number;
-  triggerType: 'MANUAL' | 'SCHEDULE' | 'TEST' | 'WEBHOOK';
+  triggerType: AiFlowTriggerType;
   inputJson?: string;
   outputJson?: string;
   /** 启动时配置快照（仅详情接口返回，列表不返回；历史重放用） */
