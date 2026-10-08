@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,6 +111,68 @@ class SopDocumentServiceImplListTest {
         String sql = wrapper.getSqlSegment();
         assertFalse(sql.contains("<>"));
         assertTrue(wrapper.getParamNameValuePairs().containsValue("PUBLISHED"));
+    }
+
+    @Test
+    @DisplayName("PRODUCTION 搜索兼容历史 PROCESS，且不放宽编码/名称/状态条件")
+    void productionSearchIncludesLegacyProcessWithoutBroadeningOtherFilters() {
+        SopDocumentBo bo = boWithStatus("DRAFT");
+        bo.setSopType("PRODUCTION");
+        bo.setSopCode("SOP-001");
+        bo.setSopName("装配");
+        LambdaQueryWrapper<SopDocument> wrapper = service.buildQueryWrapper(bo);
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.contains("sop_type IN"), "仅类型条件应兼容两个值，实际: " + sql);
+        assertFalse(sql.contains(" OR "), "不能用未分组 OR 绕过其他过滤条件");
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("PRODUCTION"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("PROCESS"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("DRAFT"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("SOP-001"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("%装配%"));
+        assertEquals("PRODUCTION", bo.getSopType(), "搜索兼容不得修改请求或历史存储类型");
+    }
+
+    @Test
+    @DisplayName("PRODUCTION 兼容分支仍默认排除已归档")
+    void productionSearchStillExcludesArchivedByDefault() {
+        SopDocumentBo bo = boWithStatus(null);
+        bo.setSopType("PRODUCTION");
+        LambdaQueryWrapper<SopDocument> wrapper = service.buildQueryWrapper(bo);
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.contains("sop_type IN"));
+        assertTrue(sql.contains("<>"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("ARCHIVED"));
+    }
+
+    @Test
+    @DisplayName("其他类型仍精确匹配：不替换 PROCESS 或未知值")
+    void otherTypeSearchesRemainExact() {
+        for (String type : new String[]{"PROCESS", "INSPECTION", "CLEAN", "OTHER", "UNKNOWN", "production"}) {
+            SopDocumentBo bo = boWithStatus("PUBLISHED");
+            bo.setSopType(type);
+            LambdaQueryWrapper<SopDocument> wrapper = service.buildQueryWrapper(bo);
+            String sql = wrapper.getSqlSegment();
+            assertTrue(sql.contains("sop_type ="), "应精确匹配 " + type + ": " + sql);
+            assertFalse(sql.contains(" IN "));
+            assertFalse(sql.contains(" OR "));
+            assertEquals(2, wrapper.getParamNameValuePairs().size());
+            assertTrue(wrapper.getParamNameValuePairs().containsValue(type));
+            assertTrue(wrapper.getParamNameValuePairs().containsValue("PUBLISHED"));
+        }
+    }
+
+    @Test
+    @DisplayName("类型留空不附加类型条件，状态过滤保持不变")
+    void blankTypeDoesNotAddTypeFilter() {
+        for (String type : new String[]{null, "", " "}) {
+            SopDocumentBo bo = boWithStatus("PUBLISHED");
+            bo.setSopType(type);
+            LambdaQueryWrapper<SopDocument> wrapper = service.buildQueryWrapper(bo);
+            String sql = wrapper.getSqlSegment();
+            assertFalse(sql.contains("sop_type"));
+            assertEquals(1, wrapper.getParamNameValuePairs().size());
+            assertTrue(wrapper.getParamNameValuePairs().containsValue("PUBLISHED"));
+        }
     }
 
     private SopDocument publishedDoc() {

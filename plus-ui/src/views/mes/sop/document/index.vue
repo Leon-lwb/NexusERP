@@ -52,7 +52,7 @@
       <el-table-column label="SOP编码" prop="sopCode" min-width="150" />
       <el-table-column label="SOP名称" prop="sopName" min-width="150" />
       <el-table-column label="类型" prop="sopType" align="center" width="100">
-        <template #default="scope"><dict-tag :options="mes_sop_type" :value="scope.row.sopType" /></template>
+        <template #default="scope"><dict-tag :options="mes_sop_type" :value="sopTypeForDisplay(scope.row.sopType)" /></template>
       </el-table-column>
       <el-table-column label="当前版本" prop="currentVersion" align="center" width="90" />
       <el-table-column label="文件" prop="fileType" align="center" width="80">
@@ -65,10 +65,19 @@
         <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.status" /></template>
       </el-table-column>
       <el-table-column label="创建人" prop="createByName" width="100" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="440" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="530" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handlePreview(scope.row)" v-if="scope.row.fileUrl" v-hasPermi="['mes:sop:document:list']"
             >预览</el-button
+          >
+          <el-button
+            link
+            type="warning"
+            icon="View"
+            @click="handlePreviewPending(scope.row)"
+            v-if="canPreviewPendingDocument(scope.row.status)"
+            v-hasPermi="['mes:sop:document:list']"
+            >待审批稿</el-button
           >
           <el-tooltip
             content="查阅：打开SOP查看器阅读并登记查阅记录(触发电子签名留痕)；「预览」仅直接打开文件、不产生留痕"
@@ -271,6 +280,7 @@ import type { SopVersionVO } from '@/api/mes/sop/version';
 import { previewCode } from '@/api/system/autocode/rule';
 import { Download } from '@element-plus/icons-vue';
 import { useCrud } from '@/composables/useCrud';
+import { sopTypeForDisplay, canPreviewPendingDocument, latestPendingVersion } from './sopDocumentDisplay';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -404,6 +414,19 @@ const handlePreviewVersion = (row: SopVersionVO) => {
   previewDialog.fileUrl = row.fileUrl || '';
   previewDialog.fileType = row.fileType || '';
   previewDialog.visible = true;
+};
+
+// 待审批稿只预览版本附件，不替换主档当前文件、不进入查看器或登记 SOP_VIEW。
+const handlePreviewPending = async (row: SopDocumentVO) => {
+  if (!canPreviewPendingDocument(row.status)) return;
+  const res = await listVersionBySop(row.sopId);
+  const pending = latestPendingVersion(res.data);
+  if (!pending?.fileUrl) {
+    proxy?.$modal.msgWarning('暂无可预览的待审批稿，请在版本历史中检查附件');
+    return;
+  }
+  handlePreviewVersion(pending);
+  previewDialog.title = `待审批稿: ${row.sopName} (${pending.versionNo})`;
 };
 
 // ===== 审批/归档 =====

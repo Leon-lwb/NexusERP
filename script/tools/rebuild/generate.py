@@ -748,18 +748,22 @@ for wsx, eqn in sorted(eq_by_ws.items()):
 w()
 
 # 第十一部分：标准作业程序。
+from sop_types import sop_type_for_process
+
+# 未附真实文件的初始化种子不能声称已审批或发布。
 w("-- ============ 11. SOP 文档与工序绑定 ============")
 sop_vals, ver_vals, bind_vals = [], [], []
 sopn, vern, bindn = 0, 0, 0
 for pcode, pname, pcate, *_rest in PROCESSES:
     sopn += 1
     sop_vals.append(row([sopn, TENANT, "SOP%s%03d" % (TODAY, sopn),
-                         pname + "作业指导书", "PROCESS", "V1.0", "PUBLISHED",
-                         0, "PDF", pname + "标准作业流程与关键控制点",
-                         1, NOW, "初始发布", None, None, BY, DEPT, NOW]))
+                         pname + "作业指导书", sop_type_for_process(pcode), None, "DRAFT",
+                         None, None, pname + "标准作业流程与关键控制点",
+                         None, None, None, None, None, BY, DEPT, NOW]))
     vern += 1
-    ver_vals.append(row([vern, TENANT, sopn, "V1.0", 0, "PDF", "初始版本",
-                         NOW, 1, "PUBLISHED", None, BY, DEPT, NOW]))
+    ver_vals.append(row([vern, TENANT, sopn, "V1.0", 0, None,
+                         "初始化草稿占位，需上传真实文件后提交审批", None, None,
+                         "PENDING", None, BY, DEPT, NOW]))
     bindn += 1
     bind_vals.append(row([bindn, TENANT, proc_id[pcode], pcode, pname, pcate,
                           sopn, 1, 1, bindn, None, BY, DEPT, NOW]))

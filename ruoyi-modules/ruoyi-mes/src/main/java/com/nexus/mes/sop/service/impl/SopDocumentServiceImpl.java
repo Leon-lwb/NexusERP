@@ -571,10 +571,13 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
      */
     LambdaQueryWrapper<SopDocument> buildQueryWrapper(SopDocumentBo bo) {
         boolean statusGiven = StringUtils.isNotBlank(bo.getStatus());
+        // 仅 PRODUCTION 搜索兼容已签名主档保留的历史 PROCESS，不改写存储值。
+        boolean productionType = "PRODUCTION".equals(bo.getSopType());
         return Wrappers.<SopDocument>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getSopCode()), SopDocument::getSopCode, bo.getSopCode())
             .like(StringUtils.isNotBlank(bo.getSopName()), SopDocument::getSopName, bo.getSopName())
-            .eq(StringUtils.isNotBlank(bo.getSopType()), SopDocument::getSopType, bo.getSopType())
+            .in(productionType, SopDocument::getSopType, "PRODUCTION", "PROCESS")
+            .eq(!productionType && StringUtils.isNotBlank(bo.getSopType()), SopDocument::getSopType, bo.getSopType())
             .eq(statusGiven, SopDocument::getStatus, bo.getStatus())
             .ne(!statusGiven, SopDocument::getStatus, STATUS_ARCHIVED)
             .orderByDesc(SopDocument::getCreateTime);
