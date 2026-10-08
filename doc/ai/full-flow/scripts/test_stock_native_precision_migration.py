@@ -9,12 +9,12 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parents[4]
-SQL = ROOT / 'script/sql/update/2026-10-03-native-stock-precision-ry-erp.sql'
 NOW = datetime(2026, 10, 3, 8, tzinfo=timezone.utc)
 SCOPE = [{'table':'wm_material_stock_tx', 'columns':['tx_quantity','before_quantity','after_quantity'], 'targetType':'DECIMAL(18,4)'},
          {'table':'wm_material_stock', 'columns':['stock_quantity','reserved_quantity'], 'targetType':'DECIMAL(18,4)'}]
@@ -134,10 +134,20 @@ class NativeStockPrecisionMigrationTests(unittest.TestCase):
         self.assertIsNotNone(importlib.util.find_spec('stock_native_precision_migration'),
                              '必须交付任务B真实结构迁移执行器')
         self.m = importlib.import_module('stock_native_precision_migration')
-        self.assertTrue(SQL.is_file(), '必须交付独立一次性SQL合同')
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.directory = Path(self.tmp.name)
+        # 只生成算法所需的占位模板，不复制/恢复退役增量，也不是可执行迁移授权。
+        self.sql = self.directory / 'synthetic-native-precision.sql'
+        blocks = ['/* NEXUS_NATIVE_STOCK_PRECISION_DDL_BEGIN ' + table + '\n' +
+                  self.m.EXPECTED_TEMPLATES[table] + '\nNEXUS_NATIVE_STOCK_PRECISION_DDL_END */'
+                  for table in self.m.STEP_ORDER]
+        self.sql.write_text('\n'.join(blocks) +
+                            "\nSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'OFFLINE_FIXTURE_ONLY';\n",
+                            encoding='utf-8')
+        sql_path = patch.object(self.m, 'SQL_PATH', self.sql)
+        sql_path.start()
+        self.addCleanup(sql_path.stop)
         self.store = FixtureStore()
         self.spent=self.directory/'spent'
         self.private_keys = {role: Ed25519PrivateKey.generate() for role in ('backup', 'review', 'execution')}
@@ -249,7 +259,7 @@ class NativeStockPrecisionMigrationTests(unittest.TestCase):
         return caught.exception
 
     def test_sql_direct_execution_only_signals_and_real_alter_is_in_guarded_template(self):
-        sql = SQL.read_text(encoding='utf-8')
+        sql = self.sql.read_text(encoding='utf-8')
         outside = self.m.executable_sql_outside_template(sql)
         self.assertNotRegex(outside.upper(), r'\b(ALTER|UPDATE|INSERT|DELETE|DROP|CREATE|REPLACE|CAST|ROUND)\b')
         self.assertRegex(outside, r"SIGNAL SQLSTATE '45000'")

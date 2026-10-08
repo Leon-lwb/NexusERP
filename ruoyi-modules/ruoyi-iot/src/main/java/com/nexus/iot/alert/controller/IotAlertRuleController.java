@@ -28,7 +28,7 @@ import java.util.List;
  * IoT告警规则 Controller（IOT-ALERT-02）。
  * <p>
  * 权限码：{@code iot:alertRule:list/query/add/edit/remove/changeStatus}，
- * 种子见 {@code script/sql/update/2026-09-20-iot-alert.sql} 第 5 节（menu_id 6040~6045）。
+ * 新装种子见 {@code script/sql/ry-vue.sql}（menu_id 6040~6045）；存量库另行审核迁移。
  *
  * @author nexus
  */

@@ -14,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,9 +37,9 @@ class AiDecisionP1VersionMappingContractTest {
     private static void assertColumn(Class<?> entity, String table, String fieldName, String column)
         throws Exception {
         assertEquals(table, entity.getAnnotation(TableName.class).value());
-        String sql = migrationSql();
-        Matcher ddl = Pattern.compile("(?is)ALTER\\s+TABLE\\s+`" + table + "`\\s+ADD\\s+COLUMN\\s+`"
-            + column + "`\\s+tinyint\\(4\\)\\s+NULL\\s+DEFAULT\\s+NULL").matcher(sql);
+        String sql = tableDefinition(table);
+        Matcher ddl = Pattern.compile("(?im)^\\s*`" + column
+            + "`\\s+tinyint\\(4\\)\\s+NULL\\s+DEFAULT\\s+NULL").matcher(sql);
         assertTrue(ddl.find(), "P1 column must be nullable, without historical default: " + column);
         Field field = entity.getDeclaredField(fieldName);
         assertEquals(Integer.class, field.getType());
@@ -49,10 +48,8 @@ class AiDecisionP1VersionMappingContractTest {
         field.setAccessible(true);
         assertNull(field.get(entity.getDeclaredConstructor().newInstance()),
             "Absent persisted version denotes a legacy record, not v2");
-        String uncommented = sqlWithoutDocumentation(sql);
-        assertEquals(2, Pattern.compile("(?i)\\bALTER\\s+TABLE\\b").matcher(uncommented).results().count());
-        assertFalse(Pattern.compile("(?i)\\b(?:UPDATE|INSERT|DELETE|DROP)\\b").matcher(uncommented).find(),
-            "The one-shot migration must not backfill or change historical records");
+        assertTrue(sql.contains("PRIMARY KEY (`id`)"));
+        assertTrue(Pattern.compile("(?i)ENGINE\\s*=\\s*InnoDB").matcher(sql).find());
     }
 
     @Test
@@ -78,19 +75,22 @@ class AiDecisionP1VersionMappingContractTest {
         assertEquals(sql, sqlWithoutDocumentation(sql));
     }
 
-    /** 仅用于固定迁移样本的静态检查；不作为通用 SQL 解析器或执行权限判定。 */
+    /** 仅用于固定 SQL 样本的静态检查；不作为通用 SQL 解析器或执行权限判定。 */
     private static String sqlWithoutDocumentation(String sql) {
         return sql.replaceAll("(?s)/\\*(?![!+]).*?\\*/", "")
             .replaceAll("(?m)^\\s*--[^\\r\\n]*", "");
     }
 
-    private static String migrationSql() throws Exception {
+    private static String tableDefinition(String table) throws Exception {
         for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
-            Path migration = dir.resolve("script/sql/update/2026-09-30-p1-decision-contract-ry-vue.sql");
-            if (Files.isRegularFile(migration)) {
-                return Files.readString(migration);
+            Path installation = dir.resolve("script/sql/ry-vue.sql");
+            if (Files.isRegularFile(installation)) {
+                Matcher ddl = Pattern.compile("(?is)CREATE\\s+TABLE\\s+`" + Pattern.quote(table)
+                    + "`\\s*\\(.*?\\)\\s*ENGINE[^;]*;").matcher(Files.readString(installation));
+                assertTrue(ddl.find(), "Missing installation DDL: " + table);
+                return ddl.group();
             }
         }
-        throw new IllegalStateException("P1 decision contract migration not found");
+        throw new IllegalStateException("Installation schema not found");
     }
 }

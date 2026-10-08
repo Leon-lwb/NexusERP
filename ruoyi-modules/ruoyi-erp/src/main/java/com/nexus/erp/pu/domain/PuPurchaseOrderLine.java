@@ -59,8 +59,8 @@ public class PuPurchaseOrderLine extends BaseEntity {
     /**
      * 已退货数量（采购退货执行后按订单行累加）。
      * <p>净采购量口径 = order_quantity - returned_quantity；可开票口径 = received_quantity - returned_quantity。
-     * 对应列 {@code pu_purchase_order_line.returned_quantity}，由增量脚本
-     * {@code script/sql/update/2026-09-20-pu-prd-bd.sql} 补充。</p>
+     * 对应列 {@code pu_purchase_order_line.returned_quantity}，新装定义见
+     * {@code script/sql/ry-erp.sql}；存量库升级需单独审核。</p>
      */
     private BigDecimal returnedQuantity;
 

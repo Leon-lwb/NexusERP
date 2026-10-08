@@ -96,19 +96,18 @@ class PuCertifiedPurchaseLifecycleSqlContractTest {
         String insert=String.join(" ",method.getAnnotation(org.apache.ibatis.annotations.Insert.class).value());
         assertTrue(insert.contains("event_sequence"));assertTrue(insert.contains("#{row.eventSequence}"));
     }
-    @Test void installationAndIncrementalSchemaPersistSequenceWithoutInferringLegacyHistory() throws Exception {
+    @Test void installationSchemaRequiresExplicitSequencePerTenantAllocation() throws Exception {
         var root=java.nio.file.Path.of(getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
         while(root!=null&&!java.nio.file.Files.isRegularFile(root.resolve("ruoyi-modules/ruoyi-erp/pom.xml")))root=root.getParent();
         assertNotNull(root,"Test must locate the actual repository schema");
         String install=java.nio.file.Files.readString(root.resolve("script/sql/ry-erp.sql"));
         int start=install.indexOf("CREATE TABLE `pu_requirement_allocation_event`");
         assertTrue(start>=0);String event=install.substring(start,install.indexOf(";",start));
-        assertTrue(event.contains("`event_sequence` int"));
+        assertTrue(event.contains("`event_sequence` int(11) NOT NULL"));
         assertTrue(event.contains("UNIQUE INDEX `uk_prae_tenant_allocation_sequence`(`tenant_id`, `allocation_id`, `event_sequence`)"));
-        String migration=java.nio.file.Files.readString(root.resolve("script/sql/update/2026-10-02-certified-allocation-event-sequence-ry-erp.sql"));
-        assertTrue(migration.contains("`event_sequence` int"));assertTrue(migration.contains("NULL DEFAULT NULL"));
-        assertFalse(migration.toUpperCase(java.util.Locale.ROOT).contains("UPDATE `PU_REQUIREMENT_ALLOCATION_EVENT`"));
-        assertFalse(migration.toUpperCase(java.util.Locale.ROOT).contains("DROP TABLE"));
+        assertFalse(java.util.regex.Pattern.compile("(?im)^\\s*`event_sequence`[^\\r\\n]*\\bDEFAULT\\b").matcher(event).find(),
+            "Event order must be supplied by the writer, not inferred by a default");
+        assertTrue(event.contains("UNIQUE INDEX `uk_prae_tenant_event_key`(`tenant_id`, `event_key`)"));
     }
     private static String sql(Class<?> type,String name)throws Exception{return String.join(" ",type.getMethod(name).getAnnotation(Select.class).value());}
 }

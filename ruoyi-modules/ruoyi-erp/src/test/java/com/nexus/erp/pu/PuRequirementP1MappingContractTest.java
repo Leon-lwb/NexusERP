@@ -35,12 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** 仅源码契约：绝不打开数据库，也不执行已审阅的一次性迁移。 */
+/** 仅源码契约：绝不打开数据库，也不执行 SQL。 */
 @Tag("dev")
 class PuRequirementP1MappingContractTest {
 
     @Test
-    void verifiedVendorTermsMapOnlyToNullableMigrationColumns() throws Exception {
+    void verifiedVendorTermsMapOnlyToNullableInstallationColumns() throws Exception {
         Map<String, Class<?>> columns = new LinkedHashMap<>();
         columns.put("order_uom_id", Long.class);
         columns.put("verified_moq_qty", BigDecimal.class);
@@ -52,16 +52,16 @@ class PuRequirementP1MappingContractTest {
         columns.put("terms_effective_at", Date.class);
         columns.put("terms_expires_at", Date.class);
         columns.put("terms_verified_at", Date.class);
-        assertNullableAddedColumns(BdMaterialVendor.class, "bd_material_vendor", columns);
+        assertNullableColumns(BdMaterialVendor.class, "bd_material_vendor", columns);
     }
 
     @Test
-    void verifiedUomMetadataMapsOnlyToNullableMigrationColumns() throws Exception {
+    void verifiedUomMetadataMapsOnlyToNullableInstallationColumns() throws Exception {
         Map<String, Class<?>> columns = new LinkedHashMap<>();
         columns.put("quantity_scale", Integer.class);
         columns.put("conversion_version", String.class);
         columns.put("conversion_verified_at", Date.class);
-        assertNullableAddedColumns(BdUnitOfMeasure.class, "bd_unit_of_measure", columns);
+        assertNullableColumns(BdUnitOfMeasure.class, "bd_unit_of_measure", columns);
     }
 
     @Test
@@ -94,6 +94,8 @@ class PuRequirementP1MappingContractTest {
         assertField(entity, "eventSequence", Integer.class);
         assertField(entity, "occurredAt", Date.class);
         assertTrue(ddlTable("pu_requirement_allocation_event").contains("UNIQUE INDEX `uk_prae_tenant_event_key`"));
+        assertTrue(ddlTable("pu_requirement_allocation_event").contains(
+            "UNIQUE INDEX `uk_prae_tenant_allocation_sequence`(`tenant_id`, `allocation_id`, `event_sequence`)"));
     }
 
     @Test
@@ -135,17 +137,17 @@ class PuRequirementP1MappingContractTest {
             || Arrays.stream(method.getAnnotations()).anyMatch(a -> a.annotationType().getSimpleName().equals("Delete"))));
     }
 
-    private static void assertNullableAddedColumns(Class<?> entity, String table, Map<String, Class<?>> columns)
+    private static void assertNullableColumns(Class<?> entity, String table, Map<String, Class<?>> columns)
         throws Exception {
         assertEquals(table, entity.getAnnotation(TableName.class).value());
-        String migration = migrationSql();
+        String ddl = ddlTable(table);
         Object blank = entity.getDeclaredConstructor().newInstance();
         for (Map.Entry<String, Class<?>> entry : columns.entrySet()) {
             String column = entry.getKey();
-            assertTrue(Pattern.compile("(?i)ADD\\s+COLUMN\\s+`" + column
+            assertTrue(Pattern.compile("(?im)^\\s*`" + Pattern.quote(column)
                 + "`\\s+\\w+(?:\\s*\\(\\s*\\d+(?:\\s*,\\s*\\d+)?\\s*\\))?"
-                + "(?:\\s+unsigned)?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(migration).find(),
-                "Migration must add nullable column without a historical default: " + column);
+                + "(?:\\s+unsigned)?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(ddl).find(),
+                "Installation column must stay nullable without a verified default: " + column);
             String fieldName = camelCase(column);
             Field field = entity.getDeclaredField(fieldName);
             assertEquals(entry.getValue(), field.getType(), column);
@@ -174,7 +176,7 @@ class PuRequirementP1MappingContractTest {
             ddlTypes.put(ddl.group(1), type);
         }
         List<String> actualDdl = List.copyOf(ddlTypes.keySet());
-        assertEquals(expected, actualDdl, "Migration DDL drift: " + table);
+        assertEquals(expected, actualDdl, "Installation DDL drift: " + table);
         List<String> mapped = Arrays.stream(entity.getDeclaredFields())
             .filter(field -> !Modifier.isStatic(field.getModifiers()))
             .map(field -> {
@@ -224,19 +226,18 @@ class PuRequirementP1MappingContractTest {
 
     private static String ddlTable(String name) throws IOException {
         Matcher table = Pattern.compile("(?is)CREATE\\s+TABLE\\s+`" + name + "`\\s*\\((.*?)\\)\\s*ENGINE")
-            .matcher(name.equals("pu_requirement_allocation_event")
-                ? Files.readString(root().resolve("script/sql/ry-erp.sql")) : migrationSql());
-        assertTrue(table.find(), "Missing migration DDL: " + name);
+            .matcher(installationSql());
+        assertTrue(table.find(), "Missing installation DDL: " + name);
         return table.group(1);
     }
 
-    private static String migrationSql() throws IOException {
-        return Files.readString(root().resolve("script/sql/update/2026-09-30-p1-purchase-lineage-ry-erp.sql"));
+    private static String installationSql() throws IOException {
+        return Files.readString(root().resolve("script/sql/ry-erp.sql"));
     }
 
     private static Path root() {
         for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
-            if (Files.isRegularFile(dir.resolve("script/sql/update/2026-09-30-p1-purchase-lineage-ry-erp.sql"))) {
+            if (Files.isRegularFile(dir.resolve("script/sql/ry-erp.sql"))) {
                 return dir;
             }
         }

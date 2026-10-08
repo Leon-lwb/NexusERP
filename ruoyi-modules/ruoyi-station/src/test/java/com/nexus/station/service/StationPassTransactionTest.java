@@ -40,9 +40,12 @@ import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -230,13 +233,20 @@ class StationPassTransactionTest {
         assertThrows(ServiceException.class,()->service.reportSingle(dto,service.resolveOperator(null,"EMP-1")));
         assertEquals(1,count()); assertEquals(0,BigDecimal.ONE.compareTo(good()));
     }
-    @Test void oneTimeMigrationKeepsLegacyRowsUncertifiedAndRejectsReplay() throws Exception {
-        db.execute("ALTER TABLE mes_station_report DROP COLUMN request_fingerprint");
-        db.update("INSERT INTO mes_station_report(report_id,tenant_id,client_key) VALUES(7,'000000','old-key')");
-        String migration=java.nio.file.Files.readString(java.nio.file.Path.of("../../script/sql/update/2026-10-02-station-single-request-fingerprint-ry-mes.sql"));
-        db.execute(migration);
-        assertNull(db.queryForObject("SELECT request_fingerprint FROM mes_station_report WHERE report_id=7",String.class));
-        assertThrows(org.springframework.dao.DataAccessException.class,()->db.execute(migration));
+    @Test void installationKeepsFingerprintNullableAndReplayKeyTenantScoped() throws Exception {
+        Path root=Path.of("").toAbsolutePath();
+        while(root!=null&&!Files.isRegularFile(root.resolve("script/sql/ry-mes.sql")))root=root.getParent();
+        assertNotNull(root,"Installation schema must be present");
+        var ddl=Pattern.compile("(?is)CREATE\\s+TABLE\\s+`mes_station_report`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
+            .matcher(Files.readString(root.resolve("script/sql/ry-mes.sql")));
+        assertTrue(ddl.find(),"Missing installation DDL: mes_station_report");
+        String table=ddl.group();
+        assertTrue(Pattern.compile("(?im)^\\s*`request_fingerprint`\\s+varchar\\(64\\)"
+            +"(?:\\s+CHARACTER SET\\s+\\w+)?(?:\\s+COLLATE\\s+\\w+)?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(table).find());
+        assertEquals(String.class,MesStationReport.class.getDeclaredField("requestFingerprint").getType());
+        assertNull(new MesStationReport().getRequestFingerprint());
+        assertTrue(table.contains("PRIMARY KEY (`report_id`)"));
+        assertTrue(table.contains("UNIQUE INDEX `uk_tenant_client_key`(`tenant_id`, `client_key`)"));
     }
     @Test void deletedReplayCarrierIsNotReused() {
         service.reportSingle(request(1000),OP); db.update("UPDATE mes_station_report SET del_flag='1'");

@@ -99,7 +99,7 @@ public class SopVersionServiceImpl implements ISopVersionService {
         if (notPending != null && notPending > 0) {
             throw new ServiceException("仅「待发布(PENDING)」版本可删除，当前发布/历史版本不可删除"
                 + "（请先发布新版本或归档SOP；若列表状态显示为 PUBLISHED 等值域外值，"
-                + "请执行 2026-09-20-tg-sop.sql 的状态订正）");
+                + "请联系维护者核对状态与适用迁移；历史订正脚本已退役，勿重导主 SQL）");
         }
         int rows = baseMapper.deleteByIds(idList);
         log.info("批量删除SOP版本: count={}", ids.length);

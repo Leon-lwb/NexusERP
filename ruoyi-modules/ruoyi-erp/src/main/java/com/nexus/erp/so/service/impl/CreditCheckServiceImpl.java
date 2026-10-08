@@ -43,8 +43,8 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkAndFreeze(Long clientId, Long soId, BigDecimal orderAmount) {
-        // ERP-BD-09: bd_client_credit 的 (client_id, tenant_id) 唯一键由增量脚本
-        // script/sql/update/2026-09-20-uk-tenant-dimension.sql 补上。为兼容尚未执行该脚本的存量库
+        // ERP-BD-09: bd_client_credit 的 (client_id, tenant_id) 唯一键新装定义见
+        // script/sql/ry-erp.sql。为兼容尚未完成相应唯一约束迁移的存量库
         // (历史上可由手工 SQL 引入同客户多行信用记录), 这里不使用 selectOne —— 多行会抛
         // TooManyResultsException 导致销售订单确认 500; 改为按 credit_id 倒序取最新一行并对重复行告警。
         List<BdClientCredit> credits = bdClientCreditMapper.selectList(

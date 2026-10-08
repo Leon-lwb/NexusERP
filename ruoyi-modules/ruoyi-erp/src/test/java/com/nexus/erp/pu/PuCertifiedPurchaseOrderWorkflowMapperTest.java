@@ -62,8 +62,9 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
         String head=Arrays.stream(methods).filter(m->m.getName().equals("approveHead")).map(m->String.join("",m.getAnnotation(Update.class).value())).findFirst().orElseThrow();
         assertTrue(head.contains("expected_arrival_date=#{q.promisedArrivalDate}"));assertTrue(head.contains("IFNULL(certified_version,0)=#{old.version}"));
         assertFalse(head.contains("CURRENT_DATE"));assertTrue(head.contains("certified_terms_id IS NULL"));
-        String sql=Files.readString(repoFile("script/sql/update/2026-10-03-certified-purchase-order-terms-ry-erp.sql"));
-        assertFalse(sql.toUpperCase(Locale.ROOT).contains("DROP TABLE"));assertFalse(sql.contains("UPDATE pu_purchase_order"));
+        String headDdl=tableDefinition("pu_purchase_order");
+        assertTrue(Pattern.compile("(?im)^\\s*`certified_version`\\s+int(?:\\(\\d+\\))?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(headDdl).find());
+        assertTrue(Pattern.compile("(?im)^\\s*`certified_terms_id`\\s+bigint(?:\\(\\d+\\))?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(headDdl).find());
     }
     static void stubOrderDefinitions(PuCertifiedPurchaseLifecycleMapper m) {
         PuCertifiedPurchaseLifecycleSourceGateTest.stub(m);when(m.pinAllocationDefinitions()).thenReturn(List.of());
@@ -75,22 +76,20 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
         try {
             var result=new ArrayList<OrderColumnDefinition>();
             // 测试模拟实际观测到的原生元数据；生产环境绝不从 SQL 文件获取权威依据。
-            String sql=Files.readString(repoFile("script/sql/update/2026-10-03-certified-purchase-order-terms-ry-erp.sql"));
-            var tables=Pattern.compile("CREATE TABLE (\\w+) \\((.*?)\\) ENGINE",Pattern.DOTALL).matcher(sql);
-            while(tables.find())for(String line:tables.group(2).split("\n")) {
-                var c=Pattern.compile("^\\s+(\\w+) (BIGINT|INT|DATETIME|DATE|VARCHAR|CHAR|DECIMAL)(?:\\((\\d+)(?:,(\\d+))?\\))?(?: COLLATE \\w+)? (NOT NULL|NULL)").matcher(line);
-                if(c.find())result.add(column(tables.group(1),c.group(1),c.group(2),c.group(3),c.group(4),c.group(5).equals("NULL")?"YES":"NO"));
-            }
-            String base=Files.readString(repoFile("script/sql/ry-erp.sql"));
-            for(String table:List.of("pu_purchase_order","pu_purchase_order_line")) {
-                var block=Pattern.compile("CREATE TABLE `"+table+"`  \\((.*?)\\) ENGINE",Pattern.DOTALL).matcher(base);assertTrue(block.find());
-                for(String line:block.group(1).split("\n")) {
-                    var c=Pattern.compile("^  `(\\w+)` (bigint|int|datetime|date|varchar|char|decimal)(?:\\((\\d+)(?:, (\\d+))?\\))?.*?(NOT NULL|NULL)",Pattern.CASE_INSENSITIVE).matcher(line);
-                    if(c.find())result.add(column(table,c.group(1),c.group(2),c.group(3),c.group(4),c.group(5).equals("NULL")?"YES":"NO"));
+            for(String table:TABLES) {
+                for(String line:tableDefinition(table).split("\n")) {
+                    var c=Pattern.compile("^\\s+`?(\\w+)`? (bigint|int|datetime|date|varchar|char|decimal)(?:\\((\\d+)(?:,\\s*(\\d+))?\\))?.*?(NOT NULL|NULL)",Pattern.CASE_INSENSITIVE).matcher(line);
+                    if(c.find())result.add(column(table,c.group(1),c.group(2),c.group(3),c.group(4),c.group(5).equalsIgnoreCase("NULL")?"YES":"NO"));
                 }
             }
             return result;
         }catch(java.io.IOException e){throw new AssertionError(e);}
+    }
+    private static String tableDefinition(String table) throws java.io.IOException {
+        String sql=Files.readString(repoFile("script/sql/ry-erp.sql"));
+        var ddl=Pattern.compile("(?is)CREATE\\s+TABLE\\s+`?"+Pattern.quote(table)+"`?\\s*\\(.*?\\)\\s*ENGINE[^;]*;").matcher(sql);
+        assertTrue(ddl.find(),"Missing installation DDL: "+table);
+        return ddl.group();
     }
     private static Path repoFile(String file) {
         Path root=Path.of("").toAbsolutePath();

@@ -7,8 +7,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 ERP_MAIN = ROOT / "script/sql/ry-erp.sql"
 SYSTEM_MAIN = ROOT / "script/sql/ry-vue.sql"
-ERP_DELTA = ROOT / "script/sql/update/2026-09-30-p1-purchase-lineage-ry-erp.sql"
-SYSTEM_DELTA = ROOT / "script/sql/update/2026-09-30-p1-decision-contract-ry-vue.sql"
 
 VENDOR_COLUMNS = (
     "order_uom_id", "verified_moq_qty", "moq_uom_id", "order_multiple", "allow_split",
@@ -22,7 +20,7 @@ def read(path):
 
 
 def executable_sql(sql):
-    """检查可执行迁移语句前，先移除注释。"""
+    """检查新装 SQL 前，先移除注释。"""
     sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.S)
     return re.sub(r"(?m)^\s*--[^\n]*", "", sql)
 
@@ -54,55 +52,45 @@ def value_count(values):
     return commas + 1
 
 class P1PurchaseDdlContract(unittest.TestCase):
-    def test_one_time_deltas_only_add_schema_and_select_database_explicitly(self):
-        for path, database in ((SYSTEM_DELTA, "ry-vue"), (ERP_DELTA, "ry-erp")):
-            with self.subTest(path=path.name):
-                text = read(path)
-                sql = executable_sql(text)
-                self.assertRegex(sql, rf"(?i)\bUSE\s+`{database}`\s*;")
-                self.assertNotRegex(sql, r"(?i)\b(?:DROP|TRUNCATE|DELETE|UPDATE|INSERT|REPLACE)\b")
-                self.assertNotRegex(sql, r"(?i)\bIF\s+NOT\s+EXISTS\b")
-                statements = [s.strip() for s in sql.split(";") if s.strip()]
-                self.assertTrue(statements[0] == f"USE `{database}`", statements[:1])
-                self.assertTrue(all(re.match(r"(?i)^(?:ALTER TABLE|CREATE TABLE)\b", s)
-                                    for s in statements[1:]), statements)
-                self.assertIn("information_schema.COLUMNS", text)
-                self.assertIn("information_schema.TABLES", text)
-                self.assertIn("information_schema.STATISTICS", text)
-                self.assertIn("不可重放", text)
-                self.assertNotIn("information_schema.", sql)
-                self.assertEqual(len(re.findall(r"(?i)\bUSE\s+`", sql)), 1)
-                self.assertNotRegex(sql, r"(?i)\b(?:ry-vue|ry-erp)\b\s*\.\s*`")
+    def test_purchase_and_decision_contracts_belong_to_their_install_schema(self):
+        erp, system = read(ERP_MAIN), read(SYSTEM_MAIN)
+        owned = ((erp, system, ("pu_requirement_material_guard", "pu_requirement_allocation_ledger",
+                                "pu_requirement_allocation_event")),
+                 (system, erp, ("ai_decision_run", "ai_decision_action")))
+        for main, other, tables in owned:
+            for name in tables:
+                with self.subTest(table=name):
+                    create_table(main, name)
+                    engine = re.search(rf"(?s)CREATE TABLE `{name}`\s*\(.*?\) ENGINE\s*=\s*(\w+)", main)
+                    self.assertEqual("InnoDB", engine.group(1))
+                    self.assertNotRegex(other, rf"CREATE TABLE `{name}`")
+                    self.assertNotRegex(executable_sql(main), rf"(?i)\b(?:INSERT|REPLACE)\s+INTO\s+`{name}`")
 
-    def test_system_contract_is_nullable_and_never_upgrades_old_runs(self):
-        main, delta = read(SYSTEM_MAIN), executable_sql(read(SYSTEM_DELTA))
-        for table, column in (("ai_decision_run", "decision_contract_version"),
-                              ("ai_decision_action", "purchase_payload_version")):
-            for ddl in (create_table(main, table), delta):
-                self.assertRegex(ddl, rf"`{column}`\s+tinyint\(4\)\s+NULL\s+DEFAULT\s+NULL")
-            self.assertRegex(delta, rf"ALTER TABLE `{table}`")
-            self.assertNotRegex(create_table(main, table), r"(?i)\bDEFAULT\s+2\b")
-        self.assertNotIn("ai_decision_", executable_sql(read(ERP_DELTA)))
+    def test_system_contract_is_nullable_and_never_certifies_unknown_runs(self):
+        main = read(SYSTEM_MAIN)
+        for name, column in (("ai_decision_run", "decision_contract_version"),
+                             ("ai_decision_action", "purchase_payload_version")):
+            definition = create_table(main, name)
+            self.assertRegex(definition, rf"`{column}`\s+tinyint\(4\)\s+NULL\s+DEFAULT\s+NULL")
+            self.assertNotRegex(definition, r"(?i)\bDEFAULT\s+2\b")
 
     def test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows(self):
-        main, delta = read(ERP_MAIN), executable_sql(read(ERP_DELTA))
-        for table, columns in (("bd_material_vendor", VENDOR_COLUMNS),
-                               ("bd_unit_of_measure", UOM_COLUMNS)):
-            definition = create_table(main, table)
+        main = read(ERP_MAIN)
+        for name, columns in (("bd_material_vendor", VENDOR_COLUMNS),
+                              ("bd_unit_of_measure", UOM_COLUMNS)):
+            definition = create_table(main, name)
             for col in columns:
-                with self.subTest(table=table, column=col):
+                with self.subTest(table=name, column=col):
                     self.assertRegex(definition, rf"`{col}`\s+[^\n]+\bNULL\s+DEFAULT\s+NULL\b")
-                    self.assertRegex(delta, rf"ADD COLUMN `{col}`\s+[^\n]+\bNULL\s+DEFAULT\s+NULL\b")
-            seeds = re.findall(rf"(?m)^INSERT INTO `{table}` \(([^)]*)\) VALUES \((.*)\);", main)
+            seeds = re.findall(rf"(?m)^INSERT INTO `{name}` \(([^)]*)\) VALUES \((.*)\);", main)
             self.assertGreater(len(seeds), 0)
-            self.assertEqual(len(seeds), len(re.findall(rf"(?m)^INSERT INTO `{table}`", main)))
+            self.assertEqual(len(seeds), len(re.findall(rf"(?m)^INSERT INTO `{name}`", main)))
             for column_list, values in seeds:
                 self.assertEqual(len(column_list.split(", ")), value_count(values))
                 self.assertFalse(any(f"`{col}`" in column_list for col in columns))
-        self.assertNotIn("bd_material_vendor", executable_sql(read(SYSTEM_DELTA)))
 
     def test_guard_and_detail_to_line_ledger_with_snowflake_ids(self):
-        main, delta = read(ERP_MAIN), executable_sql(read(ERP_DELTA))
+        main = read(ERP_MAIN)
         guard = create_table(main, "pu_requirement_material_guard")
         self.assertRegex(guard, r"PRIMARY KEY \(`tenant_id`, `material_id`\)")
         self.assertRegex(guard, r"`tenant_id` varchar\(20\)[^\n]+NOT NULL")
@@ -112,41 +100,50 @@ class P1PurchaseDdlContract(unittest.TestCase):
                     "allocation_status", "allocation_key", "version", "released_at"):
             self.assertIn(f"`{col}`", ledger)
         self.assertRegex(ledger, r"`allocation_id` bigint\(20\) NOT NULL.*雪花ID")
+        self.assertRegex(ledger, r"`tenant_id` varchar\(20\)[^\n]+NOT NULL")
         self.assertRegex(ledger, r"UNIQUE INDEX `uk_pral_tenant_key`\(`tenant_id`, `allocation_key`\)")
+        self.assertRegex(ledger, r"UNIQUE INDEX `uk_pral_tenant_req_detail_no`\(`tenant_id`, `requisition_line_id`, `detail_id`, `allocation_no`\)")
         self.assertRegex(ledger, r"INDEX `idx_pral_tenant_detail`\(`tenant_id`, `detail_id`\)")
         self.assertRegex(ledger, r"INDEX `idx_pral_tenant_req_line`\(`tenant_id`, `requisition_line_id`\)")
         self.assertRegex(ledger, r"INDEX `idx_pral_tenant_order_line`\(`tenant_id`, `order_line_id`\)")
+        for col in ("covered_demand_base_qty", "occupied_base_qty", "fulfilled_base_qty", "released_base_qty"):
+            self.assertRegex(ledger, rf"`{col}` decimal\(18, 4\) NOT NULL")
         events = create_table(main, "pu_requirement_allocation_event")
-        self.assertIn("`allocation_id`", events)
+        self.assertIn("`allocation_id` bigint(20) NOT NULL", events)
         self.assertIn("`event_id` bigint(20) NOT NULL", events)
-        for table in ("pu_requirement_material_guard", "pu_requirement_allocation_ledger",
-                      "pu_requirement_allocation_event"):
-            self.assertRegex(delta, rf"CREATE TABLE `{table}`")
-        self.assertNotIn("pu_requirement_material_guard", executable_sql(read(SYSTEM_DELTA)))
+        self.assertIn("`event_sequence` int(11) NOT NULL", events)
+        self.assertRegex(events, r"`tenant_id` varchar\(20\)[^\n]+NOT NULL")
+        self.assertRegex(events, r"UNIQUE INDEX `uk_prae_tenant_event_key`\(`tenant_id`, `event_key`\)")
+        self.assertRegex(events, r"UNIQUE INDEX `uk_prae_tenant_allocation_sequence`\(`tenant_id`, `allocation_id`, `event_sequence`\)")
+        for col in ("occupied_base_before", "occupied_base_after"):
+            self.assertIn(f"`{col}` decimal(18, 4) NOT NULL", events)
 
-    def test_new_tables_and_added_column_types_match_fresh_install(self):
-        main, delta = read(ERP_MAIN), executable_sql(read(ERP_DELTA))
-        for table in ("pu_requirement_material_guard", "pu_requirement_allocation_ledger",
-                      "pu_requirement_allocation_event"):
-            with self.subTest(table=table):
-                self.assertEqual(create_table(main, table), create_table(delta, table))
-        for table, columns in (("bd_material_vendor", VENDOR_COLUMNS),
-                               ("bd_unit_of_measure", UOM_COLUMNS)):
-            definition = create_table(main, table)
-            for col in columns:
-                with self.subTest(table=table, column=col):
-                    added = re.search(rf"ADD COLUMN (`{col}` [^\n]+?) AFTER `[^`]+`", delta)
-                    installed = re.search(rf"(?m)^  (`{col}` [^\n]+)", definition)
-                    self.assertIsNotNone(added)
-                    self.assertIsNotNone(installed)
-                    self.assertEqual(added.group(1), installed.group(1).rstrip(","))
+    def test_vendor_and_uom_column_types_preserve_current_purchase_contract(self):
+        main = read(ERP_MAIN)
+        vendor_types = {
+            "order_uom_id": "bigint(20)", "verified_moq_qty": "decimal(18, 4)",
+            "moq_uom_id": "bigint(20)", "order_multiple": "decimal(18, 4)",
+            "allow_split": "tinyint(1)", "units_per_pack": "decimal(18, 4)",
+            "terms_version": "varchar(64)", "terms_effective_at": "datetime",
+            "terms_expires_at": "datetime", "terms_verified_at": "datetime",
+        }
+        uom_types = {"quantity_scale": "tinyint(3) unsigned", "conversion_version": "varchar(64)",
+                     "conversion_verified_at": "datetime"}
+        self.assertEqual(set(VENDOR_COLUMNS), set(vendor_types))
+        self.assertEqual(set(UOM_COLUMNS), set(uom_types))
+        for name, types in (("bd_material_vendor", vendor_types), ("bd_unit_of_measure", uom_types)):
+            definition = create_table(main, name)
+            for col, kind in types.items():
+                with self.subTest(table=name, column=col):
+                    self.assertIn(f"`{col}` {kind} NULL DEFAULT NULL", definition)
+        self.assertRegex(create_table(main, "bd_material_vendor"),
+                         r"UNIQUE INDEX `uk_material_supplier`\(`material_id`, `vendor_id`, `tenant_id`\)")
+        self.assertRegex(create_table(main, "bd_unit_of_measure"),
+                         r"UNIQUE INDEX `uk_uom_code`\(`uom_code`, `tenant_id`\)")
 
     def test_legacy_source_id_definition_unchanged(self):
-        main, delta = read(ERP_MAIN), executable_sql(read(ERP_DELTA))
-        line = create_table(main, "pu_purchase_requisition_line")
+        line = create_table(read(ERP_MAIN), "pu_purchase_requisition_line")
         self.assertIn("`source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID'", line)
-        self.assertNotRegex(delta, r"(?i)\bALTER\s+TABLE\s+`pu_purchase_requisition_line`")
-        self.assertNotIn("`source_id`", delta)
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ import java.math.BigDecimal;
  *   <li>{@link #currentStock} 为 <b>ERP 库存的派生冗余缓存（只读视图语义）</b>：
  *       同步方向 = ERP → MES，时机 = 每次备件出入库过账后由 {@code EqSparePartServiceImpl} 刷新；
  *       不再作为权威账本，查询可用量一律读 ERP（在库 − 已预留，且 {@code frozen_flag = 0}）。
- *       历史遗留：升级前的数据由增量脚本 {@code 2026-09-20-mes-spare-erp.sql} 标记为待对账。</li>
+ *       历史遗留：升级前的数据曾由 2026-09-20 增量标记为待对账；该脚本已退役，历史处理不构成当前数据已对账证明。</li>
  * </ul>
  *
  * @author Nexus

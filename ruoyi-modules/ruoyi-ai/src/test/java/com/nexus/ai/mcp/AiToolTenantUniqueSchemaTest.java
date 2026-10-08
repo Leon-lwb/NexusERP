@@ -37,15 +37,13 @@ class AiToolTenantUniqueSchemaTest {
     }
 
     @Test
-    @DisplayName("新装工具状态默认停用且存量迁移只改结构")
-    void disabledDefaultAndMigrationAreExplicit() throws Exception {
+    @DisplayName("Fresh installation defaults tools to disabled without a global name constraint")
+    void disabledDefaultAndTenantIdentityAreExplicit() throws Exception {
         String table = definition();
         assertTrue(Pattern.compile("`status`[^\\n]*DEFAULT '1'").matcher(table).find());
-        Path migration = repository().resolve("script/sql/update/2026-10-08-ai-tool-tenant-unique-ry-vue.sql");
-        assertTrue(Files.isRegularFile(migration));
-        String sql = Files.readString(migration).toUpperCase();
-        assertTrue(sql.contains("ALTER TABLE"));
-        assertFalse(Pattern.compile("(?m)^\\s*(UPDATE|DELETE|INSERT|DROP TABLE)\\b").matcher(sql).find(), "不得迁移历史租户或业务配置行");
+        assertTrue(Pattern.compile("`tenant_id`[^\\n]*DEFAULT '000000'").matcher(table).find());
+        assertEquals(1, Pattern.compile("(?i)UNIQUE\\s+(?:INDEX|KEY)\\b").matcher(table).results().count(),
+            "Only the tenant/name key may reserve tool names");
     }
 
     @ParameterizedTest

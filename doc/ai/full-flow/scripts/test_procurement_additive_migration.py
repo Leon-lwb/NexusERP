@@ -10,6 +10,26 @@ NEW_TABLES=('ry-erp.pu_certified_purchase_command','ry-erp.pu_certified_purchase
  'ry-erp.pu_certified_purchase_order_terms_confirmation','ry-erp.pu_certified_purchase_order_operation',
  'ry-erp.wm_certified_iqc_evidence','ry-erp.wm_certified_receipt_posting','ry-erp.wm_receipt_iqc_birth','ry-mes.qc_receipt_iqc_birth')
 
+def synthetic_sources(module):
+    """只造解析/范围/执行次序所需的占位DDL，不重建历史真实增量。"""
+    def create(table):return 'CREATE TABLE `'+table+'` (`fixture_id` bigint NOT NULL) ENGINE=InnoDB;'
+    groups=(
+        create('pu_certified_purchase_command'),
+        'ALTER TABLE `pu_requirement_allocation_event` ADD COLUMN `fixture_sequence` int NULL;',
+        'ALTER TABLE `pu_purchase_order` ADD COLUMN `fixture_version` int NULL;'
+        'ALTER TABLE `pu_purchase_order` ADD COLUMN `fixture_terms` bigint NULL;'+
+        create('pu_certified_purchase_order_terms')+
+        create('pu_certified_purchase_order_terms_confirmation')+
+        create('pu_certified_purchase_order_operation'),
+        create('wm_certified_iqc_evidence'),
+        create('wm_certified_receipt_posting'),
+        'ALTER TABLE `wm_certified_iqc_evidence` ADD COLUMN `fixture_birth` bigint NULL;'+
+        create('wm_receipt_iqc_birth'),
+        create('qc_receipt_iqc_birth'))
+    assert len(groups)==len(module.INPUTS)
+    return {name:sql.encode('utf-8') for (name,_),sql in zip(module.INPUTS,groups)}
+
+
 def before_metadata():
     metadata=fresh_metadata()
     for name in NEW_TABLES:metadata.pop(name)
@@ -22,7 +42,11 @@ class AdditiveMigrationTests(unittest.TestCase):
     def setUp(self):
         self.assertIsNotNone(importlib.util.find_spec('procurement_additive_migration'),'缺少固定范围追加DDL执行器')
         self.m=importlib.import_module('procurement_additive_migration')
-    def test_twelve_frozen_operations_create_eight_tables_without_dml(self):
+        sources=synthetic_sources(self.m)
+        for patched in (patch.object(self.m,'INPUTS',tuple((name,self.m.sha(raw)) for name,raw in sources.items())),
+                        patch.object(self.m,'read_source',side_effect=sources.__getitem__)):
+            patched.start();self.addCleanup(patched.stop)
+    def test_twelve_synthetic_operations_create_eight_tables_without_dml(self):
         operations=self.m.load_operations()
         self.assertEqual(12,len(operations))
         self.assertEqual(8,sum(op.kind=='CREATE' for op in operations))

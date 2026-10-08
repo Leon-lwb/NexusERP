@@ -40,13 +40,19 @@ class PuCertifiedPurchaseWriteSqlContractTest {
         assertEquals(1,java.util.Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
             .filter(m -> m.isAnnotationPresent(org.springframework.web.bind.annotation.GetMapping.class)).count());
     }
-    @Test void migrationNeverUpdatesLegacyBusinessRowsOrRemovesPermanentKeys() throws Exception {
+    @Test void installationSchemaKeepsPermanentTenantKeysAndCommittedDefault() throws Exception {
         Path root=Path.of(".").toAbsolutePath();while(root!=null&&!Files.exists(root.resolve("script/sql/ry-erp.sql")))root=root.getParent();
         assertNotNull(root,"需要仓库脚本上下文");
-        String sql=Files.readString(root.resolve("script/sql/update/2026-10-02-certified-purchase-command-ry-erp.sql")).toLowerCase(Locale.ROOT);
-        assertTrue(sql.contains("create table if not exists `pu_certified_purchase_command`"));
+        var ddl=java.util.regex.Pattern.compile("(?is)CREATE\\s+TABLE\\s+`pu_certified_purchase_command`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
+            .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
+        assertTrue(ddl.find(),"Missing installation DDL: pu_certified_purchase_command");
+        String sql=ddl.group().toLowerCase(Locale.ROOT);
+        assertTrue(sql.contains("create table `pu_certified_purchase_command`"));
         assertTrue(sql.contains("primary key (`tenant_id`,`request_key`)"));
         assertTrue(sql.contains("unique key `uk_certified_purchase_requisition` (`tenant_id`,`requisition_id`)"));
-        assertTrue(sql.contains("engine=innodb"));assertFalse(java.util.regex.Pattern.compile("(?im)^\\s*(update|delete|drop|truncate|replace|insert)\\b").matcher(sql).find());
+        assertTrue(sql.contains("engine=innodb"));
+        assertTrue(sql.contains("`command_status` varchar(20) character set ascii collate ascii_bin not null default 'committed'"));
+        assertTrue(sql.contains("`catalog_fingerprint` char(64) character set ascii collate ascii_bin not null"));
+        assertTrue(sql.contains("`window_end` date not null"));
     }
 }

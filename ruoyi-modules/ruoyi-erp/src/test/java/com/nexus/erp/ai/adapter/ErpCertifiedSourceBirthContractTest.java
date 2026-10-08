@@ -8,7 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,15 +52,20 @@ class ErpCertifiedSourceBirthContractTest {
         }
     }
     @Test
-    void birthMigrationOnlyAddsEmptyRegistryAndNeverBackfillsOldMaterial() throws Exception {
+    void birthInstallationRequiresTenantMaterialIdentityAndPersistedProvenance() throws Exception {
         Path root = Path.of(System.getProperty("user.dir")).toAbsolutePath();
-        while (!Files.isDirectory(root.resolve("script/sql")) && root.getParent() != null) root = root.getParent();
-        Path sql = root.resolve("script/sql/update/2026-10-04-certified-source-birth-ry-erp.sql");
-        assertTrue(Files.exists(sql), "同事务持久出生必须有追加结构，不能仅保留内存声明");
-        String text = Files.readString(sql).replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)--.*$", "").toLowerCase();
-        assertTrue(text.contains("create table `erp_certified_source_birth`"));
-        assertFalse(text.matches("(?s).*\\b(insert|update|delete|drop|truncate)\\b.*"));
-        assertTrue(text.contains("unique") && text.contains("`tenant_id`, `material_id`"));
-        assertTrue(text.contains("engine = innodb"));
+        while (root != null && !Files.isRegularFile(root.resolve("script/sql/ry-erp.sql"))) root = root.getParent();
+        assertNotNull(root, "Installation schema must be present");
+        var table = Pattern.compile("(?is)CREATE\\s+TABLE\\s+`erp_certified_source_birth`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
+            .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
+        assertTrue(table.find(), "Persisted birth registry must exist in the installation schema");
+        String text = table.group().toLowerCase(Locale.ROOT);
+        assertTrue(text.contains("primary key (`birth_id`)"));
+        assertTrue(text.contains("unique key `uk_source_birth_material` (`tenant_id`, `material_id`)"));
+        for (String column : List.of("`tenant_id` varchar(20)", "`material_id` bigint(20)",
+            "`born_at` datetime", "`actor_id` bigint(20)", "`birth_fingerprint` char(64)")) {
+            assertTrue(text.contains(column + " not null"), column);
+        }
+        assertTrue(Pattern.compile("engine\\s*=\\s*innodb").matcher(text).find());
     }
 }

@@ -66,15 +66,22 @@ class QcReceiptIqcBirthMapperTest {
             assertThat(method.getAnnotation(org.apache.ibatis.annotations.Delete.class)).isNull();
         }
     }
-    @Test void migrationCreatesNoHistoricalBirthCertificatesAndKeepsAllThreePermanentUniques() throws Exception {
+    @Test void installationKeepsAllBirthFieldsAndThreePermanentTenantUniques() throws Exception {
         Path root = Path.of("").toAbsolutePath();
-        while (root != null && !Files.exists(root.resolve("script/sql/update/2026-10-03-native-iqc-birth-ry-mes.sql"))) root = root.getParent();
-        assertThat(root).isNotNull(); String ddl = Files.readString(root.resolve("script/sql/update/2026-10-03-native-iqc-birth-ry-mes.sql"));
-        String body = ddl.lines().filter(line -> !line.stripLeading().startsWith("--")).reduce("", (a,b)->a+"\n"+b);
+        while (root != null && !Files.isRegularFile(root.resolve("script/sql/ry-mes.sql"))) root = root.getParent();
+        assertThat(root).isNotNull();
+        var ddl = Pattern.compile("(?is)CREATE\\s+TABLE\\s+`qc_receipt_iqc_birth`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
+            .matcher(Files.readString(root.resolve("script/sql/ry-mes.sql")));
+        assertThat(ddl.find()).as("Missing installation DDL: qc_receipt_iqc_birth").isTrue();
+        String body = ddl.group();
         assertThat(body).contains("ENGINE=InnoDB", "`quantity` decimal(14,4)", "`bound_at` datetime(3)");
         assertThat(body).contains("(`tenant_id`,`iqc_id`)", "(`tenant_id`,`birth_id`)", "(`tenant_id`,`receive_id`,`material_id`)");
-        assertThat(body).doesNotContain("IF NOT EXISTS", "DROP TABLE", "INSERT INTO", "UPDATE `", "ALTER TABLE");
-        var fields = Pattern.compile("(?m)^\s*`([^`]+)`").matcher(body.substring(0,body.indexOf("PRIMARY KEY")));
+        assertThat(body).contains("PRIMARY KEY (`iqc_id`)",
+            "UNIQUE KEY `uk_native_iqc` (`tenant_id`,`iqc_id`)",
+            "UNIQUE KEY `uk_native_birth` (`tenant_id`,`birth_id`)",
+            "UNIQUE KEY `uk_native_scope` (`tenant_id`,`receive_id`,`material_id`)",
+            "FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)", "ON DELETE RESTRICT ON UPDATE RESTRICT");
+        var fields = Pattern.compile("(?m)^\\s*`([^`]+)`").matcher(body.substring(0,body.indexOf("PRIMARY KEY")));
         String insert = sql(configuration(),"insertBinding"); int count=0;
         while (fields.find()) { assertThat(insert).contains(fields.group(1)); count++; }
         assertThat(count).isEqualTo(18);

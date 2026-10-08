@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 首页工作台统计 Controller
  * <p>只读聚合。含全租户销售额/订单额, 属经营数据, <b>必须带权限码</b>(ERP-DASH-01):
  * 原实现无 {@code @SaCheckPermission}, 任意登录用户即可看到全租户本月销售额。
- * 权限码 {@code erp:dashboard:stats} 的 {@code sys_menu} 种子由增量脚本
- * {@code script/sql/update/2026-09-20-erp-p2.sql} §3 提供(非超管需角色授权后方可见)。</p>
+ * 权限码 {@code erp:dashboard:stats} 的 {@code sys_menu} 新装种子见
+ * {@code script/sql/ry-vue.sql}(非超管需角色授权后方可见；存量库另行审核迁移)。</p>
  *
  * @author Nexus
  */

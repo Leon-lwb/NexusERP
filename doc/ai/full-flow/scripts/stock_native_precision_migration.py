@@ -1,5 +1,6 @@
 """两表五列原生精度迁移v3：逐表DDL与全计划单调恢复守卫，不认证历史来源。
 
+固定增量输入已于2026-10-08退役；缺失时在连接前拒绝，不能以主安装SQL替代。
 v1/v2签名均拒绝。维护、备份、审查计划及执行签名必须显式覆盖流水三列与库存两列，
 目标DECIMAL(18,4)；没有apply/verified布尔授权。三个独立Ed25519角色，公钥指纹
 由外部可信通道提供。签名对象为canonical规范UTF-8 JSON，公钥/签名为32/64原始字节。
@@ -87,6 +88,11 @@ class MigrationBlocked(RuntimeError):
 def require(condition, code):
     if not condition:
         raise MigrationBlocked(code)
+
+
+def require_migration_input():
+    """历史一次性输入不在仓库时失败关闭，不授权重建或执行主安装 dump。"""
+    require(SQL_PATH.is_file(), 'MIGRATION_RETIRED')
 
 
 def sha(data):
@@ -187,6 +193,7 @@ def file_digest(path):
 
 
 def artifact_hashes():
+    require_migration_input()
     return {'migrationSqlSha256': file_digest(SQL_PATH)[0], 'executorSha256': file_digest(Path(__file__))[0]}
 
 
@@ -198,9 +205,12 @@ def executable_sql_outside_template(sql):
 
 
 def sql_template(table=STOCK):
+    require_migration_input()
     require(table in STEP_ORDER, 'SQL_TEMPLATE_REJECTED')
     try:
         sql = SQL_PATH.read_text(encoding='utf-8-sig')
+    except FileNotFoundError:
+        raise MigrationBlocked('MIGRATION_RETIRED') from None
     except OSError:
         raise MigrationBlocked('SQL_TEMPLATE_REJECTED') from None
     outside = executable_sql_outside_template(sql)
@@ -607,6 +617,7 @@ def match_checkpoint(plan, snapshot):
 
 
 def precheck(*, store_factory, maintenance, backup, keys, files, now=lambda: datetime.now(timezone.utc)):
+    require_migration_input()
     maint, saved = validate_context(maintenance, backup, keys, files, now())
     store = None
     try:
@@ -1188,6 +1199,7 @@ def _run_steps(*,store_factory,plan,review,execution,grant,keys,files,active_mai
 
 def execute_once(*,store_factory,maintenance,backup,reviewed_plan,execution,keys,files,receipt_dir,
                  now=lambda:datetime.now(timezone.utc)):
+    require_migration_input()
     maint,saved=validate_context(maintenance,backup,keys,files,now())
     plan=verify_reviewed_plan(keys,reviewed_plan,maint,saved,maintenance,backup)
     grant=validate_execution(keys,execution,reviewed_plan,plan,maint['target'],now())
@@ -1204,6 +1216,7 @@ def execute_once(*,store_factory,maintenance,backup,reviewed_plan,execution,keys
 
 def resume_once(*,store_factory,maintenance,backup,reviewed_plan,parent_execution,recovery_maintenance,execution,
                 keys,files,receipt_dir,now=lambda:datetime.now(timezone.utc)):
+    require_migration_input()
     # 原计划与备份仍须认证；只有恢复维护签名可开新窗口，过期原授权不提供任何执行权。
     maint,saved=validate_original_contracts(maintenance,backup,keys,now())
     plan=verify_reviewed_plan(keys,reviewed_plan,maint,saved,maintenance,backup)
@@ -1244,6 +1257,7 @@ def resume_once(*,store_factory,maintenance,backup,reviewed_plan,parent_executio
 class MySQLStore:
     """5.7实际执行适配器；仅prepared二进制游标可读取原数量，禁止文本回退。"""
     def __init__(self, target):
+        require_migration_input()
         validate_target(target)
         try:
             import mysql.connector
@@ -1486,6 +1500,7 @@ def main(argv=None):
         parser.add_argument('--' + name)
         parser.add_argument('--' + name + '-signature')
     try:
+        require_migration_input()
         args = parser.parse_args(argv)
         if args.operation=='resume-once':
             require(all((args.reviewed_plan,args.reviewed_plan_signature,args.execution_grant,args.execution_grant_signature,

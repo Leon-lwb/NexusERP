@@ -1,43 +1,83 @@
-name: 功能建议
-description: 对本项目提出一个功能建议。
-title: "[功能建议]: "
+name: Nexus-ERP 功能建议
+description: 为 Nexus-ERP 提出业务改进或新功能建议，请说明业务场景与可验证的验收标准。
+title: "[Nexus-ERP 功能建议]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        感谢提出功能建议，我们将仔细考虑！请持续关注该issues，在加入计划后我们会有贡献者设置为负责人，同时状态成为进行中。
+        感谢参与 Nexus-ERP。当前维护发布分支为 `plus`，功能建议不代表已纳入发布计划。
+        请先阅读仓库根目录的 `doc/README.md`（文档中心）、`CONTRIBUTING.md` 和 `SECURITY.md`，并搜索本仓库现有 Issues。
+        示例、日志和截图必须脱敏，不提供凭据或真实租户数据；安全漏洞按 `SECURITY.md` 的私密报告流程处理。
+  - type: textarea
+    id: business-scenario
+    attributes:
+      label: 业务场景与当前痛点
+      description: 说明使用角色、现有业务流程、遇到的限制和业务影响，避免只描述希望增加的按钮或技术方案。
+      placeholder: |
+        使用角色与业务流程：
+        当前痛点及发生条件：
+        业务影响与期望收益：
+    validations:
+      required: true
+  - type: textarea
+    id: module
+    attributes:
+      label: 受影响模块与范围
+      description: 请注明相关模块、页面或接口，以及是否影响权限、租户或跨模块业务。
+      placeholder: |
+        模块（ERP / MES / IoT / AI / Flow / IM / CV / Station / 电子签章 / 系统管理 / 前端 / 其他）：
+        页面、接口或业务对象：
+        权限、租户及跨模块影响：
+    validations:
+      required: true
   - type: textarea
     id: related-problem
     attributes:
-      label: 你的功能建议是否和某个问题相关？
-      description: 清晰并简洁地描述问题是什么，例如，当我...时，我总是感到困扰。
+      label: 关联问题或已有讨论
+      description: 如有，请填写本仓库 Issue 编号、已有方案或相关文档位置。
     validations:
       required: false
   - type: textarea
     id: desired-solution
     attributes:
-      label: 你希望看到什么解决方案？
-      description: 清晰并简洁地描述你希望发生的事情。
+      label: 建议方案
+      description: 说明希望如何改进业务流程、输入输出和操作方式，并列出本次不包含的范围。
+      placeholder: |
+        建议的业务行为与输入输出：
+        与现有功能的兼容方式：
+        不包含的范围：
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 验收标准
+      description: 给出可执行的验证步骤及预期结果，包含必要的异常、权限和租户隔离边界。
+      placeholder: |
+        1. 在什么前置条件下，执行什么操作，应得到什么结果：
+        2. 异常、权限不足或跨租户情况下应如何处理：
+        3. 兼容性、性能或其他需要核验的约束（如适用）：
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: 你考虑过哪些替代方案？
-      description: 清晰并简洁地描述你考虑过的任何替代解决方案或功能。
+      label: 替代方案
+      description: 说明已经尝试的现有功能、临时流程或其他方案，以及它们不能满足需求的原因。
     validations:
       required: false
   - type: textarea
     id: additional-context
     attributes:
-      label: 你有其他上下文或截图吗？
-      description: 在此处添加有关功能请求的任何其他上下文或截图。
+      label: 补充资料（脱敏）
+      description: 可附业务流程图、合成示例或脱敏截图，不上传真实客户数据、凭据或数据库备份。
     validations:
       required: false
   - type: checkboxes
+    id: contribution
     attributes:
-      label: 意向参与贡献
+      label: 参与贡献
       options:
-        - label: 我有意向参与具体功能的开发实现并将代码贡献回到上游社区。
+        - label: 我愿意按 CONTRIBUTING.md 参与实现、测试或文档完善，并将改动贡献到 Nexus-ERP。
           required: false

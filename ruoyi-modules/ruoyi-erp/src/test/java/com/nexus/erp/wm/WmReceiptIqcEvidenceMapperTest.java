@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -41,15 +42,22 @@ class WmReceiptIqcEvidenceMapperTest {
                 WmReceiptIqcEvidenceMapper.EvidenceRow.class, WmReceiptIqcEvidenceService.EvidenceIdentity.class);
         }
     }
-    @Test void incrementalDdlPreservesNativePrecisionImmutableUniqueIdentitiesAndMilliseconds() throws Exception {
+    @Test void installationDdlPreservesNativePrecisionImmutableUniqueIdentitiesAndMilliseconds() throws Exception {
         Path root = Path.of("").toAbsolutePath();
-        while (root != null && !Files.isDirectory(root.resolve("script/sql/update"))) root = root.getParent();
+        while (root != null && !Files.isRegularFile(root.resolve("script/sql/ry-erp.sql"))) root = root.getParent();
         assertThat(root).isNotNull();
-        String sql = Files.readString(root.resolve("script/sql/update/2026-10-03-certified-iqc-evidence-ry-erp.sql"));
+        var ddl = Pattern.compile("(?is)CREATE\\s+TABLE\\s+`wm_certified_iqc_evidence`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
+            .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
+        assertThat(ddl.find()).as("Missing installation DDL: wm_certified_iqc_evidence").isTrue();
+        String sql = ddl.group();
         assertThat(sql).contains("CREATE TABLE `wm_certified_iqc_evidence`", "`inspected_quantity` decimal(14,4)",
             "`tenant_id`, `inspection_id`", "`tenant_id`, `receive_id`, `material_id`", "`tenant_id`, `first_message_id`",
             "`observed_at` datetime(3)", "`certified_at` datetime(3)");
-        assertThat(sql.toUpperCase()).doesNotContain("DROP TABLE", "ALTER TABLE", "INSERT INTO", "UPDATE WM_");
+        assertThat(sql).contains("PRIMARY KEY (`evidence_id`)",
+            "UNIQUE KEY `uk_certified_iqc_inspection` (`tenant_id`, `inspection_id`)",
+            "UNIQUE KEY `uk_certified_iqc_scope` (`tenant_id`, `receive_id`, `material_id`)",
+            "UNIQUE KEY `uk_certified_iqc_message` (`tenant_id`, `first_message_id`)",
+            "`birth_id` bigint NULL", "`birth_sha256` char(64) NULL", "ENGINE=InnoDB");
     }
 
     @Test void catalogGateUsesSameDatabaseNativeDefinitionsAndOnlyMetadataIgnoresTenantPlugin() throws Exception {

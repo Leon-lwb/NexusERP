@@ -1,5 +1,6 @@
 """已获用户授权的本地测试库追加结构执行器；不授予任何正式业务写或来源认证资格。
 
+固定增量输入已于2026-10-08退役；缺失时在数据库访问前明确拒绝，不以主安装SQL替代。
 固定七个已审查增量输入，只能执行十二条CREATE/追加可空列/唯一键及新空证据表说明DDL。
 拒绝部分基线的自动重放、历史DML、数量类型改写；多步跨库DDL没有回滚保证。
 连接、备份声明和用户授权由显式调用方核实，不自动连接/登录/启停服务或提供通用apply入口。
@@ -46,7 +47,10 @@ def sha(raw):return hashlib.sha256(raw).hexdigest()
 
 def read_source(name):
     require(name in dict(INPUTS),'MIGRATION_INPUT_REJECTED')
-    return (ROOT/'script/sql/update'/name).read_bytes()
+    path=ROOT/'script/sql/update'/name
+    require(path.is_file(),'MIGRATION_RETIRED')
+    try:return path.read_bytes()
+    except FileNotFoundError:raise AdditiveMigrationBlocked('MIGRATION_RETIRED') from None
 
 def split_sql(text):
     """仅为固定DDL解析引号和分号；可执行块注释或不闭合内容一律拒绝。"""
@@ -209,15 +213,17 @@ class MysqlAdditiveStore:
                     digest.update(str(len(raw)).encode()+b':'+raw)
         return {'rows':count,'sha256':digest.hexdigest()}
     def initial(self):
-        self.target();metadata=self.metadata();require(plan_operations(metadata)==load_operations(),'ADDITIVE_BASELINE_UNVERIFIED')
+        operations=load_operations()
+        self.target();metadata=self.metadata();require(plan_operations(metadata)==operations,'ADDITIVE_BASELINE_UNVERIFIED')
         self.original_metadata=metadata
         for key in OLD_TABLES:
             self.original_columns[key]=tuple(sorted(metadata[key]['columns']))
             self.original_rows[key]=self.row_hash(key,self.original_columns[key],metadata)
         return metadata
     def execute(self,op):
+        operations=load_operations()
         self.target();require(type(op.ordinal) is int and op.ordinal==self.step+1
-            and op==load_operations()[op.ordinal-1],'MIGRATION_STEP_UNVERIFIED')
+            and op==operations[op.ordinal-1],'MIGRATION_STEP_UNVERIFIED')
         metadata=self.metadata();key=op.schema+'.'+op.table
         require((op.kind=='CREATE' and key not in metadata) or (op.kind=='ALTER' and key in metadata),'MIGRATION_STEP_UNVERIFIED')
         self.verify_original(metadata)
