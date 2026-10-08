@@ -61,8 +61,8 @@ function setup(configSnapshot, configJson = JSON.stringify(analysis)) {
     '../designer/useFlowStore': storeModule,
     '../designer/FlowCanvas.vue': { default: {} },
     '../components/JsonViewer.vue': { default: {} },
-    get '../flowDisplay'() {
-      return moduleFromTypeScript(source('src/views/ai/flow/flowDisplay.ts'), {});
+    get '../flowTriggerDisplay'() {
+      return moduleFromTypeScript(source('src/views/ai/flow/flowTriggerDisplay.ts'), {});
     },
     '@/api/ai/flow': {
       getInstance: async (id) => {
