@@ -6,7 +6,7 @@
 
 ## 当前批次的最高优先级运行约定
 
-- 用户自行在 IDEA 和 VS Code 运行后端、前端。本批次 Agent **不得**另起服务、停止或自动重启这些服务，也不自动启停用户 Docker 依赖；需要加载新的 Java 修复时由用户重编译、冷重启。
+- 服务生命周期遵守**当次用户的明确授权**。此前批次由用户在 IDEA／VS Code 手动运行、Agent 不启停；2026-10-08 正式来源续接任务已获本项目后端重启授权，但执行环境拒绝终止和启动命令，未绕过限制。新版本运行验收仍待恢复；不启停用户 Docker 基础服务，也不将本次授权视为之后任务的长期自动重启许可。
 - 开发保留在独立分支；全部流程、回归和审查完成前不合并 `plus`，不把局部通过写成生产部署或人工验收。
 - 本机数据库已获得用户明确读写授权。不要求把密码另存为 `.mysql-readonly.env`；既有正常登录的私有会话缓存仅留在 Git 忽略目录，密码、Token、私钥及原始认证输出不得进入报告或提交。
 - 管理员只读盘点的 `writeEligible=false` 表示该快照不是写事务授权；它不否定用户另行授权的、经过业务权限/来源/数量守卫的 API 执行。禁止把只读 transport 的拒绝写操作改成无限制写入。
@@ -18,6 +18,23 @@
 - 2026-10-06 采购接线开发检查点见 [AI逐来源采购开发核验](reports/2026-10-06-ai-逐来源采购整链接线与恢复开发核验.md)；该报告的根编码拒绝/待重启只代表其当时状态，不作为2026-10-07仍未执行的结论。
 - 2026-10-07 重启后实际仓储八阶段及剩余范围见 [八阶段实测与任务核对](reports/2026-10-07-erp-重启后仓储八阶段实测与剩余任务核对.md)：已存在本地软件采购→制造→销售主链，统一writer/AI v2/P2排名已有代码及限定运行；不把缺口误报整体未实现，不以重叠保护记录充独立案例。
 - 当前生产工单单位、报工自动编号及来源失败定位开发见 [生产单位/报工编号/来源诊断](reports/2026-10-07-erp-生产工单单位与报工编号修复及来源诊断进展.md)。最新代码仍需正常构建/重启后的API验证；新SCJH20260010尚无工单，来源预览尚未取得成功；代码/单测不等于全来源、全部业务或40独立来源SLA通过。
+
+## 正式案例就绪离线盘点（2026-10-08）
+
+`formal_case_readiness.py` 只读取显式提供的案例、黄金期望和逐来源证据，不联网、不写库、不创建业务对象。它分别报告计划数、独立业务来源、分析通过、预期安全拒绝、执行闭环和单构建性能资格；同一工单的多个 runId 不算多个来源，旧 SHA／其他 buildId 不能拼入本轮 SLA。
+
+以下是**空证据负例**，应返回 `BLOCKED` 和退出码 `2`，不是现库工单为 0，也不是验收通过：
+
+```powershell
+$head = git rev-parse HEAD
+'{"sources":[],"runs":[]}' | python -X utf8 -B doc/ai/full-flow/scripts/formal_case_readiness.py `
+  --cases doc/ai/benchmark/delivery-risk/cases.jsonl `
+  --expected doc/ai/benchmark/delivery-risk/expected-results.jsonl `
+  --evidence - --tenant-id 000000 --commit-sha $head --build-id evidence-not-collected
+python -X utf8 -B -m unittest discover -s doc/ai/full-flow/scripts -p test_formal_case_readiness.py -v
+```
+
+完整输入格式见脚本顶部中文说明。只有完整 40 个独立来源、同租户／提交／构建、黄金结果及应执行动作的独立回查齐备，才会 `officialFullReady=true`；此标志仍不是现实比赛提交回执、现场验收或自动签发的 SLA 达标。
 
 ## 前置条件
 
