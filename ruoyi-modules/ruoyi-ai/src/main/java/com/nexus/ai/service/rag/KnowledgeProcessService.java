@@ -284,7 +284,15 @@ public class KnowledgeProcessService {
                     AiKnowledgeDocument current = documentMapper.selectById(documentId);
                     if (current != null && tenantId.equals(current.getTenantId())
                         && knowledgeId.equals(current.getKnowledgeId())) {
-                        updateDocumentStatus(documentId, "3", "文档处理任务未提交，请稍后重试。");
+                        /** 拒绝回写同样采用 CAS，不能把其他任务已认领或已完成的文档重新开放。 */
+                        AiKnowledgeDocument failure = new AiKnowledgeDocument();
+                        failure.setStatus("3");
+                        failure.setErrorMessage("文档处理任务未提交，请稍后重试。");
+                        documentMapper.update(failure, new LambdaUpdateWrapper<AiKnowledgeDocument>()
+                            .eq(AiKnowledgeDocument::getId, documentId)
+                            .eq(AiKnowledgeDocument::getTenantId, tenantId)
+                            .eq(AiKnowledgeDocument::getKnowledgeId, knowledgeId)
+                            .in(AiKnowledgeDocument::getStatus, retry ? List.of("0", "3") : List.of("0")));
                     }
                 });
             } catch (RuntimeException unavailable) {

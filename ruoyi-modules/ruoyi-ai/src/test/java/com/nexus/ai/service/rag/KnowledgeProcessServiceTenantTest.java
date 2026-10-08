@@ -107,7 +107,9 @@ class KnowledgeProcessServiceTenantTest {
             .thenAnswer(invocation -> applyDocumentPatch(invocation.getArgument(0)));
         when(documents.update(org.mockito.ArgumentMatchers.<AiKnowledgeDocument>any(),
             org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any()))
-            .thenAnswer(invocation -> applyAtomicClaim(invocation.getArgument(1)));
+            .thenAnswer(invocation -> invocation.getArgument(0) == null
+                ? applyAtomicClaim(invocation.getArgument(1))
+                : applyRejectedSubmission(invocation.getArgument(0), invocation.getArgument(1)));
         when(chunks.insert(any(AiKnowledgeChunk.class))).thenAnswer(invocation -> {
             invocation.<AiKnowledgeChunk>getArgument(0).setId(301L);
             return 1;
@@ -273,8 +275,9 @@ class KnowledgeProcessServiceTenantTest {
         assertNull(rejected.getCause());
         verifyNoInteractions(chunks, vectors, oss);
         assertTrue(submitted.isEmpty());
-        verify(documents).updateById(argThat((AiKnowledgeDocument row) -> "3".equals(row.getStatus())
-            && "文档处理任务未提交，请稍后重试。".equals(row.getErrorMessage())));
+        verify(documents).update(argThat((AiKnowledgeDocument row) -> "3".equals(row.getStatus())
+            && "文档处理任务未提交，请稍后重试。".equals(row.getErrorMessage())),
+            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
         assertEquals(List.of("000000"), statusTenants);
     }
 
@@ -480,6 +483,23 @@ class KnowledgeProcessServiceTenantTest {
         assertEquals("3", document.getStatus());
     }
 
+    /** 拒绝回写也会与其他任务竞争，不能把已认领或已完成的文档重新置为可重试。 */
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "2"})
+    @DisplayName("提交拒绝不会覆盖另一任务的处理中或成功状态")
+    void rejectedRetryDoesNotOverwriteAnotherTaskState(String otherState) {
+        service = new KnowledgeProcessService(parser, new ChunkingService(), vectors, documents, chunks,
+            knowledgeService, indexGate, task -> {
+                document.setStatus(otherState);
+                throw new java.util.concurrent.RejectedExecutionException("私有执行器诊断");
+            });
+
+        assertThrows(ServiceException.class, () -> service.retryProcess(DOCUMENT_ID));
+
+        assertEquals(otherState, document.getStatus(), "拒绝回写不得重新开放已被其他任务认领的文档");
+        verifyNoInteractions(chunks, vectors, oss);
+    }
+
     /** 同步 OSS 失败可经 URL 导入结果返回，必须在上传边界清除原始异常与原因。 */
     @Test
     @DisplayName("同步上传异常不经文档或URL导入接口回显凭据")
@@ -510,8 +530,9 @@ class KnowledgeProcessServiceTenantTest {
             assertEquals("文档处理任务未提交，请稍后重试。", rejected.getMessage());
             assertNull(rejected.getCause());
         }
-        verify(documents).updateById(argThat((AiKnowledgeDocument row) -> "3".equals(row.getStatus())
-            && "文档处理任务未提交，请稍后重试。".equals(row.getErrorMessage())));
+        verify(documents).update(argThat((AiKnowledgeDocument row) -> "3".equals(row.getStatus())
+            && "文档处理任务未提交，请稍后重试。".equals(row.getErrorMessage())),
+            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
         assertEquals(List.of("000000"), statusTenants);
         verifyNoInteractions(chunks, vectors);
     }
@@ -612,6 +633,22 @@ class KnowledgeProcessServiceTenantTest {
                 document.setErrorMessage(patch.getErrorMessage());
             }
             return 1;
+        }
+    }
+
+    /** 拒绝回写的独立条件更新也必须保护租户、知识库及可重试状态，不能覆盖运行中任务。 */
+    private int applyRejectedSubmission(AiKnowledgeDocument patch, LambdaUpdateWrapper<AiKnowledgeDocument> condition) {
+        String where = condition.getSqlSegment();
+        Map<String, Object> parameters = condition.getParamNameValuePairs();
+        assertEquals(DOCUMENT_ID, parameterForColumn(where, "id", parameters));
+        assertEquals("000000", parameterForColumn(where, "tenant_id", parameters));
+        assertEquals(KNOWLEDGE_ID, parameterForColumn(where, "knowledge_id", parameters));
+        List<Object> statuses = statusesForClaim(condition);
+        assertTrue(statuses.equals(List.of("0")) || statuses.equals(List.of("0", "3")));
+        assertEquals("3", patch.getStatus());
+        synchronized (document) {
+            if (!statuses.contains(document.getStatus())) return 0;
+            return applyDocumentPatch(patch);
         }
     }
 
