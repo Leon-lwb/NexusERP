@@ -1949,7 +1949,10 @@ class DeliveryContextAssemblerTest {
         var snapshot=assembler.assemble(f.ref(),14,f.actor());
         assertTrue(snapshot.stocks().stream().allMatch(x -> x.stockQty()==null && x.reservedQty()==null));
         assertTrue(snapshot.warnings().contains("UNKNOWN_STOCK_SOURCE:501"));
-        assertThrows(ServiceException.class,()->new ErpDecisionShortageSimulation(new PrdShortageScenarioService()).simulate(snapshot,14,null));
+        var rejected = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
+            () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService()).simulate(snapshot, 14, null));
+        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE,
+            rejected.reason());
     }
 
     @Test

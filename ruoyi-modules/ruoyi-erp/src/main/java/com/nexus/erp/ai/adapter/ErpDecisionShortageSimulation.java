@@ -10,7 +10,6 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLi
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
-import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.erp.prd.schedule.PrdShortageInput;
 import com.nexus.erp.prd.schedule.PrdShortageResult;
@@ -42,6 +41,15 @@ public class ErpDecisionShortageSimulation {
 
     private final PrdShortageScenarioService scenarioService;
 
+    /**
+     * 基于冻结事实推演逐物料缺口，不将缺失或未认证的供给解释为可靠零库存。
+     *
+     * @param snapshot 已限定业务范围的可信事实快照
+     * @param horizonDays 从快照日起算的推演天数，范围为 1 至 90 天
+     * @param overrides 仅允许覆盖既有采购行的假设到货日期
+     * @return 已确认的逐物料风险；部分事实未知时不签发完整 KPI
+     * @throws DecisionEvidenceException 证据不完整或有限计算失败，无法发布无风险结论
+     */
     public ShortageSimulationResult simulate(DeliveryContextSnapshot snapshot, int horizonDays,
                                              Map<String, Object> overrides) {
         validateSnapshot(snapshot, horizonDays);
@@ -183,7 +191,8 @@ public class ErpDecisionShortageSimulation {
         if (failedMaterials != 0 || incompleteEvidence) {
             warnings.add("SHORTAGE_SIMULATION_INCOMPLETE: 仅列已确认风险，完整风险未知");
             if (items.stream().noneMatch(item -> item.firstShortageDate() != null)) {
-                throw new ServiceException("SHORTAGE_SIMULATION_INCOMPLETE: 推演未完成，无法判定无风险");
+                /** 领域拒绝必须保留类型，Flow 只传播白名单错误码，不解析任意异常文本。 */
+                throw new DecisionEvidenceException(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE);
             }
         }
         if (items.isEmpty()) {
