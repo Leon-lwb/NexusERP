@@ -241,12 +241,44 @@ class StationPassTransactionTest {
             .matcher(Files.readString(root.resolve("script/sql/ry-mes.sql")));
         assertTrue(ddl.find(),"Missing installation DDL: mes_station_report");
         String table=ddl.group();
-        assertTrue(Pattern.compile("(?im)^\\s*`request_fingerprint`\\s+varchar\\(64\\)"
-            +"(?:\\s+CHARACTER SET\\s+\\w+)?(?:\\s+COLLATE\\s+\\w+)?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(table).find());
+        assertReplayInstallationSchema(table);
         assertEquals(String.class,MesStationReport.class.getDeclaredField("requestFingerprint").getType());
         assertNull(new MesStationReport().getRequestFingerprint());
+    }
+    /** 转储可省略显式 NULL 并使用 UNIQUE KEY，但不能替历史记录伪造请求指纹。 */
+    @Test void replaySchemaAcceptsEquivalentMysqlDumpSyntax() {
+        for (String nullable : List.of("NULL DEFAULT NULL", "DEFAULT NULL")) {
+            for (String unique : List.of("UNIQUE INDEX", "UNIQUE KEY")) {
+                assertReplayInstallationSchema("  `request_fingerprint` varchar(64) COLLATE utf8mb4_unicode_ci " + nullable + ",\n"
+                    + "  PRIMARY KEY (`report_id`) USING BTREE,\n"
+                    + "  " + unique + " `uk_tenant_client_key` (`tenant_id`,`client_key`) USING BTREE");
+            }
+        }
+    }
+    /** 保留非空、默认值、类型、租户列顺序及唯一性的变异负例。 */
+    @Test void replaySchemaRejectsVerifiedDefaultsAndUnscopedOrNonuniqueKeys() {
+        String valid = "  `request_fingerprint` varchar(64) DEFAULT NULL,\n"
+            + "  PRIMARY KEY (`report_id`),\n"
+            + "  UNIQUE KEY `uk_tenant_client_key` (`tenant_id`,`client_key`)";
+        for (String invalid : List.of(valid.replace("DEFAULT NULL", "NOT NULL DEFAULT NULL"),
+            valid.replace("DEFAULT NULL", "DEFAULT 'trusted'"), valid.replace("varchar(64)", "varchar(32)"),
+            valid.replace("UNIQUE KEY", "KEY"), valid.replace("`tenant_id`,`client_key`", "`client_key`,`tenant_id`"),
+            valid.replace("`tenant_id`,`client_key`", "`client_key`"))) {
+            assertThrows(AssertionError.class, () -> assertReplayInstallationSchema(invalid));
+        }
+    }
+    /** 只兼容语义等价的转储写法，不放宽旧指纹为 NULL 和永久租户重放键约束。 */
+    private static void assertReplayInstallationSchema(String table) {
+        var column = Pattern.compile("(?im)^\\s*`request_fingerprint`\\s+([^\\r\\n]+)$").matcher(table);
+        assertTrue(column.find(), "请求指纹列必须存在");
+        String definition = column.group(1).replaceFirst("(?i)\\s+COMMENT\\s+.*$", "")
+            .replaceFirst(",\\s*$", "").replaceAll("(?i)\\s+(?:CHARACTER SET|COLLATE)\\s+\\w+", "")
+            .trim().replaceAll("\\s+", " ");
+        assertTrue(definition.matches("(?i)varchar\\(64\\) (?:NULL )?DEFAULT NULL"),
+            "旧指纹必须可空且无已验证默认值");
         assertTrue(table.contains("PRIMARY KEY (`report_id`)"));
-        assertTrue(table.contains("UNIQUE INDEX `uk_tenant_client_key`(`tenant_id`, `client_key`)"));
+        assertTrue(Pattern.compile("(?im)^\\s*UNIQUE\\s+(?:KEY|INDEX)\\s+`uk_tenant_client_key`\\s*"
+            + "\\(`tenant_id`\\s*,\\s*`client_key`\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$").matcher(table).find());
     }
     @Test void deletedReplayCarrierIsNotReused() {
         service.reportSingle(request(1000),OP); db.update("UPDATE mes_station_report SET del_flag='1'");
