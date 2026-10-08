@@ -1,5 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import org.apache.ibatis.annotations.Param;
@@ -28,26 +30,26 @@ class ErpDecisionDraftSqlContractTest {
     void purchaseRequisitionContainsStructuredIdempotencyVersionAndIndexes() throws IOException {
         String table = tableSql("pu_purchase_requisition");
 
-        assertColumn(table, "decision_run_id", "bigint");
-        assertColumn(table, "decision_action_id", "bigint");
-        assertColumn(table, "decision_idempotency_key", "varchar\\(128\\)");
-        assertColumn(table, "version", "int(?:\\(11\\))?\\s+not\\s+null\\s+default\\s+0");
-        assertContains(table, "unique index `uk_pur_decision_idem`(`tenant_id`, `decision_idempotency_key`)");
-        assertContains(table, "index `idx_pur_decision_run`(`tenant_id`, `decision_run_id`)");
+        assertColumn(table, "decision_run_id", "bigint DEFAULT NULL");
+        assertColumn(table, "decision_action_id", "bigint DEFAULT NULL");
+        assertColumn(table, "decision_idempotency_key", "varchar(128) DEFAULT NULL");
+        assertColumn(table, "version", "int NOT NULL DEFAULT 0");
+        ErpDdlTestSupport.assertIndex(table, true, "uk_pur_decision_idem", "tenant_id", "decision_idempotency_key");
+        ErpDdlTestSupport.assertIndex(table, false, "idx_pur_decision_run", "tenant_id", "decision_run_id");
     }
 
     @Test
     void schedulePlanContainsStructuredScopeVersionAndIndexes() throws IOException {
         String table = tableSql("prd_schedule_plan");
 
-        assertColumn(table, "decision_run_id", "bigint");
-        assertColumn(table, "decision_action_id", "bigint");
-        assertColumn(table, "decision_idempotency_key", "varchar\\(128\\)");
-        assertColumn(table, "decision_scenario_code", "varchar\\(64\\)");
-        assertColumn(table, "decision_work_order_ids_json", "varchar\\(4000\\)");
-        assertColumn(table, "version", "int(?:\\(11\\))?\\s+not\\s+null\\s+default\\s+0");
-        assertContains(table, "unique index `uk_psp_decision_idem`(`tenant_id`, `decision_idempotency_key`)");
-        assertContains(table, "index `idx_psp_decision_run`(`tenant_id`, `decision_run_id`)");
+        assertColumn(table, "decision_run_id", "bigint DEFAULT NULL");
+        assertColumn(table, "decision_action_id", "bigint DEFAULT NULL");
+        assertColumn(table, "decision_idempotency_key", "varchar(128) DEFAULT NULL");
+        assertColumn(table, "decision_scenario_code", "varchar(64) DEFAULT NULL");
+        assertColumn(table, "decision_work_order_ids_json", "varchar(4000) DEFAULT NULL");
+        assertColumn(table, "version", "int NOT NULL DEFAULT 0");
+        ErpDdlTestSupport.assertIndex(table, true, "uk_psp_decision_idem", "tenant_id", "decision_idempotency_key");
+        ErpDdlTestSupport.assertIndex(table, false, "idx_psp_decision_run", "tenant_id", "decision_run_id");
     }
 
     @Test
@@ -81,7 +83,7 @@ class ErpDecisionDraftSqlContractTest {
             "(?is)CREATE\\s+TABLE\\s+`" + Pattern.quote(tableName) + "`\\s*\\((.*?)\\)\\s*ENGINE");
         Matcher matcher = pattern.matcher(sql);
         assertTrue(matcher.find(), "未找到表定义: " + tableName);
-        return matcher.group(1).toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+        return matcher.group(1);
     }
 
     private Path repoRoot() {
@@ -95,13 +97,7 @@ class ErpDecisionDraftSqlContractTest {
         return current;
     }
 
-    private void assertColumn(String table, String column, String typePattern) {
-        assertTrue(Pattern.compile("`" + Pattern.quote(column) + "`\\s+" + typePattern,
-            Pattern.CASE_INSENSITIVE).matcher(table).find(),
-            () -> "缺少或定义错误的列 " + column + ": " + table);
-    }
-
-    private void assertContains(String table, String expected) {
-        assertTrue(table.contains(expected), () -> "表定义缺少: " + expected + "；实际=" + table);
+    private void assertColumn(String table, String column, String definition) {
+        ErpDdlTestSupport.assertColumn(table, column, definition);
     }
 }

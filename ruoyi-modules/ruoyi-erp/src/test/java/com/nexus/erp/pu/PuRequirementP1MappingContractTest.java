@@ -1,5 +1,7 @@
 package com.nexus.erp.pu;
 
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -79,8 +81,9 @@ class PuRequirementP1MappingContractTest {
         assertField(entity, "allocationStatus", String.class);
         assertField(entity, "version", Integer.class);
         assertNotNull(entity.getDeclaredField("version").getAnnotation(Version.class));
-        assertTrue(ddlTable("pu_requirement_allocation_ledger").contains("UNIQUE INDEX `uk_pral_tenant_req_detail_no`"));
-        assertTrue(ddlTable("pu_requirement_allocation_ledger").contains("UNIQUE INDEX `uk_pral_tenant_key`"));
+        ErpDdlTestSupport.assertIndex(ddlTable("pu_requirement_allocation_ledger"),true,"uk_pral_tenant_req_detail_no","tenant_id","requisition_line_id","detail_id","allocation_no");
+        ErpDdlTestSupport.assertIndex(ddlTable("pu_requirement_allocation_ledger"),true,"uk_pral_tenant_key","tenant_id","allocation_key");
+        ErpDdlTestSupport.assertColumn(ddlTable("pu_requirement_allocation_ledger"),"version","int NOT NULL DEFAULT 0");
     }
 
     @Test
@@ -93,15 +96,15 @@ class PuRequirementP1MappingContractTest {
         assertField(entity, "occupiedBaseBefore", BigDecimal.class);
         assertField(entity, "eventSequence", Integer.class);
         assertField(entity, "occurredAt", Date.class);
-        assertTrue(ddlTable("pu_requirement_allocation_event").contains("UNIQUE INDEX `uk_prae_tenant_event_key`"));
-        assertTrue(ddlTable("pu_requirement_allocation_event").contains(
-            "UNIQUE INDEX `uk_prae_tenant_allocation_sequence`(`tenant_id`, `allocation_id`, `event_sequence`)"));
+        ErpDdlTestSupport.assertIndex(ddlTable("pu_requirement_allocation_event"),true,"uk_prae_tenant_event_key","tenant_id","event_key");
+        ErpDdlTestSupport.assertIndex(ddlTable("pu_requirement_allocation_event"),true,"uk_prae_tenant_allocation_sequence","tenant_id","allocation_id","event_sequence");
     }
 
     @Test
     void guardUsesCompositeTenantMaterialKeyForInsertIgnoreAndRowLock() throws Exception {
         String ddl = ddlTable("pu_requirement_material_guard");
-        assertTrue(ddl.contains("PRIMARY KEY (`tenant_id`, `material_id`)"));
+        ErpDdlTestSupport.assertPrimaryKey(ddl,"tenant_id","material_id");
+        ErpDdlTestSupport.assertColumn(ddl,"version","int NOT NULL DEFAULT 0");
         Class<?> mapper = mapper("PuRequirementMaterialGuardMapper");
         String insert = sql(mapper.getMethod("ensureGuard", String.class, Long.class), Insert.class);
         assertTrue(Pattern.compile("(?is)INSERT\\s+IGNORE\\s+INTO\\s+pu_requirement_material_guard\\s*"
@@ -144,10 +147,11 @@ class PuRequirementP1MappingContractTest {
         Object blank = entity.getDeclaredConstructor().newInstance();
         for (Map.Entry<String, Class<?>> entry : columns.entrySet()) {
             String column = entry.getKey();
-            assertTrue(Pattern.compile("(?im)^\\s*`" + Pattern.quote(column)
-                + "`\\s+\\w+(?:\\s*\\(\\s*\\d+(?:\\s*,\\s*\\d+)?\\s*\\))?"
-                + "(?:\\s+unsigned)?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(ddl).find(),
-                "Installation column must stay nullable without a verified default: " + column);
+            Class<?> javaType=entry.getValue();
+            String type=javaType==Long.class?"bigint":javaType==BigDecimal.class?"decimal(18,4)":
+                javaType==Boolean.class?"tinyint":javaType==Integer.class?"tinyint UNSIGNED":
+                javaType==String.class?"varchar(64)":"datetime";
+            ErpDdlTestSupport.assertColumn(ddl,column,type+" DEFAULT NULL");
             String fieldName = camelCase(column);
             Field field = entity.getDeclaredField(fieldName);
             assertEquals(entry.getValue(), field.getType(), column);

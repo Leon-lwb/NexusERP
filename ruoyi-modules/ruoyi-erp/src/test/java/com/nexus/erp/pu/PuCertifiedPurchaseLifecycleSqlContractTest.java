@@ -1,4 +1,6 @@
 package com.nexus.erp.pu;
+
+import com.nexus.erp.support.ErpDdlTestSupport;
 import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.controller.PuCertifiedPurchaseWorkflowController;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseWorkflowService;
@@ -103,11 +105,11 @@ class PuCertifiedPurchaseLifecycleSqlContractTest {
         String install=java.nio.file.Files.readString(root.resolve("script/sql/ry-erp.sql"));
         int start=install.indexOf("CREATE TABLE `pu_requirement_allocation_event`");
         assertTrue(start>=0);String event=install.substring(start,install.indexOf(";",start));
-        assertTrue(event.contains("`event_sequence` int(11) NOT NULL"));
-        assertTrue(event.contains("UNIQUE INDEX `uk_prae_tenant_allocation_sequence`(`tenant_id`, `allocation_id`, `event_sequence`)"));
+        ErpDdlTestSupport.assertColumn(event, "event_sequence", "int NOT NULL");
+        ErpDdlTestSupport.assertIndex(event, true, "uk_prae_tenant_allocation_sequence", "tenant_id", "allocation_id", "event_sequence");
         assertFalse(java.util.regex.Pattern.compile("(?im)^\\s*`event_sequence`[^\\r\\n]*\\bDEFAULT\\b").matcher(event).find(),
             "Event order must be supplied by the writer, not inferred by a default");
-        assertTrue(event.contains("UNIQUE INDEX `uk_prae_tenant_event_key`(`tenant_id`, `event_key`)"));
+        ErpDdlTestSupport.assertIndex(event, true, "uk_prae_tenant_event_key", "tenant_id", "event_key");
     }
     private static String sql(Class<?> type,String name)throws Exception{return String.join(" ",type.getMethod(name).getAnnotation(Select.class).value());}
 }
