@@ -174,10 +174,23 @@ public class DeliveryContextAssembler {
     }
 
     /**
+     * 历史决策只读可见性：工单允许已完工/关闭，但仍核对精确 ID、租户、未删除及已知状态。
+     * 其他业务类型沿用原检查；分析、审批与新建草稿不得使用此终态读取例外。
+     */
+    public boolean existsForDecisionRead(DecisionBusinessRef ref, DecisionActor actor) {
+        return ref != null && ref.type() == DecisionBusinessType.WORK_ORDER
+            ? existsIncludingTerminalWorkOrder(ref, actor) : exists(ref, actor);
+    }
+
+    /**
      * 采购永久恢复专用的对象可见性：只允许本租户未删除的明确工单，可认领其后来的终态。
      * 不授予新分析、新建采购或来源额度，普通exists和核心快照算法保持原终态拒绝。
      */
     public boolean existsForPurchaseRecovery(DecisionBusinessRef ref, DecisionActor actor) {
+        return existsIncludingTerminalWorkOrder(ref, actor);
+    }
+
+    private boolean existsIncludingTerminalWorkOrder(DecisionBusinessRef ref, DecisionActor actor) {
         try {
             if (!TenantHelper.isEnable() || actor == null || actor.tenantId() == null
                 || !actor.tenantId().equals(TenantHelper.getTenantId()) || ref == null

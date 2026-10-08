@@ -123,7 +123,7 @@ public class ErpIndustrialDecisionDataAdapter implements IndustrialDecisionDataP
     public boolean canReadDecision(DecisionBusinessRef ref, DecisionActor actor) {
         if (!validActor(actor) || !validRef(ref) || !TenantHelper.isEnable()
             || !hasPermission(actor.permissions(), "ai:decision:query") || !businessRead(ref, actor)) return false;
-        return inTenant(actor, () -> contextAssembler.exists(ref, actor));
+        return inTenant(actor, () -> contextAssembler.existsForDecisionRead(ref, actor));
     }
 
     @Override

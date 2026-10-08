@@ -125,11 +125,12 @@ class ErpIndustrialDecisionDataAdapterTest {
     void queryOnlyViewerNeedsBothDecisionAndBusinessReadPermission() {
         withTenant(() -> {
             DecisionActor viewer = actor(Set.of("ai:decision:query", "prd:work:query"));
-            when(assembler.exists(REF, viewer)).thenReturn(true);
+            when(assembler.existsForDecisionRead(REF, viewer)).thenReturn(true);
             assertTrue(adapter.canReadDecision(REF, viewer));
             assertFalse(adapter.canReadDecision(REF, actor(Set.of("ai:decision:query"))));
             assertFalse(adapter.canReadDecision(REF, actor(Set.of("prd:work:query"))));
-            verify(assembler, times(1)).exists(REF, viewer);
+            verify(assembler, times(1)).existsForDecisionRead(REF, viewer);
+            verify(assembler, never()).exists(any(), any());
         });
     }
 
