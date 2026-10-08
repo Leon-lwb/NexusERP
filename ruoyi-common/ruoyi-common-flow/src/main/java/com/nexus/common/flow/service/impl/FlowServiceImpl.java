@@ -132,18 +132,41 @@ public class FlowServiceImpl implements IFlowService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(FlowBo bo) {
-        Flow existing = baseMapper.selectById(bo.getId());
+        // 锁定生命周期后再校验，通用编辑不能替代发布/下线入口。
+        Flow existing = baseMapper.selectOne(Wrappers.<Flow>lambdaQuery()
+            .eq(Flow::getId, bo.getId()).last("FOR UPDATE"));
         if (existing == null) {
             throw new ServiceException("流程不存在");
         }
         if ("PUBLISHED".equals(existing.getStatus())) {
             throw new ServiceException("流程已发布，请先下线再编辑");
         }
+        if (!"DRAFT".equals(existing.getStatus()) && !"OFFLINE".equals(existing.getStatus())) {
+            throw new ServiceException("流程状态异常，无法编辑");
+        }
+        if (bo.getStatus() != null && !"DRAFT".equals(bo.getStatus())) {
+            throw new ServiceException("流程编辑仅可保存草稿，请使用发布或下线入口");
+        }
+        if (bo.getVersion() != null && !bo.getVersion().equals(existing.getVersion())) {
+            throw new ServiceException("流程版本已变更，请刷新后重试");
+        }
         if (StringUtils.isNotBlank(bo.getFlowKey())) {
             checkFlowKeyUnique(bo.getFlowKey(), bo.getId());
         }
         Flow entity = MapstructUtils.convert(bo, Flow.class);
-        return baseMapper.updateById(entity);
+        // 编辑统一回到草稿，发布版本只取服务端值，不由客户端创建或提升。
+        entity.setStatus("DRAFT");
+        entity.setVersion(existing.getVersion());
+        // 单次状态/版本 CAS，失配即拒绝，绝不重试覆盖新发布状态或版本。
+        int rows = baseMapper.update(entity, Wrappers.<Flow>lambdaUpdate()
+            .eq(Flow::getId, bo.getId())
+            .eq(Flow::getStatus, existing.getStatus())
+            .eq(existing.getVersion() != null, Flow::getVersion, existing.getVersion())
+            .isNull(existing.getVersion() == null, Flow::getVersion));
+        if (rows == 0) {
+            throw new ServiceException("流程状态或版本已变更，请刷新后重试");
+        }
+        return rows;
     }
 
     /**
