@@ -33,7 +33,7 @@ class AiToolTenantUniqueSchemaTest {
     @Test
     @DisplayName("新装工具表的唯一性明确包含租户维度")
     void newInstallationHasTenantUniqueContract() throws Exception {
-        assertTrue(Pattern.compile("UNIQUE INDEX `uk_tenant_tool_name`\\s*\\(\\s*`tenant_id`\\s*,\\s*`tool_name`\\s*\\)").matcher(definition()).find());
+        assertTenantToolUnique(definition());
     }
 
     @Test
@@ -46,11 +46,32 @@ class AiToolTenantUniqueSchemaTest {
             "Only the tenant/name key may reserve tool names");
     }
 
+    /** 转储可以使用 UNIQUE KEY，但租户与名称的唯一列合同不能被降级或调换。 */
+    @Test
+    void equivalentDumpKeysKeepStrictTenantScope() {
+        for (String keyword : new String[]{"UNIQUE KEY", "UNIQUE INDEX"}) {
+            assertTenantToolUnique("  " + keyword + " `uk_tenant_tool_name` (`tenant_id`,`tool_name`) USING BTREE,");
+        }
+        for (String invalid : new String[]{"KEY `uk_tenant_tool_name` (`tenant_id`,`tool_name`)",
+            "UNIQUE KEY `uk_tenant_tool_name` (`tool_name`)",
+            "UNIQUE KEY `uk_tenant_tool_name` (`tool_name`,`tenant_id`)",
+            "UNIQUE KEY `uk_tenant_tool_name` (`tenant_id`,`tool_name`,`status`)"}) {
+            assertThrows(AssertionError.class, () -> assertTenantToolUnique(invalid));
+        }
+    }
+
+    /** 语义兼容两种唯一索引关键字，不允许全局占名、额外列或非唯一键。 */
+    private static void assertTenantToolUnique(String table) {
+        assertTrue(Pattern.compile("(?im)^\\s*UNIQUE\\s+(?:INDEX|KEY)\\s+`uk_tenant_tool_name`\\s*"
+            + "\\(\\s*`tenant_id`\\s*,\\s*`tool_name`\\s*\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$")
+            .matcher(table).find());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"000000", "001234", "factory_A"})
     @DisplayName("同名工具跨租户可各自持有，当前租户重复仍拒绝")
     void actualUniqueConstraintIsPerTenant(String otherTenant) throws Exception {
-        var matcher = Pattern.compile("UNIQUE INDEX `[^`]+`\\s*\\(([^)]+)\\)").matcher(definition());
+        var matcher = Pattern.compile("(?i)UNIQUE\\s+(?:INDEX|KEY)\\s+`uk_tenant_tool_name`\\s*\\(([^)]+)\\)").matcher(definition());
         assertTrue(matcher.find());
         String columns = matcher.group(1).replace("`", "");
         try (var connection = DriverManager.getConnection("jdbc:h2:mem:" + UUID.randomUUID());
