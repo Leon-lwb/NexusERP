@@ -356,6 +356,14 @@ public class ErpPurchaseStockLineageVerifier {
             IssueHead head = o.issueHeads().get(line.issueId()); RequirementDetail detail = o.requirements().get(line.requirementDetailId());
             require(head != null && detail != null && tenant.equals(line.tenantId()) && positive(line.materialId()) && line.materialId().equals(detail.materialId()) && unit.equals(line.baseUomId())
                 && "0".equals(line.delFlag()) && head.warehouseId().equals(line.warehouseId()) && nullablePositive(line.locationId()) && nullablePositive(line.batchId()), "领料原始行租户/物料/单位/需求归属未知");
+            // PARTIAL编辑允许切换下一次领料批次，当前选择不是所有历史分配的不可变批次承诺。
+            // 目标当前选择仍须归属完整认证的同物料/仓库/储位库存；兄弟物料不借本物料库存认证。
+            if (material.equals(line.materialId()) && line.batchId() != null) {
+                require(stocks.values().stream().anyMatch(stock -> line.materialId().equals(stock.materialId())
+                    && line.warehouseId().equals(stock.warehouseId())
+                    && (line.locationId() == null || line.locationId().equals(stock.locationId()))
+                    && line.batchId().equals(stock.batchId())), "领料当前批次选择缺少已认证库存维度归属");
+            }
             RequirementHead requirement = o.requirementHeads().get(detail.requirementId()); WorkOrder wo = o.workOrders().get(head.woId());
             require(requirement != null && wo != null && requirement.planId().equals(wo.planId()) && requirement.bomId().equals(wo.bomId())
                 && requirement.materialId().equals(wo.materialId()), "领料行MRP需求不属于原始工单计划/BOM/母物料");
@@ -386,8 +394,10 @@ public class ErpPurchaseStockLineageVerifier {
                 require(row.materialId().equals(line.materialId()), "原始领料/预留流水物料与原始领料行不符");
                 require(row.sourceDocCode() == null || head.issueCode().equals(row.sourceDocCode()), "领料流水原始单号不符");
                 StockRow stock = stocks.get(row.stockId());
-                require(line.warehouseId().equals(stock.warehouseId()) && (line.locationId() == null || line.locationId().equals(stock.locationId()))
-                    && (line.batchId() == null || line.batchId().equals(stock.batchId())), "领料原始行与引用库存分配维度不符");
+                // 历史批次以每笔实际流水为准；前序流水身份检查已逐笔校验TX与所引用库存的全部维度。
+                // 不能用后来切换的行批次重绑早期出库；仓库/储位未扩大支持范围，继续维持原约束。
+                require(line.warehouseId().equals(stock.warehouseId())
+                    && (line.locationId() == null || line.locationId().equals(stock.locationId())), "领料原始行与引用库存仓储维度不符");
                 require(!millisInstant(head.issueAtEpochMillis()).isAfter(millisInstant(row.txAtEpochMillis())), "流水早于原始领料单日期");
                 if ("PRODUCTION_ISSUE".equals(row.txType())) add(issuedByLine, line.lineId(), quantity(row.txQuantity(), scale));
             }

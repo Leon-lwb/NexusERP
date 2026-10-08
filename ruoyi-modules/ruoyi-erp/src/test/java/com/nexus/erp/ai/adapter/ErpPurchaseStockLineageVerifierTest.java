@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -28,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** Mapper doubles are unavoidable: no external databases or services are accessed. */
+/** 使用Mapper替身隔离持久层，测试不访问外部数据库或服务。 */
 class ErpPurchaseStockLineageVerifierTest {
     private static final String TENANT = "000000";
     private static final Long MATERIAL = 140L;
@@ -539,7 +540,7 @@ class ErpPurchaseStockLineageVerifierTest {
         f.transactions.add(change(change(rowTx(103L, "RESERVE", 0, "2", "5", "5", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -300), "stockId", 92L), "batchId", 82L));
         f.receiveDetail("quantity", q("5"));
         f.receiveDetails.add(change(change(f.receiveDetails.get(0), "detailId", 522L), "batchId", 82L));
-        f.issueLine("batchId", null); // Original issue line explicitly permits allocation across the two proven batches.
+        f.issueLine("batchId", null); // 此场景未指定当前批次，历史分配仍必须逐笔核验真实流水维度。
         f.snapshot = new InventorySnapshot(TENANT, MATERIAL, UNIT, 4, NOW, "+08:00", q("5"), q("2"), q("1"), q("5"), Set.of(91L, 92L),
             Map.of("wm_material_stock:91", "version=2;digest1", "wm_material_stock:92", "version=2;digest2", "bd_unit_of_measure:27", "conversionVersion=unit-v1;digest"));
         StockLineageSnapshot result = f.read();
@@ -547,6 +548,107 @@ class ErpPurchaseStockLineageVerifierTest {
         assertEquals(Map.of(701L, q("2")), result.frozenReservedByRequirementDetail());
         assertEquals(2, result.stocks().size());
         verify(f.mapper).lockTransactions(TENANT, MATERIAL, List.of(91L, 92L));
+    }
+
+    @ParameterizedTest(name = "当前选择批次 {0} 不能覆盖之前合法分批出库的真实批次")
+    @ValueSource(longs = {81L, 82L})
+    void latestMutableBatchSelectorDoesNotRebindHistoricalPostedTransactions(long selectedBatch) {
+        Fixture f = multiBatchPartialIssue();
+        f.issueLine("batchId", selectedBatch);
+        StockLineageSnapshot result = assertDoesNotThrow(f::read, "已核验的每笔历史分配不能被最新批次选择字段改绑");
+        assertEquals(2, result.stocks().size());
+        assertEquals(q("2"), result.inventory().quantity());
+        assertEquals(Map.of(), result.reservedByRequirementDetail());
+        assertEquals(Map.of(), result.frozenReservedByRequirementDetail());
+    }
+
+    @Test
+    void selectedBatchStillMustBelongToCertifiedTargetStockDimensions() {
+        Fixture f = multiBatchPartialIssue();
+        f.issueLine("batchId", 999L);
+        assertThrows(ServiceException.class, f::read, "可变选择字段不能改绑未知或他人批次");
+    }
+
+    @Test
+    void selectedBatchCannotBorrowCertifiedStockFromAnotherWarehouse() {
+        Fixture f = partialIssueWithAdditionalCertifiedBatch(9L, 19L);
+        // 行未指定储位，隔离仓库条件；既有历史流水和库存维度均不修改。
+        f.issueLine("locationId", null);
+        assertCurrentSelectorCannotBorrowCertifiedBatch(f);
+    }
+
+    @Test
+    void selectedBatchCannotBorrowCertifiedStockFromAnotherExplicitLocation() {
+        Fixture f = partialIssueWithAdditionalCertifiedBatch(8L, 18L);
+        assertEquals(28L, f.issueLines.get(0).locationId(), "行储位必须明确，不能使用 null 通配");
+        assertCurrentSelectorCannotBorrowCertifiedBatch(f);
+    }
+
+    private void assertCurrentSelectorCannotBorrowCertifiedBatch(Fixture f) {
+        f.issueLine("batchId", null);
+        StockLineageSnapshot control = assertDoesNotThrow(f::read, "选择为空时，额外库存及其独立原始入库链必须先完整认证");
+        assertEquals(Set.of(91L, 92L, 93L), control.inventory().stockIds());
+        assertEquals(3, control.stocks().size());
+        assertEquals(q("7"), control.inventory().quantity());
+        assertEquals(q("2"), control.inventory().frozenQuantity());
+
+        // 仅改变当前选择；必须命中新选择归属守卫，而非历史维度或数量校验。
+        f.issueLine("batchId", 83L);
+        ServiceException error = assertThrows(ServiceException.class, f::read);
+        assertEquals(ERROR + "领料当前批次选择缺少已认证库存维度归属", error.getMessage());
+    }
+
+    /** 额外批次拥有独立原始入库头/行/分配与收货流水，不借用旧历史分配。 */
+    private Fixture partialIssueWithAdditionalCertifiedBatch(long warehouse, long area) {
+        Fixture f = multiBatchPartialIssue();
+        f.stocks.add(new StockRow(93L, TENANT, MATERIAL, "27", warehouse, area, 29L, 83L, null,
+            q("5"), q("0"), 0L, 2, "0", time(-600), time(86400)));
+        if (area != 18L) {
+            f.areas.add(new AreaRow(area, TENANT, warehouse, 0L, 1L, 1L, "0"));
+        }
+        f.locations.add(new LocationRow(29L, TENANT, warehouse, area, 0L, 1L, "0"));
+        f.receiveHeads.add(new ReceiveHead(502L, TENANT, "RK502", "FINISHED", warehouse, area, 29L,
+            time(-700), time(-650), "0"));
+        f.receiveLines.add(new ReceiveLine(512L, TENANT, 502L, MATERIAL, "27", q("5"), "0"));
+        f.receiveDetails.add(new ReceiveDetail(523L, TENANT, 502L, 512L, MATERIAL, "27", q("5"),
+            warehouse, area, 29L, 83L, null, "0"));
+        TransactionRow receipt = rowTx(104L, "RECEIVE_IN", 1, "5", "0", "5", "WM_MATERIAL_RECEIVE", 502L, 512L, null, -600);
+        receipt = change(change(change(change(change(receipt, "stockId", 93L), "batchId", 83L),
+            "warehouseId", warehouse), "areaId", area), "locationId", 29L);
+        f.transactions.add(receipt);
+        f.snapshot = new InventorySnapshot(TENANT, MATERIAL, UNIT, 4, NOW, "+08:00", q("7"), q("0"), q("1"), q("2"),
+            Set.of(91L, 92L, 93L), Map.of("wm_material_stock:91", "version=2;digest1", "wm_material_stock:92", "version=2;digest2",
+                "wm_material_stock:93", "version=2;digest3", "bd_unit_of_measure:27", "conversionVersion=unit-v1;digest"));
+        return f;
+    }
+
+    @Test
+    void historicalTransactionBatchMismatchStillFailsAfterChangingCurrentSelector() {
+        Fixture f = multiBatchPartialIssue();
+        f.issueLine("batchId", 82L);
+        f.transactions.set(2, change(f.transactions.get(2), "batchId", 82L));
+        assertThrows(ServiceException.class, f::read, "每笔历史出库仍须和所引用真实库存的批次完全一致");
+    }
+
+    /** 两次合法部分出库分别使用两个批次；行批次字段仅代表当前/下一次选择。 */
+    private Fixture multiBatchPartialIssue() {
+        Fixture f = new Fixture();
+        f.stock("stockQuantity", q("2")); f.stock("reservedQuantity", q("0"));
+        StockRow second = change(change(change(f.stocks.get(0), "stockId", 92L), "batchId", 82L), "frozenFlag", 1L);
+        f.stocks.add(second);
+        f.transactions.clear();
+        f.transactions.add(rowTx(100L, "RECEIVE_IN", 1, "5", "0", "5", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600));
+        f.transactions.add(change(change(rowTx(101L, "RECEIVE_IN", 1, "5", "0", "5", "WM_MATERIAL_RECEIVE", 501L, 511L, null, -600), "stockId", 92L), "batchId", 82L));
+        f.transactions.add(rowTx(102L, "PRODUCTION_ISSUE", -1, "3", "5", "2", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -300));
+        f.transactions.add(change(change(rowTx(103L, "PRODUCTION_ISSUE", -1, "3", "5", "2", "WM_PRODUCTION_ISSUE", 601L, 611L, null, -200), "stockId", 92L), "batchId", 82L));
+        f.receiveDetail("quantity", q("5"));
+        f.receiveDetails.add(change(change(f.receiveDetails.get(0), "detailId", 522L), "batchId", 82L));
+        f.issueHead("status", "PARTIAL");
+        f.issueLine("issuedQty", q("6")); f.issueLine("shortQty", q("2")); f.issueLine("lineStatus", "PARTIAL");
+        f.requirement("issuedQuantity", q("6"));
+        f.snapshot = new InventorySnapshot(TENANT, MATERIAL, UNIT, 4, NOW, "+08:00", q("2"), q("0"), q("1"), q("2"), Set.of(91L, 92L),
+            Map.of("wm_material_stock:91", "version=2;digest1", "wm_material_stock:92", "version=2;digest2", "bd_unit_of_measure:27", "conversionVersion=unit-v1;digest"));
+        return f;
     }
 
     @Test
