@@ -15,6 +15,12 @@ const encryptHeader = 'encrypt-key';
 let downloadLoadingInstance: LoadingInstance;
 // 是否显示重新登录
 export const isRelogin = { show: false };
+
+/** 认证业务页面自行给出固定文案；此客户端标记只隔离错误副作用，不授予业务权限。 */
+type CertifiedErrorConfig = InternalAxiosRequestConfig & { _certifiedErrorBoundary?: boolean };
+const hasCertifiedErrorBoundary = (config?: InternalAxiosRequestConfig): boolean =>
+  (config as CertifiedErrorConfig | undefined)?._certifiedErrorBoundary === true;
+
 export const globalHeaders = () => {
   return {
     Authorization: 'Bearer ' + getToken(),
@@ -106,6 +112,11 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // 内部标记不发送到后端；固定会话的401迟到响应不能登出另一账号或弹出原始异常。
+    if (config.headers?.certifiedErrorBoundary === 'true') {
+      (config as CertifiedErrorConfig)._certifiedErrorBoundary = true;
+      delete config.headers.certifiedErrorBoundary;
+    }
     // 请求头语言(仅中文)
     config.headers['Content-Language'] = 'zh_CN';
 
@@ -172,21 +183,34 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (res: AxiosResponse) => {
-    if (import.meta.env.VITE_APP_ENCRYPT === 'true') {
-      // 加密后的 AES 秘钥
-      const keyStr = res.headers[encryptHeader];
-      // 加密
-      if (keyStr != null && keyStr != '') {
-        const data = res.data;
-        // 请求体 AES 解密
-        const base64Str = decrypt(keyStr);
-        // base64 解码 得到请求头的 AES 秘钥
-        const aesKey = decryptBase64(base64Str.toString());
-        // aesKey 解码 data
-        const decryptData = decryptWithAes(data, aesKey);
-        // 将结果 (得到的是 JSON 字符串) 转为 JSON
-        res.data = JSON.parse(decryptData);
+    const isolated = hasCertifiedErrorBoundary(res.config);
+    try {
+      if (import.meta.env.VITE_APP_ENCRYPT === 'true') {
+        // 加密后的 AES 秘钥
+        const keyStr = res.headers[encryptHeader];
+        // 加密
+        if (keyStr != null && keyStr != '') {
+          const data = res.data;
+          // 请求体 AES 解密
+          const base64Str = decrypt(keyStr);
+          // base64 解码 得到请求头的 AES 秘钥
+          const aesKey = decryptBase64(base64Str.toString());
+          // aesKey 解码 data
+          const decryptData = decryptWithAes(data, aesKey);
+          // 将结果 (得到的是 JSON 字符串) 转为 JSON
+          res.data = JSON.parse(decryptData);
+        }
       }
+    } catch (error) {
+      if (isolated) return Promise.reject(new Error('认证接口响应解码未确认，请通过业务页面只读核对。'));
+      throw error;
+    }
+    // 位于所有toast/通知/重新登录副作用之前；helper仍从真实HTTP及R信封区分明确拒绝和未知。
+    if (isolated) {
+      if (res.status === 200 && res.data && typeof res.data === 'object' && !Array.isArray(res.data) && res.data.code === HttpStatus.SUCCESS) {
+        return Promise.resolve(res.data);
+      }
+      return Promise.reject(new Error('认证接口结果未确认，请通过业务页面核对；禁止自动重发。'));
     }
     // 未设置状态码则默认成功状态
     const code = res.data.code || HttpStatus.SUCCESS;
@@ -244,6 +268,9 @@ service.interceptors.response.use(
     }
   },
   (error: any) => {
+    if (hasCertifiedErrorBoundary(error?.config)) {
+      return Promise.reject(new Error('认证接口网络或HTTP结果未确认，请保留原意图，只读核对。'));
+    }
     let { message } = error;
     if (message == 'Network Error') {
       message = '后端接口连接异常';
