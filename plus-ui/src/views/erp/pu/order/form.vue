@@ -7,9 +7,11 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <!-- 保存按钮，仅在非查看模式下显示 -->
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled && !sourceProtected">保存</el-button>
             <!-- 提交审批按钮 -->
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && !sourceProtected && form.status === 'DRAFT'"
+              >提交审批</el-button
+            >
             <!-- 查看流程按钮 -->
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <!-- 取消按钮 -->
@@ -19,6 +21,14 @@
       </template>
 
       <!-- 表单区域 -->
+      <el-alert
+        v-if="sourceProtected"
+        title="认证或未核实来源订单在此只读。请回订单列表使用认证报价／生命周期入口；新增须由认证请购转单，不用旧Flowable或普通保存补来源。"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="mb-4"
+      />
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <!-- 基本信息 -->
         <el-divider content-position="left">基本信息</el-divider>
@@ -53,7 +63,7 @@
         <el-alert
           v-if="!form.orderId && !isViewMode && !props.disabled"
           title="带申请来源的订单请在采购申请列表转单后编辑"
-          description="本页仅支持无申请来源的手工新增，转单与来源校验仍由服务端负责。"
+          description="本页不支持无申请来源的手工新增；新增须由认证请购转单，来源与写资格仍由服务端核验。"
           type="warning"
           :closable="false"
           show-icon
@@ -145,7 +155,7 @@
                 clearable
                 filterable
                 :loading="loadingFlow"
-                :disabled="isViewMode || props.disabled || form.status !== 'DRAFT'"
+                :disabled="isViewMode || props.disabled || sourceProtected || form.status !== 'DRAFT'"
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
@@ -175,7 +185,14 @@
 
         <!-- 流程选择警告 -->
         <el-alert
-          v-if="!isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          v-if="
+            !isViewMode &&
+            !props.disabled &&
+            !sourceProtected &&
+            !loadingFlow &&
+            flowOptions.length === 0 &&
+            (!form.selectFlowId || form.selectFlowId === '')
+          "
           type="warning"
           show-icon
           :closable="false"
@@ -189,16 +206,18 @@
         <!-- 明细操作按钮 -->
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled && !sourceProtected">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled && !sourceProtected"
+              >删除</el-button
+            >
           </el-col>
         </el-row>
 
         <!-- 订单明细表格 -->
         <el-table :data="lineList" @selection-change="handleLineSelectionChange" border>
-          <el-table-column type="selection" width="50" v-if="!isViewMode && !props.disabled" />
+          <el-table-column type="selection" width="50" v-if="!isViewMode && !props.disabled && !sourceProtected" />
           <el-table-column label="序号" type="index" width="60" />
           <el-table-column label="物料编码">
             <template #default="scope">
@@ -351,7 +370,19 @@
 
 <script setup lang="ts" name="PurchaseOrderForm">
 /** 导入采购订单相关的API方法 */
-import { addPurchaseOrder, getPurchaseOrder, updatePurchaseOrder, submitOrderFlow, getOrderProcId } from '@/api/erp/pu/order';
+import {
+  addPurchaseOrder,
+  getPurchaseOrder,
+  updatePurchaseOrder,
+  submitOrderFlow,
+  getOrderProcId,
+  getCertifiedOrderContext,
+  getCertifiedOrderDetail
+} from '@/api/erp/pu/order';
+import { getToken } from '@/utils/auth';
+import { createBusinessSession, normalizeBusinessId } from '@/utils/certified-business';
+import type { CertifiedBusinessSession } from '@/utils/certified-business';
+import type { CertifiedOrderDetail } from '@/api/erp/pu/order/types';
 /** 导入供应商管理API */
 import { listVendor } from '@/api/erp/bd/vendor';
 import { listUser } from '@/api/system/user';
@@ -396,7 +427,15 @@ const loadingFlow = ref(false);
 const flowOptions = ref([]);
 
 /** 表单禁用状态 */
-const formDisabled = computed(() => isViewMode.value || props.disabled);
+const sourceProtected = ref(true);
+const legacyWritePending = ref(false);
+const loadedCredential = ref<string | null>(null);
+const loadedActor = ref<{ tenantId: string; userId: string } | null>(null);
+const nativeOrderSnapshot = ref<CertifiedOrderDetail | null>(null);
+const originalOrderId = ref<string | null>(null);
+const detailRequestSeq = ref(0);
+const loadedRouteSignature = ref('');
+const formDisabled = computed(() => isViewMode.value || props.disabled || sourceProtected.value || legacyWritePending.value);
 
 /** 供应商选择对话框数据 */
 const vendorDialog = reactive({
@@ -479,12 +518,102 @@ onMounted(() => {
  * 根据ID获取采购订单详情
  * @param id 采购订单ID
  */
-function getInfo(id: any) {
-  getPurchaseOrder(id).then((res: any) => {
-    form.value = res.data;
-    lineList.value = res.data.lineList || res.data.puPurchaseOrderLineList || [];
-    tryAutoSelect();
-  });
+/** 源身份取自独立原生读取；编辑表单及流程props不能改写保护资格。 */
+function routeIdentity() {
+  return JSON.stringify([route.path, route.query.id, route.query.action, props.customFormData?.orderId]);
+}
+function ordinaryNative(data: CertifiedOrderDetail, id: string): boolean {
+  const h = data?.order;
+  return (
+    !!h &&
+    normalizeBusinessId(h.orderId) === id &&
+    data.genericEditAllowedHint === true &&
+    Array.isArray(data.allocations) &&
+    data.allocations.length === 0 &&
+    h.originalCommandPresent === false &&
+    h.version == null &&
+    h.quoteId == null &&
+    h.decisionRunId == null &&
+    h.decisionActionId == null &&
+    h.sourceRequestKey == null &&
+    (h.requisitionId == null || h.requisitionSourceType === 'MANUAL')
+  );
+}
+async function getInfo(id: any) {
+  const seq = ++detailRequestSeq.value;
+  const identity = routeIdentity();
+  sourceProtected.value = true;
+  nativeOrderSnapshot.value = null;
+  loadedCredential.value = null;
+  loadedActor.value = null;
+  try {
+    const key = normalizeBusinessId(id);
+    const session = createBusinessSession(() => getToken());
+    const actor = await getCertifiedOrderContext(session);
+    const native = await getCertifiedOrderDetail(key, session);
+    const res = await getPurchaseOrder(key, session);
+    session.assertCurrent();
+    if (seq !== detailRequestSeq.value || identity !== routeIdentity()) return;
+    if (!res.data || normalizeBusinessId(res.data.orderId) !== key || native.order.tenantId !== actor.tenantId) throw new Error('来源未确认');
+    form.value = JSON.parse(JSON.stringify(res.data));
+    lineList.value = form.value.lineList || form.value.puPurchaseOrderLineList || [];
+    nativeOrderSnapshot.value = JSON.parse(JSON.stringify(native));
+    loadedCredential.value = session.token;
+    loadedActor.value = { tenantId: actor.tenantId, userId: normalizeBusinessId(actor.userId) };
+    originalOrderId.value = key;
+    loadedRouteSignature.value = identity;
+    sourceProtected.value = !ordinaryNative(native, key);
+    if (!sourceProtected.value) tryAutoSelect();
+  } catch {
+    if (seq === detailRequestSeq.value) sourceProtected.value = true;
+  }
+}
+/** 验证、保存及Flowable派发各边界都绑定同一原单，不读取迟到回调的新表单ID。 */
+function assertOriginalFormBinding(id: string, identity: string, seq: number, flowId?: string) {
+  if (
+    isViewMode.value ||
+    props.disabled ||
+    sourceProtected.value ||
+    (getToken() ?? null) !== loadedCredential.value ||
+    originalOrderId.value !== id ||
+    normalizeBusinessId(form.value.orderId) !== id ||
+    loadedRouteSignature.value !== identity ||
+    routeIdentity() !== identity ||
+    detailRequestSeq.value !== seq ||
+    (flowId !== undefined && normalizeBusinessId(form.value.selectFlowId) !== flowId)
+  )
+    throw new Error('页面或来源已变化');
+}
+async function requireLegacyOrder(
+  id: string,
+  identity: string,
+  seq: number,
+  flowId?: string,
+  saved?: Record<string, unknown>
+): Promise<CertifiedBusinessSession> {
+  assertOriginalFormBinding(id, identity, seq, flowId);
+  const session = createBusinessSession(
+    () => getToken(),
+    () => assertOriginalFormBinding(id, identity, seq, flowId)
+  );
+  const actor = await getCertifiedOrderContext(session);
+  const native = await getCertifiedOrderDetail(id, session);
+  session.assertCurrent();
+  const expected = { ...nativeOrderSnapshot.value?.order };
+  if (saved) {
+    if (flowId !== undefined) expected.selectFlowId = flowId;
+    if (saved.vendorId != null) expected.vendorId = normalizeBusinessId(saved.vendorId);
+    if (typeof saved.orderNo === 'string') expected.orderNo = saved.orderNo;
+  }
+  if (
+    !ordinaryNative(native, id) ||
+    native.order.tenantId !== actor.tenantId ||
+    actor.tenantId !== loadedActor.value?.tenantId ||
+    normalizeBusinessId(actor.userId) !== loadedActor.value?.userId ||
+    JSON.stringify(native.order) !== JSON.stringify(expected)
+  )
+    throw new Error('旧路径来源未确认');
+  return session;
 }
 
 /**
@@ -546,34 +675,36 @@ function tryAutoSelect() {
 /**
  * 提交审批
  */
-function handleSubmitFlow() {
-  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      if (!form.value.selectFlowId) {
-        proxy.$modal.msgWarning('请先选择审批流程');
-        return;
-      }
-      form.value.lineList = lineList.value;
-      if (form.value.orderId != null) {
-        updatePurchaseOrder(form.value).then(() => {
-          submitOrderFlow(String(form.value.orderId), String(form.value.selectFlowId))
-            .then((res: any) => {
-              if (res.code === 200) {
-                proxy.$modal.msgSuccess('提交审批成功');
-                router.push('/erp/puExec/order');
-              } else {
-                proxy.$modal.msgError(res.msg || '提交审批失败');
-              }
-            })
-            .catch((error: any) => {
-              proxy.$modal.msgError('提交审批失败：' + error);
-            });
-        });
-      } else {
-        proxy.$modal.msgWarning('请先保存单据后再提交审批');
-      }
-    }
-  });
+async function handleSubmitFlow() {
+  if (isViewMode.value || props.disabled || sourceProtected.value || legacyWritePending.value || !form.value.orderId) return;
+  legacyWritePending.value = true;
+  try {
+    const id = normalizeBusinessId(form.value.orderId);
+    const identity = routeIdentity();
+    const seq = detailRequestSeq.value;
+    const flowId = normalizeBusinessId(form.value.selectFlowId);
+    const valid = await new Promise<boolean>((resolve) => (proxy.$refs['formRef'] as any).validate((result: boolean) => resolve(result)));
+    if (!valid) return;
+    const session = await requireLegacyOrder(id, identity, seq, flowId);
+    assertOriginalFormBinding(id, identity, seq, flowId);
+    const payload = JSON.parse(JSON.stringify({ ...form.value, lineList: lineList.value }));
+    await updatePurchaseOrder(payload, session);
+    session.assertCurrent();
+    await requireLegacyOrder(id, identity, seq, flowId, payload);
+    session.assertCurrent();
+    assertOriginalFormBinding(id, identity, seq, flowId);
+    const res: any = await submitOrderFlow(id, flowId, session);
+    session.assertCurrent();
+    assertOriginalFormBinding(id, identity, seq, flowId);
+    if (res.code === 200) {
+      proxy.$modal.msgSuccess('提交审批成功');
+      router.push('/erp/puExec/order');
+    } else proxy.$modal.msgWarning('审批提交未确认，请只读核对。');
+  } catch {
+    proxy.$modal.msgWarning('旧路径权限或原单来源未确认，不再提交审批；请使用认证入口或只读核对。');
+  } finally {
+    legacyWritePending.value = false;
+  }
 }
 
 /**
@@ -810,17 +941,29 @@ function recalcHeader() {
 /**
  * 提交表单
  */
-function submitForm() {
-  recalcLines();
-  form.value.lineList = lineList.value;
-  /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
-  if (autoGenFlag.value) {
-    form.value.orderNo = undefined;
+async function submitForm() {
+  if (isViewMode.value || props.disabled || sourceProtected.value || legacyWritePending.value || !form.value.orderId) {
+    proxy.$modal.msgWarning('认证或未知来源只能通过专属入口办理；不能用普通新增或编辑补源。');
+    return;
   }
-  (form.value.orderId ? updatePurchaseOrder(form.value) : addPurchaseOrder(form.value)).then(() => {
+  const id = normalizeBusinessId(form.value.orderId);
+  const identity = routeIdentity();
+  const seq = detailRequestSeq.value;
+  legacyWritePending.value = true;
+  try {
+    const session = await requireLegacyOrder(id, identity, seq);
+    recalcLines();
+    const payload = JSON.parse(JSON.stringify({ ...form.value, lineList: lineList.value }));
+    await updatePurchaseOrder(payload, session);
+    session.assertCurrent();
+    assertOriginalFormBinding(id, identity, seq);
     proxy.$modal.msgSuccess('保存成功');
     router.push('/erp/puExec/order');
-  });
+  } catch {
+    proxy.$modal.msgWarning('普通保存的原单、权限或结果未确认，请只读核对，禁止重复派发。');
+  } finally {
+    legacyWritePending.value = false;
+  }
 }
 
 /**

@@ -57,11 +57,18 @@
       </el-col>
       -->
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Goods" :disabled="single" @click="handleReceive()" v-hasPermi="['pu:order:edit']"> 收货联动 </el-button>
+        <el-button type="success" plain icon="Goods" :disabled="single" @click="handleReceive()" v-hasPermi="['pu:order:receive']">
+          收货联动
+        </el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Warning" @click="handleDiffReport()" v-hasPermi="['pu:order:list']"> 差异报表 </el-button>
       </el-col>
+      <el-col :span="1.5"
+        ><el-button type="primary" plain :disabled="single || mutationReadPending" @click="handleCertified()" v-hasPermi="['pu:order:query']"
+          >认证报价／生命周期</el-button
+        ></el-col
+      >
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -136,6 +143,7 @@
       <el-table-column label="备注" prop="remark" min-width="120" show-overflow-tooltip />
     </el-table>
 
+    <CertifiedOrderWorkflowDialog ref="certifiedOrderRef" @changed="getList" />
     <!-- 分页组件 -->
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
   </div>
@@ -150,13 +158,21 @@ import {
   delPurchaseOrder,
   receivePurchaseOrder,
   getDiffReport,
-  listOrderLines
+  listOrderLines,
+  getCertifiedOrderContext,
+  getCertifiedOrderDetail
 } from '@/api/erp/pu/order';
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { getToken } from '@/utils/auth';
+import { createBusinessSession, normalizeBusinessId } from '@/utils/certified-business';
+import type { CertifiedBusinessSession } from '@/utils/certified-business';
+import CertifiedOrderWorkflowDialog from './CertifiedOrderWorkflowDialog.vue';
 
 const router = useRouter();
+const certifiedOrderRef = ref<InstanceType<typeof CertifiedOrderWorkflowDialog>>();
+const mutationReadPending = ref(false);
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_order_status } = toRefs<any>(proxy.useDict('pu_purchase_order_status'));
 
@@ -185,7 +201,6 @@ const {
   showSearch,
   getList,
   handleQuery,
-  handleDelete,
   handleExport,
   handleSelectionChange
 } = useCrud({
@@ -207,24 +222,89 @@ function resetQuery() {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  router.push({ path: '/erp/pu/order/form', query: { action: 'add' } });
+  proxy.$modal.msgWarning('新增订单须由认证请购来源转单，不能用普通新增表单补来源。');
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row?: any) {
-  if (!row) {
-    if (ids.value.length !== 1) {
-      proxy.$modal.msgWarning('请选择一条数据进行修改');
-      return;
-    }
-    const selected = orderList.value.find((item: any) => item.orderId == ids.value[0]);
-    if (!selected) {
-      proxy.$modal.msgWarning('未找到选中的数据');
-      return;
-    }
-    row = selected;
+/** 专属入口只传精确身份，实际权限、详情和版本重新向服务端读取。 */
+function handleCertified(row?: any) {
+  const id = row?.orderId ?? (ids.value.length === 1 ? ids.value[0] : null);
+  if (id == null) {
+    proxy.$modal.msgWarning('请选择一张原订单。');
+    return;
   }
-  router.push({ path: '/erp/pu/order/form', query: { id: row.orderId, action: 'edit' } });
+  try {
+    certifiedOrderRef.value?.open(normalizeBusinessId(id));
+  } catch {
+    proxy.$modal.msgWarning('原订单身份不完整，不猜测ID。');
+  }
+}
+async function readOrdinaryOrder(id: string, session?: CertifiedBusinessSession) {
+  const fixed = session ?? createBusinessSession(() => getToken());
+  const actor = await getCertifiedOrderContext(fixed);
+  const native = await getCertifiedOrderDetail(id, fixed);
+  fixed.assertCurrent();
+  if (normalizeBusinessId(native.order.orderId) !== id || native.order.tenantId !== actor.tenantId) throw new Error('原生订单归属未知');
+  const h = native.order;
+  const ordinary =
+    native.genericEditAllowedHint === true &&
+    Array.isArray(native.allocations) &&
+    native.allocations.length === 0 &&
+    h.originalCommandPresent === false &&
+    h.version == null &&
+    h.quoteId == null &&
+    h.decisionRunId == null &&
+    h.decisionActionId == null &&
+    h.sourceRequestKey == null &&
+    (h.requisitionId == null || h.requisitionSourceType === 'MANUAL');
+  return { session: fixed, native, ordinary };
+}
+async function handleUpdate(row?: any) {
+  if (mutationReadPending.value) return;
+  const value = row?.orderId ?? (ids.value.length === 1 ? ids.value[0] : null);
+  if (value == null) {
+    proxy.$modal.msgWarning('请选择一张原订单。');
+    return;
+  }
+  mutationReadPending.value = true;
+  try {
+    const id = normalizeBusinessId(value);
+    const read = await readOrdinaryOrder(id);
+    read.session.assertCurrent();
+    if (!read.ordinary) {
+      handleCertified({ orderId: id });
+      return;
+    }
+    router.push({ path: '/erp/pu/order/form', query: { id, action: 'edit' } });
+  } catch {
+    proxy.$modal.msgWarning('订单来源或查询身份未确认，不进入普通编辑。');
+  } finally {
+    mutationReadPending.value = false;
+  }
+}
+async function handleDelete(row?: any) {
+  if (mutationReadPending.value) return;
+  const selected = (row?.orderId != null ? [row.orderId] : ids.value).map(normalizeBusinessId);
+  if (!selected.length) return;
+  mutationReadPending.value = true;
+  try {
+    const session = createBusinessSession(() => getToken());
+    for (const id of selected) {
+      if (!(await readOrdinaryOrder(id, session)).ordinary) throw new Error('认证或未知单不能旧删除');
+    }
+    await proxy.$modal.confirm('仅删除已核验的普通历史订单；认证或未知来源不允许通过旧入口删除。是否继续？');
+    for (const id of selected) {
+      if (!(await readOrdinaryOrder(id, session)).ordinary) throw new Error('来源变化');
+    }
+    session.assertCurrent();
+    await delPurchaseOrder(selected, session);
+    session.assertCurrent();
+    getList();
+  } catch {
+    proxy.$modal.msgWarning('旧删除权限、原生来源或结果未确认，请只读核对。');
+  } finally {
+    mutationReadPending.value = false;
+  }
 }
 
 /** 查看按钮操作 */
@@ -308,11 +388,23 @@ const getProgressColor = (row: any): string => {
 /**
  * 收货联动按钮操作
  */
-function handleReceive() {
-  receivePurchaseOrder(ids.value[0]).then((res: any) => {
-    proxy.$modal.msgSuccess('收货联动成功，到货通知单ID: ' + (res.data || ''));
+async function handleReceive() {
+  if (mutationReadPending.value || ids.value.length !== 1) return;
+  mutationReadPending.value = true;
+  try {
+    const id = normalizeBusinessId(ids.value[0]);
+    const read = await readOrdinaryOrder(id);
+    if (!read.ordinary) throw new Error('认证订单必须通过认证到货入口，不可复制数量为到货');
+    read.session.assertCurrent();
+    await receivePurchaseOrder(id, read.session);
+    read.session.assertCurrent();
+    proxy.$modal.msgSuccess('普通历史订单收货联动结果已返回，请回查通知。');
     getList();
-  });
+  } catch {
+    proxy.$modal.msgWarning('当前订单不能使用旧收货联动；请使用认证到货工作台或只读核对。');
+  } finally {
+    mutationReadPending.value = false;
+  }
 }
 
 /**
