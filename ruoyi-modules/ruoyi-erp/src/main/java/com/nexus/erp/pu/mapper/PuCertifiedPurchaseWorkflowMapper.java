@@ -40,10 +40,14 @@ public interface PuCertifiedPurchaseWorkflowMapper {
         +"AND unit=#{line.unit} AND apply_quantity=#{line.applyQuantity} AND approved_quantity=0 AND del_flag='0'")
     int approveLine(@Param("tenantId") String tenantId,@Param("line") RequisitionLine line,@Param("actorId") Long actor);
 
+    /**
+     * 显式写入认证转单的出生版本0及空报价引用，不依赖存量列的默认值。
+     * 只作用于本次新建未定价草稿；不补写历史NULL版本，也不伪造价格或到货承诺。
+     */
     @Insert("INSERT INTO pu_purchase_order (order_id,tenant_id,order_no,requisition_id,requisition_no,vendor_id,vendor_code,vendor_name,"
-        +"order_date,expected_arrival_date,status,buyer_id,buyer_name,create_by,create_dept,create_time,del_flag) VALUES ("
+        +"order_date,expected_arrival_date,status,certified_version,certified_terms_id,buyer_id,buyer_name,create_by,create_dept,create_time,del_flag) VALUES ("
         +"#{id},#{tenantId},#{number},#{head.requisitionId},#{head.requisitionNo},#{vendor.vendorId},#{vendor.vendorCode},#{vendor.vendorName},"
-        +"NOW(),NULL,'DRAFT',#{actorId},#{actorName},#{actorId},#{deptId},NOW(),'0')")
+        +"NOW(),NULL,'DRAFT',0,NULL,#{actorId},#{actorName},#{actorId},#{deptId},NOW(),'0')")
     int insertOrder(@Param("tenantId") String tenantId,@Param("id") Long id,@Param("number") String number,
         @Param("head") Head head,@Param("vendor") Vendor vendor,@Param("actorId") Long actor,@Param("actorName") String actorName,@Param("deptId") Long dept);
 
