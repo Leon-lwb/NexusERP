@@ -39,6 +39,9 @@ const action = (patch = {}) => ({
   ...patch
 });
 const purchase = { requisitionId: id, requisitionNo: 'PR20261007001', status: 'DRAFT' };
+/** 普通编辑语义必须来自明确MANUAL且无认证标记，不用缺失sourceType伪装可编辑来源。 */
+const manualPurchase = { ...purchase, sourceType: 'MANUAL', decisionIdempotencyKey: null, decisionRunId: null, decisionActionId: null };
+
 const scheduleAction = (patch = {}) =>
   action({
     actionType: 'CREATE_SCHEDULE_PLAN_DRAFT',
@@ -712,6 +715,8 @@ async function mountPurchase(query, get, componentProps = {}) {
       {
         name: 'purchase-boundaries',
         setup(builder) {
+          /** 父表单KeepAlive测试隔离新增对话框，专属组件另有真实挂载矩阵；纯协议仍真实bundle。 */
+          builder.onResolve({ filter: /CertifiedRequisitionWorkflowDialog\.vue$/ }, (args) => ({ path: args.path, external: true }));
           builder.onResolve({ filter: /^@\/(api|components)\// }, (args) => ({ path: args.path, external: true }));
         }
       }
@@ -739,6 +744,7 @@ async function mountPurchase(query, get, componentProps = {}) {
     (name) => {
       if (name.startsWith('@/api/')) return api;
       if (name.startsWith('@/components/')) return { render: () => h('div') };
+      if (name.endsWith('CertifiedRequisitionWorkflowDialog.vue')) return { render: () => h('div') };
       if (name === 'vue-router') return { useRoute: () => route, useRouter: () => ({ push: () => writes.push('navigate') }) };
       return require(name);
     },
@@ -859,7 +865,7 @@ for (const ordinaryAction of ['view', 'edit']) {
     test(`P2-1 普通${ordinaryAction}迟到A不能覆盖结果B${outcome}后的表单和明细`, async () => {
       const pending = [];
       const secondId = '9007199254740999';
-      const ordinaryA = { ...purchase, puPurchaseRequisitionLineList: [{ materialCode: '普通A行' }] };
+      const ordinaryA = { ...manualPurchase, puPurchaseRequisitionLineList: [{ materialCode: '普通A行' }] };
       const resultB = {
         requisitionId: secondId,
         requisitionNo: 'PR20261007002',
@@ -892,7 +898,7 @@ for (const ordinaryAction of ['view', 'edit']) {
   }
   test(`P2-1 普通${ordinaryAction}在原路由仍正常回写，不改变编辑/查看语义`, async () => {
     const mounted = await mountPurchase({ id, action: ordinaryAction }, async () => ({
-      data: { ...purchase, puPurchaseRequisitionLineList: [{ materialCode: '普通有效明细' }] }
+      data: { ...manualPurchase, puPurchaseRequisitionLineList: [{ materialCode: '普通有效明细' }] }
     }));
     try {
       assert.match(text(mounted.root), /PR20261007001.*普通有效明细/s, '当前普通详情正常展示单据和明细');
@@ -905,7 +911,7 @@ for (const ordinaryAction of ['view', 'edit']) {
 }
 for (const disabled of [true, false]) {
   test(`P2-1 props流程嵌入disabled=${disabled}仍由原payload分支加载和更新`, async () => {
-    const payload = reactive({ ...purchase, requisitionNo: 'FLOW20261007001', puPurchaseRequisitionLineList: [{ materialCode: '流程明细' }] });
+    const payload = reactive({ ...manualPurchase, requisitionNo: 'FLOW20261007001', puPurchaseRequisitionLineList: [{ materialCode: '流程明细' }] });
     const mounted = await mountPurchase(
       {},
       async () => {
@@ -973,8 +979,8 @@ for (const ordinaryAction of ['view', 'edit']) {
   for (const oldResponseTime of ['切出期间', '新响应之后']) {
     test(`质量回归 普通${ordinaryAction} pending→切出→KeepAlive返回，${oldResponseTime}迟到旧响应不能阻止恢复或覆盖新单`, async () => {
       const pending = [];
-      const oldRecord = { ...purchase, requisitionNo: 'OLD-PENDING', puPurchaseRequisitionLineList: [{ materialCode: '旧响应明细' }] };
-      const newRecord = { ...purchase, requisitionNo: 'RESTORED-CURRENT', puPurchaseRequisitionLineList: [{ materialCode: '恢复新明细' }] };
+      const oldRecord = { ...manualPurchase, requisitionNo: 'OLD-PENDING', puPurchaseRequisitionLineList: [{ materialCode: '旧响应明细' }] };
+      const newRecord = { ...manualPurchase, requisitionNo: 'RESTORED-CURRENT', puPurchaseRequisitionLineList: [{ materialCode: '恢复新明细' }] };
       const mounted = await mountPurchase({ id, action: ordinaryAction }, () => new Promise((resolve, reject) => pending.push({ resolve, reject })));
       try {
         assert.deepEqual(mounted.calls, [id], '首次普通详情请求仍按合法ID查询');
@@ -1013,7 +1019,7 @@ for (const ordinaryAction of ['view', 'edit']) {
     });
   }
   test(`质量回归 已加载普通${ordinaryAction}切标签返回不重查，${ordinaryAction === 'edit' ? '未保存修改不被抹掉' : '只读内容保持'}`, async () => {
-    const mounted = await mountPurchase({ id, action: ordinaryAction }, async () => ({ data: { ...purchase, requisitionName: '原申请名称' } }));
+    const mounted = await mountPurchase({ id, action: ordinaryAction }, async () => ({ data: { ...manualPurchase, requisitionName: '原申请名称' } }));
     try {
       if (ordinaryAction === 'edit') {
         const input = mounted.inputs.find((item) => item.placeholder === '请输入申请名称');
@@ -1041,7 +1047,7 @@ for (const ordinaryAction of ['view', 'edit']) {
   test(`质量回归 决策结果返回合法普通${ordinaryAction}必须重新加载普通单据并恢复非结果模式`, async () => {
     const ordinaryId = '9007199254740999';
     const ordinary = {
-      ...purchase,
+      ...manualPurchase,
       requisitionId: ordinaryId,
       requisitionNo: 'ORDINARY-RETURN',
       puPurchaseRequisitionLineList: [{ materialCode: '普通返回明细' }]
@@ -1086,7 +1092,11 @@ for (const query of [
 }
 for (const disabled of [true, false]) {
   test(`质量回归 props流程嵌入disabled=${disabled}切标签及带普通参数返回不抢占payload`, async () => {
-    const payload = reactive({ ...purchase, requisitionNo: 'FLOW-KEEPALIVE', puPurchaseRequisitionLineList: [{ materialCode: '流程保持明细' }] });
+    const payload = reactive({
+      ...manualPurchase,
+      requisitionNo: 'FLOW-KEEPALIVE',
+      puPurchaseRequisitionLineList: [{ materialCode: '流程保持明细' }]
+    });
     const mounted = await mountPurchase({}, async () => ({ data: { ...purchase, requisitionNo: '错误路由单据' } }), {
       disabled,
       customFormData: payload

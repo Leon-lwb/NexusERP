@@ -61,8 +61,20 @@
       </el-col>
       -->
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Position" :disabled="single" @click="handleConvert()" v-hasPermi="['pu:requisition:edit']">
+        <el-button
+          type="success"
+          plain
+          icon="Position"
+          :disabled="single || selectedProtected"
+          @click="handleConvert()"
+          v-hasPermi="['pu:requisition:edit']"
+        >
           转单
+        </el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button v-hasPermi="['pu:requisition:query']" type="primary" plain icon="Connection" :disabled="single" @click="handleCertifiedWorkflow()">
+          认证生命周期
         </el-button>
       </el-col>
       <el-col :span="1.5">
@@ -101,6 +113,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     <el-alert type="warning" show-icon :closable="false" title="旧低库存生成已暂停：须具备完整可信来源，不会把无库存记录当成 0 或用普通 BO 新增。" />
     <CertifiedPurchaseDialog ref="certifiedPurchaseDialogRef" @created="getList" />
+    <CertifiedRequisitionWorkflowDialog ref="certifiedWorkflowDialogRef" @changed="getList" />
   </div>
 </template>
 
@@ -117,8 +130,11 @@ import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import CertifiedPurchaseDialog from './CertifiedPurchaseDialog.vue';
+import CertifiedRequisitionWorkflowDialog from './CertifiedRequisitionWorkflowDialog.vue';
+import { isProtectedRequisitionHint, normalizeRequisitionId } from './certifiedWorkflow';
 
 const certifiedPurchaseDialogRef = ref<InstanceType<typeof CertifiedPurchaseDialog>>();
+const certifiedWorkflowDialogRef = ref<InstanceType<typeof CertifiedRequisitionWorkflowDialog>>();
 
 const router = useRouter();
 // 获取当前实例并获取字典数据
@@ -189,6 +205,11 @@ function handleUpdate(row?: any) {
     }
     row = selected;
   }
+  if (isProtectedRequisitionHint(row)) {
+    proxy.$modal.msgWarning('认证来源不可普通编辑，请使用认证生命周期入口；当前仅打开只读详情');
+    router.push({ path: '/erp/pu/requisition/form', query: { id: row.requisitionId, action: 'view' } });
+    return;
+  }
   router.push({ path: '/erp/pu/requisition/form', query: { id: row.requisitionId, action: 'edit' } });
 }
 
@@ -209,10 +230,43 @@ function handleView(row?: any) {
   router.push({ path: '/erp/pu/requisition/form', query: { id: row.requisitionId, action: 'view' } });
 }
 
+/** 只比较精确字符串身份，不把雪花ID经Number或宽松等号截断。 */
+const selectedRequisition = computed(() => {
+  if (ids.value.length !== 1) return undefined;
+  try {
+    const selectedId = normalizeRequisitionId(ids.value[0]);
+    return requisitionList.value.find((row: any) => {
+      try {
+        return normalizeRequisitionId(row.requisitionId) === selectedId;
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return undefined;
+  }
+});
+/** 来源未知或有认证标记时禁止旧写提示；实际来源与权限仍由后端负责。 */
+const selectedProtected = computed(() => isProtectedRequisitionHint(selectedRequisition.value));
+
+/** 专属面板只接收身份，内部重新核验主体、原生详情与版本，不传列表数量或认证结论。 */
+function handleCertifiedWorkflow() {
+  const selected = selectedRequisition.value;
+  if (!selected) {
+    proxy.$modal.msgWarning('请选择身份明确的一张采购申请');
+    return;
+  }
+  certifiedWorkflowDialogRef.value?.open(normalizeRequisitionId(selected.requisitionId));
+}
+
 /**
  * 转单按钮操作 - 将请购单转换为采购订单
  */
 function handleConvert() {
+  if (selectedProtected.value) {
+    proxy.$modal.msgWarning('认证来源或保护事实未知，禁止旧转单；请使用认证生命周期入口');
+    return;
+  }
   convertPurchaseRequisition(ids.value[0]).then(() => {
     proxy.$modal.msgSuccess('转单成功');
     getList();

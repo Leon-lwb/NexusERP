@@ -4,7 +4,7 @@
  */
 export interface PurchaseRequisitionVO {
   /** 请购单ID */
-  requisitionId?: number;
+  requisitionId?: string | number;
   /** 请购单编号 */
   requisitionNo?: string;
   /** 请购单名称 */
@@ -25,6 +25,16 @@ export interface PurchaseRequisitionVO {
   sourceType?: string;
   /** 请购单状态 */
   status?: string;
+  /** 乐观锁版本；NULL 或非法数值绝不能按 0 处理。 */
+  version?: number | null;
+  /** 原 AI 决策运行 ID，雪花 ID 必须保留精确字符串。 */
+  decisionRunId?: string | number | null;
+  /** 原 AI 决策动作 ID。 */
+  decisionActionId?: string | number | null;
+  /** 原认证命令的租户内幂等键；仅作候选提示，不证明永久 command 存在。 */
+  decisionIdempotencyKey?: string | null;
+  /** 已绑定的 Flowable 审批流；绑定时禁止直接认证状态转换。 */
+  selectFlowId?: string | number | null;
   /** 备注 */
   remark?: string;
   /** 请购单行项列表 */
@@ -115,4 +125,39 @@ export interface CertifiedPurchaseResponse<T> {
   code: number;
   msg?: string;
   data?: T;
+}
+
+/** 只读查询权限下的实际主体及 UI 权限提示；布尔值不签发写授权。 */
+export interface CertifiedRequisitionWorkflowContext {
+  tenantId: string;
+  userId: string | number;
+  approveAllowed: boolean;
+  convertAllowed: boolean;
+}
+
+/** 服务端分配账本事件原值，仅用于展示，不由前端计算数量或业务事实。 */
+export interface CertifiedRequisitionWorkflowAllocation {
+  eventId: string | number;
+  allocationId: string | number;
+  operation: string;
+  fromStatus: string;
+  toStatus: string;
+  occupiedBefore: string | number;
+  occupiedAfter: string | number;
+  requisitionLineId: string | number | null;
+  orderLineId: string | number | null;
+  actorId: string | number;
+  replayed: boolean;
+}
+
+/** 认证批准/转单的整单结果，与旧可信创建的 Result 保持独立。 */
+export interface CertifiedRequisitionWorkflowResult {
+  requisitionId: string | number;
+  requisitionNo: string;
+  status: string;
+  version: number;
+  orderId: string | number | null;
+  orderNo: string | null;
+  replayed: boolean;
+  allocations: CertifiedRequisitionWorkflowAllocation[];
 }
