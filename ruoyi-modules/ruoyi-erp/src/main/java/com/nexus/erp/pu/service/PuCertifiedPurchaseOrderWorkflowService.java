@@ -54,6 +54,27 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         this.mapper=Objects.requireNonNull(mapper);this.sources=Objects.requireNonNull(sources);this.lifecycle=Objects.requireNonNull(lifecycle);
         this.certification=Objects.requireNonNull(certification);this.sourceGate=new PuCertifiedPurchaseLifecycleSourceGate(sources,qualification);
     }
+    /** 页面主体提示；query与写权限独立，实际写操作仍复用原actor、来源和事务守卫。 */
+    public record WorkflowContext(String tenantId, Long userId, boolean termsAddAllowed,
+        boolean termsConfirmAllowed, boolean approveAllowed, boolean closeAllowed,
+        boolean cancelAllowed, boolean priceVisible) { }
+
+    /**
+     * 读取真实登录主体及按钮权限，不获取ERP连接，也不对采购来源签发认证。
+     *
+     * @return 当前主体和各操作提示；审批仍同时要求批准及价格权限
+     */
+    public WorkflowContext currentWorkflowContext() {
+        Actor actor = actor("pu:order:query");
+        boolean add = StpUtil.hasPermission("pu:order:terms:add");
+        boolean confirm = StpUtil.hasPermission("pu:order:terms:confirm");
+        boolean price = StpUtil.hasPermission("pu:order:price");
+        return new WorkflowContext(actor.tenantId(), actor.userId(), add, confirm,
+            StpUtil.hasPermission("pu:order:approve") && price,
+            StpUtil.hasPermission("pu:order:close"), StpUtil.hasPermission("pu:order:cancel"),
+            add || confirm || price);
+    }
+
     /** 录入不等于批准：人工提供的完整条款以不可变记录保存，并绑定 ERP 读取的数量。 */
     public QuoteResult recordTerms(Long id,SupplierTermsRequest request) {
         Actor actor=actor("pu:order:terms:add");validateTerms(id,request);String requestHash=termsRequestHash(actor,id,request);
