@@ -17,6 +17,17 @@ import org.springframework.web.bind.annotation.*;
 public class PuCertifiedPurchaseWorkflowController {
     private final PuCertifiedPurchaseWorkflowService service;
     public PuCertifiedPurchaseWorkflowController(PuCertifiedPurchaseWorkflowService service) {this.service=service;}
+    /**
+     * 读取生命周期页面当前主体；不复用创建入口的新增权限，不接受客户端身份或认证标志。
+     *
+     * @return 当前主体及操作按钮提示，实际写操作仍走原状态机守卫
+     */
+    @SaCheckPermission("pu:requisition:query")
+    @GetMapping("/workflow-context")
+    public R<PuCertifiedPurchaseWorkflowService.WorkflowContext> workflowContext() {
+        return R.ok(service.currentWorkflowContext());
+    }
+
     public record VersionRequest(@NotNull @PositiveOrZero Integer expectedVersion) { }
     @SaCheckPermission("pu:requisition:approve")
     @PostMapping("/{id}/approve")
