@@ -347,7 +347,8 @@ def _rows(rows, fields, identity):
     return by_id
 
 
-def _metadata(metadata):
+def _metadata_structure(metadata):
+    """只验证共同物理结构；自动更新许可由各自入口的明确策略决定。"""
     _shape(metadata, ("tables", "columns", "uniqueKeys", "nativeColumns", "orderUpdateTriggers", "orderAutomaticUpdates"))
     _shape(metadata["tables"], REQUIRED_TABLES, "NATIVE_METADATA_UNKNOWN")
     _require(all(v == "InnoDB" for v in metadata["tables"].values()), "NON_TRANSACTIONAL_SOURCE")
@@ -394,6 +395,11 @@ def _metadata(metadata):
             _text(name, 64)
         _require(len(names) == len(set(names)) and set(names) == NATIVE_COLUMNS[table]
                  and required.issubset(set(names)), "NATIVE_ROW_COLUMNS")
+
+
+def _metadata(metadata):
+    """原 full-preimage 策略不变：仍拒绝所有触发器和自动更新列。"""
+    _metadata_structure(metadata)
     _require(type(metadata["orderUpdateTriggers"]) is list and not metadata["orderUpdateTriggers"], "ORDER_UPDATE_TRIGGER")
     _require(type(metadata["orderAutomaticUpdates"]) is list and not metadata["orderAutomaticUpdates"], "ORDER_AUTOMATIC_UPDATE")
 
@@ -449,7 +455,8 @@ def _fingerprints(order, ids, req_lines):
              "ORIGINAL_FINGERPRINT_MISMATCH")
 
 
-def _order(order, ids, metadata):
+def _order_structure(order, ids, metadata):
+    """共享完整原生结构/金额/因果门禁，不签发任何指纹来源证明。"""
     _shape(order, ORDER_FIELDS)
     _require(order["nativeVersion"] is None, "NATIVE_VERSION_NOT_NULL")
     head, command = _shape(order["head"], HEAD_FIELDS), _shape(order["command"], COMMAND_FIELDS)
@@ -558,7 +565,6 @@ def _order(order, ids, metadata):
                  and _time(ledger["transfer_time"]) >= order_created, "NATIVE_CAUSAL_TIME")
         ledger_by_req[rid] = ledger
     _require(set(ledger_by_req) == set(req_lines), "LEDGER_COVERAGE")
-    _fingerprints(order, ids, req_lines)
     native = _shape(order["nativeRows"], ("head", "lines"))
     _shape(native["head"], metadata["nativeColumns"]["pu_purchase_order"], "NATIVE_FULL_ROW_MISSING")
     _require(native["head"]["certified_version"] is None and all(native["head"][k] == v for k, v in head.items()), "NATIVE_PROJECTION_MISMATCH")
@@ -575,6 +581,13 @@ def _order(order, ids, metadata):
         _require(lid in lines and lid not in found and all(row[k] == v for k, v in lines[lid].items()), "NATIVE_PROJECTION_MISMATCH")
         _require(row["create_by"] == native["head"]["create_by"], "NATIVE_CREATION_IDENTITY")
         found.add(lid)
+    return oid, req_lines
+
+
+def _order(order, ids, metadata):
+    """原入口仍要求完整历史 source/catalog 前像，不接受回执替代。"""
+    oid, req_lines = _order_structure(order, ids, metadata)
+    _fingerprints(order, ids, req_lines)
     return oid
 
 
