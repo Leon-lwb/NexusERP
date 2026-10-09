@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "c5f79c64-021e-4728-9319-e8fe66710946",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\candidate.json",
+  "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+  "specification": {
+    "sha256": "4ca96d496b6327155721a466ccf149401b2aee799db562205dd2f72112fc0188",
+    "bytes": 15396
+  },
+  "artifact": {
+    "sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+    "bytes": 793986
+  }
+}

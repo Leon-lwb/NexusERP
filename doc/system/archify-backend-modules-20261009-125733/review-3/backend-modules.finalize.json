@@ -1,0 +1,2085 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-10-09T05:19:23.900Z",
+  "specification": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\candidate.json",
+    "sha256": "4ca96d496b6327155721a466ccf149401b2aee799db562205dd2f72112fc0188",
+    "bytes": 15396
+  },
+  "artifact": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+    "sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+    "bytes": 793986
+  },
+  "stages": {
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "D:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\MyPC\\.dsh\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "architecture",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\candidate.json",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "E:\\Nexus\\nexus-erp",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "4ca96d496b6327155721a466ccf149401b2aee799db562205dd2f72112fc0188",
+          "bytes": 15396
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 4905,
+      "command": [
+        "D:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\MyPC\\.dsh\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "architecture",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\candidate.json",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "E:\\Nexus\\nexus-erp",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "c5f79c64-021e-4728-9319-e8fe66710946",
+        "ok": true,
+        "command": "deliver",
+        "type": "architecture",
+        "input": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\candidate.json",
+        "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+        "specification": {
+          "sha256": "4ca96d496b6327155721a466ccf149401b2aee799db562205dd2f72112fc0188",
+          "bytes": 15396
+        },
+        "artifact": {
+          "sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+          "bytes": 793986
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "evidence": {
+          "verified": true,
+          "repository": "https://gitee.com/helloworld_wh18/nexus-erp",
+          "revision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+          "references": 28,
+          "linkMode": "local-only"
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 882,
+      "command": [
+        "D:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\MyPC\\.dsh\\skills\\archify\\bin\\archify.mjs",
+        "check",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+        "artifact": {
+          "sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+          "bytes": 793986
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "metrics": {
+            "properCrossings": 0,
+            "resolvedCrossovers": 38,
+            "ambiguousCorridors": 0,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 4.9,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 6.179401993355482,
+            "maxBends": 6,
+            "routesOverSuggestedBends": 15,
+            "maxStretch": 1.686,
+            "routesOverSuggestedStretch": 2,
+            "minSegmentPx": 16,
+            "minInteriorSegmentPx": 16,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [
+              {
+                "left": {
+                  "id": "admin-erp",
+                  "from": "admin",
+                  "to": "erp",
+                  "label": "直接引用",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "right": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "point": [
+                  505.79999999999995,
+                  225
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-erp",
+                  "from": "admin",
+                  "to": "erp",
+                  "label": "直接引用",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "right": {
+                  "id": "admin-iot",
+                  "from": "admin",
+                  "to": "iot",
+                  "label": "直接引用",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "point": [
+                  505.79999999999995,
+                  200
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-erp",
+                  "from": "admin",
+                  "to": "erp",
+                  "label": "直接引用",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "right": {
+                  "id": "admin-flow",
+                  "from": "admin",
+                  "to": "flow",
+                  "label": "直接引用",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
+                },
+                "point": [
+                  416,
+                  306
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-erp",
+                  "from": "admin",
+                  "to": "erp",
+                  "label": "直接引用",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  27,
+                  400
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-mes",
+                  "from": "admin",
+                  "to": "mes",
+                  "label": "直接引用",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "admin-ai",
+                  "from": "admin",
+                  "to": "ai",
+                  "label": "直接引用",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "point": [
+                  580.0000000000001,
+                  347.00000000000006
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-mes",
+                  "from": "admin",
+                  "to": "mes",
+                  "label": "直接引用",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "admin-flow",
+                  "from": "admin",
+                  "to": "flow",
+                  "label": "直接引用",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
+                },
+                "point": [
+                  415.99999999999994,
+                  347
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-mes",
+                  "from": "admin",
+                  "to": "mes",
+                  "label": "直接引用",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "flow-to-ai",
+                  "from": "flow",
+                  "to": "ai",
+                  "label": "直接依赖",
+                  "collectionIndex": 11,
+                  "artifactIndex": 12
+                },
+                "point": [
+                  394.2,
+                  401.05
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-mes",
+                  "from": "admin",
+                  "to": "mes",
+                  "label": "直接引用",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  394.20000000000005,
+                  504
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-mes",
+                  "from": "admin",
+                  "to": "mes",
+                  "label": "直接引用",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "flow-contracts",
+                  "from": "flow",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "point": [
+                  394.2,
+                  474
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "right": {
+                  "id": "admin-ai",
+                  "from": "admin",
+                  "to": "ai",
+                  "label": "直接引用",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "point": [
+                  535.8999999999999,
+                  225
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "right": {
+                  "id": "admin-flow",
+                  "from": "admin",
+                  "to": "flow",
+                  "label": "直接引用",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
+                },
+                "point": [
+                  416,
+                  225
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "right": {
+                  "id": "flow-to-ai",
+                  "from": "flow",
+                  "to": "ai",
+                  "label": "直接依赖",
+                  "collectionIndex": 11,
+                  "artifactIndex": 12
+                },
+                "point": [
+                  356.6,
+                  401.05
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "right": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  356.6,
+                  504
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "right": {
+                  "id": "flow-contracts",
+                  "from": "flow",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "point": [
+                  356.6,
+                  474
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-iot",
+                  "from": "admin",
+                  "to": "iot",
+                  "label": "直接引用",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "right": {
+                  "id": "admin-ai",
+                  "from": "admin",
+                  "to": "ai",
+                  "label": "直接引用",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "point": [
+                  535.8999999999999,
+                  200
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-iot",
+                  "from": "admin",
+                  "to": "iot",
+                  "label": "直接引用",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "right": {
+                  "id": "admin-flow",
+                  "from": "admin",
+                  "to": "flow",
+                  "label": "直接引用",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
+                },
+                "point": [
+                  416,
+                  200
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-iot",
+                  "from": "admin",
+                  "to": "iot",
+                  "label": "直接引用",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  19,
+                  400
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "admin-workflow-tools",
+                  "from": "admin",
+                  "to": "workflow-tools",
+                  "label": "直接引用",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "point": [
+                  638.1,
+                  314
+                ],
+                "sharedNode": "admin"
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "erp-to-workflow-tools",
+                  "from": "erp",
+                  "to": "workflow-tools",
+                  "label": "引用 Flowable",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "point": [
+                  753.8000000000001,
+                  834.0000000000001
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "mes-to-workflow-tools",
+                  "from": "mes",
+                  "to": "workflow-tools",
+                  "label": "引用 Flowable",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
+                },
+                "point": [
+                  753.8,
+                  753
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  580,
+                  1007
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  824.1999999999999,
+                  504
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "mes-contracts",
+                  "from": "mes",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 20,
+                  "artifactIndex": 21
+                },
+                "point": [
+                  824.1999999999999,
+                  422
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "ai-contracts",
+                  "from": "ai",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 22,
+                  "artifactIndex": 23
+                },
+                "point": [
+                  824.1999999999998,
+                  394
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "flow-contracts",
+                  "from": "flow",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "point": [
+                  824.1999999999999,
+                  474
+                ]
+              },
+              {
+                "left": {
+                  "id": "admin-workflow-tools",
+                  "from": "admin",
+                  "to": "workflow-tools",
+                  "label": "直接引用",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "right": {
+                  "id": "iot-contracts",
+                  "from": "iot",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "point": [
+                  1143,
+                  415
+                ]
+              },
+              {
+                "left": {
+                  "id": "station-to-mes",
+                  "from": "station",
+                  "to": "mes",
+                  "label": "直接依赖",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "right": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  314,
+                  730
+                ]
+              },
+              {
+                "left": {
+                  "id": "erp-to-workflow-tools",
+                  "from": "erp",
+                  "to": "workflow-tools",
+                  "label": "引用 Flowable",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "right": {
+                  "id": "workflow-tools-to-platform",
+                  "from": "workflow-tools",
+                  "to": "platform",
+                  "label": "引用 System",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "point": [
+                  846,
+                  834.0000000000001
+                ],
+                "sharedNode": "workflow-tools"
+              },
+              {
+                "left": {
+                  "id": "erp-to-workflow-tools",
+                  "from": "erp",
+                  "to": "workflow-tools",
+                  "label": "引用 Flowable",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  433.1499999999999,
+                  1007
+                ]
+              },
+              {
+                "left": {
+                  "id": "workflow-tools-to-platform",
+                  "from": "workflow-tools",
+                  "to": "platform",
+                  "label": "引用 System",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  564.9499999999971,
+                  1007
+                ]
+              },
+              {
+                "left": {
+                  "id": "iot-to-platform",
+                  "from": "iot",
+                  "to": "platform",
+                  "label": "引用 System",
+                  "collectionIndex": 15,
+                  "artifactIndex": 16
+                },
+                "right": {
+                  "id": "iot-contracts",
+                  "from": "iot",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "point": [
+                  365,
+                  1228
+                ],
+                "sharedNode": "iot"
+              },
+              {
+                "left": {
+                  "id": "platform-to-common-base",
+                  "from": "platform",
+                  "to": "common-base",
+                  "label": "成员引用",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  846,
+                  1078
+                ]
+              },
+              {
+                "left": {
+                  "id": "demo-to-common-base",
+                  "from": "demo",
+                  "to": "common-base",
+                  "label": "成员引用",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "right": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "point": [
+                  846,
+                  1092
+                ]
+              },
+              {
+                "left": {
+                  "id": "demo-to-common-base",
+                  "from": "demo",
+                  "to": "common-base",
+                  "label": "成员引用",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "right": {
+                  "id": "iot-contracts",
+                  "from": "iot",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "point": [
+                  795,
+                  1228
+                ]
+              },
+              {
+                "left": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "right": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  314,
+                  1007
+                ]
+              },
+              {
+                "left": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "right": {
+                  "id": "iot-contracts",
+                  "from": "iot",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "point": [
+                  846,
+                  1228
+                ]
+              },
+              {
+                "left": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "right": {
+                  "id": "mes-contracts",
+                  "from": "mes",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 20,
+                  "artifactIndex": 21
+                },
+                "point": [
+                  795,
+                  504
+                ],
+                "sharedNode": "common-contracts"
+              },
+              {
+                "left": {
+                  "id": "mes-contracts",
+                  "from": "mes",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 20,
+                  "artifactIndex": 21
+                },
+                "right": {
+                  "id": "flow-contracts",
+                  "from": "flow",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "point": [
+                  795,
+                  474
+                ],
+                "sharedNode": "common-contracts"
+              }
+            ],
+            "detours": [
+              {
+                "relationship": {
+                  "id": "build-admin",
+                  "from": "root",
+                  "to": "admin",
+                  "label": "构建聚合",
+                  "collectionIndex": 0,
+                  "artifactIndex": 1
+                },
+                "bends": 4,
+                "stretch": 1.206
+              },
+              {
+                "relationship": {
+                  "id": "build-extend",
+                  "from": "root",
+                  "to": "extend",
+                  "label": "经 extend 聚合",
+                  "collectionIndex": 1,
+                  "artifactIndex": 2
+                },
+                "bends": 4,
+                "stretch": 1.139
+              },
+              {
+                "relationship": {
+                  "id": "admin-erp",
+                  "from": "admin",
+                  "to": "erp",
+                  "label": "直接引用",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "bends": 4,
+                "stretch": 1.221
+              },
+              {
+                "relationship": {
+                  "id": "admin-mes",
+                  "from": "admin",
+                  "to": "mes",
+                  "label": "直接引用",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "bends": 4,
+                "stretch": 1.686,
+                "directCorridorBlockers": [
+                  {
+                    "id": "ai",
+                    "label": "ruoyi-ai",
+                    "box": [
+                      440,
+                      350,
+                      280,
+                      100
+                    ]
+                  }
+                ]
+              },
+              {
+                "relationship": {
+                  "id": "admin-station",
+                  "from": "admin",
+                  "to": "station",
+                  "label": "直接引用",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "bends": 4,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "admin-iot",
+                  "from": "admin",
+                  "to": "iot",
+                  "label": "直接引用",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "bends": 4,
+                "stretch": 1.167
+              },
+              {
+                "relationship": {
+                  "id": "admin-platform",
+                  "from": "admin",
+                  "to": "platform",
+                  "label": "直接引用",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "bends": 6,
+                "stretch": 1.405,
+                "directCorridorBlockers": [
+                  {
+                    "id": "ai",
+                    "label": "ruoyi-ai",
+                    "box": [
+                      440,
+                      350,
+                      280,
+                      100
+                    ]
+                  },
+                  {
+                    "id": "mes",
+                    "label": "ruoyi-mes",
+                    "box": [
+                      440,
+                      680,
+                      280,
+                      100
+                    ]
+                  }
+                ]
+              },
+              {
+                "relationship": {
+                  "id": "admin-workflow-tools",
+                  "from": "admin",
+                  "to": "workflow-tools",
+                  "label": "直接引用",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "bends": 4,
+                "stretch": 1.302
+              },
+              {
+                "relationship": {
+                  "id": "erp-to-workflow-tools",
+                  "from": "erp",
+                  "to": "workflow-tools",
+                  "label": "引用 Flowable",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "mes-to-workflow-tools",
+                  "from": "mes",
+                  "to": "workflow-tools",
+                  "label": "引用 Flowable",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
+                },
+                "bends": 4,
+                "stretch": 1.205
+              },
+              {
+                "relationship": {
+                  "id": "workflow-tools-to-platform",
+                  "from": "workflow-tools",
+                  "to": "platform",
+                  "label": "引用 System",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "flow-to-common-integration",
+                  "from": "flow",
+                  "to": "common-integration",
+                  "label": "成员引用",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "bends": 4,
+                "stretch": 1.026
+              },
+              {
+                "relationship": {
+                  "id": "erp-contracts",
+                  "from": "erp",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "iot-contracts",
+                  "from": "iot",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "bends": 3,
+                "stretch": 1.025
+              },
+              {
+                "relationship": {
+                  "id": "flow-contracts",
+                  "from": "flow",
+                  "to": "common-contracts",
+                  "label": "契约依赖",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "bends": 3,
+                "stretch": 1.064
+              }
+            ]
+          },
+          "leadingSpace": {
+            "measured": true,
+            "emptyTopPx": 37,
+            "emptyTopRatio": 0.024,
+            "occupiedTop": 37,
+            "viewBoxTop": 0,
+            "canvasHeight": 1558,
+            "typicalNodeHeight": 100,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "legacy-930",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 930,
+            "actualBudgetPx": 930,
+            "limit": "legacy",
+            "requestedTargetPx": 7.5,
+            "requestedTargetMet": false,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "edge",
+              "id": "build-admin",
+              "from": "root",
+              "to": "admin"
+            },
+            "minimumSourceTextPx": 8,
+            "minimumProjectedTextPx": 6.179401993355482,
+            "semanticTextCount": 54
+          },
+          "issues": []
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "c5f79c64-021e-4728-9319-e8fe66710946"
+      }
+    },
+    "browser-check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 3025,
+      "command": [
+        "D:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\MyPC\\.dsh\\skills\\archify\\bin\\archify.mjs",
+        "browser-check",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+        "--json",
+        "--require-provenance",
+        "--out-dir",
+        "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "pass",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "c5f79c64-021e-4728-9319-e8fe66710946",
+        "artifact": {
+          "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+          "sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+          "bytes": 793986
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "available",
+          "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+        },
+        "diagnostics": [],
+        "containment": {
+          "status": "pass",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 1442,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 52,
+                "diagramChromePx": 78,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1508,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1508,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1526,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1054,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 68,
+                "diagramChromePx": 94,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "themeStates": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            }
+          ]
+        },
+        "readability": {
+          "status": "pass",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 1442,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 52,
+                "diagramChromePx": 78,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1508,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1508,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1526,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1054,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 68,
+                "diagramChromePx": 94,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "viewerChrome": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 1442,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 52,
+                "diagramChromePx": 78,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1508,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1508,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1034,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1526,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1054,
+              "diagramWidth": 1004,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 68,
+                "diagramChromePx": 94,
+                "svgPx": 1299,
+                "cardsPx": 0,
+                "viewBoxHeight": 1558
+              },
+              "viewBoxWidth": 1204,
+              "minimumProjectedNodeTextPx": 6.67109634551495,
+              "minimumProjectedNonEdgeTextPx": 7.50498338870432,
+              "minimumProjectedEdgeTextPx": 6.67109634551495,
+              "minimumProjectedNodeText": "构建聚合",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "build-admin",
+                "from": "root",
+                "to": "admin"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "directory": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3",
+          "receipt": "backend-modules.browser-check.json",
+          "files": []
+        }
+      }
+    }
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.finalize.json",
+    "summaryReceipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "finishedAt": "2026-10-09T05:19:36.971Z",
+  "durationMs": 13070,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-09T02:25:04.620Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

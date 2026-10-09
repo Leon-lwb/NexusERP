@@ -1,0 +1,29 @@
+{
+  "diagram_type": "architecture",
+  "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+  "specification_sha256": "4ca96d496b6327155721a466ccf149401b2aee799db562205dd2f72112fc0188",
+  "artifact_sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+  "validation": "9/9 showcase, 0 errors, 0 warnings",
+  "browser_evidence": "passed",
+  "visual_review": "passed",
+  "correction_rounds": 1,
+  "repository_revision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+  "pom_count": 54,
+  "internal_direct_dependency_count": 268,
+  "repository_references": 28,
+  "finalize_summary": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.finalize-summary.json",
+  "browser_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.browser-check.json",
+  "capture_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.visual-check.json",
+  "visual_review_record": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\visual-review.json",
+  "resolved_crossovers": 38,
+  "limitations": [
+    "Grouped selected direct dependencies, not all single-module edges in the drawing",
+    "Dense edge crossings; use Markdown/JSON dependency matrix",
+    "No resolved third-party tree, Maven build, runtime activation or production acceptance claim"
+  ],
+  "full_diagram_preview": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules-full-preview.png",
+  "supplemental_diagram_preview_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\supplemental-preview.json",
+  "independent_verification": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\independent-verification.json",
+  "independent_final_check": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\independent-final-check.json",
+  "current_head_observed": "2d8abf814df33c6f6433897264df072a202536a3"
+}

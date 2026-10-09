@@ -1,0 +1,16 @@
+{
+  "diagram_type": "architecture",
+  "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-101409\\nexus-erp-architecture.html",
+  "specification_sha256": "7eaa634484dce2b965c7d872881270dcac1f3b588b1f18a936253b432365d6ff",
+  "artifact_sha256": "ea38b0a85943ead6e5649553b75f99cd058abeb8c3fd0ffdd9ac7915eba8b336",
+  "validation": "9/9 showcase, 0 errors, 0 warnings",
+  "browser_evidence": "passed",
+  "visual_review": "passed",
+  "correction_rounds": 1,
+  "repository_revision": "515206db702a52ec1fb4ee3e167af386a610a915",
+  "evidence_references": 29,
+  "finalize_summary": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-101409\\review-2\\nexus-erp-architecture.finalize-summary.json",
+  "browser_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-101409\\review-2\\nexus-erp-architecture.browser-check.json",
+  "capture_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-101409\\review-2\\nexus-erp-architecture.visual-check.json",
+  "visual_review_record": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-101409\\visual-review.json"
+}

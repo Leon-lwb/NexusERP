@@ -1,0 +1,20 @@
+{
+  "source": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634\\review-2\\nexus-erp-architecture.visual-check.2048x1320.light.png",
+  "source_sha256": "fca305f3990600dbe221e872e4cac8552877b52299516f0ed6f1fbd251f6fe48",
+  "operation": "crop surrounding viewport margins only",
+  "crop_rect": [
+    439,
+    22,
+    1607,
+    1320
+  ],
+  "source_size": [
+    2048,
+    1320
+  ],
+  "preview_size": [
+    1168,
+    1298
+  ],
+  "preview_sha256": "8b95365945c9b8459f09b49f8480178aafef69c17558931da019d0c0232f9b61"
+}

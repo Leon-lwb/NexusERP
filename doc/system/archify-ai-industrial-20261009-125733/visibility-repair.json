@@ -1,0 +1,113 @@
+{
+  "reason": "Native READ captures hide node tags. Move sourced behavior-changing conditions into visible sublabels; retain positions, sizes, sources, edges and ownership.",
+  "placementChanged": false,
+  "placementRounds": 1,
+  "changes": [
+    {
+      "component": "chat_ui",
+      "before": "Vue · /ai/chat/send",
+      "after": "/ai/chat/send；按用户接收 SSE"
+    },
+    {
+      "component": "facade",
+      "before": "AiServiceFacade · 模式与 Agent 编排",
+      "after": "会话归属校验；异步租户 set→clear"
+    },
+    {
+      "component": "models",
+      "before": "ChatModelFactory · 配置驱动客户端",
+      "after": "ai_model / ai_provider；协议校验与缓存"
+    },
+    {
+      "component": "session_sse",
+      "before": "消息落库 / 按用户分发事件",
+      "after": "消息落库 / 用户 SSE；恢复租户上下文"
+    },
+    {
+      "component": "tools",
+      "before": "内置分类工具 / 独立 MCP Agent",
+      "after": "启用内置 QUERY/ALL；MCP 按会话选择"
+    },
+    {
+      "component": "rag",
+      "before": "RetrieverService · 检索 / 可选重排",
+      "after": "RAG 路由；知识库可见 / 索引就绪"
+    },
+    {
+      "component": "sql",
+      "before": "SqlSafetyValidator → ErpQueryService",
+      "after": "仅 SELECT；表前缀 / tenant / LIMIT"
+    },
+    {
+      "component": "vectors",
+      "before": "VectorStoreService · 按知识库隔离",
+      "after": "默认 inmemory；milvus 按配置选用"
+    },
+    {
+      "component": "decision_trigger",
+      "before": "工单 / 销售订单 / 排程 / 缺料",
+      "after": "run 权限；工单 / 订单 / 排程 / 缺料"
+    },
+    {
+      "component": "decision_run",
+      "before": "AiDecisionController / Orchestrator",
+      "after": "功能启用 / run 权限 / 登录租户"
+    },
+    {
+      "component": "contracts",
+      "before": "IndustrialDecisionDataPort / WorkflowPort",
+      "after": "公共 DTO 与端口；自身不执行业务"
+    },
+    {
+      "component": "analysis_flow",
+      "before": "适配桥接 / FlowEngine / 已注册节点",
+      "after": "规范已发布图；注册节点 / 绑定身份"
+    },
+    {
+      "component": "erp_data",
+      "before": "工业适配器 / APS / 缺料仿真",
+      "after": "业务权 / tenant / 快照新鲜度"
+    },
+    {
+      "component": "decision_persistence",
+      "before": "DecisionPersistenceService · 状态机",
+      "after": "状态机；tenant + version CAS / 原键"
+    },
+    {
+      "component": "decision_analysis",
+      "before": "确定性评分 / 排名 / 动作提案校验",
+      "after": "数值须证据；动作须过审批策略"
+    },
+    {
+      "component": "qualitative_summary",
+      "before": "可选 LLM / 制度 RAG；失败用模板",
+      "after": "LLM / 制度 RAG 可选；失败模板兜底"
+    },
+    {
+      "component": "approval_ui",
+      "before": "风险 / 方案 / 证据 / 动作审批",
+      "after": "runVersion + snapshotHash；人工选择"
+    },
+    {
+      "component": "decision_approval",
+      "before": "DecisionApprovalService · 非 Flowable",
+      "after": "权限 + 版本 + 快照；变化→STALE"
+    },
+    {
+      "component": "execution_flow",
+      "before": "新执行实例 / 注册 execute 节点",
+      "after": "受保护执行节点；仅续接已批准运行"
+    },
+    {
+      "component": "decision_execution",
+      "before": "DecisionActionExecutionService",
+      "after": "已批准 / 权限 / 新鲜度 / 原键恢复"
+    },
+    {
+      "component": "erp_write",
+      "before": "采购认证 writer / 排程方案 executor",
+      "after": "采购 DRAFT/v0；排程方案 COMPLETED"
+    }
+  ],
+  "authoritativeRound": "review-4"
+}

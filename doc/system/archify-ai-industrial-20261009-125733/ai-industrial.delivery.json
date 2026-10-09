@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "9b354215-248d-45cf-90db-f862bfb0549e",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\candidate.json",
+  "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.html",
+  "specification": {
+    "sha256": "abee4580e855addcb2226fe387fadd11f7afe4665995f8804898d77384d4b5d9",
+    "bytes": 29911
+  },
+  "artifact": {
+    "sha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c",
+    "bytes": 816306
+  }
+}

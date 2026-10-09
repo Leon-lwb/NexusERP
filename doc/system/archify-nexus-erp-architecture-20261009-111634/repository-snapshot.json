@@ -1,0 +1,100 @@
+{
+  "observed_at": "2026-10-09T12:06:12+08:00",
+  "repositories": [
+    {
+      "name": "ERP",
+      "root": "E:\\Nexus\\nexus-erp",
+      "revision": "785f70d08a59e4c6115afae61a59da0173d7afa9",
+      "worktree_status": [
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/reports/2026-10-08-FINISH产成品容量与编码规则核查进展.md"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/reports/2026-10-08-流程触发显示与工业流程中文名修复核验.md"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/scripts/finish_capacity_batch.py"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/scripts/finish_numbering_repair.py"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/scripts/test_finish_capacity_batch.py"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/scripts/test_finish_numbering_repair.py"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/full-flow/scripts/test_retired_migration_inputs.py"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/plans/2026-10-08-FINISH产成品容量约束全流程数据实施计划.md"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/plans/2026-10-08-流程触发显示与工业流程中文名修复计划.md"
+        },
+        {
+          "status": "??",
+          "path": "doc/ai/plans/2026-10-09-ai-采购订单续接与根来源故障验证计划.md"
+        },
+        {
+          "status": "??",
+          "path": "doc/system/archify-nexus-erp-architecture-20261009-101409/"
+        },
+        {
+          "status": "??",
+          "path": "doc/system/archify-nexus-erp-architecture-20261009-104313/"
+        },
+        {
+          "status": "??",
+          "path": "doc/system/archify-nexus-erp-architecture-20261009-111634/"
+        },
+        {
+          "status": "??",
+          "path": "doc/system/plans/2026-10-08-repository-metadata-cleanup-plan.md"
+        },
+        {
+          "status": "??",
+          "path": "plus-ui/scripts/test-flow-trigger-display.mjs"
+        },
+        {
+          "status": "??",
+          "path": "plus-ui/src/views/ai/flow/flowDisplay.ts"
+        },
+        {
+          "status": "??",
+          "path": "script/README.md"
+        }
+      ]
+    },
+    {
+      "name": "APP",
+      "root": "E:\\Nexus\\Nexus-App",
+      "revision": "807e6a050166a9c5e1abe4191480b6d665521609",
+      "worktree_status": []
+    },
+    {
+      "name": "PDA",
+      "root": "E:\\Nexus\\nexus-pda",
+      "revision": "6f75c4891e696bf7b9b1487020d1ddaea3d9f9a8",
+      "worktree_status": []
+    },
+    {
+      "name": "Station",
+      "root": "E:\\Nexus\\nexus-station",
+      "revision": "0d8ebcb461ae40f196fabfc72608f429db1bd8dc",
+      "worktree_status": []
+    }
+  ],
+  "write_scope": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634",
+  "evidence_policy": "Pinned committed bytes only; worktree edits are recorded, not presented as commit evidence."
+}

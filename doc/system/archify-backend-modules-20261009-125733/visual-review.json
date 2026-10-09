@@ -1,0 +1,22 @@
+{
+  "artifact_sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+  "visual_review": "passed",
+  "review_scope": "Agent image inspection of 1440 light and 2048 light/dark; not aesthetic perfection or human acceptance",
+  "correction_rounds": 1,
+  "inspected_captures": [
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.visual-check.1440x900.light.png",
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.visual-check.2048x1320.light.png",
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.visual-check.2048x1320.dark.png",
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules-full-preview.png"
+  ],
+  "observations": [
+    "Solid dependency edges and dashed build aggregation are distinguishable.",
+    "Group labels and module ownership correspond to the extracted POM declaration evidence.",
+    "Dense assembly/shared-contract edges retain 38 resolved crossovers and several detours; do not claim zero crossings.",
+    "Small viewports and the captured 2048 viewport require document-level vertical scrolling for the bottom rows.",
+    "Use the exact dependency matrix for full single-module auditing; this diagram is a selected grouped overview.",
+    "2026-10-09 交付复核：完整 SVG 预览覆盖全部 15 个图示组件及图例；未遮挡或截断。线路仍密集，完整 POM 依赖表仍是精确审计入口。"
+  ],
+  "placement_attempt": "One positions/sizes-only hint round failed automated geometry gates. Restored the passing original candidate and finalized review-3; no further placement rounds.",
+  "supplemental_full_diagram_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\supplemental-preview.json"
+}

@@ -1,0 +1,634 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nexus-ERP 后端模块依赖图",
+    "locale": "zh-CN",
+    "output": "doc/system/archify-backend-modules-20261009-125733/backend-modules.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://gitee.com/helloworld_wh18/nexus-erp.git",
+      "revision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+      "provider": "gitee",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "根聚合 POM",
+      "sublabel": "nexus-erp · 4 个聚合入口",
+      "pos": [
+        30,
+        40
+      ],
+      "size": [
+        260,
+        90
+      ],
+      "sources": [
+        {
+          "path": "pom.xml",
+          "line": 1,
+          "end_line": 612,
+          "label": "根聚合与版本管理"
+        }
+      ],
+      "tag": "构建聚合，不是应用进程"
+    },
+    {
+      "id": "admin",
+      "type": "backend",
+      "label": "应用组装 ruoyi-admin",
+      "sublabel": "13 个业务直接依赖",
+      "pos": [
+        440,
+        40
+      ],
+      "size": [
+        280,
+        110
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-admin/pom.xml",
+          "line": 1,
+          "end_line": 214,
+          "label": "主应用直接依赖"
+        }
+      ],
+      "tag": "Online 由 Flowable 间接引入"
+    },
+    {
+      "id": "extend",
+      "type": "external",
+      "label": "独立扩展服务",
+      "sublabel": "MonitorAdmin · SnailJobServer",
+      "pos": [
+        870,
+        40
+      ],
+      "size": [
+        270,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-extend/pom.xml",
+          "line": 1,
+          "end_line": 19,
+          "label": "扩展服务聚合"
+        },
+        {
+          "path": "ruoyi-extend/ruoyi-monitor-admin/pom.xml",
+          "line": 1,
+          "end_line": 73,
+          "label": "监控服务 POM"
+        },
+        {
+          "path": "ruoyi-extend/ruoyi-snailjob-server/pom.xml",
+          "line": 1,
+          "end_line": 64,
+          "label": "调度服务 POM"
+        }
+      ],
+      "tag": "不在 Admin 仓内依赖链"
+    },
+    {
+      "id": "flow",
+      "type": "backend",
+      "label": "ruoyi-flow",
+      "sublabel": "节点式流程编排",
+      "pos": [
+        30,
+        350
+      ],
+      "size": [
+        260,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/pom.xml",
+          "line": 1,
+          "end_line": 139,
+          "label": "Flow 依赖声明"
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "type": "backend",
+      "label": "ruoyi-ai",
+      "sublabel": "AI 服务与工业决策",
+      "pos": [
+        440,
+        350
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/pom.xml",
+          "line": 1,
+          "end_line": 220,
+          "label": "AI 依赖声明"
+        }
+      ]
+    },
+    {
+      "id": "common-contracts",
+      "type": "backend",
+      "label": "跨模块公共契约",
+      "sublabel": "common-ai / flow / iot",
+      "pos": [
+        870,
+        350
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/pom.xml",
+          "line": 1,
+          "end_line": 79,
+          "label": "AI 契约公共库"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-flow/pom.xml",
+          "line": 1,
+          "end_line": 52,
+          "label": "Flow 契约公共库"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-iot/pom.xml",
+          "line": 1,
+          "end_line": 33,
+          "label": "IoT 契约公共库"
+        }
+      ],
+      "tag": "3 个公共模块；不是 ERP 业务实现"
+    },
+    {
+      "id": "station",
+      "type": "backend",
+      "label": "ruoyi-station",
+      "sublabel": "后端工位设备通道",
+      "pos": [
+        30,
+        680
+      ],
+      "size": [
+        260,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-station/pom.xml",
+          "line": 1,
+          "end_line": 109,
+          "label": "Station 依赖声明"
+        }
+      ],
+      "tag": "不是 Electron 客户端"
+    },
+    {
+      "id": "mes",
+      "type": "backend",
+      "label": "ruoyi-mes",
+      "sublabel": "制造执行与质量",
+      "pos": [
+        440,
+        680
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-mes/pom.xml",
+          "line": 1,
+          "end_line": 206,
+          "label": "MES 依赖声明"
+        }
+      ]
+    },
+    {
+      "id": "workflow-tools",
+      "type": "backend",
+      "label": "工作流与开发工具组",
+      "sublabel": "Flowable · Online · Generator",
+      "pos": [
+        870,
+        680
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flowable/pom.xml",
+          "line": 1,
+          "end_line": 117,
+          "label": "Flowable 依赖声明"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-online/pom.xml",
+          "line": 1,
+          "end_line": 115,
+          "label": "Online 依赖声明"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-generator/pom.xml",
+          "line": 1,
+          "end_line": 94,
+          "label": "Generator 依赖声明"
+        }
+      ],
+      "tag": "组内：Flowable → Online → Generator"
+    },
+    {
+      "id": "erp",
+      "type": "backend",
+      "label": "ruoyi-erp",
+      "sublabel": "ERP 基础与业务领域",
+      "pos": [
+        30,
+        1010
+      ],
+      "size": [
+        260,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/pom.xml",
+          "line": 1,
+          "end_line": 131,
+          "label": "ERP 依赖声明"
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "type": "backend",
+      "label": "平台业务模块组",
+      "sublabel": "System · IM · Pay · Report · Job",
+      "pos": [
+        440,
+        1010
+      ],
+      "size": [
+        280,
+        160
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-admin/pom.xml",
+          "line": 1,
+          "end_line": 214,
+          "label": "平台模块应用组装"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-system/pom.xml",
+          "line": 1,
+          "end_line": 133,
+          "label": "系统公共依赖"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-im/pom.xml",
+          "line": 1,
+          "end_line": 165,
+          "label": "IM 公共依赖"
+        }
+      ],
+      "tag": "5 个成员，具体引用见完整明细"
+    },
+    {
+      "id": "common-base",
+      "type": "backend",
+      "label": "基础 / Web / 安全库族",
+      "sublabel": "core · web · mybatis · 租户鉴权",
+      "pos": [
+        870,
+        1010
+      ],
+      "size": [
+        270,
+        150
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-common/pom.xml",
+          "line": 1,
+          "end_line": 54,
+          "label": "公共模块聚合清单"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-system/pom.xml",
+          "line": 1,
+          "end_line": 133,
+          "label": "基础库引用示例"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-security/pom.xml",
+          "line": 1,
+          "end_line": 26,
+          "label": "安全库依赖声明"
+        }
+      ],
+      "tag": "18 成员，含 BOM / attestation"
+    },
+    {
+      "id": "iot",
+      "type": "backend",
+      "label": "ruoyi-iot",
+      "sublabel": "设备接入与消息管道",
+      "pos": [
+        30,
+        1340
+      ],
+      "size": [
+        260,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-iot/pom.xml",
+          "line": 1,
+          "end_line": 158,
+          "label": "IoT 依赖声明"
+        }
+      ]
+    },
+    {
+      "id": "demo",
+      "type": "backend",
+      "label": "ruoyi-demo",
+      "sublabel": "示例模块，未被 Admin 引入",
+      "pos": [
+        440,
+        1340
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-demo/pom.xml",
+          "line": 1,
+          "end_line": 108,
+          "label": "示例模块依赖声明"
+        },
+        {
+          "path": "ruoyi-modules/pom.xml",
+          "line": 1,
+          "end_line": 37,
+          "label": "业务模块构建聚合"
+        }
+      ],
+      "tag": "构建存在不等于运行加载"
+    },
+    {
+      "id": "common-integration",
+      "type": "backend",
+      "label": "集成与基础设施库族",
+      "sublabel": "MQ · SSE · OSS · CV · Sign · Job",
+      "pos": [
+        870,
+        1340
+      ],
+      "size": [
+        270,
+        150
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-common/pom.xml",
+          "line": 1,
+          "end_line": 54,
+          "label": "公共模块聚合清单"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/pom.xml",
+          "line": 1,
+          "end_line": 139,
+          "label": "集成库引用示例"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-mq/pom.xml",
+          "line": 1,
+          "end_line": 50,
+          "label": "MQ 公共库依赖"
+        }
+      ],
+      "tag": "11 成员，完整边见依赖矩阵"
+    }
+  ],
+  "connections": [
+    {
+      "id": "build-admin",
+      "from": "root",
+      "to": "admin",
+      "label": "构建聚合",
+      "variant": "dashed"
+    },
+    {
+      "id": "build-extend",
+      "from": "root",
+      "to": "extend",
+      "label": "经 extend 聚合",
+      "variant": "dashed"
+    },
+    {
+      "id": "admin-erp",
+      "from": "admin",
+      "to": "erp",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-mes",
+      "from": "admin",
+      "to": "mes",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-station",
+      "from": "admin",
+      "to": "station",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-iot",
+      "from": "admin",
+      "to": "iot",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-ai",
+      "from": "admin",
+      "to": "ai",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-flow",
+      "from": "admin",
+      "to": "flow",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-platform",
+      "from": "admin",
+      "to": "platform",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-workflow-tools",
+      "from": "admin",
+      "to": "workflow-tools",
+      "label": "直接引用",
+      "variant": "emphasis"
+    },
+    {
+      "id": "station-to-mes",
+      "from": "station",
+      "to": "mes",
+      "label": "直接依赖"
+    },
+    {
+      "id": "flow-to-ai",
+      "from": "flow",
+      "to": "ai",
+      "label": "直接依赖"
+    },
+    {
+      "id": "erp-to-workflow-tools",
+      "from": "erp",
+      "to": "workflow-tools",
+      "label": "引用 Flowable"
+    },
+    {
+      "id": "mes-to-workflow-tools",
+      "from": "mes",
+      "to": "workflow-tools",
+      "label": "引用 Flowable"
+    },
+    {
+      "id": "workflow-tools-to-platform",
+      "from": "workflow-tools",
+      "to": "platform",
+      "label": "引用 System"
+    },
+    {
+      "id": "iot-to-platform",
+      "from": "iot",
+      "to": "platform",
+      "label": "引用 System"
+    },
+    {
+      "id": "platform-to-common-base",
+      "from": "platform",
+      "to": "common-base",
+      "label": "成员引用"
+    },
+    {
+      "id": "demo-to-common-base",
+      "from": "demo",
+      "to": "common-base",
+      "label": "成员引用"
+    },
+    {
+      "id": "flow-to-common-integration",
+      "from": "flow",
+      "to": "common-integration",
+      "label": "成员引用"
+    },
+    {
+      "id": "erp-contracts",
+      "from": "erp",
+      "to": "common-contracts",
+      "label": "契约依赖"
+    },
+    {
+      "id": "mes-contracts",
+      "from": "mes",
+      "to": "common-contracts",
+      "label": "契约依赖"
+    },
+    {
+      "id": "iot-contracts",
+      "from": "iot",
+      "to": "common-contracts",
+      "label": "契约依赖"
+    },
+    {
+      "id": "ai-contracts",
+      "from": "ai",
+      "to": "common-contracts",
+      "label": "契约依赖"
+    },
+    {
+      "id": "flow-contracts",
+      "from": "flow",
+      "to": "common-contracts",
+      "label": "契约依赖"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "箭头与抽象层级",
+      "items": [
+        "实线：依赖方 → 被依赖方，来自 project/dependencies 的仓内直接声明",
+        "虚线：构建聚合，不是运行时调用或加载",
+        "分组节点表示成员集合，成员引用不表示依赖该组每一个 JAR",
+        "图展示重点关系；全部直接边、scope、optional 与组内边见依赖明细"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "应用组装与可达模块",
+      "items": [
+        "根聚合 54 个 POM；common 聚合 32 个子模块；业务模块 15 个",
+        "ruoyi-admin 直接依赖 13 个业务模块，Online 由 Flowable 间接引入",
+        "Flowable → Online → Generator 是声明依赖，不是三个运行服务",
+        "Demo 在构建聚合中，但未从 Admin 非 optional compile/runtime 路径可达"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "关键边界",
+      "items": [
+        "Flow → AI；Station → MES；ERP / MES → Flowable 有直接 POM 证据",
+        "MES 与 ERP 运行桥接、AI 与可信 ERP 端口不等于存在直接 Maven 依赖",
+        "公共契约放在 common-ai / common-flow / common-iot，避免复制业务实现",
+        "BOM / attestation 也纳入完整清单；独立扩展服务不属于 Admin 依赖链"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "证据与未验证事项",
+      "items": [
+        "固定提交 5b66fbee；按已提交 POM 提取，不使用未提交文件作证据",
+        "未执行 Maven resolve/build；不是完整第三方传递依赖树",
+        "不把代码模块当成微服务，也不把构建存在当作生产部署验收",
+        "完整 54-POM 声明矩阵与每条图示边的成员证据另存 JSON / Markdown"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "d7167b9c-7705-43a1-8e5c-a7c001d0a5fd",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634\\candidate.json",
+  "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634\\nexus-erp-architecture.html",
+  "specification": {
+    "sha256": "61605e43cb01513945901c1d619edcd55aea931391580321c685005671261a6c",
+    "bytes": 19473
+  },
+  "artifact": {
+    "sha256": "d7564cb45ee3885c2d6d9ac79ca585e46719bdf8342cc59bf1b6fed35b9098ae",
+    "bytes": 789253
+  }
+}

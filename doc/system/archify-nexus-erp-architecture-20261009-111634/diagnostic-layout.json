@@ -1,0 +1,783 @@
+{
+  "ok": false,
+  "diagram_type": "architecture",
+  "layout": {
+    "mode": "free"
+  },
+  "viewBox": [
+    1190,
+    1188
+  ],
+  "components": [
+    {
+      "id": "frontend-host",
+      "type": "cloud",
+      "label": "Nginx 前端入口",
+      "x": 30,
+      "y": 30,
+      "width": 240,
+      "height": 80,
+      "pos": [
+        30,
+        30
+      ]
+    },
+    {
+      "id": "station-hardware",
+      "type": "external",
+      "label": "工位外设",
+      "x": 900,
+      "y": 30,
+      "width": 240,
+      "height": 88,
+      "pos": [
+        900,
+        30
+      ]
+    },
+    {
+      "id": "web-console",
+      "type": "frontend",
+      "label": "PC 管理端",
+      "x": 30,
+      "y": 240,
+      "width": 240,
+      "height": 96,
+      "pos": [
+        30,
+        240
+      ]
+    },
+    {
+      "id": "app-client",
+      "type": "frontend",
+      "label": "APP 移动端",
+      "x": 320,
+      "y": 240,
+      "width": 240,
+      "height": 96,
+      "pos": [
+        320,
+        240
+      ]
+    },
+    {
+      "id": "pda-client",
+      "type": "frontend",
+      "label": "手持智能终端 PDA",
+      "x": 610,
+      "y": 240,
+      "width": 240,
+      "height": 100,
+      "pos": [
+        610,
+        240
+      ]
+    },
+    {
+      "id": "station-client",
+      "type": "frontend",
+      "label": "Station 工位机",
+      "x": 900,
+      "y": 240,
+      "width": 240,
+      "height": 110,
+      "pos": [
+        900,
+        240
+      ]
+    },
+    {
+      "id": "nexus-runtime",
+      "type": "backend",
+      "label": "NexusServer",
+      "x": 445,
+      "y": 510,
+      "width": 310,
+      "height": 180,
+      "pos": [
+        445,
+        510
+      ]
+    },
+    {
+      "id": "business-data",
+      "type": "database",
+      "label": "MySQL 业务数据源",
+      "x": 900,
+      "y": 559,
+      "width": 240,
+      "height": 82,
+      "pos": [
+        900,
+        559
+      ]
+    },
+    {
+      "id": "model-services",
+      "type": "external",
+      "label": "模型服务",
+      "x": 30,
+      "y": 555,
+      "width": 250,
+      "height": 90,
+      "pos": [
+        30,
+        555
+      ]
+    },
+    {
+      "id": "vision-service",
+      "type": "external",
+      "label": "Vision 视觉服务",
+      "x": 30,
+      "y": 765,
+      "width": 250,
+      "height": 90,
+      "pos": [
+        30,
+        765
+      ]
+    },
+    {
+      "id": "mqtt-devices",
+      "type": "external",
+      "label": "MQTT 工业设备",
+      "x": 900,
+      "y": 765,
+      "width": 240,
+      "height": 90,
+      "pos": [
+        900,
+        765
+      ]
+    },
+    {
+      "id": "object-store",
+      "type": "cloud",
+      "label": "MinIO / S3 对象存储",
+      "x": 30,
+      "y": 1020,
+      "width": 250,
+      "height": 90,
+      "pos": [
+        30,
+        1020
+      ]
+    },
+    {
+      "id": "redis-runtime",
+      "type": "database",
+      "label": "Redis",
+      "x": 320,
+      "y": 1020,
+      "width": 240,
+      "height": 90,
+      "pos": [
+        320,
+        1020
+      ]
+    },
+    {
+      "id": "message-broker",
+      "type": "messagebus",
+      "label": "RabbitMQ",
+      "x": 610,
+      "y": 1020,
+      "width": 240,
+      "height": 90,
+      "pos": [
+        610,
+        1020
+      ]
+    },
+    {
+      "id": "milvus-store",
+      "type": "database",
+      "label": "Milvus 向量存储",
+      "x": 900,
+      "y": 1020,
+      "width": 250,
+      "height": 100,
+      "pos": [
+        900,
+        1020
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NexusServer · 同进程业务模块",
+      "x": 419,
+      "y": 484,
+      "width": 362,
+      "height": 226,
+      "wraps": [
+        "nexus-runtime"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "frontend-host",
+      "to": "web-console",
+      "label": "静态目录挂载",
+      "variant": "dashed",
+      "route": "auto",
+      "points": [
+        [
+          150,
+          110
+        ],
+        [
+          150,
+          240
+        ]
+      ],
+      "labelAt": [
+        110,
+        178
+      ]
+    },
+    {
+      "from": "web-console",
+      "to": "nexus-runtime",
+      "label": "鉴权 API / SSE 订阅",
+      "variant": "emphasis",
+      "route": "auto",
+      "points": [
+        [
+          150,
+          336
+        ],
+        [
+          150,
+          452.5
+        ],
+        [
+          586,
+          452.5
+        ],
+        [
+          586,
+          510
+        ]
+      ],
+      "labelAt": [
+        368,
+        443
+      ]
+    },
+    {
+      "from": "mqtt-devices",
+      "to": "nexus-runtime",
+      "label": "MQTT 设备鉴权",
+      "variant": "security",
+      "route": "auto",
+      "points": [
+        [
+          900,
+          810
+        ],
+        [
+          827.5,
+          810
+        ],
+        [
+          827.5,
+          614
+        ],
+        [
+          755,
+          614
+        ]
+      ],
+      "labelAt": [
+        828,
+        702
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "model-services",
+      "label": "按模型配置调用",
+      "variant": "default",
+      "route": "auto",
+      "points": [
+        [
+          445,
+          593
+        ],
+        [
+          280,
+          593
+        ]
+      ],
+      "labelAt": [
+        363,
+        583
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "business-data",
+      "label": "业务 SQL",
+      "variant": "emphasis",
+      "route": "auto",
+      "points": [
+        [
+          755,
+          570.95
+        ],
+        [
+          827.5,
+          570.95
+        ],
+        [
+          827.5,
+          600
+        ],
+        [
+          900,
+          600
+        ]
+      ],
+      "labelAt": [
+        791,
+        561
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "vision-service",
+      "label": "启用且有密钥时 HTTP",
+      "variant": "dashed",
+      "route": "auto",
+      "points": [
+        [
+          445,
+          607
+        ],
+        [
+          362.5,
+          607
+        ],
+        [
+          362.5,
+          810
+        ],
+        [
+          280,
+          810
+        ]
+      ],
+      "labelAt": [
+        363,
+        699
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "object-store",
+      "label": "S3 对象读写",
+      "variant": "default",
+      "route": "auto",
+      "points": [
+        [
+          579,
+          690
+        ],
+        [
+          579,
+          996
+        ],
+        [
+          155,
+          996
+        ],
+        [
+          155,
+          1020
+        ]
+      ],
+      "labelAt": [
+        367,
+        986
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "redis-runtime",
+      "label": "缓存 / Stream / 广播",
+      "variant": "default",
+      "route": "auto",
+      "points": [
+        [
+          593,
+          690
+        ],
+        [
+          593,
+          1065
+        ],
+        [
+          560,
+          1065
+        ]
+      ],
+      "labelAt": [
+        577,
+        1055
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "message-broker",
+      "label": "消息发布 / 监听",
+      "variant": "dashed",
+      "route": "auto",
+      "points": [
+        [
+          636.05,
+          690
+        ],
+        [
+          636.05,
+          855
+        ],
+        [
+          730,
+          855
+        ],
+        [
+          730,
+          1020
+        ]
+      ],
+      "labelAt": [
+        683,
+        845
+      ]
+    },
+    {
+      "from": "pda-client",
+      "to": "nexus-runtime",
+      "label": "鉴权 API",
+      "variant": "security",
+      "route": "auto",
+      "points": [
+        [
+          730,
+          340
+        ],
+        [
+          730,
+          425
+        ],
+        [
+          614,
+          425
+        ],
+        [
+          614,
+          510
+        ]
+      ],
+      "labelAt": [
+        672,
+        415
+      ]
+    },
+    {
+      "from": "nexus-runtime",
+      "to": "milvus-store",
+      "label": "milvus 模式读写",
+      "variant": "emphasis",
+      "route": "auto",
+      "points": [
+        [
+          621,
+          690
+        ],
+        [
+          621,
+          996
+        ],
+        [
+          1025,
+          996
+        ],
+        [
+          1025,
+          1020
+        ]
+      ],
+      "labelAt": [
+        823,
+        986
+      ]
+    },
+    {
+      "from": "app-client",
+      "to": "nexus-runtime",
+      "label": "鉴权 HTTP API",
+      "variant": "security",
+      "route": "auto",
+      "points": [
+        [
+          440,
+          336
+        ],
+        [
+          440,
+          423
+        ],
+        [
+          628,
+          423
+        ],
+        [
+          628,
+          510
+        ]
+      ],
+      "labelAt": [
+        534,
+        413
+      ]
+    },
+    {
+      "from": "station-client",
+      "to": "nexus-runtime",
+      "label": "X-API-KEY HTTP",
+      "variant": "security",
+      "route": "auto",
+      "points": [
+        [
+          900,
+          295
+        ],
+        [
+          853,
+          295
+        ],
+        [
+          853,
+          586
+        ],
+        [
+          755,
+          586
+        ]
+      ],
+      "labelAt": [
+        853,
+        431
+      ]
+    },
+    {
+      "from": "station-client",
+      "to": "station-hardware",
+      "label": "真实驱动时 串口 / CLI",
+      "variant": "dashed",
+      "route": "auto",
+      "points": [
+        [
+          1020,
+          240
+        ],
+        [
+          1020,
+          118
+        ]
+      ],
+      "labelAt": [
+        1020,
+        230
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "text": "静态目录挂载",
+      "x": 76,
+      "y": 168,
+      "width": 68,
+      "height": 14,
+      "labelAt": [
+        110,
+        178
+      ]
+    },
+    {
+      "text": "鉴权 API / SSE 订阅",
+      "x": 317,
+      "y": 433,
+      "width": 101,
+      "height": 14,
+      "labelAt": [
+        368,
+        443
+      ]
+    },
+    {
+      "text": "MQTT 设备鉴权",
+      "x": 791,
+      "y": 692,
+      "width": 72,
+      "height": 14,
+      "labelAt": [
+        828,
+        702
+      ]
+    },
+    {
+      "text": "按模型配置调用",
+      "x": 324,
+      "y": 573,
+      "width": 77,
+      "height": 14,
+      "labelAt": [
+        363,
+        583
+      ]
+    },
+    {
+      "text": "业务 SQL",
+      "x": 767,
+      "y": 551,
+      "width": 48,
+      "height": 14,
+      "labelAt": [
+        791,
+        561
+      ]
+    },
+    {
+      "text": "启用且有密钥时 HTTP",
+      "x": 312,
+      "y": 689,
+      "width": 101,
+      "height": 14,
+      "labelAt": [
+        363,
+        699
+      ]
+    },
+    {
+      "text": "S3 对象读写",
+      "x": 336,
+      "y": 976,
+      "width": 63,
+      "height": 14,
+      "labelAt": [
+        367,
+        986
+      ]
+    },
+    {
+      "text": "缓存 / Stream / 广播",
+      "x": 524,
+      "y": 1045,
+      "width": 106,
+      "height": 14,
+      "labelAt": [
+        577,
+        1055
+      ]
+    },
+    {
+      "text": "消息发布 / 监听",
+      "x": 642,
+      "y": 835,
+      "width": 82,
+      "height": 14,
+      "labelAt": [
+        683,
+        845
+      ]
+    },
+    {
+      "text": "鉴权 API",
+      "x": 648,
+      "y": 405,
+      "width": 48,
+      "height": 14,
+      "labelAt": [
+        672,
+        415
+      ]
+    },
+    {
+      "text": "milvus 模式读写",
+      "x": 782,
+      "y": 976,
+      "width": 82,
+      "height": 14,
+      "labelAt": [
+        823,
+        986
+      ]
+    },
+    {
+      "text": "鉴权 HTTP API",
+      "x": 498,
+      "y": 403,
+      "width": 72,
+      "height": 14,
+      "labelAt": [
+        534,
+        413
+      ]
+    },
+    {
+      "text": "X-API-KEY HTTP",
+      "x": 814,
+      "y": 421,
+      "width": 77,
+      "height": 14,
+      "labelAt": [
+        853,
+        431
+      ]
+    },
+    {
+      "text": "真实驱动时 串口 / CLI",
+      "x": 965,
+      "y": 220,
+      "width": 111,
+      "height": 14,
+      "labelAt": [
+        1020,
+        230
+      ]
+    }
+  ],
+  "schemaVersion": 1,
+  "source": "renderer",
+  "error": "Architecture layout validation failed:\n- Label \"缓存 / Stream / 广播\" overlaps component \"redis-runtime\" — adjust labelDx/labelDy/labelSegment or set labelAt.\n  label rect: [524, 1045, 106, 14]\n  component \"redis-runtime\" rect: [320, 1020, 240, 90]\n  Suggested fix: set labelAt [577, 1124] or set labelDx 1 with labelDy 69 (below); or set labelAt [577, 1012] or set labelDx 1 with labelDy -43 (above)\n- Label \"缓存 / Stream / 广播\" overlaps component \"message-broker\" — adjust labelDx/labelDy/labelSegment or set labelAt.\n  label rect: [524, 1045, 106, 14]\n  component \"message-broker\" rect: [610, 1020, 240, 90]\n  Suggested fix: set labelAt [577, 1124] or set labelDx 1 with labelDy 69 (below); or set labelAt [577, 1012] or set labelDx 1 with labelDy -43 (above)",
+  "diagnostics": [
+    {
+      "code": "layout/constraint",
+      "severity": "error",
+      "message": "Label \"缓存 / Stream / 广播\" overlaps component \"redis-runtime\" — adjust labelDx/labelDy/labelSegment or set labelAt.\n  label rect: [524, 1045, 106, 14]\n  component \"redis-runtime\" rect: [320, 1020, 240, 90]\n  Suggested fix: set labelAt [577, 1124] or set labelDx 1 with labelDy 69 (below); or set labelAt [577, 1012] or set labelDx 1 with labelDy -43 (above)",
+      "subject": {
+        "diagramType": "architecture"
+      },
+      "evidence": {},
+      "supportedFixes": []
+    },
+    {
+      "code": "layout/constraint",
+      "severity": "error",
+      "message": "Label \"缓存 / Stream / 广播\" overlaps component \"message-broker\" — adjust labelDx/labelDy/labelSegment or set labelAt.\n  label rect: [524, 1045, 106, 14]\n  component \"message-broker\" rect: [610, 1020, 240, 90]\n  Suggested fix: set labelAt [577, 1124] or set labelDx 1 with labelDy 69 (below); or set labelAt [577, 1012] or set labelDx 1 with labelDy -43 (above)",
+      "subject": {
+        "diagramType": "architecture"
+      },
+      "evidence": {},
+      "supportedFixes": []
+    }
+  ],
+  "contract": "archify-architecture-layout-v1"
+}

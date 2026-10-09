@@ -1,0 +1,1014 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AI 与工业决策架构图",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "doc/system/archify-ai-industrial-20261009-125733/ai-industrial.html",
+    "repository": {
+      "url": "https://gitee.com/helloworld_wh18/nexus-erp.git",
+      "provider": "gitee",
+      "revision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "chat_ui",
+      "type": "frontend",
+      "label": "AI 助手工作台",
+      "sublabel": "/ai/chat/send；按用户接收 SSE",
+      "tag": "发送对话 / 接收用户 SSE",
+      "pos": [
+        40,
+        90
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "plus-ui/src/views/ai/assistant/index.vue",
+          "line": 663,
+          "end_line": 678,
+          "label": "助手 · 发送"
+        },
+        {
+          "path": "plus-ui/src/views/ai/assistant/index.vue",
+          "line": 402,
+          "end_line": 429,
+          "label": "助手 · SSE"
+        },
+        {
+          "path": "plus-ui/src/api/ai/chat.ts",
+          "line": 28,
+          "end_line": 46,
+          "label": "聊天 API"
+        }
+      ]
+    },
+    {
+      "id": "facade",
+      "type": "backend",
+      "label": "AiServiceFacade · 普通 AI",
+      "sublabel": "会话归属校验；异步租户 set→clear",
+      "tag": "会话归属 / 异步上下文 set→clear",
+      "pos": [
+        430,
+        90
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+          "line": 50,
+          "end_line": 56,
+          "label": "聊天入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 158,
+          "end_line": 205,
+          "label": "Facade · 会话"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 237,
+          "end_line": 269,
+          "label": "Facade · 路由"
+        }
+      ]
+    },
+    {
+      "id": "models",
+      "type": "backend",
+      "label": "ChatModelFactory · 模型工厂",
+      "sublabel": "ai_model / ai_provider；协议校验与缓存",
+      "tag": "ai_model / ai_provider；有界缓存",
+      "pos": [
+        820,
+        90
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/ChatModelFactory.java",
+          "line": 69,
+          "end_line": 98,
+          "label": "模型工厂"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/provider/ChatServiceProviderFactory.java",
+          "line": 66,
+          "end_line": 109,
+          "label": "协议与厂商校验"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/service/impl/AiModelServiceImpl.java",
+          "line": 274,
+          "end_line": 280,
+          "label": "厂商配置装配"
+        }
+      ]
+    },
+    {
+      "id": "session_sse",
+      "type": "backend",
+      "label": "会话记忆与 SSE 输出",
+      "sublabel": "消息落库 / 用户 SSE；恢复租户上下文",
+      "tag": "异步写库恢复 TenantHelper",
+      "pos": [
+        40,
+        350
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/PersistentChatMemoryStore.java",
+          "line": 48,
+          "end_line": 65,
+          "label": "持久化记忆"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 751,
+          "end_line": 761,
+          "label": "回复 · 租户写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/sse/AiSseMessageHelper.java",
+          "line": 287,
+          "end_line": 294,
+          "label": "用户事件发布"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "启用工具提供者",
+      "sublabel": "启用内置 QUERY/ALL；MCP 按会话选择",
+      "tag": "内置 QUERY/ALL；MCP 按会话选择",
+      "pos": [
+        430,
+        350
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/ToolProviderFactory.java",
+          "line": 38,
+          "end_line": 61,
+          "label": "工具统一入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/BuiltinToolRegistry.java",
+          "line": 133,
+          "end_line": 151,
+          "label": "内置启用与分类"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/McpClientManager.java",
+          "line": 143,
+          "end_line": 153,
+          "label": "MCP · 启用选择"
+        }
+      ]
+    },
+    {
+      "id": "rag",
+      "type": "backend",
+      "label": "RAG 检索与提示词增强",
+      "sublabel": "RAG 路由；知识库可见 / 索引就绪",
+      "tag": "RAG 路由；知识库可见 / 索引就绪",
+      "pos": [
+        820,
+        350
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 352,
+          "end_line": 370,
+          "label": "RAG · 调用"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+          "line": 98,
+          "end_line": 116,
+          "label": "检索配置与索引"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+          "line": 365,
+          "end_line": 378,
+          "label": "提示词增强"
+        }
+      ]
+    },
+    {
+      "id": "sql",
+      "type": "security",
+      "label": "ERP 只读查询门",
+      "sublabel": "仅 SELECT；表前缀 / tenant / LIMIT",
+      "tag": "SELECT / 表前缀 / tenant / LIMIT",
+      "pos": [
+        430,
+        610
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+          "line": 43,
+          "end_line": 60,
+          "label": "SQL 工具调用"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/SqlSafetyValidator.java",
+          "line": 94,
+          "end_line": 153,
+          "label": "SELECT / 租户护栏"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/ErpQueryService.java",
+          "line": 26,
+          "end_line": 60,
+          "label": "ERP 数据源读取"
+        }
+      ]
+    },
+    {
+      "id": "vectors",
+      "type": "database",
+      "label": "向量存储 · 二选一",
+      "sublabel": "默认 inmemory；milvus 按配置选用",
+      "tag": "默认 inmemory；milvus 需显式配置",
+      "pos": [
+        820,
+        610
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 104,
+          "end_line": 109,
+          "label": "知识库优先配置"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 139,
+          "end_line": 158,
+          "label": "Milvus / 堆内存"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiProperties.java",
+          "line": 60,
+          "end_line": 66,
+          "label": "默认 inmemory"
+        }
+      ]
+    },
+    {
+      "id": "decision_trigger",
+      "type": "frontend",
+      "label": "ERP 业务页 · 决策入口",
+      "sublabel": "run 权限；工单 / 订单 / 排程 / 缺料",
+      "tag": "run 权限；打开决策详情",
+      "pos": [
+        40,
+        870
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "plus-ui/src/views/erp/prd/prdwork/index.vue",
+          "line": 219,
+          "end_line": 225,
+          "label": "工单 · 发起分析"
+        },
+        {
+          "path": "plus-ui/src/views/erp/prd/shortage/index.vue",
+          "line": 138,
+          "end_line": 148,
+          "label": "缺料 · 发起分析"
+        },
+        {
+          "path": "plus-ui/src/api/ai/decision.ts",
+          "line": 209,
+          "end_line": 220,
+          "label": "决策 API"
+        }
+      ]
+    },
+    {
+      "id": "decision_run",
+      "type": "backend",
+      "label": "工业决策 · 受控入口",
+      "sublabel": "功能启用 / run 权限 / 登录租户",
+      "tag": "已启用 / 登录租户 / run 权限",
+      "pos": [
+        430,
+        870
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+          "line": 47,
+          "end_line": 59,
+          "label": "决策入口 · 鉴权"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 115,
+          "end_line": 126,
+          "label": "业务权 / 活跃运行"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 230,
+          "end_line": 248,
+          "label": "启用与范围校验"
+        }
+      ]
+    },
+    {
+      "id": "contracts",
+      "type": "backend",
+      "label": "common-ai · 公共契约",
+      "sublabel": "公共 DTO 与端口；自身不执行业务",
+      "tag": "DTO / 端口；接口不是业务执行者",
+      "pos": [
+        820,
+        870
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/IndustrialDecisionDataPort.java",
+          "line": 15,
+          "end_line": 50,
+          "label": "数据 / 仿真 / 动作端口"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/DecisionWorkflowPort.java",
+          "line": 6,
+          "end_line": 19,
+          "label": "分析 / 执行 Flow 端口"
+        }
+      ]
+    },
+    {
+      "id": "analysis_flow",
+      "type": "backend",
+      "label": "ruoyi-flow · 受保护分析图",
+      "sublabel": "规范已发布图；注册节点 / 绑定身份",
+      "tag": "规范已发布图；节点绑定租户与身份",
+      "pos": [
+        430,
+        1130
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 43,
+          "end_line": 56,
+          "label": "桥接启动分析"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+          "line": 62,
+          "end_line": 101,
+          "label": "受保护分析 DAG"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/engine/FlowEngineImpl.java",
+          "line": 959,
+          "end_line": 976,
+          "label": "工作节点上下文"
+        }
+      ]
+    },
+    {
+      "id": "erp_data",
+      "type": "backend",
+      "label": "ERP · 可信数据与推演",
+      "sublabel": "业务权 / tenant / 快照新鲜度",
+      "tag": "DataPort：业务权 / 租户 / 新鲜度",
+      "pos": [
+        820,
+        1130
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+          "line": 129,
+          "end_line": 165,
+          "label": "ERP 端口实现"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/DeliveryContextAssembler.java",
+          "line": 213,
+          "end_line": 248,
+          "label": "ERP · 一致性快照"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionApsSimulation.java",
+          "line": 239,
+          "end_line": 257,
+          "label": "确定性 APS / 不可行"
+        }
+      ]
+    },
+    {
+      "id": "decision_persistence",
+      "type": "backend",
+      "label": "AI · 决策状态持久化",
+      "sublabel": "状态机；tenant + version CAS / 原键",
+      "tag": "tenant + 版本 CAS；动作原幂等键",
+      "pos": [
+        40,
+        1130
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 169,
+          "end_line": 179,
+          "label": "状态 CAS 写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 347,
+          "end_line": 389,
+          "label": "动作 / 原幂等键"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionRunStateMachine.java",
+          "line": 14,
+          "end_line": 31,
+          "label": "运行状态机"
+        }
+      ]
+    },
+    {
+      "id": "decision_store",
+      "type": "database",
+      "label": "common-ai · 决策实体映射",
+      "sublabel": "ai_decision_run / evidence / action",
+      "tag": "快照 / 证据谱系 / 审批与执行留痕",
+      "pos": [
+        40,
+        1390
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionRun.java",
+          "line": 19,
+          "end_line": 60,
+          "label": "运行与冻结快照"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionEvidence.java",
+          "line": 18,
+          "end_line": 63,
+          "label": "可核验数值 / 谱系"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionAction.java",
+          "line": 19,
+          "end_line": 63,
+          "label": "动作 / 审批 / 执行"
+        }
+      ]
+    },
+    {
+      "id": "decision_analysis",
+      "type": "security",
+      "label": "AI · 证据、风险与策略",
+      "sublabel": "数值须证据；动作须过审批策略",
+      "tag": "数值需证据；策略不允许跳过审批",
+      "pos": [
+        430,
+        1390
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionAnalysisAssemblyService.java",
+          "line": 90,
+          "end_line": 138,
+          "label": "风险与证据组装"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionEvidenceService.java",
+          "line": 89,
+          "end_line": 105,
+          "label": "数值事实覆盖"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPolicyGuardService.java",
+          "line": 89,
+          "end_line": 132,
+          "label": "摘要与动作护栏"
+        }
+      ]
+    },
+    {
+      "id": "qualitative_summary",
+      "type": "backend",
+      "label": "工业摘要 · 定性解释",
+      "sublabel": "LLM / 制度 RAG 可选；失败模板兜底",
+      "tag": "不编 KPI / 证据；不写业务数据",
+      "pos": [
+        820,
+        1390
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionSummaryService.java",
+          "line": 33,
+          "end_line": 57,
+          "label": "摘要解析 / 重试 / 兜底"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiPromptTemplateInitializer.java",
+          "line": 28,
+          "end_line": 38,
+          "label": "只读定性摘要契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+          "line": 72,
+          "end_line": 85,
+          "label": "可选 RAG / LLM 节点"
+        }
+      ]
+    },
+    {
+      "id": "approval_ui",
+      "type": "frontend",
+      "label": "决策详情 · 人工审阅",
+      "sublabel": "runVersion + snapshotHash；人工选择",
+      "tag": "提交 runVersion + snapshotHash",
+      "pos": [
+        40,
+        1650
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "plus-ui/src/views/ai/decision/detail.vue",
+          "line": 44,
+          "end_line": 55,
+          "label": "详情 · 审批权限"
+        },
+        {
+          "path": "plus-ui/src/views/ai/decision/detail.vue",
+          "line": 205,
+          "end_line": 218,
+          "label": "版本 / 快照 / 审批"
+        },
+        {
+          "path": "plus-ui/src/api/ai/decision.ts",
+          "line": 225,
+          "end_line": 235,
+          "label": "审批与原动作重试"
+        }
+      ]
+    },
+    {
+      "id": "decision_approval",
+      "type": "security",
+      "label": "AI · 工业决策审批",
+      "sublabel": "权限 + 版本 + 快照；变化→STALE",
+      "tag": "实时权限 / 版本 / 快照；变化→STALE",
+      "pos": [
+        430,
+        1650
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+          "line": 83,
+          "end_line": 94,
+          "label": "工业审批入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 73,
+          "end_line": 108,
+          "label": "审批权限 / 版本 / 新鲜度"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 142,
+          "end_line": 156,
+          "label": "提交后启动执行 Flow"
+        }
+      ]
+    },
+    {
+      "id": "execution_flow",
+      "type": "backend",
+      "label": "ruoyi-flow · 审批后执行图",
+      "sublabel": "受保护执行节点；仅续接已批准运行",
+      "tag": "受保护图；仅续接已批准运行",
+      "pos": [
+        820,
+        1650
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 59,
+          "end_line": 67,
+          "label": "受控执行桥接"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+          "line": 104,
+          "end_line": 108,
+          "label": "单节点执行图"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionExecuteApprovedActionsNodeProvider.java",
+          "line": 22,
+          "end_line": 30,
+          "label": "调用执行状态服务"
+        }
+      ]
+    },
+    {
+      "id": "decision_execution",
+      "type": "security",
+      "label": "AI · 幂等执行与恢复",
+      "sublabel": "已批准 / 权限 / 新鲜度 / 原键恢复",
+      "tag": "已批准 / 业务权 / 新鲜度 / 原键恢复",
+      "pos": [
+        820,
+        1910
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+          "line": 129,
+          "end_line": 164,
+          "label": "运行 / 动作状态校验"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+          "line": 426,
+          "end_line": 449,
+          "label": "恢复优先 / 冻结重核"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/executor/AbstractErpDraftExecutor.java",
+          "line": 14,
+          "end_line": 33,
+          "label": "受控 ERP 执行端口"
+        }
+      ]
+    },
+    {
+      "id": "erp_write",
+      "type": "backend",
+      "label": "ERP · 受控业务动作权威",
+      "sublabel": "采购 DRAFT/v0；排程方案 COMPLETED",
+      "tag": "采购 DRAFT/v0；排程方案 COMPLETED",
+      "pos": [
+        430,
+        1910
+      ],
+      "size": [
+        280,
+        126
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+          "line": 168,
+          "end_line": 176,
+          "label": "权限后选择 ERP 执行器"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+          "line": 118,
+          "end_line": 156,
+          "label": "冻结合同 / 恢复 / 业务权"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionActionExecutor.java",
+          "line": 193,
+          "end_line": 232,
+          "label": "排程方案 · 实际状态"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "普通 AI · 工作台、对话门面与条件启用的工具 / 检索",
+      "wraps": [
+        "chat_ui",
+        "facade",
+        "models",
+        "session_sse",
+        "tools",
+        "rag",
+        "sql",
+        "vectors"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "region",
+      "label": "工业决策 · 公共契约、受保护节点 Flow 与批准后的受控执行",
+      "wraps": [
+        "decision_trigger",
+        "decision_run",
+        "contracts",
+        "analysis_flow",
+        "erp_data",
+        "decision_persistence",
+        "decision_store",
+        "decision_analysis",
+        "qualitative_summary",
+        "approval_ui",
+        "decision_approval",
+        "execution_flow",
+        "decision_execution",
+        "erp_write"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "chat_send",
+      "from": "chat_ui",
+      "to": "facade",
+      "label": "发送对话",
+      "variant": "emphasis"
+    },
+    {
+      "id": "model_client",
+      "from": "facade",
+      "to": "models",
+      "label": "获取模型客户端",
+      "variant": "default"
+    },
+    {
+      "id": "memory_and_events",
+      "from": "facade",
+      "to": "session_sse",
+      "label": "记忆 / 消息 / 事件",
+      "variant": "default"
+    },
+    {
+      "id": "user_sse",
+      "from": "session_sse",
+      "to": "chat_ui",
+      "label": "用户 SSE",
+      "variant": "dashed"
+    },
+    {
+      "id": "enabled_agent_tools",
+      "from": "facade",
+      "to": "tools",
+      "label": "Agent 启用工具",
+      "variant": "default"
+    },
+    {
+      "id": "rag_route",
+      "from": "facade",
+      "to": "rag",
+      "label": "RAG 路由",
+      "variant": "dashed"
+    },
+    {
+      "id": "tool_read_query",
+      "from": "tools",
+      "to": "sql",
+      "label": "只读 ERP 查询",
+      "variant": "default"
+    },
+    {
+      "id": "vector_retrieval",
+      "from": "rag",
+      "to": "vectors",
+      "label": "向量检索",
+      "variant": "default"
+    },
+    {
+      "id": "decision_start",
+      "from": "decision_trigger",
+      "to": "decision_run",
+      "label": "发起分析",
+      "variant": "emphasis"
+    },
+    {
+      "id": "public_port_contracts",
+      "from": "decision_run",
+      "to": "contracts",
+      "label": "依赖公共端口",
+      "variant": "dashed"
+    },
+    {
+      "id": "controlled_analysis_start",
+      "from": "decision_run",
+      "to": "analysis_flow",
+      "label": "校验并启动分析",
+      "variant": "emphasis"
+    },
+    {
+      "id": "workflow_port_impl",
+      "from": "analysis_flow",
+      "to": "contracts",
+      "label": "实现 WorkflowPort",
+      "variant": "dashed"
+    },
+    {
+      "id": "data_port_impl",
+      "from": "erp_data",
+      "to": "contracts",
+      "label": "实现 DataPort",
+      "variant": "dashed"
+    },
+    {
+      "id": "industrial_source_simulation",
+      "from": "analysis_flow",
+      "to": "erp_data",
+      "label": "节点读取 / 推演",
+      "variant": "emphasis"
+    },
+    {
+      "id": "node_persistence",
+      "from": "analysis_flow",
+      "to": "decision_persistence",
+      "label": "节点留痕",
+      "variant": "default"
+    },
+    {
+      "id": "registered_analysis_services",
+      "from": "analysis_flow",
+      "to": "decision_analysis",
+      "label": "节点评分 / 策略",
+      "variant": "default"
+    },
+    {
+      "id": "qualitative_only",
+      "from": "decision_analysis",
+      "to": "qualitative_summary",
+      "label": "可选定性摘要",
+      "variant": "dashed"
+    },
+    {
+      "id": "decision_entity_io",
+      "from": "decision_persistence",
+      "to": "decision_store",
+      "label": "Mapper 读写",
+      "variant": "default"
+    },
+    {
+      "id": "human_approval",
+      "from": "approval_ui",
+      "to": "decision_approval",
+      "label": "人工审批",
+      "variant": "security"
+    },
+    {
+      "id": "approval_continuation",
+      "from": "decision_approval",
+      "to": "execution_flow",
+      "label": "批准提交后启动",
+      "variant": "security"
+    },
+    {
+      "id": "execute_registered",
+      "from": "execution_flow",
+      "to": "decision_execution",
+      "label": "执行已批准动作",
+      "variant": "emphasis"
+    },
+    {
+      "id": "trusted_business_execution",
+      "from": "decision_execution",
+      "to": "erp_write",
+      "label": "DataPort 受控执行",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三个控制面，不混用",
+      "items": [
+        "AI 对话：AiServiceFacade 路由普通聊天、Agent 与 RAG。",
+        "节点 Flow：注册节点执行受保护的工业分析 / 执行图。",
+        "Flowable：独立 /workflow/task BPMN 业务审批；本图不画未证实的工业调用边。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "数值与业务动作的权威",
+      "items": [
+        "ERP 提供来源快照、缺料与 APS 推演；AI 服务确定性评分 / 排名并核对证据。",
+        "工业 LLM 仅做定性解释；不得编造 KPI、证据或直接写业务。",
+        "模型 / policyKnowledgeId 有效时才加入 LLM / 制度 RAG；失败由服务端模板兜底。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "审批、失效与幂等边界",
+      "items": [
+        "批准要求版本、snapshotHash、实时业务权与冻结来源一致；已证明变化则 STALE。",
+        "采购执行先恢复永久 command，再核对新鲜度；未确认写入保留原运行 / 动作断点。",
+        "动作名含 draft 不等于每种业务都为 DRAFT：采购 DRAFT/v0；排程方案实际 COMPLETED。"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "证据范围 · 固定提交，不是上线证明",
+      "items": [
+        "源码固定于 5b66fbeeff5a58028f248c68705e29b0bf968dd1；来源链接 local-only。",
+        "只解释代码职责与有证据的调用 / 接口实现；不以 POM 推断运行时关系。",
+        "未连接数据库、未调用业务接口；不声明生产部署、模型端点可用或现场审批验收。"
+      ]
+    }
+  ]
+}

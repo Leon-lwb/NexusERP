@@ -1,0 +1,22 @@
+{
+  "preview": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\preview.png",
+    "sha256": "6bf22ae18e8da4e51d386a2f43129bacc8a84267cedd6892dc71a5b2f908dd4b",
+    "operation": "byte-identical copy of authoritative native light viewport capture",
+    "source": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.visual-check.1440x900.light.png",
+    "sourceSha256": "6bf22ae18e8da4e51d386a2f43129bacc8a84267cedd6892dc71a5b2f908dd4b"
+  },
+  "fullPreview": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\preview-full.png",
+    "sha256": "782ea6baa357e5404a3cd9de9cf4067fdde1c938815a55eed81f8c84ea5af13b",
+    "operation": "crop horizontal margins only; no rescaling or rewriting native evidence",
+    "cropBounds": [
+      210,
+      0,
+      1230,
+      2917
+    ],
+    "source": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.supplemental-2.1440.read.light.full.png",
+    "sourceSha256": "6b08833661cf888785cfd141eb568543ae9c78d2188842c927d4dc71d508446e"
+  }
+}
