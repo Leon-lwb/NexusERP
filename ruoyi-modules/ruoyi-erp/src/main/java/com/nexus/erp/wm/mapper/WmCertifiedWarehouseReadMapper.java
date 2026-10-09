@@ -9,8 +9,14 @@ import java.util.Map;
 @Mapper
 @InterceptorIgnore(tenantLine="true")
 public interface WmCertifiedWarehouseReadMapper {
+    /**
+     * 读取数据库当前日期；使用 DUAL 保证 MySQL 5.7 的常量查询与 WHERE 条件兼容。
+     *
+     * @param tenant 已校验的当前租户，仅用于只读查询绑定，不代表业务写入资格
+     * @return 数据库当前日期，格式为 yyyy-MM-dd
+     */
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
-    @Select("SELECT SQL_NO_CACHE DATE_FORMAT(CURRENT_DATE(),'%Y-%m-%d') WHERE #{tenant}=#{tenant}")
+    @Select("SELECT SQL_NO_CACHE DATE_FORMAT(CURRENT_DATE(),'%Y-%m-%d') FROM DUAL WHERE #{tenant}=#{tenant}")
     String databaseDate(@Param("tenant") String tenant);
 
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)

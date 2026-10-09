@@ -6,6 +6,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.wm.mapper.WmCertifiedWarehouseReadMapper;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingAuthorizer;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
@@ -19,6 +20,16 @@ import static org.mockito.Mockito.*;
 
 /** 隔离真实只读 Service/Mapper/Controller 合同；不连接数据库、Redis或真正写 Service。 */
 class WmCertifiedWarehouseReadTest {
+    /** MySQL5.7实际1064已只读复现：日期常量带WHERE时必须有DUAL，不是H2/替身验收。 */
+    @Test void databaseClockWithTenantPredicateUsesMysqlDualRatherThanFromlessWhere() throws Exception {
+        Method m = WmCertifiedWarehouseReadMapper.class.getMethod("databaseDate", String.class);
+        String sql = String.join(" ", m.getAnnotation(Select.class).value()).toUpperCase(java.util.Locale.ROOT);
+        assertTrue(sql.contains("FROM DUAL WHERE"));
+        assertTrue(sql.contains("#{TENANT}=#{TENANT}"));
+        assertFalse(sql.contains("FOR UPDATE"));
+        assertFalse(m.getAnnotation(Options.class).useCache());
+    }
+
     private static Class<?> type(String name) {try{return Class.forName("com.nexus.erp.wm."+name);}catch(ClassNotFoundException missing){return fail("缺少独立仓储只读合同："+name);}}
     private static Object call(Object target,String name,Object... args) {
         var method=Arrays.stream(target instanceof Class<?> c?c.getMethods():target.getClass().getMethods()).filter(m->m.getName().equals(name)&&m.getParameterCount()==args.length).findFirst().orElseThrow();
