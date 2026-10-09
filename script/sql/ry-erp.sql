@@ -7200,7 +7200,7 @@ CREATE TABLE `pu_requirement_allocation_event` (
   `event_id` bigint(20) NOT NULL COMMENT '雪花ID，占用事件ID',
   `tenant_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
   `allocation_id` bigint(20) NOT NULL COMMENT '对应来源占用账本ID',
-  `event_sequence` int(11) DEFAULT NULL COMMENT '占用内因果序号：CREATE=0，变更=账本CAS新版本；NULL旧事件未证明，禁止自动回填',
+  `event_sequence` int(11) NOT NULL COMMENT '占用内因果序号：CREATE=0，变更=账本CAS新版本；写入方须显式提供',
   `event_key` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '事务内幂等事件键，不可复用',
   `event_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '创建/承接/部分入账/释放/补偿',
   `from_status` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '原状态',

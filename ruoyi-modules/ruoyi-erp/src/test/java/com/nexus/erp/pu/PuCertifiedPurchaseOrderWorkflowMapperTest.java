@@ -62,7 +62,14 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
         String set=price.substring(0,price.indexOf("WHERE"));assertFalse(set.contains("order_quantity="));assertFalse(set.contains("received_quantity="));assertFalse(set.contains("invoiced_qty="));
         assertTrue(price.contains("order_quantity=#{old.orderQuantity}"));assertTrue(price.contains("tenant_id=#{tenantId}"));
         String head=Arrays.stream(methods).filter(m->m.getName().equals("approveHead")).map(m->String.join("",m.getAnnotation(Update.class).value())).findFirst().orElseThrow();
-        assertTrue(head.contains("expected_arrival_date=#{q.promisedArrivalDate}"));assertTrue(head.contains("IFNULL(certified_version,0)=#{old.version}"));
+        assertTrue(head.contains("expected_arrival_date=#{q.promisedArrivalDate}"));assertTrue(head.contains("certified_version=#{old.version}"));
+        for(String methodName:List.of("approveHead","closeHead")) {
+            String sql=Arrays.stream(methods).filter(m->m.getName().equals(methodName)).map(m->String.join("",m.getAnnotation(Update.class).value())).findFirst().orElseThrow();
+            assertTrue(sql.contains("certified_version=certified_version+1"));assertTrue(sql.contains("certified_version=#{old.version}"));
+            assertFalse(sql.contains("IFNULL(certified_version"),"未知原生版本不得补0参与CAS");
+        }
+        String locked=String.join("",PuCertifiedPurchaseOrderWorkflowMapper.class.getMethod("lockHead",String.class,Long.class).getAnnotation(Select.class).value());
+        assertTrue(locked.contains("certified_version AS version"));assertFalse(locked.contains("IFNULL(certified_version"));
         assertFalse(head.contains("CURRENT_DATE"));assertTrue(head.contains("certified_terms_id IS NULL"));
         String headDdl=tableDefinition("pu_purchase_order");
         ErpDdlTestSupport.assertColumn(headDdl, "certified_version", "int DEFAULT NULL");
