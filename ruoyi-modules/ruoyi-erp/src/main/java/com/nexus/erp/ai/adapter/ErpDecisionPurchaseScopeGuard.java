@@ -8,6 +8,7 @@ import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceCha
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper;
 import com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper.*;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
 import org.springframework.stereotype.Component;
@@ -175,7 +176,14 @@ public class ErpDecisionPurchaseScopeGuard {
     private static <T> T readSafely(Supplier<T> read) {
         try {return read.get();}
         catch(SourceChangedException|ServiceException classified) {throw classified;}
-        catch(RuntimeException unavailable) {throw new ServiceException("采购根来源读取无法核验，请稍后重试或人工核对");}
+        catch(RuntimeException unavailable) {
+            try {
+                PuRequirementErpTransactionExecutor.diagnosePurchaseScopeRead(unavailable);
+            } catch(Throwable ignored) {
+                // 仅捕获诊断调用及设施初始化失败；不包住原读取，也不替代固定安全拒绝。
+            }
+            throw new ServiceException("采购根来源读取无法核验，请稍后重试或人工核对");
+        }
     }
     private static boolean positive(Long value) {return value!=null&&value>0;}
     private static void require(boolean valid,String message) {if(!valid)throw new ServiceException("采购根来源拒绝："+message);}

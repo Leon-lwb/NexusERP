@@ -226,8 +226,19 @@ public class PuRequirementErpTransactionExecutor {
         return new ServiceException("ERP 专属物理事务未成功完成，不能确认提交结果");
     }
 
+    /**
+     * 采购根来源读取故障的固定阶段安全诊断转接，仅用于原未知异常净化前。
+     * 仅复用既有有限类型、业务帧及防再入设施，不认证来源、不改变事务或公开拒绝；
+     * 不接受租户、业务身份、事务或回调，不提供授权和业务写入能力。
+     *
+     * @param failure 尚未净化的普通读取故障；已分类异常与原致命错误由调用方原样处理
+     */
+    public static void diagnosePurchaseScopeRead(RuntimeException failure) {
+        diagnoseFailure(FailureDiagnosticStage.PURCHASE_SCOPE_READ, failure);
+    }
+
     /** 仅作排错位置提示，不认证来源、不修改事务，也不构成性能或超时修复。 */
-    private enum FailureDiagnosticStage { CALLBACK_SCOPE, TRANSACTION_SCOPE }
+    private enum FailureDiagnosticStage { CALLBACK_SCOPE, TRANSACTION_SCOPE, PURCHASE_SCOPE_READ }
 
     /** 仅诊断级防再入；不作为事务资格，也不让内层退出清除外层哨兵。 */
     private static final ThreadLocal<Boolean> FAILURE_DIAGNOSTIC_ACTIVE = new ThreadLocal<>();
