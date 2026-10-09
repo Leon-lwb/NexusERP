@@ -5,8 +5,10 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && ordinaryAllowed && !props.disabled">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && ordinaryAllowed && !props.disabled && form.status === 'DRAFT'"
+              >提交审批</el-button
+            >
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -120,7 +122,14 @@
 
         <!-- 流程选择警告 -->
         <el-alert
-          v-if="!isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          v-if="
+            !isViewMode &&
+            ordinaryAllowed &&
+            !props.disabled &&
+            !loadingFlow &&
+            flowOptions.length === 0 &&
+            (!form.selectFlowId || form.selectFlowId === '')
+          "
           type="warning"
           show-icon
           :closable="false"
@@ -132,10 +141,14 @@
         <el-divider content-position="center">到货通知单行信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddWmArrivalNoticeLine" v-if="!isViewMode && !props.disabled">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddWmArrivalNoticeLine" v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+              >添加</el-button
+            >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteWmArrivalNoticeLine" v-if="!isViewMode && !props.disabled">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteWmArrivalNoticeLine" v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+              >删除</el-button
+            >
           </el-col>
         </el-row>
         <el-table
@@ -144,11 +157,16 @@
           @selection-change="handleWmArrivalNoticeLineSelectionChange"
           ref="wmArrivalNoticeLine"
         >
-          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && !props.disabled" />
+          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
           <el-table-column label="产品物料编码" prop="materialCode" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.materialCode" placeholder="请输入产品物料编码" v-if="!isViewMode && !props.disabled" readonly>
+              <el-input
+                v-model="scope.row.materialCode"
+                placeholder="请输入产品物料编码"
+                v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+                readonly
+              >
                 <template #append>
                   <el-button icon="Search" @click="openMaterialSelect(scope.$index)" />
                 </template>
@@ -158,7 +176,7 @@
           </el-table-column>
           <el-table-column label="产品物料名称" prop="materialName" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.materialName" placeholder="请输入产品物料名称" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.materialName" placeholder="请输入产品物料名称" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
               <span v-else>{{ scope.row.materialName }}</span>
             </template>
           </el-table-column>
@@ -167,7 +185,7 @@
               <el-select
                 v-model="scope.row.baseUomId"
                 placeholder="请选择单位"
-                v-if="!isViewMode && !props.disabled"
+                v-if="!isViewMode && ordinaryAllowed && !props.disabled"
                 filterable
                 style="width: 100%"
                 @change="(val) => onUomChange(val, scope.row)"
@@ -179,19 +197,23 @@
           </el-table-column>
           <el-table-column label="到货数量" prop="quantityArrival" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.quantityArrival" placeholder="请输入到货数量" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.quantityArrival" placeholder="请输入到货数量" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
               <span v-else>{{ scope.row.quantityArrival }}</span>
             </template>
           </el-table-column>
           <el-table-column label="合格数量" prop="quantityQuanlified" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.quantityQuanlified" placeholder="请输入合格数量" v-if="!isViewMode && !props.disabled" />
+              <el-input
+                v-model="scope.row.quantityQuanlified"
+                placeholder="请输入合格数量"
+                v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+              />
               <span v-else>{{ scope.row.quantityQuanlified }}</span>
             </template>
           </el-table-column>
           <el-table-column label="是否来料检验" prop="iqcCheck" width="150">
             <template #default="scope">
-              <el-select v-model="scope.row.iqcCheck" placeholder="请选择是否来料检验" v-if="!isViewMode && !props.disabled">
+              <el-select v-model="scope.row.iqcCheck" placeholder="请选择是否来料检验" v-if="!isViewMode && ordinaryAllowed && !props.disabled">
                 <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
               <span v-else>{{ getDictLabel(sys_true_or_false, scope.row.iqcCheck) }}</span>
@@ -199,7 +221,7 @@
           </el-table-column>
           <el-table-column label="来料检验单编号" prop="iqcCode" width="180">
             <template #default="scope">
-              <div style="display: flex; align-items: center; gap: 8px" v-if="!isViewMode && !props.disabled">
+              <div style="display: flex; align-items: center; gap: 8px" v-if="!isViewMode && ordinaryAllowed && !props.disabled">
                 <el-input v-model="scope.row.iqcCode" placeholder="请选择来料检验单" readonly style="flex: 1" />
                 <el-button type="primary" icon="Search" @click="openIqcSelect(scope.$index)" />
               </div>
@@ -280,6 +302,11 @@
 </template>
 
 <script setup lang="ts" name="ArrivalnoticeForm">
+import { getToken } from '@/utils/auth';
+import { useUserStore } from '@/store/modules/user';
+import { createWarehouseLegacyGate } from '../certified/warehouseWorkflow';
+import { getCertifiedArrivalContext, getCertifiedArrivalDetail } from '@/api/erp/wm/arrivalnotice';
+
 import { getArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from '@/api/erp/wm/arrivalnotice';
 import { getProcesss } from '@/api/workflow/process/index';
 import { getMaterial } from '@/api/erp/bd/material';
@@ -315,7 +342,54 @@ const isViewMode = ref(false);
 const title = ref('');
 
 // 表单禁用状态（考虑 workflow 嵌入和查看模式）
-const formDisabled = computed(() => isViewMode.value || props.disabled);
+const formDisabled = computed(() => isViewMode.value || props.disabled || !ordinaryAllowed.value);
+
+const warehouseUser = useUserStore();
+const protectionRevision = ref(0);
+const nativeIdentity = computed(() => route.query.id || route.query.dataId || (props.customFormData as any)?.noticeId);
+const legacyGate = createWarehouseLegacyGate({
+  domain: 'arrivalnotice',
+  readCredential: getToken,
+  readScope: () => ({
+    tenantId: warehouseUser.tenantId,
+    userId: warehouseUser.userId,
+    routeKey: route.fullPath + '|' + String(nativeIdentity.value ?? '') + '|' + String(form.value.noticeId ?? '')
+  }),
+  hasPermission: (p) => proxy.$auth.hasPermi(p),
+  context: getCertifiedArrivalContext,
+  detail: getCertifiedArrivalDetail,
+  changed: () => {
+    protectionRevision.value++;
+  }
+});
+/** form 可编辑字段无法把 CERTIFIED/UNKNOWN 切换为 LEGACY。 */
+const ordinaryAllowed = computed(() => {
+  protectionRevision.value;
+  return nativeIdentity.value ? legacyGate.known(nativeIdentity.value) : route.query.action === 'add';
+});
+async function guardOrdinary(permission: string, allowNew = false) {
+  try {
+    if (nativeIdentity.value) {
+      const session = await legacyGate.requireLegacy([nativeIdentity.value], permission);
+      session.assertCurrent();
+      if (String(form.value.noticeId) !== String(nativeIdentity.value)) throw new Error('原生身份已变化');
+      return session;
+    }
+    if (allowNew && route.query.action === 'add' && form.value.noticeId == null)
+      return await legacyGate.requireNew('wm:arrivalnotice:add', form.value as any);
+    throw new Error('保护事实未知');
+  } catch {
+    proxy.$modal.msgWarning('认证或保护事实未知：通用编辑/审批/上架入口关闭，只能原生只读核对');
+    return null;
+  }
+}
+watch(
+  () => [route.fullPath, warehouseUser.userId, warehouseUser.tenantId, getToken(), nativeIdentity.value],
+  () => {
+    legacyGate.clear();
+    if (nativeIdentity.value) void legacyGate.probe(nativeIdentity.value);
+  }
+);
 
 // 添加缺失的响应式变量定义
 const wmArrivalNoticeLineList = ref([]);
@@ -429,11 +503,21 @@ function initPage(id: any) {
 
 // 获取详细信息
 function getInfo(id: any) {
-  getArrivalnotice(id).then((response: any) => {
-    form.value = response.data;
-    wmArrivalNoticeLineList.value = response.data.wmArrivalNoticeLineList;
-    loadFlows();
-  });
+  const session = legacyGate.readSession();
+  getArrivalnotice(id)
+    .then((response: any) => {
+      session.assertCurrent();
+      void nextTick(() => {
+        if (String(nativeIdentity.value) === String(id)) void legacyGate.probe(id);
+      });
+      form.value = response.data;
+      wmArrivalNoticeLineList.value = response.data.wmArrivalNoticeLineList;
+      loadFlows();
+    })
+    .catch(() => {
+      legacyGate.clear();
+      proxy.$modal.msgWarning('原生读取失败，通用入口保持只读');
+    });
 }
 
 // 表单重置
@@ -471,7 +555,9 @@ function reset() {
 const rules = {};
 
 /** 提交按钮 */
-function submitForm() {
+async function submitForm() {
+  const session = await guardOrdinary('wm:arrivalnotice:edit', true);
+  if (!session) return;
   (proxy.$refs['arrivalnoticeRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
@@ -480,12 +566,14 @@ function submitForm() {
       }
       form.value.wmArrivalNoticeLineList = wmArrivalNoticeLineList.value;
       if (form.value.noticeId != null) {
-        updateArrivalnotice(form.value).then(() => {
+        updateArrivalnotice(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+          session.assertCurrent();
           proxy.$modal.msgSuccess('修改成功');
           router.push('/erp/inbound/arrivalnotice');
         });
       } else {
-        addArrivalnotice(form.value).then(() => {
+        addArrivalnotice(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+          session.assertCurrent();
           proxy.$modal.msgSuccess('新增成功');
           router.push('/erp/inbound/arrivalnotice');
         });
@@ -537,7 +625,9 @@ function tryAutoSelect() {
 }
 
 /** 提交审批 */
-function handleSubmitFlow() {
+async function handleSubmitFlow() {
+  const session = await guardOrdinary('wm:arrivalnotice:submit', false);
+  if (!session) return;
   if (!form.value.noticeId) {
     proxy.$modal.msgWarning('请先保存单据');
     return;
@@ -546,8 +636,11 @@ function handleSubmitFlow() {
     proxy.$modal.msgWarning('请先选择审批流程并保存');
     return;
   }
+  const originalId = String(form.value.noticeId);
+  const originalFlow = String(form.value.selectFlowId);
   proxy.$modal.confirm('确认提交到货通知审批？').then(() => {
-    submitArrivalnotice(String(form.value.noticeId), String(form.value.selectFlowId)).then(() => {
+    session.assertCurrent();
+    submitArrivalnotice(originalId, originalFlow, session).then(() => {
       proxy.$modal.msgSuccess('提交审批成功');
       getInfo(form.value.noticeId);
     });

@@ -119,7 +119,7 @@
 
     <!-- 添加或修改物料入库单明细对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
-      <el-form ref="detailRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-form ref="detailRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode || !ordinaryParent">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="行ID" prop="lineId">
@@ -254,7 +254,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
+          <el-button type="primary" @click="submitForm" v-if="!isViewMode && ordinaryParent">确 定</el-button>
           <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
@@ -263,7 +263,15 @@
 </template>
 
 <script setup lang="ts" name="Detail">
-import { listDetail, getDetail, delDetail, addDetail, updateDetail } from '@/api/erp/wm/detail';
+import { getToken } from '@/utils/auth';
+import request from '@/utils/request';
+import { normalizeBusinessId } from '@/utils/certified-business';
+import type { CertifiedBusinessSession } from '@/utils/certified-business';
+import { useUserStore } from '@/store/modules/user';
+import { createWarehouseLegacyGate } from '../certified/warehouseWorkflow';
+import { getCertifiedReceiveContext, getCertifiedReceiveDetail } from '@/api/erp/wm/receive';
+
+import { listDetail, getDetail, delDetail } from '@/api/erp/wm/detail';
 import type { DetailForm, DetailVO } from '@/api/erp/wm/detail/types';
 import { useRoute } from 'vue-router';
 
@@ -314,6 +322,77 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+const warehouseUser = useUserStore();
+const protectionRevision = ref(0);
+const nativeParentId = ref<string | null>(null);
+const nativeDetailId = ref<string | null>(null);
+let detailIdentityRevision = 0;
+const legacyGate = createWarehouseLegacyGate({
+  domain: 'receive',
+  readCredential: getToken,
+  readScope: () => ({
+    tenantId: warehouseUser.tenantId,
+    userId: warehouseUser.userId,
+    routeKey: JSON.stringify([
+      route.fullPath,
+      nativeParentId.value,
+      nativeDetailId.value,
+      form.value.receiveId ?? null,
+      form.value.detailId ?? null,
+      form.value.lineId ?? null,
+      ids.value,
+      detailIdentityRevision
+    ])
+  }),
+  hasPermission: (p) => proxy.$auth.hasPermi(p),
+  context: getCertifiedReceiveContext,
+  detail: getCertifiedReceiveDetail,
+  changed: () => {
+    protectionRevision.value++;
+  }
+});
+// 身份改动同步推进代次；A→B→A 也不能复活已暂停的 validate/派发句柄。
+watch(
+  () => [nativeParentId.value, nativeDetailId.value, form.value.receiveId, form.value.detailId, form.value.lineId, ids.value.join(',')],
+  () => {
+    detailIdentityRevision++;
+  },
+  { flush: 'sync' }
+);
+const ordinaryParent = computed(() => {
+  protectionRevision.value;
+  return nativeParentId.value != null && legacyGate.known(nativeParentId.value);
+});
+/** 从原生 detail 重新解析父链，不能相信表单或 URL 指定的可变父 ID。 */
+async function guardDetail(permission: string, detailId?: unknown) {
+  try {
+    const read = legacyGate.readSession();
+    let parent: unknown;
+    let lineId: string | null = null;
+    if (detailId != null) {
+      const response: any = await getDetail(detailId as any);
+      read.assertCurrent();
+      if (String(response.data?.detailId) !== String(detailId)) throw new Error('明细身份不一致');
+      parent = response.data?.receiveId;
+      lineId = normalizeBusinessId(response.data?.lineId);
+    } else parent = nativeParentId.value ?? route.query.receiveId;
+    const session = await legacyGate.requireLegacy([parent], permission);
+    session.assertCurrent();
+    return { session, parent: normalizeBusinessId(parent), lineId };
+  } catch {
+    proxy.$modal.msgWarning('收货父归属为认证或保护事实未知，明细旧写入口关闭');
+    return null;
+  }
+}
+watch(
+  () => [route.fullPath, warehouseUser.userId, warehouseUser.tenantId, getToken()],
+  () => {
+    legacyGate.clear();
+    nativeDetailId.value = null;
+    nativeParentId.value = null;
+  }
+);
 
 onMounted(() => {
   // 检查是否有传入的参数，如果有则直接打开新增对话框
@@ -398,20 +477,30 @@ function handleSelectionChange(selection: any[]) {
 }
 
 /** 新增按钮操作 */
-function handleAdd() {
+async function handleAdd() {
+  const guarded = await guardDetail('wm:detail:add');
+  if (!guarded) return;
+  nativeParentId.value = guarded.parent;
+  nativeDetailId.value = null;
   reset();
+  form.value.receiveId = nativeParentId.value;
   isViewMode.value = false;
   open.value = true;
   title.value = '添加物料入库单明细';
 }
 
 /** 新增按钮操作 - 从收货单跳转过来 */
-function handleAddFromReceive() {
+async function handleAddFromReceive() {
+  const guarded = await guardDetail('wm:detail:add');
+  if (!guarded) return;
+  nativeParentId.value = guarded.parent;
+  nativeDetailId.value = null;
   reset();
   isViewMode.value = false;
 
   // 从路由参数中获取值并填入表单（路由参数均为字符串）
   const query = route.query as Record<string, string>;
+  form.value.receiveId = nativeParentId.value;
   form.value.lineId = query.lineId;
   form.value.materialId = query.materialId;
   form.value.materialCode = query.materialCode;
@@ -425,11 +514,17 @@ function handleAddFromReceive() {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row: any) {
+async function handleUpdate(row: any) {
+  const guarded = await guardDetail('wm:detail:edit', row?.detailId ?? ids.value[0]);
+  if (!guarded) return;
+  nativeParentId.value = guarded.parent;
+  nativeDetailId.value = String(row?.detailId ?? ids.value[0]);
   reset();
   isViewMode.value = false;
   const _detailId = row.detailId || ids.value;
+  const detailReadSession = legacyGate.readSession();
   getDetail(_detailId).then((response: any) => {
+    detailReadSession.assertCurrent();
     form.value = response.data;
     open.value = true;
     title.value = '修改物料入库单明细';
@@ -448,33 +543,89 @@ function handleView(row: any) {
   });
 }
 
-/** 提交按钮 */
-function submitForm() {
-  (proxy.$refs['detailRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.detailId != null) {
-        updateDetail(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addDetail(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
+/** 可变表单身份单独核对，ID 不经 Number 截断；新增 detail/line 可保持 NULL。 */
+function detailIdentity(body: DetailForm): string {
+  return JSON.stringify([body.receiveId, body.detailId, body.lineId].map((value) => (value == null ? null : normalizeBusinessId(value))));
+}
+/** 保留原 detail URL/method/DTO，仅本页补固定会话的实际 Axios dispatch 边界。 */
+function saveDetail(body: DetailForm, session: CertifiedBusinessSession) {
+  session.assertCurrent();
+  const transforms = request.defaults.transformRequest;
+  return request({
+    url: '/erp/wm/detail',
+    method: body.detailId != null ? 'put' : 'post',
+    data: body,
+    headers: { isToken: false, Authorization: 'Bearer ' + session.token },
+    transformRequest: [
+      ...(Array.isArray(transforms) ? transforms : transforms ? [transforms] : []),
+      (data: unknown) => {
+        session.assertCurrent();
+        return data;
       }
-    }
+    ]
   });
+}
+/** 提交按钮：完整 payload 在等待守卫/validate 前复制，父/明细/行不能跨 scope 切换。 */
+async function submitForm() {
+  try {
+    const body: DetailForm = Object.freeze(JSON.parse(JSON.stringify(form.value)));
+    const identity = detailIdentity(body);
+    const revision = detailIdentityRevision;
+    const parent = nativeParentId.value;
+    const detail = nativeDetailId.value;
+    if (parent == null || normalizeBusinessId(body.receiveId) !== normalizeBusinessId(parent)) return;
+    if ((body.detailId == null ? null : normalizeBusinessId(body.detailId)) !== detail) return;
+    const guarded = await guardDetail(body.detailId != null ? 'wm:detail:edit' : 'wm:detail:add', detail ?? undefined);
+    if (!guarded || normalizeBusinessId(body.receiveId) !== guarded.parent) return;
+    if (body.detailId != null && normalizeBusinessId(body.lineId) !== guarded.lineId) return;
+    // 只包装已查询 A 的同一会话；不重新捕获当前 token/父 ID 以迁移到 B。
+    const session: CertifiedBusinessSession = Object.freeze({
+      token: guarded.session.token,
+      assertCurrent: () => {
+        guarded.session.assertCurrent();
+        if (
+          detailIdentityRevision !== revision ||
+          nativeParentId.value !== parent ||
+          nativeDetailId.value !== detail ||
+          detailIdentity(form.value) !== identity
+        ) {
+          throw new Error('明细归属已变化');
+        }
+      }
+    });
+    session.assertCurrent();
+    (proxy.$refs['detailRef'] as any).validate((valid: boolean) => {
+      if (!valid) return;
+      try {
+        session.assertCurrent();
+        saveDetail(body, session)
+          .then(() => {
+            session.assertCurrent();
+            proxy.$modal.msgSuccess(body.detailId != null ? '修改成功' : '新增成功');
+            open.value = false;
+            getList();
+          })
+          .catch(() => proxy.$modal.msgWarning('明细保存未确认，请核对原生状态；不会自动重发'));
+      } catch {
+        proxy.$modal.msgWarning('明细身份或页面会话已变化，请重新读取后确认');
+      }
+    });
+  } catch {
+    proxy.$modal.msgWarning('明细身份或页面会话已变化，请重新读取后确认');
+  }
 }
 
 /** 删除按钮操作 */
-function handleDelete(row: any) {
+async function handleDelete(row: any) {
+  const selected = row?.detailId != null ? [row.detailId] : [...ids.value];
+  if (!selected.length) return;
+  for (const value of selected) if (!(await guardDetail('wm:detail:remove', value))) return;
+  const session = legacyGate.readSession();
   const _detailIds = row.detailId || ids.value;
   proxy.$modal
     .confirm('是否确认删除物料入库单明细编号为"' + _detailIds + '"的数据项？')
     .then(function () {
+      session.assertCurrent();
       return delDetail(_detailIds);
     })
     .then(() => {

@@ -5,14 +5,17 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && ordinaryAllowed && !props.disabled">保存</el-button>
             <el-button
               type="success"
               @click="handleSubmitFlow"
-              v-if="!isViewMode && !props.disabled && (form.status === 'DRAFT' || form.status === 'REJECTED')"
+              v-if="!isViewMode && ordinaryAllowed && !props.disabled && (form.status === 'DRAFT' || form.status === 'REJECTED')"
               >提交审批</el-button
             >
-            <el-button type="warning" @click="handleConfirmShelf" v-if="pageType === 'shelf' && form.status === 'APPROVED' && !isViewMode"
+            <el-button
+              type="warning"
+              @click="handleConfirmShelf"
+              v-if="pageType === 'shelf' && form.status === 'APPROVED' && !isViewMode && ordinaryAllowed"
               >确认上架</el-button
             >
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
@@ -160,7 +163,14 @@
 
         <!-- 流程选择警告 -->
         <el-alert
-          v-if="!isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          v-if="
+            !isViewMode &&
+            ordinaryAllowed &&
+            !props.disabled &&
+            !loadingFlow &&
+            flowOptions.length === 0 &&
+            (!form.selectFlowId || form.selectFlowId === '')
+          "
           type="warning"
           show-icon
           :closable="false"
@@ -172,10 +182,14 @@
         <el-divider content-position="center">物料入库单信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddWmMaterialReceiveLine" v-if="!isViewMode && !props.disabled">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddWmMaterialReceiveLine" v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+              >添加</el-button
+            >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteWmMaterialReceiveLine" v-if="!isViewMode && !props.disabled">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteWmMaterialReceiveLine" v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+              >删除</el-button
+            >
           </el-col>
         </el-row>
         <el-table
@@ -185,7 +199,7 @@
           ref="wmMaterialReceiveLine"
           style="width: 100%"
         >
-          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && !props.disabled" />
+          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
           <el-table-column type="expand" v-if="form.status !== 'DRAFT'">
             <template #default="props">
               <el-table :data="props.row.detailList" border style="width: 90%; margin-left: 50px">
@@ -199,7 +213,7 @@
                 <el-table-column label="仓库名称" prop="warehouseName" />
                 <el-table-column label="库区名称" prop="areaName" />
                 <el-table-column label="库位名称" prop="locationName" />
-                <el-table-column label="操作" align="center" width="150" v-if="!isViewMode && !props.disabled">
+                <el-table-column label="操作" align="center" width="150" v-if="!isViewMode && ordinaryAllowed && !props.disabled">
                   <template #default="scope">
                     <el-button link type="primary" @click="handleEditDetail(scope.row, props.row)">修改</el-button>
                     <el-button link type="danger" @click="handleDeleteDetail(scope.row, props.row)">删除</el-button>
@@ -211,7 +225,12 @@
           <el-table-column label="序号" align="center" prop="index" width="60" />
           <el-table-column label="产品物料编码" prop="materialCode" min-width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.materialCode" placeholder="请输入产品物料编码" v-if="!isViewMode && !props.disabled" readonly>
+              <el-input
+                v-model="scope.row.materialCode"
+                placeholder="请输入产品物料编码"
+                v-if="!isViewMode && ordinaryAllowed && !props.disabled"
+                readonly
+              >
                 <template #append>
                   <el-button icon="Search" @click="openMaterialSelect(scope.$index)" />
                 </template>
@@ -221,30 +240,30 @@
           </el-table-column>
           <el-table-column label="产品物料名称" prop="materialName" min-width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.materialName" placeholder="请输入产品物料名称" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.materialName" placeholder="请输入产品物料名称" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
               <span v-else>{{ scope.row.materialName }}</span>
             </template>
           </el-table-column>
           <el-table-column label="单位名称" prop="baseUomName" min-width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.baseUomName" placeholder="请输入单位名称" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.baseUomName" placeholder="请输入单位名称" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
               <span v-else>{{ scope.row.baseUomName }}</span>
             </template>
           </el-table-column>
           <el-table-column label="入库数量" prop="quantityReceived" min-width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.quantityReceived" placeholder="请输入入库数量" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.quantityReceived" placeholder="请输入入库数量" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
               <span v-else>{{ scope.row.quantityReceived }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchCode" min-width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.batchCode" placeholder="请输入批次号" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.batchCode" placeholder="请输入批次号" v-if="!isViewMode && ordinaryAllowed && !props.disabled" />
               <span v-else>{{ scope.row.batchCode }}</span>
             </template>
           </el-table-column>
           <!-- 上架操作列，只在通过上架按钮进入页面时显示 -->
-          <el-table-column label="操作" align="center" min-width="120" v-if="pageType === 'shelf' && !isViewMode">
+          <el-table-column label="操作" align="center" min-width="120" v-if="pageType === 'shelf' && !isViewMode && ordinaryAllowed">
             <template #default="scope">
               <el-button link type="primary" @click="handleShelf(scope.row)">上架</el-button>
             </template>
@@ -256,7 +275,7 @@
 
     <!-- 上架弹窗 -->
     <el-dialog :title="shelfTitle" v-model="shelfOpen" width="960px" append-to-body>
-      <el-form ref="shelfRef" :model="shelfForm" :rules="shelfRules" label-width="100px" :disabled="isShelfViewMode">
+      <el-form ref="shelfRef" :model="shelfForm" :rules="shelfRules" label-width="100px" :disabled="isShelfViewMode || !ordinaryAllowed">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="物料编码" prop="materialCode">
@@ -389,7 +408,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitShelfForm" v-if="!isShelfViewMode">确 定</el-button>
+          <el-button type="primary" @click="submitShelfForm" v-if="!isShelfViewMode && ordinaryAllowed">确 定</el-button>
           <el-button @click="cancelShelf">{{ isShelfViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
@@ -436,6 +455,12 @@
 </template>
 
 <script setup lang="ts" name="ReceiveForm">
+import { updateReceive as guardedUpdateReceive, confirmShelf as guardedConfirmShelf } from '@/api/erp/wm/receive';
+import { getToken } from '@/utils/auth';
+import { useUserStore } from '@/store/modules/user';
+import { createWarehouseLegacyGate } from '../certified/warehouseWorkflow';
+import { getCertifiedReceiveContext, getCertifiedReceiveDetail } from '@/api/erp/wm/receive';
+
 import { getReceive, addReceive, updateReceive, submitReceive, confirmShelf, getReceiveProcId } from '@/api/erp/wm/receive';
 import type { ReceiveForm, ReceiveLineVO, ReceiveDetailVO } from '@/api/erp/wm/receive/types';
 import { getArrivalnotice } from '@/api/erp/wm/arrivalnotice';
@@ -642,7 +667,54 @@ const isViewMode = ref(false);
 const title = ref('');
 const pageType = ref('');
 
-const formDisabled = computed(() => isViewMode.value || props.disabled);
+const formDisabled = computed(() => isViewMode.value || props.disabled || !ordinaryAllowed.value);
+
+const warehouseUser = useUserStore();
+const protectionRevision = ref(0);
+const nativeIdentity = computed(() => route.query.id || route.query.dataId || (props.customFormData as any)?.receiveId);
+const legacyGate = createWarehouseLegacyGate({
+  domain: 'receive',
+  readCredential: getToken,
+  readScope: () => ({
+    tenantId: warehouseUser.tenantId,
+    userId: warehouseUser.userId,
+    routeKey: route.fullPath + '|' + String(nativeIdentity.value ?? '') + '|' + String(form.value.receiveId ?? '')
+  }),
+  hasPermission: (p) => proxy.$auth.hasPermi(p),
+  context: getCertifiedReceiveContext,
+  detail: getCertifiedReceiveDetail,
+  changed: () => {
+    protectionRevision.value++;
+  }
+});
+/** form 可编辑字段无法把 CERTIFIED/UNKNOWN 切换为 LEGACY。 */
+const ordinaryAllowed = computed(() => {
+  protectionRevision.value;
+  return nativeIdentity.value ? legacyGate.known(nativeIdentity.value) : route.query.action === 'add';
+});
+async function guardOrdinary(permission: string, allowNew = false) {
+  try {
+    if (nativeIdentity.value) {
+      const session = await legacyGate.requireLegacy([nativeIdentity.value], permission);
+      session.assertCurrent();
+      if (String(form.value.receiveId) !== String(nativeIdentity.value)) throw new Error('原生身份已变化');
+      return session;
+    }
+    if (allowNew && route.query.action === 'add' && form.value.receiveId == null)
+      return await legacyGate.requireNew('wm:receive:add', form.value as any);
+    throw new Error('保护事实未知');
+  } catch {
+    proxy.$modal.msgWarning('认证或保护事实未知：通用编辑/审批/上架入口关闭，只能原生只读核对');
+    return null;
+  }
+}
+watch(
+  () => [route.fullPath, warehouseUser.userId, warehouseUser.tenantId, getToken(), nativeIdentity.value],
+  () => {
+    legacyGate.clear();
+    if (nativeIdentity.value) void legacyGate.probe(nativeIdentity.value);
+  }
+);
 
 function normalizeReceiveDate(raw: any) {
   if (raw == null || raw === '') return raw;
@@ -736,45 +808,58 @@ function initPage(id: any) {
 
 /** 获取详细信息 */
 function getInfo(id: any) {
-  getReceive(id).then((response: any) => {
-    form.value = response.data;
-    wmMaterialReceiveLineList.value = response.data.wmMaterialReceiveLineList;
+  const session = legacyGate.readSession();
+  getReceive(id)
+    .then((response: any) => {
+      session.assertCurrent();
+      void nextTick(() => {
+        if (String(nativeIdentity.value) === String(id)) void legacyGate.probe(id);
+      });
+      form.value = response.data;
+      wmMaterialReceiveLineList.value = response.data.wmMaterialReceiveLineList;
 
-    /** 获取每个行项目的明细数据 */
-    wmMaterialReceiveLineList.value.forEach((line: any, index: number) => {
-      /** 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则初始化为空数组 */
-      /** 后端 selectById 会查询明细数据并填充到此字段 */
-      line.detailList = line.wmMaterialReceiveLineDetailList || [];
+      /** 获取每个行项目的明细数据 */
+      wmMaterialReceiveLineList.value.forEach((line: any, index: number) => {
+        /** 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则初始化为空数组 */
+        /** 后端 selectById 会查询明细数据并填充到此字段 */
+        line.detailList = line.wmMaterialReceiveLineDetailList || [];
 
-      /** 如果后端未返回明细数据但行ID存在，则通过独立接口加载 */
-      if (line.detailList.length === 0 && line.lineId) {
-        loadDetailList(line.lineId, index);
+        /** 如果后端未返回明细数据但行ID存在，则通过独立接口加载 */
+        if (line.detailList.length === 0 && line.lineId) {
+          loadDetailList(line.lineId, index);
+        }
+      });
+
+      /** 状态校验：审批中状态强制设为只读 */
+      if (form.value.status === 'APPROVING') {
+        isViewMode.value = true;
+        proxy.$modal.msgWarning('当前单据正在审批中，不可修改');
       }
+
+      /** 表单数据加载完成后，重新尝试自动选择流程（解决与 loadFlows 的竞态问题） */
+      tryAutoSelect();
+    })
+    .catch(() => {
+      legacyGate.clear();
+      proxy.$modal.msgWarning('原生读取失败，通用入口保持只读');
     });
-
-    /** 状态校验：审批中状态强制设为只读 */
-    if (form.value.status === 'APPROVING') {
-      isViewMode.value = true;
-      proxy.$modal.msgWarning('当前单据正在审批中，不可修改');
-    }
-
-    /** 表单数据加载完成后，重新尝试自动选择流程（解决与 loadFlows 的竞态问题） */
-    tryAutoSelect();
-  });
 }
 
 /** 加载明细数据 */
 function loadDetailList(lineId: any, index: number): Promise<any> {
+  const session = legacyGate.readSession();
   const queryParams = { pageNum: 1, pageSize: 9999, lineId: lineId };
   return listDetail(queryParams)
     .then((response: any) => {
       /** 将获取到的明细数据赋值给对应的行 */
       /** 兼容两种响应结构：TableDataInfo 直接返回（response.rows）或被 R 包装（response.data.rows） */
+      session.assertCurrent();
+      if (String(wmMaterialReceiveLineList.value[index]?.lineId) !== String(lineId)) return;
       wmMaterialReceiveLineList.value[index].detailList = response.rows || response.data?.rows || [];
     })
     .catch((error: any) => {
       console.error('加载明细数据失败:', error);
-      wmMaterialReceiveLineList.value[index].detailList = [];
+      if (String(wmMaterialReceiveLineList.value[index]?.lineId) === String(lineId)) wmMaterialReceiveLineList.value[index].detailList = [];
     });
 }
 
@@ -843,38 +928,49 @@ function tryAutoSelect() {
 }
 
 /** 提交审批 */
-function handleSubmitFlow() {
+async function handleSubmitFlow() {
+  const session = await guardOrdinary('wm:receive:submit', false);
+  if (!session) return;
+  if (!proxy.$auth.hasPermi('wm:receive:edit')) return;
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      if (!form.value.selectFlowId) {
-        proxy.$modal.msgWarning('请先选择审批流程');
-        return;
-      }
-      form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
-      if (form.value.receiveId != null) {
-        updateReceive(form.value).then(() => {
-          submitReceive(String(form.value.receiveId), String(form.value.selectFlowId))
-            .then((res: any) => {
-              if (res.code === 200) {
-                proxy.$modal.msgSuccess('提交审批成功');
-                router.push('/erp/inbound/receive');
-              } else {
-                proxy.$modal.msgError(res.msg || '提交审批失败');
-              }
-            })
-            .catch((error: any) => {
-              proxy.$modal.msgError('提交审批失败：' + error);
-            });
-        });
-      } else {
-        proxy.$modal.msgWarning('请先保存单据后再提交审批');
-      }
+    if (!valid || !form.value.selectFlowId) return;
+    try {
+      session.assertCurrent();
+    } catch {
+      return;
     }
+    const originalBody = JSON.parse(JSON.stringify({ ...form.value, wmMaterialReceiveLineList: normalizeReceiveLineDetails() })) as ReceiveForm;
+    const originalId = String(originalBody.receiveId);
+    const originalFlow = String(originalBody.selectFlowId);
+    updateReceive(originalBody, session)
+      .then(() => {
+        session.assertCurrent();
+        return submitReceive(originalId, originalFlow, session).then((res: any) => {
+          session.assertCurrent();
+          if (res.code === 200) {
+            proxy.$modal.msgSuccess('提交审批成功');
+            router.push('/erp/inbound/receive');
+          } else proxy.$modal.msgWarning('审批结果未确认，请只读核对，禁止自动重发');
+        });
+      })
+      .catch(() => {
+        proxy.$modal.msgWarning('原单保存/提交结果未确认或作用域已变化；没有跨对象补发');
+      });
   });
 }
 
 /** 确认上架 */
-function handleConfirmShelf() {
+async function handleConfirmShelf() {
+  const session = await guardOrdinary('wm:receive:shelf', false);
+  if (!session) return;
+  const updateReceive = (body: ReceiveForm) => {
+    session.assertCurrent();
+    return guardedUpdateReceive(JSON.parse(JSON.stringify(body)), session);
+  };
+  const confirmShelf = (value: string | number) => {
+    session.assertCurrent();
+    return guardedConfirmShelf(value, session);
+  };
   if (form.value.status !== 'APPROVED') {
     proxy.$modal.msgWarning('当前状态不允许确认上架，只有待上架状态才能执行确认上架操作！');
     return;
@@ -942,7 +1038,9 @@ function normalizeReceiveLineDetails() {
 }
 
 /** 提交按钮 */
-function submitForm() {
+async function submitForm() {
+  const session = await guardOrdinary('wm:receive:edit', true);
+  if (!session) return;
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       /** 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号 */
@@ -951,12 +1049,14 @@ function submitForm() {
       }
       form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
       if (form.value.receiveId != null) {
-        updateReceive(form.value).then(() => {
+        updateReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+          session.assertCurrent();
           proxy.$modal.msgSuccess('修改成功');
           router.push('/erp/inbound/receive');
         });
       } else {
-        addReceive(form.value).then(() => {
+        addReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+          session.assertCurrent();
           proxy.$modal.msgSuccess('新增成功');
           router.push('/erp/inbound/receive');
         });
@@ -966,19 +1066,23 @@ function submitForm() {
 }
 
 /** 审核按钮提交表单 */
-function submitApprovingForm() {
+async function submitApprovingForm() {
+  const session = await guardOrdinary('wm:receive:edit', false);
+  if (!session) return;
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       /** 设置状态为审核中 */
       form.value.status = 'APPROVING';
       form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
       if (form.value.receiveId != null) {
-        updateReceive(form.value).then(() => {
+        updateReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+          session.assertCurrent();
           proxy.$modal.msgSuccess('审核提交成功');
           router.push('/erp/inbound/receive');
         });
       } else {
-        addReceive(form.value).then(() => {
+        addReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+          session.assertCurrent();
           proxy.$modal.msgSuccess('审核提交成功');
           router.push('/erp/inbound/receive');
         });
@@ -1113,7 +1217,9 @@ function selectArrivalNoticeLine(row: any) {
 }
 
 /** 上架按钮操作 */
-function handleShelf(row: any) {
+async function handleShelf(row: any) {
+  const session = await guardOrdinary('wm:receive:edit', false);
+  if (!session) return;
   /** 校验行ID：若行未保存到数据库（lineId为空），不允许上架 */
   /** 否则 addDetail 保存的明细 line_id 为 null，会成为孤儿记录，重新打开后无法查询 */
   if (!row.lineId) {
@@ -1150,7 +1256,9 @@ function handleShelf(row: any) {
  * 调用后端 /erp/wm/batch/createBatch 接口，自动生成批次编码并回填到上架表单
  * 如果生成失败（如物料未启用批次管理），不阻塞上架流程
  */
-function autoGenerateBatch(row: any) {
+async function autoGenerateBatch(row: any) {
+  const session = await guardOrdinary('wm:receive:edit', false);
+  if (!session) return;
   if (!row.materialId) return;
 
   const batchData = {
@@ -1165,6 +1273,7 @@ function autoGenerateBatch(row: any) {
 
   createBatch(batchData)
     .then((response: any) => {
+      session.assertCurrent();
       if (response.code === 200 && response.data) {
         /** 自动回填批次ID和批次号到上架表单 */
         shelfForm.value.batchId = response.data.batchId;
@@ -1343,7 +1452,9 @@ function cancelShelf() {
 }
 
 /** 提交上架表单 */
-function submitShelfForm() {
+async function submitShelfForm() {
+  const session = await guardOrdinary('wm:receive:edit', false);
+  if (!session) return;
   (proxy.$refs['shelfRef'] as any).validate((valid: boolean) => {
     if (valid) {
       /** 校验 lineId：若为空则不允许保存，防止生成孤儿明细记录 */
@@ -1384,7 +1495,9 @@ function submitShelfForm() {
 /**
  * 修改明细数据
  */
-function handleEditDetail(detailRow: any, parentRow: any) {
+async function handleEditDetail(detailRow: any, parentRow: any) {
+  const session = await guardOrdinary('wm:receive:edit', false);
+  if (!session) return;
   /** 打开上架弹窗进行编辑 */
   resetShelfForm();
   isShelfViewMode.value = false;
@@ -1411,7 +1524,9 @@ function handleEditDetail(detailRow: any, parentRow: any) {
 /**
  * 删除明细数据
  */
-function handleDeleteDetail(detailRow: any, parentRow: any) {
+async function handleDeleteDetail(detailRow: any, parentRow: any) {
+  const session = await guardOrdinary('wm:receive:edit', false);
+  if (!session) return;
   proxy.$modal
     .confirm('确定要删除该条明细数据吗？')
     .then(() => {
