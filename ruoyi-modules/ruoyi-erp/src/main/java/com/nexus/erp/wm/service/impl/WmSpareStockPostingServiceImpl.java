@@ -4,10 +4,17 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmSpareStockPostingService;
 import com.nexus.erp.wm.service.mq.MesSpareErpMessage;
@@ -62,6 +69,9 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
     private final WmMaterialStockTxMapper stockTxMapper;
     private final WmSpareStockDedupGuard dedupGuard;
     private final IInventoryValuationService valuationService;
+    private final BdMaterialMapper materialMapper;
+    private final BdUnitOfMeasureMapper unitOfMeasureMapper;
+    private final WmWarehouseMapper warehouseMapper;
 
     /**
      * 查询 ERP 可用量（在库 − 已预留，且 frozen_flag = 0）
@@ -159,6 +169,7 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
 
     /**
      * 入库过账：优先累加到同维度既有行（含冻结行，避免制造重复维度行），无行则新建（version=0）
+     * <p>新建行的物料和基本单位只读取当前租户 ERP 主数据；资料缺失或停用时拒绝建行。</p>
      *
      * @param message 过账消息
      * @param qty     数量
@@ -169,11 +180,39 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             .eq(message.getWarehouseId() != null, WmMaterialStock::getWarehouseId, message.getWarehouseId())
             .orderByAsc(WmMaterialStock::getStockId));
         if (stocks == null || stocks.isEmpty()) {
+            // Mapper 查询沿用消费端 TenantHelper.dynamic 上下文和本服务 ERP 数据源，消息名称不作为主数据。
+            BdMaterial material = materialMapper.selectById(message.getMaterialId());
+            if (material == null || !Long.valueOf(1L).equals(material.getStatus())
+                || StringUtils.isBlank(material.getMaterialCode()) || StringUtils.isBlank(material.getMaterialName())) {
+                throw new ServiceException("ERP 备件物料不存在、已停用或编码/名称缺失, 拒绝新建库存: materialId="
+                    + message.getMaterialId());
+            }
+            if (material.getBaseUomId() == null) {
+                throw new ServiceException("ERP 备件物料缺少基本计量单位, 拒绝新建库存: materialId="
+                    + message.getMaterialId());
+            }
+            BdUnitOfMeasure baseUnit = unitOfMeasureMapper.selectById(material.getBaseUomId());
+            if (baseUnit == null || !Long.valueOf(1L).equals(baseUnit.getStatus())
+                || StringUtils.isBlank(baseUnit.getUomName())) {
+                throw new ServiceException("ERP 备件基本计量单位不存在、已停用或名称为空, 拒绝新建库存: baseUomId="
+                    + material.getBaseUomId());
+            }
             WmMaterialStock created = new WmMaterialStock();
             created.setMaterialId(message.getMaterialId());
-            created.setMaterialCode(message.getSpareCode());
-            created.setMaterialName(message.getSpareName());
+            created.setMaterialCode(material.getMaterialCode());
+            created.setMaterialName(material.getMaterialName());
+            created.setMaterialSpec(material.getMaterialSpec());
+            created.setCategoryId(material.getCategoryId());
+            created.setBaseUomId(material.getBaseUomId().toString());
+            created.setBaseUomName(baseUnit.getUomName());
             created.setWarehouseId(message.getWarehouseId());
+            if (message.getWarehouseId() != null) {
+                WmWarehouse warehouse = warehouseMapper.selectById(message.getWarehouseId());
+                if (warehouse != null) {
+                    created.setWarehouseCode(warehouse.getWarehouseCode());
+                    created.setWarehouseName(warehouse.getWarehouseName());
+                }
+            }
             created.setStockQuantity(qty);
             created.setReservedQuantity(BigDecimal.ZERO);
             created.setFrozenFlag(0L);
@@ -323,6 +362,9 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         tx.setMaterialId(message.getMaterialId());
         tx.setMaterialCode(stock.getMaterialCode() != null ? stock.getMaterialCode() : message.getSpareCode());
         tx.setMaterialName(stock.getMaterialName() != null ? stock.getMaterialName() : message.getSpareName());
+        tx.setMaterialSpec(stock.getMaterialSpec());
+        tx.setBaseUomId(stock.getBaseUomId());
+        tx.setBaseUomName(stock.getBaseUomName());
         tx.setWarehouseId(stock.getWarehouseId());
         tx.setWarehouseCode(stock.getWarehouseCode());
         tx.setWarehouseName(stock.getWarehouseName());

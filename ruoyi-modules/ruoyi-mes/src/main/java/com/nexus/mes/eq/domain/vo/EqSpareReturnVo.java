@@ -3,6 +3,8 @@ package com.nexus.mes.eq.domain.vo;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import lombok.Data;
+import io.github.linpeilie.annotations.AutoMapper;
+import com.nexus.mes.eq.domain.EqSpareReturn;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -18,6 +20,7 @@ import java.util.List;
  */
 @Data
 @ExcelIgnoreUnannotated
+@AutoMapper(target = EqSpareReturn.class)
 public class EqSpareReturnVo implements Serializable {
 
     @Serial
