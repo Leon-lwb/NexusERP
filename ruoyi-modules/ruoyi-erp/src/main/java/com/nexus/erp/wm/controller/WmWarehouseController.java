@@ -11,10 +11,12 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.wm.domain.bo.WmWarehouseBo;
+import com.nexus.erp.wm.domain.bo.WmWarehouseCodeCorrectionBo;
 import com.nexus.erp.wm.domain.vo.WmWarehouse3dVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 import com.nexus.erp.wm.service.IWmWarehouseService;
+import com.nexus.erp.wm.service.WmWarehouseCodeCorrectionService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +37,8 @@ public class WmWarehouseController extends BaseController {
 
     /** 仓库业务服务，提供仓库相关能力 */
     private final IWmWarehouseService wmWarehouseService;
+    /** 仓库编码全量纠正服务 */
+    private final WmWarehouseCodeCorrectionService warehouseCodeCorrectionService;
 
     /**
      * 分页查询仓库设置列表
@@ -111,6 +115,21 @@ public class WmWarehouseController extends BaseController {
     @PutMapping
     public R<Void> edit(@Validated @RequestBody WmWarehouseBo bo) {
         return toAjax(wmWarehouseService.updateByBo(bo));
+    }
+
+    /**
+     * 按系统规则重新生成仓库编码，并同步库存及库存流水快照。
+     *
+     * @param warehouseId 仓库ID
+     * @param bo          当前编码及纠正原因
+     * @return 新生成的仓库编码
+     */
+    @SaCheckPermission("wm:warehouse:edit")
+    @Log(title = "仓库编码全量纠正", businessType = BusinessType.UPDATE)
+    @PutMapping("/{warehouseId}/regenerate-code")
+    public R<String> regenerateCode(@PathVariable Long warehouseId,
+                                    @Validated @RequestBody WmWarehouseCodeCorrectionBo bo) {
+        return R.ok("编码纠正完成", warehouseCodeCorrectionService.correct(warehouseId, bo));
     }
 
     /**
