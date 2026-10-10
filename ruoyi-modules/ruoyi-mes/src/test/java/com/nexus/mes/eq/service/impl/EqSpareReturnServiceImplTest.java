@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -189,6 +190,67 @@ class EqSpareReturnServiceImplTest {
 
         assertTrue(exception.getMessage().contains("仅草稿退库单可删除"));
         verifyNoInteractions(lineMapper);
+    }
+
+    @Test
+    void insertRejectsHeaderWarehouseDifferentFromSpareMapping() {
+        EqSpareReturnBo bo = new EqSpareReturnBo();
+        bo.setReturnNo("MESRT202610100001");bo.setWarehouseId(3L);bo.setLines(List.of(line(1L, "1")));
+        when(sparePartMapper.selectVoById(1L)).thenReturn(spare(1L, "SP-001", "10"));
+        ServiceException failure = assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        assertTrue(failure.getMessage().contains("仓库"));
+        verify(returnMapper, never()).insert(any(EqSpareReturn.class));
+        verifyNoInteractions(lineMapper, sparePartService);
+    }
+
+    @Test
+    void updateLosingDraftVersionRaceDoesNotReplaceLines() {
+        when(returnMapper.selectById(5L)).thenReturn(header(5L, "DRAFT"));
+        when(sparePartMapper.selectVoById(1L)).thenReturn(spare(1L, "SP-001", "10"));
+        lenient().when(returnMapper.updateById(any(EqSpareReturn.class))).thenReturn(1);
+        EqSpareReturnBo bo = new EqSpareReturnBo();bo.setReturnId(5L);bo.setLines(List.of(line(1L,"1")));
+        assertThrows(ServiceException.class, () -> service.updateByBo(bo));
+        verifyNoInteractions(lineMapper, sparePartService);
+        verify(returnMapper, never()).updateById(any(EqSpareReturn.class));
+    }
+
+    @Test
+    void deleteLosingDraftVersionRaceDoesNotRemoveLines() {
+        when(returnMapper.selectList(any())).thenReturn(List.of(header(5L,"DRAFT")));
+        assertThrows(ServiceException.class, () -> service.deleteByIds(new Long[]{5L}));
+        verifyNoInteractions(lineMapper, sparePartService);
+        verify(returnMapper, never()).deleteByIds(any());
+    }
+
+    @Test
+    void insertRejectsQuantityThatDatabaseWouldRound() {
+        EqSpareReturnBo bo = new EqSpareReturnBo();bo.setReturnNo("MESRT202610100002");
+        bo.setLines(List.of(line(1L,"0.00001")));
+        lenient().when(sparePartMapper.selectVoById(1L)).thenReturn(spare(1L,"SP-001","10"));
+        assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        verify(returnMapper, never()).insert(any(EqSpareReturn.class));
+    }
+
+    @Test
+    void confirmRejectsChangedWarehouseMappingBeforePosting() {
+        EqSpareReturn header = header(5L,"DRAFT");header.setWarehouseId(3L);
+        when(returnMapper.selectById(5L)).thenReturn(header);
+        when(returnMapper.update(any(),any())).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(lineEntity(5L,1L,"1")));
+        lenient().when(sparePartMapper.selectVoById(1L)).thenReturn(spare(1L,"SP-001","10"));
+        assertThrows(ServiceException.class, () -> service.confirm(5L));
+        verifyNoInteractions(sparePartService);
+    }
+
+    @Test
+    void updateWithOmittedWarehouseValidatesPersistedHeaderWarehouse() {
+        EqSpareReturn header=header(5L,"DRAFT");header.setWarehouseId(3L);
+        when(returnMapper.selectById(5L)).thenReturn(header);
+        when(sparePartMapper.selectVoById(1L)).thenReturn(spare(1L,"SP-001","10"));
+        lenient().when(returnMapper.update(any(),any())).thenReturn(1);
+        EqSpareReturnBo bo=new EqSpareReturnBo();bo.setReturnId(5L);bo.setLines(List.of(line(1L,"1")));
+        assertThrows(ServiceException.class, () -> service.updateByBo(bo));
+        verifyNoInteractions(lineMapper,sparePartService);
     }
 
     // ==================== 构造辅助 ====================
