@@ -1,7 +1,6 @@
 package com.nexus.mes.qc.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -24,8 +23,10 @@ public class QcOqcBo extends BaseEntity {
     /** OQC ID */
     private Long oqcId;
 
-    /** OQC编号 */
-    @NotBlank(message = "OQC编号不能为空")
+    /**
+     * OQC编号展示字段；正常创建由服务端生成，不要求客户端预填编号。
+     * <p>保留字段以兼容既有查询／表单，创建服务仍不使用客户端值。</p>
+     */
     private String oqcNo;
 
     /** ERP销售订单ID */
