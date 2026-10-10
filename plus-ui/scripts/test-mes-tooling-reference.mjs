@@ -51,3 +51,20 @@ test('标准前端单测命令包含工装引用回归', () => {
   const pkg = JSON.parse(read('package.json'));
   assert.match(pkg.scripts['test:unit'], /test-mes-tooling-reference\.mjs/);
 });
+
+test('保养记录作为不可篡改追溯台账时不暴露编辑删除入口', () => {
+  const source = read('src/views/mes/tg/maintenance-record/index.vue');
+  assert.doesNotMatch(source, /type="selection"/);
+  assert.doesNotMatch(source, /mes:tg:record:(?:edit|remove)/);
+  assert.doesNotMatch(source, /handleUpdate\(scope\.row\)|handleDelete\(scope\.row\)/);
+});
+
+test('使用记录只允许补全未归还上下文且不提交服务端权威字段', () => {
+  const source = read('src/views/mes/tg/usage-record/index.vue');
+  assert.doesNotMatch(source, /type="selection"/);
+  assert.doesNotMatch(source, /mes:tg:usage:remove|handleDelete\(scope\.row\)/);
+  assert.match(source, /v-if="scope\.row\.status === 'OUT'"/);
+  assert.doesNotMatch(source, /v-model="form\.(?:usageCount|usageHours|status)"/);
+  assert.match(source, /operatorId:\s*\[\{ required: true/);
+  assert.match(source, /delete formData\.(?:status|usageCount|usageHours)/);
+});
