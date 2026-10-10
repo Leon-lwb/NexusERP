@@ -30,8 +30,10 @@ public class EqSparePartBo extends BaseEntity {
     /** 备件ID */
     private Long spareId;
 
-    /** 备件编码 */
-    @NotBlank(message = "备件编码不能为空")
+    /**
+     * 备件编码。
+     * <p>新增时留空由服务端按 {@code MES_SPARE_CODE} 规则生成；显式传值时保留手工业务编码兼容性。</p>
+     */
     @Size(max = 64, message = "备件编码不能超过64个字符")
     private String spareCode;
 

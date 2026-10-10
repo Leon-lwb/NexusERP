@@ -25,6 +25,7 @@ import com.nexus.mes.eq.mapper.ErpSpareStockQueryMapper;
 import com.nexus.mes.eq.mq.EqSpareErpMqPublisher;
 import com.nexus.mes.eq.service.IEqSparePartService;
 import com.nexus.mes.eq.service.support.EqSpareValueValidator;
+import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -98,6 +99,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     private final EqSpareErpSyncMapper erpSyncMapper;
     private final ErpSpareStockQueryMapper erpSpareStockQueryMapper;
     private final EqSpareErpMqPublisher erpMqPublisher;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * ERP 严格模式: 未映射 {@code material_id}/{@code warehouse_id} 的备件拒绝出入库（默认开启，
@@ -168,6 +170,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     @Override
     public EqSparePartVo insertByBo(EqSparePartBo bo) {
         validateMasterValues(bo);
+        if (StringUtils.isBlank(bo.getSpareCode())) {
+            bo.setSpareCode(autoCodeUtil.genSerialCode("MES_SPARE_CODE", null));
+        }
         /** 校验编码唯一 */
         Long cnt = baseMapper.selectCount(Wrappers.<EqSparePart>lambdaQuery()
             .eq(EqSparePart::getSpareCode, bo.getSpareCode()));

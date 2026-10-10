@@ -15,6 +15,7 @@ import com.nexus.mes.eq.mapper.EqSparePartMapper;
 import com.nexus.mes.eq.mapper.EqSpareStockLogMapper;
 import com.nexus.mes.eq.mapper.ErpSpareStockQueryMapper;
 import com.nexus.mes.eq.mq.EqSpareErpMqPublisher;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
@@ -73,6 +74,8 @@ class EqSparePartServiceImplTest {
     private ErpSpareStockQueryMapper erpSpareStockQueryMapper;
     @Mock
     private EqSpareErpMqPublisher erpMqPublisher;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
     @InjectMocks
     private EqSparePartServiceImpl service;
 
@@ -102,6 +105,27 @@ class EqSparePartServiceImplTest {
         assertEquals(0, new BigDecimal("7").compareTo(balance));
         /** selectVoById 被调用两次: 出入库入口一次 + 事务提交后组装消息体一次 */
         verify(sparePartMapper, atLeastOnce()).selectVoById(1L);
+    }
+
+    @Test
+    void insertBlankCodeUsesMesSpareAutoCodeBeforeUniquenessCheck() {
+        EqSparePartBo bo = masterRequest();
+        bo.setSpareCode(" ");
+        when(autoCodeUtil.genSerialCode("MES_SPARE_CODE", null)).thenReturn("SP20261010001");
+        when(sparePartMapper.selectCount(any())).thenReturn(0L);
+        when(sparePartMapper.insert(any(EqSparePart.class))).thenAnswer(invocation -> {
+            EqSparePart entity = invocation.getArgument(0);
+            entity.setSpareId(91L);
+            return 1;
+        });
+        when(sparePartMapper.selectVoById(91L)).thenReturn(new EqSparePartVo());
+
+        service.insertByBo(bo);
+
+        ArgumentCaptor<EqSparePart> captor = ArgumentCaptor.forClass(EqSparePart.class);
+        verify(sparePartMapper).insert(captor.capture());
+        assertEquals("SP20261010001", captor.getValue().getSpareCode());
+        verify(autoCodeUtil).genSerialCode("MES_SPARE_CODE", null);
     }
 
     @Test
