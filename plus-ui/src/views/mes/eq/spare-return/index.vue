@@ -1,5 +1,12 @@
 <template>
   <div class="app-container">
+    <el-alert
+      class="mb8"
+      type="info"
+      show-icon
+      :closable="false"
+      title="草稿不影响库存；确认后按入库方向过账到 ERP，单据不可撤销。单据已确认不等于 ERP 已落账，请在过账台账核对同步状态。"
+    />
     <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
       <el-row :gutter="16">
         <el-col :span="6">
@@ -60,7 +67,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList()"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="dataList" row-key="returnId" show-overflow-tooltip empty-text="暂无退库单，可创建维修余件或领用余料退库草稿">
       <el-table-column label="退库单号" prop="returnNo" width="160" />
       <el-table-column label="退库日期" prop="returnDate" width="120">
         <template #default="scope">{{ scope.row.returnDate || '-' }}</template>
@@ -80,8 +87,13 @@
           <el-tag v-else :type="statusTagType(scope.row.status)" size="small">{{ dictLabel(STATUS_FALLBACK, scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="合计数量" prop="totalQty" align="right" width="100">
-        <template #default="scope">{{ scope.row.totalQty ?? '-' }}</template>
+      <el-table-column label="明细数量合计" prop="totalQty" align="right" width="150">
+        <template #header>
+          <el-tooltip content="仅为单据明细数值合计，不是统一单位的库存 KPI；不同物料、单位以明细为准。">
+            <span>明细数量合计</span>
+          </el-tooltip>
+        </template>
+        <template #default="scope">{{ formatQuantity(scope.row.totalQty) }}</template>
       </el-table-column>
       <el-table-column label="确认人" prop="confirmBy" width="100">
         <template #default="scope">{{ scope.row.confirmBy || '-' }}</template>
@@ -90,15 +102,17 @@
         <template #default="scope">{{ scope.row.confirmTime || '-' }}</template>
       </el-table-column>
       <el-table-column label="创建时间" prop="createTime" width="160" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mes:eq:spare:return:query']">查看</el-button>
           <el-button
             link
             type="success"
             icon="Select"
+            :loading="confirmingIds.includes(scope.row.returnId)"
             @click="handleConfirm(scope.row)"
             v-hasPermi="['mes:eq:spare:return:confirm']"
-            :disabled="scope.row.status !== 'DRAFT'"
+            :disabled="scope.row.status !== 'DRAFT' || confirmingIds.includes(scope.row.returnId)"
             >确认退库</el-button
           >
           <el-button
@@ -107,7 +121,7 @@
             icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['mes:eq:spare:return:edit']"
-            :disabled="scope.row.status !== 'DRAFT'"
+            :disabled="scope.row.status !== 'DRAFT' || confirmingIds.includes(scope.row.returnId)"
             >编辑</el-button
           >
           <el-button
@@ -116,7 +130,7 @@
             icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['mes:eq:spare:return:remove']"
-            :disabled="scope.row.status !== 'DRAFT'"
+            :disabled="scope.row.status !== 'DRAFT' || confirmingIds.includes(scope.row.returnId)"
             >删除</el-button
           >
         </template>
@@ -126,8 +140,16 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改备件退库单对话框 -->
-    <el-dialog :title="title" v-model="open" width="900px" append-to-body>
-      <el-form :model="form" label-width="100px" ref="formRef" :rules="rules">
+    <el-dialog
+      :title="title"
+      v-model="open"
+      width="1050px"
+      append-to-body
+      :close-on-click-modal="!submitting"
+      :close-on-press-escape="!submitting"
+      :show-close="!submitting"
+    >
+      <el-form :model="form" label-width="100px" ref="formRef" :rules="rules" :disabled="submitting || isViewMode">
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="退库单号">
@@ -153,7 +175,13 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="仓库" prop="warehouseId">
-              <el-select v-model="form.warehouseId" placeholder="请选择 ERP 仓库" filterable clearable style="width: 100%">
+              <el-select
+                v-model="form.warehouseId"
+                :placeholder="canClearWarehouse ? '可留空，按每行备件映射仓库过账' : '选择与明细映射一致的仓库'"
+                filterable
+                :clearable="canClearWarehouse"
+                style="width: 100%"
+              >
                 <el-option
                   v-for="w in warehouseOptions"
                   :key="w.warehouseId"
@@ -171,11 +199,19 @@
         </el-row>
 
         <el-divider content-position="left">退库明细</el-divider>
-        <el-button type="primary" icon="Plus" size="small" @click="addLine" style="margin-bottom: 8px">添加行</el-button>
+        <el-alert
+          class="mb8"
+          type="info"
+          :closable="false"
+          title="数量最多四位小数；不同单位的合计仅汇总数值，库存按行核算。仓库可留空，提供时须与每行备件映射一致，后端校验为准。参考单价取自备件主数据，仅供查看；保存时由服务端生成成本快照。已有单头仓库的草稿须保留或改选一致仓库，不能清空。"
+        />
+        <el-button v-if="!isViewMode" type="primary" icon="Plus" size="small" @click="addLine" style="margin-bottom: 8px">添加行</el-button>
         <el-table :data="form.lines || []" border size="small" show-overflow-tooltip>
           <el-table-column label="备件" min-width="240">
             <template #default="scope">
+              <span v-if="isViewMode">{{ scope.row.spareCode || '#' + scope.row.spareId }} - {{ scope.row.spareName || '-' }}</span>
               <el-select
+                v-else
                 v-model="scope.row.spareId"
                 placeholder="选择备件"
                 filterable
@@ -187,14 +223,29 @@
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="退库数量" width="130">
+          <el-table-column label="映射仓库" min-width="170">
+            <template #default="scope">{{ spareWarehouseLabel(scope.row.spareId) }}</template>
+          </el-table-column>
+          <el-table-column label="单位" width="65" align="center">
+            <template #default="scope">{{ spareOptions.find((s) => s.spareId === scope.row.spareId)?.unit || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="退库数量" width="150">
             <template #default="scope">
-              <el-input-number v-model="scope.row.returnQty" :min="0.0001" :precision="4" size="small" style="width: 100%" />
+              <span v-if="isViewMode">{{ formatQuantity(scope.row.returnQty) }}</span>
+              <el-input-number
+                v-else
+                v-model="scope.row.returnQty"
+                :min="0.0001"
+                :max="MAX_SPARE_DECIMAL"
+                :precision="4"
+                size="small"
+                style="width: 100%"
+              />
             </template>
           </el-table-column>
-          <el-table-column label="单价" width="130">
+          <el-table-column label="参考单价" width="150">
             <template #default="scope">
-              <el-input-number v-model="scope.row.unitCost" :min="0" :precision="4" size="small" style="width: 100%" />
+              <span>{{ formatAmount(scope.row.unitCost) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="备注" min-width="150">
@@ -202,7 +253,7 @@
               <el-input v-model="scope.row.remark" placeholder="备注" size="small" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="70" align="center">
+          <el-table-column v-if="!isViewMode" label="操作" width="70" align="center">
             <template #default="scope">
               <el-button link type="danger" icon="Delete" @click="removeLine(scope.$index)" />
             </template>
@@ -210,8 +261,8 @@
         </el-table>
       </el-form>
       <template #footer>
-        <el-button @click="cancel">取 消</el-button>
-        <el-button type="primary" @click="handleSubmit">确 定</el-button>
+        <el-button :disabled="submitting" @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+        <el-button v-if="!isViewMode" type="primary" :loading="submitting" :disabled="submitting" @click="handleSubmit">保存草稿</el-button>
       </template>
     </el-dialog>
   </div>
@@ -219,8 +270,11 @@
 
 <script setup lang="ts" name="MesEqSpareReturn">
 import { listSpareReturn, getSpareReturn, addSpareReturn, updateSpareReturn, delSpareReturn, confirmSpareReturn } from '@/api/mes/eq/spare-return';
-import type { SpareReturnVo, SpareReturnQuery, SpareReturnLineVo } from '@/api/mes/eq/spare-return/types';
+import type { SpareReturnVo, SpareReturnQuery, SpareReturnForm, SpareReturnLineForm } from '@/api/mes/eq/spare-return/types';
 import { listSparePart } from '@/api/mes/eq/spare-part';
+import type { EqSparePartVO } from '@/api/mes/eq/spare-part';
+import type { Ref } from 'vue';
+import { formatQuantity, formatAmount, decimalValue, isPositiveQuantity, costInputValue, MAX_SPARE_DECIMAL } from '@/utils/mesSpareDisplay';
 import { listWarehouse } from '@/api/erp/wm/warehouse/index';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
@@ -241,10 +295,10 @@ const TYPE_FALLBACK: Record<string, string> = { REPAIR_RETURN: '维修退库', E
 
 const formRef = ref<FormInstance>();
 const dateRange = ref<string[]>([]);
+const persistedWarehouseId = ref<string>();
 const rules = {
   returnDate: [{ required: true, message: '请选择退库日期', trigger: 'change' }],
-  returnType: [{ required: true, message: '请选择退库类型', trigger: 'change' }],
-  warehouseId: [{ required: true, message: '请选择仓库', trigger: 'change' }]
+  returnType: [{ required: true, message: '请选择退库类型', trigger: 'change' }]
 };
 
 const queryParams = ref<SpareReturnQuery>({
@@ -262,7 +316,9 @@ const {
   open,
   title,
   showSearch,
-  form,
+  form: crudForm,
+  isViewMode,
+  handleView,
   getList,
   handleQuery,
   handleAdd,
@@ -286,14 +342,33 @@ const {
     remark: '',
     lines: []
   }),
+  onReset: () => {
+    persistedWarehouseId.value = undefined;
+  },
+  afterLoad: (data) => {
+    persistedWarehouseId.value = data.warehouseId;
+    for (const line of data.lines || []) {
+      line.returnQty = decimalValue(line.returnQty);
+      line.unitCost = costInputValue(line.unitCost);
+    }
+  },
+  beforeSubmit: (data) => {
+    // 单价、冗余编码等只供查看，实际成本快照由服务端主数据生成。
+    data.lines = (data.lines || []).map((line) => ({ spareId: line.spareId, returnQty: line.returnQty, remark: line.remark }));
+  },
   beforeList: (query) => {
     query.beginTime = dateRange.value?.[0];
     query.endTime = dateRange.value?.[1];
   }
 });
 
+const form = crudForm as Ref<SpareReturnForm>;
+const canClearWarehouse = computed(() => !form.value.returnId || !persistedWarehouseId.value);
+const submitting = ref(false);
+const confirmingIds = ref<string[]>([]);
+
 /** 备件/仓库下拉 */
-const spareOptions = ref<{ spareId: string; spareCode: string; spareName: string; unitCost?: number }[]>([]);
+const spareOptions = ref<EqSparePartVO[]>([]);
 const warehouseOptions = ref<{ warehouseId: string; warehouseCode: string; warehouseName: string }[]>([]);
 
 const loadOptions = async () => {
@@ -323,63 +398,93 @@ const statusTagType = (status?: string) => {
   }
 };
 const warehouseLabel = (warehouseId?: string) => {
-  if (!warehouseId) return '-';
+  if (!warehouseId) return '按明细映射仓库';
   const hit = warehouseOptions.value.find((w) => String(w.warehouseId) === String(warehouseId));
   return hit ? `${hit.warehouseCode} - ${hit.warehouseName}` : `#${warehouseId}`;
 };
 
+/** 下拉可能只含前 500 条，未知映射仅提示，不代替后端权威校验。 */
+const spareWarehouseLabel = (spareId?: string) => {
+  const hit = spareOptions.value.find((s) => s.spareId === spareId);
+  if (!hit) return '映射未加载，以后端为准';
+  return hit.warehouseId ? warehouseLabel(hit.warehouseId) : '未映射 ERP 仓库';
+};
+
 /** 明细行增删 */
 const addLine = () => {
+  if (submitting.value || isViewMode.value) return;
   if (!form.value.lines) form.value.lines = [];
   form.value.lines.push({ spareId: undefined, returnQty: 1, unitCost: undefined, remark: '' });
 };
 const removeLine = (index: number) => {
+  if (submitting.value || isViewMode.value) return;
   form.value.lines?.splice(index, 1);
 };
-const handleSpareChange = (val: any, index: number) => {
+const handleSpareChange = (val: string, index: number) => {
   const hit = spareOptions.value.find((s) => String(s.spareId) === String(val));
-  const line: SpareReturnLineVo | undefined = form.value.lines?.[index];
+  const line: SpareReturnLineForm | undefined = form.value.lines?.[index];
   if (!hit || !line) return;
   line.spareCode = hit.spareCode;
   line.spareName = hit.spareName;
-  if (line.unitCost === undefined || line.unitCost === null) line.unitCost = hit.unitCost;
+  line.unitCost = costInputValue(hit.unitCost);
 };
 
-/** 提交：先做明细校验与合计，再走 useCrud 的新增/修改 */
-const handleSubmit = () => {
-  const lines = form.value.lines || [];
-  if (lines.length === 0) {
-    proxy?.$modal.msgWarning('请至少添加一行退库明细');
-    return;
-  }
-  for (const line of lines) {
-    if (!line.spareId) {
-      proxy?.$modal.msgWarning('存在未选择备件的明细行');
-      return;
-    }
-    if (!line.returnQty || Number(line.returnQty) <= 0) {
-      proxy?.$modal.msgWarning('退库数量必须大于 0');
-      return;
-    }
-  }
-  form.value.totalQty = lines.reduce((sum, line) => sum + Number(line.returnQty || 0), 0);
-  submitForm();
-};
-
-/** 确认退库（仅 DRAFT，确认后不可撤销） */
-const handleConfirm = async (row: SpareReturnVo) => {
+/** 保存草稿：数量/成本与已知仓库映射预校验，后端重验明细及映射。 */
+const handleSubmit = async () => {
+  if (submitting.value || isViewMode.value) return;
+  submitting.value = true;
   try {
-    await proxy?.$modal.confirm('确认后不可撤销，将按入库方向过账到 ERP 库存。是否确认？');
+    if (form.value.returnId && persistedWarehouseId.value && !form.value.warehouseId) {
+      form.value.warehouseId = persistedWarehouseId.value;
+    }
+    const lines = form.value.lines || [];
+    if (lines.length === 0) {
+      proxy?.$modal.msgWarning('请至少添加一行退库明细');
+      return;
+    }
+    for (const [index, line] of lines.entries()) {
+      if (!line.spareId) {
+        proxy?.$modal.msgWarning(`第 ${index + 1} 行未选择备件`);
+        return;
+      }
+      if (!isPositiveQuantity(line.returnQty)) {
+        proxy?.$modal.msgWarning(`第 ${index + 1} 行退库数量必须大于 0，最多 10 位整数、4 位小数`);
+        return;
+      }
+      const spare = spareOptions.value.find((s) => s.spareId === line.spareId);
+      if (form.value.warehouseId && spare?.warehouseId && form.value.warehouseId !== spare.warehouseId) {
+        proxy?.$modal.msgWarning(`第 ${index + 1} 行备件「${spare.spareCode}」映射仓库与单头仓库不一致，请核对；后端校验为准`);
+        return;
+      }
+    }
+    // 不由前端计算/提交合计数量，服务端按有效明细生成合计。
+    await submitForm();
   } catch {
-    return;
+    // 校验有行内提示，业务失败由统一拦截器反馈；不自动重发。
+  } finally {
+    submitting.value = false;
   }
+};
+
+/** 确认仅针对草稿；加载态包含弹窗等待，禁止同一单据重复确认。 */
+const handleConfirm = async (row: SpareReturnVo) => {
+  if (!row.returnId || row.status !== 'DRAFT' || confirmingIds.value.includes(row.returnId)) return;
+  confirmingIds.value.push(row.returnId);
   try {
-    await confirmSpareReturn(row.returnId!);
-    proxy?.$modal.msgSuccess('确认成功');
-    getList();
+    try {
+      await proxy?.$modal.confirm(`确认退库单「${row.returnNo || row.returnId}」？确认后不可撤销，将按入库方向过账到 ERP 库存。`);
+    } catch {
+      return;
+    }
+    const res = await confirmSpareReturn(row.returnId);
+    if (res?.data === true) proxy?.$modal.msgSuccess('退库单已确认，请在 ERP 过账台账核实落账状态');
+    else proxy?.$modal.msgWarning('尚未确认退库结果，请刷新核对，不要重复新建单据');
+    await getList();
   } catch (e: any) {
-    // 接口已关闭统一错误 toast，这里原样展示后端拒绝原因
+    // 接口已关闭统一错误 toast，只有业务请求失败才展示后端拒绝原因。
     proxy?.$modal.msgError(e?.message || '确认失败');
+  } finally {
+    confirmingIds.value = confirmingIds.value.filter((id) => id !== row.returnId);
   }
 };
 

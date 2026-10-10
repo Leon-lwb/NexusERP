@@ -4,6 +4,8 @@
  * @author Nexus
  */
 
+import type { EqSpareDecimal } from '@/api/mes/eq/spare-part';
+
 /** 备件退库单明细行视图对象 */
 export interface SpareReturnLineVo {
   /** 明细行ID */
@@ -17,9 +19,9 @@ export interface SpareReturnLineVo {
   /** 备件名称 */
   spareName?: string;
   /** 退库数量 */
-  returnQty?: number;
-  /** 单价(可选, 用于 ERP 计价) */
-  unitCost?: number;
+  returnQty?: EqSpareDecimal;
+  /** 单价(可选, 最多四位小数, 用于 ERP 计价) */
+  unitCost?: EqSpareDecimal;
   /** 备注 */
   remark?: string;
 }
@@ -30,7 +32,7 @@ export interface SpareReturnVo {
   returnId?: string;
   /** 退库单号 */
   returnNo?: string;
-  /** ERP 仓库ID(wm_warehouse.warehouse_id) */
+  /** ERP 仓库ID(可选；提供时须与每行备件映射一致，后端权威校验) */
   warehouseId?: string;
   /** 退库日期 */
   returnDate?: string;
@@ -38,8 +40,8 @@ export interface SpareReturnVo {
   returnType?: string;
   /** 状态: DRAFT / CONFIRMED / CANCELLED */
   status?: string;
-  /** 合计数量 */
-  totalQty?: number;
+  /** 合计数量(后端 BigDecimal 可能返回字符串) */
+  totalQty?: number | string | null;
   /** 备注 */
   remark?: string;
   /** 确认人 */
@@ -66,14 +68,21 @@ export interface SpareReturnQuery extends PageQuery {
   endTime?: string;
 }
 
+/** 数量输入使用数值；成本为只读展示快照，不提交客户端改价，业务 ID 保持字符串。 */
+export interface SpareReturnLineForm extends Omit<SpareReturnLineVo, 'returnQty' | 'unitCost'> {
+  returnQty?: number;
+  unitCost?: number | string;
+}
+
 /** 备件退库单表单 */
 export interface SpareReturnForm {
   returnId?: string;
   returnNo?: string;
+  /** 新增可留空按明细映射；编辑已有单头仓库时不可清空，须与明细映射一致 */
   warehouseId?: string;
   returnDate?: string;
   returnType?: string;
   status?: string;
   remark?: string;
-  lines?: SpareReturnLineVo[];
+  lines?: SpareReturnLineForm[];
 }

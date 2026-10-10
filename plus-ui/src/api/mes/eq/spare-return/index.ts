@@ -1,6 +1,6 @@
 import request from '@/utils/request';
-import { AxiosPromise } from 'axios';
-import { SpareReturnForm, SpareReturnQuery, SpareReturnVo } from './types';
+import type { AxiosPromise } from 'axios';
+import type { SpareReturnForm, SpareReturnQuery, SpareReturnVo } from './types';
 
 /**
  * MES 备件退库单 API（MES-EQ-04 前端契约冻结）
@@ -9,7 +9,7 @@ import { SpareReturnForm, SpareReturnQuery, SpareReturnVo } from './types';
  * {@code mes:eq:spare:return:list|query|add|edit|remove|confirm}。</p>
  */
 
-/** 分页查询备件退库单 */
+/** 分页查询备件退库单；响应雪花 ID 保持字符串，禁止 Number() 转换 */
 export const listSpareReturn = (query: SpareReturnQuery): AxiosPromise<SpareReturnVo[]> =>
   request({ url: '/mes/eq/spare-return/list', method: 'get', params: query });
 
