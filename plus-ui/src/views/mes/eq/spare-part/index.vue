@@ -5,15 +5,9 @@
       type="info"
       show-icon
       :closable="false"
-      title="ERP 库存为权威账本；可用量按物料汇总（在库减预留、排除冻结），目标仓库余额由后端校验。MES 库存仅是派生缓存，不作为出库预校验依据。"
+      title="ERP 为库存权威口径，可用量汇总各仓未冻结库存并扣除预留；出库按绑定仓库核验，MES 缓存库存仅作同步参考。"
     />
-    <el-alert
-      class="mb8"
-      type="warning"
-      show-icon
-      :closable="false"
-      title="低库存自动请购已暂停：来源占用、同物料防重及后端门禁未收口，本页不提供自动请购入口。"
-    />
+    <el-alert class="mb8" type="warning" show-icon :closable="false" title="低库存自动请购已暂停，请先在 ERP 关联采购需求，再办理采购申请。" />
     <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
       <el-row :gutter="16">
         <el-col :span="6">
@@ -58,12 +52,12 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" row-key="spareId" show-overflow-tooltip empty-text="暂无备件，请新增备件并配置 ERP 物料及仓库映射">
-      <el-table-column label="备件编码" prop="spareCode" width="120" />
-      <el-table-column label="备件名称" prop="spareName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="规格型号" prop="spec" min-width="120" show-overflow-tooltip>
+      <el-table-column label="备件编码" prop="spareCode" width="150" />
+      <el-table-column label="备件名称" prop="spareName" min-width="180" show-overflow-tooltip />
+      <el-table-column label="规格型号" prop="spec" min-width="150" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.spec || '-' }}</template>
       </el-table-column>
-      <el-table-column label="单位" prop="unit" align="center" width="70" />
+      <el-table-column label="单位" prop="unit" align="center" width="60" />
       <el-table-column label="分类" prop="category" align="center">
         <template #default="scope">
           <dict-tag
@@ -74,10 +68,24 @@
           <span v-else>{{ categoryLabel(scope.row.category) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="安全库存" prop="safetyStock" align="right" width="110">
+      <el-table-column label="安全库存" prop="safetyStock" align="right" width="90">
         <template #default="scope">{{ formatQuantity(scope.row.safetyStock) }}</template>
       </el-table-column>
-      <el-table-column label="MES 缓存库存" prop="currentStock" align="right" width="125">
+      <el-table-column label="ERP 可用量（汇总）" prop="erpAvailableStock" align="right" min-width="160">
+        <template #default="scope">
+          <el-tag v-if="erpStockValue(scope.row) !== undefined && scope.row.lowStock" type="danger" size="small">
+            {{ formatQuantity(erpStockValue(scope.row)) }} · 低于安全库存
+          </el-tag>
+          <span v-else>{{ formatQuantity(erpStockValue(scope.row)) }}</span>
+          <div :class="{ 'basis-hint': erpStockValue(scope.row) === undefined, 'stock-note': erpStockValue(scope.row) !== undefined }">
+            {{ stockBasisLabel(scope.row.lowStockBasis) }}
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="参考单价" prop="unitCost" align="right" width="100">
+        <template #default="scope">{{ formatAmount(scope.row.unitCost) }}</template>
+      </el-table-column>
+      <el-table-column label="MES 缓存库存" prop="currentStock" align="right" width="115">
         <template #default="scope">{{ formatQuantity(scope.row.currentStock) }}</template>
       </el-table-column>
       <el-table-column label="ERP物料" min-width="170" show-overflow-tooltip>
@@ -92,21 +100,7 @@
           <span v-else class="basis-hint">未映射 ERP 仓库，无法出入库</span>
         </template>
       </el-table-column>
-      <el-table-column label="ERP 可用量（汇总）" prop="erpAvailableStock" align="right" min-width="185">
-        <template #default="scope">
-          <el-tag v-if="erpStockValue(scope.row) !== undefined && scope.row.lowStock" type="danger" size="small">
-            {{ formatQuantity(erpStockValue(scope.row)) }} · 低于安全库存
-          </el-tag>
-          <span v-else>{{ formatQuantity(erpStockValue(scope.row)) }}</span>
-          <div :class="{ 'basis-hint': erpStockValue(scope.row) === undefined, 'stock-note': erpStockValue(scope.row) !== undefined }">
-            {{ stockBasisLabel(scope.row.lowStockBasis) }}
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="参考单价" prop="unitCost" align="right" width="120">
-        <template #default="scope">{{ formatAmount(scope.row.unitCost) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="success" icon="Top" @click="handleOpenStock(scope.row, 'IN')" v-hasPermi="['mes:eq:spare:stock']">入库</el-button>
           <el-button link type="warning" icon="Bottom" @click="handleOpenStock(scope.row, 'OUT')" v-hasPermi="['mes:eq:spare:stock']">出库</el-button>
