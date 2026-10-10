@@ -117,6 +117,21 @@ public class EqSparePartController extends BaseController {
     }
 
     /**
+     * 使用当前主表编码重新同步全部历史编码快照，不消耗自动编码流水号。
+     *
+     * @param spareId 备件ID
+     * @param bo      当前编码及同步原因
+     * @return 当前备件编码
+     */
+    @SaCheckPermission("mes:eq:spare:edit")
+    @Log(title = "备件历史编码快照同步", businessType = BusinessType.UPDATE)
+    @PutMapping("/{spareId}/synchronize-code-snapshots")
+    public R<String> synchronizeCodeSnapshots(@PathVariable Long spareId,
+                                              @Validated @RequestBody EqSpareCodeCorrectionBo bo) {
+        return R.ok("编码快照同步完成", spareCodeCorrectionService.synchronizeSnapshots(spareId, bo));
+    }
+
+    /**
      * 批量删除备件(库存为0才允许)
      *
      * @param ids ID数组

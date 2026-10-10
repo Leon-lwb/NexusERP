@@ -5,11 +5,8 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.mes.eq.domain.EqRepairSpare;
-import com.nexus.mes.eq.domain.EqSpareErpSync;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.eq.domain.EqSparePart;
-import com.nexus.mes.eq.domain.EqSpareReturnLine;
-import com.nexus.mes.eq.domain.EqSpareStockLog;
 import com.nexus.mes.eq.domain.bo.EqSpareCodeCorrectionBo;
 import com.nexus.mes.eq.mapper.EqRepairSpareMapper;
 import com.nexus.mes.eq.mapper.EqSpareErpSyncMapper;
@@ -75,29 +72,47 @@ public class EqSpareCodeCorrectionService {
             throw new ServiceException("备件编码已被其他操作修改，本次纠正未生效");
         }
 
-        EqSpareStockLog stockLog = new EqSpareStockLog();
-        stockLog.setSpareCode(newCode);
-        stockLogMapper.update(stockLog, Wrappers.<EqSpareStockLog>lambdaUpdate()
-            .eq(EqSpareStockLog::getSpareId, spareId));
-
-        EqSpareErpSync erpSync = new EqSpareErpSync();
-        erpSync.setSpareCode(newCode);
-        erpSyncMapper.update(erpSync, Wrappers.<EqSpareErpSync>lambdaUpdate()
-            .eq(EqSpareErpSync::getSpareId, spareId));
-
-        EqRepairSpare repairSpare = new EqRepairSpare();
-        repairSpare.setSpareCode(newCode);
-        repairSpareMapper.update(repairSpare, Wrappers.<EqRepairSpare>lambdaUpdate()
-            .eq(EqRepairSpare::getSpareId, spareId));
-
-        EqSpareReturnLine returnLine = new EqSpareReturnLine();
-        returnLine.setSpareCode(newCode);
-        returnLineMapper.update(returnLine, Wrappers.<EqSpareReturnLine>lambdaUpdate()
-            .eq(EqSpareReturnLine::getSpareId, spareId));
+        synchronizeSnapshotRows(spareId, newCode);
 
         log.info("备件编码全量纠正完成: spareId={}, oldCode={}, newCode={}",
             spareId, current.getSpareCode(), newCode);
         return newCode;
+    }
+
+    /**
+     * 仅按当前主表编码重新同步历史快照，不生成新编码。
+     * <p>用于纠正服务升级后补齐此前被逻辑删除过滤器遗漏的历史行；当前编码仍通过 CAS 入参核对，
+     * 且不会消耗自动编码流水号。</p>
+     *
+     * @param spareId 备件ID
+     * @param bo      当前编码及同步原因
+     * @return 当前备件编码
+     */
+    @Lock4j(keys = {"#spareId"})
+    @Transactional(rollbackFor = Exception.class)
+    public String synchronizeSnapshots(Long spareId, EqSpareCodeCorrectionBo bo) {
+        validateRequest(spareId, bo);
+        EqSparePart current = sparePartMapper.selectById(spareId);
+        if (current == null) {
+            throw new ServiceException("备件不存在: " + spareId);
+        }
+        if (!Objects.equals(current.getSpareCode(), bo.getExpectedCurrentCode())) {
+            throw new ServiceException("备件编码已变化，请刷新后重新核对");
+        }
+        synchronizeSnapshotRows(spareId, current.getSpareCode());
+        log.info("备件历史编码快照同步完成: spareId={}, code={}", spareId, current.getSpareCode());
+        return current.getSpareCode();
+    }
+
+    private void synchronizeSnapshotRows(Long spareId, String spareCode) {
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            throw new ServiceException("当前租户不能为空");
+        }
+        stockLogMapper.updateSpareCodeBySpareId(tenantId, spareId, spareCode);
+        erpSyncMapper.updateSpareCodeBySpareId(tenantId, spareId, spareCode);
+        repairSpareMapper.updateSpareCodeBySpareId(tenantId, spareId, spareCode);
+        returnLineMapper.updateSpareCodeBySpareId(tenantId, spareId, spareCode);
     }
 
     private void validateRequest(Long spareId, EqSpareCodeCorrectionBo bo) {
