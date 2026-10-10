@@ -640,6 +640,29 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             assertDoesNotThrow(()->f.service.consumeReceiptLocked(f.receiptCommand()));
         }
     }
+    @Test void existingGuardOnlyPreflightTraversesTheRealLifecycleWithoutProvisioning() throws Exception {
+        try (var f=new Fixture()) {
+            f.transferred("ORDERED","DRAFT",BigDecimal.ZERO,BigDecimal.ZERO);stubOrderGroup(f);
+            when(f.locks.lockExisting(T,List.of(201L))).thenReturn(Map.of(201L,5));
+            var method=assertDoesNotThrow(()->PuCertifiedPurchaseLifecycleService.class.getMethod(
+                "validateOrderForWorkflowExistingGuardLocked",PuCertifiedPurchaseLifecycleService.OrderCommand.class));
+            assertDoesNotThrow(()->method.invoke(f.service,orderGroup(f,Operation.APPROVE_ORDER)));
+            verify(f.locks).lockExisting(T,List.of(201L));verify(f.locks,never()).lock(any(),any());
+            assertNoLifecycleWrites(f);
+        }
+    }
+    @Test void existingGuardOnlyPreflightDoesNotTurnMissingGuardIntoBirth() throws Exception {
+        try (var f=new Fixture()) {
+            f.transferred("ORDERED","DRAFT",BigDecimal.ZERO,BigDecimal.ZERO);stubOrderGroup(f);
+            when(f.locks.lockExisting(T,List.of(201L))).thenReturn(Map.of());
+            var method=assertDoesNotThrow(()->PuCertifiedPurchaseLifecycleService.class.getMethod(
+                "validateOrderForWorkflowExistingGuardLocked",PuCertifiedPurchaseLifecycleService.OrderCommand.class));
+            var error=assertThrows(java.lang.reflect.InvocationTargetException.class,
+                ()->method.invoke(f.service,orderGroup(f,Operation.APPROVE_ORDER)));
+            assertInstanceOf(ServiceException.class,error.getCause());verify(f.locks,never()).lock(any(),any());
+            assertNoLifecycleWrites(f);
+        }
+    }
     private static PuCertifiedPurchaseLifecycleService.OrderCommand orderGroup(Fixture f,Operation op) {
         return new PuCertifiedPurchaseLifecycleService.OrderCommand(T,ACTOR,201L,KEY,801L,op,Map.of(ALLOCATION,f.row.getVersion()));
     }

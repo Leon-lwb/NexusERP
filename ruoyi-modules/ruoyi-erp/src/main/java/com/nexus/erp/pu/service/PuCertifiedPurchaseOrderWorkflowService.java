@@ -35,6 +35,45 @@ public class PuCertifiedPurchaseOrderWorkflowService {
         @NotBlank String supplierQuoteReference,@NotBlank String supplierContact,@NotBlank String evidenceReference,@NotBlank String evidenceSha256,
         @NotBlank String paymentTerms,@NotBlank String deliveryTerms) { }
     public record QuoteResult(Quote quote,Confirmation confirmation,boolean replayed) { }
+
+    /** 原请求核对方式；必须显式选择，只读核对绝不默认升级为写入。 */
+    public enum TermsRecoveryMode {
+        /** 仅核对永久原键及当前合法性，不创建报价。 */
+        CHECK_ONLY,
+        /** 无原提交时，经全部正常门禁核对后在当前事务录入一次。 */
+        SETTLE_IF_ABSENT
+    }
+
+    /** 本次处置结果；缺行不等于证明历史请求已回滚。 */
+    public enum TermsRecoveryStatus {
+        /** 当前无原报价，正常写入门禁已通过，但本次没有写入。 */
+        ABSENT_REVALIDATED,
+        /** 原键已有完整永久提交，本次仅读回原提交结果。 */
+        EXISTING_COMMIT,
+        /** 本次核对后新录入原键报价，不声明历史未知请求成功。 */
+        RECORDED_AFTER_RECONCILIATION
+    }
+
+    /**
+     * 原报价请求的显式处置合同。
+     * <p>摘要是调用方保留的审计线索，不是历史提交证明，也不代替当前权限、来源或额度校验。
+     * 原操作人必须等于当前登录主体，原报价全文仍按正常报价规则验证。</p>
+     *
+     * @param originalTerms 原请求全部条款，沿用原请求键，不接受替代报价或客户端数量
+     * @param originalActorId 原操作人断言，只能与真实登录主体相同
+     * @param originalIntentSha256 原意图文件摘要，仅作为审计引用
+     * @param expectedRequestHash 原报价逻辑合同摘要，服务端按全部字段重新计算
+     * @param reason 本次人工核对处置原因
+     * @param mode 显式只读核对或核对后录入模式
+     */
+    public record TermsRecoveryRequest(@NotNull @jakarta.validation.Valid SupplierTermsRequest originalTerms,
+        @NotNull @Positive Long originalActorId, @NotBlank @Pattern(regexp="[0-9a-f]{64}") String originalIntentSha256,
+        @NotBlank @Pattern(regexp="[0-9a-f]{64}") String expectedRequestHash,
+        @NotBlank @Size(max=500) String reason, @NotNull TermsRecoveryMode mode) { }
+
+    /** 本次处置状态与不可变报价；只读缺行时 result 为空。 */
+    public record TermsRecoveryResult(TermsRecoveryStatus status, QuoteResult result,
+        String originalIntentSha256, String expectedRequestHash, Long actorId) { }
     public record Result(Long orderId,String orderNo,String requestKey,String status,Integer version,Long quoteId,String quoteHash,
         String expectedArrivalDate,BigDecimal totalAmount,BigDecimal amountExcludingTax,BigDecimal taxAmount,boolean replayed,List<EventReceipt> allocations) {
         public Result {allocations=List.copyOf(allocations);}
@@ -84,18 +123,95 @@ public class PuCertifiedPurchaseOrderWorkflowService {
                 require(old.orderId().equals(id)&&old.enteredBy().equals(actor.userId())&&old.requestHash().equals(requestHash),"报价永久请求键/actor/全字段合同冲突");
                 requireQuote(d,old,false);return new QuoteResult(old,io(()->mapper.lockConfirmation(actor.tenantId(),old.quoteId())),true);
             }
-            requireDraft(d,request.expectedOrderVersion());lifecycle.validateOrderForWorkflowLocked(orderCommand(d,actor,Operation.APPROVE_ORDER));
-            requireCurrentCapacityAndCatalog(d);requireDates(request.promisedArrivalDate(),request.validFrom(),request.validUntil(),databaseDate());
-            List<Integer> versions=quoteVersions(actor.tenantId(),id);Date now=databaseNow();
-            Quote q=new Quote(IdWorker.getId(),actor.tenantId(),id,versions.size()+1,request.requestKey(),requestHash,actor.userId(),now,
-                d.head().vendorId(),d.source().materialId(),d.rows().get(0).getBaseUomId(),d.source().requestKey(),d.source().sourceFingerprint(),d.source().catalogFingerprint(),
-                orderFingerprint(d),totalQuantity(d),request.unitPriceExcludingTax(),request.taxRate(),request.currency(),request.exchangeRate(),request.promisedArrivalDate().toString(),
-                request.validFrom().toString(),request.validUntil().toString(),request.supplierQuoteReference(),request.supplierContact(),request.evidenceReference(),request.evidenceSha256(),
-                request.paymentTerms(),request.deliveryTerms(),ROUNDING,null);
-            Quote frozen=withQuoteHash(q,quoteHash(q));calculatePrices(d,frozen);
-            require(io(()->mapper.insertQuote(frozen))==1,"不可变报价版本写入失败");qualification.requireSourceChainTransaction();return new QuoteResult(frozen,null,false);
+            return recordTermsLocked(d,actor,id,request,requestHash,false);
         });
     }
+    /**
+     * 显式核对原报价未知结果，并按指定模式处置。
+     * <p>既有提交只读返回；缺行仅表示当前未发现提交。核对后录入必须在原有 ERP 独占可重复读
+     * 事务和既有物料锁内通过完整正常门禁，使用原键创建当前时点报价，不能覆盖任何其他报价版本。
+     * 本入口不会创建缺失 guard，不改订单状态，也不以文件摘要授予权限或证明历史结果。</p>
+     *
+     * @param id 原可信采购订单 ID
+     * @param request 保留原操作人、原键及完整条款的显式处置合同
+     * @return 区分只读缺行、既有提交和本次新录入的结果
+     */
+    public TermsRecoveryResult reconcileTerms(Long id, TermsRecoveryRequest request) {
+        Actor actor = actor("pu:order:terms:add");
+        StpUtil.checkPermission("pu:order:query");
+        require(request != null && request.mode() != null && actor.userId().equals(request.originalActorId())
+            && digest(request.originalIntentSha256()) && digest(request.expectedRequestHash())
+            && text(request.reason(),500), "原请求处置模式/主体/摘要/审计原因无效");
+        SupplierTermsRequest terms = request.originalTerms();
+        validateTerms(id,terms);
+        String requestHash = termsRequestHash(actor,id,terms);
+        require(requestHash.equals(request.expectedRequestHash()), "原报价全文与冻结逻辑合同摘要不符");
+        return executor.executeRepeatableRead(actor.tenantId(), () -> {
+            recheckActor(actor);
+            StpUtil.checkPermission("pu:order:query");
+            Document d = load(actor.tenantId(),id,true);
+            Quote old = io(() -> mapper.lockQuoteRequest(actor.tenantId(),terms.requestKey()));
+            if (old != null) {
+                require(id.equals(old.orderId()) && actor.userId().equals(old.enteredBy())
+                    && requestHash.equals(old.requestHash()), "原报价永久请求键/actor/全字段合同冲突");
+                requireQuote(d,old,false);
+                SupplierTermsRequest stored = new SupplierTermsRequest(old.requestKey(),terms.expectedOrderVersion(),
+                    old.unitPriceExcludingTax(),old.taxRate(),old.currency(),old.exchangeRate(),date(old.promisedArrivalDate()),
+                    date(old.validFrom()),date(old.validUntil()),old.supplierQuoteReference(),old.supplierContact(),
+                    old.evidenceReference(),old.evidenceSha256(),old.paymentTerms(),old.deliveryTerms());
+                require(requestHash.equals(termsRequestHash(actor,id,stored)), "原报价持久全文与原逻辑摘要冲突");
+                require(quoteVersions(actor.tenantId(),id).contains(old.quoteVersion()), "原报价不在完整永久版本序列中");
+                Confirmation confirmation = io(() -> mapper.lockConfirmation(actor.tenantId(),old.quoteId()));
+                if (confirmation != null) requireConfirmation(old,confirmation);
+                return recoveryResult(request,actor,TermsRecoveryStatus.EXISTING_COMMIT,
+                    new QuoteResult(old,confirmation,true));
+            }
+            if (request.mode() == TermsRecoveryMode.CHECK_ONLY) {
+                validateNewTermsLocked(d,actor,terms,true);
+                require(quoteVersions(actor.tenantId(),id).isEmpty(), "原键缺行但已有其他报价，禁止替代原未知请求");
+                validateRequestedAmounts(d,terms);
+                qualification.requireSourceChainTransaction();
+                return recoveryResult(request,actor,TermsRecoveryStatus.ABSENT_REVALIDATED,null);
+            }
+            QuoteResult result = recordTermsLocked(d,actor,id,terms,requestHash,true);
+            return recoveryResult(request,actor,TermsRecoveryStatus.RECORDED_AFTER_RECONCILIATION,result);
+        });
+    }
+
+    private static TermsRecoveryResult recoveryResult(TermsRecoveryRequest request, Actor actor,
+        TermsRecoveryStatus status, QuoteResult result) {
+        return new TermsRecoveryResult(status,result,request.originalIntentSha256(),request.expectedRequestHash(),actor.userId());
+    }
+
+    /** 正常报价及显式处置共用同事务门禁，禁止调用公开方法另起事务。 */
+    private void validateNewTermsLocked(Document d, Actor actor, SupplierTermsRequest request, boolean existingGuardOnly) {
+        requireDraft(d,request.expectedOrderVersion());
+        OrderCommand command = orderCommand(d,actor,Operation.APPROVE_ORDER);
+        if (existingGuardOnly) lifecycle.validateOrderForWorkflowExistingGuardLocked(command);
+        else lifecycle.validateOrderForWorkflowLocked(command);
+        requireCurrentCapacityAndCatalog(d,existingGuardOnly);
+        requireDates(request.promisedArrivalDate(),request.validFrom(),request.validUntil(),databaseDate());
+    }
+
+    /** 在已锁定的原订单内保存不可变报价，不修改订单及价税事实。 */
+    private QuoteResult recordTermsLocked(Document d, Actor actor, Long id, SupplierTermsRequest request,
+        String requestHash, boolean requireFirstVersion) {
+        validateNewTermsLocked(d,actor,request,requireFirstVersion);
+        List<Integer> versions = quoteVersions(actor.tenantId(),id);
+        require(!requireFirstVersion || versions.isEmpty(), "原键缺行但已有其他报价，禁止替代原未知请求");
+        Date now = databaseNow();
+        Quote q = new Quote(IdWorker.getId(),actor.tenantId(),id,versions.size()+1,request.requestKey(),requestHash,actor.userId(),now,
+            d.head().vendorId(),d.source().materialId(),d.rows().get(0).getBaseUomId(),d.source().requestKey(),d.source().sourceFingerprint(),d.source().catalogFingerprint(),
+            orderFingerprint(d),totalQuantity(d),request.unitPriceExcludingTax(),request.taxRate(),request.currency(),request.exchangeRate(),request.promisedArrivalDate().toString(),
+            request.validFrom().toString(),request.validUntil().toString(),request.supplierQuoteReference(),request.supplierContact(),request.evidenceReference(),request.evidenceSha256(),
+            request.paymentTerms(),request.deliveryTerms(),ROUNDING,null);
+        Quote frozen = withQuoteHash(q,quoteHash(q));
+        calculatePrices(d,frozen);
+        require(io(() -> mapper.insertQuote(frozen)) == 1, "不可变报价版本写入失败");
+        qualification.requireSourceChainTransaction();
+        return new QuoteResult(frozen,null,false);
+    }
+
     /** 由另一名已授权操作人核验精确的持久化哈希；不对报价/审计记录执行 UPDATE。 */
     public QuoteResult confirmTerms(Long id,Long quoteId,String key,String expectedQuoteHash,String reviewNote) {
         Actor actor=actor("pu:order:terms:confirm");validateId(id);require(positive(quoteId)&&requestKey(key)&&digest(expectedQuoteHash)&&text(reviewNote,500),"独立报价确认合同无效");
@@ -287,8 +403,14 @@ public class PuCertifiedPurchaseOrderWorkflowService {
             "未批准订单已有未经独立确认的价格/税/金额/发票事实");
     }
     private void requireCurrentCapacityAndCatalog(Document d) {
+        requireCurrentCapacityAndCatalog(d,false);
+    }
+    /** 完整认证核心不变，显式处置仅采用不会创建 guard 的既有预览读取器。 */
+    private void requireCurrentCapacityAndCatalog(Document d, boolean existingGuardOnly) {
         qualification.requireSourceChainTransaction();LocalDate end=date(d.source().windowEnd());Set<Long> details=new HashSet<>();for(var l:d.reqLines())require(details.add(l.sourceId()),"冻结MRP来源重复");
-        var current=certification.prepareLocked(d.head().tenantId(),d.source().materialId(),d.head().vendorId(),end,Set.copyOf(details));
+        var current=existingGuardOnly
+            ? certification.previewLocked(d.head().tenantId(),d.source().materialId(),d.head().vendorId(),end,Set.copyOf(details))
+            : certification.prepareLocked(d.head().tenantId(),d.source().materialId(),d.head().vendorId(),end,Set.copyOf(details));
         require(current!=null&&d.head().tenantId().equals(current.tenantId())&&d.source().materialId().equals(current.materialId())&&d.head().vendorId().equals(current.vendorId())&&end.equals(current.windowEnd())&&current.catalog()!=null,"当前全局占额认证作用域与冻结订单不一致");
         require(d.source().catalogFingerprint().equals(ErpPurchaseSourceCertificationService.catalogFingerprint(current.catalog())),"当前目录与永久command冻结合同不一致，必须重新审批");qualification.requireSourceChainTransaction();
     }
@@ -315,6 +437,15 @@ public class PuCertifiedPurchaseOrderWorkflowService {
     private static void requireDates(LocalDate promise,LocalDate from,LocalDate until,LocalDate today) {
         require(promise!=null&&from!=null&&until!=null&&!from.isAfter(today)&&!until.isBefore(today)&&!until.isBefore(from)&&!promise.isBefore(today)&&!promise.isBefore(from),"报价未生效/已过期/供应承诺到货日无效");
         date(promise.toString());date(from.toString());date(until.toString());
+    }
+    /** 只读核对也覆盖正常录入的总量、逐行价税和整单金额门禁，不生成报价 ID 或时间。 */
+    private void validateRequestedAmounts(Document d, SupplierTermsRequest request) {
+        totalQuantity(d);
+        List<LinePrice> prices = new ArrayList<>();
+        for (OrderLine line : d.lines()) {
+            prices.add(calculateLine(line.orderQuantity(),request.unitPriceExcludingTax(),request.taxRate()));
+        }
+        totals(prices);
     }
     private Map<Long,LinePrice> calculatePrices(Document d,Quote q) {
         Map<Long,LinePrice> prices=new LinkedHashMap<>();for(var l:d.lines())prices.put(l.lineId(),calculateLine(l.orderQuantity(),q.unitPriceExcludingTax(),q.taxRate()));totals(prices.values());return prices;
