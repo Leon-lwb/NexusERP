@@ -91,7 +91,8 @@ async function setupPage(name, ports = {}) {
     '@/api/mes/eq/spare-part': api,
     '@/api/mes/eq/spare-return': api,
     '@/api/erp/bd/material/index': api,
-    '@/api/erp/wm/warehouse/index': api
+    '@/api/erp/wm/warehouse/index': api,
+    '@/api/system/autocode/rule': api
   };
   if (existsSync(displayUrl)) modules['@/utils/mesSpareDisplay'] = display();
   modules['@/composables/useCrud'] = evaluate(read('src/composables/useCrud.ts'), modules);
@@ -125,6 +126,9 @@ async function setupPage(name, ports = {}) {
     'rules',
     'handleDelete',
     'handleUpdate',
+    'autoGenFlag',
+    'spareCodePreview',
+    'handleAutoGenChange',
     'cancel'
   ];
   const footer = `\nexports.bindings = { ${names.map((key) => `${key}: typeof ${key} === 'undefined' ? undefined : ${key}`).join(', ')} };`;
@@ -260,6 +264,20 @@ for (const name of ['spare-part', 'spare-return']) {
     assert.equal(page.submitting.value, false);
   });
 }
+
+test('备件自动编码只展示预览，正式新增由后端取号', async () => {
+  const page = await setupPage('spare-part', { previewCode: () => Promise.resolve('SP20261010001') });
+  assert.equal(typeof page.handleAutoGenChange, 'function');
+  await page.handleAutoGenChange(true);
+  assert.equal(page.spareCodePreview.value, 'SP20261010001');
+  page.form.value = { spareCode: 'SP20261010001', spareName: '深沟球轴承 6204-2RS' };
+
+  await page.handleSubmit();
+
+  const request = page.calls.find((entry) => entry.name === 'addSparePart');
+  assert.ok(request, '应提交新增备件请求');
+  assert.equal(request.args[0].spareCode, '', '自动模式必须清空预览编码，由后端正式取号');
+});
 
 for (const quantity of [undefined, 0, -1, NaN, Infinity, 0.00001, 10000000000]) {
   test(`退库保存拒绝无效数量 ${String(quantity)}`, async () => {

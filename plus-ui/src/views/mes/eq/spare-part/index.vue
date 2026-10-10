@@ -124,7 +124,11 @@
     >
       <el-form :model="form" label-width="100px" ref="formRef" :rules="rules" :disabled="submitting">
         <el-form-item label="备件编码" prop="spareCode">
-          <el-input v-model="form.spareCode" placeholder="备件编码" clearable :disabled="!!form.spareId" />
+          <div class="code-editor">
+            <el-input v-if="autoGenFlag" v-model="spareCodePreview" placeholder="按规则生成" disabled />
+            <el-input v-else v-model="form.spareCode" placeholder="备件编码" clearable :disabled="!!form.spareId" />
+            <el-switch v-if="!form.spareId" v-model="autoGenFlag" active-text="自动生成" @change="handleAutoGenChange" />
+          </div>
         </el-form-item>
         <el-form-item label="备件名称" prop="spareName">
           <el-input v-model="form.spareName" placeholder="备件名称" clearable />
@@ -234,6 +238,7 @@ import {
 import type { EqSparePartVO, EqSparePartForm, EqSparePartQuery, EqSpareStockBo, EqSpareDecimal } from '@/api/mes/eq/spare-part';
 import { listMaterial } from '@/api/erp/bd/material/index';
 import { listWarehouse } from '@/api/erp/wm/warehouse/index';
+import { previewCode } from '@/api/system/autocode/rule';
 import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
 import type { Ref } from 'vue';
 import {
@@ -253,6 +258,8 @@ import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_spare_category } = toRefs<any>(proxy?.useDict('mes_spare_category'));
+const autoGenFlag = ref(false);
+const spareCodePreview = ref('');
 
 const formRef = ref<FormInstance>();
 const validateDecimal: FormItemRule = {
@@ -263,7 +270,15 @@ const validateDecimal: FormItemRule = {
   trigger: ['blur', 'change']
 };
 const rules: FormRules = {
-  spareCode: [{ required: true, whitespace: true, message: '请输入备件编码', trigger: 'blur' }],
+  spareCode: [
+    {
+      validator: (_rule, value, callback) => {
+        if (autoGenFlag.value || String(value ?? '').trim()) callback();
+        else callback(new Error('请输入备件编码'));
+      },
+      trigger: 'blur'
+    }
+  ],
   spareName: [{ required: true, whitespace: true, message: '请输入备件名称', trigger: 'blur' }],
   safetyStock: [validateDecimal],
   unitCost: [
@@ -295,7 +310,7 @@ const {
   form: crudForm,
   getList,
   handleQuery,
-  handleAdd,
+  handleAdd: openAdd,
   handleUpdate,
   handleDelete,
   handleExport,
@@ -322,11 +337,14 @@ const {
     remark: ''
   }),
   afterLoad: (data) => {
+    autoGenFlag.value = false;
+    spareCodePreview.value = '';
     // 数量转数字供输入组件使用；成本和雪花 ID 保留字符串精度。
     data.safetyStock = decimalValue(data.safetyStock);
     data.unitCost = costInputValue(data.unitCost);
   },
   beforeSubmit: (data) => {
+    if (!data.spareId && autoGenFlag.value) data.spareCode = '';
     data.unitCost = costInputValue(data.unitCost);
   },
   exportUrl: '/mes/eq/spare-part/export',
@@ -334,6 +352,24 @@ const {
 });
 
 const form = crudForm as Ref<Partial<EqSparePartForm>>;
+
+const handleAutoGenChange = async (enabled: boolean) => {
+  autoGenFlag.value = enabled;
+  form.value.spareCode = '';
+  spareCodePreview.value = '';
+  if (!enabled) return;
+  try {
+    spareCodePreview.value = (await previewCode('MES_SPARE_CODE')) as unknown as string;
+  } catch {
+    autoGenFlag.value = false;
+  }
+};
+
+const handleAdd = async () => {
+  openAdd();
+  await handleAutoGenChange(true);
+};
+
 const submitting = ref(false);
 const handleSubmit = async () => {
   if (submitting.value) return;
@@ -478,6 +514,12 @@ getList();
   font-size: 12px;
   line-height: 1.5;
   white-space: normal;
+}
+.code-editor {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
 }
 .basis-hint {
   color: #e6a23c;

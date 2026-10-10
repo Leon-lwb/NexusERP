@@ -215,6 +215,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (bo.getSpareId() == null) {
             throw new ServiceException("备件ID不能为空");
         }
+        if (StringUtils.isBlank(bo.getSpareCode())) {
+            throw new ServiceException("备件编码不能为空");
+        }
         if (baseMapper.selectById(bo.getSpareId()) == null) {
             throw new ServiceException("备件不存在: " + bo.getSpareId());
         }

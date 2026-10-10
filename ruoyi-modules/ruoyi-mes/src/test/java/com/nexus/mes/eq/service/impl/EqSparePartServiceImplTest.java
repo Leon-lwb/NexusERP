@@ -129,6 +129,19 @@ class EqSparePartServiceImplTest {
     }
 
     @Test
+    void updateRejectsBlankCodeBeforeWritingMasterData() {
+        EqSparePartBo bo = masterRequest();
+        bo.setSpareId(1L);
+        bo.setSpareCode(" ");
+
+        ServiceException failure = assertThrows(ServiceException.class, () -> service.updateByBo(bo));
+
+        assertEquals("备件编码不能为空", failure.getMessage());
+        verify(sparePartMapper, never()).updateById(any(EqSparePart.class));
+        verifyNoInteractions(erpSpareStockQueryMapper);
+    }
+
+    @Test
     void stockTransactionWritesBackReadAfterQtyInsteadOfComputedValue() {
         EqSparePartVo spare = mappedSpare(new BigDecimal("10"));
         when(sparePartMapper.selectVoById(1L)).thenReturn(spare);

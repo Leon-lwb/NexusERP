@@ -36296,6 +36296,9 @@ INSERT INTO `sys_auto_code_part` (`part_id`, `tenant_id`, `rule_id`, `part_index
 (30201, '000000', 302, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'PL', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0'),
 (30202, '000000', 302, 2, 'NOWDATE', 'DATE', '日期', 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0'),
 (30203, '000000', 302, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0'),
+(30301, '000000', 303, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'SP', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-10-10 00:00:00', NULL, NULL, '0'),
+(30302, '000000', 303, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-10-10 00:00:00', NULL, NULL, '0'),
+(30303, '000000', 303, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, 103, 1, '2026-10-10 00:00:00', NULL, NULL, '0'),
 (2058013587653398529, '000000', 277, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'XSDD', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-05-23 10:34:10', 1, '2026-05-23 10:34:10', '0'),
 (2058014003736743938, '000000', 277, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-05-23 10:35:49', 1, '2026-05-23 10:35:49', '0'),
 (2058014518088437761, '000000', 277, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, 103, 1, '2026-05-23 10:37:52', 1, '2026-05-23 10:37:52', '0');
@@ -36507,7 +36510,8 @@ INSERT INTO `sys_auto_code_rule` (`rule_id`, `tenant_id`, `rule_code`, `rule_nam
 (296, '000000', 'WM_HANDOVER_CODE', '上料交接单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-08-30 00:00:00', NULL, NULL, '0'),
 (300, '000000', 'PRD_SUBCONTRACT_CODE', '委外订单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-09-06 00:00:00', NULL, NULL, '0'),
 (301, '000000', 'ROUTING_CODE', '工艺路线编码', 'RT+日期+3位日循环流水号', 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-09-14 00:00:00', NULL, NULL, '0'),
-(302, '000000', 'PRICE_LIST_CODE', '价目表编码', '销售价目表头编码 PL+yyyyMMdd+3位流水', 14, 'N', '0', 'L', 'Y', '2026-09-14 补建：代码引用但库中缺失', NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+(302, '000000', 'PRICE_LIST_CODE', '价目表编码', '销售价目表头编码 PL+yyyyMMdd+3位流水', 14, 'N', '0', 'L', 'Y', '2026-09-14 补建：代码引用但库中缺失', NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0'),
+(303, '000000', 'MES_SPARE_CODE', 'MES备件编码', 'SP+日期+3位日循环流水号', 13, 'N', NULL, 'L', 'Y', '新增备件留空时由服务端正式取号', NULL, NULL, 0, 0, 103, 1, '2026-10-10 00:00:00', NULL, NULL, '0');
 
 DROP TABLE IF EXISTS `sys_client`;
 

@@ -43,7 +43,8 @@ export interface EqSparePartQuery extends PageQuery {
 /** 备件表单 */
 export interface EqSparePartForm {
   spareId?: string;
-  spareCode: string;
+  /** 新增时留空由后端 MES_SPARE_CODE 规则生成 */
+  spareCode?: string;
   spareName: string;
   spec?: string;
   model?: string;
@@ -57,6 +58,12 @@ export interface EqSparePartForm {
   /** 参考单价(decimal(18,4)，字符串避免高位小数失真，用于 ERP 移动平均计价) */
   unitCost?: number | string;
   remark?: string;
+}
+
+/** 备件编码受控纠正入参 */
+export interface EqSpareCodeCorrectionForm {
+  expectedCurrentCode: string;
+  reason: string;
 }
 
 /** 出入库参数 */
@@ -99,6 +106,10 @@ export const addSparePart = (data: EqSparePartForm): AxiosPromise<EqSparePartVO>
 
 /** 修改备件 */
 export const updateSparePart = (data: EqSparePartForm): AxiosPromise<void> => request({ url: '/mes/eq/spare-part', method: 'put', data });
+
+/** 按 MES_SPARE_CODE 规则重新生成编码并同步历史快照 */
+export const regenerateSpareCode = (spareId: string | number, data: EqSpareCodeCorrectionForm): AxiosPromise<string> =>
+  request({ url: `/mes/eq/spare-part/${spareId}/regenerate-code`, method: 'put', data });
 
 /** 删除备件 */
 export const delSparePart = (spareIds: string | string[] | number | number[]) => request({ url: `/mes/eq/spare-part/${spareIds}`, method: 'delete' });
