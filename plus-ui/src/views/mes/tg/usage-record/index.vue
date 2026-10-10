@@ -32,20 +32,20 @@
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工装编码" prop="toolingCode" min-width="140">
-        <template #default="scope">{{ scope.row.toolingCode || scope.row.toolingId }}</template>
+      <el-table-column label="工装" min-width="195">
+        <template #default="scope">{{ toolingReference(scope.row.toolingId) }}</template>
       </el-table-column>
-      <el-table-column label="工单编号" prop="woNo" width="140" />
-      <el-table-column label="工位" prop="workstationName" width="120" />
-      <el-table-column label="操作员" prop="operatorName" width="100" />
-      <el-table-column label="领用时间" prop="checkoutTime" width="160" />
-      <el-table-column label="归还时间" prop="returnTime" width="160" />
-      <el-table-column label="使用次数" prop="usageCount" align="right" width="90" />
-      <el-table-column label="使用时长" prop="usageHours" align="right" width="90" />
-      <el-table-column label="状态" prop="status" align="center" width="90">
+      <el-table-column label="工单编号" prop="woNo" width="120" />
+      <el-table-column label="工位" prop="workstationName" width="100" />
+      <el-table-column label="操作员" prop="operatorName" width="80" />
+      <el-table-column label="领用时间" prop="checkoutTime" width="140" />
+      <el-table-column label="归还时间" prop="returnTime" width="140" />
+      <el-table-column label="使用次数" prop="usageCount" align="right" width="75" />
+      <el-table-column label="使用时长" prop="usageHours" align="right" width="75" />
+      <el-table-column label="状态" prop="status" align="center" width="75">
         <template #default="scope"><dict-tag :options="tg_usage_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="135" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:tg:usage:edit']">编辑</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:tg:usage:remove']">删除</el-button>
@@ -213,6 +213,7 @@ import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listWorkstation } from '@/api/erp/bd/workstation';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { buildToolingReferenceMap, formatToolingReference, type MesToolingReferenceMap } from '@/utils/mesToolingReference';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { tg_usage_status, mes_tooling_status, prd_wo_status } = toRefs<any>(proxy?.useDict('tg_usage_status', 'mes_tooling_status', 'prd_wo_status'));
@@ -224,6 +225,13 @@ const toolingDialog = reactive({
   total: 0,
   query: { pageNum: 1, pageSize: 10, toolingCode: '', toolingName: '' }
 });
+const toolingReferences = ref<MesToolingReferenceMap>({});
+
+const loadToolingReferences = () =>
+  listTooling({ pageNum: 1, pageSize: 1000 } as any).then((res: any) => {
+    toolingReferences.value = buildToolingReferenceMap(res.rows || []);
+  });
+const toolingReference = (toolingId: string | number) => formatToolingReference(toolingReferences.value, toolingId);
 const userDialog = reactive({ visible: false, list: [] as any[], total: 0, query: { pageNum: 1, pageSize: 10, userName: '', nickName: '' } });
 const woDialog = reactive({ visible: false, list: [] as any[], total: 0, query: { pageNum: 1, pageSize: 10, woNo: '' } });
 const workstationDialog = reactive({
@@ -349,5 +357,5 @@ const selectWorkstation = (row: any) => {
   workstationDialog.visible = false;
 };
 
-getList();
+void Promise.all([loadToolingReferences(), getList()]);
 </script>
