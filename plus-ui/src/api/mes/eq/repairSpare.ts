@@ -6,9 +6,10 @@ import { AxiosPromise } from 'axios';
  * <p>后端契约：EqRepairSpareVo（EqRepairSpareController `/mes/eq/repair-spare`）。</p>
  */
 export interface EqRepairSpareVO {
-  id: number;
-  repairId: number;
-  spareId: number;
+  id: string;
+  /** 运行时雪花 ID 为字符串；number 仅兼容既有维修页的旧接口声明，禁止数值转换。 */
+  repairId: string | number;
+  spareId: string;
   spareCode?: string;
   spareName?: string;
   spec?: string;
@@ -28,4 +29,4 @@ export const listRepairSpareByRepair = (repairId: number | string): AxiosPromise
  * 删除维修领用明细（录入纠错用，权限码 `mes:eq:repair:complete`）
  * <p>注意：删除不会自动回补已扣减的备件库存，纠错后需在备件台账核对。</p>
  */
-export const delRepairSpare = (ids: number | number[]) => request({ url: `/mes/eq/repair-spare/${ids}`, method: 'delete' });
+export const delRepairSpare = (ids: string | string[] | number | number[]) => request({ url: `/mes/eq/repair-spare/${ids}`, method: 'delete' });

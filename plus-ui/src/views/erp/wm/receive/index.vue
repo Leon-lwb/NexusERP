@@ -52,6 +52,7 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5"><el-button plain @click="openCertified()" v-hasPermi="['wm:receive:query']">认证收货工作台</el-button></el-col>
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:receive:add']">新增</el-button>
       </el-col>
@@ -167,6 +168,7 @@
       </el-table-column> -->
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" fixed="right">
         <template #default="scope">
+          <el-button link @click="openCertified(scope.row)" v-hasPermi="['wm:receive:query']">认证工作台</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['wm:receive:query']">查看</el-button>
           <el-dropdown
             v-if="rowMoreActions(scope.row).some((action) => hasPermi(action.perm))"
@@ -195,6 +197,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
+    <CertifiedWarehouseWorkflowDialog v-model="certifiedOpen" domain="receive" :initial-id="certifiedId" :initial-kind="certifiedKind" />
     <!-- 添加或修改物料入库单对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="receiveRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
@@ -323,6 +326,14 @@ import { listArrivalnotice } from '@/api/erp/wm/arrivalnotice';
 import { useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 
+import { useRoute } from 'vue-router';
+import { getToken } from '@/utils/auth';
+import { useUserStore } from '@/store/modules/user';
+import { createWarehouseLegacyGate } from '../certified/warehouseWorkflow';
+import { getCertifiedReceiveContext, getCertifiedReceiveDetail } from '@/api/erp/wm/receive';
+import CertifiedWarehouseWorkflowDialog from '../certified/CertifiedWarehouseWorkflowDialog.vue';
+import type { WarehouseTarget } from '@/api/erp/wm/arrivalnotice/types';
+
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_receive_status'));
@@ -381,11 +392,13 @@ const selectedRow = computed(() => {
 });
 
 /** 选中行可修改（草稿 / 已驳回） */
-const isDraftOrRejected = computed(() => selectedRow.value?.status === 'DRAFT' || selectedRow.value?.status === 'REJECTED');
+const isDraftOrRejected = computed(
+  () => legacyRow(selectedRow.value) && (selectedRow.value?.status === 'DRAFT' || selectedRow.value?.status === 'REJECTED')
+);
 /** 选中行可删除（仅草稿） */
-const isDraft = computed(() => selectedRow.value?.status === 'DRAFT');
+const isDraft = computed(() => legacyRow(selectedRow.value) && selectedRow.value?.status === 'DRAFT');
 /** 选中行可上架 / 确认上架（待上架） */
-const isApproved = computed(() => selectedRow.value?.status === 'APPROVED');
+const isApproved = computed(() => legacyRow(selectedRow.value) && selectedRow.value?.status === 'APPROVED');
 /** 选中行可入库（待入库） */
 const isShelved = computed(() => selectedRow.value?.status === 'SHELVED');
 
@@ -415,7 +428,7 @@ const ROW_MORE_ACTIONS: Record<string, RowAction[]> = {
 
 /** 获取某行「更多」下拉的操作列表 */
 function rowMoreActions(row: any): RowAction[] {
-  return ROW_MORE_ACTIONS[row?.status] ?? [];
+  return legacyRow(row) ? (ROW_MORE_ACTIONS[row?.status] ?? []) : [];
 }
 
 /** 当前用户是否具备指定权限（用于下拉项过滤，避免对 el-dropdown-item 使用 v-hasPermi 指令） */
@@ -424,6 +437,68 @@ function hasPermi(permission: string) {
 }
 
 const { queryParams, form, rules } = toRefs(data);
+
+const warehouseRoute = useRoute();
+const warehouseUser = useUserStore();
+const protectionRevision = ref(0);
+const certifiedOpen = ref(false);
+const certifiedId = ref('');
+const certifiedKind = ref<WarehouseTarget>('ORDER');
+/** 独立服务器保护事实，不用列表 attr1/status 作为认证判断。 */
+const legacyGate = createWarehouseLegacyGate({
+  domain: 'receive',
+  readCredential: getToken,
+  readScope: () => ({
+    tenantId: warehouseUser.tenantId,
+    userId: warehouseUser.userId,
+    routeKey: warehouseRoute.fullPath + '|' + ids.value.join(',') + '|' + String(form.value.receiveId ?? '')
+  }),
+  hasPermission: (p) => proxy.$auth.hasPermi(p),
+  context: getCertifiedReceiveContext,
+  detail: getCertifiedReceiveDetail,
+  changed: () => {
+    protectionRevision.value++;
+  }
+});
+function legacyRow(row: any) {
+  protectionRevision.value;
+  return !!row && legacyGate.known(row.receiveId);
+}
+async function legacyPermit(values: unknown[], permission: string) {
+  try {
+    return await legacyGate.requireLegacy(values, permission);
+  } catch {
+    proxy.$modal.msgWarning('认证或保护事实未知：旧通用入口已关闭，请只读核对或使用认证工作台');
+    return null;
+  }
+}
+function openCertified(row?: any) {
+  certifiedId.value = row?.receiveId == null ? '' : String(row.receiveId);
+  certifiedKind.value = row?.receiveId == null ? 'ORDER' : 'RECEIVE';
+  certifiedOpen.value = true;
+}
+watch(
+  () => receiveList.value,
+  (rows) => {
+    legacyGate.clear();
+    for (const row of rows ?? []) void legacyGate.probe(row.receiveId);
+  }
+);
+watch(
+  () => [warehouseRoute.fullPath, warehouseUser.userId, warehouseUser.tenantId, getToken()],
+  () => legacyGate.clear()
+);
+
+async function legacyFormPermit() {
+  try {
+    return form.value.receiveId == null
+      ? await legacyGate.requireNew('wm:receive:add', form.value as any)
+      : await legacyGate.requireLegacy([form.value.receiveId], 'wm:receive:edit');
+  } catch {
+    proxy.$modal.msgWarning('认证或未知来源关闭通用保存');
+    return null;
+  }
+}
 
 /** 查询物料入库单列表 */
 function getList() {
@@ -511,7 +586,7 @@ function handleAdd() {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row: any) {
+async function handleUpdate(row: any) {
   if (row && row.type && row instanceof Event) {
     row = null;
   }
@@ -535,6 +610,7 @@ function handleUpdate(row: any) {
     return;
   }
 
+  if (!(await legacyPermit([row.receiveId], 'wm:receive:edit'))) return;
   const receiveId = row.receiveId;
   router.push({
     path: '/erp/wm/receive/form',
@@ -569,7 +645,9 @@ function handleView(row: any) {
 }
 
 /** 提交按钮 */
-function submitForm() {
+async function submitForm() {
+  const session = await legacyFormPermit();
+  if (!session) return;
   (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
@@ -577,13 +655,13 @@ function submitForm() {
         form.value.receiveCode = undefined;
       }
       if (form.value.receiveId != null) {
-        updateReceive(form.value).then(() => {
+        updateReceive(form.value, session).then(() => {
           proxy.$modal.msgSuccess('修改成功');
           open.value = false;
           getList();
         });
       } else {
-        addReceive(form.value).then(() => {
+        addReceive(form.value, session).then(() => {
           proxy.$modal.msgSuccess('新增成功');
           open.value = false;
           getList();
@@ -594,7 +672,7 @@ function submitForm() {
 }
 
 /** 删除按钮操作 */
-function handleDelete(row: any) {
+async function handleDelete(row: any) {
   // 工具栏点击时传入的是 MouseEvent，需兜底取选中行 ID
   if (row instanceof Event) {
     row = undefined;
@@ -611,11 +689,14 @@ function handleDelete(row: any) {
       return;
     }
   }
+  const selected = row?.receiveId ? [row.receiveId] : [...ids.value];
+  const session = await legacyPermit(selected, 'wm:receive:remove');
+  if (!session) return;
   const _receiveIds = row?.receiveId || ids.value;
   proxy.$modal
     .confirm('是否确认删除物料入库单编号为"' + _receiveIds + '"的数据项？')
     .then(function () {
-      return delReceive(_receiveIds);
+      return delReceive(_receiveIds, session);
     })
     .then(() => {
       getList();
@@ -625,7 +706,7 @@ function handleDelete(row: any) {
 }
 
 /** 上架按钮操作 */
-function handleShelf(row: any) {
+async function handleShelf(row: any) {
   if (row && row.type && row instanceof Event) {
     row = null;
   }
@@ -649,6 +730,7 @@ function handleShelf(row: any) {
     return;
   }
 
+  if (!(await legacyPermit([row.receiveId], 'wm:receive:edit'))) return;
   const receiveId = row.receiveId;
   router.push({
     path: '/erp/wm/receive/form',
@@ -657,7 +739,7 @@ function handleShelf(row: any) {
 }
 
 /** 入库按钮操作 */
-function handleExecute() {
+async function handleExecute() {
   if (ids.value.length !== 1) {
     proxy.$modal.msgWarning('请选择一条数据进行入库');
     return;
@@ -674,10 +756,12 @@ function handleExecute() {
     return;
   }
 
+  const session = await legacyPermit([selectedRow.receiveId], 'wm:receive:execute');
+  if (!session) return;
   proxy.$modal
     .confirm('是否确认执行物料入库操作？')
     .then(function () {
-      return execute(selectedRow.receiveId, {});
+      return execute(selectedRow.receiveId, {}, session);
     })
     .then(() => {
       getList();
@@ -701,7 +785,9 @@ function handleConfirmShelf() {
 }
 
 /** 行内确认上架按钮操作 */
-function handleConfirmShelfRow(row: any) {
+async function handleConfirmShelfRow(row: any) {
+  const session = await legacyPermit([row.receiveId], 'wm:receive:shelf');
+  if (!session) return;
   // 校验状态：只有待上架状态才能执行确认上架操作
   if (row.status !== 'APPROVED') {
     proxy.$modal.msgWarning('当前状态不允许确认上架，只有待上架状态才能执行确认上架操作！');
@@ -710,7 +796,7 @@ function handleConfirmShelfRow(row: any) {
   proxy.$modal
     .confirm('是否确认上架？确认后单据状态将变为"待入库"。')
     .then(function () {
-      return confirmShelf(row.receiveId);
+      return confirmShelf(row.receiveId, session);
     })
     .then(() => {
       getList();
@@ -720,7 +806,9 @@ function handleConfirmShelfRow(row: any) {
 }
 
 /** 行内入库按钮操作 */
-function handleExecuteRow(row: any) {
+async function handleExecuteRow(row: any) {
+  const session = await legacyPermit([row.receiveId], 'wm:receive:execute');
+  if (!session) return;
   // 校验状态：只有待入库状态才能执行入库操作
   if (row.status !== 'SHELVED') {
     proxy.$modal.msgWarning('当前状态不允许入库，只有待入库状态才能执行入库操作！');
@@ -729,7 +817,7 @@ function handleExecuteRow(row: any) {
   proxy.$modal
     .confirm('是否确认执行物料入库操作？')
     .then(function () {
-      return execute(row.receiveId, {});
+      return execute(row.receiveId, {}, session);
     })
     .then(() => {
       getList();

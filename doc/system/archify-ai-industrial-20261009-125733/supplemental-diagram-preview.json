@@ -1,0 +1,36 @@
+{
+  "kind": "supplemental-complete-svg-preview",
+  "notAuthoritativeAutomatedGate": true,
+  "generatedAt": "2026-10-09T15:24:49.759501+08:00",
+  "artifact": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.html",
+    "sha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c",
+    "bytes": 816306
+  },
+  "screenshot": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial-full-diagram-preview.png",
+    "sha256": "ae296330f49aa36f0157b8521377d9391d6b90bf49bdd73efd33c004ab63629e",
+    "theme": "light",
+    "viewport": [
+      1440,
+      3000
+    ],
+    "deviceScaleFactor": 1,
+    "svgBounds": {
+      "x": 56.66666793823242,
+      "y": 124.66667175292969,
+      "width": 1326.666706085205,
+      "height": 2424.9895782470703
+    },
+    "selector": "svg:first",
+    "completeDiagramElement": true,
+    "includesViewerChrome": false
+  },
+  "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "offline": true,
+  "visualReview": "passed",
+  "nativeEvidenceUnchanged": true,
+  "reviewMethod": "functions.view_image",
+  "reviewScope": "Complete diagram SVG, all components/relationships/legend visible; no page footer cards or Viewer Runtime controls are included. This is supplemental perceptual evidence, not a new browser gate.",
+  "reviewedAt": "2026-10-09T15:28:20.614501+08:00"
+}

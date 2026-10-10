@@ -1,0 +1,24 @@
+{
+  "artifact_sha256": "d7564cb45ee3885c2d6d9ac79ca585e46719bdf8342cc59bf1b6fed35b9098ae",
+  "visual_review": "passed",
+  "reviewer": "Codex Agent image inspection (not human business acceptance)",
+  "correction_rounds": 1,
+  "inspected_captures": [
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634\\review-2\\nexus-erp-architecture.visual-check.1440x900.light.png",
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634\\review-2\\nexus-erp-architecture.visual-check.2048x1320.light.png",
+    "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-111634\\review-2\\nexus-erp-architecture.visual-check.2048x1320.dark.png"
+  ],
+  "observations": [
+    "The four client nodes are peers on one row: PC, APP, PDA and Station.",
+    "MQTT devices, station-local hardware and the backend runtime are separate ownership roles.",
+    "Station local hardware is gated by real-driver configuration; optional Vision and Milvus conditions are visible on relationships.",
+    "Two resolved crossovers remain (PC/model and Station/MQTT); endpoint/label distinctions are traceable and no junction is implied.",
+    "The measured Redis label occupies its own tail corridor without covering store nodes or unrelated routes.",
+    "At 1440x900, lower data facilities and explanatory cards require declared document-level vertical scrolling."
+  ],
+  "unverified": [
+    "Production deployment and environment-specific reverse proxy / vector-store configuration",
+    "PDA or Station real-device acceptance and live client/backend compatibility",
+    "End-to-end viewer export formats"
+  ]
+}

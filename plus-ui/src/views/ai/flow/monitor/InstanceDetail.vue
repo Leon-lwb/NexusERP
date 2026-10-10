@@ -7,7 +7,7 @@ import FlowCanvas from '../designer/FlowCanvas.vue';
 import JsonViewer from '../components/JsonViewer.vue';
 import type { AiFlowInstance, AiFlowNodeRun } from '@/api/ai/flow';
 import { getFlow, getInstance, listNodeRuns, retryInstance } from '@/api/ai/flow';
-import { flowTriggerLabel } from '../flowDisplay';
+import { flowTriggerLabel } from '../flowTriggerDisplay';
 
 /**
  * 流程实例详情页（只读画布重放）

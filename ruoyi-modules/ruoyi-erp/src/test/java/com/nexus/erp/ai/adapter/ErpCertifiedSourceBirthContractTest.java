@@ -1,5 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,11 +62,11 @@ class ErpCertifiedSourceBirthContractTest {
             .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
         assertTrue(table.find(), "Persisted birth registry must exist in the installation schema");
         String text = table.group().toLowerCase(Locale.ROOT);
-        assertTrue(text.contains("primary key (`birth_id`)"));
-        assertTrue(text.contains("unique key `uk_source_birth_material` (`tenant_id`, `material_id`)"));
-        for (String column : List.of("`tenant_id` varchar(20)", "`material_id` bigint(20)",
-            "`born_at` datetime", "`actor_id` bigint(20)", "`birth_fingerprint` char(64)")) {
-            assertTrue(text.contains(column + " not null"), column);
+        ErpDdlTestSupport.assertPrimaryKey(text, "birth_id");
+        ErpDdlTestSupport.assertIndex(text, true, "uk_source_birth_material", "tenant_id", "material_id");
+        for (String[] column : List.of(new String[]{"tenant_id", "varchar(20)"}, new String[]{"material_id", "bigint"},
+            new String[]{"born_at", "datetime"}, new String[]{"actor_id", "bigint"}, new String[]{"birth_fingerprint", "char(64)"})) {
+            ErpDdlTestSupport.assertColumn(text, column[0], column[1] + " NOT NULL");
         }
         assertTrue(Pattern.compile("engine\\s*=\\s*innodb").matcher(text).find());
     }

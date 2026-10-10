@@ -203,14 +203,25 @@ test('普通 BO 新增彻底关闭，历史单据只走原维护接口', () => {
   assert.doesNotMatch(body, /addPurchaseRequisition\s*\(/);
   const warn = [];
   let writes = 0;
-  new Function('form', 'proxy', 'route', 'updatePurchaseRequisition', 'router', body)(
+  const proxy = { $modal: { msgWarning: (msg) => warn.push(msg) } };
+  /** 新增依赖按真实保护函数执行；本例为无身份的普通新增，不用常量false替代守卫。 */
+  const legacyGuard = () =>
+    new Function('isViewMode', 'props', 'isDecisionResultRoute', 'protectsLegacyWrites', 'proxy', functionBody('legacyWriteBlocked'))(
+      { value: false },
+      { disabled: false },
+      () => false,
+      { value: false },
+      proxy
+    );
+  new Function('form', 'proxy', 'route', 'updatePurchaseRequisition', 'router', 'legacyWriteBlocked', body)(
     { value: { requisitionId: null } },
-    { $modal: { msgWarning: (msg) => warn.push(msg) } },
+    proxy,
     { query: { action: 'add' } },
     () => {
       writes++;
     },
-    {}
+    {},
+    legacyGuard
   );
   assert.equal(writes, 0);
   assert.match(warn.join(''), /普通.*新增.*关闭|可信来源/);

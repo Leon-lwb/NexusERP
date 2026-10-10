@@ -22,7 +22,8 @@ public final class DecisionEvidenceException extends RuntimeException {
     public enum Reason {
         ROUTING_EVIDENCE_MISSING("缺少生产工艺路线证据，不能发布风险结论。"),
         SCHEDULE_EVIDENCE_MISSING("缺少当前基线排程证据，不能发布风险结论。"),
-        SHORTAGE_SIMULATION_INCOMPLETE("缺少工单 MRP 需求证据，不能发布风险结论。"),
+        /** 需求、库存、到货单位或有限计算任一未完成时，不承诺完整风险或无风险。 */
+        SHORTAGE_SIMULATION_INCOMPLETE("缺料推演证据不完整或计算未完成，不能发布完整风险结论。"),
         CAPACITY_EVIDENCE_MISSING("缺少可信产能日历证据，不能发布风险结论。"),
         /** 仅限排程方案终态过滤后的空工单范围，不把派生出的空产能误报为来源证据缺失。 */
         NO_ANALYZABLE_WORK_ORDER("当前决策范围没有可分析工单，不能发布风险结论。");

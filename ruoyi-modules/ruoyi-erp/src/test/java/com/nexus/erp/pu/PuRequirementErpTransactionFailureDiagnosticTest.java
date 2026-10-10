@@ -10,13 +10,18 @@ import ch.qos.logback.core.spi.FilterReply;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
+import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard;
+import com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper;
 import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -33,7 +38,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -51,6 +58,7 @@ class PuRequirementErpTransactionFailureDiagnosticTest {
     private static final String TENANT = "000000";
     private static final String PRIVATE = "SELECT private_table; password=FAKE_ONLY; Bearer FAKE_TOKEN_ONLY";
     private static final String SAFE_MESSAGE = "ERP 专属物理事务未成功完成，不能确认提交结果";
+    private static final String ROOT_STAGE = "PURCHASE_SCOPE_READ";
 
     @AfterEach
     void sixThreadProtectionsRemainClean() {
@@ -261,6 +269,12 @@ class PuRequirementErpTransactionFailureDiagnosticTest {
     private static ILoggingEvent singleEvent(Capture capture, String stage, String type) {
         assertEquals(1, capture.events.list.size(), "缺少原失败的安全位置日志，或外层重复记录");
         var event = capture.events.list.get(0);
+        assertSafeEvent(event, stage, type);
+        return event;
+    }
+
+    /** 根与回调事件共用既有安全参数断言，不能因增加阶段而放松日志边界。 */
+    private static void assertSafeEvent(ILoggingEvent event, String stage, String type) {
         assertNull(event.getThrowableProxy());
         assertEquals(Level.ERROR, event.getLevel());
         assertEquals(3, event.getArgumentArray().length);
@@ -270,7 +284,7 @@ class PuRequirementErpTransactionFailureDiagnosticTest {
         assertFalse(event.getFormattedMessage().contains("FAKE_TOKEN_ONLY"));
         assertFalse(event.getFormattedMessage().contains("private_table"));
         assertFalse(event.getFormattedMessage().contains("password="));
-        return event;
+        assertFalse(event.getFormattedMessage().contains(TENANT));
     }
 
     private static void assertSanitized(ServiceException outward) {
@@ -315,6 +329,172 @@ class PuRequirementErpTransactionFailureDiagnosticTest {
         }
     }
 
+
+    /** 原异常经真实 Guard 净化前须留下根阶段；回调仍按原规则净化并回滚，不重记事务阶段。 */
+    @Test
+    void rootReadLogsOriginalTypeBeforeCallbackSanitizationAndKeepsRollback() throws SQLException {
+        var fixture = new Fixture();
+        var original = new SensitiveFailure();
+        original.initCause(new IllegalStateException(PRIVATE));
+        original.addSuppressed(new IllegalArgumentException(PRIVATE));
+        original.setStackTrace(new StackTraceElement[] {
+            frame("com.nexus.erp.ai.adapter.SyntheticRootSourceReader", "readLocked", 47)
+        });
+        var guard = fixture.rootReaderFailing(original);
+        try (var tenant = tenant(); var capture = new Capture()) {
+            assertSanitized(assertThrows(ServiceException.class, () -> fixture.executor.executeRepeatableRead(TENANT, () -> {
+                readRoot(guard);
+                return null;
+            })));
+            fixture.assertRollback();
+            assertEquals(0, original.forbiddenReads.get());
+            assertEquals(2, capture.events.list.size(), "必须保留原根阶段及既有回调阶段，不能只记录替代对象或重记事务阶段");
+            assertSafeEvent(capture.events.list.get(0), ROOT_STAGE, original.getClass().getName());
+            assertEquals("[com.nexus.erp.ai.adapter.SyntheticRootSourceReader#readLocked:47]",
+                capture.events.list.get(0).getArgumentArray()[2]);
+            assertSafeEvent(capture.events.list.get(1), "CALLBACK_SCOPE", ServiceException.class.getName());
+        }
+    }
+
+    /** 提取自身故障必须确实被触发，不能因跳过诊断而假通过；之后原回调回滚路径不变。 */
+    @ParameterizedTest
+    @ValueSource(strings = {"RUNTIME", "ERROR", "FATAL"})
+    void rootPositionExtractionFailureCannotReplaceSafeFailureOrRollback(String kind) throws SQLException {
+        var fixture = new Fixture();
+        var attempts = new AtomicInteger();
+        var original = new SensitiveFailure() {
+            @Override public StackTraceElement[] getStackTrace() {
+                attempts.incrementAndGet();
+                throw syntheticFacilityFailure(kind);
+            }
+        };
+        var guard = fixture.rootReaderFailing(original);
+        try (var tenant = tenant(); var capture = new Capture()) {
+            assertSanitized(assertThrows(ServiceException.class, () -> fixture.executor.executeRepeatableRead(TENANT, () -> {
+                readRoot(guard);
+                return null;
+            })));
+            fixture.assertRollback();
+            assertEquals(0, original.forbiddenReads.get());
+            assertEquals(1, attempts.get(), "必须在根净化前实际尝试一次提取，不得因没调用诊断而假通过");
+            singleEvent(capture, "CALLBACK_SCOPE", ServiceException.class.getName());
+        }
+        assertLaterRootDiagnosticAndRollback();
+    }
+
+    /** 只使根阶段 appender 失败，既有回调日志仍可见；设施 fatal 不能变成业务 fatal。 */
+    @ParameterizedTest
+    @ValueSource(strings = {"RUNTIME", "ERROR", "FATAL"})
+    void rootAppenderFailureCannotReplaceSafeFailureRollbackOrLaterDiagnostic(String kind) throws SQLException {
+        var fixture = new Fixture();
+        var original = new SensitiveFailure();
+        original.setStackTrace(new StackTraceElement[0]);
+        var guard = fixture.rootReaderFailing(original);
+        var broken = new RootFailingAppender(kind);
+        try (var tenant = tenant(); var capture = new Capture(broken)) {
+            assertSanitized(assertThrows(ServiceException.class, () -> fixture.executor.executeRepeatableRead(TENANT, () -> {
+                readRoot(guard);
+                return null;
+            })));
+            fixture.assertRollback();
+            assertEquals(0, original.forbiddenReads.get());
+            assertEquals(1, broken.attempts.get(), "必须实际触发根阶段 appender，不能只触发回调日志而假通过");
+            assertNotNull(broken.attemptedRoot);
+            assertSafeEvent(broken.attemptedRoot, ROOT_STAGE, original.getClass().getName());
+            singleEvent(capture, "CALLBACK_SCOPE", ServiceException.class.getName());
+        }
+        assertLaterRootDiagnosticAndRollback();
+    }
+
+    /** 根层原样透传后，来源 RR 的既有可信变化分类、重新净化及回滚规则仍生效。 */
+    @Test
+    void sourceChangeFromRootReadKeepsExistingRrClassificationWithoutDiagnostic() throws SQLException {
+        var fixture = new Fixture();
+        var original = new SourceChangedException();
+        original.initCause(new IllegalStateException(PRIVATE));
+        original.addSuppressed(new IllegalArgumentException(PRIVATE));
+        var guard = fixture.rootReaderFailing(original);
+        try (var tenant = tenant(); var capture = new Capture()) {
+            var outward = assertThrows(SourceChangedException.class, () -> fixture.executor.executeRepeatableRead(TENANT, () -> {
+                readRoot(guard);
+                return null;
+            }));
+            assertNotSame(original, outward, "原样透传契约在 Guard；事务入口仍保留原先的安全重新构造规则");
+            assertEquals("采购冻结来源已变化，须重新分析", outward.getMessage());
+            assertNull(outward.getCause());
+            assertEquals(0, outward.getSuppressed().length);
+            assertTrue(capture.events.list.isEmpty());
+            fixture.assertRollback();
+        }
+    }
+
+    /** 原 fatal 经过 Guard 与真实事务回调后仍按原对象传播，并先完成已有回滚清理。 */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void originalFatalFromRootReadKeepsIdentityRollbackAndNoDiagnostic(boolean threadDeath) throws SQLException {
+        var fixture = new Fixture();
+        Error original = threadDeath ? new ThreadDeath() : new OutOfMemoryError("离线模拟致命对象，不耗尽内存");
+        var guard = fixture.rootReaderFailing(original);
+        try (var tenant = tenant(); var capture = new Capture()) {
+            assertSame(original, assertThrows(Error.class, () -> fixture.executor.executeRepeatableRead(TENANT, () -> {
+                readRoot(guard);
+                return null;
+            })));
+            assertTrue(capture.events.list.isEmpty(), "原业务 fatal 不得被根阶段诊断读取");
+            fixture.assertRollback();
+        }
+    }
+
+    /** 故障设施移除后重新走根入口，证明诊断防再入标记未污染后续事务。 */
+    private static void assertLaterRootDiagnosticAndRollback() throws SQLException {
+        var fixture = new Fixture();
+        var later = new SensitiveFailure();
+        later.setStackTrace(new StackTraceElement[0]);
+        var guard = fixture.rootReaderFailing(later);
+        try (var tenant = tenant(); var capture = new Capture()) {
+            assertSanitized(assertThrows(ServiceException.class, () -> fixture.executor.executeRepeatableRead(TENANT, () -> {
+                readRoot(guard);
+                return null;
+            })));
+            fixture.assertRollback();
+            assertEquals(2, capture.events.list.size(), "后续根诊断不能因残留诊断标记而被跳过");
+            assertSafeEvent(capture.events.list.get(0), ROOT_STAGE, later.getClass().getName());
+            assertEquals("[]", capture.events.list.get(0).getArgumentArray()[2]);
+            assertSafeEvent(capture.events.list.get(1), "CALLBACK_SCOPE", ServiceException.class.getName());
+            assertEquals(0, later.forbiddenReads.get());
+        }
+    }
+
+    /** 所有身份均为合成夹具，仅调用既有冻结根入口，不提供外部授权或业务写入口。 */
+    private static void readRoot(ErpDecisionPurchaseScopeGuard guard) {
+        guard.requireRootSourcesLocked(TENANT, new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null),
+            139L, Set.of(21L), LocalDate.of(2026, 10, 6));
+    }
+
+    /** 模拟提取或日志设施自身的普通、Error 与 fatal 故障，不耗尽内存或操作服务。 */
+    private static RuntimeException syntheticFacilityFailure(String kind) {
+        if ("ERROR".equals(kind)) throw new AssertionError("合成诊断设施 Error");
+        if ("FATAL".equals(kind)) throw new OutOfMemoryError("合成诊断设施 fatal，不耗尽内存");
+        return new IllegalStateException("合成诊断设施普通故障");
+    }
+
+    /** 只对根阶段抛错，避免用既有回调诊断冒充新增早期诊断已经触发。 */
+    private static final class RootFailingAppender extends ListAppender<ILoggingEvent> {
+        final String kind;
+        final AtomicInteger attempts = new AtomicInteger();
+        ILoggingEvent attemptedRoot;
+        RootFailingAppender(String kind) { this.kind = kind; }
+        @Override protected void append(ILoggingEvent event) {
+            Object[] arguments = event.getArgumentArray();
+            if (arguments != null && arguments.length > 0 && ROOT_STAGE.equals(arguments[0])) {
+                attemptedRoot = event;
+                attempts.incrementAndGet();
+                throw syntheticFacilityFailure(kind);
+            }
+            super.append(event);
+        }
+    }
+
     private static MockedStatic<TenantHelper> tenant() {
         var tenant = mockStatic(TenantHelper.class);
         tenant.when(TenantHelper::isEnable).thenReturn(true); tenant.when(TenantHelper::getTenantId).thenReturn(TENANT);
@@ -332,10 +512,18 @@ class PuRequirementErpTransactionFailureDiagnosticTest {
 
     private static final class Capture implements AutoCloseable {
         final Logger logger = (Logger) LoggerFactory.getLogger(PuRequirementErpTransactionExecutor.class);
-        final ListAppender<ILoggingEvent> events = new ListAppender<>();
+        final ListAppender<ILoggingEvent> events;
         final Level oldLevel = logger.getLevel();
         final boolean oldAdditive = logger.isAdditive();
-        Capture() { events.start(); logger.setLevel(Level.ERROR); logger.setAdditive(false); logger.addAppender(events); }
+        Capture() { this(new ListAppender<>()); }
+        Capture(ListAppender<ILoggingEvent> events) {
+            this.events = events;
+            events.setContext(logger.getLoggerContext());
+            events.start();
+            logger.setLevel(Level.ERROR);
+            logger.setAdditive(false);
+            logger.addAppender(events);
+        }
         @Override public void close() { logger.detachAppender(events); logger.setLevel(oldLevel); logger.setAdditive(oldAdditive); events.stop(); }
     }
 
@@ -367,6 +555,16 @@ class PuRequirementErpTransactionFailureDiagnosticTest {
             config.addMapper(PuRequirementCompetitionPoolMapper.class); config.addMapper(PuRequirementMaterialGuardMapper.class);
             factory = new DefaultSqlSessionFactory(config); executor = new PuRequirementErpTransactionExecutor(factory);
         }
+        /** 真实 Guard 及事务归属检查；来源与锁仅为合成替身，不模拟数据库认证结果。 */
+        ErpDecisionPurchaseScopeGuard rootReaderFailing(Throwable original) {
+            var mapper = mock(ErpDecisionPurchaseScopeMapper.class);
+            when(mapper.pinScopeDefinition()).thenReturn(List.of());
+            when(mapper.scopeTableEngine()).thenReturn("InnoDB");
+            doAnswer(call -> { throw original; }).when(mapper).findRootWorkOrder(anyString(), anyLong());
+            return new ErpDecisionPurchaseScopeGuard(mapper, new PuRequirementErpTransactionQualification(factory),
+                mock(PuRequirementMaterialLockService.class));
+        }
+
         void assertRollback() throws SQLException {
             verify(erp).getConnection(); verify(master, never()).getConnection();
             verify(connection).rollback(); verify(connection, never()).commit(); verify(connection).close();

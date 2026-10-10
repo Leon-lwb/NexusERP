@@ -15,8 +15,9 @@ public interface PuCertifiedPurchaseOrderWorkflowMapper {
         +"WHERE o.tenant_id=#{tenantId} AND o.order_id=#{id} AND c.command_status='COMMITTED'")
     Long findMaterial(@Param("tenantId") String tenantId,@Param("id") Long orderId);
 
+    /** 锁内保留原生版本；历史 NULL 表示未知，不得冒充合法出生版本 0。 */
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
-    @Select("SELECT tenant_id,order_id,order_no,requisition_id,vendor_id,status,IFNULL(certified_version,0) AS version,certified_terms_id AS quote_id,"
+    @Select("SELECT tenant_id,order_id,order_no,requisition_id,vendor_id,status,certified_version AS version,certified_terms_id AS quote_id,"
         +"DATE_FORMAT(expected_arrival_date,'%Y-%m-%d') AS expected_arrival_date,del_flag,select_flow_id,currency,exchange_rate,total_amount,"
         +"amount_excluding_tax,tax_amount,discount_amount,freight_amount,discount_rate,payment_terms,delivery_terms "
         +"FROM pu_purchase_order WHERE tenant_id=#{tenantId} AND order_id=#{id} FOR UPDATE")
@@ -66,13 +67,13 @@ public interface PuCertifiedPurchaseOrderWorkflowMapper {
         +"#{c.confirmationId},#{c.tenantId},#{c.quoteId},#{c.quoteHash},#{c.requestKey},#{c.requestHash},#{c.actorId},#{c.permissionCode},#{c.confirmedAt},#{c.reviewNote})")
     int insertConfirmation(@Param("c") Confirmation confirmation);
 
-    /** 对真实订单头的状态/版本/供应商执行 CAS；现有 Flowable/配置化/旧路径均不得绕过门禁。 */
-    @Update("UPDATE pu_purchase_order SET status='APPROVED',certified_version=IFNULL(certified_version,0)+1,certified_terms_id=#{q.quoteId},"
+    /** 对真实订单头的状态/原生版本/供应商执行 CAS；未知 NULL 不可写入，现有 Flowable/配置化/旧路径均不得绕过门禁。 */
+    @Update("UPDATE pu_purchase_order SET status='APPROVED',certified_version=certified_version+1,certified_terms_id=#{q.quoteId},"
         +"expected_arrival_date=#{q.promisedArrivalDate},currency=#{q.currency},exchange_rate=#{q.exchangeRate},"
         +"total_amount=#{total.gross},amount_excluding_tax=#{total.net},tax_amount=#{total.tax},discount_amount=0,freight_amount=0,discount_rate=0,"
         +"payment_terms=#{q.paymentTerms},delivery_terms=#{q.deliveryTerms},update_by=#{actorId},update_time=NOW() "
         +"WHERE tenant_id=#{tenantId} AND order_id=#{old.orderId} AND requisition_id=#{old.requisitionId} AND vendor_id=#{old.vendorId} "
-        +"AND status='DRAFT' AND IFNULL(certified_version,0)=#{old.version} AND certified_terms_id IS NULL AND del_flag='0' AND select_flow_id IS NULL")
+        +"AND status='DRAFT' AND certified_version=#{old.version} AND certified_terms_id IS NULL AND del_flag='0' AND select_flow_id IS NULL")
     int approveHead(@Param("tenantId") String tenantId,@Param("old") Head old,@Param("q") Quote quote,@Param("total") Totals total,@Param("actorId") Long actor);
     @Update("UPDATE pu_purchase_order_line SET unit_price=#{price.grossUnit},unit_price_excluding_tax=#{price.netUnit},tax_rate=#{price.rate},"
         +"line_amount=#{price.gross},line_amount_excluding_tax=#{price.net},line_tax_amount=#{price.tax},update_by=#{actorId},update_time=NOW() "
@@ -81,9 +82,10 @@ public interface PuCertifiedPurchaseOrderWorkflowMapper {
         +"AND received_quantity=0 AND returned_quantity=0 AND receive_status='PENDING' AND IFNULL(invoiced_qty,0)=0 AND del_flag='0'")
     int priceLine(@Param("tenantId") String tenantId,@Param("old") PuCertifiedPurchaseLifecycleMapper.OrderLine old,
         @Param("price") LinePrice price,@Param("actorId") Long actor);
-    @Update("UPDATE pu_purchase_order SET status=#{next},certified_version=IFNULL(certified_version,0)+1,update_by=#{actorId},update_time=NOW() "
+    /** 按原生版本关闭或取消订单；未知版本不得参与 CAS 或自动补齐。 */
+    @Update("UPDATE pu_purchase_order SET status=#{next},certified_version=certified_version+1,update_by=#{actorId},update_time=NOW() "
         +"WHERE tenant_id=#{tenantId} AND order_id=#{old.orderId} AND requisition_id=#{old.requisitionId} AND vendor_id=#{old.vendorId} "
-        +"AND status=#{old.status} AND IFNULL(certified_version,0)=#{old.version} AND del_flag='0' AND select_flow_id IS NULL")
+        +"AND status=#{old.status} AND certified_version=#{old.version} AND del_flag='0' AND select_flow_id IS NULL")
     int closeHead(@Param("tenantId") String tenantId,@Param("old") Head old,@Param("next") String next,@Param("actorId") Long actor);
 
     String OPERATION_COLUMNS="command_id,tenant_id,order_id,request_key,request_hash,actor_id,operation,expected_version,result_version,result_status,"

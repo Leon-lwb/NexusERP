@@ -1,0 +1,14 @@
+{
+  "source": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\review-3\\backend-modules.visual-check.2048x1320.light.png",
+  "source_sha256": "768ef0cfac70b4fa7390c6d90d11e373853bfd1347a8720b811bb100599f5ac6",
+  "operation": "crop viewport margins only",
+  "partial_viewport": true,
+  "note": "Lower module rows require normal page scrolling in HTML; this preview is not a full-page export.",
+  "crop_rect": [
+    479,
+    22,
+    1567,
+    1320
+  ],
+  "preview_sha256": "7d1bcc38a449a54803b9a698e3115cd1a1209ed786caba6c87df9bd09692356f"
+}

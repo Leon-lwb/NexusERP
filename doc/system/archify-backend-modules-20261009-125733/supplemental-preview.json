@@ -1,0 +1,40 @@
+{
+  "kind": "supplemental-complete-svg-preview",
+  "notAuthoritativeAutomatedGate": true,
+  "generatedAt": "2026-10-09T15:23:32.129394+08:00",
+  "artifact": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules.html",
+    "sha256": "54cb02cc5aae4915a83b018a46ab9f26db7e216da0bba0525b1a7cc0359634f3",
+    "bytes": 793986
+  },
+  "screenshot": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-backend-modules-20261009-125733\\backend-modules-full-preview.png",
+    "sha256": "1e0cf9736aac1f0a8a031acbdeca96b1ed32f3b72ec401c78275909ab86d1306",
+    "theme": "light",
+    "viewport": [
+      1440,
+      2400
+    ],
+    "deviceScaleFactor": 1,
+    "svgBounds": {
+      "x": 56.66666793823242,
+      "y": 124.66667175292969,
+      "width": 1326.666706085205,
+      "height": 1716.7292022705078
+    },
+    "selector": "svg:first",
+    "completeDiagramElement": true,
+    "includesViewerChrome": false
+  },
+  "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "offline": true,
+  "visualReview": "passed",
+  "nativeEvidenceUnchanged": true,
+  "priorAttempt": {
+    "status": "failed-before-write",
+    "reason": "The HTML runtime also contains one invisible export SVG; an exact SVG count of one was not a valid selector assertion."
+  },
+  "reviewMethod": "functions.view_image",
+  "reviewScope": "Complete diagram SVG, all components/relationships/legend visible; no page footer cards or Viewer Runtime controls are included. This is supplemental perceptual evidence, not a new browser gate.",
+  "reviewedAt": "2026-10-09T15:28:20.604502+08:00"
+}

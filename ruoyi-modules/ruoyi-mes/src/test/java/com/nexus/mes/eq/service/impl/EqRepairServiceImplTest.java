@@ -6,6 +6,7 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqRepair;
 import com.nexus.mes.eq.domain.bo.EqRepairCompleteBo;
+import com.nexus.mes.eq.domain.bo.EqRepairSpareBo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -132,6 +135,27 @@ class EqRepairServiceImplTest {
     }
 
     // ==================== MES-EQ-13: 负停机/负成本必须在服务端被拒 ====================
+
+    /** 完工时的新增领用必须发生在 REPAIRING 状态，不能先完工再调用领用守卫。 */
+    @Test
+    void completeWithSparesConsumesWhileRepairIsStillRepairing() {
+        EqRepair repair = new EqRepair();repair.setRepairId(1L);repair.setEquipmentId(10L);
+        repair.setStatus("REPAIRING");
+        when(baseMapper.selectById(1L)).thenReturn(repair);
+        when(baseMapper.update(isNull(),any())).thenAnswer(call -> {repair.setStatus("COMPLETED");return 1;});
+        doAnswer(call -> {
+            if (!"REPAIRING".equals(repair.getStatus())) {
+                throw new ServiceException("维修单不在维修中状态, 无法领用备件");
+            }
+            return List.of();
+        }).when(repairSpareService).batchAdd(any());
+        EqRepairSpareBo spare = new EqRepairSpareBo();spare.setSpareId(2L);spare.setQuantity(BigDecimal.ONE);
+        EqRepairCompleteBo bo = new EqRepairCompleteBo();bo.setSpares(List.of(spare));
+        service.completeRepair(1L,bo);
+        assertEquals(1L,spare.getRepairId());
+        assertEquals("COMPLETED",repair.getStatus());
+        verify(repairSpareService).batchAdd(any());
+    }
 
     @Test
     void completeRepairRejectsNegativeDowntimeHours() {

@@ -1,0 +1,2452 @@
+{
+  "repository": {
+    "url": "https://gitee.com/helloworld_wh18/nexus-erp.git",
+    "provider": "gitee",
+    "revision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+    "link_mode": "local-only"
+  },
+  "method": "git show <pinned-revision>:<repo-relative-path>; inclusive ranges checked against committed line counts",
+  "nodeSources": [
+    {
+      "component": "chat_ui",
+      "sources": [
+        {
+          "path": "plus-ui/src/views/ai/assistant/index.vue",
+          "line": 663,
+          "end_line": 678,
+          "label": "助手 · 发送"
+        },
+        {
+          "path": "plus-ui/src/views/ai/assistant/index.vue",
+          "line": 402,
+          "end_line": 429,
+          "label": "助手 · SSE"
+        },
+        {
+          "path": "plus-ui/src/api/ai/chat.ts",
+          "line": 28,
+          "end_line": 46,
+          "label": "聊天 API"
+        }
+      ]
+    },
+    {
+      "component": "facade",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+          "line": 50,
+          "end_line": 56,
+          "label": "聊天入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 158,
+          "end_line": 205,
+          "label": "Facade · 会话"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 237,
+          "end_line": 269,
+          "label": "Facade · 路由"
+        }
+      ]
+    },
+    {
+      "component": "models",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/ChatModelFactory.java",
+          "line": 69,
+          "end_line": 98,
+          "label": "模型工厂"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/provider/ChatServiceProviderFactory.java",
+          "line": 66,
+          "end_line": 109,
+          "label": "协议与厂商校验"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/service/impl/AiModelServiceImpl.java",
+          "line": 274,
+          "end_line": 280,
+          "label": "厂商配置装配"
+        }
+      ]
+    },
+    {
+      "component": "session_sse",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/PersistentChatMemoryStore.java",
+          "line": 48,
+          "end_line": 65,
+          "label": "持久化记忆"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 751,
+          "end_line": 761,
+          "label": "回复 · 租户写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/sse/AiSseMessageHelper.java",
+          "line": 287,
+          "end_line": 294,
+          "label": "用户事件发布"
+        }
+      ]
+    },
+    {
+      "component": "tools",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/ToolProviderFactory.java",
+          "line": 38,
+          "end_line": 61,
+          "label": "工具统一入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/BuiltinToolRegistry.java",
+          "line": 133,
+          "end_line": 151,
+          "label": "内置启用与分类"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/McpClientManager.java",
+          "line": 143,
+          "end_line": 153,
+          "label": "MCP · 启用选择"
+        }
+      ]
+    },
+    {
+      "component": "rag",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 352,
+          "end_line": 370,
+          "label": "RAG · 调用"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+          "line": 98,
+          "end_line": 116,
+          "label": "检索配置与索引"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+          "line": 365,
+          "end_line": 378,
+          "label": "提示词增强"
+        }
+      ]
+    },
+    {
+      "component": "sql",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+          "line": 43,
+          "end_line": 60,
+          "label": "SQL 工具调用"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/SqlSafetyValidator.java",
+          "line": 94,
+          "end_line": 153,
+          "label": "SELECT / 租户护栏"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/ErpQueryService.java",
+          "line": 26,
+          "end_line": 60,
+          "label": "ERP 数据源读取"
+        }
+      ]
+    },
+    {
+      "component": "vectors",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 104,
+          "end_line": 109,
+          "label": "知识库优先配置"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 139,
+          "end_line": 158,
+          "label": "Milvus / 堆内存"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiProperties.java",
+          "line": 60,
+          "end_line": 66,
+          "label": "默认 inmemory"
+        }
+      ]
+    },
+    {
+      "component": "decision_trigger",
+      "sources": [
+        {
+          "path": "plus-ui/src/views/erp/prd/prdwork/index.vue",
+          "line": 219,
+          "end_line": 225,
+          "label": "工单 · 发起分析"
+        },
+        {
+          "path": "plus-ui/src/views/erp/prd/shortage/index.vue",
+          "line": 138,
+          "end_line": 148,
+          "label": "缺料 · 发起分析"
+        },
+        {
+          "path": "plus-ui/src/api/ai/decision.ts",
+          "line": 209,
+          "end_line": 220,
+          "label": "决策 API"
+        }
+      ]
+    },
+    {
+      "component": "decision_run",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+          "line": 47,
+          "end_line": 59,
+          "label": "决策入口 · 鉴权"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 115,
+          "end_line": 126,
+          "label": "业务权 / 活跃运行"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 230,
+          "end_line": 248,
+          "label": "启用与范围校验"
+        }
+      ]
+    },
+    {
+      "component": "contracts",
+      "sources": [
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/IndustrialDecisionDataPort.java",
+          "line": 15,
+          "end_line": 50,
+          "label": "数据 / 仿真 / 动作端口"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/DecisionWorkflowPort.java",
+          "line": 6,
+          "end_line": 19,
+          "label": "分析 / 执行 Flow 端口"
+        }
+      ]
+    },
+    {
+      "component": "analysis_flow",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 43,
+          "end_line": 56,
+          "label": "桥接启动分析"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+          "line": 62,
+          "end_line": 101,
+          "label": "受保护分析 DAG"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/engine/FlowEngineImpl.java",
+          "line": 959,
+          "end_line": 976,
+          "label": "工作节点上下文"
+        }
+      ]
+    },
+    {
+      "component": "erp_data",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+          "line": 129,
+          "end_line": 165,
+          "label": "ERP 端口实现"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/DeliveryContextAssembler.java",
+          "line": 213,
+          "end_line": 248,
+          "label": "ERP · 一致性快照"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionApsSimulation.java",
+          "line": 239,
+          "end_line": 257,
+          "label": "确定性 APS / 不可行"
+        }
+      ]
+    },
+    {
+      "component": "decision_persistence",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 169,
+          "end_line": 179,
+          "label": "状态 CAS 写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 347,
+          "end_line": 389,
+          "label": "动作 / 原幂等键"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionRunStateMachine.java",
+          "line": 14,
+          "end_line": 31,
+          "label": "运行状态机"
+        }
+      ]
+    },
+    {
+      "component": "decision_store",
+      "sources": [
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionRun.java",
+          "line": 19,
+          "end_line": 60,
+          "label": "运行与冻结快照"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionEvidence.java",
+          "line": 18,
+          "end_line": 63,
+          "label": "可核验数值 / 谱系"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionAction.java",
+          "line": 19,
+          "end_line": 63,
+          "label": "动作 / 审批 / 执行"
+        }
+      ]
+    },
+    {
+      "component": "decision_analysis",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionAnalysisAssemblyService.java",
+          "line": 90,
+          "end_line": 138,
+          "label": "风险与证据组装"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionEvidenceService.java",
+          "line": 89,
+          "end_line": 105,
+          "label": "数值事实覆盖"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPolicyGuardService.java",
+          "line": 89,
+          "end_line": 132,
+          "label": "摘要与动作护栏"
+        }
+      ]
+    },
+    {
+      "component": "qualitative_summary",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionSummaryService.java",
+          "line": 33,
+          "end_line": 57,
+          "label": "摘要解析 / 重试 / 兜底"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiPromptTemplateInitializer.java",
+          "line": 28,
+          "end_line": 38,
+          "label": "只读定性摘要契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+          "line": 72,
+          "end_line": 85,
+          "label": "可选 RAG / LLM 节点"
+        }
+      ]
+    },
+    {
+      "component": "approval_ui",
+      "sources": [
+        {
+          "path": "plus-ui/src/views/ai/decision/detail.vue",
+          "line": 44,
+          "end_line": 55,
+          "label": "详情 · 审批权限"
+        },
+        {
+          "path": "plus-ui/src/views/ai/decision/detail.vue",
+          "line": 205,
+          "end_line": 218,
+          "label": "版本 / 快照 / 审批"
+        },
+        {
+          "path": "plus-ui/src/api/ai/decision.ts",
+          "line": 225,
+          "end_line": 235,
+          "label": "审批与原动作重试"
+        }
+      ]
+    },
+    {
+      "component": "decision_approval",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+          "line": 83,
+          "end_line": 94,
+          "label": "工业审批入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 73,
+          "end_line": 108,
+          "label": "审批权限 / 版本 / 新鲜度"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 142,
+          "end_line": 156,
+          "label": "提交后启动执行 Flow"
+        }
+      ]
+    },
+    {
+      "component": "execution_flow",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 59,
+          "end_line": 67,
+          "label": "受控执行桥接"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+          "line": 104,
+          "end_line": 108,
+          "label": "单节点执行图"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionExecuteApprovedActionsNodeProvider.java",
+          "line": 22,
+          "end_line": 30,
+          "label": "调用执行状态服务"
+        }
+      ]
+    },
+    {
+      "component": "decision_execution",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+          "line": 129,
+          "end_line": 164,
+          "label": "运行 / 动作状态校验"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+          "line": 426,
+          "end_line": 449,
+          "label": "恢复优先 / 冻结重核"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/executor/AbstractErpDraftExecutor.java",
+          "line": 14,
+          "end_line": 33,
+          "label": "受控 ERP 执行端口"
+        }
+      ]
+    },
+    {
+      "component": "erp_write",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+          "line": 168,
+          "end_line": 176,
+          "label": "权限后选择 ERP 执行器"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+          "line": 118,
+          "end_line": 156,
+          "label": "冻结合同 / 恢复 / 业务权"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionActionExecutor.java",
+          "line": 193,
+          "end_line": 232,
+          "label": "排程方案 · 实际状态"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "connection": "chat_send",
+      "claim": "发送对话",
+      "sources": [
+        {
+          "path": "plus-ui/src/api/ai/chat.ts",
+          "line": 28,
+          "end_line": 46,
+          "label": "POST send"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+          "line": 50,
+          "end_line": 56,
+          "label": "Facade 调用"
+        }
+      ]
+    },
+    {
+      "connection": "model_client",
+      "claim": "获取模型客户端",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 277,
+          "end_line": 285,
+          "label": "流式模型"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 446,
+          "end_line": 457,
+          "label": "Agent 模型"
+        }
+      ]
+    },
+    {
+      "connection": "memory_and_events",
+      "claim": "记忆 / 消息 / 事件",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 277,
+          "end_line": 292,
+          "label": "记忆与事件"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 751,
+          "end_line": 761,
+          "label": "回复落库"
+        }
+      ]
+    },
+    {
+      "connection": "user_sse",
+      "claim": "用户 SSE",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/sse/AiSseMessageHelper.java",
+          "line": 287,
+          "end_line": 294,
+          "label": "用户 SSE 发布"
+        },
+        {
+          "path": "plus-ui/src/views/ai/assistant/index.vue",
+          "line": 402,
+          "end_line": 429,
+          "label": "事件接收"
+        },
+        {
+          "path": "plus-ui/src/views/ai/assistant/index.vue",
+          "line": 873,
+          "end_line": 876,
+          "label": "绑定事件"
+        }
+      ]
+    },
+    {
+      "connection": "enabled_agent_tools",
+      "claim": "Agent 启用工具",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 455,
+          "end_line": 460,
+          "label": "按分类启用"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 499,
+          "end_line": 515,
+          "label": "独立 MCP Agent"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 855,
+          "end_line": 866,
+          "label": "会话工具选择"
+        }
+      ]
+    },
+    {
+      "connection": "rag_route",
+      "claim": "RAG 路由",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 263,
+          "end_line": 269,
+          "label": "模式路由"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 364,
+          "end_line": 370,
+          "label": "检索增强"
+        }
+      ]
+    },
+    {
+      "connection": "tool_read_query",
+      "claim": "只读 ERP 查询",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+          "line": 43,
+          "end_line": 60,
+          "label": "净化后执行"
+        }
+      ]
+    },
+    {
+      "connection": "vector_retrieval",
+      "claim": "向量检索",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+          "line": 255,
+          "end_line": 259,
+          "label": "向量读取"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 139,
+          "end_line": 158,
+          "label": "存储模式选择"
+        }
+      ]
+    },
+    {
+      "connection": "decision_start",
+      "claim": "发起分析",
+      "sources": [
+        {
+          "path": "plus-ui/src/views/erp/prd/prdwork/index.vue",
+          "line": 219,
+          "end_line": 225,
+          "label": "启动并打开详情"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+          "line": 47,
+          "end_line": 51,
+          "label": "权限后编排"
+        }
+      ]
+    },
+    {
+      "connection": "public_port_contracts",
+      "claim": "依赖公共端口",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 37,
+          "end_line": 50,
+          "label": "注入公共端口"
+        }
+      ]
+    },
+    {
+      "connection": "controlled_analysis_start",
+      "claim": "校验并启动分析",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 154,
+          "end_line": 163,
+          "label": "校验 / startAnalysis"
+        }
+      ]
+    },
+    {
+      "connection": "workflow_port_impl",
+      "claim": "实现 WorkflowPort",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 31,
+          "end_line": 46,
+          "label": "WorkflowPort 实现"
+        }
+      ]
+    },
+    {
+      "connection": "data_port_impl",
+      "claim": "实现 DataPort",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+          "line": 30,
+          "end_line": 41,
+          "label": "DataPort 实现"
+        }
+      ]
+    },
+    {
+      "connection": "industrial_source_simulation",
+      "claim": "节点读取 / 推演",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DeliveryContextNodeProvider.java",
+          "line": 21,
+          "end_line": 30,
+          "label": "快照读取"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/ShortageSimulationNodeProvider.java",
+          "line": 21,
+          "end_line": 25,
+          "label": "缺料端口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/ApsWhatIfSimulationService.java",
+          "line": 28,
+          "end_line": 43,
+          "label": "APS 端口"
+        }
+      ]
+    },
+    {
+      "connection": "node_persistence",
+      "claim": "节点留痕",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DeliveryContextNodeProvider.java",
+          "line": 21,
+          "end_line": 30,
+          "label": "快照留痕"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionActionProposalNodeProvider.java",
+          "line": 80,
+          "end_line": 95,
+          "label": "证据 / 动作 / 定稿"
+        }
+      ]
+    },
+    {
+      "connection": "registered_analysis_services",
+      "claim": "节点评分 / 策略",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/ScenarioRankNodeProvider.java",
+          "line": 29,
+          "end_line": 42,
+          "label": "确定性事实准备"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionPolicyGuardNodeProvider.java",
+          "line": 44,
+          "end_line": 52,
+          "label": "组装与策略"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionActionProposalNodeProvider.java",
+          "line": 71,
+          "end_line": 81,
+          "label": "动作策略检查"
+        }
+      ]
+    },
+    {
+      "connection": "qualitative_only",
+      "claim": "可选定性摘要",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionAnalysisAssemblyService.java",
+          "line": 125,
+          "end_line": 151,
+          "label": "摘要 / 策略 / 回退"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionSummaryService.java",
+          "line": 33,
+          "end_line": 57,
+          "label": "LLM 可选兜底"
+        }
+      ]
+    },
+    {
+      "connection": "decision_entity_io",
+      "claim": "Mapper 读写",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 162,
+          "end_line": 179,
+          "label": "运行读取 / 写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 323,
+          "end_line": 334,
+          "label": "证据写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 377,
+          "end_line": 389,
+          "label": "动作写入"
+        }
+      ]
+    },
+    {
+      "connection": "human_approval",
+      "claim": "人工审批",
+      "sources": [
+        {
+          "path": "plus-ui/src/views/ai/decision/detail.vue",
+          "line": 205,
+          "end_line": 218,
+          "label": "版本快照提交"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+          "line": 83,
+          "end_line": 87,
+          "label": "审批 Service"
+        }
+      ]
+    },
+    {
+      "connection": "approval_continuation",
+      "claim": "批准提交后启动",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 142,
+          "end_line": 156,
+          "label": "审批事务后执行"
+        }
+      ]
+    },
+    {
+      "connection": "execute_registered",
+      "claim": "执行已批准动作",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionExecuteApprovedActionsNodeProvider.java",
+          "line": 22,
+          "end_line": 30,
+          "label": "受保护执行节点"
+        }
+      ]
+    },
+    {
+      "connection": "trusted_business_execution",
+      "claim": "DataPort 受控执行",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/executor/AbstractErpDraftExecutor.java",
+          "line": 14,
+          "end_line": 33,
+          "label": "端口执行 / 核验"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+          "line": 168,
+          "end_line": 176,
+          "label": "ERP 权限与选择"
+        }
+      ]
+    }
+  ],
+  "additionalEvidence": [
+    {
+      "topic": "普通 AI 不等同于工业决策；MCP 不能泛称只读",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 499,
+          "end_line": 515,
+          "label": "MCP 独立角色"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 531,
+          "end_line": 572,
+          "label": "上下文 / 资料证据 / 清理"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 855,
+          "end_line": 866,
+          "label": "按会话启用外部工具"
+        }
+      ]
+    },
+    {
+      "topic": "工作线程身份来自持久化 actor 与实时权限交集；通用 Flow 禁止替换工业图",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionNodeSupport.java",
+          "line": 66,
+          "end_line": 96,
+          "label": "身份与实时权限"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 89,
+          "end_line": 117,
+          "label": "规范图与发布版本"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+          "line": 146,
+          "end_line": 157,
+          "label": "已注册节点配置"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowAccessGuard.java",
+          "line": 11,
+          "end_line": 24,
+          "label": "通用入口隔离"
+        }
+      ]
+    },
+    {
+      "topic": "分析定稿重读 ERP 来源，不能把模型说明当证据",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 65,
+          "end_line": 90,
+          "label": "身份 / 新鲜度 / 事实重读"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+          "line": 91,
+          "end_line": 111,
+          "label": "冻结合同 / 定稿"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionEvidenceService.java",
+          "line": 89,
+          "end_line": 105,
+          "label": "数值谱系"
+        }
+      ]
+    },
+    {
+      "topic": "审批与执行均调用持久化状态服务；图中的 Mapper 箭头以该服务为写入所有者",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 142,
+          "end_line": 149,
+          "label": "审批留痕"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+          "line": 158,
+          "end_line": 188,
+          "label": "执行状态收敛"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+          "line": 887,
+          "end_line": 894,
+          "label": "tenant / version CAS"
+        }
+      ]
+    },
+    {
+      "topic": "采购业务 authority 与跨库边界：ERP RR 独立事务、永久 command 与原键恢复",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+          "line": 165,
+          "end_line": 199,
+          "label": "RR 与创建"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+          "line": 200,
+          "end_line": 222,
+          "label": "来源额度 / 业务写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpCertifiedPurchaseDecisionAdapter.java",
+          "line": 54,
+          "end_line": 82,
+          "label": "真实提交与恢复"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+          "line": 82,
+          "end_line": 109,
+          "label": "原动作重试 / 恢复"
+        }
+      ]
+    },
+    {
+      "topic": "Flowable BPMN 是独立业务审批控制面；本工业审批续接 DecisionWorkflowPort → FlowEngine，不画 Flowable 调用边",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/controller/WfTaskController.java",
+          "line": 95,
+          "end_line": 100,
+          "label": "独立 workflow 审批入口"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/impl/WfTaskServiceImpl.java",
+          "line": 320,
+          "end_line": 331,
+          "label": "Flowable TaskService.complete"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+          "line": 142,
+          "end_line": 156,
+          "label": "实际工业审批续接"
+        }
+      ]
+    },
+    {
+      "topic": "前端发起入口包括四个业务上下文；AI decision 页面负责查询 / 详情 / 审阅，不凭空声称 index 发起运行",
+      "sources": [
+        {
+          "path": "plus-ui/src/views/erp/so/orderheader/index.vue",
+          "line": 214,
+          "end_line": 223,
+          "label": "销售订单入口"
+        },
+        {
+          "path": "plus-ui/src/views/erp/prd/schedule/index.vue",
+          "line": 453,
+          "end_line": 467,
+          "label": "排程入口"
+        },
+        {
+          "path": "plus-ui/src/views/erp/prd/shortage/index.vue",
+          "line": 138,
+          "end_line": 148,
+          "label": "缺料入口"
+        },
+        {
+          "path": "plus-ui/src/views/ai/decision/index.vue",
+          "line": 120,
+          "end_line": 125,
+          "label": "查询页面"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "plus-ui/src/api/ai/chat.ts",
+      "lineCount": 127,
+      "committedBytesSha256": "e49bafa01e34710787af00f43a3314a8860ffe488021e5fe0ba20e1349c18c67"
+    },
+    {
+      "path": "plus-ui/src/api/ai/decision.ts",
+      "lineCount": 239,
+      "committedBytesSha256": "4fbe3cb86bed8b54355493f9bcaa64f1ad5e716caa6111bc0b5205b709cae941"
+    },
+    {
+      "path": "plus-ui/src/views/ai/assistant/index.vue",
+      "lineCount": 1428,
+      "committedBytesSha256": "c5d29c03a16f6c999a4fa250c68efb89ba34426413509e4a976d2c9be3d830b6"
+    },
+    {
+      "path": "plus-ui/src/views/ai/decision/detail.vue",
+      "lineCount": 266,
+      "committedBytesSha256": "b594585c560bf0cd8f67a8acee62c9a8398a1d2c773d5e51234d66351613f733"
+    },
+    {
+      "path": "plus-ui/src/views/ai/decision/index.vue",
+      "lineCount": 187,
+      "committedBytesSha256": "03727264203e6d21ea63eed057fd5b77da101232d80136c84151767268117152"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/prdwork/index.vue",
+      "lineCount": 430,
+      "committedBytesSha256": "a0edfa31b1639a4c447eac44af6e0197e64ac635797bbc9e7c7b4f3deea0020f"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/schedule/index.vue",
+      "lineCount": 659,
+      "committedBytesSha256": "14123d79a88b30a7f634aa30150169cde25f6615da8256d00a023c68cc4eb0d9"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/shortage/index.vue",
+      "lineCount": 180,
+      "committedBytesSha256": "105ece455b8ba5c3b3d0378cd959945f93024be868b676deb5d9ce31a69e70ae"
+    },
+    {
+      "path": "plus-ui/src/views/erp/so/orderheader/index.vue",
+      "lineCount": 493,
+      "committedBytesSha256": "a4592f1745423cdea9b0808a0443b20ba7d0b133a5cdc846c92ea8688be333d0"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/DecisionWorkflowPort.java",
+      "lineCount": 19,
+      "committedBytesSha256": "578a0344f0fcdf2eb61303be2db9f186560595e419353898f0454eaee4c074be"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/IndustrialDecisionDataPort.java",
+      "lineCount": 57,
+      "committedBytesSha256": "44731ae7b12415d5c8fbfc46a3cdec6dedc3c056bcb1c9b02863df87a988a7d0"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionAction.java",
+      "lineCount": 105,
+      "committedBytesSha256": "c49d7618b5dadeb4918a36e9e87bfd1211ca0e271d53625fb1688f981011d849"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionEvidence.java",
+      "lineCount": 77,
+      "committedBytesSha256": "d98d62894db909acda4190a0e962b2e30004efe3f70a7e570a2f0ffad5ca85c8"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionRun.java",
+      "lineCount": 119,
+      "committedBytesSha256": "96618851ae1efc3b84c670240d7f5f45ef937fe4419d4240f8b153f7a78d3902"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/service/impl/AiModelServiceImpl.java",
+      "lineCount": 332,
+      "committedBytesSha256": "b3a1fe4eddef1da056ff157b16cdb80f60296361633013831603fc7cb769217f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiPromptTemplateInitializer.java",
+      "lineCount": 139,
+      "committedBytesSha256": "435852e204ed6f5e42cc4771f23d28c355dd130df46b49fe2d8d7bf1fe867ca3"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiProperties.java",
+      "lineCount": 230,
+      "committedBytesSha256": "e1384ca810c1619cedec47b7fe2efdbe6e0473b5c29ee48ab807d4021744fd18"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+      "lineCount": 293,
+      "committedBytesSha256": "f516fae141b8175a56f55bde7c2485bf7efcac562ab18c76450e7cafde4a6e2f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+      "lineCount": 136,
+      "committedBytesSha256": "17a6b8bad9624dc8f81ed974aa58352c72507853c76ab67aa0172ab4d720bf96"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/McpClientManager.java",
+      "lineCount": 542,
+      "committedBytesSha256": "274133002b66a74ebd6926d2fa541ab343271f409745ded96e71a2a73d455954"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/ToolProviderFactory.java",
+      "lineCount": 84,
+      "committedBytesSha256": "de0629c49da0d2e2fcd2eacb08c6afcf606fd11f16e7dd09fecd19e668f257d9"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/ChatModelFactory.java",
+      "lineCount": 169,
+      "committedBytesSha256": "b8e3f1cf06d8b587b6288f8b64ff6ed46e89a494e0f93e2a392476be7bdc6fb3"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/PersistentChatMemoryStore.java",
+      "lineCount": 173,
+      "committedBytesSha256": "907276d51f8983f7a4845c1879be8b2c6330b18eb0fa541bdc8131f8cf133071"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/provider/ChatServiceProviderFactory.java",
+      "lineCount": 113,
+      "committedBytesSha256": "837be1b23eba73b46033fd7f162f086938e6aa3b0776beccc45b79a7ccd5fc5d"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/ApsWhatIfSimulationService.java",
+      "lineCount": 60,
+      "committedBytesSha256": "9b736bbac931f18a8ba86d8faf46c4f2f79f3a96d61937a93eb70ec433379787"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+      "lineCount": 623,
+      "committedBytesSha256": "865869add753f4eb04b718c291f55937402ba0c536bc8bb217ddd2558b0a24fa"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionAnalysisAssemblyService.java",
+      "lineCount": 226,
+      "committedBytesSha256": "165e1986cbd144b63f10b398326ea45e0593653566f7753d6cef3f1f6e5889db"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "lineCount": 252,
+      "committedBytesSha256": "4c74738d824a6fb78267226f1c72b1d70bf5e1e7d1e525718f5fff2109b5f9bc"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionEvidenceService.java",
+      "lineCount": 215,
+      "committedBytesSha256": "7db98ccddc96fb71af6e6fd7d08f13810391c867c04873b2cfdd47dd6504f8de"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "lineCount": 911,
+      "committedBytesSha256": "645952f0b2b8a27822ccd5b4c30eb0c4dec62305ab4fcb7d25e6e10d4353b40d"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPolicyGuardService.java",
+      "lineCount": 263,
+      "committedBytesSha256": "c31698a471687e44efde9d6caec0264261b51fc9d523d0c8a7df2d1cd148f55e"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionRunStateMachine.java",
+      "lineCount": 32,
+      "committedBytesSha256": "2239a8adfd7c757eee5e7d30ad66b2826bf24cc7d5b7e624370aaa88618286fc"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionSummaryService.java",
+      "lineCount": 232,
+      "committedBytesSha256": "9184dd47e6fe31310096feab6929fc508b570461280579bbae3fe2bd2a00d3f5"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "lineCount": 250,
+      "committedBytesSha256": "5cf8b581ec0ff3433034afb27b937b851063638b554f37d6d731905393e61e65"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/executor/AbstractErpDraftExecutor.java",
+      "lineCount": 36,
+      "committedBytesSha256": "5170d3fbab1ddf4b4bb54e0c3421f15c47e1626ccb1a6410d774f1b0ff39f16b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "lineCount": 1149,
+      "committedBytesSha256": "e9c58e48424b23528074cacbdae9dd22ae7279bc7ed0db8aff93be78727c5c98"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/ErpQueryService.java",
+      "lineCount": 177,
+      "committedBytesSha256": "8d7d499285416c8c6ab9e4c0094a85b7acf39863086d289c2a834915bfe02689"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/SqlSafetyValidator.java",
+      "lineCount": 382,
+      "committedBytesSha256": "145503e604833edaf0992807c430f921356721409f1d03da547bcbf5bd10009b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+      "lineCount": 537,
+      "committedBytesSha256": "c0265b1e2852390a49a65aea45b449a078ab77923a6a431165639f5f9de37ef7"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+      "lineCount": 525,
+      "committedBytesSha256": "173ce5aa60cde1941af7e2e7643f3d2139e1555b203f26a8fd514a17dcfcd173"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/sse/AiSseMessageHelper.java",
+      "lineCount": 297,
+      "committedBytesSha256": "d5070a2ab4154eb2890e74684ffa83ed73b97b6f97358f837ab48c0c4dedcfc4"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/BuiltinToolRegistry.java",
+      "lineCount": 176,
+      "committedBytesSha256": "a93f1baee7229150675a9db8116b7098a1dffa48eb522e37dc121bac6df9d025"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+      "lineCount": 119,
+      "committedBytesSha256": "ce9c2c322cfb2da89eb951b8c5a3cbd0fb31b07f9e67af2fbe6ba00941f5b6bb"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/DeliveryContextAssembler.java",
+      "lineCount": 2966,
+      "committedBytesSha256": "edcce597582fd2f3e3145a44045d7cd42f7077fdf79126416b6740f664fa3045"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpCertifiedPurchaseDecisionAdapter.java",
+      "lineCount": 276,
+      "committedBytesSha256": "7a575957822604d7f09e9f78e4972ff8ee90c6dfcd96322e8b7e79eae3540254"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionActionExecutor.java",
+      "lineCount": 709,
+      "committedBytesSha256": "cd20f9d2db94b9add26af9cc723228439cba7e815ac90f6839a09f1f19522eb6"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionApsSimulation.java",
+      "lineCount": 820,
+      "committedBytesSha256": "acf1c28da184e76f698805926063224e557aac5f30e526221d94f23b80828dd2"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+      "lineCount": 298,
+      "committedBytesSha256": "564bd19c227686125bc7fe4e23ce15786eafd916a8d4533aa08dde0a7f4a9ed5"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+      "lineCount": 426,
+      "committedBytesSha256": "7be0163517869c0582704e6f309f82485fa35d756126eb74721a04092a273241"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+      "lineCount": 169,
+      "committedBytesSha256": "ecc1f1275fdbba7706d70889d850b844e32c7285cc33fafda6472b33681ce737"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowAccessGuard.java",
+      "lineCount": 25,
+      "committedBytesSha256": "fe79c627beb123d17a52f8adc5c17a91432611fa1f29e7ab534123790e9e11f1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+      "lineCount": 145,
+      "committedBytesSha256": "0df77a2102a48b812e4310a787f55ef96d754ab2437618bab0512301dd2bd941"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/engine/FlowEngineImpl.java",
+      "lineCount": 1504,
+      "committedBytesSha256": "1e0f570c7425eda1b6df10aa7e395414dc7bd25a24b2da32e1341feb57fe7cdd"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionActionProposalNodeProvider.java",
+      "lineCount": 146,
+      "committedBytesSha256": "a3efbb3df726a4049c8177904f4d56641be8edc817815b3acf73942b47c470d5"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionExecuteApprovedActionsNodeProvider.java",
+      "lineCount": 38,
+      "committedBytesSha256": "dd00983fe93450736325447cabd452b2250d5e27b5db8bb718f80925f95557a0"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionNodeSupport.java",
+      "lineCount": 247,
+      "committedBytesSha256": "5267c043e4b3aff116d279c88f3f7b539d22e0219e9f707e6d316b2c9e655e19"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionPolicyGuardNodeProvider.java",
+      "lineCount": 54,
+      "committedBytesSha256": "b36444999af8884e552fbe5d8c447d7b5555445ac40be47576c647c7ee9af37f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DeliveryContextNodeProvider.java",
+      "lineCount": 32,
+      "committedBytesSha256": "3f728dc834dbc0c18951f7b74105324f277fc021096d0595b9fa74979f9fbc7a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/ScenarioRankNodeProvider.java",
+      "lineCount": 44,
+      "committedBytesSha256": "24cae542516f5f7d2d7330028b957f702af9a49a75a43a9a133f08723227c41b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/ShortageSimulationNodeProvider.java",
+      "lineCount": 29,
+      "committedBytesSha256": "fc820d600196a8e1689d0488961bc973939cc0ebb591e9ce3037d09130a05ece"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/controller/WfTaskController.java",
+      "lineCount": 330,
+      "committedBytesSha256": "c17e7f5864e9df81c092244fa678dd3c4574b219e955a24b446437911def842e"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/impl/WfTaskServiceImpl.java",
+      "lineCount": 2266,
+      "committedBytesSha256": "eab3489e98f74408ec99a0aa6ff8d34aa8fc0209e2f9c9ad735aa5de17166075"
+    }
+  ],
+  "rangeChecks": [
+    {
+      "path": "plus-ui/src/views/ai/assistant/index.vue",
+      "line": 663,
+      "end_line": 678,
+      "label": "助手 · 发送",
+      "committedLineCount": 1428,
+      "rangeSha256": "cb7c68eb1edcc747b0b3ec89495fa7fc2cf59009be33be619703b5d64484dad8"
+    },
+    {
+      "path": "plus-ui/src/views/ai/assistant/index.vue",
+      "line": 402,
+      "end_line": 429,
+      "label": "助手 · SSE",
+      "committedLineCount": 1428,
+      "rangeSha256": "e8b59347bfe66aa460e0ea49cb1869546dd4406b059693a6f9fba10b3f1cefd2"
+    },
+    {
+      "path": "plus-ui/src/api/ai/chat.ts",
+      "line": 28,
+      "end_line": 46,
+      "label": "聊天 API",
+      "committedLineCount": 127,
+      "rangeSha256": "e5d683187fd3dc8125fb3c754723e1b64215da494cb44ab8db224566c804ddaa"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+      "line": 50,
+      "end_line": 56,
+      "label": "聊天入口",
+      "committedLineCount": 293,
+      "rangeSha256": "b80ef095cc528b4f4425ad6741c498b0c95828e57e1c342fbab273d4aa72e06a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 158,
+      "end_line": 205,
+      "label": "Facade · 会话",
+      "committedLineCount": 1149,
+      "rangeSha256": "5cf90c82420cf26c73453ba207c587079faf92aec2b9353e97bfc219ee7f9f16"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 237,
+      "end_line": 269,
+      "label": "Facade · 路由",
+      "committedLineCount": 1149,
+      "rangeSha256": "23ab01f99d8d8219f053ecd3edfbb3ffad28fc60d0d0da83ba4fe1f5791dea79"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/ChatModelFactory.java",
+      "line": 69,
+      "end_line": 98,
+      "label": "模型工厂",
+      "committedLineCount": 169,
+      "rangeSha256": "7a5100cbf681302f26cc44699b354cae95cb3263144ffe2922a3103ec1921fca"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/provider/ChatServiceProviderFactory.java",
+      "line": 66,
+      "end_line": 109,
+      "label": "协议与厂商校验",
+      "committedLineCount": 113,
+      "rangeSha256": "6110b832b79ec92cd6a0373bdf032e2bd6e60ddea9a6493d5884548e4d4d33df"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/service/impl/AiModelServiceImpl.java",
+      "line": 274,
+      "end_line": 280,
+      "label": "厂商配置装配",
+      "committedLineCount": 332,
+      "rangeSha256": "46a7a29d521c1923e43336fbbf8333d386ba7a6e2b7102b45960e0f861d492c4"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/PersistentChatMemoryStore.java",
+      "line": 48,
+      "end_line": 65,
+      "label": "持久化记忆",
+      "committedLineCount": 173,
+      "rangeSha256": "43825b702263150e666f76eed8991fcae9f7e1658b4e8987df13de2fd89ef166"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 751,
+      "end_line": 761,
+      "label": "回复 · 租户写入",
+      "committedLineCount": 1149,
+      "rangeSha256": "db574cd20af040960cb76f4edde66c612dc3d678d1c1a0eb7cbd5ca38b9d440b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/sse/AiSseMessageHelper.java",
+      "line": 287,
+      "end_line": 294,
+      "label": "用户事件发布",
+      "committedLineCount": 297,
+      "rangeSha256": "83dd000d66247f10399b7f7aafe5824b22ab40bf6cc849221a8b8388124ae200"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/ToolProviderFactory.java",
+      "line": 38,
+      "end_line": 61,
+      "label": "工具统一入口",
+      "committedLineCount": 84,
+      "rangeSha256": "5f6c58c978805cefd155a26cd65c77414fd5948b2faba8311c2e03089b6dbf73"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/BuiltinToolRegistry.java",
+      "line": 133,
+      "end_line": 151,
+      "label": "内置启用与分类",
+      "committedLineCount": 176,
+      "rangeSha256": "543b4f926690c4df7ea67cdea542f7ef8fe01c3207743530dfa65d236986915c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/mcp/service/McpClientManager.java",
+      "line": 143,
+      "end_line": 153,
+      "label": "MCP · 启用选择",
+      "committedLineCount": 542,
+      "rangeSha256": "104455b0063e7b8a1b3caf0d96ff4f57e0db0576b245f2fe133b8e805b6edf0b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 352,
+      "end_line": 370,
+      "label": "RAG · 调用",
+      "committedLineCount": 1149,
+      "rangeSha256": "c7ddd8a7ab667c8e4e70fc0e6e4b75b76694234ba4e1a0cf47f6ad3137653f41"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+      "line": 98,
+      "end_line": 116,
+      "label": "检索配置与索引",
+      "committedLineCount": 537,
+      "rangeSha256": "aa24098c64e658697d9b910a2fd0e543bd48121813c8a88d291f6cde0cd7f950"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+      "line": 365,
+      "end_line": 378,
+      "label": "提示词增强",
+      "committedLineCount": 537,
+      "rangeSha256": "eb08d1925109fcb094232a3f54fc0445e1011f416635ae6a890f45c3ff4a1906"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+      "line": 43,
+      "end_line": 60,
+      "label": "SQL 工具调用",
+      "committedLineCount": 119,
+      "rangeSha256": "22abcaed78319daf506220f1333b80822d58bd8780383479c6d30263ecb55e2c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/SqlSafetyValidator.java",
+      "line": 94,
+      "end_line": 153,
+      "label": "SELECT / 租户护栏",
+      "committedLineCount": 382,
+      "rangeSha256": "b13c060e45a5b153817efd19b296dffb88ffcfeefdb95263fcbc67dd85025342"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/ErpQueryService.java",
+      "line": 26,
+      "end_line": 60,
+      "label": "ERP 数据源读取",
+      "committedLineCount": 177,
+      "rangeSha256": "ac1b3506c3f4532c5a3a09b9d96655d88c13a60f313c745e51fd7f67596f0c58"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+      "line": 104,
+      "end_line": 109,
+      "label": "知识库优先配置",
+      "committedLineCount": 525,
+      "rangeSha256": "a76399c67817648179abe303b2f08abecbfe6efa56e806cab8320d7cfaf1941f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+      "line": 139,
+      "end_line": 158,
+      "label": "Milvus / 堆内存",
+      "committedLineCount": 525,
+      "rangeSha256": "794bdac2899792960c81171fdb54ebdec3ad2eb87358a45218bd5695c015f586"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiProperties.java",
+      "line": 60,
+      "end_line": 66,
+      "label": "默认 inmemory",
+      "committedLineCount": 230,
+      "rangeSha256": "a7d917ee0e6dc2c81fc486a560e199ba09b9a608914ad36fe75d2510df5480f2"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/prdwork/index.vue",
+      "line": 219,
+      "end_line": 225,
+      "label": "工单 · 发起分析",
+      "committedLineCount": 430,
+      "rangeSha256": "b8a25b38a1639649cb8a3da8a363812eba949cde29d6513e031205cace760385"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/shortage/index.vue",
+      "line": 138,
+      "end_line": 148,
+      "label": "缺料 · 发起分析",
+      "committedLineCount": 180,
+      "rangeSha256": "1b1f8447cb559e9d7ed1399b2ae6e6b3b70efb6a63e65c3b9e7d36faffb7ccb0"
+    },
+    {
+      "path": "plus-ui/src/api/ai/decision.ts",
+      "line": 209,
+      "end_line": 220,
+      "label": "决策 API",
+      "committedLineCount": 239,
+      "rangeSha256": "8bd223e9f40c2b2b33ea08b887266750171531a245cf751a291fa12bd5f32b3f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+      "line": 47,
+      "end_line": 59,
+      "label": "决策入口 · 鉴权",
+      "committedLineCount": 136,
+      "rangeSha256": "3cbc97df366627ab667304681c75ceba02217071237230d97c9e49f74d0c1cbc"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "line": 115,
+      "end_line": 126,
+      "label": "业务权 / 活跃运行",
+      "committedLineCount": 250,
+      "rangeSha256": "b3c861323c6cfbcd699a97c9e4395823fd9681114ae8f71b15db2260307f3cf0"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "line": 230,
+      "end_line": 248,
+      "label": "启用与范围校验",
+      "committedLineCount": 250,
+      "rangeSha256": "d3647a098b7291fdfaab0bc0fb0854a58c50d69499cb9fc51bdfc0b8363378c6"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/IndustrialDecisionDataPort.java",
+      "line": 15,
+      "end_line": 50,
+      "label": "数据 / 仿真 / 动作端口",
+      "committedLineCount": 57,
+      "rangeSha256": "34e3917e1acd7801857df94fb63b9aafbe01faf88337795ec28a242a9dff4569"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision/port/DecisionWorkflowPort.java",
+      "line": 6,
+      "end_line": 19,
+      "label": "分析 / 执行 Flow 端口",
+      "committedLineCount": 19,
+      "rangeSha256": "bb780209c9a847ff8c065b4512dd0b80bdd9a6d7132127d5b3c86579a0f877a3"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+      "line": 43,
+      "end_line": 56,
+      "label": "桥接启动分析",
+      "committedLineCount": 169,
+      "rangeSha256": "1ea4248911becb4b78836027bd57d56eaf2185c534b2ac01881b9d0fc89c846e"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+      "line": 62,
+      "end_line": 101,
+      "label": "受保护分析 DAG",
+      "committedLineCount": 145,
+      "rangeSha256": "efacf6b9f2671ac7153633100ec31a8cb961e19bac0622bb207d013e6e2478c8"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/engine/FlowEngineImpl.java",
+      "line": 959,
+      "end_line": 976,
+      "label": "工作节点上下文",
+      "committedLineCount": 1504,
+      "rangeSha256": "779d069fb1cd2d85627f5d0948588b66a46636fbef4eea1e2eb47a4875056bed"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+      "line": 129,
+      "end_line": 165,
+      "label": "ERP 端口实现",
+      "committedLineCount": 298,
+      "rangeSha256": "27c33e45c0d8269b04404ad23be99a9c98fe20edf8987e538464a89c52ecea0c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/DeliveryContextAssembler.java",
+      "line": 213,
+      "end_line": 248,
+      "label": "ERP · 一致性快照",
+      "committedLineCount": 2966,
+      "rangeSha256": "9b5cff26961d53f82b52685611e028b2a222e8c1d81c0155d25335fa7762b8f7"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionApsSimulation.java",
+      "line": 239,
+      "end_line": 257,
+      "label": "确定性 APS / 不可行",
+      "committedLineCount": 820,
+      "rangeSha256": "fbb6aae378039b420dc59b2ff622eaea8d3d39db814d09eb38350c3d8f5d06b6"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "line": 169,
+      "end_line": 179,
+      "label": "状态 CAS 写入",
+      "committedLineCount": 911,
+      "rangeSha256": "82cc3ea08ab5b21fb89df2eaff98ca4987e33bd419c90c3b7b9074afad1a6258"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "line": 347,
+      "end_line": 389,
+      "label": "动作 / 原幂等键",
+      "committedLineCount": 911,
+      "rangeSha256": "40e8232afc8ea38f2cb01ed26d5ead3534e36b95f3ca44972b3536b096a37949"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionRunStateMachine.java",
+      "line": 14,
+      "end_line": 31,
+      "label": "运行状态机",
+      "committedLineCount": 32,
+      "rangeSha256": "c762ea727298666c564677acaa79a558902c53eb7756bef401527599b939e0e2"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionRun.java",
+      "line": 19,
+      "end_line": 60,
+      "label": "运行与冻结快照",
+      "committedLineCount": 119,
+      "rangeSha256": "a304f0a31e9df0bdf33ee424b64d88224f1102bab265b839e8de802b65806c2f"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionEvidence.java",
+      "line": 18,
+      "end_line": 63,
+      "label": "可核验数值 / 谱系",
+      "committedLineCount": 77,
+      "rangeSha256": "dd71aa57c08bdd39442b6651b329d2b5e3b40e625013b3ddeff746bd00dc6d6b"
+    },
+    {
+      "path": "ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/domain/entity/AiDecisionAction.java",
+      "line": 19,
+      "end_line": 63,
+      "label": "动作 / 审批 / 执行",
+      "committedLineCount": 105,
+      "rangeSha256": "121fe8656d65a0c179cd354a446cd44c5d76123d259ab5fb78b1f8af28b9d4ab"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionAnalysisAssemblyService.java",
+      "line": 90,
+      "end_line": 138,
+      "label": "风险与证据组装",
+      "committedLineCount": 226,
+      "rangeSha256": "a702df0151ccf0fc07ca03cea0d39f7e0df646e704efbd69f346ddfad1a0dfe3"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionEvidenceService.java",
+      "line": 89,
+      "end_line": 105,
+      "label": "数值事实覆盖",
+      "committedLineCount": 215,
+      "rangeSha256": "712005fd71541468cbeb0f12584ca213c303af421b6b602238e92caee94ede1f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPolicyGuardService.java",
+      "line": 89,
+      "end_line": 132,
+      "label": "摘要与动作护栏",
+      "committedLineCount": 263,
+      "rangeSha256": "fd84a75e6277ea79a565fc34523a91ef7edf3d7afe2c07ec90ae471b83055bce"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionSummaryService.java",
+      "line": 33,
+      "end_line": 57,
+      "label": "摘要解析 / 重试 / 兜底",
+      "committedLineCount": 232,
+      "rangeSha256": "befce1f4353a67c16d9af32a5de34a02f55eba7a9f0600aa6b8af35f07894454"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/config/AiPromptTemplateInitializer.java",
+      "line": 28,
+      "end_line": 38,
+      "label": "只读定性摘要契约",
+      "committedLineCount": 139,
+      "rangeSha256": "0171b8aa6f85c79d5253a7c97de54f71ce5a0b8caa82fc69fa33e3b51cfd16d1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+      "line": 72,
+      "end_line": 85,
+      "label": "可选 RAG / LLM 节点",
+      "committedLineCount": 145,
+      "rangeSha256": "729d577ccb5f4cdf5b5b5b396c2415b71d715469b90cb3e979371dd75091521d"
+    },
+    {
+      "path": "plus-ui/src/views/ai/decision/detail.vue",
+      "line": 44,
+      "end_line": 55,
+      "label": "详情 · 审批权限",
+      "committedLineCount": 266,
+      "rangeSha256": "c6fc9759877da4d4fa9f5002cd45a2d77826d2c631ad78b79c9c1bafcec225f3"
+    },
+    {
+      "path": "plus-ui/src/views/ai/decision/detail.vue",
+      "line": 205,
+      "end_line": 218,
+      "label": "版本 / 快照 / 审批",
+      "committedLineCount": 266,
+      "rangeSha256": "755c32e5dd6bc1aed3b0055d2a15198ee6def732ae58010717e7c3b37d0dc008"
+    },
+    {
+      "path": "plus-ui/src/api/ai/decision.ts",
+      "line": 225,
+      "end_line": 235,
+      "label": "审批与原动作重试",
+      "committedLineCount": 239,
+      "rangeSha256": "4f385b00f9106d73cd5d6e3cf7519bdc3c1ce7c66f78cc9e029042c9b2d08776"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+      "line": 83,
+      "end_line": 94,
+      "label": "工业审批入口",
+      "committedLineCount": 136,
+      "rangeSha256": "2b6405f313232fe9a3788f690580f3bab085c7d9a248133f104643d5e1f368ca"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "line": 73,
+      "end_line": 108,
+      "label": "审批权限 / 版本 / 新鲜度",
+      "committedLineCount": 252,
+      "rangeSha256": "5fcb4f2ab53ee7e19bd315b0dc1db53a2a601ded980273a980bcb039a2ecca9a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "line": 142,
+      "end_line": 156,
+      "label": "提交后启动执行 Flow",
+      "committedLineCount": 252,
+      "rangeSha256": "c3ee4dd0b46bdf1932ef9e82127f397b5870751ebc3fb635cab22c2e9ceb78ed"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+      "line": 59,
+      "end_line": 67,
+      "label": "受控执行桥接",
+      "committedLineCount": 169,
+      "rangeSha256": "cc4b869921014bc8f364bb40ca535d50be69650aef63258724f1fb37425f50bf"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowDefinitionFactory.java",
+      "line": 104,
+      "end_line": 108,
+      "label": "单节点执行图",
+      "committedLineCount": 145,
+      "rangeSha256": "9acdd0f826705326644798f4dd9624222ecfce9aaea20948f11ce6102457f277"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionExecuteApprovedActionsNodeProvider.java",
+      "line": 22,
+      "end_line": 30,
+      "label": "调用执行状态服务",
+      "committedLineCount": 38,
+      "rangeSha256": "2a770af69a0b8de01a4fe5719e0fa87f3ef3f5f467c78a79b242a97b95a4cbd1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+      "line": 129,
+      "end_line": 164,
+      "label": "运行 / 动作状态校验",
+      "committedLineCount": 623,
+      "rangeSha256": "2385b6dfb855e8dbbaf2bb83ebb1f0879d784ba6bc09b2ec7bc193c413c7af7b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+      "line": 426,
+      "end_line": 449,
+      "label": "恢复优先 / 冻结重核",
+      "committedLineCount": 623,
+      "rangeSha256": "a6de86c181df8f7d4011e3c403094bcbd81c6069d26bf2cf4f0274846886d72b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/executor/AbstractErpDraftExecutor.java",
+      "line": 14,
+      "end_line": 33,
+      "label": "受控 ERP 执行端口",
+      "committedLineCount": 36,
+      "rangeSha256": "7d13182576621e49ef774ab483b2de7d7f0f0a756a82573ca7716033de6bd0d9"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+      "line": 168,
+      "end_line": 176,
+      "label": "权限后选择 ERP 执行器",
+      "committedLineCount": 298,
+      "rangeSha256": "cf1f2c9c3805116ae0b2bf6057ddf72455a60fe20d4d38c6712e14821c1a06d1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+      "line": 118,
+      "end_line": 156,
+      "label": "冻结合同 / 恢复 / 业务权",
+      "committedLineCount": 426,
+      "rangeSha256": "bff41243203fe2655c09fd972105352fa9f03e3314e1eaf38ccb82223cbf6e6a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpDecisionActionExecutor.java",
+      "line": 193,
+      "end_line": 232,
+      "label": "排程方案 · 实际状态",
+      "committedLineCount": 709,
+      "rangeSha256": "5fa8b5708c9045f03e59ac5fbe254ec58e36366876b062a49b6e9dc0aabed52f"
+    },
+    {
+      "path": "plus-ui/src/api/ai/chat.ts",
+      "line": 28,
+      "end_line": 46,
+      "label": "POST send",
+      "committedLineCount": 127,
+      "rangeSha256": "e5d683187fd3dc8125fb3c754723e1b64215da494cb44ab8db224566c804ddaa"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+      "line": 50,
+      "end_line": 56,
+      "label": "Facade 调用",
+      "committedLineCount": 293,
+      "rangeSha256": "b80ef095cc528b4f4425ad6741c498b0c95828e57e1c342fbab273d4aa72e06a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 277,
+      "end_line": 285,
+      "label": "流式模型",
+      "committedLineCount": 1149,
+      "rangeSha256": "5466206e3dd77d85c1a7a449d7e3ab1e26ebb45b236fff834d48d7a029ad65a2"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 446,
+      "end_line": 457,
+      "label": "Agent 模型",
+      "committedLineCount": 1149,
+      "rangeSha256": "2142e09736bd6bbe7ba380d5af5a5737a615c713fe170de0fea0b74c71d6c6af"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 277,
+      "end_line": 292,
+      "label": "记忆与事件",
+      "committedLineCount": 1149,
+      "rangeSha256": "e999933a64b71e87a4cb586992b381be3cdbc252e16f1e01047327d643a1bdbe"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 751,
+      "end_line": 761,
+      "label": "回复落库",
+      "committedLineCount": 1149,
+      "rangeSha256": "db574cd20af040960cb76f4edde66c612dc3d678d1c1a0eb7cbd5ca38b9d440b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/sse/AiSseMessageHelper.java",
+      "line": 287,
+      "end_line": 294,
+      "label": "用户 SSE 发布",
+      "committedLineCount": 297,
+      "rangeSha256": "83dd000d66247f10399b7f7aafe5824b22ab40bf6cc849221a8b8388124ae200"
+    },
+    {
+      "path": "plus-ui/src/views/ai/assistant/index.vue",
+      "line": 402,
+      "end_line": 429,
+      "label": "事件接收",
+      "committedLineCount": 1428,
+      "rangeSha256": "e8b59347bfe66aa460e0ea49cb1869546dd4406b059693a6f9fba10b3f1cefd2"
+    },
+    {
+      "path": "plus-ui/src/views/ai/assistant/index.vue",
+      "line": 873,
+      "end_line": 876,
+      "label": "绑定事件",
+      "committedLineCount": 1428,
+      "rangeSha256": "6c6fa9d5cc926e9fbf80e0802febae378ce9ea026ba9a29005ee5c450ab1bebd"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 455,
+      "end_line": 460,
+      "label": "按分类启用",
+      "committedLineCount": 1149,
+      "rangeSha256": "6377f591c2341f306a00fc58cce82c57c495cd0a76b1307b93f2bec3583c386c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 499,
+      "end_line": 515,
+      "label": "独立 MCP Agent",
+      "committedLineCount": 1149,
+      "rangeSha256": "4562f2d84d6ae7a199bfca35a4c37ec40146e25057b49d5243b795853b946199"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 855,
+      "end_line": 866,
+      "label": "会话工具选择",
+      "committedLineCount": 1149,
+      "rangeSha256": "c1d0dc2b564cfcbe571c8445d5c63d81878b94bd2ac2f6fbfb521ca84a52298c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 263,
+      "end_line": 269,
+      "label": "模式路由",
+      "committedLineCount": 1149,
+      "rangeSha256": "5658bbdb9b0ab4cdd3dfb51dc17a9a24f057e2d7fb6e1af3193137cc40d06fcd"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 364,
+      "end_line": 370,
+      "label": "检索增强",
+      "committedLineCount": 1149,
+      "rangeSha256": "448d087800a89c15a3835088d04a954346d7f8c149f37882b315eeb926b4fd80"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+      "line": 43,
+      "end_line": 60,
+      "label": "净化后执行",
+      "committedLineCount": 119,
+      "rangeSha256": "22abcaed78319daf506220f1333b80822d58bd8780383479c6d30263ecb55e2c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+      "line": 255,
+      "end_line": 259,
+      "label": "向量读取",
+      "committedLineCount": 537,
+      "rangeSha256": "70f0b8253eaa89a6b966d40e94e66f832c9e4a0dc3e1f4157263c196cfdb9e40"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+      "line": 139,
+      "end_line": 158,
+      "label": "存储模式选择",
+      "committedLineCount": 525,
+      "rangeSha256": "794bdac2899792960c81171fdb54ebdec3ad2eb87358a45218bd5695c015f586"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/prdwork/index.vue",
+      "line": 219,
+      "end_line": 225,
+      "label": "启动并打开详情",
+      "committedLineCount": 430,
+      "rangeSha256": "b8a25b38a1639649cb8a3da8a363812eba949cde29d6513e031205cace760385"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+      "line": 47,
+      "end_line": 51,
+      "label": "权限后编排",
+      "committedLineCount": 136,
+      "rangeSha256": "7a6909ca342c41fd5250695dd861519ed0b741b9cceaa71207b3c37e19134f1e"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "line": 37,
+      "end_line": 50,
+      "label": "注入公共端口",
+      "committedLineCount": 250,
+      "rangeSha256": "018c7ea848138bb6810b0cc271e5a200e0ea5c5118e0687896ea0aa94111fa6f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "line": 154,
+      "end_line": 163,
+      "label": "校验 / startAnalysis",
+      "committedLineCount": 250,
+      "rangeSha256": "91599e80bfc13574efb579450bb817d766f6e38022c73745355d5f30b146aee1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+      "line": 31,
+      "end_line": 46,
+      "label": "WorkflowPort 实现",
+      "committedLineCount": 169,
+      "rangeSha256": "379609f32a85f286bf507359b72a9cce37182c39a4b51b5adf18ea5009784f18"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+      "line": 30,
+      "end_line": 41,
+      "label": "DataPort 实现",
+      "committedLineCount": 298,
+      "rangeSha256": "f0cf70c188facd300dd9431f26acd1df46c45fc4b3c7851bf833f6e812a67363"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DeliveryContextNodeProvider.java",
+      "line": 21,
+      "end_line": 30,
+      "label": "快照读取",
+      "committedLineCount": 32,
+      "rangeSha256": "281497a920c7bad8223a070a57f71f9c6b2dd913d47c2f48c2b6d4b3e67a866c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/ShortageSimulationNodeProvider.java",
+      "line": 21,
+      "end_line": 25,
+      "label": "缺料端口",
+      "committedLineCount": 29,
+      "rangeSha256": "f959c7a5e23280f461c828fe1d19d79d2b906ef2b2cde36f19eb52622f570838"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/ApsWhatIfSimulationService.java",
+      "line": 28,
+      "end_line": 43,
+      "label": "APS 端口",
+      "committedLineCount": 60,
+      "rangeSha256": "fc05e95316867c7de26808552b9d1acf06d2df6107492aa9159d92f0bde20efa"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DeliveryContextNodeProvider.java",
+      "line": 21,
+      "end_line": 30,
+      "label": "快照留痕",
+      "committedLineCount": 32,
+      "rangeSha256": "281497a920c7bad8223a070a57f71f9c6b2dd913d47c2f48c2b6d4b3e67a866c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionActionProposalNodeProvider.java",
+      "line": 80,
+      "end_line": 95,
+      "label": "证据 / 动作 / 定稿",
+      "committedLineCount": 146,
+      "rangeSha256": "19dca2e0ccc41bac7617700e2f5bd88f4355641a615286e7016c97fbe2c34f6c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/ScenarioRankNodeProvider.java",
+      "line": 29,
+      "end_line": 42,
+      "label": "确定性事实准备",
+      "committedLineCount": 44,
+      "rangeSha256": "ba51590ceb36e2848866f5cac08ae8dd13159c0b818ee35cd445a0667a9f1619"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionPolicyGuardNodeProvider.java",
+      "line": 44,
+      "end_line": 52,
+      "label": "组装与策略",
+      "committedLineCount": 54,
+      "rangeSha256": "e912371ed720fcdee37ed30a4db7933efd1a341d15c88b2a16da80c4fd0f53c1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionActionProposalNodeProvider.java",
+      "line": 71,
+      "end_line": 81,
+      "label": "动作策略检查",
+      "committedLineCount": 146,
+      "rangeSha256": "5ac011eacd98175d8bdecb1cf6a06c9f75ce6e0c610d9ed546153e88623981da"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionAnalysisAssemblyService.java",
+      "line": 125,
+      "end_line": 151,
+      "label": "摘要 / 策略 / 回退",
+      "committedLineCount": 226,
+      "rangeSha256": "eec4a7cd2f35899a5bb51b934c1cf8cab7ec8bb45f3c8693e4674691a7e74335"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionSummaryService.java",
+      "line": 33,
+      "end_line": 57,
+      "label": "LLM 可选兜底",
+      "committedLineCount": 232,
+      "rangeSha256": "befce1f4353a67c16d9af32a5de34a02f55eba7a9f0600aa6b8af35f07894454"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "line": 162,
+      "end_line": 179,
+      "label": "运行读取 / 写入",
+      "committedLineCount": 911,
+      "rangeSha256": "98c98f4920599466c8a029b66998de68412a89cb8fcf7aa52c378588afa389aa"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "line": 323,
+      "end_line": 334,
+      "label": "证据写入",
+      "committedLineCount": 911,
+      "rangeSha256": "0f5f1a354d82a9b7e96a73161e3484ce9f71d796c7a5b72e42f4d07348580cd0"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "line": 377,
+      "end_line": 389,
+      "label": "动作写入",
+      "committedLineCount": 911,
+      "rangeSha256": "76b08399fd7476b2332ce9d63118b689a7dfa10057c166b7d1f0c08089c1a55c"
+    },
+    {
+      "path": "plus-ui/src/views/ai/decision/detail.vue",
+      "line": 205,
+      "end_line": 218,
+      "label": "版本快照提交",
+      "committedLineCount": 266,
+      "rangeSha256": "755c32e5dd6bc1aed3b0055d2a15198ee6def732ae58010717e7c3b37d0dc008"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiDecisionController.java",
+      "line": 83,
+      "end_line": 87,
+      "label": "审批 Service",
+      "committedLineCount": 136,
+      "rangeSha256": "304fd46606afaaed7d0767e6f9bbf8b251bdbdefbd6341dbf4f24f70d488d3b9"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "line": 142,
+      "end_line": 156,
+      "label": "审批事务后执行",
+      "committedLineCount": 252,
+      "rangeSha256": "c3ee4dd0b46bdf1932ef9e82127f397b5870751ebc3fb635cab22c2e9ceb78ed"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionExecuteApprovedActionsNodeProvider.java",
+      "line": 22,
+      "end_line": 30,
+      "label": "受保护执行节点",
+      "committedLineCount": 38,
+      "rangeSha256": "2a770af69a0b8de01a4fe5719e0fa87f3ef3f5f467c78a79b242a97b95a4cbd1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/executor/AbstractErpDraftExecutor.java",
+      "line": 14,
+      "end_line": 33,
+      "label": "端口执行 / 核验",
+      "committedLineCount": 36,
+      "rangeSha256": "7d13182576621e49ef774ab483b2de7d7f0f0a756a82573ca7716033de6bd0d9"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpIndustrialDecisionDataAdapter.java",
+      "line": 168,
+      "end_line": 176,
+      "label": "ERP 权限与选择",
+      "committedLineCount": 298,
+      "rangeSha256": "cf1f2c9c3805116ae0b2bf6057ddf72455a60fe20d4d38c6712e14821c1a06d1"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 499,
+      "end_line": 515,
+      "label": "MCP 独立角色",
+      "committedLineCount": 1149,
+      "rangeSha256": "4562f2d84d6ae7a199bfca35a4c37ec40146e25057b49d5243b795853b946199"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 531,
+      "end_line": 572,
+      "label": "上下文 / 资料证据 / 清理",
+      "committedLineCount": 1149,
+      "rangeSha256": "8cf412349b1fe1e5b1250c67f6fad2f1a166b64bb9b0a8a43459770b4273c423"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "line": 855,
+      "end_line": 866,
+      "label": "按会话启用外部工具",
+      "committedLineCount": 1149,
+      "rangeSha256": "c1d0dc2b564cfcbe571c8445d5c63d81878b94bd2ac2f6fbfb521ca84a52298c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial/DecisionNodeSupport.java",
+      "line": 66,
+      "end_line": 96,
+      "label": "身份与实时权限",
+      "committedLineCount": 247,
+      "rangeSha256": "ba4415e21e343111e65ed1e8780b34b67f43013bcc34ba422f4818c6964ef769"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+      "line": 89,
+      "end_line": 117,
+      "label": "规范图与发布版本",
+      "committedLineCount": 169,
+      "rangeSha256": "281b5fdd994f007b8064999605af5205125175612452544e5486b014685fd0dd"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/AiDecisionWorkflowAdapter.java",
+      "line": 146,
+      "end_line": 157,
+      "label": "已注册节点配置",
+      "committedLineCount": 169,
+      "rangeSha256": "197c0370a8beabc8eeb3478b4b8320c1496f695ecd481a85f42fe97deb24fc8a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowAccessGuard.java",
+      "line": 11,
+      "end_line": 24,
+      "label": "通用入口隔离",
+      "committedLineCount": 25,
+      "rangeSha256": "dea2716d6ea053d38c9724c19ee6439e548751be24e701c781d5763ac73d832b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "line": 65,
+      "end_line": 90,
+      "label": "身份 / 新鲜度 / 事实重读",
+      "committedLineCount": 250,
+      "rangeSha256": "c8f8ad87a18135d0b26bbaf4d75b65207ede32d880c6afd04bd3a62524de2fa8"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DeliveryRiskDecisionOrchestrator.java",
+      "line": 91,
+      "end_line": 111,
+      "label": "冻结合同 / 定稿",
+      "committedLineCount": 250,
+      "rangeSha256": "dfa376db1b710e307b93c6b10af18484ddb68faed87c11c3a49d815782b9d766"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionEvidenceService.java",
+      "line": 89,
+      "end_line": 105,
+      "label": "数值谱系",
+      "committedLineCount": 215,
+      "rangeSha256": "712005fd71541468cbeb0f12584ca213c303af421b6b602238e92caee94ede1f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "line": 142,
+      "end_line": 149,
+      "label": "审批留痕",
+      "committedLineCount": 252,
+      "rangeSha256": "863e8ae62961176e6639b1e30b59b970bf58ea2a8d785db52c739f9b96111ada"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+      "line": 158,
+      "end_line": 188,
+      "label": "执行状态收敛",
+      "committedLineCount": 623,
+      "rangeSha256": "643144ed5f5077686429df2757d4a9eeaf6c9928d27b9c94b2d68f9f9992951c"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPersistenceService.java",
+      "line": 887,
+      "end_line": 894,
+      "label": "tenant / version CAS",
+      "committedLineCount": 911,
+      "rangeSha256": "14617fae865d4e1a9d20f91adbb02e06bc6734e4446a8602daa3ca9250eb71aa"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+      "line": 165,
+      "end_line": 199,
+      "label": "RR 与创建",
+      "committedLineCount": 426,
+      "rangeSha256": "c2c455c00e72bae1627198c42c7f3d31be680c54b984e5aa7756c75f4d42c557"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWriteService.java",
+      "line": 200,
+      "end_line": 222,
+      "label": "来源额度 / 业务写入",
+      "committedLineCount": 426,
+      "rangeSha256": "b511aa5d3dc7d1601ab43d42d815528f03418de1aa006ea158250033be00057b"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/ErpCertifiedPurchaseDecisionAdapter.java",
+      "line": 54,
+      "end_line": 82,
+      "label": "真实提交与恢复",
+      "committedLineCount": 276,
+      "rangeSha256": "81e5d1c7aae867aebc8841f13f8888f1dc56665ad83c2480641a79652f6f1288"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+      "line": 82,
+      "end_line": 109,
+      "label": "原动作重试 / 恢复",
+      "committedLineCount": 623,
+      "rangeSha256": "88ae3251db4ae1525caed397ba1d574f4b1bd1884b9aa49a21790c0fed6373ab"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/controller/WfTaskController.java",
+      "line": 95,
+      "end_line": 100,
+      "label": "独立 workflow 审批入口",
+      "committedLineCount": 330,
+      "rangeSha256": "ab193e5841232b7f11f11c126efa25a40040b13b20155a7577055be6e6b3cc7a"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/impl/WfTaskServiceImpl.java",
+      "line": 320,
+      "end_line": 331,
+      "label": "Flowable TaskService.complete",
+      "committedLineCount": 2266,
+      "rangeSha256": "9940537b15dbef744ed3cabd1c14f76cd4773581910b651c6f58c334b1783e5f"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "line": 142,
+      "end_line": 156,
+      "label": "实际工业审批续接",
+      "committedLineCount": 252,
+      "rangeSha256": "c3ee4dd0b46bdf1932ef9e82127f397b5870751ebc3fb635cab22c2e9ceb78ed"
+    },
+    {
+      "path": "plus-ui/src/views/erp/so/orderheader/index.vue",
+      "line": 214,
+      "end_line": 223,
+      "label": "销售订单入口",
+      "committedLineCount": 493,
+      "rangeSha256": "063cc5256df625ddb25cd040490c71ba71acafe81f7da9062c05629a45a2d1c3"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/schedule/index.vue",
+      "line": 453,
+      "end_line": 467,
+      "label": "排程入口",
+      "committedLineCount": 659,
+      "rangeSha256": "40432dcffd624b4427c7657f62a111f5cdf0cd743fc9c5d0ac83e6e0f9192349"
+    },
+    {
+      "path": "plus-ui/src/views/erp/prd/shortage/index.vue",
+      "line": 138,
+      "end_line": 148,
+      "label": "缺料入口",
+      "committedLineCount": 180,
+      "rangeSha256": "1b1f8447cb559e9d7ed1399b2ae6e6b3b70efb6a63e65c3b9e7d36faffb7ccb0"
+    },
+    {
+      "path": "plus-ui/src/views/ai/decision/index.vue",
+      "line": 120,
+      "end_line": 125,
+      "label": "查询页面",
+      "committedLineCount": 187,
+      "rangeSha256": "2210dda5399eeee995d19a1ffbdd4c7a3352644bc697feb3225e27767ed5fa0a"
+    }
+  ],
+  "counts": {
+    "components": 22,
+    "connections": 22,
+    "primaryReferences": 65,
+    "allEvidenceReferences": 131,
+    "uniqueSourceFiles": 62
+  },
+  "limitations": [
+    "Source/configuration structure only; no runtime, DB, live service, production or approval acceptance test.",
+    "Supporting helper calls grouped by subsystem; not every internal method call is drawn.",
+    "Flowable is deliberately documented as a separate control plane, not a fictitious runtime hop."
+  ]
+}

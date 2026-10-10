@@ -22,33 +22,34 @@
       <el-col :span="1.5">
         <el-button type="success" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:tg:usage:add']">新增记录</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:tg:usage:remove']"
-          >删除</el-button
-        >
-      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工装编码" prop="toolingCode" min-width="140">
-        <template #default="scope">{{ scope.row.toolingCode || scope.row.toolingId }}</template>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip>
+      <el-table-column label="工装" min-width="195">
+        <template #default="scope">{{ toolingReference(scope.row.toolingId) }}</template>
       </el-table-column>
-      <el-table-column label="工单编号" prop="woNo" width="140" />
-      <el-table-column label="工位" prop="workstationName" width="120" />
-      <el-table-column label="操作员" prop="operatorName" width="100" />
-      <el-table-column label="领用时间" prop="checkoutTime" width="160" />
-      <el-table-column label="归还时间" prop="returnTime" width="160" />
-      <el-table-column label="使用次数" prop="usageCount" align="right" width="90" />
-      <el-table-column label="使用时长" prop="usageHours" align="right" width="90" />
-      <el-table-column label="状态" prop="status" align="center" width="90">
+      <el-table-column label="工单编号" prop="woNo" width="120" />
+      <el-table-column label="工位" prop="workstationName" width="100" />
+      <el-table-column label="操作员" prop="operatorName" width="80" />
+      <el-table-column label="领用时间" prop="checkoutTime" width="140" />
+      <el-table-column label="归还时间" prop="returnTime" width="140" />
+      <el-table-column label="使用次数" prop="usageCount" align="right" width="75" />
+      <el-table-column label="使用时长" prop="usageHours" align="right" width="75" />
+      <el-table-column label="状态" prop="status" align="center" width="75">
         <template #default="scope"><dict-tag :options="tg_usage_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="80" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:tg:usage:edit']">编辑</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:tg:usage:remove']">删除</el-button>
+          <el-button
+            v-if="scope.row.status === 'OUT'"
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['mes:tg:usage:edit']"
+            >编辑</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -59,7 +60,7 @@
       <el-form ref="usageRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="工装" prop="toolingId">
           <el-input v-model="form.toolingName" placeholder="请选择工装" readonly>
-            <template #append><el-button icon="Search" @click="openToolingDialog()" /></template>
+            <template #append><el-button icon="Search" :disabled="!!form.usageId" @click="openToolingDialog()" /></template>
           </el-input>
         </el-form-item>
         <el-form-item label="工单">
@@ -76,23 +77,6 @@
           <el-input v-model="form.operatorName" placeholder="请选择操作员" readonly>
             <template #append><el-button icon="Search" @click="openUserDialog()" /></template>
           </el-input>
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="使用次数">
-              <el-input-number v-model="form.usageCount" :min="0" controls-position="right" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="使用时长">
-              <el-input-number v-model="form.usageHours" :min="0" :precision="2" controls-position="right" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="状态">
-          <el-select v-model="form.status" style="width: 100%">
-            <el-option v-for="dict in tg_usage_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-          </el-select>
         </el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
       </el-form>
@@ -205,7 +189,7 @@
 </template>
 
 <script setup lang="ts" name="TgUsageRecord">
-import { listUsageRecord, getUsageRecord, addUsageRecord, updateUsageRecord, delUsageRecord } from '@/api/mes/tg/usage-record';
+import { listUsageRecord, getUsageRecord, addUsageRecord, updateUsageRecord } from '@/api/mes/tg/usage-record';
 import type { TgUsageRecordVO, TgUsageRecordQuery } from '@/api/mes/tg/usage-record';
 import { listTooling } from '@/api/mes/tg/tooling';
 import { listUser } from '@/api/system/user';
@@ -213,6 +197,7 @@ import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listWorkstation } from '@/api/erp/bd/workstation';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { buildToolingReferenceMap, formatToolingReference, type MesToolingReferenceMap } from '@/utils/mesToolingReference';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { tg_usage_status, mes_tooling_status, prd_wo_status } = toRefs<any>(proxy?.useDict('tg_usage_status', 'mes_tooling_status', 'prd_wo_status'));
@@ -224,6 +209,13 @@ const toolingDialog = reactive({
   total: 0,
   query: { pageNum: 1, pageSize: 10, toolingCode: '', toolingName: '' }
 });
+const toolingReferences = ref<MesToolingReferenceMap>({});
+
+const loadToolingReferences = () =>
+  listTooling({ pageNum: 1, pageSize: 1000 } as any).then((res: any) => {
+    toolingReferences.value = buildToolingReferenceMap(res.rows || []);
+  });
+const toolingReference = (toolingId: string | number) => formatToolingReference(toolingReferences.value, toolingId);
 const userDialog = reactive({ visible: false, list: [] as any[], total: 0, query: { pageNum: 1, pageSize: 10, userName: '', nickName: '' } });
 const woDialog = reactive({ visible: false, list: [] as any[], total: 0, query: { pageNum: 1, pageSize: 10, woNo: '' } });
 const workstationDialog = reactive({
@@ -240,28 +232,15 @@ const queryParams = ref<TgUsageRecordQuery>({
 });
 
 const rules = {
-  toolingId: [{ required: true, message: '工装不能为空', trigger: 'change' }]
+  toolingId: [{ required: true, message: '工装不能为空', trigger: 'change' }],
+  operatorId: [{ required: true, message: '操作员不能为空', trigger: 'change' }]
 };
 
-const {
-  loading,
-  list,
-  total,
-  open,
-  title,
-  multiple,
-  showSearch,
-  form,
-  getList,
-  handleQuery,
-  handleDelete,
-  handleSelectionChange,
-  submitForm,
-  cancel,
-  handleAdd,
-  handleUpdate
-} = useCrud<TgUsageRecordVO & { toolingName?: string }, TgUsageRecordQuery>({
-  apis: { list: listUsageRecord, get: getUsageRecord, add: addUsageRecord, update: updateUsageRecord, del: delUsageRecord },
+const { loading, list, total, open, title, showSearch, form, getList, handleQuery, submitForm, cancel, handleAdd, handleUpdate } = useCrud<
+  TgUsageRecordVO & { toolingName?: string },
+  TgUsageRecordQuery
+>({
+  apis: { list: listUsageRecord, get: getUsageRecord, add: addUsageRecord, update: updateUsageRecord },
   idField: 'usageId',
   entityName: '使用记录',
   formRef: usageRef,
@@ -276,11 +255,18 @@ const {
     workstationName: '',
     operatorId: undefined,
     operatorName: '',
-    usageCount: 1,
-    usageHours: 0,
-    status: 'OUT',
     remark: ''
-  })
+  }),
+  afterLoad: (formData) => {
+    formData.toolingName = toolingReference(formData.toolingId);
+  },
+  beforeSubmit: (formData) => {
+    delete formData.status;
+    delete formData.usageCount;
+    delete formData.usageHours;
+    delete formData.checkoutTime;
+    delete formData.returnTime;
+  }
 });
 
 function resetQuery() {
@@ -349,5 +335,5 @@ const selectWorkstation = (row: any) => {
   workstationDialog.visible = false;
 };
 
-getList();
+void Promise.all([loadToolingReferences(), getList()]);
 </script>

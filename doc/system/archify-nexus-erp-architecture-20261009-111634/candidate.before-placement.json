@@ -1,0 +1,673 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nexus-ERP 系统总体架构",
+    "locale": "zh-CN",
+    "output": "doc/system/archify-nexus-erp-architecture-20261009-111634/nexus-erp-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://gitee.com/helloworld_wh18/nexus-erp.git",
+      "revision": "785f70d08a59e4c6115afae61a59da0173d7afa9",
+      "provider": "gitee",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "frontend-host",
+      "type": "cloud",
+      "label": "Nginx 前端入口",
+      "sublabel": "PC 前端静态目录",
+      "pos": [
+        30,
+        30
+      ],
+      "size": [
+        240,
+        80
+      ],
+      "sources": [
+        {
+          "path": "docker-compose-main.yml",
+          "line": 107,
+          "end_line": 125,
+          "label": "Nginx 与静态目录编排"
+        }
+      ],
+      "tag": "API 路由依部署配置"
+    },
+    {
+      "id": "station-hardware",
+      "type": "external",
+      "label": "工位外设",
+      "sublabel": "串口设备 · 厂商 CLI",
+      "tag": "真实驱动与硬件配置后接入",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/flash/controller/FlashReportController.java",
+          "line": 32,
+          "end_line": 90,
+          "label": "MES 硬件执行结果接收契约"
+        }
+      ],
+      "pos": [
+        900,
+        30
+      ],
+      "size": [
+        240,
+        88
+      ]
+    },
+    {
+      "id": "web-console",
+      "type": "frontend",
+      "label": "PC 管理端",
+      "sublabel": "Vue 3 · Web 业务管理",
+      "pos": [
+        30,
+        240
+      ],
+      "size": [
+        240,
+        96
+      ],
+      "sources": [
+        {
+          "path": "plus-ui/src/main.ts",
+          "line": 1,
+          "end_line": 47,
+          "label": "Vue 页面与应用装配"
+        },
+        {
+          "path": "plus-ui/src/utils/request.ts",
+          "line": 95,
+          "end_line": 119,
+          "label": "API 请求与鉴权头"
+        },
+        {
+          "path": "plus-ui/src/utils/sse.ts",
+          "line": 12,
+          "end_line": 35,
+          "label": "SSE 订阅"
+        }
+      ],
+      "tag": "plus-ui · 管理与配置"
+    },
+    {
+      "id": "app-client",
+      "type": "frontend",
+      "label": "APP 移动端",
+      "sublabel": "uni-app · 移动管理协同",
+      "tag": "Nexus-App · 考勤 / IM / AI",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/sch/controller/app/AppSchAttendanceController.java",
+          "line": 139,
+          "end_line": 155,
+          "label": "APP 考勤后端契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/controller/AppImController.java",
+          "line": 50,
+          "end_line": 61,
+          "label": "APP 即时通讯后端契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+          "line": 29,
+          "end_line": 57,
+          "label": "AI 对话后端契约"
+        }
+      ],
+      "pos": [
+        320,
+        240
+      ],
+      "size": [
+        240,
+        96
+      ]
+    },
+    {
+      "id": "pda-client",
+      "type": "frontend",
+      "label": "手持智能终端 PDA",
+      "sublabel": "uni-app · 现场扫码作业",
+      "tag": "nexus-pda · 仓储 / 生产 / 质检",
+      "pos": [
+        610,
+        240
+      ],
+      "size": [
+        240,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/controller/app/AppPdaReceiveController.java",
+          "line": 28,
+          "end_line": 76,
+          "label": "PDA 仓储后端契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pda/controller/AppPdaReportController.java",
+          "line": 25,
+          "end_line": 69,
+          "label": "PDA 生产报工后端契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pda/controller/AppPdaIqcController.java",
+          "line": 35,
+          "end_line": 62,
+          "label": "PDA 质检后端契约"
+        }
+      ]
+    },
+    {
+      "id": "station-client",
+      "type": "frontend",
+      "label": "Station 工位机",
+      "sublabel": "Electron · 固定工位执行",
+      "tag": "nexus-station · 烧录 / 综测 / 过站",
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-station/src/main/java/com/nexus/station/controller/StationDeviceController.java",
+          "line": 133,
+          "end_line": 175,
+          "label": "工位过站与报工后端契约"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-station/src/main/java/com/nexus/station/controller/StationDeviceController.java",
+          "line": 315,
+          "end_line": 324,
+          "label": "工位 HTTP 密钥校验"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/flash/controller/FlashReportController.java",
+          "line": 63,
+          "end_line": 90,
+          "label": "刷写 / 综测结果后端契约"
+        }
+      ],
+      "pos": [
+        900,
+        240
+      ],
+      "size": [
+        240,
+        110
+      ]
+    },
+    {
+      "id": "nexus-runtime",
+      "type": "backend",
+      "label": "NexusServer",
+      "sublabel": "ERP · MES · IoT · AI · Flow",
+      "pos": [
+        445,
+        510
+      ],
+      "size": [
+        310,
+        180
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-admin/src/main/java/com/nexus/NexusApplication.java",
+          "line": 13,
+          "end_line": 23,
+          "label": "Spring Boot 应用入口"
+        },
+        {
+          "path": "ruoyi-admin/pom.xml",
+          "line": 68,
+          "end_line": 149,
+          "label": "业务模块同应用组装"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-security/src/main/java/com/nexus/common/security/config/SecurityConfig.java",
+          "line": 49,
+          "end_line": 75,
+          "label": "常规 API 鉴权"
+        }
+      ],
+      "tag": "含 ruoyi-station 后端设备通道"
+    },
+    {
+      "id": "business-data",
+      "type": "database",
+      "label": "MySQL 业务数据源",
+      "sublabel": "业务数据 · 知识库元数据",
+      "pos": [
+        900,
+        559
+      ],
+      "size": [
+        240,
+        82
+      ],
+      "sources": [
+        {
+          "path": "docker-compose-main.yml",
+          "line": 12,
+          "end_line": 37,
+          "label": "MySQL 编排基线"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/KnowledgeProcessService.java",
+          "line": 150,
+          "end_line": 195,
+          "label": "文档与分块元数据持久化"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-iot/src/main/java/com/nexus/iot/device/service/impl/IotDeviceDataServiceImpl.java",
+          "line": 23,
+          "end_line": 53,
+          "label": "IoT 数据源与持久化"
+        }
+      ],
+      "tag": "根编排镜像：MySQL 5.7"
+    },
+    {
+      "id": "model-services",
+      "type": "external",
+      "label": "模型服务",
+      "sublabel": "对话 · Agent · Embedding",
+      "pos": [
+        30,
+        555
+      ],
+      "size": [
+        250,
+        90
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/chat/ChatModelFactory.java",
+          "line": 87,
+          "end_line": 124,
+          "label": "配置驱动的模型构建"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+          "line": 393,
+          "end_line": 405,
+          "label": "模型调用与增量输出"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/EmbeddingService.java",
+          "line": 42,
+          "end_line": 61,
+          "label": "配置驱动的向量模型"
+        }
+      ],
+      "tag": "按配置选择厂商与模型"
+    },
+    {
+      "id": "vision-service",
+      "type": "external",
+      "label": "Vision 视觉服务",
+      "sublabel": "人脸注册 / 校验 · 物料 OCR",
+      "pos": [
+        30,
+        765
+      ],
+      "size": [
+        250,
+        90
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-common/ruoyi-common-cv/src/main/java/com/nexus/common/cv/client/VisionClientImpl.java",
+          "line": 51,
+          "end_line": 109,
+          "label": "人脸 API 调用"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-cv/src/main/java/com/nexus/common/cv/client/VisionClientImpl.java",
+          "line": 282,
+          "end_line": 293,
+          "label": "HTTP 与上传实现"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-cv/src/main/java/com/nexus/common/cv/client/VisionClientImpl.java",
+          "line": 344,
+          "end_line": 354,
+          "label": "启用与密钥前置校验"
+        }
+      ],
+      "tag": "可选服务 · 配置后启用"
+    },
+    {
+      "id": "mqtt-devices",
+      "type": "external",
+      "label": "MQTT 工业设备",
+      "sublabel": "属性上报 · Topic 鉴权",
+      "pos": [
+        900,
+        765
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-iot/src/main/java/com/nexus/iot/mqtt/MqttBrokerConfig.java",
+          "line": 35,
+          "end_line": 67,
+          "label": "内嵌 MQTT 鉴权与授权"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-iot/src/main/java/com/nexus/iot/mqtt/IotMqttInterceptHandler.java",
+          "line": 110,
+          "end_line": 126,
+          "label": "属性上报进入消息管道"
+        }
+      ],
+      "tag": "设备认证与主题授权"
+    },
+    {
+      "id": "object-store",
+      "type": "cloud",
+      "label": "MinIO / S3 对象存储",
+      "sublabel": "原始文件 · 图片与附件",
+      "pos": [
+        30,
+        1020
+      ],
+      "size": [
+        250,
+        90
+      ],
+      "sources": [
+        {
+          "path": "docker-compose-main.yml",
+          "line": 74,
+          "end_line": 105,
+          "label": "MinIO 服务编排"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-oss/src/main/java/com/nexus/common/oss/core/OssClient.java",
+          "line": 185,
+          "end_line": 216,
+          "label": "S3 对象上传"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/KnowledgeProcessService.java",
+          "line": 150,
+          "end_line": 154,
+          "label": "知识库原文读取"
+        }
+      ]
+    },
+    {
+      "id": "redis-runtime",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "缓存 · Stream · SSE 广播",
+      "pos": [
+        320,
+        1020
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-iot/src/main/java/com/nexus/iot/pipeline/IotDeviceLatestCache.java",
+          "line": 25,
+          "end_line": 57,
+          "label": "设备最新值缓存"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-iot/src/main/java/com/nexus/iot/pipeline/IotMessagePipelineService.java",
+          "line": 300,
+          "end_line": 307,
+          "label": "Redis Stream 写入"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-sse/src/main/java/com/nexus/common/sse/core/SseEmitterManager.java",
+          "line": 207,
+          "end_line": 226,
+          "label": "SSE Redis 广播"
+        }
+      ]
+    },
+    {
+      "id": "message-broker",
+      "type": "messagebus",
+      "label": "RabbitMQ",
+      "sublabel": "ERP / MES 跨模块异步事件",
+      "pos": [
+        610,
+        1020
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "sources": [
+        {
+          "path": "docker-compose-main.yml",
+          "line": 55,
+          "end_line": 72,
+          "label": "RabbitMQ 服务编排"
+        },
+        {
+          "path": "ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/producer/ReliableMessageProducer.java",
+          "line": 35,
+          "end_line": 50,
+          "label": "消息发布"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/common/mq/consumer/WorkOrderReleaseConsumer.java",
+          "line": 29,
+          "end_line": 50,
+          "label": "MES 工单消息消费"
+        }
+      ]
+    },
+    {
+      "id": "milvus-store",
+      "type": "database",
+      "label": "Milvus 向量存储",
+      "sublabel": "知识库 Collection · 相似检索",
+      "tag": "按知识库隔离 · 配置启用",
+      "pos": [
+        900,
+        1020
+      ],
+      "size": [
+        250,
+        100
+      ],
+      "sources": [
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 100,
+          "end_line": 159,
+          "label": "Milvus 模式与 Collection 隔离"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 242,
+          "end_line": 266,
+          "label": "分块向量化与写入"
+        },
+        {
+          "path": "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java",
+          "line": 424,
+          "end_line": 437,
+          "label": "查询向量与相似检索"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NexusServer · 同进程业务模块",
+      "wraps": [
+        "nexus-runtime"
+      ],
+      "pad": 26
+    }
+  ],
+  "connections": [
+    {
+      "id": "nginx-hosts-ui",
+      "from": "frontend-host",
+      "to": "web-console",
+      "label": "静态目录挂载",
+      "variant": "dashed"
+    },
+    {
+      "id": "console-opens-api",
+      "from": "web-console",
+      "to": "nexus-runtime",
+      "label": "鉴权 API / SSE 订阅",
+      "variant": "emphasis"
+    },
+    {
+      "id": "terminals-enter-runtime",
+      "from": "mqtt-devices",
+      "to": "nexus-runtime",
+      "label": "MQTT 设备鉴权",
+      "variant": "security"
+    },
+    {
+      "id": "runtime-uses-models",
+      "from": "nexus-runtime",
+      "to": "model-services",
+      "label": "按模型配置调用"
+    },
+    {
+      "id": "runtime-persists-data",
+      "from": "nexus-runtime",
+      "to": "business-data",
+      "label": "业务 SQL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "runtime-uses-vision",
+      "from": "nexus-runtime",
+      "to": "vision-service",
+      "label": "启用且有密钥时 HTTP",
+      "variant": "dashed"
+    },
+    {
+      "id": "runtime-uses-objects",
+      "from": "nexus-runtime",
+      "to": "object-store",
+      "label": "S3 对象读写"
+    },
+    {
+      "id": "runtime-uses-redis",
+      "from": "nexus-runtime",
+      "to": "redis-runtime",
+      "label": "缓存 / Stream / 广播",
+      "labelAt": [
+        577,
+        1011
+      ]
+    },
+    {
+      "id": "runtime-uses-mq",
+      "from": "nexus-runtime",
+      "to": "message-broker",
+      "label": "消息发布 / 监听",
+      "variant": "dashed"
+    },
+    {
+      "id": "pda-calls-runtime",
+      "from": "pda-client",
+      "to": "nexus-runtime",
+      "label": "鉴权 API",
+      "variant": "security"
+    },
+    {
+      "id": "runtime-uses-milvus",
+      "from": "nexus-runtime",
+      "to": "milvus-store",
+      "label": "milvus 模式读写",
+      "variant": "emphasis"
+    },
+    {
+      "id": "app-calls-runtime",
+      "from": "app-client",
+      "to": "nexus-runtime",
+      "label": "鉴权 HTTP API",
+      "variant": "security"
+    },
+    {
+      "id": "station-calls-runtime",
+      "from": "station-client",
+      "to": "nexus-runtime",
+      "label": "X-API-KEY HTTP",
+      "variant": "security"
+    },
+    {
+      "id": "station-controls-hardware",
+      "from": "station-client",
+      "to": "station-hardware",
+      "label": "真实驱动时 串口 / CLI",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四端入口与业务分工",
+      "items": [
+        "PC / plus-ui：业务人员与管理员的 Web 管理端",
+        "APP / Nexus-App：员工与管理者的考勤、IM、移动业务与 AI 入口",
+        "PDA / nexus-pda：仓储、产线、质检与设备人员的现场扫码作业",
+        "Station / nexus-station：固定工位的烧录、综测、SN 过站、SOP 与上料"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "连接与执行边界",
+      "items": [
+        "PC、APP、PDA 使用登录态业务 API；PDA 写操作另受权限与幂等校验",
+        "Station 使用 X-API-KEY 设备 HTTP 通道，不等于普通员工登录态",
+        "工位机通过配置的串口 / 厂商 CLI 驱动控制外设；不把 mock 当成真机验收",
+        "MQTT 工业设备单列：设备认证与 Topic 授权，不与工位机或 PDA 混同"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "制造与平台服务",
+      "items": [
+        "ERP / MES / IoT / AI / Flow 由 ruoyi-admin 组装在 NexusServer 内",
+        "ruoyi-station 是后端设备通道模块；nexus-station 是独立 Electron 客户端",
+        "System / IM / Flowable / Pay / Report / Job 及鉴权、租户、签章等共享能力",
+        "不把代码模块误画成独立微服务；RabbitMQ 承载跨模块异步事件"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "AI 与知识库的数据分工",
+      "items": [
+        "模型服务：按配置选择对话 / Agent / Embedding 模型",
+        "MinIO / S3 存原始文件；MySQL 存业务数据、知识文档与分块元数据",
+        "Embedding 模型生成向量；milvus 模式由 Milvus 存储并进行相似检索",
+        "Milvus 按 knowledgeId 分 Collection；工业动作受策略与审批约束"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "证据与运行范围",
+      "items": [
+        "四个仓库分别固定提交；图中原生来源验证 ERP 后端契约，客户端证据另存",
+        "Nginx 只画仓库可证明的静态目录关系，不推断外置 API 代理配置",
+        "Milvus 部署位置与线上向量模式未核验；辅助监控 / 调度未展开为部署拓扑",
+        "本图是逻辑总览，未连接真实数据库、模型服务、PDA 真机或工位硬件"
+      ]
+    }
+  ]
+}

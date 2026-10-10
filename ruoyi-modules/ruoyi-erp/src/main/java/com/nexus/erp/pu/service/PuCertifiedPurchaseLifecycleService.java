@@ -52,6 +52,21 @@ public class PuCertifiedPurchaseLifecycleService {
     }
     @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
     public void validateOrderForWorkflowLocked(OrderCommand command) {
+        validateOrderForWorkflowLocked(command,false);
+    }
+
+    /**
+     * 在既有物料守卫下完成报价生命周期预检，不初始化任何技术或业务记录。
+     * <p>复用正常整单合同、权限及来源校验；只读核对和原请求显式处置不得间接调用 ensureGuard。</p>
+     *
+     * @param command 仅包含原单及逐分配期望版本的内部合同
+     */
+    @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
+    public void validateOrderForWorkflowExistingGuardLocked(OrderCommand command) {
+        validateOrderForWorkflowLocked(command,true);
+    }
+
+    private void validateOrderForWorkflowLocked(OrderCommand command, boolean existingGuardOnly) {
         validateOrderCommand(command);
         if(command.operation()==Operation.APPROVE_ORDER) {
             // 只读报价预检不得授予或要求写入批准角色。
@@ -59,7 +74,7 @@ public class PuCertifiedPurchaseLifecycleService {
             require(command.actorId().equals(LoginHelper.getUserId())&&command.tenantId().equals(LoginHelper.getTenantId()),"报价预检actor/租户不匹配");
         }else requireActor(orderLineCommand(command,command.expectedAllocationVersions().keySet().iterator().next()));
         qualification.requireSourceChainTransaction();sourceGate.requireOrderDefinitions();
-        List<Context> contexts=orderContexts(command.tenantId(),command.materialId(),command.requestKey(),command.orderId(),command.expectedAllocationVersions());
+        List<Context> contexts=orderContexts(command.tenantId(),command.materialId(),command.requestKey(),command.orderId(),command.expectedAllocationVersions(),existingGuardOnly);
         for(Context c:contexts)checkOrderContext(c,command,false);
     }
     @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)

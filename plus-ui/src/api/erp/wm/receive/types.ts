@@ -146,3 +146,51 @@ export interface ReceiveForm {
   updateTime?: string;
   wmMaterialReceiveLineList?: ReceiveLineVO[];
 }
+
+/** 与既有认证收货草稿 DTO 对齐；不支持客户端批次/IQC/单价/批准事实。 */
+export interface CertifiedReceiveDraftRequest {
+  requestKey: string;
+  orderId: string;
+  expectedOrderVersion: number;
+  purchaseLineId: string;
+  quantity: string;
+  warehouseId: string;
+  areaId: string;
+  locationId: string;
+  actualArrivalDate: string;
+  remark?: string;
+  noticeId?: string;
+  noticeLineId?: string;
+}
+export interface CertifiedReceiveDraftResult {
+  receiveId: string;
+  receiveCode: string;
+  lineId: string;
+  purchaseLineId: string;
+  materialId: string;
+  baseUomId: string;
+  quantity: string;
+  status: string;
+  replayed: boolean;
+  requestHash: string;
+}
+export interface CertifiedReceivePostingResult {
+  receiveId: string;
+  materialId: string;
+  quantity: string;
+  sourceFingerprint: string;
+  replay: boolean;
+  notificationPending: boolean;
+}
+/** 永久恢复仅原结果，消费 pending 不触发补发 MQ 或执行 POST。 */
+export interface CertifiedReceiveRecovery {
+  receiveId: string;
+  orderId: string;
+  materialId: string;
+  quantity: string;
+  sourceFingerprint: string;
+  postedAt: string;
+  notificationStatus: 'PENDING' | 'ENQUEUED';
+  consumptionState: 'PENDING' | 'CONSUMED';
+  consumptionEvents: unknown[];
+}

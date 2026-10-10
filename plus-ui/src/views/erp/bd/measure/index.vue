@@ -42,6 +42,9 @@
             </div>
           </div>
           <div class="baseunit-actions">
+            <el-button v-hasPermi="['bd:measure:query']" link type="primary" size="small" @click.stop="handleQuantityConfirmation(unit)"
+              >数量核验</el-button
+            >
             <el-button v-hasPermi="['bd:measure:edit']" link type="primary" icon="Edit" size="small" @click.stop="handleUpdate(unit)" />
             <el-button v-hasPermi="['bd:measure:remove']" link type="danger" icon="Delete" size="small" @click.stop="handleDelete(unit)" />
           </div>
@@ -107,8 +110,9 @@
                 <dict-tag :options="sys_core_status" :value="scope.row.status" />
               </template>
             </el-table-column>
-            <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+            <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
               <template #default="scope">
+                <el-button v-hasPermi="['bd:measure:query']" link type="primary" @click="handleQuantityConfirmation(scope.row)">数量核验</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:measure:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:measure:remove']">删除</el-button>
               </template>
@@ -128,7 +132,9 @@
       </div>
     </div>
 
-    <!-- 添加或修改计量单位对话框（保留原有弹窗） -->
+    <CertifiedQuantityConfirmationDialog v-model="quantityVisible" :uom-id="quantityUnitId" @confirmed="refreshQuantityUnits" />
+
+    <!-- 添加或修改计量单位对话框（普通编辑不会自动补数量核验证据） -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="measureRef" :model="form" :rules="rules" label-width="80px" :disabled="isViewMode">
         <el-row :gutter="20">
@@ -281,6 +287,26 @@ import type { MeasureForm, MeasureQuery } from '@/api/erp/bd/measure/types';
 import { Folder, ScaleToOriginal, Collection, Connection } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import CertifiedQuantityConfirmationDialog from './CertifiedQuantityConfirmationDialog.vue';
+import { normalizeBusinessId } from '@/utils/certified-business';
+
+const quantityVisible = ref(false);
+const quantityUnitId = ref<string | null>(null);
+
+/** 仅传递身份；不传列表旧版本/换算率，不借普通编辑或查看态授予核验资格。 */
+function handleQuantityConfirmation(unit: { uomId: unknown }) {
+  try {
+    quantityUnitId.value = normalizeBusinessId(unit.uomId);
+    quantityVisible.value = true;
+  } catch {
+    proxy.$modal.msgWarning('单位身份无效，请重新读取列表。');
+  }
+}
+
+/** 仅在同一单位的有效响应及原生回读后刷新级联列表，不触发普通 CRUD 写入。 */
+function refreshQuantityUnits(id: string) {
+  if (quantityVisible.value && quantityUnitId.value === id) refreshData();
+}
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
@@ -436,7 +462,7 @@ function selectBaseUnit(unit: any) {
   loadDerivedUnits(unit.uomId);
 }
 
-function loadDerivedUnits(primaryId: number) {
+function loadDerivedUnits(primaryId: string | number) {
   derivedUnitLoading.value = true;
   listByPrimary(primaryId)
     .then((res: any) => {

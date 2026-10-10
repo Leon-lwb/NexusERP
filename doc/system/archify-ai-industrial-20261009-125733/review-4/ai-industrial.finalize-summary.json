@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\candidate.json",
+    "sha256": "abee4580e855addcb2226fe387fadd11f7afe4665995f8804898d77384d4b5d9",
+    "bytes": 29911
+  },
+  "artifact": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.html",
+    "sha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c",
+    "bytes": 816306
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.finalize.json",
+    "summaryReceipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-09T02:25:04.620Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 8018,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 1,
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "controlled_analysis_start",
+            "from": "decision_run",
+            "to": "analysis_flow",
+            "label": "校验并启动分析",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "right": {
+            "id": "workflow_port_impl",
+            "from": "analysis_flow",
+            "to": "contracts",
+            "label": "实现 WorkflowPort",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "point": [
+            570,
+            1075.0000000000002
+          ],
+          "sharedNode": "analysis_flow"
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "workflow_port_impl",
+            "from": "analysis_flow",
+            "to": "contracts",
+            "label": "实现 WorkflowPort",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "bends": 3,
+          "stretch": 1
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "decision_run → analysis_flow and analysis_flow → contracts cross next to analysis_flow: move node decision_run or contracts so the two reach analysis_flow from different sides (for example one level with it, one directly above or below it).",
+      "analysis_flow → contracts needs 3 bends: move node analysis_flow or contracts so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

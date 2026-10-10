@@ -2,6 +2,7 @@ package com.nexus.mes.eq.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -37,6 +38,7 @@ public class EqSpareStockBo extends BaseEntity {
     /** 变动数量(正数) */
     @NotNull(message = "数量不能为空")
     @Positive(message = "数量必须大于0")
+    @Digits(integer = 10, fraction = 4, message = "数量最多10位整数、4位小数")
     private BigDecimal quantity;
 
     /** 关联单据类型(MANUAL) */

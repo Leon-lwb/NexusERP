@@ -1,24 +1,27 @@
 import request, { download } from '@/utils/request';
-import { AxiosPromise } from 'axios';
+import type { AxiosPromise } from 'axios';
+
+/** 后端 BigDecimal 可序列化为字符串；空值表示未知。 */
+export type EqSpareDecimal = number | string | null;
 
 /** 备件主数据视图对象 */
 export interface EqSparePartVO {
-  spareId: number;
+  spareId: string;
   spareCode: string;
   spareName: string;
   spec?: string;
   model?: string;
   unit?: string;
   category?: string;
-  safetyStock?: number;
+  safetyStock?: EqSpareDecimal;
   /** 当前库存(ERP 库存的派生冗余缓存, 权威账本在 ERP wm_material_stock) */
-  currentStock?: number;
+  currentStock?: EqSpareDecimal;
   /** ERP物料ID(bd_material.material_id), 未映射为 null/空 */
   materialId?: string;
   /** ERP仓库ID(wm_warehouse.warehouse_id), 未映射为 null/空 */
   warehouseId?: string;
-  /** ERP可用量(在库 − 已预留, 且 frozen_flag = 0); 未映射物料时为 null */
-  erpAvailableStock?: number;
+  /** ERP可用量(按物料汇总, 在库 − 已预留, 且 frozen_flag = 0); 不可用/未映射为 null */
+  erpAvailableStock?: EqSpareDecimal;
   /** 是否已映射 ERP 物料 */
   erpMapped?: boolean;
   /** 低库存判定口径: ERP_AVAILABLE / NOT_MAPPED / ERP_UNAVAILABLE */
@@ -26,7 +29,7 @@ export interface EqSparePartVO {
   /** 是否低于安全库存(按 ERP 可用量判定) */
   lowStock?: boolean;
   /** 参考单价(用于 ERP 移动平均计价) */
-  unitCost?: number;
+  unitCost?: EqSpareDecimal;
   remark?: string;
 }
 
@@ -39,8 +42,9 @@ export interface EqSparePartQuery extends PageQuery {
 
 /** 备件表单 */
 export interface EqSparePartForm {
-  spareId?: number;
-  spareCode: string;
+  spareId?: string;
+  /** 新增时留空由后端 MES_SPARE_CODE 规则生成 */
+  spareCode?: string;
   spareName: string;
   spec?: string;
   model?: string;
@@ -51,33 +55,39 @@ export interface EqSparePartForm {
   materialId?: string;
   /** ERP仓库ID(wm_warehouse.warehouse_id); 出入库过账目标仓库 */
   warehouseId?: string;
-  /** 参考单价(保留两位以上小数, 用于 ERP 移动平均计价) */
-  unitCost?: number;
+  /** 参考单价(decimal(18,4)，字符串避免高位小数失真，用于 ERP 移动平均计价) */
+  unitCost?: number | string;
   remark?: string;
+}
+
+/** 备件编码受控纠正入参 */
+export interface EqSpareCodeCorrectionForm {
+  expectedCurrentCode: string;
+  reason: string;
 }
 
 /** 出入库参数 */
 export interface EqSpareStockBo {
-  spareId: number;
+  spareId: string;
   transactionType: 'IN' | 'OUT' | 'REPAIR_USE';
   quantity: number;
   refType?: string;
-  refId?: number;
+  refId?: string;
   remark?: string;
 }
 
 /** 库存流水视图对象 */
 export interface EqSpareStockLogVO {
-  logId: number;
-  spareId: number;
+  logId: string;
+  spareId: string;
   spareCode?: string;
   spareName?: string;
   transactionType: string;
-  quantity?: number;
-  beforeQty?: number;
-  afterQty?: number;
+  quantity?: EqSpareDecimal;
+  beforeQty?: EqSpareDecimal;
+  afterQty?: EqSpareDecimal;
   refType?: string;
-  refId?: number;
+  refId?: string;
   operatorName?: string;
   operateTime?: string;
   remark?: string;
@@ -97,15 +107,20 @@ export const addSparePart = (data: EqSparePartForm): AxiosPromise<EqSparePartVO>
 /** 修改备件 */
 export const updateSparePart = (data: EqSparePartForm): AxiosPromise<void> => request({ url: '/mes/eq/spare-part', method: 'put', data });
 
+/** 按 MES_SPARE_CODE 规则重新生成编码并同步历史快照 */
+export const regenerateSpareCode = (spareId: string | number, data: EqSpareCodeCorrectionForm): AxiosPromise<string> =>
+  request({ url: `/mes/eq/spare-part/${spareId}/regenerate-code`, method: 'put', data });
+
 /** 删除备件 */
-export const delSparePart = (spareIds: number | number[]) => request({ url: `/mes/eq/spare-part/${spareIds}`, method: 'delete' });
+export const delSparePart = (spareIds: string | string[] | number | number[]) => request({ url: `/mes/eq/spare-part/${spareIds}`, method: 'delete' });
 
 /** 导出备件 */
 export const exportSparePart = (query?: EqSparePartQuery) =>
   download('/mes/eq/spare-part/export', { ...query }, `spare_part_${new Date().getTime()}.xlsx`);
 
 /** 出入库操作 */
-export const stockTransaction = (data: EqSpareStockBo): AxiosPromise<number> => request({ url: '/mes/eq/spare-part/stock', method: 'post', data });
+export const stockTransaction = (data: EqSpareStockBo): AxiosPromise<EqSpareDecimal> =>
+  request({ url: '/mes/eq/spare-part/stock', method: 'post', data });
 
 /** 库存流水分页查询 */
 export const listStockLog = (params?: any): AxiosPromise<EqSpareStockLogVO[]> =>
@@ -141,7 +156,7 @@ export interface EqSpareErpSyncVO {
   /** 变动类型: IN / OUT / REPAIR_USE / RETURN */
   transactionType?: string;
   /** 数量 */
-  quantity?: number;
+  quantity?: EqSpareDecimal;
   /** 来源单据类型 */
   refType?: string;
   /** 来源单据ID */
@@ -157,7 +172,7 @@ export interface EqSpareErpSyncVO {
   /** 最近投递时间 */
   lastPublishTime?: string;
   /** ERP过账后可用量 */
-  erpAvailableAfter?: number;
+  erpAvailableAfter?: EqSpareDecimal;
   /** 备注 */
   remark?: string;
   /** 创建时间 */
@@ -173,7 +188,7 @@ export interface EqSparePurchaseRequest {
 }
 
 /**
- * 低库存一键生成 ERP 采购申请
+ * 低库存一键生成 ERP 采购申请（安全策略已暂停，不得重新挂载提交入口）
  * <p>权限 mes:eq:spare:purchase；成功返回提交的请购行数；未映射备件由后端拒绝并返回编码列表，
  * 这里关闭统一错误 toast，由调用方原样展示后端错误信息（避免重复提示）。</p>
  */

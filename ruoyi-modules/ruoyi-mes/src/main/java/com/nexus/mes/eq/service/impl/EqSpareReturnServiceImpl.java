@@ -2,6 +2,7 @@ package com.nexus.mes.eq.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
@@ -23,6 +24,7 @@ import com.nexus.mes.eq.mapper.EqSpareReturnMapper;
 import com.nexus.mes.eq.service.IEqSparePartService;
 import com.nexus.mes.eq.service.IEqSpareReturnService;
 import com.nexus.mes.eq.service.support.EqSpareReturnNoGenerator;
+import com.nexus.mes.eq.service.support.EqSpareValueValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
+import java.util.Objects;
 
 /**
  * MES备件退库单 Service 业务层实现（MES-EQ-04 收口）
@@ -140,6 +144,10 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
         if (!STATUS_DRAFT.equals(exist.getStatus())) {
             throw new ServiceException("仅草稿退库单可修改: " + exist.getReturnNo() + ", 当前状态: " + exist.getStatus());
         }
+        // null 按现有 NOT_NULL 更新策略表示保留，校验必须使用最终落库的仓库。
+        if (bo.getWarehouseId() == null) {
+            bo.setWarehouseId(exist.getWarehouseId());
+        }
         List<EqSpareReturnLine> lines = buildLines(bo);
         EqSpareReturn update = new EqSpareReturn();
         update.setReturnId(bo.getReturnId());
@@ -149,7 +157,7 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
         update.setTotalQty(sumQty(lines));
         update.setRemark(bo.getRemark());
         update.setVersion(exist.getVersion() == null ? 1 : exist.getVersion() + 1);
-        int rows = baseMapper.updateById(update);
+        int rows = baseMapper.update(update, draftVersionGuard(exist));
         if (rows == 0) {
             throw new ServiceException("退库单修改失败(并发冲突, 请刷新后重试): " + bo.getReturnId());
         }
@@ -183,6 +191,19 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
                     + ", 当前状态: " + record.getStatus());
             }
         }
+        if (records.size() != Arrays.stream(ids).distinct().count()) {
+            throw new ServiceException("退库单不存在或已删除，请刷新后重试");
+        }
+        // 按固定顺序锁住单头，再删明细；确认/编辑无法穿过草稿状态与版本护栏。
+        records = new ArrayList<>(records);
+        records.sort(Comparator.comparing(EqSpareReturn::getReturnId));
+        for (EqSpareReturn record : records) {
+            int locked = baseMapper.update(null, draftVersionGuard(record)
+                .setSql("version = IFNULL(version, 0) + 1"));
+            if (locked == 0) {
+                throw new ServiceException("退库单状态或版本已变更，不可删除: " + record.getReturnNo());
+            }
+        }
         lineMapper.delete(Wrappers.<EqSpareReturnLine>lambdaQuery()
             .in(EqSpareReturnLine::getReturnId, Arrays.asList(ids)));
         return baseMapper.deleteByIds(Arrays.asList(ids)) > 0;
@@ -210,13 +231,11 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
             throw new ServiceException("退库单已作废, 不可确认: " + header.getReturnNo());
         }
         // CAS 占位: 先置 CONFIRMED(同事务), 失败则整单回滚回 DRAFT, 保证并发下只过账一次
-        int rows = baseMapper.update(null, Wrappers.<EqSpareReturn>lambdaUpdate()
+        int rows = baseMapper.update(null, draftVersionGuard(header)
             .set(EqSpareReturn::getStatus, STATUS_CONFIRMED)
             .set(EqSpareReturn::getConfirmBy, LoginHelper.getUserId())
             .set(EqSpareReturn::getConfirmTime, new Date())
-            .setSql("version = version + 1")
-            .eq(EqSpareReturn::getReturnId, returnId)
-            .eq(EqSpareReturn::getStatus, STATUS_DRAFT));
+            .setSql("version = IFNULL(version, 0) + 1"));
         if (rows == 0) {
             throw new ServiceException("退库单状态已变更, 确认失败(请刷新后重试): " + header.getReturnNo());
         }
@@ -227,6 +246,10 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
             throw new ServiceException("退库单无明细, 不可确认: " + header.getReturnNo());
         }
         for (EqSpareReturnLine line : lines) {
+            EqSpareValueValidator.requirePositiveQuantity(line.getReturnQty(), "退库数量");
+            if (header.getWarehouseId() != null) {
+                validateWarehouse(header.getWarehouseId(), sparePartMapper.selectVoById(line.getSpareId()));
+            }
             EqSpareStockBo stockBo = new EqSpareStockBo();
             stockBo.setSpareId(line.getSpareId());
             stockBo.setTransactionType(IEqSparePartService.TXN_RETURN);
@@ -289,9 +312,7 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
                 throw new ServiceException("退库明细缺少备件ID");
             }
             BigDecimal qty = lineBo.getReturnQty();
-            if (qty == null || qty.signum() <= 0) {
-                throw new ServiceException("退库数量必须大于0: spareId=" + lineBo.getSpareId());
-            }
+            EqSpareValueValidator.requirePositiveQuantity(qty, "退库数量");
             EqSpareReturnLine exist = merged.get(lineBo.getSpareId());
             if (exist != null) {
                 // 同单同备件重复行合并(数量累加), 避免同一备件在本单被重复过账
@@ -302,6 +323,7 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
             if (spare == null) {
                 throw new ServiceException("备件不存在: " + lineBo.getSpareId());
             }
+            validateWarehouse(bo.getWarehouseId(), spare);
             EqSpareReturnLine line = new EqSpareReturnLine();
             line.setSpareId(spare.getSpareId());
             line.setSpareCode(spare.getSpareCode());
@@ -326,7 +348,37 @@ public class EqSpareReturnServiceImpl implements IEqSpareReturnService {
         for (EqSpareReturnLine line : lines) {
             total = total.add(line.getReturnQty());
         }
+        EqSpareValueValidator.requirePositiveQuantity(total, "退库合计数量");
         return total;
+    }
+
+    /**
+     * 锁定仍为同一版本的草稿单头，避免编辑、删除与确认之间的并发穿透。
+     *
+     * @param header 已读取的单头快照
+     * @return 状态和版本比较更新条件
+     */
+    private LambdaUpdateWrapper<EqSpareReturn> draftVersionGuard(EqSpareReturn header) {
+        return Wrappers.<EqSpareReturn>lambdaUpdate()
+            .eq(EqSpareReturn::getReturnId, header.getReturnId())
+            .eq(EqSpareReturn::getStatus, STATUS_DRAFT)
+            .eq(header.getVersion() != null, EqSpareReturn::getVersion, header.getVersion())
+            .isNull(header.getVersion() == null, EqSpareReturn::getVersion);
+    }
+
+    /**
+     * 单头指定仓库时，必须与备件实际 ERP 过账仓库一致。
+     *
+     * @param warehouseId 单头仓库；历史空值允许逐行沿用备件映射
+     * @param spare 当前租户的备件映射
+     */
+    private void validateWarehouse(Long warehouseId, EqSparePartVo spare) {
+        if (spare == null) {
+            throw new ServiceException("退库备件不存在，请刷新后重试");
+        }
+        if (warehouseId != null && !Objects.equals(warehouseId, spare.getWarehouseId())) {
+            throw new ServiceException("退库仓库与备件[" + spare.getSpareCode() + "]的 ERP 映射仓库不一致");
+        }
     }
 
     /**

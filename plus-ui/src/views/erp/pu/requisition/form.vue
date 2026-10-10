@@ -7,13 +7,33 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <!-- 保存按钮，仅在非查看模式下显示 -->
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled && form.requisitionId">保存</el-button>
+            <el-button
+              type="primary"
+              @click="submitForm"
+              v-if="!isViewMode && !props.disabled && form.requisitionId && !protectsLegacyWrites"
+              v-hasPermi="['pu:requisition:edit']"
+              >保存</el-button
+            >
             <!-- 提交审批按钮 -->
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.requisitionId && form.status === 'DRAFT'"
+            <el-button
+              type="success"
+              @click="handleSubmitFlow"
+              v-if="!isViewMode && !props.disabled && form.requisitionId && form.status === 'DRAFT' && !protectsLegacyWrites"
               >提交审批</el-button
             >
             <!-- 查看流程按钮 -->
-            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="!protectsLegacyWrites && (form.status === 'APPROVING' || form.status === 'APPROVED')"
+              >查看流程</el-button
+            >
+            <el-button
+              v-hasPermi="['pu:requisition:query']"
+              type="primary"
+              plain
+              @click="handleCertifiedWorkflow"
+              v-if="form.requisitionId && protectsLegacyWrites && !props.disabled"
+            >
+              认证生命周期（当前详情只读）
+            </el-button>
             <!-- 取消按钮 -->
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -29,6 +49,14 @@
         style="margin-bottom: 12px"
       />
       <!-- 表单区域 -->
+      <el-alert
+        v-if="protectsLegacyWrites"
+        title="认证来源或原生保护事实未知：普通编辑、旧Flowable及旧转单不开放。请从列表认证生命周期入口核验版本、来源和专属权限。"
+        type="warning"
+        show-icon
+        :closable="false"
+        class="mb-4"
+      />
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <!-- 基本信息 -->
         <el-divider content-position="left">基本信息</el-divider>
@@ -157,13 +185,21 @@
         <!-- 明细操作按钮 -->
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled && !protectsLegacyWrites"
+              >添加</el-button
+            >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled && !protectsLegacyWrites"
+              >删除</el-button
+            >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" icon="Position" @click="handleConvert" v-if="!isViewMode && !props.disabled && form.requisitionId"
+            <el-button
+              type="success"
+              icon="Position"
+              @click="handleConvert"
+              v-if="!isViewMode && !props.disabled && form.requisitionId && !protectsLegacyWrites"
               >转采购订单</el-button
             >
           </el-col>
@@ -218,6 +254,7 @@
     </el-card>
 
     <!-- 物料选择对话框 -->
+    <CertifiedRequisitionWorkflowDialog ref="certifiedWorkflowDialogRef" :read-only="true" @changed="refreshCertifiedDetails" />
     <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" @select="handleMaterialSelected" />
   </div>
 </template>
@@ -239,6 +276,9 @@ import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import { decisionPurchaseResultQuery, verifiedDecisionErpResult } from '@/views/ai/decision/decisionActionExecutionView';
+import CertifiedRequisitionWorkflowDialog from './CertifiedRequisitionWorkflowDialog.vue';
+import { isProtectedRequisitionHint, normalizeRequisitionId } from './certifiedWorkflow';
+import type { PurchaseRequisitionVO } from '@/api/erp/pu/requisition/types';
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -292,6 +332,23 @@ const sourceTypeOptions = computed(() => {
   }
   return options;
 });
+/** 与可编辑form分离保存原生根字段，局部修改source/marker不能解除普通写保护。 */
+const loadedRequisitionSnapshot = ref<PurchaseRequisitionVO | null>(null);
+const certifiedWorkflowDialogRef = ref<InstanceType<typeof CertifiedRequisitionWorkflowDialog>>();
+/** 未载入、身份不匹配或已认证均只读；客户端保护不替代后端永久来源与权限检查。 */
+const protectsLegacyWrites = computed(() => {
+  if (!form.value.requisitionId) return false;
+  const original = loadedRequisitionSnapshot.value;
+  try {
+    return (
+      !original ||
+      normalizeRequisitionId(original.requisitionId) !== normalizeRequisitionId(form.value.requisitionId) ||
+      isProtectedRequisitionHint(original)
+    );
+  } catch {
+    return true;
+  }
+});
 const lineList = ref<any[]>([]); /** 请购明细列表 */
 const checkedLines = ref<any[]>([]); /** 已选中的明细行 */
 const currentMaterialIndex = ref(-1); /** 当前选择的物料索引 */
@@ -301,7 +358,7 @@ const loadingFlow = ref(false);
 const flowOptions = ref([]);
 
 /** 表单禁用状态（考虑流程嵌入和查看模式）。 */
-const formDisabled = computed(() => isViewMode.value || props.disabled || !form.value.requisitionId);
+const formDisabled = computed(() => isViewMode.value || props.disabled || !form.value.requisitionId || protectsLegacyWrites.value);
 
 /** 物料选择对话框 */
 const materialSelectDialogRef = ref<any>(null);
@@ -315,6 +372,7 @@ const rules = {
 function applyWorkflowFormPayload(payload: Record<string, any>) {
   if (!payload || typeof payload !== 'object') return;
   const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>;
+  loadedRequisitionSnapshot.value = { ...merged };
   form.value = merged;
   lineList.value = Array.isArray(merged.puPurchaseRequisitionLineList) ? merged.puPurchaseRequisitionLineList : [];
 }
@@ -441,6 +499,7 @@ function getInfo(id: any) {
     .then((res: any) => {
       if (requestSeq !== detailRequestSeq || routeIdentity !== detailRouteIdentity() || isDecisionResultRoute()) return;
       if (res.data?.requisitionId == null) throw new Error('DETAIL_NOT_FOUND');
+      loadedRequisitionSnapshot.value = { ...res.data };
       form.value = res.data;
       lineList.value = res.data.puPurchaseRequisitionLineList || [];
       tryAutoSelect();
@@ -458,6 +517,7 @@ function getInfo(id: any) {
  * 重置表单数据
  */
 function reset() {
+  loadedRequisitionSnapshot.value = null;
   autoGenFlag.value = false;
   form.value = {
     requisitionId: null,
@@ -504,41 +564,58 @@ function tryAutoSelect() {
  * 提交审批
  */
 function handleSubmitFlow() {
+  if (legacyWriteBlocked()) return;
   if (!form.value.requisitionId) {
     proxy.$modal.msgWarning('普通 BO 新增已关闭，请使用可信来源创建并先保存真实单据');
     return;
   }
-  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      if (!form.value.selectFlowId) {
-        proxy.$modal.msgWarning('请先选择审批流程');
-        return;
-      }
-      form.value.puPurchaseRequisitionLineList = lineList.value;
-      if (form.value.requisitionId != null) {
-        /** 先保存数据 */
-        updatePurchaseRequisition(form.value).then(() => {
-          /** 再提交审批流 */
-          submitRequisitionFlow(String(form.value.requisitionId), String(form.value.selectFlowId))
-            .then((res: any) => {
-              if (res.code === 200) {
-                proxy.$modal.msgSuccess('提交审批成功');
-                router.push('/erp/pu/requisition');
-              } else {
-                proxy.$modal.msgError(res.msg || '提交审批失败');
-              }
-            })
-            .catch((error: any) => {
-              proxy.$modal.msgError('提交审批失败：' + error);
-            });
-        });
-      } else {
-        proxy.$modal.msgWarning('请先保存单据后再提交审批');
-      }
+  let requisitionId: string;
+  try {
+    requisitionId = normalizeRequisitionId(form.value.requisitionId);
+  } catch {
+    proxy.$modal.msgWarning('原采购申请身份未确认，禁止提交旧流程');
+    return;
+  }
+  const flowValue = form.value.selectFlowId;
+  const flowId =
+    typeof flowValue === 'string' ? flowValue : typeof flowValue === 'number' && Number.isSafeInteger(flowValue) ? String(flowValue) : '';
+  if (!flowId) {
+    proxy.$modal.msgWarning('请先选择身份明确的审批流程');
+    return;
+  }
+  const operationRoute = detailRouteIdentity();
+  const operationSequence = detailRequestSeq;
+  /** 校验、更新、流程提交三个异步边界都绑定原身份；新只读/受保护单据不得承接旧回调。 */
+  const stillCurrent = () => {
+    if (operationSequence !== detailRequestSeq || operationRoute !== detailRouteIdentity() || legacyWriteBlocked()) return false;
+    try {
+      return normalizeRequisitionId(form.value.requisitionId) === requisitionId && String(form.value.selectFlowId) === flowId;
+    } catch {
+      return false;
     }
+  };
+  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
+    if (!valid || !stillCurrent()) return;
+    form.value.puPurchaseRequisitionLineList = lineList.value;
+    /** 原手工单据仍先更新；后续只使用已绑定的身份，不读取随后切换的form作为流程目标。 */
+    updatePurchaseRequisition(form.value)
+      .then(() => {
+        if (!stillCurrent()) return;
+        return submitRequisitionFlow(requisitionId, flowId).then((res: any) => {
+          if (!stillCurrent()) return;
+          if (res.code === 200) {
+            proxy.$modal.msgSuccess('提交审批成功');
+            router.push('/erp/pu/requisition');
+          } else {
+            proxy.$modal.msgError('原审批提交未确认，请检查权限及当前单据状态');
+          }
+        });
+      })
+      .catch(() => {
+        if (stillCurrent()) proxy.$modal.msgError('原审批提交未完成，请检查权限及当前单据状态');
+      });
   });
 }
-
 /**
  * 查看流程
  */
@@ -613,6 +690,7 @@ function handleMaterialSelected(row: any) {
  * 提交表单
  */
 function submitForm() {
+  if (legacyWriteBlocked()) return;
   if (!form.value.requisitionId) {
     proxy.$modal.msgWarning('普通 BO 新增已关闭，请返回列表使用可信来源创建');
     return;
@@ -628,10 +706,29 @@ function submitForm() {
   });
 }
 
+/** 直接调用旧handler也必须封闭只读、决策深链或认证来源，不仅依赖按钮隐藏。 */
+function legacyWriteBlocked() {
+  if (isViewMode.value || props.disabled || isDecisionResultRoute() || protectsLegacyWrites.value) {
+    proxy.$modal.msgWarning('当前单据只读或来源受保护，禁止普通写入；请从列表认证生命周期入口核验');
+    return true;
+  }
+  return false;
+}
+
+/** 详情模式只读打开专属面板，避免查看/决策深链悄然获得写入口。 */
+function handleCertifiedWorkflow() {
+  if (!form.value.requisitionId) return;
+  certifiedWorkflowDialogRef.value?.open(normalizeRequisitionId(form.value.requisitionId), { readOnly: true });
+}
+function refreshCertifiedDetails() {
+  if (form.value.requisitionId && !props.disabled && !isDecisionResultRoute()) getInfo(form.value.requisitionId);
+}
+
 /**
  * 转换为采购订单
  */
 function handleConvert() {
+  if (legacyWriteBlocked()) return;
   convertPurchaseRequisition(form.value.requisitionId).then(() => {
     proxy.$modal.msgSuccess('转单成功');
     router.push('/erp/puExec/order');

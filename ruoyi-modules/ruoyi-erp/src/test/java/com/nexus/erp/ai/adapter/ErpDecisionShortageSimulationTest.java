@@ -9,7 +9,7 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLi
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -341,10 +341,10 @@ class ErpDecisionShortageSimulationTest {
             List.of(requirement(101L, TODAY, "1", 11L), requirement(102L, TODAY, "2", 22L)),
             List.of(stock(101L, "0", "0", "0"), stock(102L, "0", "0", "0")), List.of(), null);
 
-        ServiceException failure = assertThrows(ServiceException.class,
+        DecisionEvidenceException failure = assertThrows(DecisionEvidenceException.class,
             () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
 
-        assertTrue(failure.getMessage().startsWith("SHORTAGE_SIMULATION_INCOMPLETE"));
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, failure.reason());
         verify(service, times(2)).simulate(any(), any(), any(), eq(TODAY));
     }
 
@@ -362,10 +362,10 @@ class ErpDecisionShortageSimulationTest {
             List.of(requirement(101L, TODAY, "5", 11L), requirement(102L, TODAY, "1", 22L)),
             List.of(stock(101L, "0", "0", "0"), stock(102L, "2", "0", "0")), List.of(), null);
 
-        ServiceException failure = assertThrows(ServiceException.class,
+        DecisionEvidenceException failure = assertThrows(DecisionEvidenceException.class,
             () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
 
-        assertTrue(failure.getMessage().startsWith("SHORTAGE_SIMULATION_INCOMPLETE"));
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, failure.reason());
         verify(service, times(2)).simulate(any(), any(), any(), eq(TODAY));
     }
 
@@ -408,9 +408,9 @@ class ErpDecisionShortageSimulationTest {
     @Test
     void allScopedWorkOrdersWithoutMrpExposeOnlyTheTypedMissingEvidenceReason() {
         var snapshot = scopedSnapshot(List.of(workOrder(11L)), List.of(), List.of(stock(101L, "2", "0", "0")), List.of());
-        var error = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
+        var error = assertThrows(DecisionEvidenceException.class,
             () -> simulation.simulate(snapshot, 1, null));
-        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, error.reason());
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, error.reason());
         assertEquals(error.reason().publicMessage(), error.getMessage());
     }
 
@@ -420,14 +420,14 @@ class ErpDecisionShortageSimulationTest {
             List.of(workOrder(11L), workOrder(22L)),
             List.of(requirement(101L, TODAY, "1", 11L)),
             List.of(stock(101L, "2", "0", "0")), List.of());
-        ServiceException error = assertThrows(ServiceException.class,
+        DecisionEvidenceException error = assertThrows(DecisionEvidenceException.class,
             () -> simulation.simulate(snapshot, 1, null));
-        assertTrue(error.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, error.reason());
 
         DeliveryContextSnapshot unknownOwner = scopedSnapshot(List.of(workOrder(11L)),
             List.of(new RequirementFact(101L, "M-101", "物料-101", TODAY, BigDecimal.ONE, null, null)),
             List.of(stock(101L, "2", "0", "0")), List.of());
-        assertThrows(ServiceException.class, () -> simulation.simulate(unknownOwner, 1, null));
+        assertThrows(DecisionEvidenceException.class, () -> simulation.simulate(unknownOwner, 1, null));
     }
 
     @Test
@@ -447,7 +447,7 @@ class ErpDecisionShortageSimulationTest {
     void missingStockWithTodaysArrivalCannotProveNoRiskAndDoesNotSpoofKnownRisk() {
         DeliveryContextSnapshot missingOnly = snapshot(List.of(requirement(101L, TODAY, "1", 11L)),
             List.of(), List.of(arrival(101L, 5001L, TODAY, "3")), null);
-        assertThrows(ServiceException.class, () -> simulation.simulate(missingOnly, 1, null));
+        assertThrows(DecisionEvidenceException.class, () -> simulation.simulate(missingOnly, 1, null));
 
         DeliveryContextSnapshot partial = snapshot(
             List.of(requirement(101L, TODAY, "1", 11L), requirement(102L, TODAY, "4", 22L)),
@@ -598,9 +598,9 @@ class ErpDecisionShortageSimulationTest {
             List.of(requirement(101L, TODAY, "1", 11L)),
             List.of(new StockFact(101L, BigDecimal.ZERO, BigDecimal.ZERO, null)),
             List.of(arrival(101L, 5001L, TODAY, "2")), null);
-        ServiceException incomplete = assertThrows(ServiceException.class,
+        DecisionEvidenceException incomplete = assertThrows(DecisionEvidenceException.class,
             () -> simulation.simulate(missingOnly, 1, null));
-        assertTrue(incomplete.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, incomplete.reason());
 
         DeliveryContextSnapshot partial = snapshot(
             List.of(requirement(101L, TODAY, "1", 11L),
@@ -622,8 +622,8 @@ class ErpDecisionShortageSimulationTest {
     void unknownRequiredStockUsesIncompleteEvidenceClassificationNotZero() {
         var context=snapshot(List.of(requirement(101L,TODAY,"1",11L)),
             List.of(new StockFact(101L,null,null,BigDecimal.ZERO)),List.of(arrival(101L,5001L,TODAY,"2")),null);
-        ServiceException missing=assertThrows(ServiceException.class,()->simulation.simulate(context,1,null));
-        assertTrue(missing.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+        DecisionEvidenceException missing=assertThrows(DecisionEvidenceException.class,()->simulation.simulate(context,1,null));
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, missing.reason());
     }
 
     @Test
@@ -638,7 +638,7 @@ class ErpDecisionShortageSimulationTest {
     void unknownDuplicateFactInvalidatesWholeMaterialRatherThanKnownSubset() {
         var context=snapshot(List.of(requirement(101L,TODAY,"1",11L)),
             List.of(stock(101L,"5","0","0"),new StockFact(101L,null,null,BigDecimal.ZERO)),List.of(),null);
-        assertThrows(ServiceException.class,()->simulation.simulate(context,1,null));
+        assertThrows(DecisionEvidenceException.class,()->simulation.simulate(context,1,null));
     }
 
     @Test
@@ -740,8 +740,8 @@ class ErpDecisionShortageSimulationTest {
             var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
                 List.of(stock(101L, "0", "0", "0")),
                 List.of(new ArrivalFact(101L, 5001L, TODAY, new BigDecimal("1000"), 50L, supplyUnit)), null);
-            var failure = assertThrows(ServiceException.class, () -> simulation.simulate(source, 7, null));
-            assertTrue(failure.getMessage().startsWith("SHORTAGE_SIMULATION_INCOMPLETE"));
+            var failure = assertThrows(DecisionEvidenceException.class, () -> simulation.simulate(source, 7, null));
+            assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, failure.reason());
         }
     }
 
@@ -762,7 +762,7 @@ class ErpDecisionShortageSimulationTest {
             List.of(stock(101L, "0", "0", "0")),
             List.of(new ArrivalFact(101L, 5001L, TODAY.plusDays(8), BigDecimal.TEN, 50L)), null);
         assertNotNull(simulation.simulate(source, 7, null).kpis().shortageBasis(), "窗口外未参与供给不污染窗口内比例");
-        assertThrows(ServiceException.class, () -> simulation.simulate(source, 7,
+        assertThrows(DecisionEvidenceException.class, () -> simulation.simulate(source, 7,
             Map.of("purchaseArrivalOverrides", Map.of("5001", TODAY.toString()))));
     }
 
@@ -783,6 +783,40 @@ class ErpDecisionShortageSimulationTest {
         assertEquals(0, BigDecimal.TEN.compareTo(result.totalGap()));
         assertNull(result.kpis().shortageBasis());
         assertNull(result.kpis().shortageGapRatio());
+    }
+
+    /** 未核库存只返回有界领域拒绝，不将数据库或计算器异常透传至决策展示。 */
+    @Test
+    void incompleteStockEvidenceExposesStablePublicReasonWithoutInventingZeroRisk() {
+        var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
+            List.of(new StockFact(101L, null, null, BigDecimal.ZERO)), List.of(), null);
+
+        var rejected = assertThrows(DecisionEvidenceException.class,
+            () -> simulation.simulate(source, 7, null));
+
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, rejected.reason());
+        assertEquals(rejected.reason().publicMessage(), rejected.getMessage());
+        assertTrue(rejected.getMessage().contains("证据"));
+        assertNull(rejected.getCause());
+    }
+
+    /** 模拟器有限失败仍保留领域分类，任意底层诊断不进入公共消息。 */
+    @Test
+    void failedMaterialSimulationDoesNotLeakPrivateFailureThroughTypedRejection() {
+        var service = mock(PrdShortageScenarioService.class);
+        doAnswer(call -> { throw new ErpDecisionShortageSimulation.MaterialSimulationException(
+            "jdbc:mysql://private-host password=private-value Bearer private-token"); })
+            .when(service).simulate(any(), any(), any(), eq(TODAY));
+        var source = snapshot(List.of(unitRequirement(1001L, 101L, "10", 56L)),
+            List.of(stock(101L, "0", "0", "0")), List.of(), null);
+
+        var rejected = assertThrows(DecisionEvidenceException.class,
+            () -> new ErpDecisionShortageSimulation(service).simulate(source, 7, null));
+
+        assertEquals(DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, rejected.reason());
+        assertEquals(rejected.reason().publicMessage(), rejected.getMessage());
+        assertFalse(rejected.getMessage().contains("private"));
+        assertNull(rejected.getCause());
     }
 
     private static DeliveryContextSnapshot unitSafeTwoMaterialSnapshot(Long firstUnit, Long secondUnit) {

@@ -28,6 +28,26 @@ import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSuppo
 public class PuCertifiedPurchaseWorkflowService {
     public record Result(Long requisitionId,String requisitionNo,String status,Integer version,Long orderId,String orderNo,
         boolean replayed,List<EventReceipt> allocations) {public Result {allocations=List.copyOf(allocations);}}
+    /** 当前查询主体与按钮权限提示，不是来源认证、业务写授权或已加载构建证明。 */
+    public record WorkflowContext(String tenantId, Long userId, boolean approveAllowed, boolean convertAllowed) { }
+
+    /**
+     * 以独立查询权限读取当前有效主体，不要求创建、批准或转单权限。
+     * <p>复用实际写路径的租户及操作人元数据边界；不获取业务连接、不查询来源、不调用状态机。
+     * 返回的权限布尔值仅供页面提示，实际写入仍在原操作入口重新检查权限与完整来源。</p>
+     *
+     * @return 当前主体及批准、转单按钮提示
+     */
+    public WorkflowContext currentWorkflowContext() {
+        StpUtil.checkLogin();
+        StpUtil.checkPermission("pu:requisition:query");
+        Actor current = new Actor(TenantHelper.getTenantId(), LoginHelper.getUserId(),
+            LoginHelper.getUsername(), LoginHelper.getDeptId());
+        recheckActor(current);
+        return new WorkflowContext(current.tenantId(), current.userId(),
+            StpUtil.hasPermission("pu:requisition:approve"), StpUtil.hasPermission("pu:requisition:convert"));
+    }
+
     private final PuRequirementErpTransactionExecutor executor;
     private final PuRequirementErpTransactionQualification qualification;
     private final PuRequirementMaterialLockService locks;

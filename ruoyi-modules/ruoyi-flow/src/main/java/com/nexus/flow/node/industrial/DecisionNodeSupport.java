@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -183,6 +185,7 @@ public class DecisionNodeSupport {
                     java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), "工业节点计算完成");
                 return output;
             } catch (RuntimeException error) {
+                diagnoseFailure(error);
                 // 仅公开有限且不可继承的领域类型，不从消息或原因推断错误码。
                 var reason = error instanceof DecisionEvidenceException rejected ? rejected.reason() : null;
                 String failureCode = reason == null ? "DECISION_NODE_FAILED" : reason.code();
@@ -201,5 +204,44 @@ public class DecisionNodeSupport {
                 throw new ServiceException(failureMessage);
             }
         });
+    }
+
+    /**
+     * 原普通节点失败净化前仅记录有限类型与位置，最多扫描64帧并输出3个业务帧。
+     * 不读取message、cause、suppressed或toString，不输出业务身份、文件名、模块或类加载器。
+     * 日志仅接收安全字符串，不传Throwable；提取或日志设施失败不得改变原公开拒绝与执行保护。
+     */
+    private static void diagnoseFailure(RuntimeException failure) {
+        try {
+            String type = failure.getClass().getName();
+            if (!diagnosticBinaryName(type)) type = "UNAVAILABLE";
+            List<String> positions = new ArrayList<>(3);
+            StackTraceElement[] trace = failure.getStackTrace();
+            if (trace != null) {
+                for (int i = 0; i < Math.min(trace.length, 64) && positions.size() < 3; i++) {
+                    StackTraceElement frame = trace[i];
+                    if (frame == null) continue;
+                    String owner = frame.getClassName();
+                    String method = frame.getMethodName();
+                    if (owner != null && owner.startsWith("com.nexus.")
+                        && diagnosticBinaryName(owner) && diagnosticMethodName(method)) {
+                        positions.add(owner + "#" + method + ":" + frame.getLineNumber());
+                    }
+                }
+            }
+            log.warn("工业节点安全失败位置 type={} frames={}", type, positions.toString());
+        } catch (Throwable ignored) {
+            // 诊断只尽力完成；不得替换原失败，也不得以完整异常内容兜底。
+        }
+    }
+
+    private static boolean diagnosticBinaryName(String name) {
+        return name != null && name.length() <= 240
+            && name.matches("[A-Za-z_$][A-Za-z0-9_$]*(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)*");
+    }
+
+    private static boolean diagnosticMethodName(String name) {
+        return name != null && name.length() <= 80
+            && (name.matches("[A-Za-z_$][A-Za-z0-9_$]*") || "<init>".equals(name) || "<clinit>".equals(name));
     }
 }

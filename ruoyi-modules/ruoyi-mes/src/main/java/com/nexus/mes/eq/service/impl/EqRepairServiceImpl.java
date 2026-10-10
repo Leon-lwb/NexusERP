@@ -181,6 +181,19 @@ public class EqRepairServiceImpl implements IEqRepairService {
         if (bo.getRepairCost() != null && bo.getRepairCost().signum() < 0) {
             throw new ServiceException("维修成本不能为负: " + bo.getRepairCost());
         }
+        // 完工前领用：batchAdd 要求维修中状态；后续完工 CAS 失败时同事务回滚领用。
+        List<EqRepairSpareBo> spares = bo.getSpares();
+        if (spares != null && !spares.isEmpty()) {
+            for (EqRepairSpareBo s : spares) {
+                if (s.getSpareId() == null || s.getQuantity() == null || s.getQuantity().signum() <= 0) {
+                    throw new ServiceException("备件明细非法: 备件ID/数量必填且数量需大于0");
+                }
+                s.setRepairId(repairId);
+            }
+            repairSpareService.batchAdd(spares);
+            log.info("维修领用备件 {} 项: repairId={}", spares.size(), repairId);
+        }
+
         BigDecimal downtimeHours = bo.getDowntimeHours();
         BigDecimal repairCost = bo.getRepairCost();
         String remark = bo.getRemark();
@@ -207,18 +220,7 @@ public class EqRepairServiceImpl implements IEqRepairService {
             log.info("设备仍有活跃报修或已终态, 维持当前状态: equipmentId={}", repair.getEquipmentId());
         }
 
-        // 更换备件明细: 事务内写 eq_repair_spare + 扣减库存(REPAIR_USE), 与本次完成原子
-        List<EqRepairSpareBo> spares = bo.getSpares();
-        if (spares != null && !spares.isEmpty()) {
-            for (EqRepairSpareBo s : spares) {
-                if (s.getSpareId() == null || s.getQuantity() == null || s.getQuantity().signum() <= 0) {
-                    throw new ServiceException("备件明细非法: 备件ID/数量必填且数量需大于0");
-                }
-                s.setRepairId(repairId);
-            }
-            repairSpareService.batchAdd(spares);
-            log.info("维修领用备件 {} 项: repairId={}", spares.size(), repairId);
-        }
+
     }
 
     /**

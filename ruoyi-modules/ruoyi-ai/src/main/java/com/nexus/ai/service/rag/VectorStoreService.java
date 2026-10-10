@@ -498,33 +498,28 @@ public class VectorStoreService {
     }
 
     /**
-     * 删除指定文档的所有向量数据
-     * <p>Milvus 模式：通过 {@link MetadataFilterBuilder} 构建 metadata 过滤条件，按 documentId 精确删除</p>
-     * <p>  参考 ruoyi-ai 的 MilvusVectorStoreStrategy.removeByDocId()，已验证 {@code EmbeddingStore.removeAll(Filter)} 在 langchain4j 1.13.0 可用</p>
-     * <p>InMemory 模式：移除知识库缓存，下次使用时自动重建（InMemoryEmbeddingStore 不支持按条件删除）</p>
+     * 按文档身份精确删除向量，不清空同一知识库其他文档的数据。
+     * <p>Milvus 与当前 InMemory 存储均使用相同的 metadata 过滤条件。
+     * 外部删除失败必须明确拒绝，清除客户端缓存不等于删除实际向量。</p>
      *
-     * @param documentId  文档ID，对应存储向量时 metadata 中的 "documentId" 字段
-     * @param knowledgeId 知识库ID，用于定位 Milvus Collection 或 InMemory 实例
+     * @param documentId 文档ID，对应向量 metadata 中的 {@code documentId}
+     * @param knowledgeId 知识库ID，用于定位已缓存的 InMemory 存储或 Milvus Collection
+     * @throws com.nexus.common.core.exception.ServiceException 清理未完成，不携带厂商原始错误
      */
     public void deleteByDocumentId(Long documentId, Long knowledgeId) {
-        if ("milvus".equalsIgnoreCase(getStoreType(knowledgeId))) {
-            // Milvus: 通过 MetadataFilterBuilder 构建过滤条件，按 documentId 精确删除
-            EmbeddingStore<TextSegment> store = getStore(knowledgeId);
-            try {
-                Filter filter = MetadataFilterBuilder.metadataKey("documentId").isEqualTo(documentId.toString());
-                store.removeAll(filter);
-                log.info("[VectorStore] Milvus 按文档ID删除向量成功: documentId={}, knowledgeId={}", documentId, knowledgeId);
-            } catch (Exception e) {
-                log.error("[VectorStore] Milvus 按文档ID删除向量失败: documentId={}, knowledgeId={}, error={}",
-                    documentId, knowledgeId, e.getMessage());
-                // 降级：清除缓存，提示重新导入
-                milvusStores.invalidate(knowledgeId);
-                log.warn("[VectorStore] 已清除 Milvus 知识库缓存 (knowledgeId={})，建议重新导入该知识库", knowledgeId);
+        try {
+            EmbeddingStore<TextSegment> store = "milvus".equalsIgnoreCase(getStoreType(knowledgeId))
+                ? getStore(knowledgeId) : inMemoryStores.get(knowledgeId);
+            if (store == null) {
+                return;
             }
-        } else {
-            // InMemory: 不支持按条件删除，移除整个知识库缓存
-            inMemoryStores.remove(knowledgeId);
-            log.info("[VectorStore] InMemory 已移除知识库缓存: knowledgeId={}，下次使用时自动重建", knowledgeId);
+            Filter filter = MetadataFilterBuilder.metadataKey("documentId").isEqualTo(documentId.toString());
+            store.removeAll(filter);
+            log.info("[VectorStore] 按文档ID精确删除向量成功: documentId={}, knowledgeId={}", documentId, knowledgeId);
+        } catch (Exception failure) {
+            log.warn("[VectorStore] 文档向量清理未完成: documentId={}, knowledgeId={}, errorType={}",
+                documentId, knowledgeId, failure.getClass().getSimpleName());
+            throw new com.nexus.common.core.exception.ServiceException("文档向量清理失败，请稍后重试或联系管理员。");
         }
     }
 }

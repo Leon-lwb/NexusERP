@@ -1,0 +1,23 @@
+{
+  "approved_design": "Four peer clients (PC, APP, PDA, Station), separate MQTT devices and station hardware, explicit client/server Station distinction, retain Milvus and storage ownership.",
+  "previous_versions": [
+    {
+      "folder": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-101409",
+      "candidate_sha256": "7eaa634484dce2b965c7d872881270dcac1f3b588b1f18a936253b432365d6ff",
+      "artifact_sha256": "ea38b0a85943ead6e5649553b75f99cd058abeb8c3fd0ffdd9ac7915eba8b336"
+    },
+    {
+      "folder": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-nexus-erp-architecture-20261009-104313",
+      "candidate_sha256": "95ea510cea5ede164797d45e460586b95b13112dcc853fe2934a05d881ff0324",
+      "artifact_sha256": "4486eff68a74bc3b137fe223b9e512a45260daabcc8264975abfc0647f2ae171"
+    }
+  ],
+  "changes": [
+    "APP and Station each become an independent frontend component.",
+    "MQTT devices no longer include workstations.",
+    "Local station hardware is separate from HTTP and MQTT actors.",
+    "Human roles are described in the client responsibility card rather than duplicated as a shared person node.",
+    "Primary evidence repinned to current ERP revision 785f70d0."
+  ],
+  "scope": "Only this new diagram folder is written."
+}

@@ -1,5 +1,7 @@
 package com.nexus.erp.pu;
 
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import org.junit.jupiter.api.Test;
 import java.nio.file.*;
 import java.util.*;
@@ -28,12 +30,13 @@ class PuCertifiedPurchaseOrderWorkflowPresenceTest {
             new String[]{"pu_certified_purchase_order_operation","command_id","tenant_id,order_id,operation"})) {
             var ddl=Pattern.compile("(?is)CREATE\\s+TABLE\\s+`?"+Pattern.quote(contract[0])+"`?\\s*\\(.*?\\)\\s*ENGINE[^;]*;").matcher(sql);
             assertTrue(ddl.find(),"Missing installation DDL: "+contract[0]);
-            String table=ddl.group().replace("`","");
+            String table=ddl.group();
             assertTrue(Pattern.compile("(?i)ENGINE\\s*=\\s*InnoDB").matcher(table).find());
-            assertTrue(table.contains("tenant_id VARCHAR(20) COLLATE utf8mb4_bin NOT NULL"));
-            assertTrue(table.contains("PRIMARY KEY ("+contract[1]+")"));
-            assertTrue(Pattern.compile("UNIQUE KEY \\w+ \\(tenant_id,request_key\\)").matcher(table).find());
-            assertTrue(Pattern.compile("UNIQUE KEY \\w+ \\("+Pattern.quote(contract[2])+"\\)").matcher(table).find());
+            ErpDdlTestSupport.assertColumn(table,"tenant_id","varchar(20) NOT NULL");
+            ErpDdlTestSupport.assertColumnCollation(table,"tenant_id","utf8mb4_bin");
+            ErpDdlTestSupport.assertPrimaryKey(table,contract[1]);
+            ErpDdlTestSupport.assertUniqueIndexColumns(table,"tenant_id","request_key");
+            ErpDdlTestSupport.assertUniqueIndexColumns(table,contract[2].split(","));
         }
     }
 }

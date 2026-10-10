@@ -1,0 +1,34 @@
+{
+  "reason": "First passing receipt: controlled_analysis_start × workflow_port_impl near analysis_flow. Align contracts with analysis_flow; place ERP authority in vacated row.",
+  "changes": [
+    {
+      "component": "contracts",
+      "from": [
+        820,
+        870
+      ],
+      "to": [
+        820,
+        1130
+      ]
+    },
+    {
+      "component": "erp_data",
+      "from": [
+        820,
+        1130
+      ],
+      "to": [
+        820,
+        870
+      ]
+    }
+  ],
+  "positionSizeOnlyVerified": true,
+  "placementRound": 1,
+  "review2Status": "pass",
+  "initialCrossovers": 1,
+  "review2Crossovers": 2,
+  "decision": "Restored original candidate because measured crossings increased. No second placement round.",
+  "authoritativeRound": "review-3"
+}

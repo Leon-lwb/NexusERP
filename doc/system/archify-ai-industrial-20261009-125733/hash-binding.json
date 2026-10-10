@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "repositoryRevision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+  "specificationSha256": "abee4580e855addcb2226fe387fadd11f7afe4665995f8804898d77384d4b5d9",
+  "artifactSha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c",
+  "deliveryReceiptId": "9b354215-248d-45cf-90db-f862bfb0549e",
+  "checks": [
+    {
+      "name": "candidate hash ↔ latest finalize / delivery",
+      "ok": true
+    },
+    {
+      "name": "HTML hash ↔ finalize / delivery / browser / visual / standalone / supplemental",
+      "ok": true
+    },
+    {
+      "name": "9/9 showcase with zero errors / warnings",
+      "ok": true
+    },
+    {
+      "name": "65 primary source references verified by Archify",
+      "ok": true
+    },
+    {
+      "name": "62 committed source files / 131 inclusive ranges reverified with git show",
+      "ok": true
+    },
+    {
+      "name": "primary sources max3 per node and bounds valid",
+      "ok": true
+    },
+    {
+      "name": "preview byte-identical to authoritative native light capture",
+      "ok": true
+    },
+    {
+      "name": "manual inspected capture hashes bound to current artifact",
+      "ok": true
+    }
+  ],
+  "counts": {
+    "components": 22,
+    "connections": 22,
+    "primaryReferences": 65,
+    "allEvidenceReferences": 131,
+    "uniqueSourceFiles": 62
+  },
+  "nativeCaptureCount": 4,
+  "supplementalCaptureCount": 4,
+  "inspectedCaptureCount": 6,
+  "browserViewports": 4,
+  "authoritativeFinalizeSummary": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.finalize-summary.json",
+  "standaloneCheck": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\final-check.json",
+  "sourceEvidenceSha256": "6f5e0db6266f9cf63712523984327778996be707000322772f534e7da5dca4fe"
+}

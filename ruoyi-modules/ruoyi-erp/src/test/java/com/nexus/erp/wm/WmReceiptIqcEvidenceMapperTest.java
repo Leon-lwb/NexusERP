@@ -1,5 +1,7 @@
 package com.nexus.erp.wm;
 
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import com.nexus.common.mq.iqc.ReceiptIqcSource;
 import com.nexus.erp.wm.mapper.WmReceiptIqcEvidenceMapper;
 import com.nexus.erp.wm.service.WmReceiptIqcEvidenceService;
@@ -50,14 +52,17 @@ class WmReceiptIqcEvidenceMapperTest {
             .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
         assertThat(ddl.find()).as("Missing installation DDL: wm_certified_iqc_evidence").isTrue();
         String sql = ddl.group();
-        assertThat(sql).contains("CREATE TABLE `wm_certified_iqc_evidence`", "`inspected_quantity` decimal(14,4)",
-            "`tenant_id`, `inspection_id`", "`tenant_id`, `receive_id`, `material_id`", "`tenant_id`, `first_message_id`",
-            "`observed_at` datetime(3)", "`certified_at` datetime(3)");
-        assertThat(sql).contains("PRIMARY KEY (`evidence_id`)",
-            "UNIQUE KEY `uk_certified_iqc_inspection` (`tenant_id`, `inspection_id`)",
-            "UNIQUE KEY `uk_certified_iqc_scope` (`tenant_id`, `receive_id`, `material_id`)",
-            "UNIQUE KEY `uk_certified_iqc_message` (`tenant_id`, `first_message_id`)",
-            "`birth_id` bigint NULL", "`birth_sha256` char(64) NULL", "ENGINE=InnoDB");
+        ErpDdlTestSupport.assertColumn(sql,"inspected_quantity","decimal(14,4) NOT NULL");
+        ErpDdlTestSupport.assertColumn(sql,"observed_at","datetime(3) NOT NULL");
+        ErpDdlTestSupport.assertColumn(sql,"certified_at","datetime(3) NOT NULL");
+        ErpDdlTestSupport.assertColumn(sql,"birth_id","bigint DEFAULT NULL");
+        ErpDdlTestSupport.assertColumn(sql,"birth_sha256","char(64) DEFAULT NULL");
+        ErpDdlTestSupport.assertPrimaryKey(sql,"evidence_id");
+        ErpDdlTestSupport.assertIndex(sql,true,"uk_certified_iqc_inspection","tenant_id","inspection_id");
+        ErpDdlTestSupport.assertIndex(sql,true,"uk_certified_iqc_scope","tenant_id","receive_id","material_id");
+        ErpDdlTestSupport.assertIndex(sql,true,"uk_certified_iqc_message","tenant_id","first_message_id");
+        ErpDdlTestSupport.assertColumnCollation(sql,"tenant_id","ascii_bin");
+        assertThat(Pattern.compile("(?i)ENGINE\\s*=\\s*InnoDB").matcher(sql).find()).isTrue();
     }
 
     @Test void catalogGateUsesSameDatabaseNativeDefinitionsAndOnlyMetadataIgnoresTenantPlugin() throws Exception {

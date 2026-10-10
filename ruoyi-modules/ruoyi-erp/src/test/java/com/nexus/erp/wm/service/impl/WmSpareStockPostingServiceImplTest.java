@@ -3,10 +3,16 @@ package com.nexus.erp.wm.service.impl;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmSpareStockPostingService;
 import com.nexus.erp.wm.service.mq.MesSpareErpMessage;
@@ -17,6 +23,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -38,13 +46,15 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
  * MES 备件 → ERP 仓储过账服务单测（MES-EQ-04）。
  * <p>核心断言：① 重复消息幂等（Redis 占位命中 / 流水已存在都不再动库存）；
  * ② 出库只按「可用量 = 在库 − 已预留」扣减，不扣穿他人预留；③ 可用量不足时整单回滚（不写流水、释放幂等占位）；
- * ④ 入库新建库存行必须 {@code version = 0}。</p>
+ * ④ 入库新建库存行必须 {@code version = 0}；⑤ 新建行只用 ERP 主数据，库存及流水的基本单位完整，
+ * 资料不可用时拒绝建行并释放幂等占位。</p>
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +68,12 @@ class WmSpareStockPostingServiceImplTest {
     private WmSpareStockDedupGuard dedupGuard;
     @Mock
     private IInventoryValuationService valuationService;
+    @Mock
+    private BdMaterialMapper materialMapper;
+    @Mock
+    private BdUnitOfMeasureMapper unitOfMeasureMapper;
+    @Mock
+    private WmWarehouseMapper warehouseMapper;
     @InjectMocks
     private WmSpareStockPostingServiceImpl service;
 
@@ -164,6 +180,7 @@ class WmSpareStockPostingServiceImplTest {
         when(dedupGuard.tryMark(anyString())).thenReturn(true);
         when(stockTxMapper.selectCount(any())).thenReturn(0L);
         when(stockMapper.selectList(any())).thenReturn(Collections.emptyList());
+        mockValidMaterialAndUnit();
 
         service.postSpareStock(message("EQSP:000000:6", "IN", "4"));
 
@@ -196,6 +213,147 @@ class WmSpareStockPostingServiceImplTest {
         verify(stockTxMapper).insert(captor.capture());
         assertEquals("MES_SPARE_IN", captor.getValue().getTxType());
         assertEquals(0, new BigDecimal("12").compareTo(captor.getValue().getAfterQuantity()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"IN", "RETURN"})
+    void newInboundStockUsesErpMasterDataAndWritesCompleteLedger(String transactionType) {
+        prepareNewInbound();
+        mockValidMaterialAndUnit();
+        WmWarehouse warehouse = new WmWarehouse();
+        warehouse.setWarehouseId(2L);
+        warehouse.setWarehouseCode("WH-SPARE");
+        warehouse.setWarehouseName("备件仓库");
+        when(warehouseMapper.selectById(2L)).thenReturn(warehouse);
+        when(stockMapper.insert(any(WmMaterialStock.class))).thenAnswer(invocation -> {
+            WmMaterialStock created = invocation.getArgument(0);
+            created.setStockId(99L);
+            return 1;
+        });
+
+        service.postSpareStock(messageWithCost("EQSP:000000:master", transactionType, "4", "2.5"));
+
+        ArgumentCaptor<WmMaterialStock> stockCaptor = ArgumentCaptor.forClass(WmMaterialStock.class);
+        verify(stockMapper).insert(stockCaptor.capture());
+        WmMaterialStock created = stockCaptor.getValue();
+        assertEquals("ERP-BEARING-6304", created.getMaterialCode());
+        assertEquals("深沟球轴承", created.getMaterialName());
+        assertEquals("6304-2RS", created.getMaterialSpec());
+        assertEquals(11L, created.getCategoryId());
+        assertEquals("9007199254740993", created.getBaseUomId());
+        assertEquals("件", created.getBaseUomName());
+        assertEquals(2L, created.getWarehouseId());
+        assertEquals("WH-SPARE", created.getWarehouseCode());
+        assertEquals("备件仓库", created.getWarehouseName());
+        assertEquals(0, created.getVersion());
+        assertEquals(0, new BigDecimal("4").compareTo(created.getStockQuantity()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(created.getReservedQuantity()));
+        verify(valuationService).updateStockCost(99L, new BigDecimal("4"), new BigDecimal("2.5"));
+
+        ArgumentCaptor<WmMaterialStockTx> txCaptor = ArgumentCaptor.forClass(WmMaterialStockTx.class);
+        verify(stockTxMapper).insert(txCaptor.capture());
+        WmMaterialStockTx tx = txCaptor.getValue();
+        assertEquals(created.getMaterialCode(), tx.getMaterialCode());
+        assertEquals(created.getMaterialName(), tx.getMaterialName());
+        assertEquals(created.getMaterialSpec(), tx.getMaterialSpec());
+        assertEquals(created.getBaseUomId(), tx.getBaseUomId());
+        assertEquals(created.getBaseUomName(), tx.getBaseUomName());
+        assertEquals(created.getWarehouseCode(), tx.getWarehouseCode());
+        assertEquals(created.getWarehouseName(), tx.getWarehouseName());
+        assertEquals(99L, tx.getMaterialStockId());
+        assertEquals("MES_SPARE_IN", tx.getTxType());
+        assertEquals(0, new BigDecimal("10.0").compareTo(tx.getTxAmount()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"MISSING", "DISABLED", "UNKNOWN_STATUS", "MISSING_CODE", "BLANK_NAME", "MISSING_UOM"})
+    void newInboundRejectsMissingOrUnusableMaterialMaster(String problem) {
+        prepareNewInbound();
+        BdMaterial material = validMaterial();
+        switch (problem) {
+            case "MISSING" -> material = null;
+            case "DISABLED" -> material.setStatus(0L);
+            case "UNKNOWN_STATUS" -> material.setStatus(null);
+            case "MISSING_CODE" -> material.setMaterialCode(null);
+            case "BLANK_NAME" -> material.setMaterialName(" ");
+            case "MISSING_UOM" -> material.setBaseUomId(null);
+            default -> throw new IllegalArgumentException(problem);
+        }
+        when(materialMapper.selectById(1L)).thenReturn(material);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> service.postSpareStock(messageWithCost("EQSP:000000:invalid-material", "IN", "4", "2.5")));
+
+        assertTrue(exception.getMessage().contains("物料"));
+        assertNewInboundRejected("EQSP:000000:invalid-material");
+        verifyNoInteractions(unitOfMeasureMapper, warehouseMapper);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"MISSING", "DISABLED", "UNKNOWN_STATUS", "NULL_NAME", "BLANK_NAME"})
+    void newInboundRejectsMissingOrUnusableBaseUnit(String problem) {
+        prepareNewInbound();
+        when(materialMapper.selectById(1L)).thenReturn(validMaterial());
+        BdUnitOfMeasure unit = validUnit();
+        switch (problem) {
+            case "MISSING" -> unit = null;
+            case "DISABLED" -> unit.setStatus(0L);
+            case "UNKNOWN_STATUS" -> unit.setStatus(null);
+            case "NULL_NAME" -> unit.setUomName(null);
+            case "BLANK_NAME" -> unit.setUomName(" ");
+            default -> throw new IllegalArgumentException(problem);
+        }
+        when(unitOfMeasureMapper.selectById(9007199254740993L)).thenReturn(unit);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> service.postSpareStock(messageWithCost("EQSP:000000:invalid-unit", "IN", "4", "2.5")));
+
+        assertTrue(exception.getMessage().contains("计量单位"));
+        assertNewInboundRejected("EQSP:000000:invalid-unit");
+        verifyNoInteractions(warehouseMapper);
+    }
+
+    @Test
+    void existingInboundUsesStockMetadataWithoutReadingMasterData() {
+        WmMaterialStock row = stock(7L, "10", "2", 0L, 2);
+        row.setMaterialSpec("既有库存规格");
+        row.setBaseUomId("3");
+        row.setBaseUomName("套");
+        when(dedupGuard.tryMark(anyString())).thenReturn(true);
+        when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(stockMapper.selectList(any())).thenReturn(List.of(row));
+        when(stockMapper.selectById(7L)).thenReturn(row);
+        when(stockMapper.addStock(7L, new BigDecimal("2"), 2)).thenReturn(1);
+
+        service.postSpareStock(messageWithCost("EQSP:000000:existing-master", "RETURN", "2", "3.5"));
+
+        ArgumentCaptor<WmMaterialStockTx> txCaptor = ArgumentCaptor.forClass(WmMaterialStockTx.class);
+        verify(stockTxMapper).insert(txCaptor.capture());
+        WmMaterialStockTx tx = txCaptor.getValue();
+        assertEquals("M-1", tx.getMaterialCode());
+        assertEquals("物料1", tx.getMaterialName());
+        assertEquals("既有库存规格", tx.getMaterialSpec());
+        assertEquals("3", tx.getBaseUomId());
+        assertEquals("套", tx.getBaseUomName());
+        assertEquals(0, new BigDecimal("12").compareTo(tx.getAfterQuantity()));
+        assertEquals(0, new BigDecimal("2").compareTo(row.getReservedQuantity()));
+        assertEquals(2, row.getVersion());
+        verify(valuationService).updateStockCost(7L, new BigDecimal("2"), new BigDecimal("3.5"));
+        verifyNoInteractions(materialMapper, unitOfMeasureMapper, warehouseMapper);
+    }
+
+    @Test
+    void newInboundDoesNotRequireOptionalWarehouseMetadata() {
+        prepareNewInbound();
+        mockValidMaterialAndUnit();
+
+        service.postSpareStock(message("EQSP:000000:optional-warehouse", "IN", "4"));
+
+        ArgumentCaptor<WmMaterialStock> stockCaptor = ArgumentCaptor.forClass(WmMaterialStock.class);
+        verify(stockMapper).insert(stockCaptor.capture());
+        assertEquals("9007199254740993", stockCaptor.getValue().getBaseUomId());
+        assertEquals("件", stockCaptor.getValue().getBaseUomName());
+        assertEquals(2L, stockCaptor.getValue().getWarehouseId());
     }
 
     // ==================== MES-EQ-04 收口: 移动平均计价 ====================
@@ -239,6 +397,7 @@ class WmSpareStockPostingServiceImplTest {
         when(dedupGuard.tryMark(anyString())).thenReturn(true);
         when(stockTxMapper.selectCount(any())).thenReturn(0L);
         when(stockMapper.selectList(any())).thenReturn(Collections.emptyList());
+        mockValidMaterialAndUnit();
 
         service.postSpareStock(messageWithCost("EQSP:000000:10", "IN", "4", "2.5"));
 
@@ -277,6 +436,46 @@ class WmSpareStockPostingServiceImplTest {
 
         assertNotNull(parsed);
         assertEquals(0, new BigDecimal("12.5000").compareTo(parsed.getUnitCost()));
+    }
+
+    private void prepareNewInbound() {
+        when(dedupGuard.tryMark(anyString())).thenReturn(true);
+        when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(stockMapper.selectList(any())).thenReturn(Collections.emptyList());
+    }
+
+    private void mockValidMaterialAndUnit() {
+        when(materialMapper.selectById(1L)).thenReturn(validMaterial());
+        when(unitOfMeasureMapper.selectById(9007199254740993L)).thenReturn(validUnit());
+    }
+
+    private BdMaterial validMaterial() {
+        BdMaterial material = new BdMaterial();
+        material.setMaterialId(1L);
+        material.setMaterialCode("ERP-BEARING-6304");
+        material.setMaterialName("深沟球轴承");
+        material.setMaterialSpec("6304-2RS");
+        material.setCategoryId(11L);
+        material.setBaseUomId(9007199254740993L);
+        material.setStatus(1L);
+        return material;
+    }
+
+    private BdUnitOfMeasure validUnit() {
+        BdUnitOfMeasure unit = new BdUnitOfMeasure();
+        unit.setUomId(9007199254740993L);
+        unit.setUomName("件");
+        unit.setUomSymbol("pcs");
+        unit.setPrimaryName("不应使用的换算单位名称");
+        unit.setStatus(1L);
+        return unit;
+    }
+
+    private void assertNewInboundRejected(String bizKey) {
+        verify(stockMapper, never()).insert(any(WmMaterialStock.class));
+        verify(stockTxMapper, never()).insert(any(WmMaterialStockTx.class));
+        verifyNoInteractions(valuationService);
+        verify(dedupGuard).release(bizKey);
     }
 
     private MesSpareErpMessage messageWithCost(String bizKey, String txnType, String qty, String unitCost) {

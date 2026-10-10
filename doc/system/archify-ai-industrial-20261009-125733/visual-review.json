@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "visualReview": "passed",
+  "artifact": {
+    "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.html",
+    "sha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c"
+  },
+  "authoritativeBrowserEvidence": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.browser-check.json",
+  "nativeCaptureReceipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.visual-check.json",
+  "supplementalCaptureReceipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.supplemental-capture.json",
+  "inspected": [
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.visual-check.1440x900.light.png",
+      "sha256": "6bf22ae18e8da4e51d386a2f43129bacc8a84267cedd6892dc71a5b2f908dd4b",
+      "scope": "1440×900 · light · native READ",
+      "method": "functions.view_image"
+    },
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.visual-check.2048x1320.light.png",
+      "sha256": "e42c70b30d193ab5c3b04ef58176c5017d80e3bf476ee5ead0ff58e3bbde23c6",
+      "scope": "2048×1320 · light · native READ",
+      "method": "functions.view_image"
+    },
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.visual-check.2048x1320.dark.png",
+      "sha256": "b0fb27c1580843a65b5a3f8be7f096d0a2a9e43d26c3c18b9559a041263ab250",
+      "scope": "2048×1320 · dark · native READ",
+      "method": "functions.view_image"
+    },
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.supplemental.1440.read.light.full.png",
+      "sha256": "fca367be382e4110777d322e65842515a4fc3bee226c32b5287e602769dbda59",
+      "scope": "1440 · light · full-page READ (preserved partial capture attempt)",
+      "method": "functions.view_image"
+    },
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.supplemental-2.1440.read.dark.full.png",
+      "sha256": "5becb722c981f720c7cb026f9abde8065e009edc8feb3559983dc9c6aab948ea",
+      "scope": "1440 · dark · full-page READ",
+      "method": "functions.view_image"
+    },
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.supplemental-3.1440.read.light.industrial-plain.png",
+      "sha256": "05b33e28adec09cffede00554f8e22fe79c65d7765e5bff6bfaacfc32dd827d1",
+      "scope": "1440×900 · light · lower industrial area, scrollY=1000, no hover",
+      "method": "functions.view_image"
+    },
+    {
+      "path": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial-full-diagram-preview.png",
+      "sha256": "ae296330f49aa36f0157b8521377d9391d6b90bf49bdd73efd33c004ab63629e",
+      "scope": "Complete light SVG; all 22 components and legend; supplemental, not a native browser gate",
+      "method": "functions.view_image"
+    }
+  ],
+  "observations": [
+    "已用 view_image 检查指定原生 1440 浅色、2048 浅色 / 深色；补看全页与下方工业审批 / 执行区域。",
+    "普通 AI 与工业决策分区清晰；审批后执行 Flow 与独立 Flowable BPMN 控制面在要点卡中明确区分。",
+    "默认 READ 副标题显示启用、权限、租户、索引、新鲜度、版本与原键恢复条件；无源的部署断言未入图。",
+    "浅色 / 深色端点均可辨认；采用正常页面纵向滚动，没有应用样式 / 配置改动。",
+    "仍有一处已解析交叉：controlled_analysis_start 与 workflow_port_impl；后者三弯折。机器记录 properCrossings=0；这是非阻断阅读提示，不声称零交叉。",
+    "位置调整尝试使 resolvedCrossovers 从 1 变 2，已恢复；没有第二次位置调整。随后只提升已核实条件的可见性。",
+    "2026-10-09 交付复核：完整 SVG 预览中普通 AI / 工业决策分区、向量存储选项、审批和执行底部均可见；没有完整页预览中的悬浮导航覆盖。"
+  ],
+  "correctionRounds": 2,
+  "placementRounds": 1,
+  "placementRestored": true,
+  "semanticVisibilityRounds": 1,
+  "doesNotModifyNativeReceipts": true,
+  "limitations": [
+    "This is perceptual review of the static documentation artifact, not ERP / AI runtime acceptance.",
+    "Supplemental captures do not replace authoritative Archify browser/check receipts."
+  ],
+  "supplemental_full_diagram_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\supplemental-diagram-preview.json"
+}

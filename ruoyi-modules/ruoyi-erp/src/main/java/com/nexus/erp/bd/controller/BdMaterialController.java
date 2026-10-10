@@ -11,7 +11,9 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.bd.domain.bo.BdMaterialBo;
+import com.nexus.erp.bd.domain.bo.BdMaterialCodeCorrectionBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
+import com.nexus.erp.bd.service.BdMaterialCodeCorrectionService;
 import com.nexus.erp.bd.service.IBdMaterialService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,7 @@ import java.util.List;
 public class BdMaterialController extends BaseController {
 
     private final IBdMaterialService bdMaterialService;
+    private final BdMaterialCodeCorrectionService materialCodeCorrectionService;
 
     /**
      * 分页查询物料产品主列表
@@ -102,6 +105,21 @@ public class BdMaterialController extends BaseController {
     @PutMapping
     public R<Void> edit(@Validated @RequestBody BdMaterialBo bo) {
         return toAjax(bdMaterialService.updateByBo(bo));
+    }
+
+    /**
+     * 按系统规则重新生成物料编码，并同步库存及库存流水快照。
+     *
+     * @param materialId 物料ID
+     * @param bo         当前编码及纠正原因
+     * @return 新生成的物料编码
+     */
+    @SaCheckPermission("bd:material:edit")
+    @Log(title = "物料编码全量纠正", businessType = BusinessType.UPDATE)
+    @PutMapping("/{materialId}/regenerate-code")
+    public R<String> regenerateCode(@PathVariable Long materialId,
+                                    @Validated @RequestBody BdMaterialCodeCorrectionBo bo) {
+        return R.ok("编码纠正完成", materialCodeCorrectionService.correct(materialId, bo));
     }
 
     /**

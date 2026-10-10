@@ -24,6 +24,8 @@ import com.nexus.mes.eq.mapper.EqSpareStockLogMapper;
 import com.nexus.mes.eq.mapper.ErpSpareStockQueryMapper;
 import com.nexus.mes.eq.mq.EqSpareErpMqPublisher;
 import com.nexus.mes.eq.service.IEqSparePartService;
+import com.nexus.mes.eq.service.support.EqSpareValueValidator;
+import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -97,6 +99,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     private final EqSpareErpSyncMapper erpSyncMapper;
     private final ErpSpareStockQueryMapper erpSpareStockQueryMapper;
     private final EqSpareErpMqPublisher erpMqPublisher;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * ERP 严格模式: 未映射 {@code material_id}/{@code warehouse_id} 的备件拒绝出入库（默认开启，
@@ -166,6 +169,10 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      */
     @Override
     public EqSparePartVo insertByBo(EqSparePartBo bo) {
+        validateMasterValues(bo);
+        if (StringUtils.isBlank(bo.getSpareCode())) {
+            bo.setSpareCode(autoCodeUtil.genSerialCode("MES_SPARE_CODE", null));
+        }
         /** 校验编码唯一 */
         Long cnt = baseMapper.selectCount(Wrappers.<EqSparePart>lambdaQuery()
             .eq(EqSparePart::getSpareCode, bo.getSpareCode()));
@@ -204,6 +211,22 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      */
     @Override
     public Boolean updateByBo(EqSparePartBo bo) {
+        validateMasterValues(bo);
+        if (bo.getSpareId() == null) {
+            throw new ServiceException("备件ID不能为空");
+        }
+        if (StringUtils.isBlank(bo.getSpareCode())) {
+            throw new ServiceException("备件编码不能为空");
+        }
+        if (baseMapper.selectById(bo.getSpareId()) == null) {
+            throw new ServiceException("备件不存在: " + bo.getSpareId());
+        }
+        Long duplicates = baseMapper.selectCount(Wrappers.<EqSparePart>lambdaQuery()
+            .eq(EqSparePart::getSpareCode, bo.getSpareCode())
+            .ne(EqSparePart::getSpareId, bo.getSpareId()));
+        if (duplicates != null && duplicates > 0) {
+            throw new ServiceException("备件编码已存在: " + bo.getSpareCode());
+        }
         validateErpMapping(bo.getMaterialId(), bo.getWarehouseId());
         EqSparePart spare = new EqSparePart();
         spare.setSpareId(bo.getSpareId());
@@ -266,9 +289,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         }
         BigDecimal qty = bo.getQuantity();
         /** 数量校验：必须非空且大于 0，防止 null 触发 NPE、负值绕过防超卖/反向加库存 */
-        if (qty == null || qty.signum() <= 0) {
-            throw new ServiceException("备件出入库数量必须大于0");
-        }
+        EqSpareValueValidator.requirePositiveQuantity(qty, "备件出入库数量");
         /** MES-EQ-04: 映射缺失时行为明确 —— 拒绝并提示, 不静默只改 MES 台账 */
         assertErpMapping(spare);
 
@@ -280,7 +301,8 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
             computedAfter = before.add(qty);
             rows = baseMapper.update(null, Wrappers.<EqSparePart>lambdaUpdate()
                 .setSql("current_stock = current_stock + {0}", qty.toPlainString())
-                .eq(EqSparePart::getSpareId, bo.getSpareId()));
+                .eq(EqSparePart::getSpareId, bo.getSpareId())
+                .le(EqSparePart::getCurrentStock, EqSpareValueValidator.MAX_QUANTITY.subtract(qty)));
         } else {
             /** OUT / REPAIR_USE: 防超卖 */
             computedAfter = before.subtract(qty);
@@ -290,6 +312,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
                 .ge(EqSparePart::getCurrentStock, qty));
         }
         if (rows == 0) {
+            if (inbound) {
+                throw new ServiceException("备件库存超出允许范围或记录已变更，请刷新后重试");
+            }
             throw new ServiceException("库存不足, 当前库存: " + before + ", 需扣减: " + qty);
         }
         /**
@@ -430,7 +455,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (spare == null) {
             throw new ServiceException("备件不存在, 无法重投: " + sync.getSpareId());
         }
-        assertErpMapping(spare);
+        assertSyncMapping(sync);
         Map<String, Object> payload = buildStockPayload(spare, sync);
         try {
             erpMqPublisher.publish(payload);
@@ -601,6 +626,19 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     }
 
     /**
+     * 主数据数值的服务层防御校验，覆盖不经过 Controller 的内部调用。
+     *
+     * @param bo 备件主数据
+     */
+    private void validateMasterValues(EqSparePartBo bo) {
+        if (bo == null) {
+            throw new ServiceException("备件主数据不能为空");
+        }
+        EqSpareValueValidator.validateOptionalQuantity(bo.getSafetyStock(), "安全库存");
+        EqSpareValueValidator.validateOptionalCost(bo.getUnitCost());
+    }
+
+    /**
      * 校验 ERP 物料/仓库映射（存在 + 物料状态启用）
      * <p><b>⚠ 调用方不得处于事务中</b>（同 {@link #queryErpAvailable}）：
      * 事务内 {@code push("erp")} 失效，会报“表 {@code ry-mes.bd_material} 不存在”。
@@ -626,9 +664,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
                 }
             }
             if (warehouseId != null) {
-                long cnt = erpSpareStockQueryMapper.countWarehouse(currentTenantId(), warehouseId);
+                long cnt = erpSpareStockQueryMapper.countEnabledWarehouse(currentTenantId(), warehouseId);
                 if (cnt <= 0) {
-                    throw new ServiceException("ERP 仓库不存在: warehouseId=" + warehouseId);
+                    throw new ServiceException("ERP 仓库不存在或已停用: warehouseId=" + warehouseId);
                 }
             }
         } finally {
@@ -652,6 +690,20 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (spare.getWarehouseId() == null) {
             throw new ServiceException("备件[" + spare.getSpareCode()
                 + "]未指定 ERP 仓库(warehouse_id), 无法过账到 ERP 仓储; 请先在备件主数据中指定仓库");
+        }
+    }
+
+    /**
+     * 校验将要实际投递的历史映射快照，不允许缺仓库后退化为跨仓过账。
+     *
+     * <p>主数据后来清空或重映射，不改变原过账的目标；历史缺失快照只能先核实原始意图，
+     * 不能自动借用当前映射补齐。</p>
+     *
+     * @param sync 原始同步台账
+     */
+    private void assertSyncMapping(EqSpareErpSync sync) {
+        if (sync.getMaterialId() == null || sync.getWarehouseId() == null) {
+            throw new ServiceException("备件原过账映射快照不完整，请核实原始物料和仓库后办理，不可跨仓重投");
         }
     }
 
@@ -737,6 +789,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      * @return 消息体
      */
     private Map<String, Object> buildStockPayload(EqSparePartVo spare, EqSpareErpSync sync) {
+        assertSyncMapping(sync);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("bizType", "SPARE_STOCK");
         payload.put("tenantId", currentTenantId());
@@ -744,8 +797,8 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         payload.put("spareId", spare.getSpareId());
         payload.put("spareCode", spare.getSpareCode());
         payload.put("spareName", spare.getSpareName());
-        payload.put("materialId", spare.getMaterialId());
-        payload.put("warehouseId", spare.getWarehouseId());
+        payload.put("materialId", sync.getMaterialId());
+        payload.put("warehouseId", sync.getWarehouseId());
         payload.put("transactionType", sync.getTransactionType());
         payload.put("quantity", sync.getQuantity());
         /**
@@ -794,7 +847,10 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         EqSparePart update = new EqSparePart();
         update.setSpareId(sync.getSpareId());
         update.setCurrentStock(value);
-        baseMapper.updateById(update);
+        baseMapper.update(update, Wrappers.<EqSparePart>lambdaUpdate()
+            .eq(EqSparePart::getSpareId, sync.getSpareId())
+            .eq(EqSparePart::getMaterialId, sync.getMaterialId())
+            .eq(EqSparePart::getWarehouseId, sync.getWarehouseId()));
         EqSpareErpSync syncUpdate = new EqSpareErpSync();
         syncUpdate.setSyncId(sync.getSyncId());
         syncUpdate.setErpAvailableAfter(value);

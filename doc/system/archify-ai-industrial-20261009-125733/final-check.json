@@ -1,0 +1,169 @@
+{
+  "ok": true,
+  "file": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.html",
+  "artifact": {
+    "sha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c",
+    "bytes": 816306
+  },
+  "checks": [
+    {
+      "name": "single_svg",
+      "ok": true,
+      "details": [
+        "found 1 <svg> block(s)"
+      ]
+    },
+    {
+      "name": "finite_svg",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "orthogonal_arrows",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "label_route_clearance",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "relationship_crossings",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "relationship_corridors",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "container_border_runs",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "route_rhythm",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "legend_clearance",
+      "ok": true,
+      "details": []
+    }
+  ],
+  "composition": {
+    "schemaVersion": 1,
+    "profile": "showcase",
+    "status": "pass",
+    "summary": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "metrics": {
+      "properCrossings": 0,
+      "resolvedCrossovers": 1,
+      "ambiguousCorridors": 0,
+      "arrowheadCollisions": 0,
+      "containerBorderRuns": 0,
+      "labelRouteClearanceIssues": 0,
+      "labelCanvasOverflowIssues": 0,
+      "minLabelRouteClearance": 5,
+      "desktopReadabilityIssues": 0,
+      "viewportHeightIssues": 0,
+      "minProjectedNodeTextPx": 6.402753872633391,
+      "maxBends": 3,
+      "routesOverSuggestedBends": 1,
+      "maxStretch": 1,
+      "routesOverSuggestedStretch": 0,
+      "minSegmentPx": 24,
+      "minInteriorSegmentPx": 135,
+      "shortSegmentCount": 0,
+      "shortEndpointSegmentCount": 0,
+      "shortInteriorSegmentCount": 0,
+      "microSegmentCount": 0
+    },
+    "suggestedLimits": {
+      "bendsPerRelationship": 2,
+      "stretch": 1.35,
+      "segmentPx": 16,
+      "microSegmentPx": 8
+    },
+    "routeReview": {
+      "crossings": [
+        {
+          "left": {
+            "id": "controlled_analysis_start",
+            "from": "decision_run",
+            "to": "analysis_flow",
+            "label": "校验并启动分析",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "right": {
+            "id": "workflow_port_impl",
+            "from": "analysis_flow",
+            "to": "contracts",
+            "label": "实现 WorkflowPort",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "point": [
+            570,
+            1075.0000000000002
+          ],
+          "sharedNode": "analysis_flow"
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "workflow_port_impl",
+            "from": "analysis_flow",
+            "to": "contracts",
+            "label": "实现 WorkflowPort",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "bends": 3,
+          "stretch": 1
+        }
+      ]
+    },
+    "leadingSpace": {
+      "measured": true,
+      "emptyTopPx": 66,
+      "emptyTopRatio": 0.031,
+      "occupiedTop": 66,
+      "viewBoxTop": 0,
+      "canvasHeight": 2124,
+      "typicalNodeHeight": 126,
+      "reviewSuggested": false
+    },
+    "desktopReadability": {
+      "budgetBasis": "legacy-930",
+      "readerContract": "declared-wide-v1",
+      "availableDiagramWidth": 930,
+      "actualBudgetPx": 930,
+      "limit": "legacy",
+      "requestedTargetPx": 7.5,
+      "requestedTargetMet": false,
+      "hardFloorPx": 6,
+      "hardFloorMet": true,
+      "minimumOwner": {
+        "kind": "edge",
+        "id": "chat_send",
+        "from": "chat_ui",
+        "to": "facade"
+      },
+      "minimumSourceTextPx": 8,
+      "minimumProjectedTextPx": 6.402753872633391,
+      "semanticTextCount": 68
+    },
+    "issues": []
+  },
+  "provenance": "current",
+  "deliveryReceiptId": "9b354215-248d-45cf-90db-f862bfb0549e"
+}

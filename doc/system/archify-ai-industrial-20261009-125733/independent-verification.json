@@ -1,0 +1,49 @@
+{
+  "kind": "independent-parent-verification",
+  "status": "pass",
+  "generatedAt": "2026-10-09T15:23:35.272371+08:00",
+  "repositoryRevision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+  "currentHeadObserved": "2d8abf814df33c6f6433897264df072a202536a3",
+  "changedPathsSinceRevision": [
+    "\"doc/ai/full-flow/reports/2026-10-09-ai-\\350\\256\\244\\350\\257\\201\\351\\207\\207\\350\\264\\255\\347\\224\\237\\345\\221\\275\\345\\221\\250\\346\\234\\237PC\\346\\216\\245\\347\\272\\277\\344\\270\\216\\347\\234\\237\\345\\256\\236JDBC\\351\\252\\214\\350\\257\\201.md\"",
+    "\"doc/ai/full-flow/reports/\\345\\210\\206\\346\\256\\265\\346\\217\\220\\344\\272\\244\\344\\270\\216\\344\\270\\255\\346\\226\\207\\346\\263\\250\\351\\207\\212\\346\\240\\270\\351\\252\\214\\350\\256\\260\\345\\275\\225.md\"",
+    "\"doc/ai/plans/2026-09-23-\\345\\267\\245\\344\\270\\232\\344\\272\\244\\344\\273\\230\\351\\243\\216\\351\\231\\251\\351\\227\\255\\347\\216\\257\\345\\206\\263\\347\\255\\226\\345\\256\\236\\346\\226\\275\\350\\256\\241\\345\\210\\222.md\"",
+    "\"doc/ai/plans/2026-10-09-ai-\\350\\256\\244\\350\\257\\201\\351\\207\\207\\350\\264\\255\\347\\224\\237\\345\\221\\275\\345\\221\\250\\346\\234\\237PC\\346\\216\\245\\347\\272\\277\\344\\270\\216\\347\\234\\237\\345\\256\\236JDBC\\350\\256\\244\\351\\242\\206\\351\\252\\214\\350\\257\\201\\350\\256\\241\\345\\210\\222.md\"",
+    "doc/ai/full-flow/README.md",
+    "plus-ui/package.json",
+    "plus-ui/scripts/test-certified-requisition-dialog.mjs",
+    "plus-ui/scripts/test-certified-requisition-page-wiring.mjs",
+    "plus-ui/scripts/test-certified-requisition-workflow.mjs",
+    "plus-ui/scripts/test-decision-action-execution-results.mjs",
+    "plus-ui/scripts/test-requisition-source-closed.mjs",
+    "plus-ui/src/api/erp/pu/requisition/index.ts",
+    "plus-ui/src/api/erp/pu/requisition/types.ts",
+    "plus-ui/src/views/erp/pu/requisition/CertifiedRequisitionWorkflowDialog.vue",
+    "plus-ui/src/views/erp/pu/requisition/certifiedWorkflow.ts",
+    "plus-ui/src/views/erp/pu/requisition/form.vue",
+    "plus-ui/src/views/erp/pu/requisition/index.vue",
+    "ruoyi-modules/ruoyi-ai/src/test/java/com/nexus/ai/service/rag/KnowledgeProcessServiceJdbcClaimTest.java",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/controller/PuCertifiedPurchaseWorkflowController.java",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/PuCertifiedPurchaseWorkflowService.java",
+    "ruoyi-modules/ruoyi-erp/src/test/java/com/nexus/erp/pu/PuCertifiedPurchaseWorkflowContextTest.java"
+  ],
+  "sourceVersionPolicy": "Diagram provenance remains pinned to the authoring baseline. Cited files and all POMs are unchanged at the observed HEAD; later additions are not claimed as fully diagrammed.",
+  "databasesConnected": false,
+  "businessEndpointsInvoked": false,
+  "applicationBuildsRun": false,
+  "artifactChanged": false,
+  "counts": {
+    "sourceFiles": 62,
+    "sourceRanges": 131,
+    "components": 22,
+    "relationships": 22,
+    "primaryReferences": 65
+  },
+  "citedFilesModifiedSinceBaseline": [],
+  "checks": [
+    "Current artifact/specification SHA256 matches handoff and authoritative finalize/browser/capture receipts.",
+    "All four authoritative finalize gates pass; native capture files exist.",
+    "Source byte hashes and AI inclusive range hashes or independent ElementTree direct-dependency multiset match the fixed Git revision.",
+    "Every native component/relationship evidence entry binds to the final candidate."
+  ]
+}

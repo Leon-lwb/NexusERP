@@ -66,6 +66,39 @@ class QcReceiptIqcBirthMapperTest {
             assertThat(method.getAnnotation(org.apache.ibatis.annotations.Delete.class)).isNull();
         }
     }
+    /** MySQL 转储会省略默认 RESTRICT，兼容等价语法但仍拒绝级联和可置空引用。 */
+    @Test void restrictiveForeignKeyAcceptsExplicitOrImplicitMysqlDefaults() {
+        for (String rules : List.of("", " ON DELETE RESTRICT ON UPDATE RESTRICT",
+                " ON UPDATE NO ACTION ON DELETE NO ACTION", " ON DELETE RESTRICT")) {
+            assertRestrictiveBirthForeignKey("  CONSTRAINT `fk_native_iqc_birth` FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)" + rules);
+        }
+    }
+
+    /** 不能为适配转储而放宽永久出生记录的删除、更新及父表身份守卫。 */
+    @Test void restrictiveForeignKeyRejectsCascadesNullingDuplicatesAndWrongParent() {
+        String reference = "  CONSTRAINT `fk_native_iqc_birth` FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)";
+        for (String rules : List.of(" ON DELETE CASCADE", " ON UPDATE CASCADE", " ON DELETE SET NULL",
+                " ON UPDATE SET DEFAULT", " ON DELETE RESTRICT ON DELETE RESTRICT")) {
+            org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
+                () -> assertRestrictiveBirthForeignKey(reference + rules));
+        }
+        org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
+            () -> assertRestrictiveBirthForeignKey(reference.replace("REFERENCES `qc_iqc`", "REFERENCES `wrong_parent`")));
+    }
+
+    /** 只规范化外键规则，不改变数量精度、三条永久唯一键或来源列的断言。 */
+    private static void assertRestrictiveBirthForeignKey(String ddl) {
+        var matcher = Pattern.compile("(?im)^\\s*CONSTRAINT\\s+`fk_native_iqc_birth`\\s+FOREIGN KEY\\s*\\(`iqc_id`\\)\\s*REFERENCES\\s+`qc_iqc`\\s*\\(`iqc_id`\\)([^\\r\\n]*)$")
+            .matcher(ddl);
+        assertThat(matcher.find()).as("必须保留IQC永久出生外键身份").isTrue();
+        String rules = matcher.group(1).replaceFirst(",\\s*$", "").trim().replaceAll("\\s+", " ").toUpperCase(java.util.Locale.ROOT);
+        assertThat(rules.matches("(?:ON (?:DELETE|UPDATE) (?:RESTRICT|NO ACTION)(?: |$))*"))
+            .as("外键仅允许显式或默认RESTRICT/NO ACTION").isTrue();
+        var actions = Pattern.compile("ON (DELETE|UPDATE) (?:RESTRICT|NO ACTION)").matcher(rules);
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        while (actions.find()) assertThat(seen.add(actions.group(1))).as("禁止重复或冲突的外键规则").isTrue();
+    }
+
     @Test void installationKeepsAllBirthFieldsAndThreePermanentTenantUniques() throws Exception {
         Path root = Path.of("").toAbsolutePath();
         while (root != null && !Files.isRegularFile(root.resolve("script/sql/ry-mes.sql"))) root = root.getParent();
@@ -80,7 +113,8 @@ class QcReceiptIqcBirthMapperTest {
             "UNIQUE KEY `uk_native_iqc` (`tenant_id`,`iqc_id`)",
             "UNIQUE KEY `uk_native_birth` (`tenant_id`,`birth_id`)",
             "UNIQUE KEY `uk_native_scope` (`tenant_id`,`receive_id`,`material_id`)",
-            "FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)", "ON DELETE RESTRICT ON UPDATE RESTRICT");
+            "FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)");
+        assertRestrictiveBirthForeignKey(body);
         var fields = Pattern.compile("(?m)^\\s*`([^`]+)`").matcher(body.substring(0,body.indexOf("PRIMARY KEY")));
         String insert = sql(configuration(),"insertBinding"); int count=0;
         while (fields.find()) { assertThat(insert).contains(fields.group(1)); count++; }

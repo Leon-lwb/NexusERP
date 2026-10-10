@@ -1,4 +1,6 @@
 package com.nexus.erp.pu;
+
+import com.nexus.erp.support.ErpDdlTestSupport;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
@@ -60,11 +62,44 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
         String set=price.substring(0,price.indexOf("WHERE"));assertFalse(set.contains("order_quantity="));assertFalse(set.contains("received_quantity="));assertFalse(set.contains("invoiced_qty="));
         assertTrue(price.contains("order_quantity=#{old.orderQuantity}"));assertTrue(price.contains("tenant_id=#{tenantId}"));
         String head=Arrays.stream(methods).filter(m->m.getName().equals("approveHead")).map(m->String.join("",m.getAnnotation(Update.class).value())).findFirst().orElseThrow();
-        assertTrue(head.contains("expected_arrival_date=#{q.promisedArrivalDate}"));assertTrue(head.contains("IFNULL(certified_version,0)=#{old.version}"));
+        assertTrue(head.contains("expected_arrival_date=#{q.promisedArrivalDate}"));assertTrue(head.contains("certified_version=#{old.version}"));
+        for(String methodName:List.of("approveHead","closeHead")) {
+            String sql=Arrays.stream(methods).filter(m->m.getName().equals(methodName)).map(m->String.join("",m.getAnnotation(Update.class).value())).findFirst().orElseThrow();
+            assertTrue(sql.contains("certified_version=certified_version+1"));assertTrue(sql.contains("certified_version=#{old.version}"));
+            assertFalse(sql.contains("IFNULL(certified_version"),"未知原生版本不得补0参与CAS");
+        }
+        String locked=String.join("",PuCertifiedPurchaseOrderWorkflowMapper.class.getMethod("lockHead",String.class,Long.class).getAnnotation(Select.class).value());
+        assertTrue(locked.contains("certified_version AS version"));assertFalse(locked.contains("IFNULL(certified_version"));
         assertFalse(head.contains("CURRENT_DATE"));assertTrue(head.contains("certified_terms_id IS NULL"));
         String headDdl=tableDefinition("pu_purchase_order");
-        assertTrue(Pattern.compile("(?im)^\\s*`certified_version`\\s+int(?:\\(\\d+\\))?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(headDdl).find());
-        assertTrue(Pattern.compile("(?im)^\\s*`certified_terms_id`\\s+bigint(?:\\(\\d+\\))?\\s+NULL\\s+DEFAULT\\s+NULL").matcher(headDdl).find());
+        ErpDdlTestSupport.assertColumn(headDdl, "certified_version", "int DEFAULT NULL");
+        ErpDdlTestSupport.assertColumn(headDdl, "certified_terms_id", "bigint DEFAULT NULL");
+    }
+    @Test void implicitNullableDumpFieldsAreNotOmittedFromSharedActualDefinitionFixture() {
+        var actual=columns();
+        for(String key:List.of("pu_purchase_order.tenant_id", "pu_purchase_order_line.invoiced_qty",
+            "pu_purchase_order_line.returned_quantity", "pu_purchase_order_line.receive_status")) {
+            var matching=actual.stream().filter(c->(c.tableName()+"."+c.columnName()).equals(key)).toList();
+            assertEquals(1,matching.size(),key);assertEquals("YES",matching.get(0).nullable(),key);
+        }
+    }
+    @Test void invalidNativeTypesLengthsNullabilityAndUnownedTransactionStillFailClosed() {
+        for(int mode=0;mode<3;mode++) {
+            var m=mock(PuCertifiedPurchaseLifecycleMapper.class);stubOrderDefinitions(m);
+            var changed=new ArrayList<>(columns());
+            for(int i=0;i<changed.size();i++) {
+                var c=changed.get(i);
+                if(c.tableName().equals("pu_certified_purchase_order_terms")&&c.columnName().equals("request_key"))
+                    changed.set(i,new OrderColumnDefinition(c.tableName(),c.columnName(),mode==0?"char":c.dataType(),
+                        c.precision(),c.scale(),mode==1?127L:c.maxLength(),mode==2?"YES":c.nullable()));
+            }
+            assertNotEquals(columns(),changed,"Native definition mutation must take effect");
+            when(m.orderColumnDefinitions()).thenReturn(changed);assertThrows(ServiceException.class,()->gate(m));
+        }
+        var m=mock(PuCertifiedPurchaseLifecycleMapper.class);var q=mock(PuRequirementErpTransactionQualification.class);
+        doThrow(new ServiceException("transaction required")).when(q).requireSourceChainTransaction();
+        assertThrows(ServiceException.class,()->new PuCertifiedPurchaseLifecycleSourceGate(m,q).requireOrderDefinitions());
+        verifyNoInteractions(m);
     }
     static void stubOrderDefinitions(PuCertifiedPurchaseLifecycleMapper m) {
         PuCertifiedPurchaseLifecycleSourceGateTest.stub(m);when(m.pinAllocationDefinitions()).thenReturn(List.of());
@@ -77,9 +112,9 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
             var result=new ArrayList<OrderColumnDefinition>();
             // 测试模拟实际观测到的原生元数据；生产环境绝不从 SQL 文件获取权威依据。
             for(String table:TABLES) {
-                for(String line:tableDefinition(table).split("\n")) {
-                    var c=Pattern.compile("^\\s+`?(\\w+)`? (bigint|int|datetime|date|varchar|char|decimal)(?:\\((\\d+)(?:,\\s*(\\d+))?\\))?.*?(NOT NULL|NULL)",Pattern.CASE_INSENSITIVE).matcher(line);
-                    if(c.find())result.add(column(table,c.group(1),c.group(2),c.group(3),c.group(4),c.group(5).equalsIgnoreCase("NULL")?"YES":"NO"));
+                for (var c : ErpDdlTestSupport.columns(tableDefinition(table))) {
+                    result.add(new OrderColumnDefinition(table, c.name(), c.type(), c.precision(), c.scale(),
+                        c.maxLength(), c.nullable() ? "YES" : "NO"));
                 }
             }
             return result;
@@ -96,10 +131,6 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
         while(root!=null && !Files.isRegularFile(root.resolve("AGENTS.md"))) root=root.getParent();
         if(root==null)throw new AssertionError("repository fixture root unavailable");
         return root.resolve(file);
-    }
-    private static OrderColumnDefinition column(String table,String name,String type,String size,String scale,String nullable) {
-        String t=type.toLowerCase(Locale.ROOT);return new OrderColumnDefinition(table,name,t,t.equals("decimal")?Integer.valueOf(size):null,
-            t.equals("decimal")?Integer.valueOf(scale):null,Set.of("varchar","char").contains(t)?Long.valueOf(size):null,nullable);
     }
     static List<IndexDefinition> indices() {
         var r=new ArrayList<IndexDefinition>();

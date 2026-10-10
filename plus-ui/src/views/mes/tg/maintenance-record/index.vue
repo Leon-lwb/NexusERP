@@ -22,32 +22,22 @@
       <el-col :span="1.5">
         <el-button type="success" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:tg:record:add']">新增记录</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:tg:record:remove']"
-          >删除</el-button
-        >
-      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="保养时间" prop="maintainTime" width="160" />
-      <el-table-column label="工装ID" prop="toolingId" width="100" />
-      <el-table-column label="类型" prop="maintainType" align="center" width="90">
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip>
+      <el-table-column label="保养时间" prop="maintainTime" width="145" />
+      <el-table-column label="工装" min-width="205">
+        <template #default="scope">{{ toolingReference(scope.row.toolingId) }}</template>
+      </el-table-column>
+      <el-table-column label="类型" prop="maintainType" align="center" width="80">
         <template #default="scope"><dict-tag :options="tg_maintenance_type" :value="scope.row.maintainType" /></template>
       </el-table-column>
-      <el-table-column label="保养人" prop="maintainerName" width="100" />
-      <el-table-column label="保养前(次)" prop="usedCountBefore" align="right" width="100" />
-      <el-table-column label="保养后(次)" prop="usedCountAfter" align="right" width="100" />
-      <el-table-column label="保养内容" prop="description" min-width="160" show-overflow-tooltip />
-      <el-table-column label="成本" prop="cost" align="right" width="90" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
-        <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:tg:record:edit']">编辑</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:tg:record:remove']">删除</el-button>
-        </template>
-      </el-table-column>
+      <el-table-column label="保养人" prop="maintainerName" width="80" />
+      <el-table-column label="保养前(次)" prop="usedCountBefore" align="right" width="90" />
+      <el-table-column label="保养后(次)" prop="usedCountAfter" align="right" width="90" />
+      <el-table-column label="保养内容" prop="description" min-width="150" show-overflow-tooltip />
+      <el-table-column label="成本" prop="cost" align="right" width="80" />
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
@@ -137,18 +127,13 @@
 </template>
 
 <script setup lang="ts" name="TgMaintenanceRecord">
-import {
-  listMaintenanceRecord,
-  getMaintenanceRecord,
-  addMaintenanceRecord,
-  updateMaintenanceRecord,
-  delMaintenanceRecord
-} from '@/api/mes/tg/maintenance-record';
+import { listMaintenanceRecord, addMaintenanceRecord } from '@/api/mes/tg/maintenance-record';
 import type { TgMaintenanceRecordVO, TgMaintenanceRecordQuery } from '@/api/mes/tg/maintenance-record';
 import { listTooling } from '@/api/mes/tg/tooling';
 import { listUser } from '@/api/system/user';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { buildToolingReferenceMap, formatToolingReference, type MesToolingReferenceMap } from '@/utils/mesToolingReference';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { tg_maintenance_type, mes_tooling_type } = toRefs<any>(proxy?.useDict('tg_maintenance_type', 'mes_tooling_type'));
@@ -160,6 +145,13 @@ const toolingDialog = reactive({
   total: 0,
   query: { pageNum: 1, pageSize: 10, toolingCode: '', toolingName: '' }
 });
+const toolingReferences = ref<MesToolingReferenceMap>({});
+
+const loadToolingReferences = () =>
+  listTooling({ pageNum: 1, pageSize: 1000 } as any).then((res: any) => {
+    toolingReferences.value = buildToolingReferenceMap(res.rows || []);
+  });
+const toolingReference = (toolingId: string | number) => formatToolingReference(toolingReferences.value, toolingId);
 const userDialog = reactive({ visible: false, list: [] as any[], total: 0, query: { pageNum: 1, pageSize: 10, userName: '', nickName: '' } });
 
 const queryParams = ref<TgMaintenanceRecordQuery>({
@@ -172,31 +164,11 @@ const rules = {
   toolingId: [{ required: true, message: '工装不能为空', trigger: 'change' }]
 };
 
-const {
-  loading,
-  list,
-  total,
-  open,
-  title,
-  multiple,
-  showSearch,
-  form,
-  getList,
-  handleQuery,
-  handleDelete,
-  handleSelectionChange,
-  submitForm,
-  cancel,
-  handleAdd,
-  handleUpdate
-} = useCrud<TgMaintenanceRecordVO & { toolingName?: string }, TgMaintenanceRecordQuery>({
-  apis: {
-    list: listMaintenanceRecord,
-    get: getMaintenanceRecord,
-    add: addMaintenanceRecord,
-    update: updateMaintenanceRecord,
-    del: delMaintenanceRecord
-  },
+const { loading, list, total, open, title, showSearch, form, getList, handleQuery, submitForm, cancel, handleAdd } = useCrud<
+  TgMaintenanceRecordVO & { toolingName?: string },
+  TgMaintenanceRecordQuery
+>({
+  apis: { list: listMaintenanceRecord, add: addMaintenanceRecord },
   idField: 'recordId',
   entityName: '保养记录',
   formRef: recordRef,
@@ -252,5 +224,5 @@ const selectUser = (row: any) => {
   userDialog.visible = false;
 };
 
-getList();
+void Promise.all([loadToolingReferences(), getList()]);
 </script>

@@ -10,6 +10,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * AI 专用线程池配置
@@ -33,9 +34,23 @@ public class AiThreadPoolConfig {
         executor.setMaxPoolSize(16);
         executor.setQueueCapacity(200);
         executor.setThreadNamePrefix("ai-task-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setRejectedExecutionHandler(AiThreadPoolConfig::runOnCallerUnlessShutdown);
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * 满载时在调用线程施加背压，关闭时明确拒绝，禁止 CallerRunsPolicy 静默丢弃已登记业务任务。
+     *
+     * @param task 需要执行的业务任务
+     * @param executor 当前拒绝任务的线程池
+     * @throws RejectedExecutionException 线程池已关闭，任务未被接收
+     */
+    private static void runOnCallerUnlessShutdown(Runnable task, ThreadPoolExecutor executor) {
+        if (executor.isShutdown()) {
+            throw new RejectedExecutionException("AI 任务线程池已关闭");
+        }
+        task.run();
     }
 
     /**

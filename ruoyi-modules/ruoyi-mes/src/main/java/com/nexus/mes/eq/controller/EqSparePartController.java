@@ -10,10 +10,12 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.EqSpareErpSync;
+import com.nexus.mes.eq.domain.bo.EqSpareCodeCorrectionBo;
 import com.nexus.mes.eq.domain.bo.EqSparePartBo;
 import com.nexus.mes.eq.domain.bo.EqSpareStockBo;
 import com.nexus.mes.eq.domain.vo.EqSparePartVo;
 import com.nexus.mes.eq.domain.vo.EqSpareStockLogVo;
+import com.nexus.mes.eq.service.EqSpareCodeCorrectionService;
 import com.nexus.mes.eq.service.IEqSparePartService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.validation.annotation.Validated;
@@ -46,6 +48,7 @@ import java.util.stream.Collectors;
 public class EqSparePartController extends BaseController {
 
     private final IEqSparePartService eqSparePartService;
+    private final EqSpareCodeCorrectionService spareCodeCorrectionService;
 
     /**
      * 分页查询备件列表
@@ -96,6 +99,36 @@ public class EqSparePartController extends BaseController {
     @PutMapping
     public R<Void> edit(@Validated @RequestBody EqSparePartBo bo) {
         return toAjax(eqSparePartService.updateByBo(bo));
+    }
+
+    /**
+     * 按系统规则重新生成备件编码，并同步所有历史编码快照。
+     *
+     * @param spareId 备件ID
+     * @param bo      当前编码及纠正原因
+     * @return 新生成的备件编码
+     */
+    @SaCheckPermission("mes:eq:spare:edit")
+    @Log(title = "备件编码全量纠正", businessType = BusinessType.UPDATE)
+    @PutMapping("/{spareId}/regenerate-code")
+    public R<String> regenerateCode(@PathVariable Long spareId,
+                                    @Validated @RequestBody EqSpareCodeCorrectionBo bo) {
+        return R.ok("编码纠正完成", spareCodeCorrectionService.correct(spareId, bo));
+    }
+
+    /**
+     * 使用当前主表编码重新同步全部历史编码快照，不消耗自动编码流水号。
+     *
+     * @param spareId 备件ID
+     * @param bo      当前编码及同步原因
+     * @return 当前备件编码
+     */
+    @SaCheckPermission("mes:eq:spare:edit")
+    @Log(title = "备件历史编码快照同步", businessType = BusinessType.UPDATE)
+    @PutMapping("/{spareId}/synchronize-code-snapshots")
+    public R<String> synchronizeCodeSnapshots(@PathVariable Long spareId,
+                                              @Validated @RequestBody EqSpareCodeCorrectionBo bo) {
+        return R.ok("编码快照同步完成", spareCodeCorrectionService.synchronizeSnapshots(spareId, bo));
     }
 
     /**

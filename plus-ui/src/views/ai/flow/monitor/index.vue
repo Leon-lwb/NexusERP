@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import type { AiFlow, AiFlowInstance } from '@/api/ai/flow';
 import { listFlow, listInstance, retryInstance } from '@/api/ai/flow';
-import { FLOW_TRIGGER_OPTIONS, flowTriggerLabel } from '../flowDisplay';
+import { FLOW_TRIGGER_OPTIONS, flowTriggerLabel } from '../flowTriggerDisplay';
 
 /**
  * 流程运行历史列表页

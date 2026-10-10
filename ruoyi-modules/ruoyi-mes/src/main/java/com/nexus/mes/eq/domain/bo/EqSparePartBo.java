@@ -2,6 +2,9 @@ package com.nexus.mes.eq.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -27,12 +30,16 @@ public class EqSparePartBo extends BaseEntity {
     /** 备件ID */
     private Long spareId;
 
-    /** 备件编码 */
-    @NotBlank(message = "备件编码不能为空")
+    /**
+     * 备件编码。
+     * <p>新增时留空由服务端按 {@code MES_SPARE_CODE} 规则生成；显式传值时保留手工业务编码兼容性。</p>
+     */
+    @Size(max = 64, message = "备件编码不能超过64个字符")
     private String spareCode;
 
     /** 备件名称 */
     @NotBlank(message = "备件名称不能为空")
+    @Size(max = 128, message = "备件名称不能超过128个字符")
     private String spareName;
 
     /** 规格型号 */
@@ -48,6 +55,8 @@ public class EqSparePartBo extends BaseEntity {
     private String category;
 
     /** 安全库存 */
+    @DecimalMin(value = "0", message = "安全库存不能为负数")
+    @Digits(integer = 10, fraction = 4, message = "安全库存最多10位整数、4位小数")
     private BigDecimal safetyStock;
 
     /** ERP物料ID(bd_material.material_id); 空表示暂不映射(严格模式下无法出入库) */
@@ -60,6 +69,8 @@ public class EqSparePartBo extends BaseEntity {
      * 备件参考单价(成本口径, 人工维护)。
      * <p>仅在备件主数据新增/编辑时维护；出入库过账的单价一律由服务端读库填充，本字段不参与出入库入参。</p>
      */
+    @DecimalMin(value = "0", message = "参考单价不能为负数")
+    @Digits(integer = 14, fraction = 4, message = "参考单价最多14位整数、4位小数")
     private BigDecimal unitCost;
 
     /** 备注 */

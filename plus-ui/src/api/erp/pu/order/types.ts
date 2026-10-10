@@ -102,3 +102,95 @@ export interface PurchaseOrderLineVO {
   lineAmountExcludingTax?: number;
   sortOrder?: number;
 }
+
+/** 认证订单当前真实主体；各布尔值只是页面提示，写资格仍由服务端重验。 */
+export interface CertifiedOrderContext {
+  tenantId: string;
+  userId: string | number;
+  termsAddAllowed: boolean;
+  termsConfirmAllowed: boolean;
+  approveAllowed: boolean;
+  closeAllowed: boolean;
+  cancelAllowed: boolean;
+  priceVisible: boolean;
+}
+
+/** 原生版本和来源字段；NULL历史版本绝不默认为0。 */
+export interface CertifiedOrderHead {
+  tenantId: string;
+  orderId: string | number;
+  orderNo: string;
+  requisitionId: string | number | null;
+  vendorId: string | number | null;
+  status: string;
+  version: number | null;
+  quoteId: string | number | null;
+  selectFlowId: string | number | null;
+  requisitionSourceType: string | null;
+  decisionRunId: string | number | null;
+  decisionActionId: string | number | null;
+  sourceRequestKey: string | null;
+  originalCommandPresent: boolean | null;
+}
+
+/** 原生不可变报价展示；金额/数量全部十进制文本，页面不重算税额或供应KPI。 */
+export interface CertifiedOrderQuote {
+  quoteId: string | number;
+  orderId: string | number;
+  quoteVersion: number;
+  enteredBy: string | number;
+  requestKey: string;
+  quoteHash: string;
+  quantity: string;
+  unitPriceExcludingTax: string;
+  taxRate: string;
+  currency: string;
+  exchangeRate: string;
+  promisedArrivalDate: string;
+  validFrom: string;
+  validUntil: string;
+  supplierQuoteReference: string;
+  supplierContact: string;
+  evidenceReference: string;
+  evidenceSha256: string;
+  paymentTerms: string;
+  deliveryTerms: string;
+  confirmationId: string | number | null;
+  confirmedBy: string | number | null;
+  confirmationHash: string | null;
+  reviewNote: string | null;
+}
+
+export interface CertifiedOrderAllocation {
+  allocationId: string | number;
+  requisitionLineId: string | number;
+  orderLineId: string | number;
+  allocationStatus: string;
+  version: number | null;
+}
+
+export interface CertifiedOrderDetail {
+  order: CertifiedOrderHead;
+  quotes: CertifiedOrderQuote[];
+  allocations: CertifiedOrderAllocation[];
+  priceVisible: boolean;
+  serverDate: string;
+  genericEditAllowedHint: boolean;
+}
+
+/** 人工真实供应条款，不含服务端身份、数量、版本或认证字段。 */
+export interface SupplierOrderTermsInput {
+  unitPriceExcludingTax: string;
+  taxRate: string;
+  currency: string;
+  exchangeRate: string;
+  promisedArrivalDate: string;
+  validFrom: string;
+  validUntil: string;
+  supplierQuoteReference: string;
+  supplierContact: string;
+  evidenceReference: string;
+  evidenceSha256: string;
+  paymentTerms: string;
+  deliveryTerms: string;
+}

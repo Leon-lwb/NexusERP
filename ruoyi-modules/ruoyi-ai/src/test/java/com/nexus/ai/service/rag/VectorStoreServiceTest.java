@@ -109,6 +109,61 @@ class VectorStoreServiceTest {
         assertEquals(1024, service.resolveEmbeddingDimension(null));
     }
 
+    /** 删除一份文档必须保留同知识库其他文档；使用真实 InMemoryEmbeddingStore 验证当前依赖行为。 */
+    @Test
+    void deleteOneInMemoryDocumentPreservesOtherDocumentVectorsAndStore() throws Exception {
+        var service = newService();
+        var store = storeFor(service, 1L);
+        var vector = Embedding.from(new float[]{1.0f, 0.0f});
+        store.add(vector, TextSegment.from("待删除文档", new dev.langchain4j.data.document.Metadata()
+            .put("documentId", "7")));
+        store.add(vector, TextSegment.from("应保留文档", new dev.langchain4j.data.document.Metadata()
+            .put("documentId", "8")));
+
+        service.deleteByDocumentId(7L, 1L);
+
+        org.junit.jupiter.api.Assertions.assertSame(store, storeFor(service, 1L), "按文档删除不能丢弃整个知识库存储");
+        var matches = store.search(dev.langchain4j.store.embedding.EmbeddingSearchRequest.builder()
+            .queryEmbedding(vector).maxResults(10).minScore(0.0).build()).matches();
+        assertEquals(List.of("应保留文档"), matches.stream().map(match -> match.embedded().text()).toList());
+    }
+
+    /** 外部向量删除失败必须明确拒绝重试，不能清缓存后假装清理成功。 */
+    @Test
+    void failedMilvusDocumentDeletionDoesNotBecomeSuccessOrLeakProviderDetails() throws Exception {
+        AiKnowledge knowledge = new AiKnowledge();
+        knowledge.setId(1L);
+        knowledge.setVectorStore("milvus");
+        when(knowledgeMapper.selectById(1L)).thenReturn(knowledge);
+        var service = newService();
+        @SuppressWarnings("unchecked")
+        dev.langchain4j.store.embedding.EmbeddingStore<TextSegment> store =
+            mock(dev.langchain4j.store.embedding.EmbeddingStore.class);
+        var field = VectorStoreService.class.getDeclaredField("milvusStores");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        com.github.benmanes.caffeine.cache.Cache<Long, dev.langchain4j.store.embedding.EmbeddingStore<TextSegment>> cache =
+            (com.github.benmanes.caffeine.cache.Cache<Long, dev.langchain4j.store.embedding.EmbeddingStore<TextSegment>>) field.get(service);
+        cache.put(1L, store);
+        org.mockito.Mockito.doThrow(new IllegalStateException("private-endpoint password=private-value Bearer private-token"))
+            .when(store).removeAll(any(dev.langchain4j.store.embedding.filter.Filter.class));
+
+        var rejected = assertThrows(com.nexus.common.core.exception.ServiceException.class,
+            () -> service.deleteByDocumentId(7L, 1L));
+
+        assertEquals("文档向量清理失败，请稍后重试或联系管理员。", rejected.getMessage());
+        org.junit.jupiter.api.Assertions.assertNull(rejected.getCause());
+    }
+
+    /** 通过测试侧反射取得真实存储，避免为了测试扩大生产接口或访问远端 Milvus。 */
+    @SuppressWarnings("unchecked")
+    private dev.langchain4j.store.embedding.EmbeddingStore<TextSegment> storeFor(
+            VectorStoreService service, Long knowledgeId) throws Exception {
+        var method = VectorStoreService.class.getDeclaredMethod("getStore", Long.class);
+        method.setAccessible(true);
+        return (dev.langchain4j.store.embedding.EmbeddingStore<TextSegment>) method.invoke(service, knowledgeId);
+    }
+
     private AiKnowledgeChunk chunk(Long id) {
         AiKnowledgeChunk chunk = new AiKnowledgeChunk();
         chunk.setId(id);

@@ -519,6 +519,42 @@ class DecisionEntityContractTest {
         }
     }
 
+    @Test
+    void mysqlColumnTranslationAcceptsBothStylesWithoutChangingContracts() {
+        for (String metadata : List.of("", " COLLATE utf8mb4_unicode_ci",
+            " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")) {
+            assertEquals("`tenant_id` varchar(20) NOT NULL DEFAULT '000000'",
+                DecisionSqlTestSupport.h2Column("`tenant_id` varchar(20)" + metadata
+                    + " NOT NULL DEFAULT '000000' COMMENT 'tenant',"));
+        }
+        for (String type : List.of("int", "int(11)")) {
+            for (String value : List.of("0", "'0'")) {
+                assertEquals("`version` int NOT NULL DEFAULT 0",
+                    DecisionSqlTestSupport.h2Column("`version` " + type + " NOT NULL DEFAULT " + value + ","));
+            }
+        }
+        for (String nullable : List.of("NULL DEFAULT NULL", "DEFAULT NULL")) {
+            assertEquals("`decision_contract_version` tinyint DEFAULT NULL",
+                DecisionSqlTestSupport.h2Column("`decision_contract_version` tinyint(4) " + nullable + ","));
+        }
+    }
+
+    @Test
+    void mysqlColumnTranslationMustNotRepairUnsafeTypesDefaultsOrNullability() {
+        assertEquals("`version` varchar(20) NOT NULL DEFAULT '0'",
+            DecisionSqlTestSupport.h2Column("`version` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',"));
+        for (String value : List.of("1", "2", "NULL")) {
+            assertEquals("`version` int NOT NULL DEFAULT " + value,
+                DecisionSqlTestSupport.h2Column("`version` int(11) NOT NULL DEFAULT " + value + ","));
+        }
+        assertEquals("`purchase_payload_version` tinyint NOT NULL DEFAULT NULL",
+            DecisionSqlTestSupport.h2Column("`purchase_payload_version` tinyint(4) NOT NULL DEFAULT NULL,"));
+        assertEquals("`tenant_id` varchar(20) NOT NULL DEFAULT '000001'",
+            DecisionSqlTestSupport.h2Column("`tenant_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000001',"));
+        assertEquals("`tenant_id` varchar(20) NOT NULL DEFAULT '000000 COLLATE utf8mb4_unicode_ci'",
+            DecisionSqlTestSupport.h2Column("`tenant_id` varchar(20) NOT NULL DEFAULT '000000 COLLATE utf8mb4_unicode_ci',"));
+    }
+
     private static void shutdownDecisionDatabase(DriverManagerDataSource datasource) throws Exception {
         try (Connection connection = datasource.getConnection(); Statement statement = connection.createStatement()) {
             statement.execute("SHUTDOWN");
@@ -539,10 +575,7 @@ class DecisionEntityContractTest {
                 List<String> columns = Arrays.stream(ddl.group(1).split("\\R"))
                     .map(String::trim)
                     .filter(line -> line.startsWith("`"))
-                    .map(line -> line.replaceFirst(",?$", "")
-                        .replaceAll("(?i)\\b(bigint|int)\\(\\d+\\)", "$1")
-                        .replaceAll("(?i)\\s+CHARACTER SET\\s+\\w+(?:\\s+COLLATE\\s+\\w+)?", "")
-                        .replaceAll("(?i)\\s+COMMENT\\s+'(?:''|[^'])*'", ""))
+                    .map(DecisionSqlTestSupport::h2Column)
                     .toList();
                 List<String> uniqueConstraints = Arrays.stream(ddl.group(1).split("\\R"))
                     .map(String::trim)

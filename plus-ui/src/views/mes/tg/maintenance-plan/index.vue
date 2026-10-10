@@ -44,7 +44,9 @@
     <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="计划名称" prop="planName" min-width="150" />
-      <el-table-column label="工装ID" prop="toolingId" width="100" />
+      <el-table-column label="工装" min-width="240">
+        <template #default="scope">{{ toolingReference(scope.row.toolingId) }}</template>
+      </el-table-column>
       <el-table-column label="触发类型" prop="triggerType" align="center" width="100">
         <template #default="scope"><dict-tag :options="tg_maintenance_trigger_type" :value="scope.row.triggerType" /></template>
       </el-table-column>
@@ -144,6 +146,7 @@ import type { TgMaintenancePlanVO, TgMaintenancePlanQuery } from '@/api/mes/tg/m
 import { listTooling } from '@/api/mes/tg/tooling';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { buildToolingReferenceMap, formatToolingReference, type MesToolingReferenceMap } from '@/utils/mesToolingReference';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { tg_maintenance_trigger_type, mes_tooling_type, mes_tooling_status } = toRefs<any>(
@@ -157,6 +160,13 @@ const toolingDialog = reactive({
   total: 0,
   query: { pageNum: 1, pageSize: 10, toolingCode: '', toolingName: '' }
 });
+const toolingReferences = ref<MesToolingReferenceMap>({});
+
+const loadToolingReferences = () =>
+  listTooling({ pageNum: 1, pageSize: 1000 } as any).then((res: any) => {
+    toolingReferences.value = buildToolingReferenceMap(res.rows || []);
+  });
+const toolingReference = (toolingId: string | number) => formatToolingReference(toolingReferences.value, toolingId);
 
 const queryParams = ref<TgMaintenancePlanQuery>({
   pageNum: 1,
@@ -228,5 +238,5 @@ const selectTooling = (row: any) => {
   toolingDialog.visible = false;
 };
 
-getList();
+void Promise.all([loadToolingReferences(), getList()]);
 </script>

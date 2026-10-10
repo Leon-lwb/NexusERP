@@ -8,7 +8,9 @@ import type {
   CertifiedPurchaseSourcePreview,
   PuCertifiedPurchaseCommand,
   CertifiedPurchaseResult,
-  CertifiedPurchaseResponse
+  CertifiedPurchaseResponse,
+  CertifiedRequisitionWorkflowContext,
+  CertifiedRequisitionWorkflowResult
 } from './types';
 
 /**
@@ -202,7 +204,12 @@ function definiteBusinessRefusal(response: CertifiedPurchaseResponse<unknown> | 
 }
 
 /** 沿用全局认证/错误处理；状态不确定时原异常继续抛出，不转成可换键的拒绝。 */
-async function certifiedRequest<T>(url: string, data: object, session: CertifiedPurchaseSession): Promise<CertifiedPurchaseResponse<T>> {
+async function certifiedRequest<T>(
+  url: string,
+  data: object,
+  session: CertifiedPurchaseSession,
+  strictHttpSuccess = false
+): Promise<CertifiedPurchaseResponse<T>> {
   let received: CertifiedPurchaseResponse<T> | undefined;
   let httpStatus: number | undefined;
   const transforms = request.defaults.transformResponse;
@@ -222,6 +229,8 @@ async function certifiedRequest<T>(url: string, data: object, session: Certified
       ]
     });
     session.assertCurrent();
+    if (strictHttpSuccess && response?.code === 200 && (httpStatus !== 200 || received?.code !== 200))
+      throw new Error('服务端未确认正常写入信封，禁止重试');
     if (response?.code !== 200 && !definiteBusinessRefusal(response, httpStatus)) throw new Error('服务端未确认写入结果，禁止换键重试');
     return response;
   } catch (error) {
@@ -262,3 +271,113 @@ export const createCertifiedPurchaseRequisition = (command: PuCertifiedPurchaseC
     },
     session
   );
+
+export type { CertifiedRequisitionWorkflowContext, CertifiedRequisitionWorkflowResult } from './types';
+
+/** API 边界独立核验 ID，避免导入视图运行时造成 API/组件循环依赖。 */
+function certifiedWorkflowId(id: string | number): string {
+  const value = typeof id === 'number' && Number.isSafeInteger(id) && id > 0 ? String(id) : id;
+  if (typeof value !== 'string' || !/^[1-9]\d{0,18}$/.test(value) || (value.length === 19 && value > '9223372036854775807')) {
+    throw new Error('请购单 ID 未确认，禁止发送请求');
+  }
+  return value;
+}
+
+function certifiedWorkflowVersion(version: number): number {
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 0 || version >= 2147483647) {
+    throw new Error('请购单版本未确认，禁止发送请求');
+  }
+  return version;
+}
+
+/** 沿用固定会话和 dispatch 前复核；只读也必须收到真实 HTTP 200/R 200 信封。 */
+async function certifiedWorkflowRead<T>(url: string, session: CertifiedPurchaseSession): Promise<T> {
+  let httpStatus: number | undefined;
+  const transforms = request.defaults.transformResponse;
+  try {
+    const response = await request<unknown, CertifiedPurchaseResponse<T>>({
+      url,
+      method: 'get',
+      ...certifiedSessionConfig(session),
+      transformResponse: [
+        ...(Array.isArray(transforms) ? transforms : transforms ? [transforms] : []),
+        (body: unknown, _headers: unknown, status?: number) => {
+          httpStatus = status;
+          return body;
+        }
+      ]
+    });
+    session.assertCurrent();
+    if (httpStatus !== 200 || response?.code !== 200 || !response.data || typeof response.data !== 'object' || Array.isArray(response.data)) {
+      throw new Error('认证只读结果未确认');
+    }
+    return response.data;
+  } catch {
+    throw new Error('认证只读结果未确认，请重新核验当前身份与单据');
+  }
+}
+
+/**
+ * 查询认证生命周期上下文，与创建入口的 add 权限独立。
+ * @param session 仅内存保存的固定凭证会话
+ * @returns 当前真实主体及按钮提示，不代表服务端写授权
+ */
+export async function getCertifiedRequisitionWorkflowContext(session: CertifiedPurchaseSession): Promise<CertifiedRequisitionWorkflowContext> {
+  const context = await certifiedWorkflowRead<CertifiedRequisitionWorkflowContext>(BASE + '/certified/workflow-context', session);
+  if (
+    typeof context.tenantId !== 'string' ||
+    !context.tenantId ||
+    context.tenantId.length > 20 ||
+    context.tenantId.trim() !== context.tenantId ||
+    typeof context.approveAllowed !== 'boolean' ||
+    typeof context.convertAllowed !== 'boolean'
+  )
+    throw new Error('认证生命周期主体未确认');
+  certifiedWorkflowId(context.userId);
+  return context;
+}
+
+/**
+ * 正常读取原生完整 VO，不用来源提示代替后端认证或永久 command。
+ * @param id 原请购单精确 ID，长整数字符串不得转 Number
+ * @param session 本次固定凭证会话
+ * @returns 当前完整请购单详情
+ */
+export async function getCertifiedRequisitionWorkflowDetail(id: string | number, session: CertifiedPurchaseSession): Promise<PurchaseRequisitionVO> {
+  const normalized = certifiedWorkflowId(id);
+  const detail = await certifiedWorkflowRead<PurchaseRequisitionVO>(BASE + '/' + normalized, session);
+  if (certifiedWorkflowId(detail.requisitionId) !== normalized) throw new Error('当前请购单详情不匹配');
+  return detail;
+}
+
+/**
+ * 认证整单批准；仅提交期望版本，不传主体、数量或可信标记。
+ * @param id 原请购单精确 ID
+ * @param expectedVersion 刚从完整详情读取的合法整数版本
+ * @param session 固定会话，实际派发前再次复核
+ * @returns 原始业务信封；不确定结果仍拒绝 Promise，交由控制器安全锁存
+ */
+export async function approveCertifiedPurchaseRequisition(id: string | number, expectedVersion: number, session: CertifiedPurchaseSession) {
+  return certifiedRequest<CertifiedRequisitionWorkflowResult>(
+    BASE + '/certified/' + certifiedWorkflowId(id) + '/approve',
+    { expectedVersion: certifiedWorkflowVersion(expectedVersion) },
+    session,
+    true
+  );
+}
+
+/**
+ * 认证转单或 ORDERED 原单受控回查；绝不另建申请或猜订单编号。
+ * @param id 原请购单精确 ID
+ * @param expectedVersion 当前详情版本
+ * @param session 仅内存保存的固定凭证会话
+ * @returns 服务端 Result 业务信封，5xx/网络错误不是明确拒绝
+ */
+export async function convertCertifiedPurchaseRequisition(id: string | number, expectedVersion: number, session: CertifiedPurchaseSession) {
+  return certifiedRequest<CertifiedRequisitionWorkflowResult>(
+    BASE + '/certified/' + certifiedWorkflowId(id) + '/convert',
+    { expectedVersion: certifiedWorkflowVersion(expectedVersion) },
+    session,
+    true
+  );
+}

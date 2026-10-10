@@ -1,0 +1,240 @@
+{
+  "primary_repository": {
+    "root": "E:\\Nexus\\nexus-erp",
+    "revision": "785f70d08a59e4c6115afae61a59da0173d7afa9"
+  },
+  "scope": "Native Archify sources prove the ERP server contract. Client implementation and hardware ownership are independently bound below; no cross-repo paths are disguised as ERP source paths.",
+  "repositories": [
+    {
+      "name": "APP",
+      "root": "E:\\Nexus\\Nexus-App",
+      "url": "https://gitee.com/helloworld_wh18/nexus-app.git",
+      "revision": "807e6a050166a9c5e1abe4191480b6d665521609",
+      "references": [
+        {
+          "path": "main.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\main.js",
+          "line": 1,
+          "end_line": 24,
+          "fact": "Vue 应用入口",
+          "file_sha256": "3443c1dd39582686f1b4d2670834b39a70aad144bfd905b60e9219681a1b3cad",
+          "excerpt_sha256": "199f88a967a9a69dfa9fcf67fe2aea034422ad6057ca0049a207d898df9c80ed"
+        },
+        {
+          "path": "utils/request/request.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\utils\\request\\request.js",
+          "line": 6,
+          "end_line": 26,
+          "fact": "统一请求封装",
+          "file_sha256": "1b684b16db579367a252e25ab928dc5f3272122401d44abec59337f66d4d87c6",
+          "excerpt_sha256": "35ddf3e5948f6967c032bf774b6950a31058f444636f379ca792a54cd9592c76"
+        },
+        {
+          "path": "utils/core/http/request.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\utils\\core\\http\\request.js",
+          "line": 43,
+          "end_line": 87,
+          "fact": "登录态请求与 HTTP 发送",
+          "file_sha256": "427f9c191cf0c187866686c6dbfefe4967684c68c33e6a2018c3003cf1473814",
+          "excerpt_sha256": "e9d588c5f3e5056fd657b2b930e28ac51f150aa40a84b2a2f5027a57d067af53"
+        },
+        {
+          "path": "api/sch/attendance.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\api\\sch\\attendance.js",
+          "line": 4,
+          "end_line": 58,
+          "fact": "排班与考勤 API",
+          "file_sha256": "bf2ae06866dd223757ce92a6aa313aa9427298f7e526245af1ee899782d121e4",
+          "excerpt_sha256": "1ccea7c8ccf6f07794dc7b4635d574095920359e043c1705ae2a93be9b026ee0"
+        },
+        {
+          "path": "api/ai/chat.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\api\\ai\\chat.js",
+          "line": 1,
+          "end_line": 44,
+          "fact": "AI 对话 API",
+          "file_sha256": "e84e87cea91497c79e371225017fe9d5a0e4811348953567f275bfc5dd33e407",
+          "excerpt_sha256": "ee2d8131b4ceb07401856f598f00f6c0ed95e133bc9b20c3fb661885f020f57b"
+        },
+        {
+          "path": "api/so/customerOrder.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\api\\so\\customerOrder.js",
+          "line": 4,
+          "end_line": 33,
+          "fact": "移动业务 API",
+          "file_sha256": "aaad7838f84eef6060b30e4b955473071f937cac6eaceb90506d28343276d720",
+          "excerpt_sha256": "9f8ae6fb36b37a526f266d2ce0c5b04f12af678faa328e9c2b03957a3bf122c5"
+        },
+        {
+          "path": "store/modules/im/connection.js",
+          "absolute_path": "E:\\Nexus\\Nexus-App\\store\\modules\\im\\connection.js",
+          "line": 36,
+          "end_line": 49,
+          "fact": "IM 连接与消息订阅",
+          "file_sha256": "891e28be28ca2bf71df1db20e24a37f145032e2ae11f1d9898c57bb9a987c443",
+          "excerpt_sha256": "4c73ac667f97cb1fc06ed06c9b834d8c1cec8966278905c97e2fa15119437c33"
+        }
+      ]
+    },
+    {
+      "name": "PDA",
+      "root": "E:\\Nexus\\nexus-pda",
+      "url": "https://gitee.com/NexusERP/nexus-pda.git",
+      "revision": "6f75c4891e696bf7b9b1487020d1ddaea3d9f9a8",
+      "references": [
+        {
+          "path": "package.json",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\package.json",
+          "line": 1,
+          "end_line": 5,
+          "fact": "uni-app / Vue 3 手持工程",
+          "file_sha256": "908110049f58ae641ccc735993aa020e6a6bb4a83a3c617ce8ed92d74935ba83",
+          "excerpt_sha256": "82cc0244d0e49b56598d410824b3b99779782015a29ba6eacd67c5ea0a38c75d"
+        },
+        {
+          "path": "main.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\main.js",
+          "line": 1,
+          "end_line": 18,
+          "fact": "Vue 应用入口",
+          "file_sha256": "e6e7c9f297d24972fa3728e4fd5280fc6c24f6f075fc5cb49ef51cf76bc0e917",
+          "excerpt_sha256": "0e394c50f2f49be985bfafcf7775cdad0aba4ad1533a59032a839dd303becef4"
+        },
+        {
+          "path": "utils/request/request.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\utils\\request\\request.js",
+          "line": 6,
+          "end_line": 27,
+          "fact": "网络封装",
+          "file_sha256": "aa09a4e63fd408592ed756e76c91fb6787ecef5a639346e6c469b562cf14d73e",
+          "excerpt_sha256": "1a6db4c500c98c59b180778442e7c5fd6c39b075ce667838eda12a476bdc262e"
+        },
+        {
+          "path": "utils/core/http/request.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\utils\\core\\http\\request.js",
+          "line": 43,
+          "end_line": 87,
+          "fact": "登录态 HTTP 请求",
+          "file_sha256": "427f9c191cf0c187866686c6dbfefe4967684c68c33e6a2018c3003cf1473814",
+          "excerpt_sha256": "e9d588c5f3e5056fd657b2b930e28ac51f150aa40a84b2a2f5027a57d067af53"
+        },
+        {
+          "path": "api/pda/receive.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\api\\pda\\receive.js",
+          "line": 9,
+          "end_line": 33,
+          "fact": "仓储收货 API",
+          "file_sha256": "109cbae27b8d6ff4a353ffc4ee3801acb19cc1869e91f7ee4fde62a8ff0536e0",
+          "excerpt_sha256": "14703d527e3b0ee78fc37f6e80c5f19e4868f448a21230cc073ad75bfeb21b11"
+        },
+        {
+          "path": "api/pda/mes.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\api\\pda\\mes.js",
+          "line": 10,
+          "end_line": 70,
+          "fact": "设备 / SN / 报工 API",
+          "file_sha256": "a2142a846c86be1580d2854a75701be59fda6319ad431856e3f164f5c4678590",
+          "excerpt_sha256": "0378f1c5e7557655ad528f717c662a9119d8f53b3a880bd828e1543877fe1543"
+        },
+        {
+          "path": "api/pda/qc.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\api\\pda\\qc.js",
+          "line": 9,
+          "end_line": 37,
+          "fact": "质量检验 API",
+          "file_sha256": "c3d1a8edc37cd357cb1b5f975257f993df8d1e723c6395dae5ab8fd9c4745505",
+          "excerpt_sha256": "b17d7da1af18c4177a0377354f0753e6588061c4e9955821150cd033140594c8"
+        },
+        {
+          "path": "composables/useScan.js",
+          "absolute_path": "E:\\Nexus\\nexus-pda\\composables\\useScan.js",
+          "line": 1,
+          "end_line": 47,
+          "fact": "扫码输入处理",
+          "file_sha256": "3ca544b4fdfaab891b046e52d1e21f7360a26f0abda6222e5fedfecd2142cd4a",
+          "excerpt_sha256": "25a6a12fdcba76493e04402bf3e4a15af64d725b1ebc679a79e3f16c4ef2f49a"
+        }
+      ]
+    },
+    {
+      "name": "Station",
+      "root": "E:\\Nexus\\nexus-station",
+      "url": "https://gitee.com/NexusERP/nexus-station.git",
+      "revision": "0d8ebcb461ae40f196fabfc72608f429db1bd8dc",
+      "references": [
+        {
+          "path": "package.json",
+          "absolute_path": "E:\\Nexus\\nexus-station\\package.json",
+          "line": 1,
+          "end_line": 20,
+          "fact": "Electron / Vue 桌面工位工程",
+          "file_sha256": "64818ac54df5f9826eba65a82fd1de3239636ecd18481ba6b45727092e48379d",
+          "excerpt_sha256": "d2d1b3f4fcb06ac85103e860a2180ea773848a479e5777d9146b43438a225d9c"
+        },
+        {
+          "path": "src/main/index.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\index.ts",
+          "line": 45,
+          "end_line": 59,
+          "fact": "烧录驱动注册",
+          "file_sha256": "abc432738be5da9abc86153e9bde1aa3027d36b71e649627253d60e1915722d6",
+          "excerpt_sha256": "46ccb4c70cd837789dded847eeb1fb2ed8b6fea7ea9c3c58652ccfc46a3aedc7"
+        },
+        {
+          "path": "src/main/mes/client.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\mes\\client.ts",
+          "line": 34,
+          "end_line": 54,
+          "fact": "设备通道客户端与密钥前置检查",
+          "file_sha256": "72b434525f87825f79578530cd3b79cea14e13b3d1b635c15dddc38b22404221",
+          "excerpt_sha256": "a885440a1e15b5c1e8eedb6d9567df764a5fbf798c0dd44c05dc396cc3e6ebf8"
+        },
+        {
+          "path": "src/main/mes/client.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\mes\\client.ts",
+          "line": 89,
+          "end_line": 131,
+          "fact": "工位 API 调用",
+          "file_sha256": "72b434525f87825f79578530cd3b79cea14e13b3d1b635c15dddc38b22404221",
+          "excerpt_sha256": "bb623f75c4d6fff9e02fc66966ddf16b542d46c004596c7920d15a402af7a16f"
+        },
+        {
+          "path": "src/main/mes/client.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\mes\\client.ts",
+          "line": 300,
+          "end_line": 320,
+          "fact": "实际 HTTP 与 X-API-KEY 发送",
+          "file_sha256": "72b434525f87825f79578530cd3b79cea14e13b3d1b635c15dddc38b22404221",
+          "excerpt_sha256": "9e66ba0a304d33e1200a90f5dec3a3dcad543993af045eb89ea721c29a7d1558"
+        },
+        {
+          "path": "src/main/job/flash-job-runner.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\job\\flash-job-runner.ts",
+          "line": 29,
+          "end_line": 90,
+          "fact": "预取 / 驱动执行 / 结果上报",
+          "file_sha256": "8593664cba2bc4d421c49ef10f0e76e72d7300f7d35f24d48d7befe3f1dad183",
+          "excerpt_sha256": "be499ac90c1d5a9c487d9762ea8ab1c6af37f4d4940c83797963f23725d3076d"
+        },
+        {
+          "path": "src/main/hardware/drivers/serial-generic.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\hardware\\drivers\\serial-generic.ts",
+          "line": 33,
+          "end_line": 49,
+          "fact": "真实串口读写适配器",
+          "file_sha256": "276843046630ac1de99de1be108747a5a4fcaf63c6cda16aebb44ccddd49eae0",
+          "excerpt_sha256": "bb43d4d27457384d7b1833ed3709d8a06b2af7730f15c3e0fd95d7bb511dd6f6"
+        },
+        {
+          "path": "src/main/hardware/drivers/cli-tool.ts",
+          "absolute_path": "E:\\Nexus\\nexus-station\\src\\main\\hardware\\drivers\\cli-tool.ts",
+          "line": 27,
+          "end_line": 61,
+          "fact": "厂商 CLI 执行适配器",
+          "file_sha256": "59512434e839d8f53e1047c8abfa50d41687e5ea345566d78331da2a71dade11",
+          "excerpt_sha256": "617cf4450cce1787bfe0699c4ef58f99bfc558125776f9a51e1dbcba22974595"
+        }
+      ]
+    }
+  ]
+}

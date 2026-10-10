@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "type": "architecture",
+  "title": "AI 与工业决策架构图",
+  "locale": "zh-CN",
+  "quality_profile": "showcase",
+  "repository": {
+    "url": "https://gitee.com/helloworld_wh18/nexus-erp.git",
+    "provider": "gitee",
+    "revision": "5b66fbeeff5a58028f248c68705e29b0bf968dd1",
+    "link_mode": "local-only"
+  },
+  "output": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.html",
+  "candidate": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\candidate.json",
+  "preview": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\preview.png",
+  "full_preview": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\preview-full.png",
+  "specification_sha256": "abee4580e855addcb2226fe387fadd11f7afe4665995f8804898d77384d4b5d9",
+  "artifact_sha256": "77192ad390586c7e0a9a22f638ac016d2e10d6aff3084e8d79a23bfc621bd19c",
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "browser_evidence": "passed",
+  "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "visual_review": "passed",
+  "visual_review_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\visual-review.json",
+  "correction_rounds": 2,
+  "placement_rounds": 1,
+  "placement_restored": true,
+  "semantic_visibility_rounds": 1,
+  "counts": {
+    "components": 22,
+    "connections": 22,
+    "primaryReferences": 65,
+    "allEvidenceReferences": 131,
+    "uniqueSourceFiles": 62
+  },
+  "evidence_counts": {
+    "authoritative_native_captures": 4,
+    "supplemental_current_captures": 4,
+    "visually_inspected_captures": 6,
+    "browser_viewports": 4
+  },
+  "authoritative_receipts": {
+    "finalize_summary": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.finalize-summary.json",
+    "finalize": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.finalize.json",
+    "delivery": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial.delivery.json",
+    "browser_check": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.browser-check.json",
+    "visual_capture": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.visual-check.json",
+    "standalone_check": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\final-check.json",
+    "hash_binding": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\hash-binding.json",
+    "source_evidence": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\source-evidence.json"
+  },
+  "history": [
+    "Initial root finalize and browser receipts are history, not current delivery evidence.",
+    "review-2 preserves the position-only attempt (2 crossings); review-3 preserves the restored candidate and captures.",
+    "review-4 is authoritative after the source-preserving visible-condition edit."
+  ],
+  "remaining_gaps": [
+    {
+      "severity": "advisory",
+      "description": "保留 1 处 resolved crossover 与 WorkflowPort 三弯折；唯一位置调整增加交叉后已恢复。",
+      "receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\review-4\\ai-industrial.finalize-summary.json"
+    },
+    {
+      "severity": "unverified-runtime",
+      "description": "未验证生产部署、数据库迁移 / 数据、模型 / Milvus 在线可用性或现场人工审批；本任务禁止且未执行这些操作。"
+    }
+  ],
+  "write_scope": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733",
+  "write_paths_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\write-paths.json",
+  "runtime_changes": false,
+  "application_builds_run": false,
+  "business_endpoints_invoked": false,
+  "databases_connected": false,
+  "committed_or_pushed": false,
+  "subagents_spawned": false,
+  "full_diagram_preview": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\ai-industrial-full-diagram-preview.png",
+  "supplemental_diagram_preview_receipt": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\supplemental-diagram-preview.json",
+  "independent_verification": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\independent-verification.json",
+  "independent_final_check": "E:\\Nexus\\nexus-erp\\doc\\system\\archify-ai-industrial-20261009-125733\\independent-final-check.json",
+  "current_head_observed": "2d8abf814df33c6f6433897264df072a202536a3"
+}

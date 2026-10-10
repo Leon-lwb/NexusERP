@@ -53,22 +53,51 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5"><el-button plain @click="openCertified()" v-hasPermi="['wm:arrivalnotice:query']">认证到货工作台</el-button></el-col>
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:arrivalnotice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:arrivalnotice:edit']">修改</el-button>
+        <el-button
+          type="success"
+          plain
+          icon="Edit"
+          :disabled="single || !ids.every((id) => legacyGate.known(id))"
+          @click="handleUpdate()"
+          v-hasPermi="['wm:arrivalnotice:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:arrivalnotice:remove']"
+        <el-button
+          type="danger"
+          plain
+          icon="Delete"
+          :disabled="multiple || !ids.every((id) => legacyGate.known(id))"
+          @click="handleDelete()"
+          v-hasPermi="['wm:arrivalnotice:remove']"
           >删除</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['wm:arrivalnotice:query']">查看</el-button>
+        <el-button
+          type="info"
+          plain
+          icon="View"
+          :disabled="single || !ids.every((id) => legacyGate.known(id))"
+          @click="handleView()"
+          v-hasPermi="['wm:arrivalnotice:query']"
+          >查看</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit()" v-hasPermi="['wm:arrivalnotice:submit']"
+        <el-button
+          type="success"
+          plain
+          icon="Promotion"
+          :disabled="single || !ids.every((id) => legacyGate.known(id))"
+          @click="handleSubmit()"
+          v-hasPermi="['wm:arrivalnotice:submit']"
           >提交审批</el-button
         >
       </el-col>
@@ -101,12 +130,22 @@
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
+          <el-button link @click="openCertified(scope.row)" v-hasPermi="['wm:arrivalnotice:query']">认证工作台</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:arrivalnotice:edit']">修改</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            :disabled="!legacyRow(scope.row)"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['wm:arrivalnotice:edit']"
+            >修改</el-button
+          >
           <el-button
             link
             type="success"
             icon="Promotion"
+            :disabled="!legacyRow(scope.row)"
             @click="handleSubmitFlowRow(scope.row)"
             v-hasPermi="['wm:arrivalnotice:submit']"
             v-if="scope.row.status === 'DRAFT'"
@@ -121,13 +160,22 @@
             v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'"
             >查看流程</el-button
           >
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:arrivalnotice:remove']">删除</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Delete"
+            :disabled="!legacyRow(scope.row)"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['wm:arrivalnotice:remove']"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
+    <CertifiedWarehouseWorkflowDialog v-model="certifiedOpen" domain="arrivalnotice" :initial-id="certifiedId" :initial-kind="certifiedKind" />
     <!-- 添加或修改到货通知对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="arrivalnoticeRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
@@ -280,6 +328,14 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import { useRouter } from 'vue-router';
 
+import { useRoute } from 'vue-router';
+import { getToken } from '@/utils/auth';
+import { useUserStore } from '@/store/modules/user';
+import { createWarehouseLegacyGate } from '../certified/warehouseWorkflow';
+import { getCertifiedArrivalContext, getCertifiedArrivalDetail } from '@/api/erp/wm/arrivalnotice';
+import CertifiedWarehouseWorkflowDialog from '../certified/CertifiedWarehouseWorkflowDialog.vue';
+import type { WarehouseTarget } from '@/api/erp/wm/arrivalnotice/types';
+
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_notice_status } = toRefs<any>(proxy.useDict('wm_notice_status'));
@@ -333,9 +389,7 @@ const {
   getList,
   handleQuery,
   handleAdd,
-  submitForm,
   cancel,
-  handleDelete,
   handleExport,
   handleSelectionChange
 } = useCrud({
@@ -380,6 +434,93 @@ const {
   }
 });
 
+/** 通用新增仍是明确无来源人工普通单，认证创建只能从独立工作台进行。 */
+async function submitForm() {
+  try {
+    const session = await legacyGate.requireNew('wm:arrivalnotice:add', form.value as any);
+    arrivalnoticeRef.value?.validate(async (valid) => {
+      if (!valid) return;
+      try {
+        session.assertCurrent();
+        if (autoGenFlag.value) form.value.noticeCode = undefined;
+        await addArrivalnotice({ ...form.value }, session);
+        session.assertCurrent();
+        open.value = false;
+        getList();
+      } catch {
+        proxy.$modal.msgWarning('普通通知保存条件未确认，禁止重发未知结果');
+      }
+    });
+  } catch {
+    proxy.$modal.msgWarning('认证或未知来源关闭通用新增，请使用认证工作台');
+  }
+}
+async function handleDelete(row?: any) {
+  const selected = row?.noticeId ? [row.noticeId] : [...ids.value];
+  const session = await legacyPermit(selected, 'wm:arrivalnotice:remove');
+  if (!session) return;
+  try {
+    await proxy.$modal.confirm('确认仅删除明确普通到货通知？');
+    session.assertCurrent();
+    await delArrivalnotice(selected, session);
+    session.assertCurrent();
+    getList();
+  } catch {
+    /* 不自动重发 */
+  }
+}
+
+const warehouseRoute = useRoute();
+const warehouseUser = useUserStore();
+const protectionRevision = ref(0);
+const certifiedOpen = ref(false);
+const certifiedId = ref('');
+const certifiedKind = ref<WarehouseTarget>('ORDER');
+/** 独立服务器保护事实，不用列表 attr1/status 作为认证判断。 */
+const legacyGate = createWarehouseLegacyGate({
+  domain: 'arrivalnotice',
+  readCredential: getToken,
+  readScope: () => ({
+    tenantId: warehouseUser.tenantId,
+    userId: warehouseUser.userId,
+    routeKey: warehouseRoute.fullPath + '|' + ids.value.join(',') + '|' + String(form.value.noticeId ?? '')
+  }),
+  hasPermission: (p) => proxy.$auth.hasPermi(p),
+  context: getCertifiedArrivalContext,
+  detail: getCertifiedArrivalDetail,
+  changed: () => {
+    protectionRevision.value++;
+  }
+});
+function legacyRow(row: any) {
+  protectionRevision.value;
+  return !!row && legacyGate.known(row.noticeId);
+}
+async function legacyPermit(values: unknown[], permission: string) {
+  try {
+    return await legacyGate.requireLegacy(values, permission);
+  } catch {
+    proxy.$modal.msgWarning('认证或保护事实未知：旧通用入口已关闭，请只读核对或使用认证工作台');
+    return null;
+  }
+}
+function openCertified(row?: any) {
+  certifiedId.value = row?.noticeId == null ? '' : String(row.noticeId);
+  certifiedKind.value = row?.noticeId == null ? 'ORDER' : 'NOTICE';
+  certifiedOpen.value = true;
+}
+watch(
+  () => arrivalnoticeList.value,
+  (rows) => {
+    legacyGate.clear();
+    for (const row of rows ?? []) void legacyGate.probe(row.noticeId);
+  }
+);
+watch(
+  () => [warehouseRoute.fullPath, warehouseUser.userId, warehouseUser.tenantId, getToken()],
+  () => legacyGate.clear()
+);
+
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
@@ -387,7 +528,8 @@ function resetQuery() {
 }
 
 /** 修改按钮操作（跳转路由表单页） */
-function handleUpdate(row?: any) {
+async function handleUpdate(row?: any) {
+  if (row instanceof Event) row = undefined;
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -401,6 +543,7 @@ function handleUpdate(row?: any) {
     row = selectedRow;
   }
 
+  if (!(await legacyPermit([row.noticeId], 'wm:arrivalnotice:edit'))) return;
   const noticeId = row.noticeId;
   router.push({
     path: '/erp/wm/arrivalnotice/form',
@@ -445,7 +588,9 @@ function handleSubmit() {
 }
 
 /** 列表行提交审批 */
-function handleSubmitFlowRow(row: any) {
+async function handleSubmitFlowRow(row: any) {
+  const session = await legacyPermit([row.noticeId], 'wm:arrivalnotice:submit');
+  if (!session) return;
   if (row.status !== 'DRAFT') {
     proxy.$modal.msgWarning('只有草稿状态的单据才能提交审批');
     return;
@@ -457,7 +602,7 @@ function handleSubmitFlowRow(row: any) {
   proxy.$modal
     .confirm('确认提交到货通知【' + row.noticeCode + '】审批？')
     .then(() => {
-      submitArrivalnotice(String(row.noticeId), String(row.selectFlowId)).then(() => {
+      submitArrivalnotice(String(row.noticeId), String(row.selectFlowId), session).then(() => {
         proxy.$modal.msgSuccess('提交审批成功');
         getList();
       });
