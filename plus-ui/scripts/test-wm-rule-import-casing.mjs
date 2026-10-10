@@ -16,13 +16,24 @@ const trackedPaths = new Set(
 );
 const readSource = (path) => readFileSync(new URL(path, repositoryRoot), 'utf8');
 const rules = [
-  { name: '拣货规则', directory: 'pickingRule', endpoint: 'pickingrule' },
-  { name: '上架规则', directory: 'putawayRule', endpoint: 'putawayrule' }
+  { name: '拣货规则', directory: 'pickingRule', endpoint: 'pickingrule', menuId: 2621 },
+  { name: '上架规则', directory: 'putawayRule', endpoint: 'putawayrule', menuId: 2616 }
 ];
 
-for (const { name, directory, endpoint } of rules) {
+for (const { name, directory, endpoint, menuId } of rules) {
   const viewPath = `plus-ui/src/views/erp/wm/${directory}/index.vue`;
   const apiPath = `plus-ui/src/api/erp/wm/${directory}/index.ts`;
+
+  test(`${name}菜单种子必须保持页面 URL 并精确命中真实视图组件`, () => {
+    const sql = readSource('script/sql/ry-vue.sql');
+    const row = sql.match(new RegExp(`^\\(${menuId}, '[^']*', (\\d+), \\d+, '([^']+)', '([^']+)'`, 'm'));
+    assert.ok(row, `${name}菜单 ${menuId} 必须存在于主安装 SQL`);
+    const [, parentId, path, component] = row;
+    assert.equal(parentId, '2966', `${name}必须保留仓储策略父菜单`);
+    assert.equal(path, directory, `${name}页面 URL 的末级 path 不得改变`);
+    assert.equal(component, `erp/wm/${directory}/index`, `${name}菜单组件目录必须与真实 Vue 目录大小写精确一致`);
+    assert.ok(trackedPaths.has(`plus-ui/src/views/${component}.vue`), `${name}菜单组件必须逐字符命中 Git 跟踪路径`);
+  });
 
   test(`${name}页面导入必须与 Git 跟踪路径大小写精确一致`, () => {
     assert.ok(trackedPaths.has(viewPath), `${name}页面路径必须与 Git 跟踪拼写一致`);
