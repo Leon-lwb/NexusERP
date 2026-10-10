@@ -1,0 +1,158 @@
+{
+  "format": "nexus-milvus-logical-backup",
+  "format_version": 1,
+  "complete": true,
+  "exported_at": "2026-10-10T21:21:01.482913+08:00",
+  "source": {
+    "milvus_version": "2.5.27",
+    "pymilvus_version": "2.5.16"
+  },
+  "consistency": {
+    "read_level": "Strong",
+    "atomic_database_snapshot": false,
+    "collection_counts_checked_before_and_after": true
+  },
+  "databases": [
+    {
+      "name": "default",
+      "collections": [
+        {
+          "name": "AiKnowledge_2065090090526457857",
+          "schema": {
+            "auto_id": false,
+            "description": "",
+            "fields": [
+              {
+                "name": "id",
+                "description": "",
+                "type": 21,
+                "params": {
+                  "max_length": 36
+                },
+                "is_primary": true,
+                "auto_id": false
+              },
+              {
+                "name": "text",
+                "description": "",
+                "type": 21,
+                "params": {
+                  "max_length": 65535
+                }
+              },
+              {
+                "name": "metadata",
+                "description": "",
+                "type": 23
+              },
+              {
+                "name": "vector",
+                "description": "",
+                "type": 101,
+                "params": {
+                  "dim": 1024
+                }
+              }
+            ],
+            "enable_dynamic_field": false
+          },
+          "settings": {
+            "num_shards": 1,
+            "consistency_level": 2,
+            "properties": {}
+          },
+          "indexes": [
+            {
+              "collection": "AiKnowledge_2065090090526457857",
+              "field": "vector",
+              "index_name": "vector",
+              "index_param": {
+                "metric_type": "COSINE",
+                "index_type": "FLAT"
+              }
+            }
+          ],
+          "aliases": [],
+          "partitions": [
+            {
+              "name": "_default",
+              "data_file": "data/default/AiKnowledge_2065090090526457857/_default.jsonl.gz",
+              "row_count": 7,
+              "sha256": "9bbd1886716c152577540b37b4bebf3da7527b8549f8c8d13f2ad43780de68d9",
+              "content_sha256": "2355be1104756364e6d2b52d7a676ee8d1cb25984ed0580cb8d1fd65785373ac"
+            }
+          ],
+          "row_count": 7
+        },
+        {
+          "name": "AiKnowledge_2108204662140141569",
+          "schema": {
+            "auto_id": false,
+            "description": "",
+            "fields": [
+              {
+                "name": "id",
+                "description": "",
+                "type": 21,
+                "params": {
+                  "max_length": 36
+                },
+                "is_primary": true,
+                "auto_id": false
+              },
+              {
+                "name": "text",
+                "description": "",
+                "type": 21,
+                "params": {
+                  "max_length": 65535
+                }
+              },
+              {
+                "name": "metadata",
+                "description": "",
+                "type": 23
+              },
+              {
+                "name": "vector",
+                "description": "",
+                "type": 101,
+                "params": {
+                  "dim": 1024
+                }
+              }
+            ],
+            "enable_dynamic_field": false
+          },
+          "settings": {
+            "num_shards": 1,
+            "consistency_level": 2,
+            "properties": {}
+          },
+          "indexes": [
+            {
+              "collection": "AiKnowledge_2108204662140141569",
+              "field": "vector",
+              "index_name": "vector",
+              "index_param": {
+                "metric_type": "COSINE",
+                "index_type": "FLAT"
+              }
+            }
+          ],
+          "aliases": [],
+          "partitions": [
+            {
+              "name": "_default",
+              "data_file": "data/default/AiKnowledge_2108204662140141569/_default.jsonl.gz",
+              "row_count": 6,
+              "sha256": "3c1b62d4b3cf778744a99336b0cd3f5c6950ad0433088eab85116f9e7ef5a107",
+              "content_sha256": "345d7429e1f99054c1a9e411833b503912b5b0932d89377b78514c04c5484770"
+            }
+          ],
+          "row_count": 6
+        }
+      ]
+    }
+  ]
+}

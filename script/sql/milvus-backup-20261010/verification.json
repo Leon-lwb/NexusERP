@@ -1,0 +1,42 @@
+{
+  "verified_at": "2026-10-10T21:25:11.590320+08:00",
+  "source_milvus_version": "2.5.27",
+  "target_milvus_version": "2.5.27",
+  "target_type": "isolated disposable Docker container with tmpfs storage",
+  "source_operations": "read only; no source flush, inserts, deletes, or configuration changes",
+  "collections": [
+    {
+      "database": "default",
+      "name": "AiKnowledge_2065090090526457857",
+      "row_count": 7,
+      "dimension": 1024,
+      "schema_equal": true,
+      "indexes_equal": true,
+      "primary_keys_and_all_fields_exactly_equal": true,
+      "source_still_matches_export": true,
+      "vector_search_cases": 7,
+      "top_3_search_results_equal": true
+    },
+    {
+      "database": "default",
+      "name": "AiKnowledge_2108204662140141569",
+      "row_count": 6,
+      "dimension": 1024,
+      "schema_equal": true,
+      "indexes_equal": true,
+      "primary_keys_and_all_fields_exactly_equal": true,
+      "source_still_matches_export": true,
+      "vector_search_cases": 6,
+      "top_3_search_results_equal": true
+    }
+  ],
+  "checks": {
+    "existing_collection_refused_without_data_changes": true,
+    "corrupted_backup_refused_before_restore": true,
+    "local_backup_integrity": true,
+    "restorer_syntax": true
+  },
+  "vector_search_cases": 13,
+  "total_verified_records": 13,
+  "status": "passed"
+}
