@@ -48,15 +48,15 @@
 
       <el-table v-loading="loading" :data="ownProcessList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="流程编号" align="center" prop="procInsId" :show-overflow-tooltip="true" />
-        <el-table-column label="流程名称" align="center" prop="procDefName" :show-overflow-tooltip="true" />
-        <el-table-column label="流程类别" align="center" prop="category" :formatter="categoryFormat" />
+        <el-table-column label="流程编号" align="center" prop="procInsId" min-width="140" :show-overflow-tooltip="true" />
+        <el-table-column label="流程名称" align="center" prop="procDefName" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column label="流程类别" align="center" prop="category" :formatter="categoryFormat" min-width="100" />
         <el-table-column label="流程版本" align="center" width="80px">
           <template #default="scope">
             <el-tag>v{{ scope.row.procDefVersion }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="当前节点" align="center" prop="taskName" />
+        <el-table-column label="当前节点" align="center" prop="taskName" min-width="110" :show-overflow-tooltip="true" />
         <el-table-column label="提交时间" align="center" prop="createTime" width="180" />
         <el-table-column label="流程状态" align="center" width="100">
           <template #default="scope">
@@ -64,7 +64,7 @@
           </template>
         </el-table-column>
         <el-table-column label="耗时" align="center" prop="duration" width="180" />
-        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width" fixed="right">
           <template #default="scope">
             <el-tooltip content="详情" placement="top">
               <el-button link type="primary" icon="View" @click="handleDetails(scope.row)" v-hasPermi="['workflow:process:query']"></el-button>

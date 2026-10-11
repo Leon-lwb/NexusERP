@@ -98,37 +98,37 @@
 
     <el-table ref="orderTableRef" v-loading="loading" :data="orderheaderList" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="销售订单编号" align="center" prop="soNo" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="销售订单编号" align="center" prop="soNo" min-width="140" />
       <el-table-column label="来源客户" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="销售代表" align="center" prop="salesRepName" />
-      <el-table-column label="订单生成日期" align="center" prop="orderDate">
+      <el-table-column label="销售代表" align="center" prop="salesRepName" min-width="100" />
+      <el-table-column label="订单生成日期" align="center" prop="orderDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="承诺交货日" align="center" prop="promiseDate">
+      <el-table-column label="承诺交货日" align="center" prop="promiseDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.promiseDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="含税总金额" align="center" prop="totalAmount" />
-      <el-table-column label="货币" align="center" prop="currency">
+      <el-table-column label="含税总金额" align="center" prop="totalAmount" min-width="110" />
+      <el-table-column label="货币" align="center" prop="currency" min-width="80">
         <template #default="scope">
           <dict-tag :options="so_currency_type" :value="scope.row.currency" />
         </template>
       </el-table-column>
-      <el-table-column label="信用状态" align="center" prop="creditStatus">
+      <el-table-column label="信用状态" align="center" prop="creditStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_credit_status" :value="scope.row.creditStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="订单状态" align="center" prop="orderStatus">
+      <el-table-column label="订单状态" align="center" prop="orderStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_order_status" :value="scope.row.orderStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="warning" @click.stop="handleDeliveryDecision(scope.row)" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>

@@ -65,7 +65,7 @@
         <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.status" /></template>
       </el-table-column>
       <el-table-column label="创建人" prop="createByName" width="100" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="530" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="530" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handlePreview(scope.row)" v-if="scope.row.fileUrl" v-hasPermi="['mes:sop:document:list']"
             >预览</el-button

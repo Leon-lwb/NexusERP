@@ -63,25 +63,24 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="供应商编码" align="center" prop="vendorCode" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="供货品类" align="center" prop="industry">
+      <el-table-column label="供货品类" align="center" prop="industry" min-width="100">
         <template #default="scope">
           <dict-tag :options="bd_vendor_industry" :value="scope.row.industry" />
         </template>
       </el-table-column>
-      <el-table-column label="地区" align="center" prop="region">
+      <el-table-column label="地区" align="center" prop="region" min-width="90">
         <template #default="scope">
           <dict-tag :options="bd_region" :value="scope.row.region" />
         </template>
       </el-table-column>
-      <el-table-column label="合作状态" align="center" prop="status">
+      <el-table-column label="合作状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="bd_vendor_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['core:vendor:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['core:vendor:edit']">修改</el-button>

@@ -48,19 +48,19 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" v-if="true" />
-      <el-table-column label="业务表单名称" align="center" prop="businessName" :show-overflow-tooltip="true" />
-      <el-table-column label="业务服务名称" align="center" prop="businessService" :show-overflow-tooltip="true" />
-      <el-table-column label="流程名称" align="center" prop="flowName" :show-overflow-tooltip="true" />
-      <el-table-column label="关联流程发布主键" align="center" prop="deployId" />
-      <el-table-column label="前端路由地址" align="center" prop="routeName" :show-overflow-tooltip="true" />
-      <el-table-column label="组件注入方法" align="center" prop="component" :show-overflow-tooltip="true" />
-      <el-table-column label="业务主表" align="center" prop="tableId">
+      <el-table-column label="主键" align="center" prop="id" v-if="true" min-width="140" />
+      <el-table-column label="业务表单名称" align="center" prop="businessName" min-width="150" :show-overflow-tooltip="true" />
+      <el-table-column label="业务服务名称" align="center" prop="businessService" min-width="150" :show-overflow-tooltip="true" />
+      <el-table-column label="流程名称" align="center" prop="flowName" min-width="150" :show-overflow-tooltip="true" />
+      <el-table-column label="关联流程发布主键" align="center" prop="deployId" min-width="140" />
+      <el-table-column label="前端路由地址" align="center" prop="routeName" min-width="150" :show-overflow-tooltip="true" />
+      <el-table-column label="组件注入方法" align="center" prop="component" min-width="150" :show-overflow-tooltip="true" />
+      <el-table-column label="业务主表" align="center" prop="tableId" min-width="150">
         <template #default="scope">
           <span>{{ getGenTableLabel(scope.row.tableId) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="160" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-tooltip content="关联流程" placement="top">
             <el-button link type="primary" icon="Edit" @click="relationProcess(scope.row)" v-hasPermi="['workflow:customForm:edit']"></el-button>

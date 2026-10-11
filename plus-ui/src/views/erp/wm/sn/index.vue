@@ -56,24 +56,24 @@
 
     <el-table v-loading="loading" :data="snList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="序列号" align="center" prop="snCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
       <el-table-column label="批次号" align="center" prop="batchCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="库位" align="center" prop="locationCode" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="库位" align="center" prop="locationCode" min-width="100" />
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_sn_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="来源单号" align="center" prop="sourceDocNo" min-width="120" show-overflow-tooltip />
-      <el-table-column label="生产日期" align="center" prop="productionDate" />
-      <el-table-column label="有效期至" align="center" prop="expiryDate" />
-      <el-table-column label="创建时间" align="center" prop="createTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="生产日期" align="center" prop="productionDate" width="110" />
+      <el-table-column label="有效期至" align="center" prop="expiryDate" width="110" />
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="编辑" placement="top">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:sn:edit']" />

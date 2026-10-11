@@ -61,7 +61,7 @@
         <el-table-column type="selection" width="55" align="center" />
         <!-- 循环遍历对象 -->
         <template v-for="(itemField, indexField) in onlineField" :key="itemField.columnId || indexField">
-          <el-table-column v-if="itemField?.list" :label="itemField.columnComment" align="center">
+          <el-table-column v-if="itemField?.list" :label="itemField.columnComment" align="center" min-width="120">
             <template #default="scope">
               <!-- 处理字典值 -->
               <template v-if="itemField.commonDictCode && itemField.commonDictCode.length > 0">
@@ -78,7 +78,7 @@
             </template>
           </el-table-column>
         </template>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" align="center" width="100" fixed="right" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="修改" placement="top">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:notice:edit']"></el-button>

@@ -109,26 +109,24 @@
 
     <el-table v-loading="loading" :data="arrivalnoticeList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="通知单编号" align="center" prop="noticeCode" />
+      <el-table-column label="通知单编号" align="center" prop="noticeCode" min-width="140" />
       <el-table-column label="通知单名称" align="center" prop="noticeName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="采购订单编号" align="center" prop="purOrderCode" />
-      <el-table-column label="供应商编码" align="center" prop="vendorCode" />
+      <el-table-column label="采购订单编号" align="center" prop="purOrderCode" min-width="140" />
       <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="供应商简称" align="center" prop="vendorNick" />
-      <el-table-column label="到货日期" align="center" prop="arrivalDate">
+      <el-table-column label="到货日期" align="center" prop="arrivalDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.arrivalDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="联系人" align="center" prop="contact" />
-      <el-table-column label="联系方式" align="center" prop="phone" />
-      <el-table-column label="单据状态" align="center" prop="status">
+      <el-table-column label="联系人" align="center" prop="contact" min-width="90" />
+      <el-table-column label="联系方式" align="center" prop="phone" min-width="110" />
+      <el-table-column label="单据状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_notice_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="380" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link @click="openCertified(scope.row)" v-hasPermi="['wm:arrivalnotice:query']">认证工作台</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>

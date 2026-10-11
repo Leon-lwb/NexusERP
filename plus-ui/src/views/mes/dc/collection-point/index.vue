@@ -55,9 +55,9 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="采集点编码" prop="pointCode" />
+      <el-table-column label="采集点编码" prop="pointCode" min-width="140" />
       <el-table-column label="采集点名称" prop="pointName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="类型" prop="pointType" align="center">
+      <el-table-column label="类型" prop="pointType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="dc_collection_point_type" :value="scope.row.pointType" />
         </template>
@@ -65,23 +65,23 @@
       <el-table-column label="IoT设备" align="center" width="90">
         <template #default="scope">{{ scope.row.iotDeviceId ? '已绑定' : '-' }}</template>
       </el-table-column>
-      <el-table-column label="数据类型" prop="dataType" align="center">
+      <el-table-column label="数据类型" prop="dataType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="dc_data_type" :value="scope.row.dataType" />
         </template>
       </el-table-column>
-      <el-table-column label="单位" prop="unit">
+      <el-table-column label="单位" prop="unit" min-width="80">
         <template #default="scope">{{ scope.row.unit || '-' }}</template>
       </el-table-column>
-      <el-table-column label="频率(秒)" prop="frequency" align="right">
+      <el-table-column label="频率(秒)" prop="frequency" align="right" min-width="90">
         <template #default="scope">{{ scope.row.frequency ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_enable_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:dc:point:edit']">修改</el-button>

@@ -41,27 +41,27 @@
     </el-row>
 
     <el-table v-loading="loading" :data="summaryList" show-overflow-tooltip>
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="单位" align="center" prop="baseUomName" />
+      <el-table-column label="单位" align="center" prop="baseUomName" min-width="80" />
       <el-table-column label="批次号" align="center" prop="batchCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
       <el-table-column label="库位" align="center" prop="locationName" min-width="110" show-overflow-tooltip />
-      <el-table-column label="在库数量" align="center" prop="stockQuantity" />
-      <el-table-column label="已预留数量" align="center" prop="reservedQuantity">
+      <el-table-column label="在库数量" align="center" prop="stockQuantity" min-width="90" />
+      <el-table-column label="已预留数量" align="center" prop="reservedQuantity" min-width="100">
         <template #default="scope">
           <el-tag :type="scope.row.reservedQuantity > 0 ? 'warning' : 'info'">{{ scope.row.reservedQuantity }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="可用数量" align="center" prop="availableQuantity">
+      <el-table-column label="可用数量" align="center" prop="availableQuantity" min-width="100">
         <template #default="scope">
           <el-tag :type="scope.row.availableQuantity > 0 ? 'success' : 'danger'">{{ scope.row.availableQuantity }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="关联工单" align="center" prop="woNo" min-width="130" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="110" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="110" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="手动预留" placement="top">
             <el-button link type="primary" icon="Plus" @click="handleReserve(scope.row)" v-hasPermi="['wm:reservation:add']" />

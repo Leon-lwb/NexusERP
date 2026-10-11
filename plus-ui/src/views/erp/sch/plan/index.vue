@@ -93,41 +93,40 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" @row-click="handleRowClick" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="计划编码" align="center" prop="planCode" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="计划名称" align="center" prop="planName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="开始日期" align="center" prop="startDate">
+      <el-table-column label="开始日期" align="center" prop="startDate" width="160">
         <template #default="scope">
           <span>{{ scope.row.startDate || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="结束日期" align="center" prop="endDate">
+      <el-table-column label="结束日期" align="center" prop="endDate" width="160">
         <template #default="scope">
           <span>{{ scope.row.endDate || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="周期类型" align="center" prop="periodType">
+      <el-table-column label="周期类型" align="center" prop="periodType" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_plan_period_type" :value="scope.row.periodType" />
         </template>
       </el-table-column>
-      <el-table-column label="轮班方式" align="center" prop="rotationType">
+      <el-table-column label="轮班方式" align="center" prop="rotationType" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_rotation_type" :value="String(scope.row.rotationType)" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_plan_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="发布人" align="center" prop="publishedBy" min-width="120" show-overflow-tooltip />
-      <el-table-column label="发布时间" align="center" prop="publishedTime">
+      <el-table-column label="发布时间" align="center" prop="publishedTime" width="160">
         <template #default="scope">
           <span>{{ scope.row.publishedTime || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

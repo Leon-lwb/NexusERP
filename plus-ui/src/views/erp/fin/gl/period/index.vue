@@ -33,7 +33,7 @@
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="会计年度" align="center" prop="fiscalYear" width="100" />
       <el-table-column label="期间号" align="center" prop="periodNo" width="80" />
-      <el-table-column label="期间名称" align="center" prop="periodName" />
+      <el-table-column label="期间名称" align="center" prop="periodName" min-width="120" />
       <el-table-column label="开始日期" align="center" prop="startDate" width="120" />
       <el-table-column label="结束日期" align="center" prop="endDate" width="120" />
       <el-table-column label="状态" align="center" prop="status" width="100">
@@ -41,7 +41,7 @@
           <dict-tag :options="gl_period_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link

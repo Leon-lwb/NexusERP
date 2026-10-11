@@ -39,19 +39,19 @@
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
       <el-table-column label="控制图名称" prop="chartName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="类型" prop="chartType" align="center">
+      <el-table-column label="类型" prop="chartType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="spc_chart_type" :value="scope.row.chartType" />
         </template>
       </el-table-column>
-      <el-table-column label="样本大小" prop="sampleSize" align="right" />
-      <el-table-column label="UCL" prop="ucl" align="right">
+      <el-table-column label="样本大小" prop="sampleSize" align="right" min-width="80" />
+      <el-table-column label="UCL" prop="ucl" align="right" min-width="80">
         <template #default="scope">{{ scope.row.ucl ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="CL" prop="cl" align="right">
+      <el-table-column label="CL" prop="cl" align="right" min-width="80">
         <template #default="scope">{{ scope.row.cl ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="LCL" prop="lcl" align="right">
+      <el-table-column label="LCL" prop="lcl" align="right" min-width="80">
         <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
       </el-table-column>
       <el-table-column label="次级图限(RUCL/RCL/RLCL)" align="center" min-width="180">
@@ -62,7 +62,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="Cpk" prop="cpk" align="right">
+      <el-table-column label="Cpk" prop="cpk" align="right" min-width="80">
         <template #default="scope">
           <el-tag v-if="scope.row.cpk != null" size="small" :type="cpkTagType(scope.row.cpkGrade)">
             {{ scope.row.cpk }}
@@ -76,7 +76,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="能力等级" prop="cpkGrade" align="center">
+      <el-table-column label="能力等级" prop="cpkGrade" align="center" min-width="110">
         <template #default="scope">
           <el-tag v-if="scope.row.cpkGrade" size="small" :type="cpkTagType(scope.row.cpkGrade)">
             {{ cpkGradeLabel(scope.row.cpkGrade) }}
@@ -84,12 +84,12 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_enable_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="warning" icon="DataAnalysis" @click="handleAnalyze(scope.row)" v-hasPermi="['mes:spc:chart:analyze']">分析</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:spc:chart:edit']">编辑</el-button>

@@ -103,7 +103,7 @@
       <el-table-column label="计划员" align="center" prop="plannerName" width="90" />
       <el-table-column label="生产部门" align="center" prop="deptName" width="140" show-overflow-tooltip />
       <el-table-column label="计划总数量" align="center" prop="totalQuantity" width="110" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:plan:edit']">修改</el-button>

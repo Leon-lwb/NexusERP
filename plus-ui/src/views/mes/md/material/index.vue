@@ -26,13 +26,13 @@
     </el-row>
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
-      <el-table-column label="物料编码" prop="materialCode" />
+      <el-table-column label="物料编码" prop="materialCode" min-width="140" />
       <el-table-column label="物料名称" prop="materialName" min-width="120" show-overflow-tooltip />
       <el-table-column label="规格型号" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="物料类型" prop="materialType" />
-      <el-table-column label="计量单位" prop="unitName" />
+      <el-table-column label="物料类型" prop="materialType" min-width="90" />
+      <el-table-column label="计量单位" prop="unitName" min-width="80" />
       <!-- 只读镜像 ERP 物料, status 0=正常/1=停用, 复用 RuoYi 内置 sys_normal_disable -->
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
         </template>

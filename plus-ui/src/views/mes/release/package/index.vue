@@ -58,7 +58,7 @@
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="发布包编码" prop="packageCode" width="160" />
       <el-table-column label="客户" prop="clientName" min-width="130" show-overflow-tooltip />
-      <el-table-column label="适用物料" min-width="170">
+      <el-table-column label="适用物料" min-width="170" show-overflow-tooltip>
         <template #default="scope">
           <span
             >{{ scope.row.materialCode }}<span v-if="scope.row.materialName"> / {{ scope.row.materialName }}</span></span

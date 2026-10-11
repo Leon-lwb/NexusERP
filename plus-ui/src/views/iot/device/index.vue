@@ -81,27 +81,27 @@
 
     <el-table v-loading="loading" :data="deviceList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="设备编码" align="center" prop="deviceCode" />
+      <el-table-column label="序号" type="index" width="60" align="center" />
+      <el-table-column label="设备编码" align="center" prop="deviceCode" min-width="140" />
       <el-table-column label="设备名称" align="center" prop="deviceName" min-width="120" show-overflow-tooltip />
       <el-table-column label="所属产品" align="center" prop="productName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="协议类型" align="center" prop="protocolType">
+      <el-table-column label="协议类型" align="center" prop="protocolType" min-width="90">
         <template #default="scope">
           <dict-tag :options="iot_protocol_type" :value="scope.row.protocolType" />
         </template>
       </el-table-column>
-      <el-table-column label="最后在线" align="center" prop="lastOnlineTime" />
-      <el-table-column label="连接状态" align="center" prop="connectionStatus">
+      <el-table-column label="最后在线" align="center" prop="lastOnlineTime" width="160" />
+      <el-table-column label="连接状态" align="center" prop="connectionStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="iot_connection_status" :value="scope.row.connectionStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="iot_device_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="MES 设备" align="center">
+      <el-table-column label="MES 设备" align="center" min-width="120">
         <template #default="scope">
           <el-button v-if="scope.row.mesEquipmentId" link type="primary" @click="goToMesEquipment(scope.row.mesEquipmentId)">
             查看 MES 设备
@@ -109,7 +109,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="288" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="560" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="DataLine" @click="handleRealtime(scope.row)" v-hasPermi="['iot:device:query']">实时</el-button>
           <el-button link type="primary" icon="Monitor" @click="handleOps(scope.row)" v-hasPermi="['iot:device:query']">运维</el-button>

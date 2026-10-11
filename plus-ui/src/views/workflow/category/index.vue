@@ -43,16 +43,15 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="分类编号" align="center" prop="categoryId" />
-      <el-table-column label="分类名称" align="center" prop="categoryName" :show-overflow-tooltip="true" />
-      <el-table-column label="分类编码" align="center" prop="code" :show-overflow-tooltip="true" />
+      <el-table-column label="分类编号" align="center" prop="categoryId" min-width="140" />
+      <el-table-column label="分类名称" align="center" prop="categoryName" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="应用类型" align="center" prop="appType" width="100">
         <template #default="scope">
           <dict-tag :options="wf_app_type" :value="scope.row.appType" />
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+      <el-table-column label="备注" align="center" prop="remark" min-width="150" :show-overflow-tooltip="true" />
+      <el-table-column label="操作" align="center" width="150" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['workflow:category:edit']"></el-button>

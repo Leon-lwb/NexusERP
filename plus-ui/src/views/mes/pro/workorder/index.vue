@@ -45,28 +45,28 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工单编号" prop="woNo" />
-      <el-table-column label="产品编码" prop="materialCode" />
+      <el-table-column label="工单编号" prop="woNo" min-width="140" />
+      <el-table-column label="产品编码" prop="materialCode" min-width="140" />
       <el-table-column label="产品名称" prop="materialName" min-width="120" show-overflow-tooltip />
       <!-- FE-MES-02：计划数量带计量单位（后端 ProWorkOrderVo.unitName），不再是无单位裸数字 -->
-      <el-table-column label="计划数量" prop="plannedQty" align="right">
+      <el-table-column label="计划数量" prop="plannedQty" align="right" min-width="90">
         <template #default="scope">{{ fmtQty(scope.row.plannedQty) }} {{ scope.row.unitName || '' }}</template>
       </el-table-column>
       <!-- FE-MES-02：完工进度（已完工/报废），此前列表完全看不到完工情况 -->
-      <el-table-column label="已完工" prop="completedQty" align="right">
+      <el-table-column label="已完工" prop="completedQty" align="right" min-width="110">
         <template #default="scope">
           {{ fmtQty(scope.row.completedQty) }}
           <span v-if="progressOf(scope.row) !== '-'" class="text-gray-400">（{{ progressOf(scope.row) }}）</span>
         </template>
       </el-table-column>
-      <el-table-column label="报废" prop="scrapQty" align="right">
+      <el-table-column label="报废" prop="scrapQty" align="right" min-width="80">
         <template #default="scope">{{ fmtQty(scope.row.scrapQty) }}</template>
       </el-table-column>
-      <el-table-column label="单位" prop="unitName" align="center" />
-      <el-table-column label="优先级" prop="priority" align="center">
+      <el-table-column label="单位" prop="unitName" align="center" min-width="80" />
+      <el-table-column label="优先级" prop="priority" align="center" min-width="80">
         <template #default="scope">{{ scope.row.priority ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="来源" prop="sourceType" align="center">
+      <el-table-column label="来源" prop="sourceType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="mes_wo_source_type" :value="scope.row.sourceType" />
         </template>
@@ -74,18 +74,18 @@
       <el-table-column label="车间" prop="workshopName" min-width="120" show-overflow-tooltip />
       <!-- FE-MES-02：日期统一走 fmtDate（与 mes/eq/oee、mes/eq/repair/statistics 同型），
            直接输出后端 Date 序列化串会带时间戳且列宽不定 -->
-      <el-table-column label="计划开工" prop="planStartDate" align="center">
+      <el-table-column label="计划开工" prop="planStartDate" align="center" width="110">
         <template #default="scope">{{ fmtDate(scope.row.planStartDate) }}</template>
       </el-table-column>
-      <el-table-column label="计划完工" prop="planEndDate" align="center">
+      <el-table-column label="计划完工" prop="planEndDate" align="center" width="110">
         <template #default="scope">{{ fmtDate(scope.row.planEndDate) }}</template>
       </el-table-column>
-      <el-table-column label="状态" prop="woStatus" align="center">
+      <el-table-column label="状态" prop="woStatus" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="prd_wo_status" :value="scope.row.woStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button

@@ -61,23 +61,22 @@
 
     <el-table v-loading="loading" :data="teamList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="班组编码" align="center" prop="teamCode" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="班组名称" align="center" prop="teamName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="班组类别" align="center" prop="teamCategory">
+      <el-table-column label="班组类别" align="center" prop="teamCategory" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_team_category" :value="scope.row.teamCategory" />
         </template>
       </el-table-column>
       <el-table-column label="所属车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
       <el-table-column label="班组长姓名" align="center" prop="leaderName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="成员数量" align="center" prop="memberCount" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="成员数量" align="center" prop="memberCount" min-width="80" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:team:edit']">修改</el-button>

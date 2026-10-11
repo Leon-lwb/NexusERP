@@ -113,29 +113,29 @@
           </el-table>
         </template>
       </el-table-column>
-      <el-table-column label="订单号" prop="orderNo" />
+      <el-table-column label="订单号" prop="orderNo" min-width="140" />
       <el-table-column label="供应商" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="订单日期" prop="orderDate">
+      <el-table-column label="订单日期" prop="orderDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="预计到货" prop="expectedArrivalDate">
+      <el-table-column label="预计到货" prop="expectedArrivalDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.expectedArrivalDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="含税金额" align="right" prop="totalAmount">
+      <el-table-column label="含税金额" align="right" prop="totalAmount" min-width="100">
         <template #default="scope">{{ fmtAmount(scope.row.totalAmount) }}</template>
       </el-table-column>
       <!-- 运费：后端 PuPurchaseOrderVo.freightAmount 已返回，此前前端未展示（FE-ERP-03） -->
-      <el-table-column label="运费" align="right" prop="freightAmount">
+      <el-table-column label="运费" align="right" prop="freightAmount" min-width="90">
         <template #default="scope">{{ fmtAmount(scope.row.freightAmount) }}</template>
       </el-table-column>
-      <el-table-column label="税额" align="right" prop="taxAmount">
+      <el-table-column label="税额" align="right" prop="taxAmount" min-width="90">
         <template #default="scope">{{ fmtAmount(scope.row.taxAmount) }}</template>
       </el-table-column>
-      <el-table-column label="状态" prop="status">
+      <el-table-column label="状态" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="pu_purchase_order_status" :value="scope.row.status" />
         </template>

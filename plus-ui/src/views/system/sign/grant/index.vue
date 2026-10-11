@@ -64,7 +64,7 @@
       </el-row>
 
       <el-table v-loading="loading" :data="list">
-        <el-table-column label="印章名称" align="center" prop="sealName" show-overflow-tooltip />
+        <el-table-column label="印章名称" align="center" prop="sealName" min-width="120" show-overflow-tooltip />
         <el-table-column label="授权对象" align="center" min-width="160" :show-overflow-tooltip="false">
           <template #default="scope">{{ granteeText(scope.row) }}</template>
         </el-table-column>
@@ -82,8 +82,8 @@
             <el-tag :type="statusTag(scope.row.status)">{{ statusText(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
-        <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
+        <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+        <el-table-column label="操作" align="center" width="160" fixed="right" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button v-hasPermi="['system:sign:grant:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
             <el-button v-hasPermi="['system:sign:grant:remove']" link type="danger" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>

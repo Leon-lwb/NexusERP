@@ -36,25 +36,24 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="设备编码" prop="equipmentCode" width="130" />
       <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="保养类型" prop="maintenanceType" align="center">
+      <el-table-column label="保养类型" prop="maintenanceType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag v-if="scope.row.maintenanceType" :options="mes_maintenance_type" :value="scope.row.maintenanceType" />
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="执行人" prop="executorName">
+      <el-table-column label="执行人" prop="executorName" min-width="100">
         <template #default="scope">{{ scope.row.executorName || '-' }}</template>
       </el-table-column>
       <el-table-column label="执行时间" prop="executeTime" width="160" />
       <el-table-column label="保养内容" prop="content" min-width="160" show-overflow-tooltip />
-      <el-table-column label="结果" prop="result" align="center">
+      <el-table-column label="结果" prop="result" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_maintenance_result" :value="scope.row.result" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:eq:maintenance:record:remove']"
             >删除</el-button

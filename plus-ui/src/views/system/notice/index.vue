@@ -45,7 +45,7 @@
 
     <el-table v-loading="loading" border :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="公告标题" align="center" prop="noticeTitle" :show-overflow-tooltip="true" />
+      <el-table-column label="公告标题" align="center" prop="noticeTitle" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="公告类型" align="center" prop="noticeType" width="100">
         <template #default="scope">
           <dict-tag :options="sys_notice_type" :value="scope.row.noticeType" />
@@ -62,7 +62,7 @@
           <span>{{ proxy?.parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" fixed="right" align="center" width="150" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button v-hasPermi="['system:notice:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>

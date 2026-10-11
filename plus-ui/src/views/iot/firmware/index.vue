@@ -49,12 +49,12 @@
 
     <el-table v-loading="loading" :data="firmwareList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="固件名称" align="center" prop="firmwareName" min-width="140" />
       <el-table-column label="产品型号" align="center" prop="productKey" min-width="110">
         <template #default="scope">{{ scope.row.productKey || '不限' }}</template>
       </el-table-column>
-      <el-table-column label="版本" align="center" prop="version" />
+      <el-table-column label="版本" align="center" prop="version" min-width="80" />
       <el-table-column label="文件名" align="center" prop="fileName" min-width="140">
         <template #default="scope">{{ scope.row.fileName || '-' }}</template>
       </el-table-column>
@@ -71,18 +71,18 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="发布状态" align="center" prop="status">
+      <el-table-column label="发布状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="firmwareStatusOptions" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="发布时间" align="center" prop="releaseTime" min-width="100">
+      <el-table-column label="发布时间" align="center" prop="releaseTime" width="160">
         <template #default="scope">{{ scope.row.releaseTime ? parseTime(scope.row.releaseTime) : '-' }}</template>
       </el-table-column>
       <el-table-column label="变更说明" align="center" prop="changeLog" min-width="140">
         <template #default="scope">{{ scope.row.changeLog || '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="216" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="216" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <!-- 仅草稿可改：已发布/已停用固件改包会让"设备升级到该版本"的含义失真（后端同样拒绝） -->
           <el-tooltip :disabled="isDraft(scope.row)" content="仅草稿状态可修改；已发布固件需先「停用」才能修改" placement="top">

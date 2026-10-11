@@ -44,7 +44,6 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="模板编码" prop="templateCode" min-width="130" />
       <el-table-column label="模板名称" prop="templateName" min-width="160" />
       <el-table-column label="类型" prop="templateType" align="center" width="80">
         <template #default="scope">
@@ -65,7 +64,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" prop="remark" min-width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:qc:template:edit']">编辑</el-button>
           <el-button

@@ -64,22 +64,22 @@
 
     <el-table ref="returnTableRef" v-loading="loading" :data="returnList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="退货单编号" align="center" prop="returnNo" />
-      <el-table-column label="销售订单号" align="center" prop="soNo" />
+      <el-table-column label="退货单编号" align="center" prop="returnNo" min-width="140" />
+      <el-table-column label="销售订单号" align="center" prop="soNo" min-width="140" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="退货日期" align="center" prop="returnDate">
+      <el-table-column label="退货日期" align="center" prop="returnDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.returnDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="总金额" align="center" prop="totalAmount" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="总金额" align="center" prop="totalAmount" min-width="100" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="so_return_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="290" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="380" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <!-- 退货闭环（T3.3）：确认与入库两个动作后端早已实现，但前端此前没有接线，

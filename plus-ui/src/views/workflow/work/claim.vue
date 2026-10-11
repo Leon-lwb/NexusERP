@@ -35,17 +35,17 @@
 
       <el-table v-loading="loading" :data="claimList">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="任务编号" align="center" prop="taskId" :show-overflow-tooltip="true" />
-        <el-table-column label="流程名称" align="center" prop="procDefName" />
-        <el-table-column label="任务节点" align="center" prop="taskName" />
-        <el-table-column label="流程版本" align="center">
+        <el-table-column label="任务编号" align="center" prop="taskId" min-width="140" :show-overflow-tooltip="true" />
+        <el-table-column label="流程名称" align="center" prop="procDefName" min-width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="任务节点" align="center" prop="taskName" min-width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="流程版本" align="center" min-width="80">
           <template #default="scope">
             <el-tag>v{{ scope.row.procDefVersion }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="流程发起人" align="center" prop="startUserName" />
+        <el-table-column label="流程发起人" align="center" prop="startUserName" min-width="100" :show-overflow-tooltip="true" />
         <el-table-column label="接收时间" align="center" prop="createTime" width="180" />
-        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width" fixed="right">
           <template #default="scope">
             <el-tooltip content="签收" placement="top">
               <el-button link type="primary" icon="EditPen" @click="handleClaim(scope.row)" v-hasPermi="['workflow:process:claim']"></el-button>

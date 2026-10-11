@@ -48,33 +48,33 @@
 
     <el-table v-loading="loading" :data="list" border @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="id" align="center" prop="id" />
-      <el-table-column label="客户端id" align="center" prop="clientId" />
-      <el-table-column label="客户端key" align="center" prop="clientKey" />
-      <el-table-column label="客户端秘钥" align="center" prop="clientSecret" :show-overflow-tooltip="true">
+      <el-table-column label="id" align="center" prop="id" min-width="140" />
+      <el-table-column label="客户端id" align="center" prop="clientId" min-width="140" :show-overflow-tooltip="true" />
+      <el-table-column label="客户端key" align="center" prop="clientKey" min-width="100" />
+      <el-table-column label="客户端秘钥" align="center" prop="clientSecret" min-width="120" :show-overflow-tooltip="true">
         <template #default="scope">
           <!-- 列表脱敏，完整秘钥仅在编辑弹窗可见 -->
           <span>{{ scope.row.clientSecret ? '****' + String(scope.row.clientSecret).slice(-4) : '' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="授权类型" align="center">
+      <el-table-column label="授权类型" align="center" min-width="110">
         <template #default="scope">
           <dict-tag :options="sys_grant_type" :value="scope.row.grantTypeList" />
         </template>
       </el-table-column>
-      <el-table-column label="设备类型" align="center">
+      <el-table-column label="设备类型" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_device_type" :value="scope.row.deviceType" />
         </template>
       </el-table-column>
-      <el-table-column label="Token活跃超时时间" align="center" prop="activeTimeout" />
-      <el-table-column label="Token固定超时时间" align="center" prop="timeout" />
-      <el-table-column key="status" label="状态" align="center">
+      <el-table-column label="Token活跃超时时间" align="center" prop="activeTimeout" min-width="150" />
+      <el-table-column label="Token固定超时时间" align="center" prop="timeout" min-width="150" />
+      <el-table-column key="status" label="状态" align="center" min-width="80">
         <template #default="scope">
           <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)"></el-switch>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="140">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button v-hasPermi="['system:client:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>

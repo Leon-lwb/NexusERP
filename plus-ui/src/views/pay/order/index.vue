@@ -45,8 +45,8 @@
     <el-table v-loading="loading" :data="orderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="50" align="center" />
-      <el-table-column label="商户订单号" align="center" prop="orderNumber" :show-overflow-tooltip="true" />
-      <el-table-column label="第三方订单号" align="center" prop="thirdNumber" :show-overflow-tooltip="true" />
+      <el-table-column label="商户订单号" align="center" prop="orderNumber" min-width="140" :show-overflow-tooltip="true" />
+      <el-table-column label="第三方订单号" align="center" prop="thirdNumber" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="订单状态" align="center" prop="orderStatus" width="100">
         <template #default="scope">
           <dict-tag :options="pay_order_status" :value="scope.row.orderStatus" />
@@ -54,7 +54,7 @@
       </el-table-column>
       <el-table-column label="订单总金额(元)" align="center" prop="totalAmount" width="120" />
       <el-table-column label="实际支付(元)" align="center" prop="actualAmount" width="120" />
-      <el-table-column label="订单内容" align="center" prop="orderContent" :show-overflow-tooltip="true" />
+      <el-table-column label="订单内容" align="center" prop="orderContent" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="支付方式" align="center" prop="payType" width="100">
         <template #default="scope">
           <dict-tag :options="pay_pay_type" :value="scope.row.payType" />
@@ -62,7 +62,7 @@
       </el-table-column>
       <el-table-column label="支付时间" align="center" prop="payTime" width="160" />
       <el-table-column label="支付人" align="center" prop="payBy" width="100" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="210">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['pay:order:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pay:order:edit']">修改</el-button>

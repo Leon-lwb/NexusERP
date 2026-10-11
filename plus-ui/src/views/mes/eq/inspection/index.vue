@@ -26,19 +26,18 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="设备编码" prop="equipmentCode" />
       <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_equipment_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="最近点检" prop="lastInspection">
+      <el-table-column label="最近点检" prop="lastInspection" min-width="150">
         <template #default="scope">
           {{ parseLastInspectionTime(scope.row.lastInspection) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button type="primary" link @click="handleInspect(scope.row)">点检</el-button>
         </template>

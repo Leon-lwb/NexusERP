@@ -61,22 +61,20 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工作站编码" align="center" prop="workstationCode" />
       <el-table-column label="工作站名称" align="center" prop="workstationName" min-width="120" show-overflow-tooltip />
       <!-- <el-table-column label="所属车间ID" align="center" prop="workshopId" /> -->
-      <el-table-column label="车间编码" align="center" prop="workshopCode" />
       <el-table-column label="车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
       <el-table-column label="工作中心描述" align="center" prop="workstationDesc" min-width="120" show-overflow-tooltip />
       <!-- <el-table-column label="设备ID" align="center" prop="equipmentId" /> -->
-      <el-table-column label="标准操作工人数" align="center" prop="operatorCount" />
-      <el-table-column label="标准产能" align="center" prop="standardCapacity" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="标准操作工人数" align="center" prop="operatorCount" min-width="130" />
+      <el-table-column label="标准产能" align="center" prop="standardCapacity" min-width="100" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:workstation:edit']">修改</el-button>

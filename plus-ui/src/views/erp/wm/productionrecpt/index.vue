@@ -50,21 +50,21 @@
 
     <el-table v-loading="loading" :data="recptList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="入库单号" align="center" prop="recptCode" />
-      <el-table-column label="工单号" align="center" prop="woNo" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="入库单号" align="center" prop="recptCode" min-width="140" />
+      <el-table-column label="工单号" align="center" prop="woNo" min-width="140" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="入库数量" align="center" prop="quantity" />
+      <el-table-column label="入库数量" align="center" prop="quantity" min-width="90" />
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="库位" align="center" prop="locationName" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="库位" align="center" prop="locationName" min-width="100" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="wm_production_recpt_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="执行入库" placement="top">
             <el-button

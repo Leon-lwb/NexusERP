@@ -26,13 +26,13 @@
     </el-row>
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
-      <el-table-column label="采集点编码" prop="pointCode" />
-      <el-table-column label="数值" prop="numericValue" align="right" />
+      <el-table-column label="采集点编码" prop="pointCode" min-width="140" />
+      <el-table-column label="数值" prop="numericValue" align="right" min-width="90" />
       <el-table-column label="文本值" prop="textValue" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.textValue || '-' }}</template>
       </el-table-column>
-      <el-table-column label="采集时间" prop="collectTime" />
-      <el-table-column label="来源" prop="source" align="center">
+      <el-table-column label="采集时间" prop="collectTime" width="160" />
+      <el-table-column label="来源" prop="source" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_data_source" :value="scope.row.source" />
         </template>

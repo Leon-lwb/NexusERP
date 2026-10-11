@@ -78,56 +78,56 @@
 
     <el-table v-loading="loading" :data="workList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工单编号" align="center" prop="woNo" />
+      <el-table-column label="工单编号" align="center" prop="woNo" min-width="140" />
       <el-table-column label="计划名称" align="center" prop="planName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="来源类型" align="center" prop="sourceType">
+      <el-table-column label="来源类型" align="center" prop="sourceType" min-width="90">
         <template #default="scope">
           <dict-tag :options="workOrderSourceTypeOptions" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="来源单号" align="center" prop="sourceNo" />
-      <el-table-column label="产品编码" align="center" prop="materialCode" />
+      <el-table-column label="来源单号" align="center" prop="sourceNo" min-width="140" />
+      <el-table-column label="产品编码" align="center" prop="materialCode" min-width="140" />
       <el-table-column label="产品名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
       <el-table-column label="产品规格" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="计划数量" align="center" prop="plannedQty" />
-      <el-table-column label="已完成数量" align="center" prop="completedQty" />
-      <el-table-column label="单位名称" align="center" prop="unitName" />
-      <el-table-column label="计划开始日期" align="center" prop="planStartDate">
+      <el-table-column label="计划数量" align="center" prop="plannedQty" min-width="90" />
+      <el-table-column label="已完成数量" align="center" prop="completedQty" min-width="100" />
+      <el-table-column label="单位名称" align="center" prop="unitName" min-width="90" />
+      <el-table-column label="计划开始日期" align="center" prop="planStartDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.planStartDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="计划结束日期" align="center" prop="planEndDate">
+      <el-table-column label="计划结束日期" align="center" prop="planEndDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.planEndDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="工单状态" align="center" prop="woStatus">
+      <el-table-column label="工单状态" align="center" prop="woStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="prd_wo_status" :value="scope.row.woStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="质检状态" align="center" prop="qualityStatus">
+      <el-table-column label="质检状态" align="center" prop="qualityStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="bd_quality_status" :value="scope.row.qualityStatus" />
         </template>
       </el-table-column>
       <!-- 关联质检单号：后端 PrdWorkOrderVo.qualityCheckNo 已返回，此前前端零命中 -->
       <el-table-column label="质检单号" align="center" prop="qualityCheckNo" min-width="120" />
-      <el-table-column label="是否倒冲" align="center" prop="backflushFlag">
+      <el-table-column label="是否倒冲" align="center" prop="backflushFlag" min-width="90">
         <template #default="scope">
           <dict-tag :options="prd_backflush_flag" :value="scope.row.backflushFlag" />
         </template>
       </el-table-column>
       <el-table-column label="车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
       <el-table-column label="生产部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="负责人" align="center" prop="responsibleName" />
-      <el-table-column label="优先级" align="center" prop="priority">
+      <el-table-column label="负责人" align="center" prop="responsibleName" min-width="90" />
+      <el-table-column label="优先级" align="center" prop="priority" min-width="80">
         <template #default="scope">
           <dict-tag :options="so_order_priority" :value="scope.row.priority" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="430" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="warning" @click.stop="handleDeliveryDecision(scope.row)" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>

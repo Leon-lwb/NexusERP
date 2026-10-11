@@ -35,7 +35,6 @@
     </el-row>
 
     <el-table v-loading="loading" :data="healthList" show-overflow-tooltip>
-      <el-table-column label="设备编码" align="center" prop="equipmentCode" width="120" />
       <el-table-column label="设备名称" align="center" prop="equipmentName" min-width="140" />
       <el-table-column label="健康评分" align="center" width="180">
         <template #default="scope">

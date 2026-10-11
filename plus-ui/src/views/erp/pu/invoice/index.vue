@@ -61,7 +61,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="发票号" align="center" prop="invoiceNo" min-width="140" />
       <el-table-column label="供应商" align="center" prop="vendorName" min-width="140" show-overflow-tooltip />
-      <el-table-column label="发票类型" align="center" prop="invoiceType">
+      <el-table-column label="发票类型" align="center" prop="invoiceType" min-width="100">
         <template #default="scope">
           <dict-tag :options="pu_invoice_type" :value="scope.row.invoiceType" />
         </template>
@@ -82,7 +82,7 @@
           <dict-tag :options="pu_invoice_cert_status" :value="scope.row.certStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="360" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="420" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

@@ -52,7 +52,7 @@
       <el-table-column label="消耗数量" prop="consumedQty" align="right" width="100" />
       <el-table-column label="消耗时间" prop="consumedTime" width="160" />
       <el-table-column label="操作员" prop="operatorName" width="100" />
-      <el-table-column label="备注" prop="remark" show-overflow-tooltip />
+      <el-table-column label="备注" prop="remark" min-width="120" show-overflow-tooltip />
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />

@@ -69,7 +69,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="130" fixed="right">
+      <el-table-column label="操作" align="center" width="150" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="Link" @click="openLinkage(scope.row)">工作中心设备</el-button>
         </template>

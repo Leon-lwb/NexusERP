@@ -57,17 +57,17 @@
 
     <el-table v-loading="loading" border :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="租户编号" align="center" prop="tenantId" />
-      <el-table-column label="联系人" align="center" prop="contactUserName" />
-      <el-table-column label="联系电话" align="center" prop="contactPhone" />
-      <el-table-column label="企业名称" align="center" prop="companyName" />
-      <el-table-column label="社会信用代码" align="center" prop="licenseNumber" />
+      <el-table-column label="租户编号" align="center" prop="tenantId" min-width="140" />
+      <el-table-column label="联系人" align="center" prop="contactUserName" min-width="100" />
+      <el-table-column label="联系电话" align="center" prop="contactPhone" min-width="110" />
+      <el-table-column label="企业名称" align="center" prop="companyName" min-width="150" show-overflow-tooltip />
+      <el-table-column label="社会信用代码" align="center" prop="licenseNumber" min-width="150" />
       <el-table-column label="过期时间" align="center" prop="expireTime" width="180">
         <template #default="scope">
           <span>{{ proxy?.parseTime(scope.row.expireTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="租户状态" align="center" prop="status">
+      <el-table-column label="租户状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)"></el-switch>
         </template>

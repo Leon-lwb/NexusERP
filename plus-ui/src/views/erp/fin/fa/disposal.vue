@@ -26,7 +26,6 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="资产编号" align="center" prop="assetNo" width="130" />
       <el-table-column label="资产名称" align="left" prop="assetName" min-width="160" show-overflow-tooltip />
       <el-table-column label="处置类型" align="center" width="90">
         <template #default="scope">

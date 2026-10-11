@@ -74,37 +74,37 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="安灯编号" prop="andonNo" />
-      <el-table-column label="工单编号" prop="woNo">
+      <el-table-column label="安灯编号" prop="andonNo" min-width="140" />
+      <el-table-column label="工单编号" prop="woNo" min-width="140">
         <template #default="scope">{{ scope.row.woNo || '-' }}</template>
       </el-table-column>
-      <el-table-column label="流转卡" prop="cardNo">
+      <el-table-column label="流转卡" prop="cardNo" min-width="140">
         <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
       </el-table-column>
-      <el-table-column label="呼叫类型" prop="callType" align="center">
+      <el-table-column label="呼叫类型" prop="callType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="mes_andon_call_type" :value="scope.row.callType" />
         </template>
       </el-table-column>
-      <el-table-column label="呼叫人" prop="callerName">
+      <el-table-column label="呼叫人" prop="callerName" min-width="90">
         <template #default="scope">{{ scope.row.callerName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="来源" prop="source" align="center">
+      <el-table-column label="来源" prop="source" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_data_source" :value="scope.row.source" />
         </template>
       </el-table-column>
-      <el-table-column label="持续(分)" prop="durationMinutes" align="right">
+      <el-table-column label="持续(分)" prop="durationMinutes" align="right" min-width="80">
         <template #default="scope">{{ scope.row.durationMinutes ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="呼叫时间" prop="callTime" />
-      <el-table-column label="状态" prop="andonStatus" align="center">
+      <el-table-column label="呼叫时间" prop="callTime" width="160" />
+      <el-table-column label="状态" prop="andonStatus" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_andon_status" :value="scope.row.andonStatus" />
         </template>
       </el-table-column>
       <el-table-column label="呼叫原因" prop="callReason" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link

@@ -65,7 +65,7 @@
           <span>{{ parseTime(scope.row.receiptDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link

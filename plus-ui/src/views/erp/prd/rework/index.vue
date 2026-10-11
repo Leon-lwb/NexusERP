@@ -48,26 +48,26 @@
 
     <el-table v-loading="loading" :data="reworkList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="返工单号" align="center" prop="reworkNo" />
-      <el-table-column label="来源工单" align="center" prop="sourceWoNo" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="返工单号" align="center" prop="reworkNo" min-width="140" />
+      <el-table-column label="来源工单" align="center" prop="sourceWoNo" min-width="140" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="单位" align="center" prop="baseUomName" />
-      <el-table-column label="返工数量" align="center" prop="reworkQty" />
-      <el-table-column label="返工原因" align="center" prop="reworkReason">
+      <el-table-column label="单位" align="center" prop="baseUomName" min-width="80" />
+      <el-table-column label="返工数量" align="center" prop="reworkQty" min-width="90" />
+      <el-table-column label="返工原因" align="center" prop="reworkReason" min-width="90">
         <template #default="scope">
           <dict-tag :options="prd_rework_reason" :value="scope.row.reworkReason" />
         </template>
       </el-table-column>
-      <el-table-column label="实际数量" align="center" prop="actualQty" />
-      <el-table-column label="报废数量" align="center" prop="scrapQty" />
-      <el-table-column label="返工状态" align="center" prop="status">
+      <el-table-column label="实际数量" align="center" prop="actualQty" min-width="90" />
+      <el-table-column label="报废数量" align="center" prop="scrapQty" min-width="90" />
+      <el-table-column label="返工状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="prd_rework_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="开始" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="success" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['prd:rework:edit']" />

@@ -65,35 +65,34 @@
     <!-- 技术债：状态列使用硬编码 el-tag，缺对应字典，待补字典后改 dict-tag -->
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="规则编码" align="center" prop="ruleCode" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="规则类型" align="center" prop="ruleType">
+      <el-table-column label="规则类型" align="center" prop="ruleType" min-width="100">
         <template #default="scope">
           <dict-tag :options="rule_type_options" :value="scope.row.ruleType" />
         </template>
       </el-table-column>
-      <el-table-column label="前缀" align="center" prop="prefix" />
-      <el-table-column label="日期格式" align="center" prop="dateFormat" />
-      <el-table-column label="流水号长度" align="center" prop="seqLength" />
-      <el-table-column label="重置周期" align="center" prop="seqCycle">
+      <el-table-column label="前缀" align="center" prop="prefix" min-width="80" />
+      <el-table-column label="日期格式" align="center" prop="dateFormat" min-width="90" />
+      <el-table-column label="流水号长度" align="center" prop="seqLength" min-width="90" />
+      <el-table-column label="重置周期" align="center" prop="seqCycle" min-width="90">
         <template #default="scope">
           <dict-tag :options="seq_cycle_options" :value="scope.row.seqCycle" />
         </template>
       </el-table-column>
-      <el-table-column label="当前流水号" align="center" prop="currentSeq" />
-      <el-table-column label="校验位规则" align="center" prop="checkDigitRule">
+      <el-table-column label="当前流水号" align="center" prop="currentSeq" min-width="90" />
+      <el-table-column label="校验位规则" align="center" prop="checkDigitRule" min-width="100">
         <template #default="scope">
           <dict-tag :options="check_digit_options" :value="scope.row.checkDigitRule" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'danger'">
             {{ scope.row.status === 'ACTIVE' ? '启用' : '停用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:serialNumberRule:edit']">修改</el-button>

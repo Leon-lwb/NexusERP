@@ -75,7 +75,6 @@
 
     <el-table v-loading="loading" :data="priceListList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="价格表编码" align="center" prop="listCode" width="140" />
       <el-table-column label="价格表名称" align="center" prop="listName" min-width="140" show-overflow-tooltip />
       <el-table-column label="价格表类型" align="center" prop="listType" width="110">
         <template #default="scope">
@@ -110,7 +109,7 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:priceList:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:priceList:remove']">删除</el-button>

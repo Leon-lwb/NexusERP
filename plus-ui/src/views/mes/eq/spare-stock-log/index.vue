@@ -47,7 +47,7 @@
       <el-table-column label="流水 ID" prop="logId" min-width="190" />
       <el-table-column label="备件编码" prop="spareCode" width="120" />
       <el-table-column label="备件名称" prop="spareName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="类型" prop="transactionType" align="center">
+      <el-table-column label="类型" prop="transactionType" align="center" min-width="90">
         <template #default="scope">
           <el-tag :type="txnTagType(scope.row.transactionType)" size="small">{{ txnTypeLabel(scope.row.transactionType) }}</el-tag>
         </template>

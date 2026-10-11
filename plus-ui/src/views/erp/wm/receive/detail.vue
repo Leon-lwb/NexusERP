@@ -85,28 +85,25 @@
 
     <el-table v-loading="loading" :data="detailList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="明细ID" align="center" prop="detailId" />
-      <el-table-column label="行ID" align="center" prop="lineId" />
-      <el-table-column label="入库单ID" align="center" prop="receiveId" />
-      <el-table-column label="产品物料ID" align="center" prop="materialId" />
-      <el-table-column label="产品物料编码" align="center" prop="materialCode" />
-      <el-table-column label="产品物料名称" align="center" prop="materialName" />
-      <el-table-column label="规格型号" align="center" prop="materialSpec" />
-      <el-table-column label="单位" align="center" prop="baseUomId" />
-      <el-table-column label="单位名称" align="center" prop="baseUomName" />
-      <el-table-column label="入库数量" align="center" prop="quantity" />
-      <el-table-column label="批次ID" align="center" prop="batchId" />
-      <el-table-column label="批次号" align="center" prop="batchCode" />
-      <el-table-column label="仓库ID" align="center" prop="warehouseId" />
-      <el-table-column label="仓库编码" align="center" prop="warehouseCode" />
-      <el-table-column label="仓库名称" align="center" prop="warehouseName" />
-      <el-table-column label="库区ID" align="center" prop="areaId" />
-      <el-table-column label="库区编码" align="center" prop="areaCode" />
-      <el-table-column label="库区名称" align="center" prop="areaName" />
-      <el-table-column label="库位ID" align="center" prop="locationId" />
-      <el-table-column label="库位编码" align="center" prop="locationCode" />
-      <el-table-column label="库位名称" align="center" prop="locationName" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="明细ID" align="center" prop="detailId" min-width="150" />
+      <el-table-column label="行ID" align="center" prop="lineId" min-width="150" />
+      <el-table-column label="入库单ID" align="center" prop="receiveId" min-width="150" />
+      <el-table-column label="产品物料ID" align="center" prop="materialId" min-width="150" />
+      <el-table-column label="产品物料编码" align="center" prop="materialCode" min-width="140" show-overflow-tooltip />
+      <el-table-column label="产品物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
+      <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
+      <el-table-column label="单位" align="center" prop="baseUomId" min-width="150" />
+      <el-table-column label="单位名称" align="center" prop="baseUomName" min-width="80" />
+      <el-table-column label="入库数量" align="center" prop="quantity" min-width="90" />
+      <el-table-column label="批次ID" align="center" prop="batchId" min-width="150" />
+      <el-table-column label="批次号" align="center" prop="batchCode" min-width="140" show-overflow-tooltip />
+      <el-table-column label="仓库ID" align="center" prop="warehouseId" min-width="150" />
+      <el-table-column label="仓库名称" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="库区ID" align="center" prop="areaId" min-width="150" />
+      <el-table-column label="库区名称" align="center" prop="areaName" min-width="100" show-overflow-tooltip />
+      <el-table-column label="库位ID" align="center" prop="locationId" min-width="150" />
+      <el-table-column label="库位名称" align="center" prop="locationName" min-width="100" show-overflow-tooltip />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="210" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:detail:edit']">修改</el-button>

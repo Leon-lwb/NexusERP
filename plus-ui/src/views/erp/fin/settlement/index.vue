@@ -41,7 +41,7 @@
       <el-table-column label="核销金额" align="right" prop="settleAmount" width="120" />
       <el-table-column label="核销日期" align="center" prop="settleDate" width="120" />
       <el-table-column label="操作人" align="center" prop="operator" width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="danger" icon="RefreshLeft" @click="handleUnsettle(scope.row)" v-hasPermi="['fin:arap:settlement:unsettle']"
             >反核销</el-button

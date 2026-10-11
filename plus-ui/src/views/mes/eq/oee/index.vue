@@ -132,7 +132,6 @@
         <el-table-column label="统计日期" prop="statDate" align="center" width="120">
           <template #default="scope">{{ fmtDate(scope.row.statDate) }}</template>
         </el-table-column>
-        <el-table-column label="设备编码" prop="equipmentCode" width="120" />
         <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
         <el-table-column label="计划时长(分)" prop="plannedMinutes" align="right" width="110" />
         <el-table-column label="停机时长(分)" prop="downtimeMinutes" align="right" width="110" />
@@ -147,7 +146,7 @@
           <template #default="scope">{{ pct(scope.row.oee) }}</template>
         </el-table-column>
         <!-- 表现率/质量率：后端无真实数据源时返回 null，必须显示「占位」而不是 100%（MES-EQ-03 / R3） -->
-        <el-table-column label="表现率" prop="performanceRate" align="center">
+        <el-table-column label="表现率" prop="performanceRate" align="center" min-width="90">
           <template #default="scope">
             <el-tooltip v-if="scope.row.performanceRate == null" content="后端暂无表现率数据源（缺节拍/标准工时），当前为占位值" placement="top">
               <el-tag type="info" size="small">占位</el-tag>
@@ -155,7 +154,7 @@
             <span v-else>{{ pct(scope.row.performanceRate) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="质量率" prop="qualityRate" align="center">
+        <el-table-column label="质量率" prop="qualityRate" align="center" min-width="90">
           <template #default="scope">
             <el-tooltip v-if="scope.row.qualityRate == null" content="该记录无质量率数据源，当前为占位值" placement="top">
               <el-tag type="info" size="small">占位</el-tag>

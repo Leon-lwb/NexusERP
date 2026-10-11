@@ -46,25 +46,25 @@
 
     <el-table v-loading="loading" :data="recptList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="入库单编号" align="center" prop="recptCode" />
-      <el-table-column label="入库类型" align="center" prop="recptType">
+      <el-table-column label="入库单编号" align="center" prop="recptCode" min-width="140" />
+      <el-table-column label="入库类型" align="center" prop="recptType" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_misc_recpt_type" :value="scope.row.recptType" />
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="入库日期" align="center" prop="recptDate">
+      <el-table-column label="入库日期" align="center" prop="recptDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.recptDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_misc_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:miscrecpt:edit']">修改</el-button>

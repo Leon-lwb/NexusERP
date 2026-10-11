@@ -58,7 +58,7 @@
         <template #default="scope">{{ scope.row.spec || '-' }}</template>
       </el-table-column>
       <el-table-column label="单位" prop="unit" align="center" width="60" />
-      <el-table-column label="分类" prop="category" align="center">
+      <el-table-column label="分类" prop="category" align="center" min-width="90">
         <template #default="scope">
           <dict-tag
             v-if="mes_spare_category?.some((d) => d.value === scope.row.category)"

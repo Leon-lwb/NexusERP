@@ -56,7 +56,6 @@
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip :row-class-name="rowClassName" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工装编码" prop="toolingCode" min-width="140" />
       <el-table-column label="工装名称" prop="toolingName" min-width="130" />
       <el-table-column label="类型" prop="toolingType" align="center" width="90">
         <template #default="scope"><dict-tag :options="mes_tooling_type" :value="scope.row.toolingType" /></template>
@@ -89,7 +88,7 @@
       <el-table-column label="状态" prop="status" align="center" width="90">
         <template #default="scope"><dict-tag :options="mes_tooling_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="400" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="400" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link

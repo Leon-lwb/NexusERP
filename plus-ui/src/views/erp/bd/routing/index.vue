@@ -53,33 +53,32 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="路线编码" align="center" prop="routingCode" />
       <el-table-column label="路线名称" align="center" prop="routingName" min-width="120" show-overflow-tooltip />
       <el-table-column label="适用物料" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="版本" align="center" prop="routingVersion" />
-      <el-table-column label="总工序数" align="center" prop="totalSteps" />
-      <el-table-column label="总工时(h)" align="center" prop="totalHours" />
-      <el-table-column label="生效日期" align="center" prop="effectiveDate">
+      <el-table-column label="版本" align="center" prop="routingVersion" min-width="80" />
+      <el-table-column label="总工序数" align="center" prop="totalSteps" min-width="90" />
+      <el-table-column label="总工时(h)" align="center" prop="totalHours" min-width="100" />
+      <el-table-column label="生效日期" align="center" prop="effectiveDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.effectiveDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="失效日期" align="center" prop="expiryDate">
+      <el-table-column label="失效日期" align="center" prop="expiryDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.expiryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="当前版本" align="center" prop="isCurrent">
+      <el-table-column label="当前版本" align="center" prop="isCurrent" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isCurrent" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:routing:edit']">修改</el-button>

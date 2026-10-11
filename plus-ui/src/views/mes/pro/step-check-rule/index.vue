@@ -47,7 +47,6 @@
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工序编码" prop="processCode" min-width="130" />
       <el-table-column label="工序名称" prop="processName" min-width="130" />
       <el-table-column label="校验类型" prop="checkType" min-width="160">
         <template #default="scope"><dict-tag :options="mes_check_type" :value="scope.row.checkType" /></template>
@@ -62,7 +61,7 @@
           <el-switch v-model="scope.row.enabled" :active-value="'1'" :inactive-value="'0'" disabled />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:pro:step-check-rule:edit']">编辑</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:pro:step-check-rule:remove']"

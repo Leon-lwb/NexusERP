@@ -48,27 +48,27 @@
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="计划名称" prop="planName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="保养类型" prop="maintenanceType" align="center">
+      <el-table-column label="保养类型" prop="maintenanceType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="mes_maintenance_type" :value="scope.row.maintenanceType" />
         </template>
       </el-table-column>
-      <el-table-column label="周期(天)" prop="cycleDays" align="right" />
-      <el-table-column label="下次保养日期" prop="nextDate" align="center">
+      <el-table-column label="周期(天)" prop="cycleDays" align="right" min-width="80" />
+      <el-table-column label="下次保养日期" prop="nextDate" align="center" width="110">
         <template #default="scope">
           <el-tag v-if="isOverdue(scope.row.nextDate)" type="danger">{{ scope.row.nextDate || '-' }}</el-tag>
           <span v-else>{{ scope.row.nextDate || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="负责人" prop="responsibleName">
+      <el-table-column label="负责人" prop="responsibleName" min-width="100">
         <template #default="scope">{{ scope.row.responsibleName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_maintenance_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:eq:maintenance:edit']">编辑</el-button>
           <el-button

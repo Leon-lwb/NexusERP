@@ -60,7 +60,7 @@
           <el-switch v-model="scope.row.enabled" :active-value="'Y'" :inactive-value="'N'" disabled />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:ncr:defectcode:edit']">编辑</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:ncr:defectcode:remove']">删除</el-button>

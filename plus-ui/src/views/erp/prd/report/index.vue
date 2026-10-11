@@ -65,48 +65,55 @@
 
         <el-table v-loading="loading" :data="reportList" show-overflow-tooltip @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" type="index" align="center" />
-          <el-table-column label="报工单编号" align="center" prop="reportNo" />
-          <el-table-column label="工单编号" align="center" prop="woNo" />
+          <el-table-column label="序号" type="index" width="60" align="center" />
+          <el-table-column label="报工单编号" align="center" prop="reportNo" min-width="140" />
+          <el-table-column label="工单编号" align="center" prop="woNo" min-width="140" />
           <el-table-column label="工单名称" align="center" prop="woName" min-width="120" />
-          <el-table-column label="产品编码" align="center" prop="materialCode" />
+          <el-table-column label="产品编码" align="center" prop="materialCode" min-width="140" />
           <el-table-column label="产品名称" align="center" prop="materialName" min-width="120" />
           <el-table-column label="规格型号" align="center" prop="specification" min-width="120" />
-          <el-table-column label="工序名称" align="center" prop="processName" />
-          <el-table-column label="工序序号" align="center" prop="operationSeq" />
-          <el-table-column label="任务编号" align="center" prop="taskNo" />
-          <el-table-column label="生产批号" align="center" prop="lotNumber" />
-          <el-table-column label="批次编号" align="center" prop="batchNo" />
-          <el-table-column label="计划数量" align="right" prop="plannedQty" />
-          <el-table-column label="报工数量" align="right" prop="reportedQty" />
-          <el-table-column label="合格数量" align="right" prop="goodQty" />
-          <el-table-column label="工废数量" align="right" prop="laborScrapQty" />
-          <el-table-column label="料废数量" align="right" prop="materialScrapQty" />
-          <el-table-column label="其他废" align="right" prop="otherScrapQty" />
-          <el-table-column label="待检数量" align="right" prop="uncheckQty" />
-          <el-table-column label="累计报工" align="right" prop="cumulativeQty" />
-          <el-table-column label="报工日期" align="center" prop="reportDate">
+          <el-table-column label="工序名称" align="center" prop="processName" min-width="120" />
+          <el-table-column label="工序序号" align="center" prop="operationSeq" min-width="80" />
+          <el-table-column label="任务编号" align="center" prop="taskNo" min-width="140" />
+          <el-table-column label="生产批号" align="center" prop="lotNumber" min-width="140" />
+          <el-table-column label="批次编号" align="center" prop="batchNo" min-width="140" />
+          <el-table-column label="计划数量" align="right" prop="plannedQty" min-width="90" />
+          <el-table-column label="报工数量" align="right" prop="reportedQty" min-width="90" />
+          <el-table-column label="合格数量" align="right" prop="goodQty" min-width="90" />
+          <el-table-column label="工废数量" align="right" prop="laborScrapQty" min-width="90" />
+          <el-table-column label="料废数量" align="right" prop="materialScrapQty" min-width="90" />
+          <el-table-column label="其他废" align="right" prop="otherScrapQty" min-width="80" />
+          <el-table-column label="待检数量" align="right" prop="uncheckQty" min-width="90" />
+          <el-table-column label="累计报工" align="right" prop="cumulativeQty" min-width="90" />
+          <el-table-column label="报工日期" align="center" prop="reportDate" width="110">
             <template #default="scope">
               <span>{{ parseTime(scope.row.reportDate, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="人工工时" align="right" prop="laborHours" />
-          <el-table-column label="机器工时" align="right" prop="machineHours" />
-          <el-table-column label="报工途径" align="center" prop="reportChannel">
+          <el-table-column label="人工工时" align="right" prop="laborHours" min-width="90" />
+          <el-table-column label="机器工时" align="right" prop="machineHours" min-width="90" />
+          <el-table-column label="报工途径" align="center" prop="reportChannel" min-width="90">
             <template #default="scope">
               <dict-tag :options="prd_work_report_channel" :value="scope.row.reportChannel" />
             </template>
           </el-table-column>
           <el-table-column label="质检单号" align="center" prop="qualityCheckNo" min-width="120" />
-          <el-table-column label="报工状态" align="center" prop="reportStatus">
+          <el-table-column label="报工状态" align="center" prop="reportStatus" min-width="90">
             <template #default="scope">
               <dict-tag :options="prd_work_report_status" :value="scope.row.reportStatus" />
             </template>
           </el-table-column>
-          <el-table-column label="提交人" align="center" prop="submitBy" />
-          <el-table-column label="审核人" align="center" prop="auditBy" />
+          <el-table-column label="提交人" align="center" prop="submitBy" min-width="90" />
+          <el-table-column label="审核人" align="center" prop="auditBy" min-width="90" />
           <el-table-column label="备注" align="center" prop="remark" min-width="120" />
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+          <el-table-column
+            label="操作"
+            align="center"
+            class-name="small-padding fixed-width"
+            width="280"
+            fixed="right"
+            :show-overflow-tooltip="false"
+          >
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['prd:report:query']">查看</el-button>
               <el-button

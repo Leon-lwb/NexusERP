@@ -46,20 +46,20 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="派工单号" prop="dispatchNo" />
-      <el-table-column label="工单编号" prop="woNo" />
-      <el-table-column label="流转卡编号" prop="cardNo" />
+      <el-table-column label="派工单号" prop="dispatchNo" min-width="140" />
+      <el-table-column label="工单编号" prop="woNo" min-width="140" />
+      <el-table-column label="流转卡编号" prop="cardNo" min-width="140" />
       <el-table-column label="工序" prop="processName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作员" prop="operatorName" />
-      <el-table-column label="工作中心" prop="workcenterCode" />
-      <el-table-column label="派工数量" prop="plannedQty" align="right" />
-      <el-table-column label="已完成" prop="completedQty" align="right" />
-      <el-table-column label="状态" prop="dispatchStatus" align="center">
+      <el-table-column label="操作员" prop="operatorName" min-width="90" />
+      <el-table-column label="工作中心" prop="workcenterCode" min-width="110" />
+      <el-table-column label="派工数量" prop="plannedQty" align="right" min-width="90" />
+      <el-table-column label="已完成" prop="completedQty" align="right" min-width="80" />
+      <el-table-column label="状态" prop="dispatchStatus" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_dispatch_status" :value="scope.row.dispatchStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button

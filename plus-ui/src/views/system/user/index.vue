@@ -99,12 +99,36 @@
 
         <el-table v-loading="loading" border :data="list" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="50" align="center" />
-          <el-table-column v-if="columns[0].visible" key="userId" label="用户编号" align="center" prop="userId" />
-          <el-table-column v-if="columns[1].visible" key="userName" label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" />
-          <el-table-column v-if="columns[2].visible" key="nickName" label="用户昵称" align="center" prop="nickName" :show-overflow-tooltip="true" />
-          <el-table-column v-if="columns[3].visible" key="deptName" label="部门" align="center" prop="deptName" :show-overflow-tooltip="true" />
+          <el-table-column v-if="columns[0].visible" key="userId" label="用户编号" align="center" prop="userId" min-width="140" />
+          <el-table-column
+            v-if="columns[1].visible"
+            key="userName"
+            label="用户名称"
+            align="center"
+            prop="userName"
+            min-width="120"
+            :show-overflow-tooltip="true"
+          />
+          <el-table-column
+            v-if="columns[2].visible"
+            key="nickName"
+            label="用户昵称"
+            align="center"
+            prop="nickName"
+            min-width="120"
+            :show-overflow-tooltip="true"
+          />
+          <el-table-column
+            v-if="columns[3].visible"
+            key="deptName"
+            label="部门"
+            align="center"
+            prop="deptName"
+            min-width="120"
+            :show-overflow-tooltip="true"
+          />
           <el-table-column v-if="columns[4].visible" key="phonenumber" label="手机号码" align="center" prop="phonenumber" width="120" />
-          <el-table-column v-if="columns[5].visible" key="status" label="状态" align="center">
+          <el-table-column v-if="columns[5].visible" key="status" label="状态" align="center" min-width="80">
             <template #default="scope">
               <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)"></el-switch>
             </template>

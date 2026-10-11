@@ -51,25 +51,25 @@
 
     <el-table v-loading="loading" :data="batchList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="批次编码" align="center" prop="batchCode" min-width="120" show-overflow-tooltip />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="批次编码" align="center" prop="batchCode" min-width="150" show-overflow-tooltip />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" show-overflow-tooltip />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
       <el-table-column label="供应商" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="生产日期" align="center" prop="productionDate" />
-      <el-table-column label="有效期至" align="center" prop="expiryDate" />
-      <el-table-column label="数量" align="center" prop="quantity" />
-      <el-table-column label="已收数量" align="center" prop="receivedQty" />
-      <el-table-column label="已发数量" align="center" prop="issuedQty" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="生产日期" align="center" prop="productionDate" width="110" />
+      <el-table-column label="有效期至" align="center" prop="expiryDate" width="110" />
+      <el-table-column label="数量" align="center" prop="quantity" min-width="80" />
+      <el-table-column label="已收数量" align="center" prop="receivedQty" min-width="90" />
+      <el-table-column label="已发数量" align="center" prop="issuedQty" min-width="90" />
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_batch_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="源单号" align="center" prop="sourceDocNo" min-width="120" show-overflow-tooltip />
-      <el-table-column label="创建时间" align="center" prop="createTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="源单号" align="center" prop="sourceDocNo" min-width="140" show-overflow-tooltip />
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:batch:edit']">编辑</el-button>
           <el-button link type="primary" icon="Switch" @click="handleChangeStatus(scope.row)" v-hasPermi="['wm:batch:edit']">状态</el-button>

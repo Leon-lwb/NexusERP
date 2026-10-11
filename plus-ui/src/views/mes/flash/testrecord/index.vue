@@ -90,7 +90,7 @@
         </template>
       </el-table-column>
       <el-table-column label="SN" align="center" prop="snCode" min-width="130" />
-      <el-table-column label="测试项" align="center" min-width="140">
+      <el-table-column label="测试项" align="center" min-width="140" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.itemCode }} {{ scope.row.itemName }}</template>
       </el-table-column>
       <el-table-column label="类型" align="center" width="70">
@@ -124,7 +124,7 @@
       </el-table-column>
       <el-table-column label="测试人" align="center" prop="testerName" width="90" />
       <el-table-column label="测试时间" align="center" prop="testTime" width="155" />
-      <el-table-column label="操作" align="center" width="140" class-name="small-padding fixed-width">
+      <el-table-column label="操作" fixed="right" align="center" width="140" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button
