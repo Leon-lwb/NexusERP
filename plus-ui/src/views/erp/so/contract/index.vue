@@ -62,20 +62,19 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="合同编号" align="center" prop="contractNo" />
       <el-table-column label="合同名称" align="center" prop="contractName" min-width="120" show-overflow-tooltip />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="合同类型" align="center" prop="contractType">
+      <el-table-column label="合同类型" align="center" prop="contractType" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_contract_type" :value="scope.row.contractType" />
         </template>
       </el-table-column>
-      <el-table-column label="合同金额" align="center" prop="totalAmount" />
-      <el-table-column label="币种" align="center" prop="currency" />
-      <el-table-column label="签订日期" align="center" prop="signDate" />
-      <el-table-column label="生效日期" align="center" prop="effectiveDate" />
-      <el-table-column label="失效日期" align="center" prop="expiryDate" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="合同金额" align="center" prop="totalAmount" min-width="110" />
+      <el-table-column label="币种" align="center" prop="currency" min-width="80" />
+      <el-table-column label="签订日期" align="center" prop="signDate" width="110" />
+      <el-table-column label="生效日期" align="center" prop="effectiveDate" width="110" />
+      <el-table-column label="失效日期" align="center" prop="expiryDate" width="110" />
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_contract_status" :value="scope.row.status" />
         </template>
@@ -89,7 +88,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row, loadFlowOptions)" v-hasPermi="['so:contract:query']"
             >查看</el-button

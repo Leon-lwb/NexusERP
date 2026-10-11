@@ -40,22 +40,22 @@
 
     <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" />
-      <el-table-column label="产品范围" align="center" prop="productId">
+      <el-table-column label="产品范围" align="center" prop="productId" min-width="140">
         <template #default="scope">{{ scopeLabel(scope.row.productId) }}</template>
       </el-table-column>
-      <el-table-column label="设备范围" align="center" prop="deviceId">
+      <el-table-column label="设备范围" align="center" prop="deviceId" min-width="140">
         <template #default="scope">{{ scopeLabel(scope.row.deviceId) }}</template>
       </el-table-column>
       <el-table-column label="属性白名单" align="center" prop="propertyCodes" min-width="120">
         <template #default="scope">{{ scope.row.propertyCodes || '全部属性' }}</template>
       </el-table-column>
       <el-table-column label="目标地址" align="center" prop="targetUrl" min-width="160" />
-      <el-table-column label="方法" align="center" prop="httpMethod" />
-      <el-table-column label="超时(ms)" align="center" prop="timeoutMs" />
-      <el-table-column label="最大重试" align="center" prop="maxRetry" />
-      <el-table-column label="启用" align="center" prop="enabled">
+      <el-table-column label="方法" align="center" prop="httpMethod" min-width="80" />
+      <el-table-column label="超时(ms)" align="center" prop="timeoutMs" min-width="90" />
+      <el-table-column label="最大重试" align="center" prop="maxRetry" min-width="80" />
+      <el-table-column label="启用" align="center" prop="enabled" min-width="80">
         <template #default="scope">
           <el-switch
             v-model="scope.row.enabled"
@@ -67,7 +67,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['iot:forwardRule:edit']">修改</el-button>
           <el-button link type="info" icon="Document" @click="handleLog(scope.row)" v-hasPermi="['iot:forwardRule:log']">投递日志</el-button>

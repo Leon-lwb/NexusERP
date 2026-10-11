@@ -136,44 +136,46 @@
 
         <el-table v-loading="loading" :data="stockList" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" type="index" align="center" />
-          <el-table-column label="产品物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="产品物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="序号" type="index" align="center" width="60" />
+          <el-table-column label="产品物料编码" align="center" prop="materialCode" min-width="140" show-overflow-tooltip />
+          <el-table-column label="产品物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
           <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-          <el-table-column label="单位名称" align="center" prop="baseUomName" />
-          <el-table-column label="入库批次号" align="center" prop="batchCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="仓库编码" align="center" prop="warehouseCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="仓库名称" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="库区编码" align="center" prop="areaCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="库区名称" align="center" prop="areaName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="库位编码" align="center" prop="locationCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="库位名称" align="center" prop="locationName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="供应商编号" align="center" prop="vendorCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="供应商简称" align="center" prop="vendorNick" min-width="120" show-overflow-tooltip />
-          <el-table-column label="在库数量" align="center" prop="stockQuantity" />
-          <el-table-column label="生产工单编号" align="center" prop="woNo" min-width="120" show-overflow-tooltip />
-          <el-table-column label="生产日期" align="center" prop="productionDate">
+          <el-table-column label="单位名称" align="center" prop="baseUomName" min-width="80" />
+          <el-table-column label="入库批次号" align="center" prop="batchCode" min-width="150" show-overflow-tooltip />
+          <el-table-column label="仓库名称" align="center" prop="warehouseName" min-width="110" show-overflow-tooltip />
+          <el-table-column label="库区名称" align="center" prop="areaName" min-width="100" show-overflow-tooltip />
+          <el-table-column label="库位名称" align="center" prop="locationName" min-width="100" show-overflow-tooltip />
+          <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="140" show-overflow-tooltip />
+          <el-table-column label="在库数量" align="center" prop="stockQuantity" min-width="90" />
+          <el-table-column label="生产工单编号" align="center" prop="woNo" min-width="140" show-overflow-tooltip />
+          <el-table-column label="生产日期" align="center" prop="productionDate" width="110">
             <template #default="scope">
               <span>{{ parseTime(scope.row.productionDate, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="入库时间" align="center" prop="recptDate">
+          <el-table-column label="入库时间" align="center" prop="recptDate" width="110">
             <template #default="scope">
               <span>{{ parseTime(scope.row.recptDate, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="库存有效期" align="center" prop="expireDate">
+          <el-table-column label="库存有效期" align="center" prop="expireDate" width="110">
             <template #default="scope">
               <span>{{ parseTime(scope.row.expireDate, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="冻结标志" align="center" prop="frozenFlag">
+          <el-table-column label="冻结标志" align="center" prop="frozenFlag" width="90">
             <template #default="scope">
               <dict-tag :options="sys_true_or_false" :value="scope.row.frozenFlag" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+          <el-table-column
+            label="操作"
+            align="center"
+            class-name="small-padding fixed-width"
+            width="208"
+            fixed="right"
+            :show-overflow-tooltip="false"
+          >
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stock:edit']">修改</el-button>
@@ -712,5 +714,10 @@ getCategoryTree();
 
 .category-search-input {
   margin-bottom: 10px;
+}
+
+/* 表头单行显示，避免列名换行 */
+:deep(.el-table th.el-table__cell .cell) {
+  white-space: nowrap;
 }
 </style>

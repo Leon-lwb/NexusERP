@@ -73,37 +73,37 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="员工工号" align="center" prop="employeeId" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="员工工号" align="center" prop="employeeId" min-width="110" />
       <el-table-column label="姓名" align="center" prop="userName" min-width="120" show-overflow-tooltip />
       <el-table-column label="所属车间" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="手机号码" align="center" prop="phonenumber" />
-      <el-table-column label="性别" align="center" prop="sex">
+      <el-table-column label="手机号码" align="center" prop="phonenumber" min-width="110" />
+      <el-table-column label="性别" align="center" prop="sex" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_user_sex" :value="scope.row.sex" />
         </template>
       </el-table-column>
-      <el-table-column label="工种" align="center" prop="workCategory">
+      <el-table-column label="工种" align="center" prop="workCategory" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_work_category" :value="scope.row.workCategory" />
         </template>
       </el-table-column>
-      <el-table-column label="技能等级" align="center" prop="skillLevel">
+      <el-table-column label="技能等级" align="center" prop="skillLevel" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_skill_level" :value="scope.row.skillLevel" />
         </template>
       </el-table-column>
-      <el-table-column label="在岗状态" align="center" prop="workStatus">
+      <el-table-column label="在岗状态" align="center" prop="workStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_work_status" :value="scope.row.workStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="入职日期" align="center" prop="entryDate">
+      <el-table-column label="入职日期" align="center" prop="entryDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.entryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:worker:edit']">修改</el-button>

@@ -68,28 +68,28 @@
 
     <el-table v-loading="loading" :data="requirementList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="物料需求单编号" align="center" prop="requirementNo" />
-      <el-table-column label="生产计划编号" align="center" prop="planNo" />
-      <el-table-column label="需求日期" align="center" prop="requirementDate">
+      <el-table-column label="物料需求单编号" align="center" prop="requirementNo" min-width="150" />
+      <el-table-column label="生产计划编号" align="center" prop="planNo" min-width="140" />
+      <el-table-column label="需求日期" align="center" prop="requirementDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.requirementDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="物料种类总数" align="center" prop="totalMaterialTypes" />
-      <el-table-column label="需求总量" align="center" prop="totalRequiredQuantity" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="物料种类总数" align="center" prop="totalMaterialTypes" min-width="110" />
+      <el-table-column label="需求总量" align="center" prop="totalRequiredQuantity" min-width="90" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="prd_requirement_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="来源类型" align="center" prop="sourceType">
+      <el-table-column label="来源类型" align="center" prop="sourceType" min-width="90">
         <template #default="scope">
           <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:requirement:edit']">修改</el-button>

@@ -40,23 +40,22 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="资产编号" align="center" prop="assetNo" width="130" />
       <el-table-column label="资产名称" align="left" prop="assetName" min-width="160" show-overflow-tooltip />
       <el-table-column label="类别" align="center" prop="categoryName" width="110" />
       <!-- FE-ERP-08：折旧方法统一走 fa_depreciation_method 字典，不再使用本地硬编码 methodLabel 映射 -->
-      <el-table-column label="折旧方法" align="center">
+      <el-table-column label="折旧方法" align="center" min-width="100">
         <template #default="scope">
           <dict-tag :options="fa_depreciation_method" :value="scope.row.depreciationMethod" />
         </template>
       </el-table-column>
       <!-- FE-ERP-05/11：类别默认折旧方法（后端 FaAssetVo.categoryMethod），此前前端零命中 -->
-      <el-table-column label="类别折旧方法" align="center" prop="categoryMethod">
+      <el-table-column label="类别折旧方法" align="center" prop="categoryMethod" min-width="110">
         <template #default="scope">
           <dict-tag :options="fa_depreciation_method" :value="scope.row.categoryMethod" />
         </template>
       </el-table-column>
       <!-- FE-ERP-05：剩余折旧月数（后端 FaAssetVo.remainingMonths），此前前端零命中 -->
-      <el-table-column label="剩余月数" align="center" prop="remainingMonths" />
+      <el-table-column label="剩余月数" align="center" prop="remainingMonths" min-width="80" />
       <el-table-column label="原值" align="right" width="120">
         <template #default="scope">{{ fmt(scope.row.originalValue) }}</template>
       </el-table-column>
@@ -68,12 +67,12 @@
       </el-table-column>
       <el-table-column label="启用日期" align="center" prop="inUseDate" width="110" />
       <!-- FE-ERP-08：状态统一走 fa_asset_status 字典（原为本地 statusLabel/statusType 硬编码，与搜索下拉两套来源） -->
-      <el-table-column label="状态" align="center">
+      <el-table-column label="状态" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="fa_asset_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <!-- FE-ERP-13：已处置资产不允许再修改 -->
           <el-button

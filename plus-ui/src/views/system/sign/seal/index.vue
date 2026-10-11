@@ -30,7 +30,7 @@
       </el-row>
 
       <el-table v-loading="loading" :data="list">
-        <el-table-column label="印章名称" align="center" prop="sealName" show-overflow-tooltip />
+        <el-table-column label="印章名称" align="center" prop="sealName" min-width="120" show-overflow-tooltip />
         <el-table-column label="类型" align="center" prop="sealType" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.sealType === '2' ? 'danger' : 'info'">{{ sealTypeText(scope.row.sealType) }}</el-tag>
@@ -56,10 +56,10 @@
             <el-tag :type="statusTag(scope.row.status)">{{ statusText(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="生效日期" align="center" prop="validFrom" width="120" />
-        <el-table-column label="失效日期" align="center" prop="validTo" width="120" />
-        <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
-        <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
+        <el-table-column label="生效日期" align="center" prop="validFrom" width="160" />
+        <el-table-column label="失效日期" align="center" prop="validTo" width="160" />
+        <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+        <el-table-column label="操作" align="center" width="230" fixed="right" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button
               v-hasPermi="['system:sign:seal:edit']"

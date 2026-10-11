@@ -55,22 +55,22 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="contractList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="合同编号" align="center" prop="contractNo" />
+      <el-table-column label="序号" type="index" width="60" align="center" />
+      <el-table-column label="合同编号" align="center" prop="contractNo" min-width="140" />
       <el-table-column label="合同名称" align="center" prop="contractName" min-width="120" show-overflow-tooltip />
       <el-table-column label="供应商" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="合同类型" align="center" prop="contractType">
+      <el-table-column label="合同类型" align="center" prop="contractType" min-width="90">
         <template #default="scope">
           <dict-tag :options="contract_type" :value="scope.row.contractType" />
         </template>
       </el-table-column>
-      <el-table-column label="合同金额" align="right" prop="totalAmount" />
-      <el-table-column label="签订日期" align="center" prop="signDate">
+      <el-table-column label="合同金额" align="right" prop="totalAmount" min-width="100" />
+      <el-table-column label="签订日期" align="center" prop="signDate" width="110">
         <template #default="scope">
           <span>{{ scope.row.signDate ? scope.row.signDate.substring(0, 10) : '' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="pu_contract_status" :value="scope.row.status" />
         </template>
@@ -84,7 +84,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row, loadFlowOptions)" v-hasPermi="['pu:contract:query']"
             >查看</el-button

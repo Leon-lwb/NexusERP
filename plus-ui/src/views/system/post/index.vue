@@ -85,12 +85,11 @@
 
         <el-table v-loading="loading" border :data="list" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="岗位编码" align="center" prop="postCode" />
-          <el-table-column label="类别编码" align="center" prop="postCategory" />
-          <el-table-column label="岗位名称" align="center" prop="postName" />
-          <el-table-column label="部门" align="center" prop="deptName" />
-          <el-table-column label="排序" align="center" prop="postSort" />
-          <el-table-column label="状态" align="center" prop="status">
+          <el-table-column label="类别编码" align="center" prop="postCategory" min-width="140" show-overflow-tooltip />
+          <el-table-column label="岗位名称" align="center" prop="postName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="排序" align="center" prop="postSort" min-width="80" />
+          <el-table-column label="状态" align="center" prop="status" min-width="80">
             <template #default="scope">
               <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
             </template>
@@ -100,7 +99,7 @@
               <span>{{ proxy?.parseTime(scope.row.createTime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="操作" width="180" fixed="right" align="center" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-tooltip content="修改" placement="top">
                 <el-button v-hasPermi="['system:post:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>

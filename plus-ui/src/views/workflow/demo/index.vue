@@ -49,13 +49,13 @@
     </el-row>
     <el-table v-loading="loading" :data="demoList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="20" align="center" />
-      <el-table-column label="用户ID" align="center" prop="demoId" v-if="true" />
-      <el-table-column label="用户账号" align="center" prop="userName" />
-      <el-table-column label="用户昵称" align="center" prop="nickName" />
-      <el-table-column label="流程状态" align="center" prop="actStatus" />
-      <el-table-column label="待处理节点" align="center" prop="taskName" />
-      <el-table-column label="处理人" align="center" prop="todoUsers" />
-      <el-table-column label="操作" align="center" width="420">
+      <el-table-column label="用户ID" align="center" prop="demoId" v-if="true" min-width="140" />
+      <el-table-column label="用户账号" align="center" prop="userName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="用户昵称" align="center" prop="nickName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="流程状态" align="center" prop="actStatus" min-width="90" />
+      <el-table-column label="待处理节点" align="center" prop="taskName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="处理人" align="center" prop="todoUsers" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="操作" align="center" width="420" fixed="right">
         <template #default="scope">
           <act-apply-btn @success="getList" :data-id="String(scope.row.demoId)" :serviceName="serviceName" :variables="scope.row"></act-apply-btn>
           <!--<act-handle-btn @success="getList" :data-id="scope.row.demoId" :type="0" text="通过"></act-handle-btn>

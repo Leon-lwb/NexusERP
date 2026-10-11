@@ -77,7 +77,7 @@
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.remark || '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
+      <el-table-column label="操作" fixed="right" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:label:template:edit']">修改</el-button>
           <el-button link type="primary" icon="View" @click="handlePreview(scope.row)">预览指令</el-button>

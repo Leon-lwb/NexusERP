@@ -66,31 +66,31 @@
 
     <el-table v-loading="loading" :data="customerOrderList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="客户订单号" align="center" prop="coNo" />
+      <el-table-column label="客户订单号" align="center" prop="coNo" min-width="140" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="客户下单日期" align="center" prop="orderDate">
+      <el-table-column label="客户下单日期" align="center" prop="orderDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="订单总金额" align="center" prop="totalAmount" />
-      <el-table-column label="订单状态" align="center" prop="status">
+      <el-table-column label="订单总金额" align="center" prop="totalAmount" min-width="110" />
+      <el-table-column label="订单状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_customer_order_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="订单优先级" align="center" prop="priority">
+      <el-table-column label="订单优先级" align="center" prop="priority" min-width="100">
         <template #default="scope">
           <dict-tag :options="so_order_priority" :value="scope.row.priority" />
         </template>
       </el-table-column>
       <el-table-column label="客户采购订单号" align="center" prop="customerPoNo" min-width="120" show-overflow-tooltip />
-      <el-table-column label="订单来源" align="center" prop="sourceChannel">
+      <el-table-column label="订单来源" align="center" prop="sourceChannel" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_source_channel" :value="scope.row.sourceChannel" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdateCustomerOrder(scope.row)" v-hasPermi="['so:customerOrder:edit']"

@@ -74,30 +74,30 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="salesIssueList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="出库单编号" align="center" prop="issueCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="出库单名称" align="center" prop="issueName" min-width="120" show-overflow-tooltip />
       <el-table-column label="销售订单编号" align="center" prop="soNo" min-width="120" show-overflow-tooltip />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库名称" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="出库日期" align="center" prop="issueDate">
+      <el-table-column label="出库日期" align="center" prop="issueDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.issueDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="出库数量" align="center" prop="totalQuantity" />
-      <el-table-column label="出库金额" align="center" prop="totalAmount">
+      <el-table-column label="出库数量" align="center" prop="totalQuantity" min-width="90" />
+      <el-table-column label="出库金额" align="center" prop="totalAmount" min-width="100">
         <template #default="scope">
           <span>{{ formatAmount(scope.row.totalAmount) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="status">
+      <el-table-column label="单据状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_sales_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

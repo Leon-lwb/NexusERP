@@ -56,17 +56,17 @@
     </el-row>
 
     <el-table v-loading="loading" :data="taskList" show-overflow-tooltip>
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="设备" align="center" min-width="140">
         <template #default="scope">{{ deviceText(scope.row) }}</template>
       </el-table-column>
-      <el-table-column label="目标版本" align="center" prop="targetVersion">
+      <el-table-column label="目标版本" align="center" prop="targetVersion" min-width="90">
         <template #default="scope">{{ scope.row.targetVersion || '-' }}</template>
       </el-table-column>
-      <el-table-column label="当前版本" align="center" prop="currentVersion">
+      <el-table-column label="当前版本" align="center" prop="currentVersion" min-width="90">
         <template #default="scope">{{ scope.row.currentVersion || '-' }}</template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="otaStatusOptions" :value="scope.row.status" />
         </template>
@@ -79,16 +79,16 @@
       <el-table-column label="批次号" align="center" prop="batchNo" min-width="120">
         <template #default="scope">{{ scope.row.batchNo || '-' }}</template>
       </el-table-column>
-      <el-table-column label="下发时间" align="center" prop="sentTime" min-width="100">
+      <el-table-column label="下发时间" align="center" prop="sentTime" width="160">
         <template #default="scope">{{ scope.row.sentTime ? parseTime(scope.row.sentTime) : '-' }}</template>
       </el-table-column>
-      <el-table-column label="结束时间" align="center" prop="finishTime" min-width="100">
+      <el-table-column label="结束时间" align="center" prop="finishTime" width="160">
         <template #default="scope">{{ scope.row.finishTime ? parseTime(scope.row.finishTime) : '-' }}</template>
       </el-table-column>
       <el-table-column label="失败原因" align="center" prop="failReason" min-width="140">
         <template #default="scope">{{ scope.row.failReason || '-' }}</template>
       </el-table-column>
-      <el-table-column label="重试次数" align="center" prop="retryCount">
+      <el-table-column label="重试次数" align="center" prop="retryCount" min-width="80">
         <template #default="scope">{{ scope.row.retryCount ?? 0 }}</template>
       </el-table-column>
       <el-table-column label="关联指令" align="center" min-width="110" :show-overflow-tooltip="false">
@@ -97,7 +97,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['iot:ota:query']">详情</el-button>
           <el-button

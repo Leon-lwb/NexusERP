@@ -26,18 +26,18 @@
     </el-row>
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
-      <el-table-column label="BOM版本" prop="bomVersion" align="center" />
+      <el-table-column label="BOM版本" prop="bomVersion" align="center" min-width="90" />
       <el-table-column label="BOM名称" prop="bomName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="父项物料编码" prop="parentMaterialCode" />
+      <el-table-column label="父项物料编码" prop="parentMaterialCode" min-width="140" />
       <el-table-column label="父项物料名称" prop="parentMaterialName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="BOM类型" prop="bomType" align="center" />
-      <el-table-column label="是否当前版本" prop="isCurrent" align="center">
+      <el-table-column label="BOM类型" prop="bomType" align="center" min-width="80" />
+      <el-table-column label="是否当前版本" prop="isCurrent" align="center" min-width="100">
         <template #default="scope">
           <el-tag v-if="scope.row.isCurrent === 1" type="success">是</el-tag>
           <span v-else>否</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>

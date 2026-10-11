@@ -78,9 +78,9 @@
       @sort-change="handleSortChange"
     >
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="日志编号" align="center" prop="operId" />
-      <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" />
-      <el-table-column label="操作类型" align="center" prop="businessType">
+      <el-table-column label="日志编号" align="center" prop="operId" min-width="140" />
+      <el-table-column label="系统模块" align="center" prop="title" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="操作类型" align="center" prop="businessType" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_oper_type" :value="scope.row.businessType" />
         </template>
@@ -96,7 +96,7 @@
       />
       <el-table-column label="部门" align="center" prop="deptName" width="130" :show-overflow-tooltip="true" />
       <el-table-column label="操作地址" align="center" prop="operIp" width="130" :show-overflow-tooltip="true" />
-      <el-table-column label="操作状态" align="center" prop="status">
+      <el-table-column label="操作状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_common_status" :value="scope.row.status" />
         </template>
@@ -119,7 +119,7 @@
           <span>{{ scope.row.costTime }}毫秒</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" fixed="right" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" fixed="right" align="center" class-name="small-padding fixed-width" width="70">
         <template #default="scope">
           <el-tooltip content="详细" placement="top">
             <el-button v-hasPermi="['monitor:operlog:query']" link type="primary" icon="View" @click="handleView(scope.row)"></el-button>

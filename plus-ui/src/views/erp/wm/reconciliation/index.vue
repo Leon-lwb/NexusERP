@@ -45,26 +45,26 @@
 
     <el-table v-loading="loading" :data="reconciliationList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="单位" align="center" prop="baseUomName" />
-      <el-table-column label="账面库存" align="center" prop="bookQty" />
-      <el-table-column label="事务汇总" align="center" prop="txBalance" />
-      <el-table-column label="差异数量" align="center" prop="diffQty">
+      <el-table-column label="单位" align="center" prop="baseUomName" min-width="80" />
+      <el-table-column label="账面库存" align="center" prop="bookQty" min-width="90" />
+      <el-table-column label="事务汇总" align="center" prop="txBalance" min-width="90" />
+      <el-table-column label="差异数量" align="center" prop="diffQty" min-width="90">
         <template #default="scope">
           <span :style="{ color: scope.row.diffQty !== 0 ? '#F56C6C' : '#67C23A', fontWeight: 'bold' }">
             {{ scope.row.diffQty }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="校验状态" align="center" prop="status">
+      <el-table-column label="校验状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_recon_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="校验时间" align="center" prop="reconTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="校验时间" align="center" prop="reconTime" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="删除" placement="top">
             <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:reconciliation:remove']" />

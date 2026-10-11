@@ -26,29 +26,29 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     <el-table v-loading="loading" fit :data="processList">
-      <el-table-column label="序号" type="index" width="50"></el-table-column>
-      <el-table-column label="流程标识" align="center" prop="processKey" :show-overflow-tooltip="true" />
-      <el-table-column label="流程名称" align="center" :show-overflow-tooltip="true">
+      <el-table-column label="序号" type="index" width="60"></el-table-column>
+      <el-table-column label="流程标识" align="center" prop="processKey" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="流程名称" align="center" min-width="150" :show-overflow-tooltip="true">
         <template #default="scope">
           <el-button type="primary" @click="handleProcessView(scope.row)">
             <span>{{ scope.row.processName }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="流程分类" align="center" prop="categoryName" :formatter="categoryFormat" />
-      <el-table-column label="流程版本" align="center">
+      <el-table-column label="流程分类" align="center" prop="categoryName" min-width="80" :formatter="categoryFormat" />
+      <el-table-column label="流程版本" align="center" min-width="80">
         <template #default="scope">
           <el-tag size="default">v{{ scope.row.version }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center">
+      <el-table-column label="状态" align="center" min-width="80">
         <template #default="scope">
           <el-tag type="success" v-if="!scope.row.suspended">激活</el-tag>
           <el-tag type="warning" v-if="scope.row.suspended">挂起</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
         <template #default="scope">
           <el-button type="primary" size="default" icon="el-icon-video-play" @click="handleStart(scope.row)" v-hasPermi="['workflow:process:start']"
             >发起</el-button

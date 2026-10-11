@@ -52,29 +52,28 @@
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="设备编码" prop="equipmentCode" />
       <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="类型" prop="equipmentType" align="center">
+      <el-table-column label="类型" prop="equipmentType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag v-if="scope.row.equipmentType" :options="mes_equipment_type" :value="scope.row.equipmentType" />
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="型号" prop="model">
+      <el-table-column label="型号" prop="model" min-width="100">
         <template #default="scope">{{ scope.row.model || '-' }}</template>
       </el-table-column>
-      <el-table-column label="工作中心" prop="workcenterCode">
+      <el-table-column label="工作中心" prop="workcenterCode" min-width="110">
         <template #default="scope">{{ scope.row.workcenterCode || '-' }}</template>
       </el-table-column>
       <el-table-column label="安装位置" prop="location" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.location || '-' }}</template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_equipment_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="IoT 在线" align="center">
+      <el-table-column label="IoT 在线" align="center" min-width="90">
         <template #default="scope">
           <el-tag v-if="scope.row.iotStatus === 'ONLINE'" type="success" size="small">在线</el-tag>
           <el-tag v-else-if="scope.row.iotStatus === 'OFFLINE'" type="info" size="small">离线</el-tag>
@@ -82,7 +81,7 @@
           <el-tag v-else type="danger" size="small">未知</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="380" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleOpenDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>

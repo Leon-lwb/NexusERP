@@ -40,15 +40,15 @@
 
       <el-table v-loading="loading" border :data="providerList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="厂商名称" align="center" prop="name" :show-overflow-tooltip="true" />
-        <el-table-column label="API 地址" align="center" prop="apiHost" :show-overflow-tooltip="true" />
-        <el-table-column label="API Key" align="center" prop="apiKey" :show-overflow-tooltip="true" />
-        <el-table-column label="厂商类型" align="center" prop="providerType">
+        <el-table-column label="厂商名称" align="center" prop="name" min-width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="API 地址" align="center" prop="apiHost" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column label="API Key" align="center" prop="apiKey" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column label="厂商类型" align="center" prop="providerType" min-width="100">
           <template #default="scope">
             <dict-tag :options="ai_provider_type" :value="scope.row.providerType" />
           </template>
         </el-table-column>
-        <el-table-column label="状态" align="center" prop="status">
+        <el-table-column label="状态" align="center" prop="status" min-width="80">
           <template #default="scope">
             <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
           </template>
@@ -58,7 +58,7 @@
             <span>{{ proxy?.parseTime(scope.row.createTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+        <el-table-column label="操作" align="center" width="150" fixed="right" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="修改" placement="top">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>

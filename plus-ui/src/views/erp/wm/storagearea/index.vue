@@ -68,32 +68,31 @@
 
     <el-table v-loading="loading" :data="storageareaList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="库区编码" align="center" prop="areaCode" min-width="120" show-overflow-tooltip />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="库区名称" align="center" prop="areaName" min-width="120" show-overflow-tooltip />
       <el-table-column v-if="!route.query.warehouseId" label="所属仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="面积(㎡)" align="center" prop="area" />
-      <el-table-column label="开启库位管理" align="center" prop="locationFlag">
+      <el-table-column label="面积(㎡)" align="center" prop="area" min-width="90" />
+      <el-table-column label="开启库位管理" align="center" prop="locationFlag" min-width="110">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.locationFlag" />
         </template>
       </el-table-column>
-      <el-table-column label="是否启用" align="center" prop="enableFlag">
+      <el-table-column label="是否启用" align="center" prop="enableFlag" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.enableFlag" />
         </template>
       </el-table-column>
-      <el-table-column label="是否冻结" align="center" prop="frozenFlag">
+      <el-table-column label="是否冻结" align="center" prop="frozenFlag" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.frozenFlag" />
         </template>
       </el-table-column>
-      <el-table-column label="布局类型" align="center" prop="layoutType">
+      <el-table-column label="布局类型" align="center" prop="layoutType" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_layout_type" :value="scope.row.layoutType" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             size="small"

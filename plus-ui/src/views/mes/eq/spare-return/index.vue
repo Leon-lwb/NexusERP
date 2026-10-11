@@ -102,7 +102,7 @@
         <template #default="scope">{{ scope.row.confirmTime || '-' }}</template>
       </el-table-column>
       <el-table-column label="创建时间" prop="createTime" width="160" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mes:eq:spare:return:query']">查看</el-button>
           <el-button

@@ -67,35 +67,35 @@
     </el-row>
 
     <el-table v-loading="loading" :data="eventList" show-overflow-tooltip>
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="设备编码" align="center" prop="deviceCode" />
+      <el-table-column label="序号" type="index" width="60" align="center" />
+      <el-table-column label="设备编码" align="center" prop="deviceCode" min-width="140" />
       <el-table-column label="事件编码" align="center" prop="eventCode" min-width="120" />
       <el-table-column label="事件名称" align="center" prop="eventName" min-width="120" />
-      <el-table-column label="级别" align="center" prop="eventLevel">
+      <el-table-column label="级别" align="center" prop="eventLevel" min-width="80">
         <template #default="scope">
           <dict-tag :options="iot_event_level" :value="scope.row.eventLevel" />
         </template>
       </el-table-column>
-      <el-table-column label="事件时间" align="center" prop="eventTime">
+      <el-table-column label="事件时间" align="center" prop="eventTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.eventTime) }}</template>
       </el-table-column>
-      <el-table-column label="接收时间" align="center" prop="receiveTime">
+      <el-table-column label="接收时间" align="center" prop="receiveTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.receiveTime) }}</template>
       </el-table-column>
-      <el-table-column label="处理状态" align="center" prop="processStatus">
+      <el-table-column label="处理状态" align="center" prop="processStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="iot_event_process_status" :value="scope.row.processStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="联动告警" align="center" prop="alertId">
+      <el-table-column label="联动告警" align="center" prop="alertId" min-width="90">
         <template #default="scope">
           <el-button v-if="scope.row.alertId" link type="primary" @click="goToAlert(scope.row)">查看告警</el-button>
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="来源" align="center" prop="source" />
+      <el-table-column label="来源" align="center" prop="source" min-width="80" />
       <el-table-column label="处理说明" align="center" prop="processRemark" min-width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['iot:event:query']">详情</el-button>
           <el-button link type="primary" icon="Check" @click="handleProcess(scope.row)" v-hasPermi="['iot:event:process']">处理</el-button>

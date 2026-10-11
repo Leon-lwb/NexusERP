@@ -36,36 +36,37 @@
     </el-row>
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
-      <el-table-column label="IPQC编号" prop="ipqcNo" />
-      <el-table-column label="工单编号" prop="woNo">
+      <el-table-column label="IPQC编号" prop="ipqcNo" min-width="140" />
+      <el-table-column label="工单编号" prop="woNo" min-width="140">
         <template #default="scope">{{ scope.row.woNo || '-' }}</template>
       </el-table-column>
       <el-table-column label="工序" prop="processName" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.processName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="物料编码" prop="materialCode">
+      <el-table-column label="物料编码" prop="materialCode" min-width="140">
         <template #default="scope">{{ scope.row.materialCode || '-' }}</template>
       </el-table-column>
-      <el-table-column label="抽样数量" prop="sampleQty" align="right" />
-      <el-table-column label="不良数量" prop="defectQty" align="right" />
-      <el-table-column label="不良率(%)" prop="defectRate" align="right">
+      <el-table-column label="抽样数量" prop="sampleQty" align="right" min-width="90" />
+      <el-table-column label="不良数量" prop="defectQty" align="right" min-width="90" />
+      <el-table-column label="不良率(%)" prop="defectRate" align="right" min-width="90">
         <template #default="scope">{{ scope.row.defectRate ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_qc_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="检验结果" prop="inspectResult" align="center">
+      <el-table-column label="检验结果" prop="inspectResult" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="mes_qc_result" :value="scope.row.inspectResult" />
         </template>
       </el-table-column>
-      <el-table-column label="检验员" prop="inspectorName">
+      <el-table-column label="检验员" prop="inspectorName" min-width="90">
         <template #default="scope">{{ scope.row.inspectorName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleOpenDetail(scope.row)" v-hasPermi="['mes:qc:ipqc:query']">详情</el-button>
           <el-button
             link
             type="primary"
@@ -151,6 +152,57 @@
       </template>
     </el-dialog>
 
+    <!-- 检验单详情对话框(只读) -->
+    <el-dialog v-model="detailDialog.visible" :title="'IPQC详情 - ' + (detailData.ipqcNo || '')" width="860px" append-to-body>
+      <el-descriptions :column="3" border size="small">
+        <el-descriptions-item label="IPQC编号">{{ detailData.ipqcNo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <dict-tag :options="mes_qc_status" :value="detailData.status" />
+        </el-descriptions-item>
+        <el-descriptions-item label="检验结果">
+          <dict-tag :options="mes_qc_result" :value="detailData.inspectResult" />
+        </el-descriptions-item>
+        <el-descriptions-item label="工单编号">{{ detailData.woNo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="工序">{{ detailData.processName || detailData.processCode || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="物料编码">{{ detailData.materialCode || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="物料名称" :span="2">{{ detailData.materialName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="抽样数量">{{ detailData.sampleQty ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="不良数量">{{ detailData.defectQty ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="不良率(%)">{{ detailData.defectRate ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检验员">{{ detailData.inspectorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检验时间">{{ detailData.inspectTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="不良品信息">{{ detailData.defectInfo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="3">{{ detailData.remark || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="left">检验明细</el-divider>
+      <el-alert v-if="detailEntries.length === 0" title="无检验明细(该检验单未匹配启用的检验模板)" type="info" :closable="false" />
+      <el-table v-else :data="detailEntries" border size="small">
+        <el-table-column label="项目" min-width="140">
+          <template #default="scope">{{ scope.row.itemCode }} {{ scope.row.itemName }}</template>
+        </el-table-column>
+        <el-table-column label="标准" prop="standardDesc" min-width="120" />
+        <el-table-column label="样本量" prop="sampleQty" width="70" align="center" />
+        <el-table-column label="关键度" width="80" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.criticality === 'CRITICAL'" type="danger" size="small">关键</el-tag>
+            <el-tag v-else-if="scope.row.criticality === 'MINOR'" type="info" size="small">次要</el-tag>
+            <el-tag v-else type="warning" size="small">重要</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="实测值" prop="measuredValue" min-width="120" />
+        <el-table-column label="判定" width="80" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.judgeResult === 'PASS'" type="success" size="small">PASS</el-tag>
+            <el-tag v-else-if="scope.row.judgeResult === 'FAIL'" type="danger" size="small">FAIL</el-tag>
+            <el-tag v-else type="info" size="small">待判</el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="detailDialog.visible = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 工单选择对话框 -->
     <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
@@ -225,8 +277,9 @@
 </template>
 
 <script setup lang="ts" name="MesQcIpqc">
-import { listIpqc, addIpqc, inspectIpqc } from '@/api/mes/qc/ipqc';
+import { listIpqc, addIpqc, inspectIpqc, getIpqc, getIpqcDetails } from '@/api/mes/qc/ipqc';
 import type { QcIpqcVO, QcIpqcQuery, QcIpqcForm } from '@/api/mes/qc/ipqc';
+import type { QcInspectDetailVO } from '@/api/mes/qc/iqc';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
@@ -366,6 +419,24 @@ const submitInspect = async () => {
   proxy?.$modal.msgSuccess('检验成功');
   inspectDialog.visible = false;
   getList();
+};
+
+// ============ 详情查看(只读) ============
+const detailDialog = reactive({ visible: false });
+const detailData = ref<QcIpqcVO>({} as QcIpqcVO);
+const detailEntries = ref<QcInspectDetailVO[]>([]);
+
+const handleOpenDetail = async (row: QcIpqcVO) => {
+  detailData.value = row;
+  detailEntries.value = [];
+  detailDialog.visible = true;
+  try {
+    const [infoRes, detailRes] = await Promise.all([getIpqc(row.ipqcId), getIpqcDetails(row.ipqcId)]);
+    if (infoRes.data) detailData.value = infoRes.data;
+    detailEntries.value = detailRes.data || [];
+  } catch {
+    detailEntries.value = [];
+  }
 };
 
 // ============ 工单选择 ============

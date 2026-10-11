@@ -47,21 +47,21 @@
 
       <el-table v-loading="loading" border :data="ossConfigList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column v-if="columns[0].visible" label="主建" align="center" prop="ossConfigId" />
-        <el-table-column v-if="columns[1].visible" label="配置key" align="center" prop="configKey" />
-        <el-table-column v-if="columns[2].visible" label="访问站点" align="center" prop="endpoint" width="200" />
-        <el-table-column v-if="columns[3].visible" label="自定义域名" align="center" prop="domain" width="200" />
-        <el-table-column v-if="columns[4].visible" label="桶名称" align="center" prop="bucketName" />
-        <el-table-column v-if="columns[5].visible" label="前缀" align="center" prop="prefix" />
-        <el-table-column v-if="columns[6].visible" label="域" align="center" prop="region" />
-        <el-table-column v-if="columns[7].visible" label="桶权限类型" align="center" prop="accessPolicy">
+        <el-table-column v-if="columns[0].visible" label="主建" align="center" prop="ossConfigId" min-width="80" />
+        <el-table-column v-if="columns[1].visible" label="配置key" align="center" prop="configKey" min-width="140" show-overflow-tooltip />
+        <el-table-column v-if="columns[2].visible" label="访问站点" align="center" prop="endpoint" width="200" show-overflow-tooltip />
+        <el-table-column v-if="columns[3].visible" label="自定义域名" align="center" prop="domain" width="200" show-overflow-tooltip />
+        <el-table-column v-if="columns[4].visible" label="桶名称" align="center" prop="bucketName" min-width="120" show-overflow-tooltip />
+        <el-table-column v-if="columns[5].visible" label="前缀" align="center" prop="prefix" min-width="100" />
+        <el-table-column v-if="columns[6].visible" label="域" align="center" prop="region" min-width="80" />
+        <el-table-column v-if="columns[7].visible" label="桶权限类型" align="center" prop="accessPolicy" min-width="100">
           <template #default="scope">
             <el-tag v-if="scope.row.accessPolicy === '0'" type="warning">private</el-tag>
             <el-tag v-if="scope.row.accessPolicy === '1'" type="success">public</el-tag>
             <el-tag v-if="scope.row.accessPolicy === '2'" type="info">custom</el-tag>
           </template>
         </el-table-column>
-        <el-table-column v-if="columns[8].visible" label="是否默认" align="center" prop="status">
+        <el-table-column v-if="columns[8].visible" label="是否默认" align="center" prop="status" min-width="80">
           <template #default="scope">
             <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)"></el-switch>
           </template>

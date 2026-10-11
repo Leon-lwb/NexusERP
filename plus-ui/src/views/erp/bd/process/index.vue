@@ -61,42 +61,41 @@
     <!-- 技术债：关键工序/委外/质检列使用硬编码 el-tag，缺对应字典，待补字典后改 dict-tag -->
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工序编码" align="center" prop="processCode" />
       <el-table-column label="工序名称" align="center" prop="processName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="工序类别" align="center" prop="processCategory">
+      <el-table-column label="工序类别" align="center" prop="processCategory" min-width="90">
         <template #default="scope">
           <dict-tag :options="bd_process_category" :value="scope.row.processCategory" />
         </template>
       </el-table-column>
       <el-table-column label="工作中心" align="center" prop="workstationName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="标准工时(h/件)" align="center" prop="standardHours" />
-      <el-table-column label="准备工时(h)" align="center" prop="setupHours" />
-      <el-table-column label="人工数" align="center" prop="laborCount" />
-      <el-table-column label="机台数" align="center" prop="machineCount" />
-      <el-table-column label="关键工序" align="center" prop="isKeyProcess">
+      <el-table-column label="标准工时(h/件)" align="center" prop="standardHours" min-width="110" />
+      <el-table-column label="准备工时(h)" align="center" prop="setupHours" min-width="100" />
+      <el-table-column label="人工数" align="center" prop="laborCount" min-width="80" />
+      <el-table-column label="机台数" align="center" prop="machineCount" min-width="80" />
+      <el-table-column label="关键工序" align="center" prop="isKeyProcess" min-width="90">
         <template #default="scope">
           <el-tag v-if="scope.row.isKeyProcess === 1" type="danger" size="small">是</el-tag>
           <el-tag v-else type="info" size="small">否</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="委外" align="center" prop="isOutsource">
+      <el-table-column label="委外" align="center" prop="isOutsource" min-width="80">
         <template #default="scope">
           <el-tag v-if="scope.row.isOutsource === 1" type="warning" size="small">是</el-tag>
           <el-tag v-else type="info" size="small">否</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="质检" align="center" prop="qualityRequired">
+      <el-table-column label="质检" align="center" prop="qualityRequired" min-width="80">
         <template #default="scope">
           <el-tag v-if="scope.row.qualityRequired === 1" type="success" size="small">是</el-tag>
           <el-tag v-else type="info" size="small">否</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:process:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:process:remove']">删除</el-button>

@@ -48,31 +48,31 @@
       <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.equipmentName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="故障类型" prop="faultType" align="center">
+      <el-table-column label="故障类型" prop="faultType" align="center" min-width="90">
         <template #default="scope">
           <dict-tag v-if="scope.row.faultType" :options="mes_fault_type" :value="scope.row.faultType" />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="故障描述" prop="faultDesc" min-width="120" show-overflow-tooltip />
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="90">
         <template #default="scope">
           <dict-tag :options="mes_repair_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="报修人" prop="reporterName">
+      <el-table-column label="报修人" prop="reporterName" min-width="90">
         <template #default="scope">{{ scope.row.reporterName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="维修人" prop="repairerName">
+      <el-table-column label="维修人" prop="repairerName" min-width="90">
         <template #default="scope">{{ scope.row.repairerName || '-' }}</template>
       </el-table-column>
-      <el-table-column label="停机时长" prop="downtimeHours" align="right">
+      <el-table-column label="停机时长" prop="downtimeHours" align="right" min-width="90">
         <template #default="scope">{{ scope.row.downtimeHours ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="维修成本" prop="repairCost" align="right">
+      <el-table-column label="维修成本" prop="repairCost" align="right" min-width="90">
         <template #default="scope">{{ scope.row.repairCost ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <!-- FE-MES-03：维修领用备件明细此前前端零入口，只能直连数据库核对 -->
           <el-button link type="primary" icon="List" @click="handleOpenSpares(scope.row)" v-hasPermi="['mes:eq:repair:query']">备件明细</el-button>

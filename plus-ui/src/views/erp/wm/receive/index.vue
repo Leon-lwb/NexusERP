@@ -136,16 +136,16 @@
 
     <el-table v-loading="loading" :data="receiveList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="入库单编号" align="center" prop="receiveCode" />
+      <el-table-column label="入库单编号" align="center" prop="receiveCode" min-width="140" />
       <el-table-column label="入库单名称" align="center" prop="receiveName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="到货通知单编号" align="center" prop="noticeCode" />
-      <el-table-column label="采购订单编号" align="center" prop="purCode" />
-      <el-table-column label="入库日期" align="center" prop="receiveDate">
+      <el-table-column label="到货通知单编号" align="center" prop="noticeCode" min-width="140" />
+      <el-table-column label="采购订单编号" align="center" prop="purCode" min-width="140" />
+      <el-table-column label="入库日期" align="center" prop="receiveDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.receiveDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="status">
+      <el-table-column label="单据状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_material_receive_status" :value="scope.row.status" />
         </template>
@@ -166,7 +166,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column> -->
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template #default="scope">
           <el-button link @click="openCertified(scope.row)" v-hasPermi="['wm:receive:query']">认证工作台</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['wm:receive:query']">查看</el-button>

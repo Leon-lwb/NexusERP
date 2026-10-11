@@ -33,17 +33,17 @@
     </el-alert>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="流转卡编号" prop="cardNo" />
-      <el-table-column label="工单编号" prop="woNo" />
+      <el-table-column label="流转卡编号" prop="cardNo" min-width="140" />
+      <el-table-column label="工单编号" prop="woNo" min-width="140" />
       <el-table-column label="产品名称" prop="materialName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="计划数量" prop="plannedQty" align="right" />
-      <el-table-column label="完成数量" prop="completedQty" align="right" />
-      <el-table-column label="状态" prop="cardStatus" align="center">
+      <el-table-column label="计划数量" prop="plannedQty" align="right" min-width="90" />
+      <el-table-column label="完成数量" prop="completedQty" align="right" min-width="90" />
+      <el-table-column label="状态" prop="cardStatus" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_flow_card_status" :value="scope.row.cardStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button

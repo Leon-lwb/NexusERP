@@ -42,22 +42,22 @@
 
     <el-table v-loading="loading" :data="partList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="组成编码" align="center" prop="partCode" />
-      <el-table-column label="组成名称" align="center" prop="partName" />
-      <el-table-column label="分段序号" align="center" prop="partIndex" />
-      <el-table-column label="分段类型" align="center" prop="partType">
+      <el-table-column label="组成编码" align="center" prop="partCode" min-width="140" :show-overflow-tooltip="true" />
+      <el-table-column label="组成名称" align="center" prop="partName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="分段序号" align="center" prop="partIndex" min-width="80" />
+      <el-table-column label="分段类型" align="center" prop="partType" min-width="100">
         <template #default="scope">
           <dict-tag :options="sys_autocode_parttype" :value="scope.row.partType" />
         </template>
       </el-table-column>
-      <el-table-column label="分段长度" align="center" prop="partLength" />
-      <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
+      <el-table-column label="分段长度" align="center" prop="partLength" min-width="80" />
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ proxy.parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width" fixed="right">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:autocode:part:edit']"></el-button>

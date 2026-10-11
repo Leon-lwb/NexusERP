@@ -40,10 +40,10 @@
 
       <el-table v-loading="loading" :data="nformList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="表单ID" align="center" prop="formId" v-if="true" />
-        <el-table-column label="表单名称" align="center" prop="formName" />
-        <el-table-column label="表单描述" align="center" prop="formDesc" />
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="表单ID" align="center" prop="formId" v-if="true" min-width="140" show-overflow-tooltip />
+        <el-table-column label="表单名称" align="center" prop="formName" min-width="150" show-overflow-tooltip />
+        <el-table-column label="表单描述" align="center" prop="formDesc" min-width="150" show-overflow-tooltip />
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" fixed="right">
           <template #default="scope">
             <el-tooltip content="详情" placement="top">
               <el-button link type="primary" icon="View" @click="handleDetail(scope.row)"></el-button>

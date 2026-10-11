@@ -88,20 +88,20 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="requisitionList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="申请单号" prop="requisitionNo" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="申请单号" prop="requisitionNo" min-width="140" />
       <el-table-column label="申请名称" prop="requisitionName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="申请日期" prop="requisitionDate">
+      <el-table-column label="申请日期" prop="requisitionDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.requisitionDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="需求日期" prop="requiredDate">
+      <el-table-column label="需求日期" prop="requiredDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.requiredDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" prop="status">
+      <el-table-column label="状态" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="pu_purchase_requisition_status" :value="scope.row.status" />
         </template>

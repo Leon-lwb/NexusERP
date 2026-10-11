@@ -30,19 +30,19 @@
       <el-table-column label="父项物料" min-width="120" show-overflow-tooltip>
         <template #default="scope"> {{ scope.row.parentMaterialCode }} - {{ scope.row.parentMaterialName }} </template>
       </el-table-column>
-      <el-table-column label="BOM版本" prop="bomVersion" align="center" />
+      <el-table-column label="BOM版本" prop="bomVersion" align="center" min-width="80" />
       <el-table-column label="工艺路线" min-width="120" show-overflow-tooltip>
         <template #default="scope">
           {{ scope.row.routingCode && scope.row.routingName ? scope.row.routingCode + ' - ' + scope.row.routingName : '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="MBOM版本" prop="mbomVersion" align="center" />
-      <el-table-column label="状态" prop="mbomStatus" align="center">
+      <el-table-column label="MBOM版本" prop="mbomVersion" align="center" min-width="90" />
+      <el-table-column label="状态" prop="mbomStatus" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_mbom_status" :value="scope.row.mbomStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:pro:mbom:edit']">编辑</el-button>
           <el-button

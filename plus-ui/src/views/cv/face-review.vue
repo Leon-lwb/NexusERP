@@ -65,7 +65,7 @@
       </el-table-column>
       <el-table-column label="验证时间" align="center" prop="faceVerifyTime" width="160" />
       <el-table-column label="备注" align="left" prop="remark" min-width="150" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="success" icon="Check" @click="handleMarkPass(scope.row)" v-hasPermi="['sch:attendance:review']">误判</el-button>
           <el-button link type="danger" icon="Warning" @click="handleMarkProxy(scope.row)" v-hasPermi="['sch:attendance:review']">代打卡</el-button>

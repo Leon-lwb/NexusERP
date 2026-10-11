@@ -94,40 +94,47 @@
 
         <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="物料编码" align="center" prop="materialCode" />
+          <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
           <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
           <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-          <el-table-column label="物料类型" align="center" prop="materialType">
+          <el-table-column label="物料类型" align="center" prop="materialType" min-width="90">
             <template #default="scope">
               <dict-tag :options="bd_material_type" :value="scope.row.materialType" />
             </template>
           </el-table-column>
-          <el-table-column label="来源类型" align="center" prop="sourceType">
+          <el-table-column label="来源类型" align="center" prop="sourceType" min-width="90">
             <template #default="scope">
               <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
             </template>
           </el-table-column>
-          <el-table-column label="是否批次管理" align="center" prop="isBatchManage">
+          <el-table-column label="是否批次管理" align="center" prop="isBatchManage" min-width="100">
             <template #default="scope">
               <dict-tag :options="sys_true_or_false" :value="scope.row.isBatchManage" />
             </template>
           </el-table-column>
-          <el-table-column label="是否序列号管理" align="center" prop="isSerialManage">
+          <el-table-column label="是否序列号管理" align="center" prop="isSerialManage" min-width="110">
             <template #default="scope">
               <dict-tag :options="sys_true_or_false" :value="scope.row.isSerialManage" />
             </template>
           </el-table-column>
-          <el-table-column label="状态" align="center" prop="status">
+          <el-table-column label="状态" align="center" prop="status" min-width="80">
             <template #default="scope">
               <dict-tag :options="sys_true_or_false" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="质量状态" align="center" prop="qualityStatus">
+          <el-table-column label="质量状态" align="center" prop="qualityStatus" min-width="90">
             <template #default="scope">
               <dict-tag :options="bd_quality_status" :value="scope.row.qualityStatus" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+          <el-table-column
+            label="操作"
+            align="center"
+            class-name="small-padding fixed-width"
+            width="208"
+            fixed="right"
+            :show-overflow-tooltip="false"
+          >
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:material:edit']">修改</el-button>

@@ -52,25 +52,25 @@
 
     <el-table v-loading="loading" :data="vendorEvaluationList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="供应商名称" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="评估周期" prop="evalPeriod" />
-      <el-table-column label="交货及时率" prop="deliveryRate">
+      <el-table-column label="评估周期" prop="evalPeriod" min-width="90" />
+      <el-table-column label="交货及时率" prop="deliveryRate" min-width="100">
         <template #default="scope">
           <span>{{ scope.row.deliveryRate }}%</span>
         </template>
       </el-table-column>
-      <el-table-column label="质量合格率" prop="qualityRate">
+      <el-table-column label="质量合格率" prop="qualityRate" min-width="100">
         <template #default="scope">
           <span>{{ scope.row.qualityRate }}%</span>
         </template>
       </el-table-column>
-      <el-table-column label="价格竞争力" prop="priceCompetitiveness">
+      <el-table-column label="价格竞争力" prop="priceCompetitiveness" min-width="100">
         <template #default="scope">
           <span>{{ scope.row.priceCompetitiveness }}%</span>
         </template>
       </el-table-column>
-      <el-table-column label="综合评分" prop="totalScore">
+      <el-table-column label="综合评分" prop="totalScore" min-width="90">
         <template #default="scope">
           <el-tag :type="getScoreType(scope.row.totalScore)" effect="dark">
             {{ scope.row.totalScore }}
@@ -78,7 +78,7 @@
         </template>
       </el-table-column>
       <!-- 技术债:评估等级为硬编码 el-tag(已有 pu_vendor_eval_level 字典),待改 dict-tag -->
-      <el-table-column label="评估等级" prop="evalLevel">
+      <el-table-column label="评估等级" prop="evalLevel" min-width="90">
         <template #default="scope">
           <el-tag :type="getEvalLevelType(scope.row.evalLevel)" effect="dark">
             {{ scope.row.evalLevel }}

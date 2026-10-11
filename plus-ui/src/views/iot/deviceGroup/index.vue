@@ -99,21 +99,21 @@
 
         <el-table v-loading="deviceLoading" :data="deviceList" @selection-change="handleDeviceSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" type="index" align="center" />
-          <el-table-column label="设备编码" align="center" prop="deviceCode" />
+          <el-table-column label="序号" type="index" width="60" align="center" />
+          <el-table-column label="设备编码" align="center" prop="deviceCode" min-width="140" />
           <el-table-column label="设备名称" align="center" prop="deviceName" min-width="120" />
           <el-table-column label="所属产品" align="center" prop="productName" min-width="120" />
-          <el-table-column label="协议类型" align="center" prop="protocolType">
+          <el-table-column label="协议类型" align="center" prop="protocolType" min-width="90">
             <template #default="scope">
               <dict-tag :options="iot_protocol_type" :value="scope.row.protocolType" />
             </template>
           </el-table-column>
-          <el-table-column label="连接状态" align="center" prop="connectionStatus">
+          <el-table-column label="连接状态" align="center" prop="connectionStatus" min-width="90">
             <template #default="scope">
               <dict-tag :options="iot_connection_status" :value="scope.row.connectionStatus" />
             </template>
           </el-table-column>
-          <el-table-column label="生命周期" align="center" prop="status">
+          <el-table-column label="生命周期" align="center" prop="status" min-width="90">
             <template #default="scope">
               <dict-tag :options="iot_device_status" :value="scope.row.status" />
             </template>

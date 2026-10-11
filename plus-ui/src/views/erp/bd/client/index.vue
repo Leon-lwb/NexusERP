@@ -59,16 +59,15 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="客户编码" align="center" prop="clientCode" min-width="120" show-overflow-tooltip />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="客户类型" align="center" prop="clientType">
+      <el-table-column label="客户类型" align="center" prop="clientType" min-width="90">
         <template #default="scope">
           <dict-tag :options="bd_client_type" :value="scope.row.clientType" />
         </template>
       </el-table-column>
       <el-table-column label="客户电话" align="center" prop="tel" min-width="120" show-overflow-tooltip />
-      <el-table-column label="客户LOGO" align="center" prop="clientLogo">
+      <el-table-column label="客户LOGO" align="center" prop="clientLogo" width="100">
         <template #default="scope">
           <el-image
             v-if="scope.row.clientLogoUrl"
@@ -81,7 +80,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['core:bd:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['core:bd:edit']">修改</el-button>

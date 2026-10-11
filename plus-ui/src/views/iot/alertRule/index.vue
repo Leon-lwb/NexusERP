@@ -58,33 +58,33 @@
 
     <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" />
-      <el-table-column label="产品范围" align="center" prop="productId">
+      <el-table-column label="产品范围" align="center" prop="productId" min-width="120">
         <template #default="scope">{{ scopeLabel(scope.row.productId) }}</template>
       </el-table-column>
-      <el-table-column label="设备范围" align="center" prop="deviceId">
+      <el-table-column label="设备范围" align="center" prop="deviceId" min-width="120">
         <template #default="scope">{{ scopeLabel(scope.row.deviceId) }}</template>
       </el-table-column>
-      <el-table-column label="属性编码" align="center" prop="propertyCode" />
-      <el-table-column label="比较符" align="center" prop="operator">
+      <el-table-column label="属性编码" align="center" prop="propertyCode" min-width="140" />
+      <el-table-column label="比较符" align="center" prop="operator" min-width="110">
         <template #default="scope">{{ operatorLabel(scope.row.operator) }}</template>
       </el-table-column>
-      <el-table-column label="阈值" align="right" prop="threshold" />
-      <el-table-column label="持续(s)" align="center" prop="durationSec" />
-      <el-table-column label="去抖(s)" align="center" prop="debounceSec" />
-      <el-table-column label="类型" align="center" prop="alertType">
+      <el-table-column label="阈值" align="right" prop="threshold" min-width="90" />
+      <el-table-column label="持续(s)" align="center" prop="durationSec" min-width="90" />
+      <el-table-column label="去抖(s)" align="center" prop="debounceSec" min-width="90" />
+      <el-table-column label="类型" align="center" prop="alertType" min-width="80">
         <template #default="scope">{{ typeLabel(scope.row.alertType) }}</template>
       </el-table-column>
-      <el-table-column label="级别" align="center" prop="alertLevel">
+      <el-table-column label="级别" align="center" prop="alertLevel" min-width="80">
         <template #default="scope">
           <el-tag :type="levelTagType(scope.row.alertLevel)" size="small">{{ levelLabel(scope.row.alertLevel) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="通知渠道" align="center" prop="notifyChannels">
+      <el-table-column label="通知渠道" align="center" prop="notifyChannels" min-width="110">
         <template #default="scope">{{ channelsLabel(scope.row.notifyChannels) }}</template>
       </el-table-column>
-      <el-table-column label="启用" align="center" prop="enabled">
+      <el-table-column label="启用" align="center" prop="enabled" min-width="80">
         <template #default="scope">
           <el-switch
             v-model="scope.row.enabled"
@@ -96,7 +96,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['iot:alertRule:edit']">修改</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['iot:alertRule:remove']">删除</el-button>

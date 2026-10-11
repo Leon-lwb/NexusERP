@@ -58,28 +58,28 @@
 
     <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="盘点编号" align="center" prop="planCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="盘点名称" align="center" prop="planName" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="盘点日期" align="center" prop="plannedDate">
+      <el-table-column label="盘点日期" align="center" prop="plannedDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.plannedDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <!-- 盘点方式：后端 WmStockTakingPlanBo/Vo/实体 countMode，PDA 端已按 OPEN/BLIND 分支（FE-ERP-04） -->
-      <el-table-column label="盘点方式" align="center" prop="countMode">
+      <el-table-column label="盘点方式" align="center" prop="countMode" min-width="90">
         <template #default="scope">
           <dict-tag :options="erp_stocktaking_count_mode" :value="scope.row.countMode" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_stocktaking_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

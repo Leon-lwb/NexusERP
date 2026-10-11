@@ -40,18 +40,18 @@
     <el-table v-loading="loading" :data="invoiceList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="50" align="center" />
-      <el-table-column label="订单号" align="center" prop="orderNumber" :show-overflow-tooltip="true" />
+      <el-table-column label="订单号" align="center" prop="orderNumber" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="发票类型" align="center" prop="invoiceType" width="100">
         <template #default="scope">
           <dict-tag :options="pay_invoice_type" :value="scope.row.invoiceType" />
         </template>
       </el-table-column>
-      <el-table-column label="发票抬头" align="center" prop="invoiceHeader" :show-overflow-tooltip="true" />
+      <el-table-column label="发票抬头" align="center" prop="invoiceHeader" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="纳税人识别号" align="center" prop="invoiceNumber" width="160" />
       <el-table-column label="收票人手机号" align="center" prop="invoicePhone" width="120" />
-      <el-table-column label="收票人邮箱" align="center" prop="invoiceEmail" :show-overflow-tooltip="true" />
-      <el-table-column label="发票备注" align="center" prop="invoiceRemark" :show-overflow-tooltip="true" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="收票人邮箱" align="center" prop="invoiceEmail" min-width="140" :show-overflow-tooltip="true" />
+      <el-table-column label="发票备注" align="center" prop="invoiceRemark" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="210">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['pay:invoice:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pay:invoice:edit']">修改</el-button>

@@ -56,20 +56,20 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="请购单号" align="center" prop="requisitionNo" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="请购单号" align="center" prop="requisitionNo" min-width="140" />
       <el-table-column label="部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="申请人" align="center" prop="applicantName" />
-      <el-table-column label="需求日期" align="center" prop="requiredDate" />
+      <el-table-column label="申请人" align="center" prop="applicantName" min-width="90" />
+      <el-table-column label="需求日期" align="center" prop="requiredDate" width="160" />
       <!-- 技术债:状态为硬编码 el-tag,暂无对应字典,待补字典后改 dict-tag -->
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="创建时间" align="center" prop="createTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['po:requisition:edit']">修改</el-button>

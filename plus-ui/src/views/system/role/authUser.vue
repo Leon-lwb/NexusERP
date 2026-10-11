@@ -35,11 +35,11 @@
       </template>
       <el-table v-loading="loading" border :data="userList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="用户名称" prop="userName" :show-overflow-tooltip="true" />
-        <el-table-column label="用户昵称" prop="nickName" :show-overflow-tooltip="true" />
-        <el-table-column label="邮箱" prop="email" :show-overflow-tooltip="true" />
-        <el-table-column label="手机" prop="phonenumber" :show-overflow-tooltip="true" />
-        <el-table-column label="状态" align="center" prop="status">
+        <el-table-column label="用户名称" prop="userName" min-width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="用户昵称" prop="nickName" min-width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="邮箱" prop="email" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column label="手机" prop="phonenumber" min-width="110" :show-overflow-tooltip="true" />
+        <el-table-column label="状态" align="center" prop="status" min-width="80">
           <template #default="scope">
             <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
           </template>
@@ -49,7 +49,7 @@
             <span>{{ scope.row.createTime }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" fixed="right" align="center" width="80" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="取消授权" placement="top">
               <el-button v-hasPermi="['system:role:remove']" link type="primary" icon="CircleClose" @click="cancelAuthUser(scope.row)"> </el-button>

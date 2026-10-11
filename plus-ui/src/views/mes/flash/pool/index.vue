@@ -48,7 +48,6 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="资源池编码" align="center" prop="poolCode" min-width="150" />
       <el-table-column label="名称" align="center" prop="poolName" min-width="140" />
       <el-table-column label="资源类型" align="center" prop="resourceType" width="100">
         <template #default="scope">
@@ -72,7 +71,7 @@
           <el-tag :type="scope.row.status === 'ENABLED' ? 'success' : 'info'">{{ scope.row.status === 'ENABLED' ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="310" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
+      <el-table-column label="操作" fixed="right" align="center" width="310" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:flash:pool:edit']">编辑</el-button>
           <el-button link type="success" icon="Upload" @click="handleImport(scope.row)" v-hasPermi="['mes:flash:pool:import']">导入资源</el-button>

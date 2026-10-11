@@ -49,39 +49,38 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="班次编码" align="center" prop="shiftCode" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="班次名称" align="center" prop="shiftName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="开始时间" align="center" prop="startTime">
+      <el-table-column label="开始时间" align="center" prop="startTime" width="160">
         <template #default="scope">
           <span>{{ formatTime(scope.row.startTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="结束时间" align="center" prop="endTime">
+      <el-table-column label="结束时间" align="center" prop="endTime" width="160">
         <template #default="scope">
           <span>{{ formatTime(scope.row.endTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="工时(小时)" align="center" prop="workHours" />
-      <el-table-column label="是否跨天" align="center" prop="isCrossDay">
+      <el-table-column label="工时(小时)" align="center" prop="workHours" min-width="90" />
+      <el-table-column label="是否跨天" align="center" prop="isCrossDay" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isCrossDay" />
         </template>
       </el-table-column>
-      <el-table-column label="班次类别" align="center" prop="shiftCategory">
+      <el-table-column label="班次类别" align="center" prop="shiftCategory" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_shift_category" :value="scope.row.shiftCategory" />
         </template>
       </el-table-column>
-      <el-table-column label="班次颜色" align="center" prop="color">
+      <el-table-column label="班次颜色" align="center" prop="color" min-width="100">
         <template #default="scope">
           <div class="color-tag" :style="{ backgroundColor: scope.row.color || '#f0f0f0' }">
             <span :style="{ color: getContrastColor(scope.row.color) }">{{ scope.row.color || '-' }}</span>
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="排序" align="center" prop="sortOrder" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="排序" align="center" prop="sortOrder" min-width="80" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:shift:edit']">修改</el-button>

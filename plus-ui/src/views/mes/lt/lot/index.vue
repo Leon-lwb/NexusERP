@@ -73,7 +73,7 @@
           <dict-tag :options="mes_lot_qc_status" :value="scope.row.qcStatus" size="small" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleTrace(scope.row)" v-hasPermi="['mes:lt:lot:trace']">追溯</el-button>
           <el-button

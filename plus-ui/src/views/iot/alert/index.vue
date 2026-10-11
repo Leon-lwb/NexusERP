@@ -65,42 +65,42 @@
     </el-row>
 
     <el-table v-loading="loading" :data="alertList" show-overflow-tooltip>
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="设备编码" align="center" prop="deviceCode" />
-      <el-table-column label="属性" align="center" prop="propertyCode" />
-      <el-table-column label="类型" align="center" prop="alertType">
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="设备编码" align="center" prop="deviceCode" min-width="140" />
+      <el-table-column label="属性" align="center" prop="propertyCode" min-width="120" />
+      <el-table-column label="类型" align="center" prop="alertType" min-width="80">
         <template #default="scope">{{ typeLabel(scope.row.alertType) }}</template>
       </el-table-column>
-      <el-table-column label="级别" align="center" prop="alertLevel">
+      <el-table-column label="级别" align="center" prop="alertLevel" min-width="80">
         <template #default="scope">
           <el-tag :type="levelTagType(scope.row.alertLevel)" size="small">{{ levelLabel(scope.row.alertLevel) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="触发值" align="right" prop="triggerValue" />
-      <el-table-column label="阈值" align="right" prop="threshold" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="触发值" align="right" prop="triggerValue" min-width="90" />
+      <el-table-column label="阈值" align="right" prop="threshold" min-width="90" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <el-tag :type="statusTagType(scope.row.status)" size="small">{{ statusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="来源" align="center" prop="source">
+      <el-table-column label="来源" align="center" prop="source" min-width="90">
         <template #default="scope">{{ sourceLabel(scope.row.source) }}</template>
       </el-table-column>
-      <el-table-column label="触发时间" align="center" prop="triggerTime">
+      <el-table-column label="触发时间" align="center" prop="triggerTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.triggerTime) }}</template>
       </el-table-column>
-      <el-table-column label="最近触发" align="center" prop="lastTriggerTime">
+      <el-table-column label="最近触发" align="center" prop="lastTriggerTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.lastTriggerTime) }}</template>
       </el-table-column>
-      <el-table-column label="确认时间" align="center" prop="ackTime">
+      <el-table-column label="确认时间" align="center" prop="ackTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.ackTime) }}</template>
       </el-table-column>
-      <el-table-column label="恢复值" align="right" prop="resolveValue" />
-      <el-table-column label="恢复时间" align="center" prop="resolveTime">
+      <el-table-column label="恢复值" align="right" prop="resolveValue" min-width="90" />
+      <el-table-column label="恢复时间" align="center" prop="resolveTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.resolveTime) }}</template>
       </el-table-column>
       <el-table-column label="告警描述" align="center" prop="alertMessage" min-width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link

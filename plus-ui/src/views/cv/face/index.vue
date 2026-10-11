@@ -46,7 +46,7 @@
       <el-table-column label="样本数" align="center" prop="faceCount" width="80" />
       <el-table-column label="备注" align="left" prop="remark" min-width="150" show-overflow-tooltip />
       <el-table-column label="更新时间" align="center" prop="updateTime" width="170" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="RefreshRight" @click="handleReRegister(scope.row)" v-hasPermi="['cv:face:register']"
             >重新注册</el-button

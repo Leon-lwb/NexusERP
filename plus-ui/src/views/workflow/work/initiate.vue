@@ -32,28 +32,28 @@
       </template>
 
       <el-table v-loading="loading" :data="processList">
-        <el-table-column label="流程标识" align="center" prop="processKey" :show-overflow-tooltip="true" />
-        <el-table-column label="流程名称" align="center" :show-overflow-tooltip="true">
+        <el-table-column label="流程标识" align="center" prop="processKey" min-width="140" :show-overflow-tooltip="true" />
+        <el-table-column label="流程名称" align="center" min-width="150" :show-overflow-tooltip="true">
           <template #default="scope">
             <el-button type="primary" @click="handleProcessView(scope.row)">
               <span>{{ scope.row.processName }}</span>
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="流程分类" align="center" prop="categoryName" :formatter="categoryFormat" />
-        <el-table-column label="流程版本" align="center">
+        <el-table-column label="流程分类" align="center" prop="categoryName" :formatter="categoryFormat" min-width="100" />
+        <el-table-column label="流程版本" align="center" min-width="80">
           <template #default="scope">
             <el-tag>v{{ scope.row.version }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" align="center">
+        <el-table-column label="状态" align="center" min-width="80">
           <template #default="scope">
             <el-tag type="success" v-if="!scope.row.suspended">激活</el-tag>
             <el-tag type="warning" v-if="scope.row.suspended">挂起</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180" />
-        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width" fixed="right">
           <template #default="scope">
             <el-tooltip content="发起" placement="top">
               <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['workflow:process:start']"></el-button>
