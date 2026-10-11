@@ -106,7 +106,7 @@
           ></el-table-column
         >
         <el-table-column prop="recommendedScenarioCode" label="推荐方案" min-width="150" />
-        <el-table-column label="操作" width="85"
+        <el-table-column label="操作" width="85" fixed="right"
           ><template #default="scope"><el-button link type="primary" @click.stop="openDetail(scope.row)">详情</el-button></template></el-table-column
         >
       </el-table>

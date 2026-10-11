@@ -1,5 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
+import type { QcInspectDetailVO } from './iqc';
 
 /** 出货检验视图对象 */
 export interface QcOqcVO {
@@ -56,3 +57,7 @@ export const inspectOqc = (oqcId: string | number, inspectResult: string, defect
     method: 'put',
     params: { inspectResult, defectInfo, sampleQty, remark }
   });
+
+/** 查询OQC检验单明细(检验项目) */
+export const getOqcDetails = (oqcId: string | number): AxiosPromise<QcInspectDetailVO[]> =>
+  request({ url: `/mes/qc/oqc/${oqcId}/details`, method: 'get' });

@@ -52,9 +52,9 @@
 
       <el-table v-loading="loading" border :data="list" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="所属厂商" align="center" prop="providerName" :show-overflow-tooltip="true" />
-        <el-table-column label="模型名称" align="center" prop="modelName" :show-overflow-tooltip="true" />
-        <el-table-column label="显示名称" align="center" prop="displayName" :show-overflow-tooltip="true" />
+        <el-table-column label="所属厂商" align="center" prop="providerName" min-width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="模型名称" align="center" prop="modelName" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column label="显示名称" align="center" prop="displayName" min-width="120" :show-overflow-tooltip="true" />
         <el-table-column label="类型" align="center" prop="modelType" width="90">
           <template #default="{ row }">
             <dict-tag :options="ai_model_type" :value="row.modelType" />
@@ -113,7 +113,7 @@
             {{ row.outputPricePerMillion != null ? row.outputPricePerMillion + ' ' + currencyUnit(row) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+        <el-table-column label="操作" align="center" width="220" fixed="right" class-name="small-padding fixed-width">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="primary" :disabled="row.isDefault === 'Y'" @click="handleSetDefault(row)">设为默认</el-button>

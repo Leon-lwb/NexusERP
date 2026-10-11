@@ -80,10 +80,10 @@
       @header-click="handleHeaderCLick"
     >
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="文件名" align="center" prop="fileName" />
-      <el-table-column label="原名" align="center" prop="originalName" />
-      <el-table-column label="文件后缀" align="center" prop="fileSuffix" />
-      <el-table-column label="文件展示" align="center" prop="url">
+      <el-table-column label="文件名" align="center" prop="fileName" min-width="150" show-overflow-tooltip />
+      <el-table-column label="原名" align="center" prop="originalName" min-width="150" show-overflow-tooltip />
+      <el-table-column label="文件后缀" align="center" prop="fileSuffix" min-width="80" />
+      <el-table-column label="文件展示" align="center" prop="url" min-width="150">
         <template #default="scope">
           <ImagePreview
             v-if="previewListResource && checkFileSuffix(scope.row.fileSuffix)"
@@ -100,9 +100,9 @@
           <span>{{ proxy?.parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上传人" align="center" prop="createByName" />
-      <el-table-column label="服务商" align="center" prop="service" sortable="custom" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="上传人" align="center" prop="createByName" min-width="100" />
+      <el-table-column label="服务商" align="center" prop="service" sortable="custom" min-width="100" />
+      <el-table-column label="操作" fixed="right" align="center" width="150" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-tooltip content="下载" placement="top">
             <el-button v-hasPermi="['system:oss:download']" link type="primary" icon="Download" @click="handleDownload(scope.row)"></el-button>

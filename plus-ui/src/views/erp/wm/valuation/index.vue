@@ -36,24 +36,24 @@
     </el-row>
 
     <el-table v-loading="loading" :data="valuationList" show-overflow-tooltip>
-      <el-table-column label="序号" type="index" width="50" align="center" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
-      <el-table-column label="物料名称" align="center" prop="materialName" />
-      <el-table-column label="规格" align="center" prop="specification" />
-      <el-table-column label="单位" align="center" prop="unitName" />
-      <el-table-column label="库存数量" align="center" prop="quantity" />
-      <el-table-column label="单位成本" align="center" prop="unitCost">
+      <el-table-column label="序号" type="index" width="60" align="center" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
+      <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" />
+      <el-table-column label="规格" align="center" prop="specification" min-width="120" />
+      <el-table-column label="单位" align="center" prop="unitName" min-width="80" />
+      <el-table-column label="库存数量" align="center" prop="quantity" min-width="90" />
+      <el-table-column label="单位成本" align="center" prop="unitCost" min-width="100">
         <template #default="scope">
           <span style="color: #f56c6c; font-weight: bold">{{ formatMoney(scope.row.unitCost) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="库存总金额" align="center" prop="totalCost">
+      <el-table-column label="库存总金额" align="center" prop="totalCost" min-width="120">
         <template #default="scope">
           <span style="color: #f56c6c; font-weight: bold">{{ formatMoney(scope.row.totalCost) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouseName" />
-      <el-table-column label="库位" align="center" prop="locationName" />
+      <el-table-column label="仓库" align="center" prop="warehouseName" min-width="110" />
+      <el-table-column label="库位" align="center" prop="locationName" min-width="100" />
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />

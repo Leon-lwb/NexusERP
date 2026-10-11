@@ -64,7 +64,7 @@
                 </template>
               </el-table-column>
               <el-table-column label="规则名称" align="center" prop="ruleName" width="140" :show-overflow-tooltip="true" />
-              <el-table-column label="描述" align="center" prop="ruleDesc" :show-overflow-tooltip="true" />
+              <el-table-column label="描述" align="center" prop="ruleDesc" min-width="120" :show-overflow-tooltip="true" />
               <el-table-column label="是否可用" align="center" prop="enableFlag" width="80">
                 <template #default="scope">
                   <dict-tag :options="sys_yes_no" :value="scope.row.enableFlag" />
@@ -172,8 +172,8 @@
           <div class="autocode-table-wrap">
             <el-table v-loading="dataLoading" border :data="dataList" @selection-change="handleDataSelectionChange">
               <el-table-column type="selection" width="55" align="center" />
-              <el-table-column label="组成编码" align="center" prop="partCode" />
-              <el-table-column label="组成名称" align="center" prop="partName" />
+              <el-table-column label="组成编码" align="center" prop="partCode" min-width="140" :show-overflow-tooltip="true" />
+              <el-table-column label="组成名称" align="center" prop="partName" min-width="120" :show-overflow-tooltip="true" />
               <el-table-column label="分段序号" align="center" prop="partIndex" width="80" />
               <el-table-column label="分段类型" align="center" prop="partType" width="100">
                 <template #default="scope">

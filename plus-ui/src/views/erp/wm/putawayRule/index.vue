@@ -48,23 +48,22 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="规则编码" align="center" prop="ruleCode" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料类别" align="center" prop="categoryName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="策略类型" align="center" prop="strategyType">
+      <el-table-column label="策略类型" align="center" prop="strategyType" min-width="100">
         <template #default="scope">
           <dict-tag :options="wm_putaway_strategy_type" :value="scope.row.strategyType" />
         </template>
       </el-table-column>
-      <el-table-column label="优先级" align="center" prop="priority" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="优先级" align="center" prop="priority" min-width="80" />
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="wm_rule_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:putawayRule:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:putawayRule:remove']">删除</el-button>

@@ -39,7 +39,7 @@
       <el-table-column label="状态" prop="status" align="center" width="75">
         <template #default="scope"><dict-tag :options="tg_usage_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="80" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="80" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             v-if="scope.row.status === 'OUT'"

@@ -24,7 +24,6 @@
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="任务ID" prop="taskId" width="100" />
-      <el-table-column label="设备编码" prop="equipmentCode" width="110" />
       <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
       <el-table-column label="检查项" prop="checkItem" width="120" />
       <el-table-column label="实际值" prop="actualValue" width="100" />

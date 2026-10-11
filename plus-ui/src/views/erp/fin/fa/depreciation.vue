@@ -47,8 +47,7 @@
       <el-tab-pane label="折旧记录" name="history">
         <el-table v-loading="loading" :data="dataList" border size="small">
           <el-table-column label="期间" align="center" prop="periodName" width="100" />
-          <el-table-column label="资产编号" align="center" prop="assetNo" width="130" />
-          <el-table-column label="资产名称" align="left" prop="assetName" min-width="160" />
+          <el-table-column label="资产名称" align="left" prop="assetName" min-width="160" show-overflow-tooltip />
           <el-table-column label="本期折旧" align="right" width="120">
             <template #default="scope">{{ fmt(scope.row.depreciationAmount) }}</template>
           </el-table-column>

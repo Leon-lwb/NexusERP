@@ -97,7 +97,7 @@
         </template>
       </el-table-column>
       <el-table-column label="排序" align="center" prop="sortOrder" width="70" />
-      <el-table-column label="操作" align="center" width="140" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
+      <el-table-column label="操作" fixed="right" align="center" width="140" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:flash:testitem:edit']">编辑</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:flash:testitem:remove']">删除</el-button>

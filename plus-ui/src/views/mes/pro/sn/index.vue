@@ -34,33 +34,33 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="SN编码" prop="snCode" />
-      <el-table-column label="工单编号" prop="woNo">
+      <el-table-column label="SN编码" prop="snCode" min-width="140" />
+      <el-table-column label="工单编号" prop="woNo" min-width="140">
         <template #default="scope">{{ scope.row.woNo || '-' }}</template>
       </el-table-column>
-      <el-table-column label="流转卡" prop="cardNo">
+      <el-table-column label="流转卡" prop="cardNo" min-width="140">
         <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
       </el-table-column>
       <el-table-column label="物料" prop="materialName" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
       </el-table-column>
-      <el-table-column label="父SN" prop="parentSnCode">
+      <el-table-column label="父SN" prop="parentSnCode" min-width="140">
         <template #default="scope">{{ scope.row.parentSnCode || '-' }}</template>
       </el-table-column>
-      <el-table-column label="生产日期" prop="productionDate" />
-      <el-table-column label="状态" prop="snStatus" align="center">
+      <el-table-column label="生产日期" prop="productionDate" width="160" />
+      <el-table-column label="状态" prop="snStatus" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_sn_status" :value="scope.row.snStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="来源" prop="source" align="center">
+      <el-table-column label="来源" prop="source" align="center" min-width="80">
         <template #default="scope">
           <el-tag :type="scope.row.source === 'BATCH' ? 'primary' : 'info'" size="small">
             {{ scope.row.source === 'BATCH' ? '批量' : '手动' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleTrace(scope.row)" v-hasPermi="['mes:pro:sn:query']">追溯</el-button>
           <el-button

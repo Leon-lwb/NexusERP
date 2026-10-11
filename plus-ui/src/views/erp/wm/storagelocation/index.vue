@@ -91,40 +91,39 @@
 
     <el-table v-loading="loading" :data="storagelocationList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="库位编码" align="center" prop="locationCode" min-width="120" show-overflow-tooltip />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="库位名称" align="center" prop="locationName" min-width="120" show-overflow-tooltip />
       <el-table-column v-if="!route.query.areaId" label="所属仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
       <el-table-column v-if="!route.query.areaId" label="所属库区" align="center" prop="areaName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="面积" align="center" prop="area" />
-      <el-table-column label="最大载重量" align="center" prop="maxLoa" />
-      <el-table-column label="是否启用" align="center" prop="enableFlag">
+      <el-table-column label="面积" align="center" prop="area" min-width="80" />
+      <el-table-column label="最大载重量" align="center" prop="maxLoa" min-width="100" />
+      <el-table-column label="是否启用" align="center" prop="enableFlag" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.enableFlag" />
         </template>
       </el-table-column>
-      <el-table-column label="库位类型" align="center" prop="locationType">
+      <el-table-column label="库位类型" align="center" prop="locationType" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_location_type" :value="scope.row.locationType" />
         </template>
       </el-table-column>
-      <el-table-column label="库位状态" align="center" prop="status">
+      <el-table-column label="库位状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_location_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="占用率(0-100)" align="center" prop="occupancyRate" />
-      <el-table-column label="最后入库时间" align="center" prop="lastInboundTime">
+      <el-table-column label="占用率(0-100)" align="center" prop="occupancyRate" min-width="110" />
+      <el-table-column label="最后入库时间" align="center" prop="lastInboundTime" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.lastInboundTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="最后出库时间" align="center" prop="lastOutboundTime">
+      <el-table-column label="最后出库时间" align="center" prop="lastOutboundTime" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.lastOutboundTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:storagelocation:edit']">修改</el-button>

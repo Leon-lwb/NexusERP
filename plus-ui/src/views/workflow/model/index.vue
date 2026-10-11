@@ -36,24 +36,31 @@
 
       <el-table v-loading="loading" :data="modelList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="模型标识" align="center" prop="modelKey" :show-overflow-tooltip="true" />
-        <el-table-column label="模型名称" align="center" :show-overflow-tooltip="true">
+        <el-table-column label="模型标识" align="center" prop="modelKey" min-width="140" :show-overflow-tooltip="true" />
+        <el-table-column label="模型名称" align="center" min-width="150" :show-overflow-tooltip="true">
           <template #default="scope">
             <el-button type="primary" @click="handleProcessView(scope.row)">
               <span>{{ scope.row.modelName }}</span>
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="模型名称" align="center" prop="modelName" :show-overflow-tooltip="true" />
-        <el-table-column label="流程分类" align="center" prop="categoryName" :formatter="categoryFormat" />
-        <el-table-column label="模型版本" align="center">
+        <el-table-column label="模型名称" align="center" prop="modelName" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column
+          label="流程分类"
+          align="center"
+          prop="categoryName"
+          min-width="120"
+          :formatter="categoryFormat"
+          :show-overflow-tooltip="true"
+        />
+        <el-table-column label="模型版本" align="center" min-width="90">
           <template #default="scope">
             <el-tag size="small">v{{ scope.row.version }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="描述" align="center" prop="description" :show-overflow-tooltip="true" />
+        <el-table-column label="描述" align="center" prop="description" min-width="150" :show-overflow-tooltip="true" />
         <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
-        <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" width="180" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="修改" placement="top">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['workflow:model:edit']"></el-button>

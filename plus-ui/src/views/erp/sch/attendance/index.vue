@@ -66,36 +66,36 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="人员姓名" align="center" prop="workerName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="考勤日期" align="center" prop="recordDate">
+      <el-table-column label="考勤日期" align="center" prop="recordDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.recordDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上班打卡时间" align="center" prop="clockInTime">
+      <el-table-column label="上班打卡时间" align="center" prop="clockInTime" width="160">
         <template #default="scope">
           <span>{{ parseTime(scope.row.clockInTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="下班打卡时间" align="center" prop="clockOutTime">
+      <el-table-column label="下班打卡时间" align="center" prop="clockOutTime" width="160">
         <template #default="scope">
           <span>{{ parseTime(scope.row.clockOutTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="迟到分钟数" align="center" prop="lateMinutes" />
-      <el-table-column label="早退分钟数" align="center" prop="leaveEarlyMinutes" />
-      <el-table-column label="考勤结果" align="center" prop="attendanceStatus">
+      <el-table-column label="迟到分钟数" align="center" prop="lateMinutes" min-width="90" />
+      <el-table-column label="早退分钟数" align="center" prop="leaveEarlyMinutes" min-width="90" />
+      <el-table-column label="考勤结果" align="center" prop="attendanceStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_attendance_status" :value="scope.row.attendanceStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="数据来源" align="center" prop="sourceType">
+      <el-table-column label="数据来源" align="center" prop="sourceType" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_source_type" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:attendance:edit']">修改</el-button>

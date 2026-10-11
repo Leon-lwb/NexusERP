@@ -39,7 +39,6 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="配置编码" align="center" prop="contentCode" min-width="150" />
       <el-table-column label="名称" align="center" prop="contentName" min-width="140" />
       <el-table-column label="版本" align="center" prop="version" width="100" />
       <el-table-column label="文件MD5" align="center" prop="fileMd5" min-width="180" show-overflow-tooltip />
@@ -51,7 +50,7 @@
         </template>
       </el-table-column>
       <el-table-column label="发布时间" align="center" prop="publishTime" width="160" />
-      <el-table-column label="操作" align="center" width="240" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
+      <el-table-column label="操作" fixed="right" align="center" width="240" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link

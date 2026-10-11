@@ -249,6 +249,11 @@
   background-color: var(--el-fill-color-light) !important;
 }
 
+// 表头单行显示，避免列名换行（列宽不足时以省略号截断）
+.el-table th.el-table__cell > .cell {
+  white-space: nowrap;
+}
+
 // Tabs
 .el-tabs__header {
   margin: 0 0 12px 0;

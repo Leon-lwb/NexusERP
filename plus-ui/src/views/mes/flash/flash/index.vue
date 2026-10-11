@@ -170,7 +170,7 @@
           <el-tag v-else type="warning">手动</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
+      <el-table-column label="操作" fixed="right" align="center" width="210" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['mes:flash:flash:edit']">纠错</el-button>

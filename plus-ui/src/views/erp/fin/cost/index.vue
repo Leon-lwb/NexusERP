@@ -57,7 +57,7 @@
         </template>
       </el-table-column>
       <el-table-column label="凭证号" align="center" prop="postedVoucherNo" min-width="170" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="110" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="110" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             v-if="scope.row.posted !== 1 && Number(scope.row.txAmount || 0) !== 0"

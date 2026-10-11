@@ -42,13 +42,13 @@
 
       <el-table v-loading="loading" border :data="demoList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column v-if="true" label="主键" align="center" prop="id" />
-        <el-table-column label="部门id" align="center" prop="deptId" />
-        <el-table-column label="用户id" align="center" prop="userId" />
-        <el-table-column label="排序号" align="center" prop="orderNum" />
-        <el-table-column label="key键" align="center" prop="testKey" />
-        <el-table-column label="值" align="center" prop="value" />
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <el-table-column v-if="true" label="主键" align="center" prop="id" min-width="140" />
+        <el-table-column label="部门id" align="center" prop="deptId" min-width="120" />
+        <el-table-column label="用户id" align="center" prop="userId" min-width="120" />
+        <el-table-column label="排序号" align="center" prop="orderNum" min-width="80" />
+        <el-table-column label="key键" align="center" prop="testKey" min-width="120" show-overflow-tooltip />
+        <el-table-column label="值" align="center" prop="value" min-width="120" show-overflow-tooltip />
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
           <template #default="scope">
             <el-tooltip content="修改" placement="top">
               <el-button v-hasPermi="['demo:demo:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>

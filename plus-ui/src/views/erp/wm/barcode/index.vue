@@ -72,10 +72,10 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="配置编码" prop="configCode" align="center" />
-      <el-table-column label="业务类型" prop="bizType" align="center" />
+      <el-table-column label="配置编码" prop="configCode" align="center" min-width="140" />
+      <el-table-column label="业务类型" prop="bizType" align="center" min-width="90" />
       <!-- 技术债：状态暂无对应字典，使用本地 el-tag 渲染，待补字典后改为 dict-tag -->
-      <el-table-column label="状态" prop="status" align="center">
+      <el-table-column label="状态" prop="status" align="center" min-width="90">
         <template #default="scope">
           <el-tag v-if="scope.row.status === 'ACTIVE'" type="success">可用</el-tag>
           <el-tag v-else-if="scope.row.status === 'USED'" type="info">已使用</el-tag>
@@ -83,12 +83,12 @@
           <el-tag v-else>{{ scope.row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="生成时间" prop="generateTime" align="center">
+      <el-table-column label="生成时间" prop="generateTime" align="center" width="160">
         <template #default="scope">
           {{ parseTime(scope.row.generateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="info" icon="View" @click="handleView(scope.row)" v-hasPermi="['wm:barcode:query']"> 查看 </el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:barcode:edit']"> 修改 </el-button>

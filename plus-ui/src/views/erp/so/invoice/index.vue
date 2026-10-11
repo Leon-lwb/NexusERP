@@ -66,25 +66,25 @@
     <!-- 数据表格 -->
     <el-table ref="invoiceTableRef" v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="发票号" align="center" prop="invoiceNo" />
+      <el-table-column label="发票号" align="center" prop="invoiceNo" min-width="140" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="发票类型" align="center" prop="invoiceType">
+      <el-table-column label="发票类型" align="center" prop="invoiceType" min-width="110">
         <template #default="scope">
           <dict-tag :options="so_invoice_type" :value="scope.row.invoiceType" />
         </template>
       </el-table-column>
-      <el-table-column label="开票日期" align="center" prop="invoiceDate" />
+      <el-table-column label="开票日期" align="center" prop="invoiceDate" width="110" />
       <!-- FE-ERP-09：金额类列右对齐，便于按位比较（与 fin/fa/asset.vue 口径一致） -->
-      <el-table-column label="金额" align="right" prop="amount" />
-      <el-table-column label="税额" align="right" prop="taxAmount" />
-      <el-table-column label="价税合计" align="right" prop="totalAmount" />
-      <el-table-column label="已核销" align="right" prop="verifiedAmount" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="金额" align="right" prop="amount" min-width="100" />
+      <el-table-column label="税额" align="right" prop="taxAmount" min-width="100" />
+      <el-table-column label="价税合计" align="right" prop="totalAmount" min-width="110" />
+      <el-table-column label="已核销" align="right" prop="verifiedAmount" min-width="100" />
+      <el-table-column label="状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="so_invoice_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

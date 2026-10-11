@@ -81,36 +81,36 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="人员姓名" align="center" prop="workerName" min-width="120" show-overflow-tooltip />
       <el-table-column label="班组名称" align="center" prop="teamName" min-width="120" show-overflow-tooltip />
       <el-table-column label="班次名称" align="center" prop="shiftName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="排班日期" align="center" prop="scheduledDate">
+      <el-table-column label="排班日期" align="center" prop="scheduledDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.scheduledDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="排班开始时间" align="center" prop="startTime">
+      <el-table-column label="排班开始时间" align="center" prop="startTime" width="160">
         <template #default="scope">
           <span>{{ parseTime(scope.row.startTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="排班结束时间" align="center" prop="endTime">
+      <el-table-column label="排班结束时间" align="center" prop="endTime" width="160">
         <template #default="scope">
           <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="排班状态" align="center" prop="scheduleStatus">
+      <el-table-column label="排班状态" align="center" prop="scheduleStatus" min-width="90">
         <template #default="scope">
           <dict-tag :options="sch_schedule_status" :value="scope.row.scheduleStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="是否工作日" align="center" prop="isWorkingDay">
+      <el-table-column label="是否工作日" align="center" prop="isWorkingDay" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isWorkingDay" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:employeeSchedule:edit']">修改</el-button>

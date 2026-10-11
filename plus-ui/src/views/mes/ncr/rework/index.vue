@@ -34,7 +34,7 @@
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
       <el-table-column label="返工编号" prop="reworkCode" min-width="150" />
-      <el-table-column label="NCR编号" prop="ncrId" width="100" />
+      <el-table-column label="NCR编号" prop="ncrId" min-width="140" />
       <el-table-column label="原工单" prop="originalWoNo" width="140" />
       <el-table-column label="返工工单" prop="reworkWoNo" width="140" />
       <el-table-column label="返工数量" prop="reworkQty" align="right" width="100" />
@@ -42,7 +42,7 @@
         <template #default="scope"><dict-tag :options="mes_rework_status" :value="scope.row.status" /></template>
       </el-table-column>
       <el-table-column label="创建时间" prop="createTime" width="170" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
         </template>

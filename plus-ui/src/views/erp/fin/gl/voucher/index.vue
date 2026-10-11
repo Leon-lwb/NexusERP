@@ -45,7 +45,7 @@
         </template>
       </el-table-column>
       <el-table-column label="凭证日期" align="center" prop="voucherDate" width="110" />
-      <el-table-column label="来源" align="center" prop="voucherSource">
+      <el-table-column label="来源" align="center" prop="voucherSource" min-width="90">
         <template #default="scope">
           <dict-tag :options="gl_voucher_source" :value="scope.row.voucherSource" />
         </template>
@@ -57,7 +57,7 @@
           <dict-tag :options="gl_voucher_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="320" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="350" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

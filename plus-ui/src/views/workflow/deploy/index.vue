@@ -41,22 +41,29 @@
 
       <el-table v-loading="loading" fit :data="deployList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="流程标识" align="center" prop="processKey" :show-overflow-tooltip="true" />
-        <el-table-column label="流程名称" align="center" prop="processName" :show-overflow-tooltip="true" />
-        <el-table-column label="流程分类" align="center" prop="categoryName" :formatter="categoryFormat" />
-        <el-table-column label="流程版本" align="center">
+        <el-table-column label="流程标识" align="center" prop="processKey" min-width="140" :show-overflow-tooltip="true" />
+        <el-table-column label="流程名称" align="center" prop="processName" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column
+          label="流程分类"
+          align="center"
+          prop="categoryName"
+          min-width="120"
+          :formatter="categoryFormat"
+          :show-overflow-tooltip="true"
+        />
+        <el-table-column label="流程版本" align="center" min-width="90">
           <template #default="scope">
             <el-tag size="small">v{{ scope.row.version }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" align="center">
+        <el-table-column label="状态" align="center" min-width="80">
           <template #default="scope">
             <el-tag type="success" v-if="!scope.row.suspended">激活</el-tag>
             <el-tag type="warning" v-if="scope.row.suspended">挂起</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180" />
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" align="center" width="100" fixed="right" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="版本管理" placement="top">
               <el-button link type="primary" icon="PriceTag" @click="handlePublish(scope.row)" v-hasPermi="['workflow:deploy:list']"></el-button>

@@ -37,7 +37,7 @@
       <el-table-column label="状态" prop="status" align="center" width="80">
         <template #default="s"><dict-tag :options="mes_patrol_route_status" :value="s.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="160" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" width="160" fixed="right" :show-overflow-tooltip="false">
         <template #default="s">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(s.row)" v-hasPermi="['mes:eq:patrol:route:edit']">编辑</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(s.row)" v-hasPermi="['mes:eq:patrol:route:remove']">删除</el-button>

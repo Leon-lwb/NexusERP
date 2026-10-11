@@ -23,9 +23,9 @@
     </el-row>
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip>
-      <el-table-column label="样本组号" prop="sampleGroup" align="right" />
-      <el-table-column label="值" prop="value" align="right" />
-      <el-table-column label="是否OOC" prop="isOoc" align="center">
+      <el-table-column label="样本组号" prop="sampleGroup" align="right" min-width="80" />
+      <el-table-column label="值" prop="value" align="right" min-width="80" />
+      <el-table-column label="是否OOC" prop="isOoc" align="center" min-width="80">
         <template #default="scope">
           <dict-tag :options="mes_yes_no" :value="scope.row.isOoc" />
         </template>
@@ -33,7 +33,7 @@
       <el-table-column label="违规规则" prop="oocRule" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.oocRule || '-' }}</template>
       </el-table-column>
-      <el-table-column label="采集时间" prop="collectTime">
+      <el-table-column label="采集时间" prop="collectTime" width="160">
         <template #default="scope">{{ scope.row.collectTime || '-' }}</template>
       </el-table-column>
     </el-table>

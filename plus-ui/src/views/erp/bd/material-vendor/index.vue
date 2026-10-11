@@ -79,30 +79,29 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="供应商编码" align="center" prop="vendorCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="单价" align="center" prop="price" />
-      <el-table-column label="币种" align="center" prop="currency" />
-      <el-table-column label="供货周期(天)" align="center" prop="leadTime" />
-      <el-table-column label="最小订货量" align="center" prop="minOrderQty" />
-      <el-table-column label="优先级" align="center" prop="priority" />
-      <el-table-column label="默认供应商" align="center" prop="isDefault">
+      <el-table-column label="单价" align="center" prop="price" min-width="90" />
+      <el-table-column label="币种" align="center" prop="currency" min-width="80" />
+      <el-table-column label="供货周期(天)" align="center" prop="leadTime" min-width="110" />
+      <el-table-column label="最小订货量" align="center" prop="minOrderQty" min-width="100" />
+      <el-table-column label="优先级" align="center" prop="priority" min-width="80" />
+      <el-table-column label="默认供应商" align="center" prop="isDefault" min-width="90">
         <template #default="scope">
           <el-tag :type="scope.row.isDefault === 1 ? 'success' : 'info'">
             {{ scope.row.isDefault === 1 ? '是' : '否' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
             {{ scope.row.status === 1 ? '启用' : '停用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="生效日期" align="center" prop="effectiveDate" />
-      <el-table-column label="失效日期" align="center" prop="expiryDate" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="生效日期" align="center" prop="effectiveDate" width="160" />
+      <el-table-column label="失效日期" align="center" prop="expiryDate" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:materialVendor:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:materialVendor:remove']">删除</el-button>

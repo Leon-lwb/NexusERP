@@ -35,29 +35,29 @@
     </el-row>
 
     <el-table v-loading="loading" :data="commandList" show-overflow-tooltip>
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="设备编码" align="center" prop="deviceCode" />
-      <el-table-column label="指令类型" align="center" prop="commandType">
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="设备编码" align="center" prop="deviceCode" min-width="140" />
+      <el-table-column label="指令类型" align="center" prop="commandType" min-width="90">
         <template #default="scope">
           <dict-tag :options="iot_command_type" :value="scope.row.commandType" />
         </template>
       </el-table-column>
       <el-table-column label="下发Topic" align="center" prop="topic" min-width="140" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="iot_command_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="下发时间" align="center" prop="sentTime">
+      <el-table-column label="下发时间" align="center" prop="sentTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.sentTime) }}</template>
       </el-table-column>
-      <el-table-column label="回执时间" align="center" prop="ackTime">
+      <el-table-column label="回执时间" align="center" prop="ackTime" width="160">
         <template #default="scope">{{ parseTime(scope.row.ackTime) }}</template>
       </el-table-column>
-      <el-table-column label="重发次数" align="center" prop="retryCount" />
-      <el-table-column label="下发人" align="center" prop="operatorName" />
+      <el-table-column label="重发次数" align="center" prop="retryCount" min-width="90" />
+      <el-table-column label="下发人" align="center" prop="operatorName" min-width="90" />
       <el-table-column label="结果说明" align="center" prop="resultMessage" min-width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['iot:command:query']">详情</el-button>
           <el-button

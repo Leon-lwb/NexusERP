@@ -65,21 +65,21 @@
 
     <el-table v-loading="loading" border :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" />
-      <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" />
-      <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" />
-      <el-table-column label="系统内置" align="center" prop="configType">
+      <el-table-column label="参数名称" align="center" prop="configName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="参数键名" align="center" prop="configKey" min-width="140" :show-overflow-tooltip="true" />
+      <el-table-column label="参数键值" align="center" prop="configValue" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="系统内置" align="center" prop="configType" min-width="80">
         <template #default="scope">
           <dict-tag :options="sys_yes_no" :value="scope.row.configType" />
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ proxy?.parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+      <el-table-column label="操作" fixed="right" align="center" width="150" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button v-hasPermi="['system:config:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>

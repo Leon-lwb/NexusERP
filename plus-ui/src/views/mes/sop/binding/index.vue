@@ -38,7 +38,6 @@
 
     <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工序编码" prop="processCode" min-width="130" />
       <el-table-column label="工序名称" prop="processName" min-width="130" />
       <el-table-column label="工序类别" prop="processCategory" align="center" width="100">
         <template #default="scope">
@@ -62,7 +61,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
         <template #default="scope">
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:sop:binding:remove']">删除</el-button>
         </template>

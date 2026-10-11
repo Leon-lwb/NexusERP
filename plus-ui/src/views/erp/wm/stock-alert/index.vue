@@ -54,35 +54,35 @@
 
     <el-table v-loading="loading" :data="stockAlertList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
-      <el-table-column label="单位" align="center" prop="baseUomName" />
-      <el-table-column label="当前库存" align="center" prop="currentQty" />
-      <el-table-column label="安全库存" align="center" prop="safetyStock" />
-      <el-table-column label="最低库存" align="center" prop="minStock" />
-      <el-table-column label="最高库存" align="center" prop="maxStock" />
-      <el-table-column label="预警类型" align="center" prop="alertType">
+      <el-table-column label="单位" align="center" prop="baseUomName" min-width="80" />
+      <el-table-column label="当前库存" align="center" prop="currentQty" min-width="90" />
+      <el-table-column label="安全库存" align="center" prop="safetyStock" min-width="90" />
+      <el-table-column label="最低库存" align="center" prop="minStock" min-width="90" />
+      <el-table-column label="最高库存" align="center" prop="maxStock" min-width="90" />
+      <el-table-column label="预警类型" align="center" prop="alertType" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_stock_alert_type" :value="scope.row.alertType" />
         </template>
       </el-table-column>
-      <el-table-column label="预警级别" align="center" prop="alertLevel">
+      <el-table-column label="预警级别" align="center" prop="alertLevel" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_alert_level" :value="scope.row.alertLevel" />
         </template>
       </el-table-column>
       <!-- 技术债：handledFlag 无对应字典，暂用硬编码 el-tag，待补字典后改 dict-tag -->
-      <el-table-column label="处理状态" align="center" prop="handledFlag">
+      <el-table-column label="处理状态" align="center" prop="handledFlag" min-width="90">
         <template #default="scope">
           <el-tag :type="scope.row.handledFlag === 1 ? 'success' : 'danger'">
             {{ scope.row.handledFlag === 1 ? '已处理' : '未处理' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="处理" placement="top" v-if="scope.row.handledFlag === 0">
             <el-button link type="success" icon="Select" @click="handleHandle(scope.row)" v-hasPermi="['wm:stockAlert:edit']" />

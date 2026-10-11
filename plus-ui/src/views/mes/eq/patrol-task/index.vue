@@ -33,7 +33,7 @@
       <el-table-column label="状态" prop="status" align="center" width="100">
         <template #default="s"><dict-tag :options="mes_patrol_status" :value="s.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="240" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" width="240" fixed="right" :show-overflow-tooltip="false">
         <template #default="s">
           <el-button
             link

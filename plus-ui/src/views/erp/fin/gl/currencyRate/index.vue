@@ -40,9 +40,9 @@
           <span>{{ parseTime(scope.row.rateDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="汇率" align="right" prop="rate" />
+      <el-table-column label="汇率" align="right" prop="rate" min-width="80" />
       <el-table-column label="类型" align="center" prop="rateType" width="100" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['fin:gl:currency:edit']">修改</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['fin:gl:currency:remove']">删除</el-button>

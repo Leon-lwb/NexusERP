@@ -70,26 +70,31 @@
 
         <el-table v-loading="loading" :data="calendarList" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="日期" align="center" prop="calendarDate" />
-          <el-table-column label="对象类型" align="center" prop="objectType">
+          <el-table-column label="日期" align="center" prop="calendarDate" width="160" />
+          <el-table-column label="对象类型" align="center" prop="objectType" min-width="90">
             <template #default="scope">
               <dict-tag :options="prd_capacity_object_type" :value="scope.row.objectType" />
             </template>
           </el-table-column>
-          <el-table-column label="对象编码" align="center" prop="objectCode" />
           <el-table-column label="对象名称" align="center" prop="objectName" min-width="140" show-overflow-tooltip />
-          <el-table-column label="班次编码" align="center" prop="shiftCode" />
           <el-table-column label="班次名称" align="center" prop="shiftName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="可用工时" align="center" prop="availableHours" />
-          <el-table-column label="已计划工时" align="center" prop="plannedHours" />
-          <el-table-column label="剩余工时" align="center" prop="remainingHours" />
-          <el-table-column label="效率(%)" align="center" prop="efficiency" />
-          <el-table-column label="状态" align="center" prop="status">
+          <el-table-column label="可用工时" align="center" prop="availableHours" min-width="90" />
+          <el-table-column label="已计划工时" align="center" prop="plannedHours" min-width="100" />
+          <el-table-column label="剩余工时" align="center" prop="remainingHours" min-width="90" />
+          <el-table-column label="效率(%)" align="center" prop="efficiency" min-width="80" />
+          <el-table-column label="状态" align="center" prop="status" min-width="80">
             <template #default="scope">
               <dict-tag :options="prd_capacity_calendar_status" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+          <el-table-column
+            label="操作"
+            align="center"
+            class-name="small-padding fixed-width"
+            width="208"
+            fixed="right"
+            :show-overflow-tooltip="false"
+          >
             <template #default="scope">
               <el-tooltip content="修改" placement="top">
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:capacityCalendar:edit']" />

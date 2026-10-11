@@ -26,7 +26,6 @@
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-      <el-table-column label="类别编码" align="center" prop="categoryCode" width="140" />
       <el-table-column label="类别名称" align="left" prop="categoryName" min-width="140" />
       <el-table-column label="折旧方法" align="center" width="130">
         <template #default="scope">{{ methodLabel(scope.row.depreciationMethod) }}</template>
@@ -44,7 +43,7 @@
           <el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['fin:fa:category:edit']">修改</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['fin:fa:category:remove']">删除</el-button>

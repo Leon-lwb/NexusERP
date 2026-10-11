@@ -49,19 +49,19 @@
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
       <el-table-column label="适用班次" align="center" min-width="150">
         <template #default="scope">
           <span>{{ scope.row.shiftName || '所有班次' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上班时间" align="center" prop="workStartTime">
+      <el-table-column label="上班时间" align="center" prop="workStartTime" width="100">
         <template #default="scope"
           ><span>{{ scope.row.workStartTime }}</span></template
         >
       </el-table-column>
-      <el-table-column label="下班时间" align="center" prop="workEndTime">
+      <el-table-column label="下班时间" align="center" prop="workEndTime" width="100">
         <template #default="scope"
           ><span>{{ scope.row.workEndTime }}</span></template
         >
@@ -75,17 +75,17 @@
         </template>
       </el-table-column>
       <el-table-column label="打卡地点" align="center" prop="locationAddress" min-width="120" show-overflow-tooltip />
-      <el-table-column label="是否允许外勤" align="center" prop="allowOutdoorPunch">
+      <el-table-column label="是否允许外勤" align="center" prop="allowOutdoorPunch" min-width="110">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.allowOutdoorPunch" />
         </template>
       </el-table-column>
-      <el-table-column label="是否启用" align="center" prop="isEnabled">
+      <el-table-column label="是否启用" align="center" prop="isEnabled" min-width="90">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isEnabled" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:punchRule:edit']">修改</el-button>

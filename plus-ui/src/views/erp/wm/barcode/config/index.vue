@@ -58,16 +58,15 @@
     <!-- 数据表格区域 -->
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="规则编码" prop="configCode" align="center" />
       <el-table-column label="规则名称" prop="configName" align="center" min-width="120" show-overflow-tooltip />
-      <el-table-column label="前缀" prop="prefix" align="center" />
-      <el-table-column label="日期格式" prop="datePattern" align="center" />
-      <el-table-column label="流水长度" prop="sequenceLength" align="center" />
+      <el-table-column label="前缀" prop="prefix" align="center" min-width="80" />
+      <el-table-column label="日期格式" prop="datePattern" align="center" min-width="100" />
+      <el-table-column label="流水长度" prop="sequenceLength" align="center" min-width="80" />
       <!-- FE-ERP-05：当前流水号（后端 WmBarcodeConfigVo.currentSequence），此前前端全仓零命中 -->
-      <el-table-column label="当前流水号" prop="currentSequence" align="center" />
-      <el-table-column label="业务类型" prop="bizType" align="center" />
+      <el-table-column label="当前流水号" prop="currentSequence" align="center" min-width="140" />
+      <el-table-column label="业务类型" prop="bizType" align="center" min-width="90" />
       <!-- 技术债：启用状态暂无对应字典，使用本地 el-tag 渲染，待补字典后改为 dict-tag -->
-      <el-table-column label="启用状态" prop="enableFlag" align="center">
+      <el-table-column label="启用状态" prop="enableFlag" align="center" min-width="80">
         <template #default="scope">
           <el-tag :type="scope.row.enableFlag === 1 ? 'success' : 'info'">
             {{ scope.row.enableFlag === 1 ? '启用' : '停用' }}
@@ -75,7 +74,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" prop="remark" align="center" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:barcodeConfig:edit']"> 修改 </el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:barcodeConfig:remove']"> 删除 </el-button>

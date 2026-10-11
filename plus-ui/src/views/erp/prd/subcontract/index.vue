@@ -50,28 +50,28 @@
 
     <el-table v-loading="loading" :data="subcontractList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="委外单号" align="center" prop="subcontractNo" />
+      <el-table-column label="委外单号" align="center" prop="subcontractNo" min-width="140" />
       <el-table-column label="供应商" align="center" prop="vendorName" min-width="150" show-overflow-tooltip />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <!-- FE-ERP-09：数量/金额类列右对齐，便于按位比较 -->
-      <el-table-column label="计划数量" align="right" prop="plannedQty" />
-      <el-table-column label="单价" align="right" prop="unitPrice" />
-      <el-table-column label="总金额" align="right" prop="totalAmount" />
-      <el-table-column label="计划开始" align="center" prop="planStartDate" />
-      <el-table-column label="计划结束" align="center" prop="planEndDate" />
-      <el-table-column label="关联工单" align="center" prop="woNo" />
+      <el-table-column label="计划数量" align="right" prop="plannedQty" min-width="90" />
+      <el-table-column label="单价" align="right" prop="unitPrice" min-width="80" />
+      <el-table-column label="总金额" align="right" prop="totalAmount" min-width="90" />
+      <el-table-column label="计划开始" align="center" prop="planStartDate" width="110" />
+      <el-table-column label="计划结束" align="center" prop="planEndDate" width="110" />
+      <el-table-column label="关联工单" align="center" prop="woNo" min-width="140" />
       <el-table-column label="收货进度" align="center" width="130">
         <template #default="scope">
           <el-progress :percentage="progressOf(scope.row)" :stroke-width="8" />
         </template>
       </el-table-column>
-      <el-table-column label="委外状态" align="center" prop="status">
+      <el-table-column label="委外状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="prd_subcontract_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="查看" placement="top">
             <el-button link type="info" icon="View" @click="handleView(scope.row)" v-hasPermi="['prd:subcontract:query']" />

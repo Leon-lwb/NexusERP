@@ -49,26 +49,25 @@
 
     <el-table v-loading="loading" :data="warehouseList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="仓库编码" align="center" prop="warehouseCode" min-width="120" show-overflow-tooltip />
+      <el-table-column label="序号" type="index" align="center" width="60" />
       <el-table-column label="仓库名称" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
       <el-table-column label="位置" align="center" prop="location" min-width="120" show-overflow-tooltip />
-      <el-table-column label="面积" align="center" prop="area" />
-      <el-table-column label="负责人" align="center" prop="manager" />
+      <el-table-column label="面积" align="center" prop="area" min-width="80" />
+      <el-table-column label="负责人" align="center" prop="manager" min-width="80" />
       <el-table-column label="归属部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="仓库状态" align="center" prop="status">
+      <el-table-column label="仓库状态" align="center" prop="status" min-width="90">
         <template #default="scope">
           <dict-tag :options="wm_warehouse_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="库区数量" align="center">
+      <el-table-column label="库区数量" align="center" min-width="90">
         <template #default="scope">
           <el-button link type="primary" @click="handleStoragearea(scope.row.warehouseId)">
             {{ scope.row.areaCount || 0 }}
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             size="small"

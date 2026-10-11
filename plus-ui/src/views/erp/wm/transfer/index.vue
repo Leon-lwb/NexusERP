@@ -44,22 +44,22 @@
 
     <el-table v-loading="loading" :data="transferList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" align="center" />
-      <el-table-column label="调拨单编号" align="center" prop="transferNo" min-width="120" show-overflow-tooltip />
+      <el-table-column label="序号" type="index" align="center" width="60" />
+      <el-table-column label="调拨单编号" align="center" prop="transferNo" min-width="140" show-overflow-tooltip />
       <el-table-column label="调出仓库" align="center" prop="fromWarehouseName" min-width="120" show-overflow-tooltip />
       <el-table-column label="调拨入库" align="center" prop="toWarehouseName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="调拨日期" align="center" prop="transferDate">
+      <el-table-column label="调拨日期" align="center" prop="transferDate" width="110">
         <template #default="scope">
           <span>{{ parseTime(scope.row.transferDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" min-width="80">
         <template #default="scope">
           <dict-tag :options="wm_transfer_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button

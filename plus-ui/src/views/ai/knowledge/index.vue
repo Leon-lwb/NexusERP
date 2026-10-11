@@ -74,7 +74,7 @@
                 <span>{{ proxy?.parseTime(scope.row.createTime) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+            <el-table-column label="操作" align="center" width="150" fixed="right" class-name="small-padding fixed-width">
               <template #default="scope">
                 <el-tooltip content="修改" placement="top">
                   <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>
