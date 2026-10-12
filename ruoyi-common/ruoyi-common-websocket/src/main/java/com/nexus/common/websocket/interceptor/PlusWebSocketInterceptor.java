@@ -7,6 +7,7 @@ import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.core.utils.ServletUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.socket.WebSocketHandler;
@@ -54,7 +55,9 @@ public class PlusWebSocketInterceptor implements HandshakeInterceptor {
             attributes.put(LOGIN_USER_KEY, loginUser);
             return true;
         } catch (NotLoginException e) {
-            log.error("WebSocket 认证失败'{}',无法访问系统资源", e.getMessage());
+            // 认证异常消息可能包含完整令牌，日志仅记录失败类别。
+            log.warn("WebSocket 认证失败，无法访问系统资源");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
     }

@@ -94,6 +94,7 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
     @Mock private ImMessageTypeRegistry messageTypeRegistry;
     @Mock private ImChatSupport support;
     @Mock private ImConversationCache conversationCache;
+    @Mock private com.nexus.im.mapper.SysUserNotificationMapper notificationMapper;
 
     @InjectMocks
     private ImGroupChatService imGroupChatService;
@@ -419,91 +420,47 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
         assertThat(memberVo.getOwner()).isFalse();
     }
 
-    // ==================== P4-3 markGroupRead 水位线模式 ====================
-
-    /**
-     * P4-3: markGroupRead 应使用聚合 SQL（selectMaps + GROUP BY from_user_id）取 watermarks，
-     * 而非 SELECT 全部未读 messageId。
-     * <p>
-     * 守护点：
-     * <ul>
-     *   <li>调用 selectMaps 一次（聚合查询，返回每发送者的 MAX(message_id)）</li>
-     *   <li>不调用 selectList（避免拉取全部未读 messageId 大数组）</li>
-     *   <li>每发送者推送一次 publishToUserAfterCommit，payload 含 watermark 字段</li>
-     *   <li>payload.messageIds 兼容字段仅含 maxMessageId 单元素（不再是 N 条 ID）</li>
-     * </ul>
-     * 若有人改回 SELECT 全部 messageId + 按 sender 分组推大数组，此用例立即失败。
-     */
+    /** 群已读仅更改当前用户的通知，仍按发送者合并回执。 */
     @Test
-    void markGroupRead_usesWatermarkAggregation_notFullMessageIdList() {
-        // P5-4: 当前用户是群成员，通过越权校验
-        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
-        // 模拟聚合 SQL 返回 3 个发送者的 watermarks（而非 1000 条 messageId）
-        // 注：mapUnderscoreToCamelCase=true 将列别名转为驼峰
-        List<Map<String, Object>> watermarkRows = new ArrayList<>();
-        watermarkRows.add(buildWatermarkRow(MEMBER_101, 1001L));
-        watermarkRows.add(buildWatermarkRow(MEMBER_102, 1005L));
-        watermarkRows.add(buildWatermarkRow(MEMBER_103, 1010L));
-        when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
-        when(imMessageMapper.update(any(), any())).thenReturn(15);
-
-        int updated = imGroupChatService.markGroupRead(GROUP_ID);
-
-        assertThat(updated).isEqualTo(15);
-        // 守护：调用 1 次 selectMaps（聚合查询），不调用 selectList
-        verify(imMessageMapper, times(1)).selectMaps(any());
-        verify(imMessageMapper, never()).selectList(any());
-        // 守护：每发送者推送 1 次（共 3 次），用 publishToUserAfterCommit
+    void markGroupRead_onlyUpdatesPersonalNotifications() {
+        prepareUnread(15, 3);
+        assertThat(imGroupChatService.markGroupRead(GROUP_ID)).isEqualTo(15);
+        verify(imMessageMapper, never()).update(any(), any());
         verify(imRealtimePush, times(3)).publishToUserAfterCommit(any(), any());
     }
 
-    /**
-     * P4-3: 推送 payload 应包含 watermark 字段（{fromUserId, maxMessageId}），
-     * 且兼容字段 messageIds 仅含 maxMessageId 单元素（避免大数组）。
-     */
+    /** 水位只由当前用户读取前的通知对应消息产生。 */
     @Test
-    void markGroupRead_payloadContainsWatermarkField() {
-        // P5-4: 当前用户是群成员，通过越权校验
-        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
-        List<Map<String, Object>> watermarkRows = new ArrayList<>();
-        watermarkRows.add(buildWatermarkRow(MEMBER_101, 1001L));
-        when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
-        when(imMessageMapper.update(any(), any())).thenReturn(5);
-
+    void markGroupRead_payloadContainsPersonalWatermark() {
+        prepareUnread(5, 1);
         imGroupChatService.markGroupRead(GROUP_ID);
-
-        // 捕获推送 payload
-        ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
-        verify(imRealtimePush).publishToUserAfterCommit(eq(MEMBER_101), jsonCaptor.capture());
-        String json = jsonCaptor.getValue();
-        // 守护：payload 含 watermark 字段（新协议）
-        assertThat(json).contains("\"watermark\"");
-        assertThat(json).contains("\"fromUserId\":" + MEMBER_101);
-        assertThat(json).contains("\"maxMessageId\":1001");
-        // 守护：兼容字段 messageIds 仅含 maxMessageId 单元素（不是大数组）
-        assertThat(json).contains("\"messageIds\":[1001]");
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(imRealtimePush).publishToUserAfterCommit(eq(MEMBER_101), json.capture());
+        assertThat(json.getValue()).contains("\"watermark\"", "\"maxMessageId\":1005", "\"readBy\":" + ME_USER_ID);
     }
 
-    /**
-     * P4-3: 1000 条未读消息（来自 3 个发送者），selectMaps 返回 3 条 watermark 记录，
-     * 推送次数 = 3（每发送者一次），而非 1000 次（每消息一次）。
-     * <p>核心收益：活跃群未读数从 N 条降到 ≤ 群成员数条。
-     */
+    /** 大量未读通知仍只按发送者发送回执，不逐消息推送。 */
     @Test
-    void markGroupRead_1000unread_3senders_pushesOnly3Times() {
-        // P5-4: 当前用户是群成员，通过越权校验
-        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
-        List<Map<String, Object>> watermarkRows = new ArrayList<>();
-        watermarkRows.add(buildWatermarkRow(MEMBER_101, 2000L));
-        watermarkRows.add(buildWatermarkRow(MEMBER_102, 2005L));
-        watermarkRows.add(buildWatermarkRow(MEMBER_103, 2010L));
-        when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
-        when(imMessageMapper.update(any(), any())).thenReturn(1000);
-
+    void markGroupRead_1000PersonalUnread_pushesOnly3Times() {
+        prepareUnread(1000, 3);
         imGroupChatService.markGroupRead(GROUP_ID);
-
-        // 守护：1000 条未读仅推送 3 次（按发送者聚合），而非 1000 次
+        verify(imMessageMapper, never()).update(any(), any());
         verify(imRealtimePush, times(3)).publishToUserAfterCommit(any(), any());
+    }
+
+    private void prepareUnread(int count, int senderCount) {
+        when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
+        List<com.nexus.im.domain.SysUserNotification> notices = new ArrayList<>();
+        List<com.nexus.im.domain.ImMessage> messages = new ArrayList<>();
+        for (long i = 1; i <= count; i++) {
+            com.nexus.im.domain.SysUserNotification notice = ImTestFixture.buildNotification(2000L + i, ME_USER_ID, "im_group");
+            notice.setRefId(String.valueOf(1000L + i));
+            notices.add(notice);
+            messages.add(ImTestFixture.buildMessage(1000L + i, MEMBER_101 + (i - 1) % senderCount, null, GROUP_ID, "消息"));
+        }
+        when(notificationMapper.selectList(any())).thenReturn(notices);
+        when(imMessageMapper.selectList(any())).thenReturn(messages);
+        when(notificationMapper.update(any(), any())).thenReturn(count);
     }
 
     /**

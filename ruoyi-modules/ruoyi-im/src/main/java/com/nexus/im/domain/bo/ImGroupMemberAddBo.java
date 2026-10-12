@@ -2,6 +2,7 @@ package com.nexus.im.domain.bo;
 
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import java.util.List;
 
@@ -14,5 +15,6 @@ public class ImGroupMemberAddBo {
 
     /** 待添加成员用户 ID 列表，不能为空。 */
     @NotEmpty(message = "成员不能为空")
+    @JsonAlias("memberIds")
     private List<Long> memberUserIds;
 }

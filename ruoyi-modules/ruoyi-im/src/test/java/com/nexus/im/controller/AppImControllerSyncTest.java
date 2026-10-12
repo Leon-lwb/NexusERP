@@ -58,6 +58,8 @@ class AppImControllerSyncTest extends ImUnitTestBase {
     @Mock private ImFriendMapper friendMapper;
     @Mock private ImRealtimePush imRealtimePush;
 
+    @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
+
     @InjectMocks
     private AppImController controller;
 

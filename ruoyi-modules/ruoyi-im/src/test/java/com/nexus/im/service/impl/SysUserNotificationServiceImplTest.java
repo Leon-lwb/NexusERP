@@ -63,7 +63,7 @@ class SysUserNotificationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new SysUserNotificationServiceImpl(notificationMapper, imRealtimePush);
+        service = new SysUserNotificationServiceImpl(notificationMapper, imRealtimePush, Mockito.mock(com.nexus.im.service.impl.support.ImConversationCache.class));
         envelopeHelperMock = Mockito.mockStatic(ImEnvelopeHelper.class);
         // 模拟 MyBatis-Plus 在 insert 时回填主键（真实环境由雪花 ID 生成器完成），
         // 否则 envelope 构造处 Long → long 拆箱会 NPE

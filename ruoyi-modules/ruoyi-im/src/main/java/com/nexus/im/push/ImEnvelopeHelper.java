@@ -6,6 +6,7 @@ import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.im.constants.ImPayloadConstants;
 
 import java.util.Map;
+import java.util.Date;
 
 /**
  * 推送信封构造助手
@@ -31,6 +32,12 @@ public final class ImEnvelopeHelper {
      */
     public static String userNotification(long notificationId, String category, String title, String contentPreview, String contentUrl,
                                           String refType, String refId) {
+        return userNotification(notificationId, category, title, contentPreview, contentUrl, refType, refId, null, null);
+    }
+
+    /** 兼容原信封字段，补充 APP 跳转上下文和通知创建时间。 */
+    public static String userNotification(long notificationId, String category, String title, String contentPreview,
+                                          String contentUrl, String refType, String refId, String extJson, Date createTime) {
         MapBuilder<String, Object> builder = MapUtil.<String, Object>builder()
             // 雪花 ID 转字符串（JS 精度丢失坑：信封不走全局 BigNumberSerializer，long 直出会被截断）
             .put("notificationId", String.valueOf(notificationId))
@@ -43,6 +50,12 @@ public final class ImEnvelopeHelper {
         if (refType != null) {
             builder.put("refType", refType);
             builder.put("refId", refId);
+        }
+        if (extJson != null) {
+            builder.put("extJson", extJson);
+        }
+        if (createTime != null) {
+            builder.put("createTime", createTime);
         }
         return envelope(ImPayloadConstants.TYPE_USER_NOTIFICATION, builder.build());
     }

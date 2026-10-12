@@ -69,6 +69,25 @@ public class ImChatSupport {
      * 也不走 @DataPermission 标注的方法，避免批量查询被数据权限裁剪。
      */
     private final SysUserMapper sysUserMapper;
+    private final ImMessageVisibility visibility;
+
+    public Set<Long> hiddenMessageIds() {
+        return visibility.hiddenIds();
+    }
+
+    public void excludeHidden(LambdaQueryWrapper<ImMessage> query) {
+        visibility.excludeHidden(query);
+    }
+
+    /** 仅覆盖当前请求返回的群消息对象，不修改共享持久化记录。 */
+    public static void applyGroupReadState(List<ImMessage> records, List<com.nexus.im.domain.SysUserNotification> notices) {
+        Map<String, String> flags = new LinkedHashMap<>();
+        for (com.nexus.im.domain.SysUserNotification notice : notices) {
+            flags.merge(notice.getRefId(), notice.getReadFlag(), (a, b) -> "1".equals(a) || "1".equals(b) ? "1" : "0");
+        }
+        records.stream().filter(m -> m.getGroupId() != null)
+            .forEach(m -> m.setIsRead(flags.getOrDefault(String.valueOf(m.getMessageId()), "0")));
+    }
 
     /**
      * 将用户头像 OSS ID 解析为可直接访问的 URL（与消息历史中的 senderAvatar 保持一致）。
@@ -229,6 +248,9 @@ public class ImChatSupport {
         if (normalized == null) {
             return null;
         }
+        if (normalized.length() > 64) {
+            throw new ServiceException("消息标识不能超过64个字符");
+        }
         LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
             .eq(ImMessage::getClientMsgId, normalized)
             .eq(ImMessage::getFromUserId, fromUserId);
@@ -347,8 +369,19 @@ public class ImChatSupport {
         row.put("revoked", msg.getRevoked());
         row.put("forwardFrom", msg.getForwardFrom());
         row.put("createTime", msg.getCreateTime());
+        row.put("clientMsgId", msg.getClientMsgId());
+        row.put("replyMessageId", msg.getReplyMessageId());
+        row.put("replySnippet", msg.getReplySnippet());
         if (StrUtil.isNotBlank(msg.getMentionUserIds())) {
-            row.put("mentionUserIds", JsonUtils.parseArray(msg.getMentionUserIds(), Long.class));
+            try {
+                List<Long> mentions = JsonUtils.parseArray(msg.getMentionUserIds(), Long.class);
+                row.put("mentionUserIds", mentions);
+                row.put("mentioned", mentions.contains(com.nexus.common.satoken.utils.LoginHelper.getUserId()));
+            } catch (RuntimeException e) {
+                // 历史损坏的提及字段不能阻断整页消息加载。
+                row.put("mentionUserIds", Collections.emptyList());
+                row.put("mentioned", false);
+            }
         }
         return row;
     }

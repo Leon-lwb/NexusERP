@@ -22,7 +22,7 @@ import java.util.Date;
  * <p>
  * 清理策略:
  *   - im_message: 保留最近 180 天
- *   - sys_user_notification: 已读保留 30 天，未读保留 90 天
+ *   - sys_user_notification: 普通通知已读保留 30 天，未读保留 90 天；群消息通知保留 180 天
  * <p>
  * 清理是物理删除，不可恢复；清理跨所有租户，通过 TenantHelper.ignore 绕过多租户拦截器。
  * 单批上限 BATCH_SIZE 避免长事务锁表。
@@ -108,8 +108,11 @@ public class ImMessageClearTask {
         String readFlag = read ? "1" : "0";
         for (int i = 0; i < MAX_BATCH_LOOP; i++) {
             int deleted = notificationMapper.delete(new LambdaQueryWrapper<SysUserNotification>()
-                .lt(SysUserNotification::getCreateTime, threshold)
                 .eq(SysUserNotification::getReadFlag, readFlag)
+                .and(w -> w.and(ordinary -> ordinary.ne(SysUserNotification::getCategory, "im_group")
+                        .lt(SysUserNotification::getCreateTime, threshold))
+                    .or(group -> group.eq(SysUserNotification::getCategory, "im_group")
+                        .lt(SysUserNotification::getCreateTime, daysAgo(MESSAGE_RETENTION_DAYS))))
                 .last("LIMIT " + BATCH_SIZE));
             total += deleted;
             if (deleted < BATCH_SIZE) {

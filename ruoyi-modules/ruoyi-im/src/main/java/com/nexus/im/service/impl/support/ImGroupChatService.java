@@ -23,6 +23,7 @@ import com.nexus.im.domain.vo.ImGroupMemberVo;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
+import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.msgtype.ImMessageTypeHandler;
 import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImEnvelopeHelper;
@@ -79,6 +80,8 @@ public class ImGroupChatService {
     private final ImConversationCache conversationCache;
     /** 指标采集组件。 */
     private final ImMetrics imMetrics;
+    /** 群已读以接收用户的通知为依据，绝不修改共享消息的已读标志。 */
+    private final SysUserNotificationMapper notificationMapper;
 
     /**
      * 发送群聊消息：校验群/成员、幂等、内容规范化、@ 校验，插入消息并按 @ 分组批量通知与推送。
@@ -122,6 +125,9 @@ public class ImGroupChatService {
         if (bo.getReplyMessageId() != null) {
             ImMessage origin = imMessageMapper.selectById(bo.getReplyMessageId());
             if (origin != null && !"1".equals(origin.getRevoked())) {
+                if (!Objects.equals(origin.getGroupId(), bo.getGroupId())) {
+                    throw new ServiceException("只能引用当前群的消息");
+                }
                 msg.setReplyMessageId(bo.getReplyMessageId());
                 // P6 M4 修复：image/file 等非 text 消息的 content 是原样透传 JSON，可能含 <script> 等 HTML 标签，
                 // 统一调用 HtmlUtil.cleanHtmlTag 净化（与 TextMessageHandler.sanitize 路径一致），防止 XSS。
@@ -130,7 +136,12 @@ public class ImGroupChatService {
                 msg.setReplySnippet(snippet);
             }
         }
-        imMessageMapper.insert(msg);
+        try {
+            imMessageMapper.insert(msg);
+        } catch (DuplicateKeyException e) {
+            Long duplicate = support.findExistingByClientMsgId(bo.getClientMsgId(), fromId, null, bo.getGroupId());
+            return duplicate == null ? R.fail("消息标识已被占用，请刷新后重新发送") : R.ok(duplicate);
+        }
 
         SysUserVo from = sysUserService.selectUserById(fromId);
         String senderName = from != null ? StrUtil.blankToDefault(from.getNickName(), from.getUserName()) : "";
@@ -159,14 +170,16 @@ public class ImGroupChatService {
         String mentionedTitle = "[@你] 群聊 · " + group.getGroupName();
         String notMentionedTitle = "群聊 · " + group.getGroupName();
         String previewContent = senderName + "：" + StrUtil.maxLength(content, 400);
+        String mentionedExt = groupNotificationExt(msg, group, senderName, true);
+        String ordinaryExt = groupNotificationExt(msg, group, senderName, false);
         List<SysUserNotification> notifications = new ArrayList<>(mentionedUserIds.size() + notMentionedUserIds.size());
         for (Long uid : mentionedUserIds) {
             notifications.add(buildGroupNotification(uid, ImPayloadConstants.CATEGORY_IM_GROUP,
-                "im_message", String.valueOf(msg.getMessageId()), mentionedTitle, previewContent));
+                "im_message", String.valueOf(msg.getMessageId()), mentionedTitle, previewContent, mentionedExt));
         }
         for (Long uid : notMentionedUserIds) {
             notifications.add(buildGroupNotification(uid, ImPayloadConstants.CATEGORY_IM_GROUP,
-                "im_message", String.valueOf(msg.getMessageId()), notMentionedTitle, previewContent));
+                "im_message", String.valueOf(msg.getMessageId()), notMentionedTitle, previewContent, ordinaryExt));
         }
         // 一次 SQL 批量插入通知（替代原 N 次循环 insert）
         if (!notifications.isEmpty()) {
@@ -195,7 +208,7 @@ public class ImGroupChatService {
      * P4-1: 构造群消息通知实体（不含 notificationId，由批量插入回填）。
      */
     private SysUserNotification buildGroupNotification(Long userId, String category, String refType,
-                                                       String refId, String title, String content) {
+                                                       String refId, String title, String content, String extJson) {
         SysUserNotification n = new SysUserNotification();
         n.setUserId(userId);
         n.setCategory(category);
@@ -204,7 +217,22 @@ public class ImGroupChatService {
         n.setTitle(title);
         n.setContent(content);
         n.setReadFlag("0");
+        n.setExtJson(extJson);
         return n;
+    }
+
+    /** 通知与消息使用同一组字符串 ID，APP 无需把 refId 误当成群 ID。 */
+    private String groupNotificationExt(ImMessage msg, ImGroup group, String senderName, boolean mentioned) {
+        Map<String, Object> ext = new LinkedHashMap<>();
+        ext.put("senderId", String.valueOf(msg.getFromUserId()));
+        ext.put("fromUserId", String.valueOf(msg.getFromUserId()));
+        ext.put("senderName", senderName);
+        ext.put("groupId", String.valueOf(group.getGroupId()));
+        ext.put("messageId", String.valueOf(msg.getMessageId()));
+        ext.put("groupName", group.getGroupName());
+        ext.put("name", group.getGroupName());
+        ext.put("mentioned", mentioned);
+        return JsonUtils.toJsonString(ext);
     }
 
     /**
@@ -219,10 +247,13 @@ public class ImGroupChatService {
         if (!support.isGroupMember(groupId, me)) {
             throw new ServiceException("无权查看该群消息");
         }
+        requireActiveGroup(groupId);
         LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
             .eq(ImMessage::getGroupId, groupId)
             .orderByDesc(ImMessage::getCreateTime);
+        support.excludeHidden(w);
         Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
+        fillMyGroupReadState(page.getRecords(), me);
         return TableDataInfo.build(page);
     }
 
@@ -238,56 +269,82 @@ public class ImGroupChatService {
         if (!support.isGroupMember(groupId, me)) {
             throw new ServiceException("无权查看该群消息");
         }
+        requireActiveGroup(groupId);
         LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
             .eq(ImMessage::getGroupId, groupId)
             .orderByDesc(ImMessage::getCreateTime);
+        support.excludeHidden(w);
         Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
+        fillMyGroupReadState(page.getRecords(), me);
         return support.buildSenderMessagePage(page);
     }
 
-    /**
-     * P1-6: 标记群聊消息已读，并按发送者分组推送已读回执。
-     * <p>P4-3: 改用水位线模式（watermarks）替代 messageId 列表。
-     * <ul>
-     *   <li>原实现：SELECT 全部未读 messageId（活跃群可能数千条），payload.messageIds 数组体积过大</li>
-     *   <li>新实现：聚合 SQL 按 from_user_id 分组取 MAX(message_id)，每发送者一条水位线记录</li>
-     *   <li>payload.watermark: {fromUserId, maxMessageId}，客户端据此把本地 ≤ maxMessageId 的消息标为已读</li>
-     *   <li>兼容字段 messageIds: 仅包含 maxMessageId 单元素，保证旧客户端不报错（行为降级，建议尽快迁移）</li>
-     * </ul>
-     */
+    /** 标记当前用户已接收的群消息通知，回执只覆盖读取前的消息快照。 */
     @Transactional(rollbackFor = Exception.class)
     public int markGroupRead(Long groupId) {
         Long me = LoginHelper.getUserId();
-        ImGroup group = imGroupMapper.selectById(groupId);
-        if (group == null || !"0".equals(group.getStatus())) {
-            return 0;
-        }
-        // P5-4 HIGH: 越权防护——非群成员不得标记该群消息已读，否则会污染真实接收者的未读数
+        requireActiveGroup(groupId);
         if (!support.isGroupMember(groupId, me)) {
             throw new ServiceException("无权操作此群");
         }
-        // P4-3: 聚合 SQL 取 watermarks（按 from_user_id 分组 MAX(message_id)）
-        // 注：mapUnderscoreToCamelCase=true 会将列别名 "from_user_id" → "fromUserId"，"max_message_id" → "maxMessageId"
-        List<Map<String, Object>> watermarkRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()
-            .select("from_user_id", "MAX(message_id) AS max_message_id")
-            .eq("group_id", groupId)
-            .ne("from_user_id", me)
-            .eq("is_read", "0")
-            .groupBy("from_user_id"));
-        if (watermarkRows.isEmpty()) {
+        LambdaQueryWrapper<SysUserNotification> query = new LambdaQueryWrapper<SysUserNotification>()
+            .eq(SysUserNotification::getUserId, me)
+            .eq(SysUserNotification::getCategory, ImPayloadConstants.CATEGORY_IM_GROUP)
+            .eq(SysUserNotification::getRefType, "im_message")
+            .eq(SysUserNotification::getReadFlag, "0")
+            .apply("EXISTS (SELECT 1 FROM im_message m WHERE CAST(m.message_id AS CHAR) = sys_user_notification.ref_id "
+                + "AND m.tenant_id = sys_user_notification.tenant_id AND m.group_id = {0} AND m.revoked = '0')", groupId);
+        Set<Long> hidden = support.hiddenMessageIds();
+        if (!hidden.isEmpty()) {
+            query.notIn(SysUserNotification::getRefId, hidden.stream().map(String::valueOf).toList());
+        }
+        List<SysUserNotification> pending = notificationMapper.selectList(query);
+        if (pending.isEmpty()) {
             return 0;
         }
-        ImMessage patch = new ImMessage();
-        patch.setIsRead("1");
-        int updated = imMessageMapper.update(patch, new LambdaUpdateWrapper<ImMessage>()
-            .eq(ImMessage::getGroupId, groupId)
-            .ne(ImMessage::getFromUserId, me)
-            .eq(ImMessage::getIsRead, "0"));
-        // P4-3: 按发送者分组推送 watermark（替代原 messageIds 大数组）
-        pushGroupReadWatermark(groupId, me, watermarkRows);
-        // P4-2: 失效当前用户的会话列表缓存（未读数变化）
-        conversationCache.evict();
+        List<Long> messageIds = pending.stream().map(n -> Long.valueOf(n.getRefId())).distinct().toList();
+        List<ImMessage> snapshot = imMessageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
+            .in(ImMessage::getMessageId, messageIds).eq(ImMessage::getGroupId, groupId));
+        SysUserNotification patch = new SysUserNotification();
+        patch.setReadFlag("1");
+        int updated = notificationMapper.update(patch, new LambdaQueryWrapper<SysUserNotification>()
+            .eq(SysUserNotification::getUserId, me)
+            .eq(SysUserNotification::getReadFlag, "0")
+            .in(SysUserNotification::getNotificationId, pending.stream().map(SysUserNotification::getNotificationId).toList()));
+        if (updated > 0) {
+            Map<Long, Long> maxBySender = new LinkedHashMap<>();
+            for (ImMessage msg : snapshot) {
+                if (!me.equals(msg.getFromUserId())) {
+                    maxBySender.merge(msg.getFromUserId(), msg.getMessageId(), Math::max);
+                }
+            }
+            List<Map<String, Object>> watermarks = new ArrayList<>();
+            maxBySender.forEach((sender, maxId) -> watermarks.add(Map.of("fromUserId", sender, "maxMessageId", maxId)));
+            pushGroupReadWatermark(groupId, me, watermarks);
+            conversationCache.evict();
+        }
         return updated;
+    }
+
+    /** 历史记录中的群已读标志按当前接收者通知映射，避免污染共享消息。 */
+    private void fillMyGroupReadState(List<ImMessage> records, Long me) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<SysUserNotification> notices = notificationMapper.selectList(new LambdaQueryWrapper<SysUserNotification>()
+            .eq(SysUserNotification::getUserId, me)
+            .eq(SysUserNotification::getCategory, ImPayloadConstants.CATEGORY_IM_GROUP)
+            .eq(SysUserNotification::getRefType, "im_message")
+            .in(SysUserNotification::getRefId, records.stream().map(m -> String.valueOf(m.getMessageId())).toList()));
+        ImChatSupport.applyGroupReadState(records, notices);
+    }
+
+    private ImGroup requireActiveGroup(Long groupId) {
+        ImGroup group = imGroupMapper.selectById(groupId);
+        if (group == null || !"0".equals(group.getStatus())) {
+            throw new ServiceException("群组不存在或已解散");
+        }
+        return group;
     }
 
     /**
@@ -461,7 +518,10 @@ public class ImGroupChatService {
         if (deleted <= 0) {
             return R.fail("成员不存在");
         }
-        // P4-2: 失效被移除成员的会话列表缓存（群聊会话消失）
+        // 群头像、人数以及被移除成员的会话都在提交后刷新。
+        List<Long> remaining = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getGroupId, groupId)).stream().map(ImGroupMember::getUserId).toList();
+        conversationCache.evictUsers(remaining);
         conversationCache.evictUser(userId);
         return R.ok();
     }
@@ -475,6 +535,9 @@ public class ImGroupChatService {
         if (mentionUserIds == null || mentionUserIds.isEmpty()) {
             return java.util.Collections.emptyList();
         }
+        if (mentionUserIds.size() > 500) {
+            throw new ServiceException("@成员过多，提及信息不能超过500个字符");
+        }
         LinkedHashSet<Long> normalized = new LinkedHashSet<>();
         for (Long uid : mentionUserIds) {
             if (uid == null || uid <= 0 || uid.equals(fromUserId)) {
@@ -484,6 +547,9 @@ public class ImGroupChatService {
         }
         if (normalized.isEmpty()) {
             return java.util.Collections.emptyList();
+        }
+        if (normalized.size() > 500 || JsonUtils.toJsonString(normalized).length() > 500) {
+            throw new ServiceException("@成员过多，提及信息不能超过500个字符");
         }
         for (Long uid : normalized) {
             if (!support.isGroupMember(groupId, uid)) {
@@ -506,6 +572,9 @@ public class ImGroupChatService {
         p.put("content", msg.getContent());
         p.put("msgType", msg.getMsgType());
         p.put("createTime", msg.getCreateTime());
+        p.put("clientMsgId", msg.getClientMsgId());
+        p.put("replyMessageId", msg.getReplyMessageId());
+        p.put("replySnippet", msg.getReplySnippet());
         p.put("groupName", group.getGroupName());
         // P1-5: 携带 mentionUserIds（解析为 List<Long>）+ 当前接收者是否被 @ 标记
         if (StrUtil.isNotBlank(msg.getMentionUserIds())) {

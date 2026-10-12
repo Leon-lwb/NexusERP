@@ -16,6 +16,8 @@ import com.nexus.ai.service.chat.PersistentChatMemoryStore;
 import com.nexus.ai.service.prompt.PromptTemplateService;
 import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
+import com.nexus.ai.service.sse.AiChatSseLifecycle;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.ai.tool.WebSearchTool;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiModel;
@@ -52,7 +54,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -157,6 +158,7 @@ public class AiServiceFacade {
      */
     public Long chat(AiChatRequest request) {
         Long userId = LoginHelper.getUserId();
+        String tenantIdStr = LoginHelper.getTenantId();
 
         // 1. 获取模型配置
         AiModel modelConfig;
@@ -187,9 +189,9 @@ public class AiServiceFacade {
         } else {
             // 越权防护：复用会话时必须校验会话归属当前用户，防止向他人会话注入消息并窃取历史上下文
             AiSession existing = aiSessionMapper.selectById(sessionId);
-            if (existing == null || !userId.equals(existing.getUserId())) {
-                AiSseMessageHelper.sendError(userId, "会话不存在或无权访问该会话");
-                return null;
+            if (existing == null || !userId.equals(existing.getUserId())
+                || !java.util.Objects.equals(tenantIdStr, existing.getTenantId())) {
+                throw new ServiceException("会话不存在或无权访问该会话", 404);
             }
         }
 
@@ -202,7 +204,6 @@ public class AiServiceFacade {
 
         // 4. 捕获请求上下文（tenantIdStr 透传给异步路径，TenantHelper.dynamic 恢复，避免 ai_message insert 时 tenant_id 落 0）
         // 租户是文本身份，异步上下文与数据库条件均保留原始前导零。
-        String tenantIdStr = LoginHelper.getTenantId();
         String tenantId = tenantIdStr;
         String userName = null;
         try {
@@ -276,164 +277,108 @@ public class AiServiceFacade {
      */
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
                                      Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
-
-        // 使用 MessageWindowChatMemory 加载历史消息，限制最近 20 条（约 10 轮对话），避免超出 token 限制
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
-            .id(sessionId)
-            .maxMessages(20)
-            .chatMemoryStore(persistentChatMemoryStore)
-            .build();
-        List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
-
-        // 业务上下文注入（移动端从详情页带入，如"当前在查看采购订单 PO-xxx"）
-        injectContextIntoLastUserMessage(request, allMessages);
-
-        AiSseMessageHelper.sendThinking(userId);
-
-        // 用于拼接完整 AI 回复（StringBuffer 线程安全，流式回调可能由不同线程执行）
-        StringBuffer fullContent = new StringBuffer();
-        // 用于拼接推理过程（enableThinking 时填充，StringBuffer 线程安全）
-        StringBuffer fullThinking = new StringBuffer();
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId,
-                    modelConfig.getId(), modelConfig.getModelName());
-
-                streamingModel.chat(ChatRequest.builder()
-                        .messages(allMessages)
-                        .build(),
-                    new StreamingChatResponseHandler() {
-                        @Override
-                        public void onPartialResponse(String partialToken) {
-                            fullContent.append(partialToken);
-                            AiSseMessageHelper.sendContentIncrement(userId, partialToken);
-                        }
-
-                        @Override
-                        public void onPartialThinking(dev.langchain4j.model.chat.response.PartialThinking thinking) {
-                            if (thinking != null && thinking.text() != null) {
-                                fullThinking.append(thinking.text());
-                                AiSseMessageHelper.sendThinkingToken(userId, thinking.text());
-                            }
-                        }
-
-                        @Override
-                        public void onCompleteResponse(ChatResponse response) {
-                            // 保存完整 AI 回复到数据库（含 token 明细 + 推理过程）
-                            // 注意：回调运行在 OkHttp I/O 线程，AiRequestContext 不可用，
-                            // 因此直接使用闭包捕获的局部变量传递上下文
-                            String thinkingContent = fullThinking.length() > 0 ? fullThinking.toString() : null;
-                            saveAiMessageWithTokens(sessionId, fullContent.toString(),
-                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent, tenantIdStr);
-                            AiSseMessageHelper.sendDone(userId);
-                        }
-
-                        @Override
-                        public void onError(Throwable error) {
-                            log.error("AI 流式对话失败", error);
-                            AiSseMessageHelper.sendError(userId, "AI 对话失败: " + error.getMessage());
-                        }
-                    });
-            } catch (Exception e) {
-                log.error("AI 流式对话异常", e);
-                AiSseMessageHelper.sendError(userId, "AI 对话失败: " + e.getMessage());
-            } finally {
-                AiRequestContext.clear();
-            }
-        }, aiExecutor);
+        invokeWithStreaming(modelConfig, request, userId, sessionId, tenantId, userName, tenantIdStr,
+            new AiChatSseLifecycle(userId, sessionId));
     }
 
-    /**
-     * RAG 增强对话：先检索知识库，再流式生成回答
-     * <p>将检索到的知识片段注入提示词，让 LLM 基于知识库内容回答</p>
-     */
+    private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
+                                     Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr,
+                                     AiChatSseLifecycle lifecycle) {
+        try {
+            StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
+            MessageWindowChatMemory memory = MessageWindowChatMemory.builder().id(sessionId).maxMessages(20)
+                .chatMemoryStore(persistentChatMemoryStore).build();
+            List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
+            injectContextIntoLastUserMessage(request, allMessages);
+            streamResponse(streamingModel, allMessages, modelConfig, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
+        } catch (Exception error) {
+            lifecycle.fail(error);
+        }
+    }
+
+    /** 知识库增强与普通对话共用流式回调及唯一终态，避免收尾行为分叉。 */
     private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
                                Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
-
-        // 加载历史消息
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
-            .id(sessionId)
-            .maxMessages(20)
-            .chatMemoryStore(persistentChatMemoryStore)
-            .build();
-        List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
-
-        // RAG 检索增强：将用户问题与知识库匹配，生成增强提示词
-        String augmentedQuery;
-        if (request.getKnowledgeId() != null) {
-            augmentedQuery = retrieverService.augmentPrompt(request.getKnowledgeId(), request.getContent());
-        } else {
-            augmentedQuery = retrieverService.augmentPrompt(request.getContent());
-        }
-
-        // 从后往前查找最后一条 UserMessage 并替换为增强后的提示词
-        // （避免当末尾是 AiMessage 时误删，或连续多条 UserMessage 时删错）
-        boolean replaced = false;
-        String injectedQuery = buildInjectedPrompt(request, augmentedQuery);
-        for (int i = allMessages.size() - 1; i >= 0; i--) {
-            if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage) {
-                allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(injectedQuery));
-                replaced = true;
-                break;
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        try {
+            StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
+            MessageWindowChatMemory memory = MessageWindowChatMemory.builder().id(sessionId).maxMessages(20)
+                .chatMemoryStore(persistentChatMemoryStore).build();
+            List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
+            String augmentedQuery = request.getKnowledgeId() != null
+                ? retrieverService.augmentPrompt(request.getKnowledgeId(), request.getContent())
+                : retrieverService.augmentPrompt(request.getContent());
+            boolean replaced = false;
+            String injectedQuery = buildInjectedPrompt(request, augmentedQuery);
+            for (int i = allMessages.size() - 1; i >= 0; i--) {
+                if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage) {
+                    allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(injectedQuery));
+                    replaced = true;
+                    break;
+                }
             }
+            if (!replaced) allMessages.add(dev.langchain4j.data.message.UserMessage.from(injectedQuery));
+            streamResponse(streamingModel, allMessages, modelConfig, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
+        } catch (Exception error) {
+            lifecycle.fail(error);
         }
-        if (!replaced) {
-            allMessages.add(dev.langchain4j.data.message.UserMessage.from(injectedQuery));
-        }
+    }
 
-        AiSseMessageHelper.sendThinking(userId);
-
+    /** 模型回调的租户身份从请求闭包恢复，不读取回调线程的登录上下文。 */
+    private void streamResponse(StreamingChatModel streamingModel, List<ChatMessage> allMessages, AiModel modelConfig,
+                                Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr,
+                                AiChatSseLifecycle lifecycle) {
+        lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
         StringBuffer fullContent = new StringBuffer();
-        // 用于拼接推理过程（enableThinking 时填充，StringBuffer 线程安全）
         StringBuffer fullThinking = new StringBuffer();
-
-        CompletableFuture.runAsync(() -> {
+        submit(lifecycle, () -> {
             try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId,
-                    modelConfig.getId(), modelConfig.getModelName());
+                AiRequestContext.set(tenantId, userId, userName, sessionId, modelConfig.getId(), modelConfig.getModelName());
+                streamingModel.chat(ChatRequest.builder().messages(allMessages).build(), new StreamingChatResponseHandler() {
+                    @Override
+                    public void onPartialResponse(String token) {
+                        lifecycle.progress(() -> {
+                            fullContent.append(token);
+                            AiSseMessageHelper.sendContentIncrement(userId, token);
+                        });
+                    }
 
-                streamingModel.chat(ChatRequest.builder()
-                        .messages(allMessages)
-                        .build(),
-                    new StreamingChatResponseHandler() {
-                        @Override
-                        public void onPartialResponse(String partialToken) {
-                            fullContent.append(partialToken);
-                            AiSseMessageHelper.sendContentIncrement(userId, partialToken);
-                        }
+                    @Override
+                    public void onPartialThinking(dev.langchain4j.model.chat.response.PartialThinking thinking) {
+                        if (thinking == null || thinking.text() == null) return;
+                        lifecycle.progress(() -> {
+                            fullThinking.append(thinking.text());
+                            AiSseMessageHelper.sendThinkingToken(userId, thinking.text());
+                        });
+                    }
 
-                        @Override
-                        public void onPartialThinking(dev.langchain4j.model.chat.response.PartialThinking thinking) {
-                            if (thinking != null && thinking.text() != null) {
-                                fullThinking.append(thinking.text());
-                                AiSseMessageHelper.sendThinkingToken(userId, thinking.text());
-                            }
-                        }
+                    @Override
+                    public void onCompleteResponse(ChatResponse response) {
+                        lifecycle.complete(() -> saveAiMessageWithTokens(sessionId, fullContent.toString(), modelConfig.getId(),
+                            response, tenantId, userId, userName, modelConfig.getModelName(),
+                            fullThinking.isEmpty() ? null : fullThinking.toString(), tenantIdStr));
+                    }
 
-                        @Override
-                        public void onCompleteResponse(ChatResponse response) {
-                            String thinkingContent = fullThinking.length() > 0 ? fullThinking.toString() : null;
-                            saveAiMessageWithTokens(sessionId, fullContent.toString(),
-                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent, tenantIdStr);
-                            AiSseMessageHelper.sendDone(userId);
-                        }
-
-                        @Override
-                        public void onError(Throwable error) {
-                            log.error("AI RAG 对话失败", error);
-                            AiSseMessageHelper.sendError(userId, "AI 对话失败: " + error.getMessage());
-                        }
-                    });
-            } catch (Exception e) {
-                log.error("AI RAG 对话异常", e);
-                AiSseMessageHelper.sendError(userId, "AI 对话失败: " + e.getMessage());
+                    @Override
+                    public void onError(Throwable error) { lifecycle.fail(error); }
+                });
+            } catch (Exception error) {
+                lifecycle.fail(error);
             } finally {
                 AiRequestContext.clear();
             }
-        }, aiExecutor);
+        });
+    }
+
+    /** 提交失败也通过同一生命周期收尾，避免线程池拒绝后客户端永久等待。 */
+    private boolean submit(AiChatSseLifecycle lifecycle, Runnable task) {
+        try {
+            CompletableFuture.runAsync(task, aiExecutor);
+            return true;
+        } catch (Exception error) {
+            lifecycle.fail(error);
+            return false;
+        }
     }
 
     /**
@@ -445,6 +390,17 @@ public class AiServiceFacade {
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
                                  Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        try {
+            runAgent(modelConfig, request, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
+        } catch (Exception error) {
+            lifecycle.fail(error);
+        }
+    }
+
+    private void runAgent(AiModel modelConfig, AiChatRequest request,
+                          Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr,
+                          AiChatSseLifecycle lifecycle) {
         // Agent 模式使用低 temperature（0.1），提高 SQL 生成准确性
         ChatModel chatModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
 
@@ -525,10 +481,10 @@ public class AiServiceFacade {
         AiSseMessageHelper.sendThinking(userId);
 
         // 创建 OutputChannel 用于流式推送
-        String requestId = UUID.randomUUID().toString();
+        String requestId = lifecycle.requestId();
         OutputChannel channel = OutputChannel.create(requestId);
 
-        CompletableFuture.runAsync(() -> {
+        if (!submit(lifecycle, () -> {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,
                     modelConfig.getId(), modelConfig.getModelName());
@@ -550,29 +506,31 @@ public class AiServiceFacade {
                 long duration = System.currentTimeMillis() - startTime;
                 aiAgentListener.onAgentComplete("SupervisorAgent", duration, 0);
 
-                // 保存 AI 回复（含 Token 明细，从 AiRequestContext 暂存中读取）
-                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
-
-                // 推送最终结果
-                AiSseMessageHelper.sendContent(userId, result);
-                AiSseMessageHelper.sendDone(userId);
-
-                channel.complete();
+                if (lifecycle.complete(() -> {
+                    saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
+                    AiSseMessageHelper.sendContent(userId, result);
+                })) {
+                    channel.complete();
+                } else {
+                    channel.completeWithError(lifecycle.failure());
+                }
             } catch (Exception e) {
-                log.error("AI Agent 对话失败", e);
-                aiAgentListener.onAgentError("SupervisorAgent", e.getMessage());
-                AgentStreamHelper.sendError(channel, "SupervisorAgent", e.getMessage());
+                lifecycle.fail(e);
+                aiAgentListener.onAgentError("SupervisorAgent", AiChatSseLifecycle.ERROR_MESSAGE);
                 channel.completeWithError(e);
-                AiSseMessageHelper.sendError(userId, "AI 对话失败: " + e.getMessage());
             } finally {
                 AiToolExecutedListener.clearChannel();
                 AiRequestContext.clear();
                 OutputChannel.remove(requestId);
             }
-        }, aiExecutor);
+        })) {
+            channel.completeWithError(lifecycle.failure());
+            OutputChannel.remove(requestId);
+            return;
+        }
 
         // 异步消费 OutputChannel 事件，根据事件类型路由到对应的 SSE 推送方法
-        CompletableFuture.runAsync(() -> {
+        if (!submit(lifecycle, () -> {
             try {
                 channel.drain(eventJson -> {
                     try {
@@ -583,36 +541,39 @@ public class AiServiceFacade {
                             case "TOOL_START" -> {
                                 String toolName = node.has("toolName") ? node.get("toolName").asText() : "unknown";
                                 String args = node.has("arguments") ? node.get("arguments").asText() : "";
-                                AiSseMessageHelper.sendToolStart(userId, toolName, args);
+                                lifecycle.progress(() -> AiSseMessageHelper.sendToolStart(userId, toolName, args));
                             }
                             case "TOOL_END" -> {
                                 String toolName = node.has("toolName") ? node.get("toolName").asText() : "unknown";
                                 long dur = node.has("duration") ? node.get("duration").asLong() : 0;
                                 String summary = node.has("resultSummary") ? node.get("resultSummary").asText() : "";
-                                AiSseMessageHelper.sendToolEnd(userId, toolName, dur, summary);
+                                lifecycle.progress(() -> AiSseMessageHelper.sendToolEnd(userId, toolName, dur, summary));
                             }
                             case "THINKING" -> {
                                 String agentName = node.has("agentName") ? node.get("agentName").asText() : "Agent";
                                 String message = node.has("message") ? node.get("message").asText() : "";
-                                AiSseMessageHelper.sendAgentThinking(userId, agentName, message);
+                                lifecycle.progress(() -> AiSseMessageHelper.sendAgentThinking(userId, agentName, message));
                             }
                             case "ERROR" -> {
                                 String errorMsg = node.has("error") ? node.get("error").asText() : "未知错误";
-                                AiSseMessageHelper.sendError(userId, errorMsg);
+                                lifecycle.fail(new IllegalStateException(errorMsg));
                             }
                             default -> log.warn("[Agent] 未知 OutputChannel 事件类型: {}", eventType);
                         }
                     } catch (Exception e) {
-                        log.warn("[Agent] 解析 OutputChannel 事件失败: {}", e.getMessage());
+                        log.warn("[Agent] 解析事件失败 requestId={}", requestId, e);
                     }
                 });
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("[Agent] OutputChannel drain 被中断");
             } catch (Exception e) {
-                log.error("[Agent] OutputChannel drain 异常", e);
+                log.debug("[Agent] 事件通道收尾 requestId={}", requestId, e);
             }
-        }, aiExecutor);
+        })) {
+            channel.completeWithError(lifecycle.failure());
+            OutputChannel.remove(requestId);
+        }
     }
 
     /**
@@ -983,9 +944,10 @@ public class AiServiceFacade {
      */
     private void invokeWithWebSearchStreaming(AiModel modelConfig, AiChatRequest request,
                                               Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiSseMessageHelper.sendThinking(userId);
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
 
-        CompletableFuture.runAsync(() -> {
+        submit(lifecycle, () -> {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,
                     modelConfig.getId(), modelConfig.getModelName());
@@ -995,7 +957,7 @@ public class AiServiceFacade {
                 try {
                     searchResult = webSearchTool.webSearch(request.getContent());
                 } catch (Exception e) {
-                    log.warn("[AI] 联网搜索检索失败，降级为普通流式回答: {}", e.getMessage());
+                    log.warn("[AI] 联网搜索检索失败，降级为普通流式回答 requestId={}", lifecycle.requestId(), e);
                     searchResult = null;
                 }
 
@@ -1018,16 +980,15 @@ public class AiServiceFacade {
                 enhancedRequest.setContent(enhancedContent);
                 enhancedRequest.setContext(request.getContext());
                 enhancedRequest.setEnableThinking(request.getEnableThinking());
-                invokeWithStreaming(modelConfig, enhancedRequest, userId, sessionId, tenantId, userName, tenantIdStr);
+                invokeWithStreaming(modelConfig, enhancedRequest, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
             } catch (Exception e) {
-                log.error("AI 联网搜索流式对话失败", e);
-                AiSseMessageHelper.sendError(userId, "联网搜索失败: " + e.getMessage());
+                lifecycle.fail(e);
             } finally {
                 SearchSourceHolder.clear();
                 // invokeWithStreaming 异步派发后即可清理（上下文已在其闭包内重新设置）
                 AiRequestContext.clear();
             }
-        }, aiExecutor);
+        });
     }
 
     /**
@@ -1035,7 +996,8 @@ public class AiServiceFacade {
      */
     private void invokeWithWebSearch(AiModel modelConfig, AiChatRequest request,
                                       Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        CompletableFuture.runAsync(() -> {
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        submit(lifecycle, () -> {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,
                     modelConfig.getId(), modelConfig.getModelName());
@@ -1052,17 +1014,17 @@ public class AiServiceFacade {
                 // 推送搜索来源卡片（从 SearchSourceHolder 取出本次搜索的来源）
                 pushWebSearchSources(userId);
 
-                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
-                AiSseMessageHelper.sendContent(userId, result);
-                AiSseMessageHelper.sendDone(userId);
+                lifecycle.complete(() -> {
+                    saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
+                    AiSseMessageHelper.sendContent(userId, result);
+                });
             } catch (Exception e) {
-                log.error("AI 联网搜索失败", e);
-                AiSseMessageHelper.sendError(userId, "联网搜索失败: " + e.getMessage());
+                lifecycle.fail(e);
             } finally {
                 SearchSourceHolder.clear();
                 AiRequestContext.clear();
             }
-        }, aiExecutor);
+        });
     }
 
     /**

@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import java.util.Objects;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -22,6 +24,10 @@ import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
+import com.nexus.common.json.utils.JsonUtils;
+import com.nexus.im.mapper.SysUserNotificationMapper;
+import com.nexus.im.domain.SysUserNotification;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -55,6 +61,8 @@ public class ImPrivateChatService {
     private final ImConversationCache conversationCache;
     /** 指标采集组件。 */
     private final ImMetrics imMetrics;
+    /** 每用户通知已读与私聊消息已读一起更新。 */
+    private final SysUserNotificationMapper notificationMapper;
 
     /**
      * 发送私聊消息：校验接收方、幂等、内容规范化，插入消息后写通知并推送（提交后）。
@@ -92,6 +100,11 @@ public class ImPrivateChatService {
         if (bo.getReplyMessageId() != null) {
             ImMessage origin = imMessageMapper.selectById(bo.getReplyMessageId());
             if (origin != null && !"1".equals(origin.getRevoked())) {
+                boolean samePair = (Objects.equals(origin.getFromUserId(), fromId) && Objects.equals(origin.getToUserId(), bo.getToUserId()))
+                    || (Objects.equals(origin.getFromUserId(), bo.getToUserId()) && Objects.equals(origin.getToUserId(), fromId));
+                if (origin.getGroupId() != null || !samePair) {
+                    throw new ServiceException("只能引用当前会话的消息");
+                }
                 msg.setReplyMessageId(bo.getReplyMessageId());
                 // P6 M4 修复：image/file 等非 text 消息的 content 是原样透传 JSON，可能含 <script> 等 HTML 标签，
                 // 统一调用 HtmlUtil.cleanHtmlTag 净化（与 TextMessageHandler.sanitize 路径一致），防止 XSS。
@@ -100,7 +113,12 @@ public class ImPrivateChatService {
                 msg.setReplySnippet(snippet);
             }
         }
-        imMessageMapper.insert(msg);
+        try {
+            imMessageMapper.insert(msg);
+        } catch (DuplicateKeyException e) {
+            Long duplicate = support.findExistingByClientMsgId(bo.getClientMsgId(), fromId, bo.getToUserId(), null);
+            return duplicate == null ? R.fail("消息标识已被占用，请刷新后重新发送") : R.ok(duplicate);
+        }
 
         String title = "私聊 · " + (from != null ? StrUtil.blankToDefault(from.getNickName(), from.getUserName()) : "用户");
         sysUserNotificationService.addAndPush(
@@ -110,7 +128,7 @@ public class ImPrivateChatService {
             String.valueOf(msg.getMessageId()),
             title,
             StrUtil.maxLength(content, 500),
-            null);
+            privateNotificationExt(msg, from));
 
         String json = ImEnvelopeHelper.imMessage(buildPrivatePayload(msg, from));
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵消息"
@@ -122,6 +140,20 @@ public class ImPrivateChatService {
         // P4-9: 消息发送计数（按聊天类型分维度）
         imMetrics.recordMessageSend("private");
         return R.ok(msg.getMessageId());
+    }
+
+    /** 路由字段保持字符串 ID；私聊显式携带空 groupId，与群通知结构一致。 */
+    private String privateNotificationExt(ImMessage msg, SysUserVo from) {
+        String name = from == null ? "用户" : StrUtil.blankToDefault(StrUtil.blankToDefault(from.getNickName(), from.getUserName()), "用户");
+        Map<String, Object> ext = new LinkedHashMap<>();
+        ext.put("senderId", String.valueOf(msg.getFromUserId()));
+        ext.put("fromUserId", String.valueOf(msg.getFromUserId()));
+        ext.put("groupId", null);
+        ext.put("messageId", String.valueOf(msg.getMessageId()));
+        ext.put("senderName", name);
+        ext.put("name", name);
+        ext.put("mentioned", false);
+        return JsonUtils.toJsonString(ext);
     }
 
     /**
@@ -139,6 +171,7 @@ public class ImPrivateChatService {
             .and(q -> q.and(a -> a.eq(ImMessage::getFromUserId, me).eq(ImMessage::getToUserId, peerUserId))
                 .or(a -> a.eq(ImMessage::getFromUserId, peerUserId).eq(ImMessage::getToUserId, me)))
             .orderByDesc(ImMessage::getCreateTime);
+        support.excludeHidden(w);
         Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
         return TableDataInfo.build(page);
     }
@@ -158,6 +191,7 @@ public class ImPrivateChatService {
             .and(q -> q.and(a -> a.eq(ImMessage::getFromUserId, me).eq(ImMessage::getToUserId, peerUserId))
                 .or(a -> a.eq(ImMessage::getFromUserId, peerUserId).eq(ImMessage::getToUserId, me)))
             .orderByDesc(ImMessage::getCreateTime);
+        support.excludeHidden(w);
         Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
         return support.buildSenderMessagePage(page);
     }
@@ -170,12 +204,15 @@ public class ImPrivateChatService {
         Long me = LoginHelper.getUserId();
         support.requireSameTenantUser(peerUserId);
         // P1-6: 先查出待标记为已读的消息 ID，UPDATE 后用于推送给原发送方做已读回执
-        List<ImMessage> pending = imMessageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
+        LambdaQueryWrapper<ImMessage> pendingQuery = new LambdaQueryWrapper<ImMessage>()
             .select(ImMessage::getMessageId)
             .eq(ImMessage::getToUserId, me)
             .eq(ImMessage::getFromUserId, peerUserId)
             .eq(ImMessage::getIsRead, "0")
-            .isNull(ImMessage::getGroupId));
+            .isNull(ImMessage::getGroupId)
+            .eq(ImMessage::getRevoked, "0");
+        support.excludeHidden(pendingQuery);
+        List<ImMessage> pending = imMessageMapper.selectList(pendingQuery);
         if (pending.isEmpty()) {
             return 0;
         }
@@ -189,7 +226,15 @@ public class ImPrivateChatService {
             .eq(ImMessage::getToUserId, me)
             .eq(ImMessage::getFromUserId, peerUserId)
             .eq(ImMessage::getIsRead, "0")
-            .isNull(ImMessage::getGroupId));
+            .isNull(ImMessage::getGroupId)
+            .in(ImMessage::getMessageId, messageIds));
+        SysUserNotification noticePatch = new SysUserNotification();
+        noticePatch.setReadFlag("1");
+        notificationMapper.update(noticePatch, new LambdaQueryWrapper<SysUserNotification>()
+            .eq(SysUserNotification::getUserId, me)
+            .eq(SysUserNotification::getCategory, ImPayloadConstants.CATEGORY_IM_PRIVATE)
+            .eq(SysUserNotification::getRefType, "im_message")
+            .in(SysUserNotification::getRefId, messageIds.stream().map(String::valueOf).toList()));
         // P1-6: 向原发送方推送已读回执（事务提交后）
         pushPrivateReadReceipt(peerUserId, me, messageIds);
         // P4-2: 失效当前用户的会话列表缓存（未读数变化）
@@ -213,6 +258,9 @@ public class ImPrivateChatService {
         p.put("content", msg.getContent());
         p.put("msgType", msg.getMsgType());
         p.put("createTime", msg.getCreateTime());
+        p.put("clientMsgId", msg.getClientMsgId());
+        p.put("replyMessageId", msg.getReplyMessageId());
+        p.put("replySnippet", msg.getReplySnippet());
         if (from != null) {
             p.put("senderName", StrUtil.blankToDefault(from.getNickName(), from.getUserName()));
             p.put("senderAvatar", support.resolveAvatarUrl(from.getAvatar()));

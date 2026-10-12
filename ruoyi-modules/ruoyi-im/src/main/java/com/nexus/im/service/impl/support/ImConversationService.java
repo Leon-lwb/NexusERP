@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.im.domain.ImConversationSetting;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
@@ -68,9 +69,11 @@ public class ImConversationService {
      */
     public List<ImConversationVo> listConversations() {
         // P4-2: 先查 Redis 缓存，命中则直接返回（跳过所有 SQL）
-        List<ImConversationVo> cached = conversationCache.get();
+        // 有个人隐藏记录时实时聚合，避免旧缓存摘要重新显示已隐藏的内容。
+        Set<Long> hidden = support.hiddenMessageIds();
+        List<ImConversationVo> cached = hidden.isEmpty() ? conversationCache.get() : null;
         if (cached != null) {
-            return cached;
+            return filterAccessibleCachedGroups(cached, LoginHelper.getUserId());
         }
         Long me = LoginHelper.getUserId();
         List<ImConversationVo> list = new ArrayList<>();
@@ -99,6 +102,21 @@ public class ImConversationService {
         // P4-2: 回填缓存
         conversationCache.put(list);
         return list;
+    }
+
+    /** 群摘要属于受保护数据，缓存不能代替当前成员身份和正常状态校验。 */
+    private List<ImConversationVo> filterAccessibleCachedGroups(List<ImConversationVo> cached, Long me) {
+        if (cached.stream().noneMatch(c -> "GROUP".equals(c.getChatType()))) {
+            return cached;
+        }
+        List<Long> memberships = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getUserId, me)).stream().map(ImGroupMember::getGroupId).filter(java.util.Objects::nonNull).distinct().toList();
+        Set<String> accessible = new LinkedHashSet<>();
+        if (!memberships.isEmpty()) {
+            imGroupMapper.selectByIds(memberships).stream().filter(g -> "0".equals(g.getStatus()))
+                .map(g -> String.valueOf(g.getGroupId())).forEach(accessible::add);
+        }
+        return cached.stream().filter(c -> !"GROUP".equals(c.getChatType()) || accessible.contains(c.getTargetId())).toList();
     }
 
     /**
@@ -144,6 +162,7 @@ public class ImConversationService {
         List<Map<String, Object>> maxIdRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()
             .select("MAX(message_id) as maxId")
             .in("group_id", validGroupIds)
+            .notIn(!support.hiddenMessageIds().isEmpty(), "message_id", support.hiddenMessageIds())
             .groupBy("group_id"));
         Set<Long> maxMessageIds = new LinkedHashSet<>();
         for (Map<String, Object> row : maxIdRows) {
@@ -168,12 +187,8 @@ public class ImConversationService {
         // ── 第 4 步：批量聚合群未读数（1 SQL，GROUP BY group_id） ──
         // P2-1 修复: mapUnderscoreToCamelCase=true 会将列名 "group_id" 转为 map key "groupId"
         // 原 row.get("group_id") 返回 null 导致未读数始终为 0；改用驼峰 key
-        List<Map<String, Object>> groupUnreadRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()
-            .select("group_id", "count(*) as cnt")
-            .in("group_id", validGroupIds)
-            .ne("from_user_id", me)
-            .eq("is_read", "0")
-            .groupBy("group_id"));
+        List<Map<String, Object>> groupUnreadRows = imMessageMapper.selectGroupUnreadCounts(
+            TenantHelper.getTenantId(), me, validGroupIds, support.hiddenMessageIds());
         Map<Long, Long> groupUnreadMap = new LinkedHashMap<>();
         for (Map<String, Object> row : groupUnreadRows) {
             Object gidObj = row.get("groupId");
@@ -267,7 +282,9 @@ public class ImConversationService {
      */
     private List<ImConversationVo> listPrivateConversations(Long me) {
         // ── 第 1 步：DB 侧按对端 pair 去重，每 peer 返回最新一条消息（1 SQL） ──
-        List<ImMessage> recent = imMessageMapper.selectLatestPrivatePerPeer(me);
+        Set<Long> hidden = support.hiddenMessageIds();
+        List<ImMessage> recent = hidden.isEmpty() ? imMessageMapper.selectLatestPrivatePerPeer(me)
+            : imMessageMapper.selectLatestVisiblePrivatePerPeer(TenantHelper.getTenantId(), me, hidden);
         if (recent.isEmpty()) {
             return new ArrayList<>();
         }
@@ -308,6 +325,8 @@ public class ImConversationService {
             .eq("to_user_id", me)
             .in("from_user_id", peerIds)
             .eq("is_read", "0")
+            .eq("revoked", "0")
+            .notIn(!hidden.isEmpty(), "message_id", hidden)
             .isNull("group_id")
             .groupBy("from_user_id"));
         Map<Long, Long> privateUnreadMap = new LinkedHashMap<>();
@@ -369,6 +388,10 @@ public class ImConversationService {
      * P6-B1: 失效当前用户的会话列表缓存。
      * <p>供 AppImController 在置顶/免打扰配置变更后调用，避免 60s TTL 内返回旧数据。
      */
+    public void evictConversationCacheForUsers(java.util.Collection<Long> userIds) {
+        conversationCache.evictUsers(userIds);
+    }
+
     public void evictConversationCache() {
         conversationCache.evict();
     }

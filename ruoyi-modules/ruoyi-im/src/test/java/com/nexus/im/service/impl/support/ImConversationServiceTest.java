@@ -210,6 +210,8 @@ class ImConversationServiceTest extends ImUnitTestBase {
         ImMessage lastMsg = ImTestFixture.buildMessage(1001L, MEMBER_201, null, GROUP_1, "last");
         when(imMessageMapper.selectList(any())).thenReturn(List.of(lastMsg));
 
+        when(imMessageMapper.selectGroupUnreadCounts(any(), any(), anyCollection(), anyCollection())).thenReturn(List.of(unreadRow));
+
         List<ImConversationVo> result = imConversationService.listConversations();
 
         // 守护：群未读数 = 5（若读取下划线 key 会得到 null → 0L）

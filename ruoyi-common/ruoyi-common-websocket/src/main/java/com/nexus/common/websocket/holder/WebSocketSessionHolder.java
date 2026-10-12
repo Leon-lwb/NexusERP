@@ -5,70 +5,68 @@ import lombok.NoArgsConstructor;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * WebSocketSession 用于保存当前所有在线的会话信息
- *
- * @author zendwang
- */
+/** 保存用户的所有在线连接，支持手机、桌面和多标签页同时接收消息。 */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class WebSocketSessionHolder {
 
-    private static final Map<Long, WebSocketSession> USER_SESSION_MAP = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, WebSocketSession>> USER_SESSION_MAP = new ConcurrentHashMap<>();
 
-    /**
-     * 将WebSocket会话添加到用户会话Map中
-     *
-     * @param sessionKey 会话键，用于检索会话
-     * @param session    要添加的WebSocket会话
-     */
+    /** 注册单个连接；用户其他设备的连接继续保留。 */
     public static void addSession(Long sessionKey, WebSocketSession session) {
-        removeSession(sessionKey);
-        USER_SESSION_MAP.put(sessionKey, session);
+        USER_SESSION_MAP.compute(sessionKey, (key, sessions) -> {
+            Map<String, WebSocketSession> current = sessions == null ? new ConcurrentHashMap<>() : sessions;
+            current.put(session.getId(), session);
+            return current;
+        });
     }
 
-    /**
-     * 从用户会话Map中移除指定会话键对应的WebSocket会话
-     *
-     * @param sessionKey 要移除的会话键
-     */
+    /** 主动下线用户时关闭其全部连接。 */
     public static void removeSession(Long sessionKey) {
-        WebSocketSession session = USER_SESSION_MAP.remove(sessionKey);
-        try {
-            session.close(CloseStatus.BAD_DATA);
-        } catch (Exception ignored) {
+        Map<String, WebSocketSession> sessions = USER_SESSION_MAP.remove(sessionKey);
+        if (sessions != null) {
+            sessions.values().forEach(WebSocketSessionHolder::closeSession);
         }
     }
 
-    /**
-     * 根据会话键从用户会话Map中获取WebSocket会话
-     *
-     * @param sessionKey 要获取的会话键
-     * @return 与给定会话键对应的WebSocket会话，如果不存在则返回null
-     */
+    /** 关闭回调仅移除自己的连接，旧连接关闭不得影响新连接。 */
+    public static void removeSession(Long sessionKey, String sessionId) {
+        USER_SESSION_MAP.computeIfPresent(sessionKey, (key, sessions) -> {
+            sessions.remove(sessionId);
+            return sessions.isEmpty() ? null : sessions;
+        });
+    }
+
+    /** 保留单连接查询接口，消息投递使用完整连接列表。 */
     public static WebSocketSession getSessions(Long sessionKey) {
-        return USER_SESSION_MAP.get(sessionKey);
+        return getUserSessions(sessionKey).stream().findFirst().orElse(null);
     }
 
-    /**
-     * 获取存储在用户会话Map中所有WebSocket会话的会话键集合
-     *
-     * @return 所有WebSocket会话的会话键集合
-     */
+    /** 返回连接快照，避免发送期间的增删改变遍历。 */
+    public static Collection<WebSocketSession> getUserSessions(Long sessionKey) {
+        Map<String, WebSocketSession> sessions = USER_SESSION_MAP.get(sessionKey);
+        return sessions == null ? List.of() : List.copyOf(sessions.values());
+    }
+
     public static Set<Long> getSessionsAll() {
-        return USER_SESSION_MAP.keySet();
+        return Set.copyOf(USER_SESSION_MAP.keySet());
     }
 
-    /**
-     * 检查给定的会话键是否存在于用户会话Map中
-     *
-     * @param sessionKey 要检查的会话键
-     * @return 如果存在对应的会话键，则返回true；否则返回false
-     */
     public static Boolean existSession(Long sessionKey) {
-        return USER_SESSION_MAP.containsKey(sessionKey);
+        Map<String, WebSocketSession> sessions = USER_SESSION_MAP.get(sessionKey);
+        return sessions != null && !sessions.isEmpty();
+    }
+
+    private static void closeSession(WebSocketSession session) {
+        try {
+            session.close(CloseStatus.NORMAL);
+        } catch (Exception ignored) {
+            // 连接可能已经关闭，仍需完成本地清理。
+        }
     }
 }

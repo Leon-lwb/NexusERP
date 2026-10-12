@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.sse.utils.SseMessageUtils;
+import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.websocket.dto.WebSocketMessageDto;
 import com.nexus.common.websocket.utils.WebSocketUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -136,14 +137,16 @@ public class ImRealtimePush {
                 imMetrics.recordPushFailure(type, "ws");
             }
             if (SseMessageUtils.isEnable()) {
-                for (Long userId : userIds) {
-                    try {
-                        SseMessageUtils.sendMessage(userId, jsonMessage);
-                    } catch (Exception e) {
-                        log.warn("SSE send failed userId={}: {}", userId, e.getMessage());
-                        sseOk = false;
-                        imMetrics.recordPushFailure(type, "sse");
-                    }
+                try {
+                    // 交给集群订阅者在持有连接的节点下发，避免只发到当前节点。
+                    SseMessageDto sse = new SseMessageDto();
+                    sse.setUserIds(userIds);
+                    sse.setMessage(jsonMessage);
+                    SseMessageUtils.publishMessage(sse);
+                } catch (Exception e) {
+                    log.warn("SSE 广播失败: {}", e.getMessage());
+                    sseOk = false;
+                    imMetrics.recordPushFailure(type, "sse");
                 }
             }
             if (wsOk && sseOk) {

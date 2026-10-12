@@ -50,9 +50,10 @@ public class SysUserNotificationController extends BaseController {
      * @return 操作结果，成功时返回成功状态
      */
     @SaCheckLogin
-    @PutMapping("/read/{notificationId}")
+    @PutMapping("/read/{notificationId:[0-9]+}")
     public R<Void> markRead(@PathVariable Long notificationId) {
-        return toAjax(sysUserNotificationService.markRead(notificationId));
+        sysUserNotificationService.markRead(notificationId);
+        return R.ok();
     }
 
     /**

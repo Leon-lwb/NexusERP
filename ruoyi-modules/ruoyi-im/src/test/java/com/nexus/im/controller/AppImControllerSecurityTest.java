@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
  * <ul>
  *   <li>{@code deleteMessage} - 消息归属校验（私聊 from/to 或群聊成员）</li>
  *   <li>{@code forwardMessage} - 原消息可读校验</li>
- *   <li>{@code revokeRequest} - 通知归属校验</li>
+ *   <li>{@code revokeRequest} - 申请发送方身份校验</li>
  *   <li>{@code sendFriendRequest} - 跨租户好友申请校验</li>
  * </ul>
  * <p>
@@ -67,6 +67,9 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
     @Mock private SysUserNotificationMapper notificationMapper;
     @Mock private ImFriendMapper friendMapper;
     @Mock private ImRealtimePush imRealtimePush;
+
+    @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
+    @Mock private com.nexus.im.service.impl.support.ImConversationService conversationService;
 
     @InjectMocks
     private AppImController controller;
@@ -100,7 +103,8 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
         R<Void> result = controller.deleteMessage(1L);
 
         assertThat(result.getCode()).isEqualTo(200);
-        verify(messageMapper).deleteById(1L);
+        verify(visibility).hide(1L);
+        verify(messageMapper, never()).deleteById(anyLong());
     }
 
     /**
@@ -114,7 +118,8 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
         R<Void> result = controller.deleteMessage(1L);
 
         assertThat(result.getCode()).isEqualTo(200);
-        verify(messageMapper).deleteById(1L);
+        verify(visibility).hide(1L);
+        verify(messageMapper, never()).deleteById(anyLong());
     }
 
     /**
@@ -185,7 +190,7 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
     // ==================== revokeRequest 越权校验 ====================
 
     /**
-     * 撤销好友请求时，通知归属人是别人 → 拒绝撤销。
+     * 缺少申请关联的通知不能撤销，也不能删除接收方记录。
      */
     @Test
     void revokeRequest_nonOwner_returnsFail() {
@@ -200,17 +205,19 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
     }
 
     /**
-     * 撤销好友请求时，通知归属人是当前用户 → 允许撤销。
+     * 通知接收方不能代替发送方撤销好友申请，必须保留接收方记录。
      */
     @Test
-    void revokeRequest_owner_returnsOk() {
+    void revokeRequest_receiver_returnsFail() {
         SysUserNotification n = ImTestFixture.buildNotification(1L, ME_USER_ID, "im_friend_request");
         when(notificationMapper.selectById(1L)).thenReturn(n);
 
         R<Void> result = controller.revokeRequest(1L);
 
-        assertThat(result.getCode()).isEqualTo(200);
-        verify(notificationMapper).deleteById(1L);
+        assertThat(result.getCode()).isEqualTo(500);
+        verify(notificationMapper, never()).deleteById(anyLong());
+        verify(messageMapper, never()).update(any(ImMessage.class), any());
+        verify(notificationMapper, never()).updateById(any(SysUserNotification.class));
     }
 
     // ==================== sendFriendRequest 跨租户校验 ====================

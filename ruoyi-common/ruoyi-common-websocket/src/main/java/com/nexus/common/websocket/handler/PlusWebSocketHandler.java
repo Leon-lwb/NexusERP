@@ -106,7 +106,7 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
             log.info("[disconnect] invalid token received. sessionId: {}", session.getId());
             return;
         }
-        WebSocketSessionHolder.removeSession(loginUser.getUserId());
+        WebSocketSessionHolder.removeSession(loginUser.getUserId(), session.getId());
         log.info("[disconnect] sessionId: {},userId:{},userType:{}", session.getId(), loginUser.getUserId(), loginUser.getUserType());
     }
 

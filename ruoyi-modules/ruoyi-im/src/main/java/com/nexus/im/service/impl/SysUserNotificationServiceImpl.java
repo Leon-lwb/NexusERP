@@ -2,6 +2,7 @@ package com.nexus.im.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HtmlUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +16,14 @@ import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImConversationCache;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Date;
 
 /**
  * 用户通知Service业务层处理
@@ -37,6 +40,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
     private final SysUserNotificationMapper notificationMapper;
     /** 实时推送组件，用于 afterCommit 下发通知信封。 */
     private final ImRealtimePush imRealtimePush;
+    /** 通知承载群未读状态，已读后会话缓存必须同步失效。 */
+    private final ImConversationCache conversationCache;
 
     /**
      * 写入一条用户通知并在事务提交后推送。
@@ -62,10 +67,13 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         row.setContent(content);
         row.setReadFlag("0");
         row.setExtJson(extJson);
+        if (row.getCreateTime() == null) {
+            row.setCreateTime(new Date());
+        }
         notificationMapper.insert(row);
-        String preview = StrUtil.maxLength(StrUtil.removeAll(content, "<[^>]+>"), 200);
+        String preview = StrUtil.maxLength(HtmlUtil.cleanHtmlTag(content), 200);
         String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), category, row.getTitle(), preview, null,
-            row.getRefType(), row.getRefId());
+            row.getRefType(), row.getRefId(), row.getExtJson(), row.getCreateTime());
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
         imRealtimePush.publishToUserAfterCommit(userId, json);
         return row.getNotificationId();
@@ -84,6 +92,9 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         }
         // 规整字段：title 默认值、readFlag 默认 "0"
         for (SysUserNotification row : rows) {
+            if (row.getCreateTime() == null) {
+                row.setCreateTime(new Date());
+            }
             if (StrUtil.isBlank(row.getTitle())) {
                 row.setTitle("通知");
             }
@@ -96,10 +107,10 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         // 逐条注册 afterCommit 推送（每用户 envelope 含不同 notificationId，无法合并）
         List<Long> ids = new ArrayList<>(rows.size());
         for (SysUserNotification row : rows) {
-            String preview = StrUtil.maxLength(StrUtil.removeAll(row.getContent(), "<[^>]+>"), 200);
+            String preview = StrUtil.maxLength(HtmlUtil.cleanHtmlTag(row.getContent()), 200);
             String json = ImEnvelopeHelper.userNotification(
                 row.getNotificationId(), row.getCategory(), row.getTitle(), preview, null,
-                row.getRefType(), row.getRefId());
+                row.getRefType(), row.getRefId(), row.getExtJson(), row.getCreateTime());
             imRealtimePush.publishToUserAfterCommit(row.getUserId(), json);
             ids.add(row.getNotificationId());
         }
@@ -132,10 +143,13 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         if (StrUtil.isNotBlank(event.getTenantId())) {
             row.setTenantId(event.getTenantId());
         }
+        if (row.getCreateTime() == null) {
+            row.setCreateTime(new Date());
+        }
         notificationMapper.insert(row);
-        String preview = StrUtil.maxLength(StrUtil.removeAll(event.getContent(), "<[^>]+>"), 200);
+        String preview = StrUtil.maxLength(HtmlUtil.cleanHtmlTag(event.getContent()), 200);
         String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), row.getCategory(), row.getTitle(), preview,
-            event.getContentUrl(), row.getRefType(), row.getRefId());
+            event.getContentUrl(), row.getRefType(), row.getRefId(), row.getExtJson(), row.getCreateTime());
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
         imRealtimePush.publishToUserAfterCommit(event.getTargetUserId(), json);
     }
@@ -172,8 +186,17 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         if (row == null || !userId.equals(row.getUserId())) {
             throw new ServiceException("通知不存在或无权操作");
         }
-        row.setReadFlag("1");
-        return notificationMapper.updateById(row);
+        if ("1".equals(row.getReadFlag())) {
+            return 0;
+        }
+        SysUserNotification patch = new SysUserNotification();
+        patch.setReadFlag("1");
+        int updated = notificationMapper.update(patch, new LambdaQueryWrapper<SysUserNotification>()
+            .eq(SysUserNotification::getNotificationId, notificationId)
+            .eq(SysUserNotification::getUserId, userId)
+            .eq(SysUserNotification::getReadFlag, "0"));
+        if (updated > 0) conversationCache.evictUser(userId);
+        return updated;
     }
 
     /**
@@ -200,8 +223,10 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         Long userId = LoginHelper.getUserId();
         SysUserNotification update = new SysUserNotification();
         update.setReadFlag("1");
-        return notificationMapper.update(update, new LambdaQueryWrapper<SysUserNotification>()
+        int updated = notificationMapper.update(update, new LambdaQueryWrapper<SysUserNotification>()
             .eq(SysUserNotification::getUserId, userId)
             .eq(SysUserNotification::getReadFlag, "0"));
+        if (updated > 0) conversationCache.evictUser(userId);
+        return updated;
     }
 }

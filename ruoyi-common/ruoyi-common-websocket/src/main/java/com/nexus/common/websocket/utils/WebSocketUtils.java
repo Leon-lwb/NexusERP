@@ -1,20 +1,17 @@
 package com.nexus.common.websocket.utils;
 
-import cn.hutool.core.collection.CollUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.websocket.dto.WebSocketMessageDto;
 import com.nexus.common.websocket.holder.WebSocketSessionHolder;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.PongMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 
 import static com.nexus.common.websocket.constant.WebSocketConstants.WEB_SOCKET_TOPIC;
@@ -35,8 +32,16 @@ public class WebSocketUtils {
      * @param message    要发送的消息内容
      */
     public static void sendMessage(Long sessionKey, String message) {
-        WebSocketSession session = WebSocketSessionHolder.getSessions(sessionKey);
-        sendMessage(session, message);
+        for (WebSocketSession session : WebSocketSessionHolder.getUserSessions(sessionKey)) {
+            if (!sendMessage(session, new TextMessage(message))) {
+                WebSocketSessionHolder.removeSession(sessionKey, session.getId());
+                try {
+                    session.close(CloseStatus.SERVER_ERROR);
+                } catch (Exception ignored) {
+                    // 已失效连接不应阻断同账号其他设备的投递。
+                }
+            }
+        }
     }
 
     /**
@@ -54,25 +59,15 @@ public class WebSocketUtils {
      * @param webSocketMessage 要发布的WebSocket消息对象
      */
     public static void publishMessage(WebSocketMessageDto webSocketMessage) {
-        List<Long> unsentSessionKeys = new ArrayList<>();
-        // 当前服务内session,直接发送消息
-        for (Long sessionKey : webSocketMessage.getSessionKeys()) {
-            if (WebSocketSessionHolder.existSession(sessionKey)) {
-                WebSocketUtils.sendMessage(sessionKey, webSocketMessage.getMessage());
-                continue;
-            }
-            unsentSessionKeys.add(sessionKey);
+        // 空定向列表不得被订阅端解释为全员广播，广播只能显式调用 publishAll。
+        if (webSocketMessage == null || webSocketMessage.getSessionKeys() == null
+            || webSocketMessage.getSessionKeys().isEmpty()) {
+            return;
         }
-        // 不在当前服务内session,发布订阅消息
-        if (CollUtil.isNotEmpty(unsentSessionKeys)) {
-            WebSocketMessageDto broadcastMessage = new WebSocketMessageDto();
-            broadcastMessage.setMessage(webSocketMessage.getMessage());
-            broadcastMessage.setSessionKeys(unsentSessionKeys);
-            RedisUtils.publish(WEB_SOCKET_TOPIC, broadcastMessage, consumer -> {
-                log.info(" WebSocket发送主题订阅消息topic:{} session keys:{} message:{}",
-                    WEB_SOCKET_TOPIC, unsentSessionKeys, webSocketMessage.getMessage());
-            });
-        }
+        // 同一用户可能在多个节点同时在线，统一广播后由各节点投递给本机连接。
+        RedisUtils.publish(WEB_SOCKET_TOPIC, webSocketMessage, consumer -> {
+            log.debug("WebSocket 已发布，接收用户数:{}", webSocketMessage.getSessionKeys().size());
+        });
     }
 
     /**
@@ -84,7 +79,7 @@ public class WebSocketUtils {
         WebSocketMessageDto broadcastMessage = new WebSocketMessageDto();
         broadcastMessage.setMessage(message);
         RedisUtils.publish(WEB_SOCKET_TOPIC, broadcastMessage, consumer -> {
-            log.info("WebSocket发送主题订阅消息topic:{} message:{}", WEB_SOCKET_TOPIC, message);
+            log.debug("WebSocket 已发布广播消息，topic:{}", WEB_SOCKET_TOPIC);
         });
     }
 
@@ -113,15 +108,17 @@ public class WebSocketUtils {
      * @param session WebSocket会话
      * @param message 要发送的WebSocket消息对象
      */
-    private static void sendMessage(WebSocketSession session, WebSocketMessage<?> message) {
+    private static boolean sendMessage(WebSocketSession session, WebSocketMessage<?> message) {
         if (session == null || !session.isOpen()) {
-            log.warn("[send] session会话已经关闭");
-        } else {
-            try {
-                session.sendMessage(message);
-            } catch (IOException e) {
-                log.error("[send] session({}) 发送消息({}) 异常", session, message, e);
-            }
+            return false;
+        }
+        try {
+            session.sendMessage(message);
+            return true;
+        } catch (Exception e) {
+            // 装饰会话缓冲超限抛运行时异常，也必须在单个连接边界内隔离。
+            log.warn("WebSocket 发送失败，sessionId:{}", session.getId(), e);
+            return false;
         }
     }
 }

@@ -42,5 +42,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- 通道生命周期回归测试，不引入生产运行依赖。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

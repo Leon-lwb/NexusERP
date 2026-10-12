@@ -15,6 +15,7 @@ import com.nexus.im.push.ImMetrics;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.im.service.impl.support.ImChatSupport;
+import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.service.impl.support.ImConversationCache;
 import com.nexus.im.service.impl.support.ImGroupChatService;
 import com.nexus.im.service.impl.support.ImPrivateChatService;
@@ -75,6 +76,7 @@ class ImTenantIsolationTest extends ImUnitTestBase {
     @Mock private ImConversationCache conversationCache;
     @Mock private ISysUserNotificationService sysUserNotificationService;
     @Mock private ImMetrics imMetrics;
+    @Mock private ImMessageVisibility visibility;
 
     private ImChatSupport support;
     private ImPrivateChatService privateChatService;
@@ -93,12 +95,12 @@ class ImTenantIsolationTest extends ImUnitTestBase {
      */
     @BeforeEach
     void setUpServices() {
-        support = new ImChatSupport(imMessageMapper, imGroupMemberMapper, sysUserService, sysOssService, sysUserMapper);
+        support = new ImChatSupport(imMessageMapper, imGroupMemberMapper, sysUserService, sysOssService, sysUserMapper, visibility);
         privateChatService = new ImPrivateChatService(imMessageMapper, sysUserService, sysUserNotificationService,
-            imRealtimePush, messageTypeRegistry, support, conversationCache, imMetrics);
+            imRealtimePush, messageTypeRegistry, support, conversationCache, imMetrics, notificationMapper);
         groupChatService = new ImGroupChatService(imMessageMapper, imGroupMapper, imGroupMemberMapper,
             sysUserService, sysUserNotificationService, imRealtimePush, messageTypeRegistry, support,
-            conversationCache, imMetrics);
+            conversationCache, imMetrics, notificationMapper);
     }
 
     /**
@@ -181,7 +183,7 @@ class ImTenantIsolationTest extends ImUnitTestBase {
         // 跨租户时 isGroupMember 的 selectCount 受多租户插件过滤返回 0 → false
         when(imGroupMemberMapper.selectCount(any())).thenReturn(0L);
 
-        PageQuery pageQuery = new PageQuery(20, 1);
+        PageQuery pageQuery = com.nexus.im.support.ImTestFixture.pageQuery(20, 1);
         assertThatThrownBy(() -> groupChatService.groupHistory(GROUP_B, pageQuery))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("无权查看");
@@ -201,7 +203,7 @@ class ImTenantIsolationTest extends ImUnitTestBase {
         // 同租户群存在，但当前用户不是成员（isGroupMember 返回 false）
         when(imGroupMemberMapper.selectCount(any())).thenReturn(0L);
 
-        PageQuery pageQuery = new PageQuery(20, 1);
+        PageQuery pageQuery = com.nexus.im.support.ImTestFixture.pageQuery(20, 1);
         assertThatThrownBy(() -> groupChatService.groupHistory(GROUP_A, pageQuery))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("无权查看");

@@ -81,6 +81,8 @@ class AppImControllerP6Test extends ImUnitTestBase {
     @Mock private ImConversationSettingMapper conversationSettingMapper;
     @Mock private ImFavoriteMapper favoriteMapper;
 
+    @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
+
     @InjectMocks
     private AppImController controller;
 
@@ -514,7 +516,7 @@ class AppImControllerP6Test extends ImUnitTestBase {
         mockPage.setRecords(records);
         when(favoriteMapper.selectPage(any(), any())).thenReturn(mockPage);
 
-        TableDataInfo<ImFavorite> result = controller.favoriteList(new PageQuery(10, 1));
+        TableDataInfo<ImFavorite> result = controller.favoriteList(com.nexus.im.support.ImTestFixture.pageQuery(10, 1));
 
         // 守护：调用 selectPage 1 次
         verify(favoriteMapper, times(1)).selectPage(any(), any(LambdaQueryWrapper.class));
@@ -537,7 +539,7 @@ class AppImControllerP6Test extends ImUnitTestBase {
         mockPage.setRecords(new ArrayList<>());
         when(favoriteMapper.selectPage(any(), any())).thenReturn(mockPage);
 
-        TableDataInfo<ImFavorite> result = controller.favoriteList(new PageQuery(10, 1));
+        TableDataInfo<ImFavorite> result = controller.favoriteList(com.nexus.im.support.ImTestFixture.pageQuery(10, 1));
 
         assertThat(result.getRows()).isNullOrEmpty();
         assertThat(result.getTotal()).isEqualTo(0L);

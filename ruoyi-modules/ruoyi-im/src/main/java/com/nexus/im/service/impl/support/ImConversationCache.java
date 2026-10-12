@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * P4-2: IM 会话列表 Redis 缓存。
@@ -88,7 +90,7 @@ public class ImConversationCache {
      */
     public void evict() {
         try {
-            RedisUtils.deleteObject(buildKey());
+            evictKeyAfterCommit(buildKey());
         } catch (Exception e) {
             log.debug("[IM] 会话缓存失效失败，等待 TTL 过期: {}", e.getMessage());
         }
@@ -102,7 +104,7 @@ public class ImConversationCache {
             return;
         }
         try {
-            RedisUtils.deleteObject(buildKeyForUser(userId));
+            evictKeyAfterCommit(buildKeyForUser(userId));
         } catch (Exception e) {
             log.debug("[IM] 会话缓存失效失败(userId={}): {}", userId, e.getMessage());
         }
@@ -117,6 +119,26 @@ public class ImConversationCache {
         }
         for (Long uid : userIds) {
             evictUser(uid);
+        }
+    }
+
+    private void evictKeyAfterCommit(String key) {
+        Runnable eviction = () -> {
+            try {
+                RedisUtils.deleteObject(key);
+            } catch (Exception e) {
+                log.debug("[IM] 会话缓存失效失败，等待过期: {}", e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    eviction.run();
+                }
+            });
+        } else {
+            eviction.run();
         }
     }
 

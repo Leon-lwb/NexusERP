@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * AI 聊天接口
@@ -32,6 +33,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/ai/chat")
 public class AiChatController {
+
+    /** 与 App 消息输入组件的默认上限一致，原始正文保留以供完成回填匹配。 */
+    private static final int CONTENT_MAX_LENGTH = 2000;
 
     /** AI 对话门面，封装发送消息、流式回复与 SSE 推送的完整链路。 */
     private final AiServiceFacade aiServiceFacade;
@@ -48,7 +52,15 @@ public class AiChatController {
      * @return 操作结果（含 sessionId）
      */
     @PostMapping("/send")
-    public R<Long> send(@RequestBody AiChatRequest request) {
+    public R<Long> send(@RequestBody(required = false) AiChatRequest request) {
+        String content = request == null ? null : request.getContent();
+        if (content == null || content.codePoints().allMatch(codePoint ->
+            Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint))) {
+            return R.fail(400, "消息内容不能为空");
+        }
+        if (content.length() > CONTENT_MAX_LENGTH) {
+            return R.fail(400, "消息内容不能超过2000个字符");
+        }
         Long sessionId = aiServiceFacade.chat(request);
         if (sessionId == null) {
             return R.fail("未找到可用的 AI 模型，请先配置模型");
@@ -67,8 +79,8 @@ public class AiChatController {
         // 校验会话归属：只能查看自己的会话消息
         Long userId = LoginHelper.getUserId();
         AiSession session = aiSessionService.selectById(sessionId);
-        if (session == null || !session.getUserId().equals(userId)) {
-            return R.fail("无权访问该会话");
+        if (session == null || !isOwnedSession(session, userId)) {
+            return R.fail(404, "无权访问该会话");
         }
         List<AiMessage> messages = aiMessageMapper.selectList(
             new LambdaQueryWrapper<AiMessage>()
@@ -102,8 +114,8 @@ public class AiChatController {
         Long userId = LoginHelper.getUserId();
         for (Long id : ids) {
             AiSession session = aiSessionService.selectById(id);
-            if (session == null || !session.getUserId().equals(userId)) {
-                return R.fail("无权删除该会话");
+            if (session == null || !isOwnedSession(session, userId)) {
+                return R.fail(404, "无权删除该会话");
             }
         }
         aiSessionService.deleteByIds(ids);
@@ -124,8 +136,8 @@ public class AiChatController {
         // 校验会话归属：只能重命名自己的会话
         Long userId = LoginHelper.getUserId();
         AiSession existing = aiSessionService.selectById(session.getId());
-        if (existing == null || !existing.getUserId().equals(userId)) {
-            return R.fail("无权修改该会话");
+        if (existing == null || !isOwnedSession(existing, userId)) {
+            return R.fail(404, "无权修改该会话");
         }
         aiSessionService.updateTitle(session.getId(), session.getTitle());
         return R.ok();
@@ -147,11 +159,11 @@ public class AiChatController {
         Long userId = LoginHelper.getUserId();
         AiMessage message = aiMessageMapper.selectById(messageId);
         if (message == null) {
-            return R.fail("消息不存在");
+            return R.fail(404, "消息不存在");
         }
         AiSession session = aiSessionService.selectById(message.getSessionId());
-        if (session == null || !session.getUserId().equals(userId)) {
-            return R.fail("无权操作该消息");
+        if (session == null || !isOwnedSession(session, userId)) {
+            return R.fail(404, "无权操作该消息");
         }
         // 更新反馈（使用 UpdateWrapper 确保 null 值能写入数据库，绕过 NOT_NULL 策略）
         LambdaUpdateWrapper<AiMessage> updateWrapper = new LambdaUpdateWrapper<>();
@@ -173,11 +185,11 @@ public class AiChatController {
         Long userId = LoginHelper.getUserId();
         AiMessage message = aiMessageMapper.selectById(messageId);
         if (message == null) {
-            return R.fail("消息不存在");
+            return R.fail(404, "消息不存在");
         }
         AiSession session = aiSessionService.selectById(message.getSessionId());
-        if (session == null || !session.getUserId().equals(userId)) {
-            return R.fail("无权操作该消息");
+        if (session == null || !isOwnedSession(session, userId)) {
+            return R.fail(404, "无权操作该消息");
         }
         aiMessageMapper.deleteById(messageId);
         return R.ok();
@@ -194,8 +206,8 @@ public class AiChatController {
     public R<Map<String, Object>> getTokenUsage(@PathVariable Long sessionId) {
         Long userId = LoginHelper.getUserId();
         AiSession session = aiSessionService.selectById(sessionId);
-        if (session == null || !session.getUserId().equals(userId)) {
-            return R.fail("无权访问该会话");
+        if (session == null || !isOwnedSession(session, userId)) {
+            return R.fail(404, "无权访问该会话");
         }
 
         List<AiMessage> messages = aiMessageMapper.selectList(
@@ -229,10 +241,10 @@ public class AiChatController {
         // 校验会话归属：只能导出自己的会话
         Long userId = LoginHelper.getUserId();
         AiSession session = aiSessionService.selectById(sessionId);
-        if (session == null || !session.getUserId().equals(userId)) {
+        if (session == null || !isOwnedSession(session, userId)) {
             try {
                 response.setContentType("application/json;charset=utf-8");
-                response.getWriter().write("{\"code\":500,\"msg\":\"无权访问该会话\"}");
+                response.getWriter().write("{\"code\":404,\"msg\":\"无权访问该会话\"}");
                 return;
             } catch (Exception ignored) {
                 return;
@@ -260,6 +272,12 @@ public class AiChatController {
         } catch (java.io.IOException e) {
             log.error("导出会话失败: sessionId={}", sessionId, e);
         }
+    }
+
+    /** 会话读取或写入前同时校验用户和文本租户，拒绝结果不进入消息 Mapper。 */
+    private boolean isOwnedSession(AiSession session, Long userId) {
+        return userId.equals(session.getUserId())
+            && Objects.equals(LoginHelper.getTenantId(), session.getTenantId());
     }
 
     /**

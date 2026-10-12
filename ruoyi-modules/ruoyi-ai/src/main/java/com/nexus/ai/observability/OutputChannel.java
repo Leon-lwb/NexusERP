@@ -91,8 +91,8 @@ public class OutputChannel {
     /**
      * 写入：线程安全，非阻塞，队列满时丢弃
      */
-    public void send(String text) {
-        if (text == null || text.isEmpty()) {
+    public synchronized void send(String text) {
+        if (isCompleted() || text == null || text.isEmpty()) {
             return;
         }
         try {
@@ -107,7 +107,8 @@ public class OutputChannel {
     /**
      * 标记完成
      */
-    public void complete() {
+    public synchronized void complete() {
+        if (isCompleted()) return;
         queue.offer(DONE);
         completed.countDown();
     }
@@ -115,9 +116,10 @@ public class OutputChannel {
     /**
      * 标记错误完成
      */
-    public void completeWithError(Throwable t) {
+    public synchronized void completeWithError(Throwable t) {
+        if (isCompleted()) return;
         error.set(t);
-        queue.offer("\n[错误] 致命错误: " + t.getMessage());
+        // 错误由生成生命周期统一发布，事件队列不再混入原始异常或非 JSON 文本。
         queue.offer(DONE);
         completed.countDown();
     }

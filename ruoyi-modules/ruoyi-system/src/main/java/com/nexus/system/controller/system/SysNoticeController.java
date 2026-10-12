@@ -3,13 +3,11 @@ package com.nexus.system.controller.system;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
-import com.nexus.common.core.service.DictService;
 import com.nexus.common.idempotent.annotation.RepeatSubmit;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.system.domain.bo.SysNoticeBo;
 import com.nexus.system.domain.vo.SysNoticeVo;
@@ -19,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 通知公告Controller
- * <p>提供通知公告的分页查询、详情、增删改等接口；新增公告会通过 SSE 向在线用户推送提醒。
+ * <p>提供通知公告的分页查询、详情、增删改等接口；新增公告经用户通知事件向所属租户的启用用户发送提醒。
  * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
@@ -32,8 +30,6 @@ public class SysNoticeController extends BaseController {
 
     /** 通知公告业务服务，提供分页、增删改等能力。 */
     private final ISysNoticeService noticeService;
-    /** 字典服务，用于解析公告类型的字典标签。 */
-    private final DictService dictService;
 
     /**
      * 分页查询通知公告列表。
@@ -61,7 +57,7 @@ public class SysNoticeController extends BaseController {
     }
 
     /**
-     * 新增通知公告，并通过 SSE 向全部在线用户推送公告提醒。
+     * 新增通知公告，由业务服务在事务内发布所属租户的用户通知。
      *
      * @param notice 通知公告新增参数
      * @return 操作结果，成功时返回成功状态
@@ -71,13 +67,7 @@ public class SysNoticeController extends BaseController {
     @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysNoticeBo notice) {
-        int rows = noticeService.insertNotice(notice);
-        if (rows <= 0) {
-            return R.fail();
-        }
-        String type = dictService.getDictLabel("sys_notice_type", notice.getNoticeType());
-        SseMessageUtils.publishAll("[" + type + "] " + notice.getNoticeTitle());
-        return R.ok();
+        return toAjax(noticeService.insertNotice(notice));
     }
 
     /**

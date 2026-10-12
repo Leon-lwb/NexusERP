@@ -97,4 +97,22 @@ public final class ImTestFixture {
     public static Long snowflakeId(long seq) {
         return 1_900_000_000_000_000_000L + seq;
     }
+    /** 同时支持当前源码和已安装依赖的分页构造器。 */
+    public static com.nexus.common.mybatis.core.page.PageQuery pageQuery(int pageSize, int pageNum) {
+        try {
+            com.nexus.common.mybatis.core.page.PageQuery query;
+            try {
+                query = com.nexus.common.mybatis.core.page.PageQuery.class.getDeclaredConstructor().newInstance();
+            } catch (NoSuchMethodException e) {
+                query = com.nexus.common.mybatis.core.page.PageQuery.class
+                    .getDeclaredConstructor(Integer.class, Integer.class).newInstance(pageSize, pageNum);
+            }
+            query.setPageSize(pageSize);
+            query.setPageNum(pageNum);
+            return query;
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("无法构造分页参数", e);
+        }
+    }
+
 }

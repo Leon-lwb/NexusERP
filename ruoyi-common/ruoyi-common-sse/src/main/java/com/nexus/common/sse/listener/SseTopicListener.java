@@ -28,7 +28,7 @@ public class SseTopicListener implements ApplicationRunner, Ordered {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         sseEmitterManager.subscribeMessage((message) -> {
-            log.info("SSE主题订阅收到消息session keys={} message={}", message.getUserIds(), message.getMessage());
+            log.debug("SSE 收到订阅消息，接收用户数:{}", message.getUserIds() == null ? 0 : message.getUserIds().size());
             // 如果key不为空就按照key发消息 如果为空就群发
             if (CollUtil.isNotEmpty(message.getUserIds())) {
                 message.getUserIds().forEach(key -> {
