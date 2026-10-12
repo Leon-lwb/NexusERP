@@ -391,6 +391,11 @@ const quickTips = ['查询所有业务表', '本月采购订单总金额', '各�
 /**
  * AI SSE 消息监听器
  */
+function clearAssistantThinking() {
+  const message = messages.value[messages.value.length - 1];
+  if (message?.role === 'assistant') message.thinking = undefined;
+}
+
 function onAiSseMessage(event: Event) {
   const detail = (event as CustomEvent).detail;
   if (!detail) return;
@@ -400,6 +405,7 @@ function onAiSseMessage(event: Event) {
       thinking.value = true;
       break;
     case 'AI_CONTENT_INCREMENT':
+      clearAssistantThinking();
       // 流式 Token 追加模式
       thinking.value = false;
       const incMsg = messages.value[messages.value.length - 1];
@@ -411,6 +417,7 @@ function onAiSseMessage(event: Event) {
       nextTick(() => scrollToBottom());
       break;
     case 'AI_CONTENT':
+      clearAssistantThinking();
       // Agent 模式完整替换
       thinking.value = false;
       loading.value = false;
@@ -423,6 +430,7 @@ function onAiSseMessage(event: Event) {
       nextTick(() => scrollToBottom());
       break;
     case 'AI_DONE':
+      clearAssistantThinking();
       thinking.value = false;
       loading.value = false;
       // 刷新会话列表（新会话可能已创建）
@@ -431,6 +439,7 @@ function onAiSseMessage(event: Event) {
       nextTick(() => mountEchartsContainers());
       break;
     case 'AI_ERROR':
+      clearAssistantThinking();
       thinking.value = false;
       loading.value = false;
       messages.value.push({ role: 'assistant', content: `[错误] ${detail.content}` });
@@ -541,6 +550,8 @@ function onAiSseMessage(event: Event) {
       break;
     }
     case 'AI_AGENT_THINKING': {
+      // 已结束的请求不再接收迟到的进度状态。
+      if (!loading.value) break;
       // Agent 思考过程
       thinking.value = false;
       let thinkInfo: { agentName?: string; message?: string } = {};

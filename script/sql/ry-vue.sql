@@ -45120,7 +45120,8 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 (6185, '底库注册', 6183, 1, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:register', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '注册/重新注册/批量注册'),
 (6186, '底库删除', 6183, 2, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:remove', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '删除底库条目'),
 (6187, '复查误判', 6184, 1, '', '', '', 1, 0, 'F', '0', '0', 'sch:attendance:review', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '标记误判(PASS)/代打卡(FAIL)'),
-(6190, '物料检测调试', 6182, 3, 'detect', 'cv/detect/index', NULL, 1, 0, 'C', '0', '0', 'cv:detect:query', 'search', 103, 1, '2026-08-02 16:25:08', NULL, NULL, '物料标签 OCR/YOLO 检测调试(Phase 2)');
+(6190, '物料检测调试', 6182, 3, 'detect', 'cv/detect/index', NULL, 1, 0, 'C', '0', '0', 'cv:detect:query', 'search', 103, 1, '2026-08-02 16:25:08', NULL, NULL, '物料标签 OCR/YOLO 检测调试(Phase 2)'),
+(6195, '工业缺陷检测', 6182, 4, 'defect', 'cv/defect/index', NULL, 1, 0, 'C', '0', '0', 'cv:detect:query', 'monitor', 103, 1, '2026-10-11 00:00:00', NULL, NULL, '金属表面/PCB 缺陷检测（Vision 场景模型）');
 
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`, `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES
 (6191, '人脸1:1验证', 6183, 3, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:verify', '#', 103, 1, '2026-09-20 23:18:39', NULL, NULL, '1:1 人脸验证(ERP-CV-03)'),

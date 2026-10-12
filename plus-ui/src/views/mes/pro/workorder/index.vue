@@ -120,6 +120,7 @@ import { listWorkOrder, getWorkOrder, addWorkOrder, updateWorkOrder, delWorkOrde
 import type { ProWorkOrderVO, ProWorkOrderQuery } from '@/api/mes/pro/types';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_wo_status, mes_wo_source_type } = toRefs<any>(proxy.useDict('prd_wo_status', 'mes_wo_source_type'));
@@ -195,7 +196,5 @@ const progressOf = (row: ProWorkOrderVO) => {
 /** 日期格式化：截取到日（与 mes/eq/oee、mes/eq/repair/statistics 同型实现） */
 const fmtDate = (s?: string) => (s ? String(s).substring(0, 10) : '-');
 
-onActivated(() => {
-  getList();
-});
+useListRefresh(getList);
 </script>

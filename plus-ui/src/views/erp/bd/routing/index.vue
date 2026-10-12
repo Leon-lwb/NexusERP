@@ -105,6 +105,7 @@ import { listRouting, getRouting, addRouting, updateRouting, delRouting, activat
 import type { RoutingQuery } from '@/api/erp/bd/routing/types';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -170,7 +171,5 @@ function handleActivateVersion(row: any) {
     .catch(() => {});
 }
 
-onActivated(() => {
-  getList();
-});
+useListRefresh(getList);
 </script>

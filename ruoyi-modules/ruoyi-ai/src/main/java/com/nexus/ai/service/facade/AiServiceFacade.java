@@ -437,8 +437,13 @@ public class AiServiceFacade {
         }
         enhancedSb.append("【用户问题】\n").append(contextualQuery);
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
+        boolean directBulkQuery = isDirectBulkDataQuery(request.getContent());
+        ChatModel queryModel = isPureDataQuery(request.getContent()) ? new CompleteAnswerChatModel(chatModel,
+            chatModelFactory.getStreamingChatModel(modelConfig.getId(), request),
+            token -> lifecycle.progress(() -> AiSseMessageHelper.sendContentIncrement(userId, token)),
+            token -> lifecycle.progress(() -> AiSseMessageHelper.sendThinkingToken(userId, token))) : chatModel;
         var queryAgentBuilder = AgenticServices.agentBuilder(ErpQueryAgent.class)
-            .chatModel(chatModel);
+            .chatModel(queryModel);
         if (!queryTools.isEmpty()) {
             queryAgentBuilder.tools(queryTools.toArray());
         }
@@ -457,7 +462,7 @@ public class AiServiceFacade {
         List<Object> subAgents = new ArrayList<>();
         subAgents.add(queryAgent);
         subAgents.add(reportAgent);
-        if (mcpCapability.hasTools()) {
+        if (!directBulkQuery && mcpCapability.hasTools()) {
             McpDocumentAgent documentAgent = AgenticServices.agentBuilder(McpDocumentAgent.class)
                 .chatModel(chatModel)
                 .toolProvider(mcpCapability.provider())
@@ -471,13 +476,14 @@ public class AiServiceFacade {
         }
         final String enhancedQuery = enhancedSb.toString();
         // 增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数。
-        SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
+        SupervisorAgent supervisor = directBulkQuery ? null : AgenticServices.supervisorBuilder()
             .chatModel(chatModel)
             .subAgents(subAgents)
             .responseStrategy(SupervisorResponseStrategy.LAST)
             .maxAgentsInvocations(20)
             .build();
 
+        String executionAgentName = directBulkQuery ? "ErpQueryAgent" : "SupervisorAgent";
         AiSseMessageHelper.sendThinking(userId);
 
         // 创建 OutputChannel 用于流式推送
@@ -494,17 +500,17 @@ public class AiServiceFacade {
                 AiToolExecutedListener.setChannel(channel);
 
                 long startTime = System.currentTimeMillis();
-                aiAgentListener.onAgentStart("SupervisorAgent", enhancedQuery);
+                aiAgentListener.onAgentStart(executionAgentName, enhancedQuery);
 
                 // 推送 Agent 开始思考
-                AgentStreamHelper.sendThinking(channel, "SupervisorAgent", "开始分析您的问题...");
+                AgentStreamHelper.sendThinking(channel, executionAgentName, "开始分析您的问题...");
 
-                String result = supervisor.invoke(enhancedQuery);
+                String result = directBulkQuery ? queryAgent.query(enhancedQuery) : supervisor.invoke(enhancedQuery);
                 // 先验证正文与本请求的真实读取证据；失败不得落库、推送 content/done 或正常 complete。
                 mcpCapability.requireSuccessfulResult(result);
 
                 long duration = System.currentTimeMillis() - startTime;
-                aiAgentListener.onAgentComplete("SupervisorAgent", duration, 0);
+                aiAgentListener.onAgentComplete(executionAgentName, duration, 0);
 
                 if (lifecycle.complete(() -> {
                     saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
@@ -516,7 +522,7 @@ public class AiServiceFacade {
                 }
             } catch (Exception e) {
                 lifecycle.fail(e);
-                aiAgentListener.onAgentError("SupervisorAgent", AiChatSseLifecycle.ERROR_MESSAGE);
+                aiAgentListener.onAgentError(executionAgentName, AiChatSseLifecycle.ERROR_MESSAGE);
                 channel.completeWithError(e);
             } finally {
                 AiToolExecutedListener.clearChannel();
@@ -896,6 +902,22 @@ public class AiServiceFacade {
         return containsKeywords(input, DATA_QUERY_KEYWORDS)
             || (containsKeywords(input, DATA_QUERY_COMBO_KEYWORDS)
                 && containsKeywords(input, DATA_QUERY_INTENT_KEYWORDS));
+    }
+
+    /** 纯 ERP 查询可推送查询 Agent 的真实正文；资料证据和组合工具任务仍保留原协调边界。 */
+    static boolean isPureDataQuery(String input) {
+        if (!containsDataQueryKeywords(input) || McpDocumentCapability.isDocumentQuestion(input)) return false;
+        String lower = input.toLowerCase(java.util.Locale.ROOT);
+        return Set.of("报表", "图表", "柱状", "饼图", "折线", "可视化", "echarts", "mcp", "工具", "联网", "知识库")
+            .stream().noneMatch(lower::contains);
+    }
+
+    /** 纯批量业务明细直接由查询 Agent 交付，避免长正文再次进入调度 JSON。 */
+    static boolean isDirectBulkDataQuery(String input) {
+        if (!isPureDataQuery(input)) return false;
+        String lower = input.toLowerCase(java.util.Locale.ROOT);
+        return Set.of("全部", "所有", "全量", "逐条", "每条", "批量", "完整列出")
+            .stream().anyMatch(lower::contains);
     }
 
     /**

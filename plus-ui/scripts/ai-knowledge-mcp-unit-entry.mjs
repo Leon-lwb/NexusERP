@@ -7,8 +7,8 @@ if (args.length && (args.length !== 1 || args[0] !== '--ai-knowledge-mcp')) {
   throw new Error('仅支持 --ai-knowledge-mcp 定向参数');
 }
 const uiRoot = fileURLToPath(new URL('../', import.meta.url));
-const suites = ['knowledge.test.mjs', 'mcp.test.mjs', 'f06-tool-duration.test.mjs', 'display-usability.test.mjs'].map((name) =>
-  fileURLToPath(new URL(`../tests/ai-knowledge-mcp/${name}`, import.meta.url))
+const suites = ['knowledge.test.mjs', 'mcp.test.mjs', 'f06-tool-duration.test.mjs', 'display-usability.test.mjs', 'chat-stream-state.test.mjs'].map(
+  (name) => fileURLToPath(new URL(`../tests/ai-knowledge-mcp/${name}`, import.meta.url))
 );
 const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', ...suites], { cwd: uiRoot, stdio: 'inherit' });
 if (result.error) throw result.error;

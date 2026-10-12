@@ -221,27 +221,53 @@ async function navbar(t, avatar) {
   return { user, image, srcChanges };
 }
 
-test('实际Navbar空头像使用现有profile资产且中文alt可读', async (t) => {
-  const page = await navbar(t, '');
-  assert.equal(page.image().props.src, defaultAvatar);
-  assert.equal(page.image().props.alt, '用户头像');
-  assert.equal(page.user.avatar, '', '回退不修改用户头像数据');
-});
+const signedAvatar = 'https://minio.example.test/bucket/avatar.png?X-Amz-Signature=test-signature&X-Amz-Expires=120';
 
-for (const avatar of ['https://remote.invalid/avatar.png', '//remote.invalid/avatar.png', 'data:image/svg+xml,<svg/>', 'javascript:alert(1)']) {
-  test(`实际Navbar不把远端/非HTTP来源交给img：${avatar.split(':')[0]}`, async (t) => {
+for (const [label, avatar, expected] of [
+  ['远程 HTTPS 签名地址保持查询参数', signedAvatar, signedAvatar],
+  ['不同端口的 HTTP 对象存储', 'http://ui.test:9000/bucket/avatar.png', 'http://ui.test:9000/bucket/avatar.png'],
+  ['协议相对远程地址', '//minio.example.test/avatar.png', 'http://minio.example.test/avatar.png'],
+  ['同源完整地址', origin + '/avatars/user.jpg', origin + '/avatars/user.jpg'],
+  ['站点根相对地址', '/avatars/user.jpg', origin + '/avatars/user.jpg'],
+  ['普通相对地址', 'avatars/user.jpg', origin + '/avatars/user.jpg']
+]) {
+  test(`实际Navbar允许有效头像：${label}`, async (t) => {
     const page = await navbar(t, avatar);
-    assert.equal(page.image().props.src, defaultAvatar, '在渲染前拒绝，不先请求远端再兜底');
-    assert.equal(page.user.avatar, avatar);
+    assert.equal(page.image().props.src, expected);
+    assert.equal(page.user.avatar, avatar, '展示时不改写用户头像数据或签名');
   });
 }
 
-test('实际Navbar同源头像首次失败回退，重复error不循环加载默认资产', async (t) => {
-  const avatar = origin + '/avatars/missing.jpg';
-  const page = await navbar(t, avatar);
-  assert.equal(page.image().props.src, avatar);
+for (const avatar of [
+  undefined,
+  null,
+  '',
+  '   ',
+  'data:image/svg+xml,<svg/>',
+  'javascript:alert(1)',
+  'file:///tmp/avatar.png',
+  'ftp://minio.example.test/avatar.png',
+  'https://user:pass@minio.example.test/avatar.png',
+  'http://[invalid'
+]) {
+  test(`实际Navbar空白或非法头像回退：${JSON.stringify(avatar)}`, async (t) => {
+    const page = await navbar(t, avatar);
+    assert.equal(page.image().props.src, defaultAvatar);
+    assert.equal(page.user.avatar, avatar, '回退不修改用户头像数据');
+  });
+}
+
+test('实际Navbar默认头像保留可读中文alt', async (t) => {
+  const page = await navbar(t, '');
+  assert.equal(page.image().props.src, defaultAvatar);
+  assert.equal(page.image().props.alt, '用户头像');
+});
+
+test('实际Navbar远程头像首次失败回退，重复error不循环加载默认资产', async (t) => {
+  const page = await navbar(t, signedAvatar);
+  assert.equal(page.image().props.src, signedAvatar);
   assert.equal(typeof page.image().props.onError, 'function', '真实模板必须绑定加载错误');
-  page.image().props.onError(new Error('离线图片加载失败'));
+  page.image().props.onError(new Error('图片加载失败'));
   await nextTick();
   assert.equal(page.image().props.src, defaultAvatar);
   const updates = page.srcChanges.length;
@@ -249,16 +275,15 @@ test('实际Navbar同源头像首次失败回退，重复error不循环加载默
   await nextTick();
   assert.equal(page.image().props.src, defaultAvatar);
   assert.equal(page.srcChanges.length, updates);
-  assert.equal(page.user.avatar, avatar, '加载失败只改变展示状态，不写用户数据');
+  assert.equal(page.user.avatar, signedAvatar, '加载失败只改变展示状态，不写用户数据');
 });
 
-test('实际Navbar头像来源变化后可恢复同源图片，不遗留上一来源失败状态', async (t) => {
+test('实际Navbar头像变化后恢复远程图片，不遗留上一来源失败状态', async (t) => {
   const page = await navbar(t, origin + '/avatars/old.jpg');
-  assert.equal(typeof page.image().props.onError, 'function');
   page.image().props.onError(new Error('旧头像失败'));
   await nextTick();
   assert.equal(page.image().props.src, defaultAvatar);
-  page.user.avatar = origin + '/avatars/new.jpg';
+  page.user.avatar = signedAvatar;
   await flush();
-  assert.equal(page.image().props.src, page.user.avatar);
+  assert.equal(page.image().props.src, signedAvatar);
 });

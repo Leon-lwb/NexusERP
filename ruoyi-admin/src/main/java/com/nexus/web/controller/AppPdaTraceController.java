@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * PDA 统一追溯查询接口 (M3 批次4; 契约见 nexus-pda/doc/plans/M3-执行计划.md 批次 4)
  * <p>
- * 一次输入(批次号/SN/物料编码/MES 批次号)聚合三套既有追溯能力:
- * ERP 库存流水正反向追溯 + MES 批次链。erp/mes 模块互不依赖, 门面置于聚合模块 ruoyi-admin。
- * 权限: 具备任一构成权限点即可(wm:trace:query 或 mes:lt:lot:trace)。
+ * 一次输入(批次号/仓储或制造 SN/物料编码/MES 批次号)聚合既有追溯能力:
+ * ERP 库存流水正反向追溯 + MES 批次链 + 制造 SN 履历。门面置于聚合模块 ruoyi-admin。
+ * 权限: 任一构成查询权限可进入，各段仅在具备该段原有查询权限时读取和返回。
  */
 @Validated
 @RequiredArgsConstructor
@@ -34,9 +34,9 @@ public class AppPdaTraceController {
      * 统一追溯查询
      *
      * @param keyword 批次号 / SN / 物料编码 / MES 批次号
-     * @return 解析结果 + ERP 正反向追溯树 + MES 批次链 (未命中维度为 null)
+     * @return 解析结果 + ERP 正反向追溯树 + MES 批次链/制造 SN 履历 (未命中维度为 null)
      */
-    @SaCheckPermission(value = {"wm:trace:query", "mes:lt:lot:trace"}, mode = SaMode.OR)
+    @SaCheckPermission(value = {"wm:trace:query", "mes:lt:lot:trace", "mes:pro:trace:query"}, mode = SaMode.OR)
     @Log(title = "PDA追溯查询", businessType = BusinessType.OTHER)
     @GetMapping
     public R<PdaTraceVo> trace(@RequestParam @NotBlank(message = "追溯关键字不能为空") String keyword) {

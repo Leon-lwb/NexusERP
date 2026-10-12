@@ -108,6 +108,7 @@ import { generateWorkOrders } from '@/api/erp/prd/plan';
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -226,7 +227,5 @@ function handleGenerateWorkOrders() {
     .catch(() => {});
 }
 
-onActivated(() => {
-  getList();
-});
+useListRefresh(getList);
 </script>

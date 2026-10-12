@@ -5,6 +5,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.nexus.common.cv.config.CvProperties;
+import com.nexus.common.cv.domain.DefectScenario;
 import com.nexus.common.cv.domain.DetectDtos.DetectionItem;
 import com.nexus.common.cv.domain.DetectDtos.MaterialDetectResult;
 import com.nexus.common.cv.domain.DetectDtos.OcrItem;
@@ -160,10 +161,27 @@ public class VisionClientImpl implements VisionClient {
 
     @Override
     public ProductDetectResult detectProduct(byte[] image, boolean enableOcr) {
-        List<Part> parts = List.of(new Part("enable_ocr", String.valueOf(enableOcr)));
+        return detectProduct(image, enableOcr, null);
+    }
+
+    @Override
+    public ProductDetectResult detectProduct(byte[] image, boolean enableOcr, String scenario) {
+        if (scenario != null && !DefectScenario.isSupported(scenario)) {
+            throw new VisionException("工业缺陷检测场景无效，仅支持 defect_metal 或 defect_pcb", 0, "INVALID_SCENARIO");
+        }
+        List<Part> parts = new ArrayList<>();
+        parts.add(new Part("enable_ocr", String.valueOf(enableOcr)));
+        if (scenario != null) {
+            parts.add(new Part("scenario", scenario));
+            parts.add(new Part("strict_scenario", "true"));
+        }
         JsonNode json = multipart("/api/detect/product", parts, image, "file");
         ProductDetectResult result = new ProductDetectResult();
         result.setSuccess(json.path("success").asBoolean(false));
+        result.setEffectiveScenario(json.path("effective_scenario").asText(null));
+        if (scenario != null && result.isSuccess() && !scenario.equals(result.getEffectiveScenario())) {
+            throw new VisionException("视觉服务未确认所选工业缺陷检测场景，请检查模型配置与服务版本", 200, "SCENARIO_MISMATCH");
+        }
         result.setCount(json.path("count").asInt(0));
         result.setProcessTimeMs(json.path("process_time_ms").asDouble(0.0));
         result.setDetections(parseDetections(json));

@@ -1,9 +1,12 @@
 package com.nexus.web.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.wm.domain.WmBatch;
@@ -12,7 +15,6 @@ import com.nexus.erp.wm.domain.vo.WmTraceResultVo;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.IWmTraceService;
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.mes.lt.domain.vo.LtLotVo;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.web.domain.vo.PdaTraceVo;
@@ -20,11 +22,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
+
 /**
  * PDA 统一追溯门面 (M3 批次4)
  * <p>
- * erp/mes 模块互不依赖, 三套既有追溯能力在此聚合 (ruoyi-admin 聚合了全部模块):
- * 关键字解析(SN/批次/物料/MES批次) → ERP 库存流水正反向追溯 + MES 批次链。
+ * 在 ruoyi-admin 聚合 ERP/MES/Station 的既有只读能力，不新增 ERP → MES 依赖。
+ * 仓储 SN/批次/物料、MES 批次、制造 SN 分别受原有查询权限约束。
  * 各注入服务自带 @DS 数据源切换, 不引入跨库手写 SQL。
  */
 @Slf4j
@@ -38,13 +42,39 @@ public class PdaTraceService {
     private final BdMaterialMapper materialMapper;
     private final IWmTraceService wmTraceService;
     private final ILtLotService ltLotService;
+    private final PdaManufacturingTraceService manufacturingTraceService;
 
     public PdaTraceVo trace(String keyword) {
+        if (TenantHelper.isEnable() && StringUtils.isBlank(TenantHelper.getTenantId())) {
+            throw new ServiceException("无法获取有效租户，不能查询追溯信息");
+        }
         PdaTraceVo vo = new PdaTraceVo();
         vo.setKeyword(keyword);
         PdaTraceVo.ResolvedVo resolved = new PdaTraceVo.ResolvedVo();
         vo.setResolved(resolved);
 
+        if (StpUtil.hasPermission("wm:trace:query")) {
+            traceWarehouse(keyword, vo, resolved);
+        }
+        if (StpUtil.hasPermission("mes:lt:lot:trace")) {
+            traceMesLot(keyword, vo, resolved);
+        }
+        if (StpUtil.hasPermission("mes:pro:trace:query")) {
+            var manufacturing = manufacturingTraceService.trace(keyword);
+            if (manufacturing != null) {
+                resolved.setManufacturingSn(manufacturing.getSn());
+                // Copy the legacy lot map: never overwrite its keys or mutate its owner's response.
+                var mes = vo.getMes() == null
+                    ? new LinkedHashMap<String, Object>() : new LinkedHashMap<>(vo.getMes());
+                mes.put("manufacturing", manufacturing);
+                vo.setMes(mes);
+            }
+        }
+        return vo;
+    }
+
+    /** Preserve warehouse SN > batch > material precedence independently of a manufacturing hit. */
+    private void traceWarehouse(String keyword, PdaTraceVo vo, PdaTraceVo.ResolvedVo resolved) {
         // 1. SN 精确命中 (携带批次归属)
         WmSn sn = snMapper.selectOne(Wrappers.<WmSn>lambdaQuery().eq(WmSn::getSnCode, keyword).last("limit 1"));
         if (sn != null) {
@@ -82,21 +112,6 @@ public class PdaTraceService {
             resolved.setMaterial(materialVo);
         }
 
-        // 4. MES 批次号命中 → 批次链(消耗/绑定/工单/SN); 查询经 ILtLotService(@DS mes) 切库
-        LtLotVo lot = ltLotService.selectByCode(keyword);
-        if (lot != null) {
-            PdaTraceVo.LotVo lotVo = new PdaTraceVo.LotVo();
-            lotVo.setLotId(lot.getLotId());
-            lotVo.setLotCode(lot.getLotCode());
-            lotVo.setMaterialId(lot.getMaterialId());
-            lotVo.setMaterialCode(lot.getMaterialCode());
-            lotVo.setMaterialName(lot.getMaterialName());
-            lotVo.setStatus(lot.getStatus());
-            lotVo.setQcStatus(lot.getQcStatus());
-            resolved.setLot(lotVo);
-            vo.setMes(ltLotService.trace(lot.getLotId()));
-        }
-
         // 5. ERP 库存流水正反向追溯 (按最具体维度: SN > 批次 > 物料)
         Long materialId = null;
         String batchCode = null;
@@ -117,7 +132,23 @@ public class PdaTraceService {
             WmTraceResultVo forward = traceQuietly(materialId, batchCode, snCode, true);
             vo.setForward(forward);
         }
-        return vo;
+    }
+
+    private void traceMesLot(String keyword, PdaTraceVo vo, PdaTraceVo.ResolvedVo resolved) {
+        // 4. MES 批次号命中 → 批次链(消耗/绑定/工单/SN); 查询经 ILtLotService(@DS mes) 切库
+        LtLotVo lot = ltLotService.selectByCode(keyword);
+        if (lot != null) {
+            PdaTraceVo.LotVo lotVo = new PdaTraceVo.LotVo();
+            lotVo.setLotId(lot.getLotId());
+            lotVo.setLotCode(lot.getLotCode());
+            lotVo.setMaterialId(lot.getMaterialId());
+            lotVo.setMaterialCode(lot.getMaterialCode());
+            lotVo.setMaterialName(lot.getMaterialName());
+            lotVo.setStatus(lot.getStatus());
+            lotVo.setQcStatus(lot.getQcStatus());
+            resolved.setLot(lotVo);
+            vo.setMes(ltLotService.trace(lot.getLotId()));
+        }
     }
 
     /** 单向追溯; 追溯服务异常(如流水过大)时降级为该方向无结果, 不阻断整体查询 */

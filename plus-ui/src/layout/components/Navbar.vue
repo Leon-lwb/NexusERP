@@ -136,14 +136,14 @@ import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
 
 const appStore = useAppStore();
 const userStore = useUserStore();
-// 只加载本站头像；远端或非法来源直接使用现有默认资源，避免额外网络请求。
+// 头像可来自独立部署的对象存储；仅允许 HTTP(S) 且不含 URL 用户名或密码。
 const avatarLoadFailed = ref(false);
 const avatarSrc = computed(() => {
   const candidate = userStore.avatar;
   if (avatarLoadFailed.value || typeof candidate !== 'string' || !candidate.trim()) return defaultAvatar;
   try {
     const url = new URL(candidate, window.location.origin);
-    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== window.location.origin || url.username || url.password) return defaultAvatar;
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return defaultAvatar;
     return url.href;
   } catch {
     return defaultAvatar;

@@ -3,6 +3,8 @@ package com.nexus.erp.cv.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.cv.client.VisionClient;
+import com.nexus.common.cv.domain.DefectScenario;
+import com.nexus.common.cv.domain.DetectDtos.DefectDetectResult;
 import com.nexus.common.cv.domain.DetectDtos.MaterialDetectResult;
 import com.nexus.common.cv.domain.DetectDtos.ProductDetectResult;
 import com.nexus.common.cv.exception.VisionException;
@@ -10,6 +12,7 @@ import com.nexus.erp.cv.service.CvLabelParseService;
 import com.nexus.erp.cv.service.CvOpsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,10 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 视觉识别检测控制器(物料 OCR + 操作台人脸)
+ * 视觉识别检测控制器(物料 OCR、工业缺陷检测、操作台人脸)
  * <p>端点与方案文档 3.3 对应:/cv/detect/product(物料 OCR)、/cv/detect/material(YOLO 兜底)、
- * /cv/ops/identify(操作台 1:N top-3)。三端统一经 ERP 代理,不直连 vision 服务。</p>
- * <p><b>鉴权</b>:三个端点都会消耗视觉服务额度并暴露底库候选,必须带权限码
+ * /cv/detect/defect(工业缺陷)、/cv/ops/identify(操作台 1:N top-3)。统一经 ERP 代理,不直连 vision 服务。</p>
+ * <p><b>鉴权</b>:检测与识别端点都会消耗视觉服务额度并暴露底库候选,必须带权限码
  * ({@code cv:detect:query} / {@code cv:ops:identify}),不能仅靠登录态。</p>
  *
  * @author nexus
@@ -59,6 +62,43 @@ public class CvDetectController {
                 data.put("label", labelParseService.parse(result.getOcrResults()));
             }
             return R.ok(data);
+        } catch (IOException e) {
+            return R.fail("读取图片失败: " + e.getMessage());
+        } catch (VisionException e) {
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 单张工业缺陷检测：仅接受 defect_metal / defect_pcb，固定使用成品推理且关闭 OCR。
+     * <p>file 与 scenario 均必填；非法场景在读取图片或访问 Vision 前拒绝，禁止降级至通用模型。
+     * detections.bbox 原样返回原图像素坐标 [x1, y1, x2, y2]，耗时为本次完整推理总耗时。</p>
+     */
+    @SaCheckPermission("cv:detect:query")
+    @PostMapping(value = "/detect/defect", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public R<DefectDetectResult> detectDefect(@RequestParam("file") MultipartFile file,
+                                             @RequestParam("scenario") String scenario) {
+        if (!DefectScenario.isSupported(scenario)) {
+            return R.fail("工业缺陷检测场景无效，请选择金属表面缺陷或 PCB缺陷");
+        }
+        if (file.isEmpty()) {
+            return R.fail("检测图片不能为空");
+        }
+        try {
+            ProductDetectResult inference = visionClient.detectProduct(file.getBytes(), false, scenario);
+            if (!inference.isSuccess()) {
+                return R.fail("工业缺陷检测未成功，请检查所选场景模型是否可用");
+            }
+            if (!scenario.equals(inference.getEffectiveScenario())) {
+                return R.fail("视觉服务未确认所选工业缺陷检测场景，请检查模型配置与服务版本");
+            }
+            DefectDetectResult result = new DefectDetectResult();
+            result.setScenario(inference.getEffectiveScenario());
+            result.setSuccess(inference.isSuccess());
+            result.setCount(inference.getCount());
+            result.setDetections(inference.getDetections());
+            result.setProcessTimeMs(inference.getProcessTimeMs());
+            return R.ok(result);
         } catch (IOException e) {
             return R.fail("读取图片失败: " + e.getMessage());
         } catch (VisionException e) {

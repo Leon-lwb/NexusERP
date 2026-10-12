@@ -177,7 +177,7 @@ async function run(row: AiFlow) {
 
 /** 运行历史 */
 function history(row: AiFlow) {
-  router.push({ path: '/ai/flow/monitor', query: { flowId: row.id } });
+  router.push({ path: '/ai/flow/monitor/index', query: { flowId: row.id } });
 }
 
 onMounted(loadList);

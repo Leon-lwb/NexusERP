@@ -214,6 +214,7 @@ import { withMaterialRequirementSource } from './workOrderDisplay';
 import { runDeliveryRisk } from '@/api/ai/decision';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 
 const router = useRouter();
 async function handleDeliveryDecision(row: { woId?: string | number }) {
@@ -424,7 +425,5 @@ function handleClose(row?: any) {
     .catch(() => {});
 }
 
-onActivated(() => {
-  getList();
-});
+useListRefresh(getList);
 </script>

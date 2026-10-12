@@ -78,6 +78,16 @@ public interface VisionClient {
     ProductDetectResult detectProduct(byte[] image, boolean enableOcr);
 
     /**
+     * 指定工业场景的成品检测；未指定场景时保持旧的通用检测行为。
+     *
+     * @param image 图片字节
+     * @param enableOcr 是否启用 OCR
+     * @param scenario 可选场景：null（不传）、defect_metal、defect_pcb；其他值直接拒绝
+     * @throws VisionException 场景无效、服务不可用或上游推理失败
+     */
+    ProductDetectResult detectProduct(byte[] image, boolean enableOcr, String scenario);
+
+    /**
      * 存活探针
      */
     HealthResult health();
