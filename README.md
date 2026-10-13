@@ -44,9 +44,9 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 ## 系统架构
 
-![Nexus-ERP 系统总体架构](doc/system/archify-nexus-erp-architecture-20261009-111634/nexus-erp-architecture-preview.png)
+![Nexus-ERP 系统总体架构](doc/system/screenshots/nexus-erp-light.svg)
 
-[查看原尺寸 PNG](doc/system/archify-nexus-erp-architecture-20261009-111634/nexus-erp-architecture-preview.png) · [交互式 HTML 源文件](doc/system/archify-nexus-erp-architecture-20261009-111634/nexus-erp-architecture.html)
+ [交互式 HTML 源文件](doc/system/archify-nexus-erp-architecture-20261009-111634/nexus-erp-architecture.html)
 
 - **接入层**：PC 管理端、App、PDA、Station，以及 MQTT 工业设备；人员登录接口与工位设备密钥通道分开管理。
 - **应用层**：`NexusApplication` 组装 ERP、MES、IoT、AI、Flow、IM 等模块。当前为模块化单体，不是每个业务模块都独立部署的微服务集群。
@@ -153,7 +153,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 - **审批与执行**：按风险、业务权限、租户、版本和幂等键控制通知、采购申请草稿、排产草稿等允许动作；源数据变化时可要求重新分析。
 - **结果回查**：批准不等于执行成功，草稿不等于正式单据已生效；需核对执行结果并回查 ERP 实际记录。
 
-入口与边界见 [AI 模块文档](doc/ai/README.md)及[工业决策流程](doc/flowcharts/ai/工业决策审批与执行流程.drawio)。本地测试或迁移记录不等于生产部署、全部基准案例 SLA 或竞赛验收完成。
+入口与边界见 [AI 模块文档](doc/ai/README.md)及[工业决策流程](doc/flowcharts/ai/工业决策审批与执行流程.drawio)。
 
 ### ERP 业务管理
 
