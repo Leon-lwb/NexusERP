@@ -69,6 +69,7 @@ ruoyi-common/             — 共享库 (当前 31 个子模块；具体依赖�
   ruoyi-common-flow/      —    流程编排公共层: 实体类 (Flow/FlowInstance/FlowNodeRun/FlowVersion)、Mapper、BO/VO、Service
   ruoyi-common-cv/        —    视觉识别客户端 (VisionClient — 封装 Vision 服务: 人脸注册/1:1验证/1:N识别、物料OCR、探活)
   ruoyi-common-oss/       —    对象存储 (Minio / S3 协议)
+  ruoyi-common-report/    —    报表公共契约: typed value、provider、租户/业务权限范围及安全 JDBC 查询
   ruoyi-common-flowable/  —    Flowable 工作流引擎集成
   ... 以及更多 (任务、日志、短信、邮件、社交、Excel、加密等)
 ruoyi-modules/            — 业务模块 (当前 15 个子模块)
@@ -84,7 +85,7 @@ ruoyi-modules/            — 业务模块 (当前 15 个子模块)
   ruoyi-job/              —    分布式任务调度 (SnailJob)
   ruoyi-demo/             —    演示/示例代码
   ruoyi-online/           —    在线低代码表单构建器
-  ruoyi-report/           —    报表 (JimuReport 积木报表，独立数据源 + Token 鉴权)
+  ruoyi-report/           —    自研报表 (DSL v1、TABLE/DOCUMENT、运行/布局/导出、私有快照与资源 ACL)
   ruoyi-pay/              —    支付 (支付订单、发票、对账)
 ruoyi-extend/             — 独立服务
   ruoyi-monitor-admin/    —    Spring Boot Admin 监控服务端
@@ -351,3 +352,12 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - **多数据源切换**: AI 数据查询走 `@DS("erp")` (ry-erp 库)，系统配置走默认 master (ry-vue 库)；跨库调用注意 `@DS` 注解必须放在被实际调用的 Service 方法上，同类内部方法调用不会触发 AOP 切换。
 - **API 加密默认开启但不替代 HTTPS**: 前后端开关与密钥需一致；调试解密失败先核对配置。仓库可能含演示用密钥/默认值，生产必须替换，绝不在日志、文档、回复中打印私钥、Token 或完整配置。
 - **Sa-Token 认证异常被通用处理器抢先捕获**: `NotLoginException`/`NotPermissionException`/`NotRoleException` 均继承自 `RuntimeException`。全局有多个 `@RestControllerAdvice`，其中 `GlobalExceptionHandler` 标了 `@Order(1)` 且含 `@ExceptionHandler(RuntimeException.class)`，若不提升 `SaTokenExceptionHandler` 优先级，认证异常会被它抢先捕获，执行 `R.fail(e.getMessage())` 返回 500 且把 "token 已被冻结：eyJ…" 等 JWT 明文暴露给前端。`SaTokenExceptionHandler` 已加 `@Order(Ordered.HIGHEST_PRECEDENCE)` 确保认证/鉴权异常优先返回 401/403。新增其它 `@RestControllerAdvice` 时，若其处理 `RuntimeException` 子类，务必用 `@Order` 控制优先级，否则同样会被 `GlobalExceptionHandler` 抢先。
+
+### 自研报表模块（2026-10-14）
+
+- `ruoyi-report` 已复用原模块名实现原生定义、版本、执行、布局、PDF/XLSX 和持久任务；积木 Starter、Token 鉴权桥、URL 令牌 iframe、放行路由和未使用的旧表按用户授权删除。
+- 报表元数据只走 master 的 `rpt_*` 九表；业务只读 provider 在 ERP/MES，通过 common-report SPI 暴露代码固定字段和参数，正常身份认证、资源 ACL 与业务范围共同生效。
+- 原生 Vue 页面在 `plus-ui/src/views/report`，菜单根 23000；创建初始模板是已登录管理员显式操作，不在启动时自动写模板。
+- 字符串传输 ID/DECIMAL；不要用 JavaScript Number 重算业务值；发布版本不可改写，草稿使用 revision。
+- 默认私有存储 `./data/report`，只有授权下载 API 访问；生产 Compose 挂载该路径。多节点必须提供同一私有共享存储接口，节点标识不一致会拒绝读取。中文字体通过 `nexus.report.font-path` 或受控候选加载。
+- 结构变更和本机执行见 [2026-10-14 增量](script/sql/update/2026-10-14-report-p0.sql) 与数据库登记；本地实施不代表生产部署。

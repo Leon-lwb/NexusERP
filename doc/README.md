@@ -11,6 +11,8 @@
 | **[PROGRESS.md](./PROGRESS.md)** | **📊 功能进度与跨模块流程** — 299 项为 2026-08-29 的历史统计，后续增量单列，未重算当前总数 |
 | [PLANS.md](./PLANS.md) | **📅 2026-08-29 待办快照** — 优先级与数量为历史口径，现行遗留需结合后续审计核对 |
 | [system/2026-09-06-全项目审查报告.md](./system/2026-09-06-全项目审查报告.md) | **🔍 最近一次全项目复核**（以当日代码为准，后续见审计/交接报告） |
+| [system/plans/2026-10-14-system-report-p0-verification-report.md](./system/plans/2026-10-14-system-report-p0-verification-report.md) | 自研报表 P0 实施与验证记录 |
+| [system/specs/2026-10-13-system-reporting-design.md](./system/specs/2026-10-13-system-reporting-design.md) | 自研报表建设方案 — 源码调研、独立模块设计，2026-10-14 已批准首期实施 |
 | [system/数据库增量变更记录.md](./system/数据库增量变更记录.md) | 🗄️ 数据库变更登记（新装主 SQL / 存量迁移需区分） |
 
 ## 目录结构

@@ -142,11 +142,6 @@ security:
     - /mes/flash/report/**
     # 工位终端设备通道接口（nexus-station，内部按 X-API-KEY 鉴权）
     - /mes/station/**
-    # 积木报表（内部自行鉴权）
-    - /jmreport/**
-    - /drag/**
-    - /jmreport-designer/**
-    - /jmubi/**
 
 # 多租户配置
 tenant:
@@ -174,21 +169,6 @@ tenant:
     # AI 运行参数配置（全局共享，Redis 广播重载时订阅回调线程无租户上下文）
     - ai_config
     - flow_spel
-    # 积木报表表（无 tenant_id 字段）
-    - jm_report
-    - jm_report_db_param
-    - jm_report_db_source
-    - jm_report_link
-    - jm_report_map
-    - jm_report_share
-    - jm_report_tree
-    - jm_report_collect
-    - jm_report_page
-    - jm_report_datasource
-    - jm_report_template
-    - jm_report_data
-    - jm_drag_page
-    - jm_drag_component
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

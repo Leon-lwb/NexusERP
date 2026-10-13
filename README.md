@@ -271,9 +271,9 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 即时消息模块，支持私聊、群聊、消息推送，与系统通知联动，提供企业内部沟通能力。
 
-#### 积木报表（JimuReport）
+#### 自研报表
 
-内置积木报表引擎，支持在线设计报表模板、拖拽式报表配置和数据可视化展示，降低业务报表开发门槛。
+采用自有 JSON DSL、运行与布局引擎和原生 Vue 3 设计器，支持列表报表、业务打印单据、版本发布/回滚、精确计算、固定快照及 PDF/明细与样式 XLSX。数据集接入 ERP/MES 并遵守租户、业务角色范围和资源授权。详见 [首期实施与验证](doc/system/plans/2026-10-14-system-report-p0-verification-report.md)。
 
 #### 支付管理（Pay）
 
@@ -399,11 +399,9 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 |------------|------------|
 | ![工作流设计](doc/system/screenshots/工作流设计.png) | ![工作流审批](doc/system/screenshots/工作流审批.png) |
 
-### 积木报表
+### 自研报表
 
-| 报表填写 |
-|----------|
-| ![报表填写](doc/system/screenshots/报表填写.png) |
+![原生报表设计器（合成样例）](doc/system/assets/report-p0/designer-synthetic.png)
 
 ### 支付管理
 
@@ -432,7 +430,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 | 消息队列 | RabbitMQ（工单下发、质检联动、数据采集等业务消息桥接） |
 | MQTT | Moquette 内嵌 MQTT Broker（IoT 设备接入） |
 | 工作流与编排 | Flowable 7.0 审批 + 独立 Flow DAG 自动化编排 |
-| 报表 | 积木报表（JimuReport） |
+| 报表 | Nexus 自研 DSL/运行/设计器；PDFBox、POI 基础库 |
 | 任务调度 | SnailJob |
 | 文件存储 | Minio（S3 协议） |
 | AI 框架 | LangChain4j 1.18.0 + LangChain4j Agentic 1.18.0-beta28（Supervisor Agent、MCP、知识图谱） |
@@ -462,7 +460,7 @@ nexus-erp/
 │   ├── ruoyi-flow/           #   独立 DAG 流程编排（引擎、节点、实例、定时、工业决策适配）
 │   ├── ruoyi-im/             #   即时通讯（私聊、群聊、消息推送）
 │   ├── ruoyi-pay/            #   支付管理
-│   ├── ruoyi-report/         #   积木报表与独立数据源鉴权
+│   ├── ruoyi-report/         #   自研报表定义、运行、布局及导出
 │   ├── ruoyi-online/         #   在线低代码表单
 │   ├── ruoyi-flowable/       #   Flowable 工作流 REST API
 │   ├── ruoyi-generator/      #   代码生成器

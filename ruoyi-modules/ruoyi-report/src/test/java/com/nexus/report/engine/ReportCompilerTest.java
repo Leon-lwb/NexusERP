@@ -1,0 +1,46 @@
+package com.nexus.report.engine;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.report.*;
+import com.nexus.report.domain.*;
+import org.junit.jupiter.api.Test;
+import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+class ReportCompilerTest {
+    private final ReportCompiler compiler=new ReportCompiler(new ObjectMapper());
+    private final ReportActor root=new ReportActor("A",1,10,true,List.of());
+    private DatasetDescriptor descriptor(){return new DatasetDescriptor("TEST","测试数据",1,"wm:stock:list",false,List.of(new DatasetField("quantity","数量",ValueType.DECIMAL,null,List.of("unit")),new DatasetField("unit","单位",ValueType.STRING),new DatasetField("secret","成本",ValueType.DECIMAL,"wm:stock:query",List.of())),List.of(),List.of("quantity","unit"));}
+    private ReportDsl dsl(List<ReportDsl.Column> columns,List<ReportDsl.Summary> summaries){return new ReportDsl(1,"TEST_REPORT","测试报表",ReportDsl.Kind.TABLE,"TEST","1",columns,List.of(),null,List.of(),List.of(),summaries,true);}
+    private ReportDsl.Column column(String name,String expression){return new ReportDsl.Column(name,name,100,4,expression,null);}
+    @Test void numericDependenciesAreTopologicallyCompiled(){
+        var compiled=compiler.compile(dsl(List.of(column("quantity",null),column("second","first+1"),column("first","quantity*2")),List.of()),descriptor(),root);
+        assertEquals(List.of("first","second"),compiled.computedOrder());assertEquals(Set.of("quantity"),compiled.requiredFields());
+    }
+    @Test void cyclesAndUnknownFieldsCannotPublish(){
+        assertThrows(ReportFault.class,()->compiler.compile(dsl(List.of(column("a","b+1"),column("b","a+1")),List.of()),descriptor(),root));
+        assertThrows(ReportFault.class,()->compiler.compile(dsl(List.of(column("missing",null)),List.of()),descriptor(),root));
+    }
+    @Test void protectedFieldsAreCheckedEvenWhenOnlyUsedInsideFormula(){
+        var actor=new ReportActor("A",7,10,false,List.of(new ReportRole(2,Set.of("wm:stock:list"),ReportScope.all(7))));
+        var fault=assertThrows(ReportFault.class,()->compiler.compile(dsl(List.of(column("derived","secret*2")),List.of()),descriptor(),actor));assertEquals("SCOPE_DENIED",fault.code());
+    }
+    @Test void quantitySummationRequiresItsPartition(){
+        var unsafe=new ReportDsl.Summary("quantity","SUM",List.of(),"数量总计",4);
+        assertThrows(ReportFault.class,()->compiler.compile(dsl(List.of(column("quantity",null)),List.of(unsafe)),descriptor(),root));
+        var safe=new ReportDsl.Summary("quantity","SUM",List.of("unit"),"按单位汇总",4);
+        assertEquals(Set.of("quantity","unit"),compiler.compile(dsl(List.of(column("quantity",null)),List.of(safe)),descriptor(),root).requiredFields());
+    }
+    @Test void unknownWireVersionAndEditorStateAreRejected(){
+        String valid="{\"schemaVersion\":1,\"code\":\"TEST_REPORT\",\"title\":\"测试\",\"kind\":\"TABLE\",\"datasetCode\":\"TEST\",\"datasetVersionId\":\"1\",\"columns\":[{\"field\":\"quantity\",\"label\":\"数量\",\"width\":100}],\"editorSelection\":1}";
+        assertThrows(ReportFault.class,()->compiler.parse(valid));
+        var original=dsl(List.of(column("quantity",null)),List.of());
+        var v2=new ReportDsl(2,original.code(),original.title(),original.kind(),original.datasetCode(),"1",original.columns(),List.of(),null,List.of(),List.of(),List.of(),true);
+        assertEquals("VERSION_UNSUPPORTED",assertThrows(ReportFault.class,()->compiler.compile(v2,descriptor(),root)).code());
+    }
+    @Test void overlappingStaticMergesAndPaperOverflowAreRejected(){
+        var headers=List.of(new ReportDsl.BandRow(24,List.of(new ReportDsl.Cell(0,2,1,"标题",null,null),new ReportDsl.Cell(1,1,1,"重复",null,null))));
+        var invalid=new ReportDsl(1,"TEST_REPORT","测试",ReportDsl.Kind.DOCUMENT,"TEST","1",List.of(column("quantity",null),column("unit",null)),List.of(),null,headers,List.of(),List.of(),true);
+        assertThrows(ReportFault.class,()->compiler.compile(invalid,descriptor(),root));
+        var wide=new ReportDsl(1,"TEST_REPORT","测试",ReportDsl.Kind.DOCUMENT,"TEST","1",List.of(new ReportDsl.Column("quantity","数量",600,4,null,null)),List.of(),null,List.of(),List.of(),List.of(),true);
+        assertThrows(ReportFault.class,()->compiler.compile(wide,descriptor(),root));
+    }
+}

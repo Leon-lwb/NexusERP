@@ -151,6 +151,8 @@ services:
     volumes:
       # 日志目录
       - /docker/server/logs/:/ruoyi/server/logs/
+      # 自研报表私有快照与导出文件（单节点；集群需共享存储实现）
+      - /docker/server/report/:/ruoyi/server/data/report/
       # skywalking 探针
 #      - /docker/skywalking/agent/:/ruoyi/skywalking/agent
     privileged: true
