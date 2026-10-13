@@ -1,0 +1,247 @@
+{
+  "source": "E:\\Nexus\\nexus-erp\\doc\\system\\user-manual\\NexusERP_用户操作手册.docx",
+  "source_sha256": "0062b7a1c331cee585d9debd078d59d65a82802610d6e14f05ac59ff88c3435c",
+  "generated_at": "2026-10-13T10:48:51+08:00",
+  "version": "4.0",
+  "chapters": 23,
+  "headings": 218,
+  "tables": 49,
+  "images": 29,
+  "index_bytes": 367512,
+  "gzip_bytes": 121083,
+  "assets_bytes": 35043639,
+  "assets": [
+    {
+      "src": "assets/diagram-01.png",
+      "filename": "diagram-01.png",
+      "bytes": 990073,
+      "sha256": "6a30c40dc7743d1a8f0ea99b3b4e2984c4e2de2bb889b6daaf046fa1b95aedba",
+      "width": 2320,
+      "height": 2084
+    },
+    {
+      "src": "assets/diagram-02.png",
+      "filename": "diagram-02.png",
+      "bytes": 1332394,
+      "sha256": "1f41ad149fd042a16db27302ef3c2be8a2ce5458afccbaf1d224513885ec74ac",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-03.png",
+      "filename": "diagram-03.png",
+      "bytes": 1285113,
+      "sha256": "20a759ac96355a5eb0f261bbca747438d46267d267684154b49c9e49d841eea7",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-04.png",
+      "filename": "diagram-04.png",
+      "bytes": 1211009,
+      "sha256": "9276c3c2b9d87e3a51d5feaa3702711511a4bdc7a13130eb5bbfe1b119dbc3d7",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-05.png",
+      "filename": "diagram-05.png",
+      "bytes": 1143732,
+      "sha256": "72970a02217889d2db67c338cb4418d9b278f371a3d5703cefd6025d68acd06c",
+      "width": 2320,
+      "height": 2780
+    },
+    {
+      "src": "assets/diagram-06.png",
+      "filename": "diagram-06.png",
+      "bytes": 1301833,
+      "sha256": "754dcfc1bb49333be5e03218eaadffae7ecd38850142a0d2b2a934ef6a2f0ebc",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-07.png",
+      "filename": "diagram-07.png",
+      "bytes": 1167300,
+      "sha256": "4c7e76d202a252820ac449c378e8e1ecfa72e3ff2eb5352297f7fec4371b8ce6",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-08.png",
+      "filename": "diagram-08.png",
+      "bytes": 1063508,
+      "sha256": "e69d88e4fbef221b570688b32bd4b7b46f186a72e08af5f7d70cd1a3492afad6",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-09.png",
+      "filename": "diagram-09.png",
+      "bytes": 966454,
+      "sha256": "07bf78b221037175a493306f5a0c6c54c9ed66b0f52d98bc5a127ef1b594cbb4",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-10.png",
+      "filename": "diagram-10.png",
+      "bytes": 1182504,
+      "sha256": "b83860c99d068dcf080db1e3cc670155e645604c5ee76b08caa0d77a8513f680",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-11.png",
+      "filename": "diagram-11.png",
+      "bytes": 1016517,
+      "sha256": "d0afcedd592e72adec7fb8c385724eb1e12a96101875ff727d0c530e4126dce5",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-12.png",
+      "filename": "diagram-12.png",
+      "bytes": 1196349,
+      "sha256": "1b6074161dd6aee0f4730d6610ee3dd68653428e11bef56edc44e2af537a0461",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-13.png",
+      "filename": "diagram-13.png",
+      "bytes": 1274319,
+      "sha256": "7e7af43f9cee01e9062b0f8d5e5ecb3e51ad33c563af011363efdff10fc9f791",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-14.png",
+      "filename": "diagram-14.png",
+      "bytes": 1303298,
+      "sha256": "3eaf2bcfd0b62ddbb0fe2ab83b9260e7fbed3392e09c354f45199cbb7ae42b77",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-15.png",
+      "filename": "diagram-15.png",
+      "bytes": 1286460,
+      "sha256": "6e10363c2ec572cd8f7206c946c2483ce9a34b42f28054641ce02774e24c50eb",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-16.png",
+      "filename": "diagram-16.png",
+      "bytes": 1370884,
+      "sha256": "452ba0dba363c637fe487b124a892f213ef3d1b5ad0cfa4d7c92cec9e3bc85e0",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-17.png",
+      "filename": "diagram-17.png",
+      "bytes": 1049429,
+      "sha256": "63d03db541159be48cfe60a509b0f21010b5f7a9fb1464422ada2ea9ee217080",
+      "width": 2320,
+      "height": 2780
+    },
+    {
+      "src": "assets/diagram-18.png",
+      "filename": "diagram-18.png",
+      "bytes": 1153429,
+      "sha256": "121d33ce220f56e65ebe9f48bc8d13d6ba7e03a6f0a2d5a4a19a1865b4e8d782",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-19.png",
+      "filename": "diagram-19.png",
+      "bytes": 1425282,
+      "sha256": "0aee8f2a3d536507c05c723e7947ab15c5d0ebd0a0016744384abcb91c61b96c",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-20.png",
+      "filename": "diagram-20.png",
+      "bytes": 1265924,
+      "sha256": "bf36614afa1820f96a0bd5f3977e1030918cf391b0a1c6e429f4048c6f922bd0",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-21.png",
+      "filename": "diagram-21.png",
+      "bytes": 1062189,
+      "sha256": "7a1dd754c261e1370232d2f3c6804d362ad7000e03ebe0e48816fe9b57dde385",
+      "width": 2320,
+      "height": 2432
+    },
+    {
+      "src": "assets/diagram-22.png",
+      "filename": "diagram-22.png",
+      "bytes": 1209325,
+      "sha256": "14b6611774e6bbe0f2e83ff8937c765b5b209c0f554d368c71730163e9544116",
+      "width": 2320,
+      "height": 3128
+    },
+    {
+      "src": "assets/diagram-23.png",
+      "filename": "diagram-23.png",
+      "bytes": 1347765,
+      "sha256": "97d4d476b49589b720c2eaaac08df5108385e5bee42262cc974fd5d0515a15bc",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-24.png",
+      "filename": "diagram-24.png",
+      "bytes": 1311710,
+      "sha256": "1cad1f8f43b65f4831f4571e29b9aafaafc10e2d89eec1a00ff2aad735bcf35a",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-25.png",
+      "filename": "diagram-25.png",
+      "bytes": 1234151,
+      "sha256": "fea33b9b0b842944d04272ff982e51989f4567a03bb41de601be11736a21d14b",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-26.png",
+      "filename": "diagram-26.png",
+      "bytes": 1296419,
+      "sha256": "d0ae203c353b275b67966e0dba7c81d27cb2d21e87ff8e8c28f00bcf6c9ae30a",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-27.png",
+      "filename": "diagram-27.png",
+      "bytes": 1267425,
+      "sha256": "bc23a1f73679cc8193cc3cdde7a9dafa64580e8b9d22fa3fefa463616681c5c8",
+      "width": 2320,
+      "height": 3476
+    },
+    {
+      "src": "assets/diagram-28.png",
+      "filename": "diagram-28.png",
+      "bytes": 1130018,
+      "sha256": "058bb0d4ca91b34dbc49cf911fafc1cb5acf92cb7b4e97276749facdd87c2912",
+      "width": 2320,
+      "height": 2780
+    },
+    {
+      "src": "assets/diagram-29.png",
+      "filename": "diagram-29.png",
+      "bytes": 1198826,
+      "sha256": "4e5553bcb93651567198dee02e550995a0136efbd5515ea92d99e9b68f5689cf",
+      "width": 2320,
+      "height": 2780
+    }
+  ]
+}

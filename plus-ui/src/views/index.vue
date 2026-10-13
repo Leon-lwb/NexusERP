@@ -140,7 +140,7 @@
     </el-row>
 
     <!-- 表格区域 -->
-    <el-row :gutter="20" class="table-row">
+    <el-row :gutter="20" class="dashboard-table-row">
       <el-col :xs="24" :sm="24" :md="24" :lg="12">
         <el-card shadow="hover" class="table-card">
           <template #header>
@@ -772,12 +772,12 @@ onUnmounted(() => {
 }
 
 .chart-row,
-.table-row {
+.dashboard-table-row {
   margin-top: 4px;
 }
 
 .chart-row .el-col,
-.table-row .el-col {
+.dashboard-table-row .el-col {
   margin-bottom: 20px;
 }
 

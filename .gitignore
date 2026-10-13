@@ -99,4 +99,8 @@ doc/assets/_t1_work/raw/
 doc/ai/benchmark/delivery-risk/reports/latest.md
 
 /.codex/full-flow-20260928/
-doc/ai/competition/
+.docs/
+
+# 本地竞赛与方案文档（已跟踪文件需另行取消跟踪）
+/doc/ai/competition/
+/docs/

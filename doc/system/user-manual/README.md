@@ -23,6 +23,7 @@
 python -X utf8 doc/flowcharts/scripts/gen_current_flowcharts.py --check
 python -X utf8 doc/flowcharts/scripts/gen_current_flowcharts.py
 python -X utf8 doc/flowcharts/scripts/gen_manual_v4.py
+python -X utf8 doc/flowcharts/scripts/gen_manual_html.py --output "$env:TEMP/NexusERP-manual-web"
 python -X utf8 -m unittest discover -s doc/flowcharts/scripts -p "test_*.py" -v
 ```
 
@@ -30,6 +31,7 @@ python -X utf8 -m unittest discover -s doc/flowcharts/scripts -p "test_*.py" -v
 完整回归还包含Windows COM保护测试，需pywin32；非Windows环境可单独运行`test_current_docs.py`做图集和Word结构检查。
 章节内容在 `../../flowcharts/scripts/manual_ch*.py` 和 `manual_current*.py`，图定义在 `current_*.json`。
 生成脚本检查每张图是否放入真实章节；不要只修改 Word 或 PNG 后声称已同步所有源文件。
+网页生成器输出独立的 `index.html`、`index.html.gz`、`manifest.json` 和 `assets/`；检查后将整个输出目录同步到 `plus-ui/public/manual/`，生产环境只需原子替换 `/manual/`，不需要重新打包主前端。
 当前交付文件的目录和页码已更新；以后重新生成时需再次使用Word/WPS更新域。
 本机实际渲染证据见更新记录，不将结构校验当作纸面排版验收。
 当前正式交付保留最后实际核验的174页版，第24页为仅页眉页脚的空白页。
