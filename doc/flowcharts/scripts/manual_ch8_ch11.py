@@ -3,6 +3,7 @@
 """第8章 MES制造执行 + 第9章 质量管理与SPC + 第10章 设备管理
 + 第11章 批次/工装/SOP/NCR
 供 gen_manual_v3.py 导入调用。
+核对基线: 2026-10-12, plus HEAD fe59e4ae。代码存在不代表生产部署或真机验收。
 """
 
 
@@ -10,6 +11,9 @@ def ch8_mes(doc, h1, h2, h3, para, bullet, numbered, table):
     h1(doc, '第8章 MES制造执行')
     para(doc, 'MES（Manufacturing Execution System）制造执行模块位于ERP计划层与设备控制层之间，'
               '负责车间级生产执行管理，实现从计划层到执行层的闭环管理。')
+    para(doc, '阅读边界：本章按2026-10-12的plus分支fe59e4ae前后端核对。操作入口指仓库中已有PC页面，'
+              '实际菜单与按钮取决于部署环境、租户菜单及角色权限；初始化SQL和历史报告不证明当前环境可用。'
+              'Station独立Electron客户端及扫码枪/相机/刷写设备的现场验收另见第21章。')
 
     # ---------- 8.1 MBOM ----------
     h2(doc, '8.1 MBOM管理')
@@ -32,30 +36,53 @@ def ch8_mes(doc, h1, h2, h3, para, bullet, numbered, table):
               ['明细-倒冲', '否', '倒冲标记'],
           ],
           widths=[4.5, 1.2, 10.5])
-    para(doc, '状态流转：草稿DRAFT→激活→已激活ACTIVE（唯一生效版本）。')
-    para(doc, '验证规则：每行必须选物料且用量>0；父物料须已存在激活版本BOM。')
+    para(doc, '状态流转：草稿DRAFT→激活→已激活ACTIVE。同一ERP BOM只能关联一份MBOM，'
+              '不能将“激活”理解为全产品多版本自动择优或自动停用旧版本。')
+    para(doc, '验证规则：每行必须选物料且用量>0；所选工序步骤属于关联工艺路线，子物料必须存在。'
+              '下达后以工单快照为准，编辑MBOM不会自动改写已下达工单。')
+    numbered(doc, '选择ERP BOM及路线，逐行维护物料、用量、损耗率、工序、工位与倒冲标记，保存后执行验证。')
+    numbered(doc, '确认明细后激活；再次修改前核对受影响工单。已被工单快照引用的MBOM不可直接删除。')
 
     # ---------- 8.2 MES工单 ----------
     h2(doc, '8.2 MES工单管理')
     para(doc, '操作入口：MES制造执行 > MES工单')
     para(doc, '列表：搜索工单编号/产品名称/状态；列：工单编号、产品编码/名称、计划数量、车间、计划开工、状态。')
     para(doc, '表单字段：工单编号*（编辑后禁用，可手输）、产品*（选择后带出编码/名称）、计划数量*（min 0.0001精度4）、优先级（默认0）、BOM（格式“父物料编码-父物料名称 v版本”）、工艺路线（“编码-名称 v版本”）、关联设备、计划开工/完工日期。')
-    para(doc, '状态流转（mes_wo_status）：CREATED已创建→【下达】→RELEASED已下达→【开工】→IN_PROGRESS生产中→完工（流转卡聚合）。')
+    para(doc, '状态流转：CREATED→直接下达或审批通过→RELEASED；首道工序开工推进IN_PROGRESS；'
+              '卡级聚合数量不足计划时为PARTIAL_COMPLETED，满足数量与质量门禁后COMPLETED。'
+              'PC列表提供详情、CREATED编辑和下达，没有独立“工单开工/完工/取消/关单”按钮。')
     para(doc, '操作步骤：')
     numbered(doc, '新增工单：填编号/选产品/填计划数量→保存（状态CREATED）')
-    numbered(doc, '行内“下达”工单（状态RELEASED）')
-    numbered(doc, '（可选）详情页提交审批：选审批流程→提交→查看流程')
-    numbered(doc, '详情页“创建流转卡”：输入数量（校验≤剩余可建=计划数量-已建合计）')
-    para(doc, '详情页四个页签：基本信息、工序步骤（步骤状态）、物料明细（MBOM快照，含倒冲标记）、审批流程。')
+    numbered(doc, '下达前核对路线、工序和物料快照；手工/返工工单无工序会被拒绝，FLASH工序须绑定固件或刷写配置。'
+                   'CREATED详情可更改固件（mes:pro:work:edit），下达后冻结相关绑定。')
+    numbered(doc, '按环境选择一种路径：列表“下达”（mes:pro:work:edit），或CREATED详情选择已配置流程并提交审批。'
+                   '审批是下达前路径，不能先下达再提交；审批通过回调仍执行下达门禁。')
+    numbered(doc, '下达成功后“创建流转卡”：输入正数且不超过计划量减已建卡计划量合计。'
+                   'RELEASED/IN_PROGRESS/PARTIAL_COMPLETED且有mes:pro:flowcard:add权限时可创建。')
+    para(doc, '详情页签：基本信息、工序步骤（含固件/配置绑定）、物料明细（MBOM快照及倒冲标记）、组件追溯、审批流程。')
     para(doc, '注意事项：创建流转卡数量校验——剩余量≤0时按钮禁用并提示“工单计划数量已全部分配”。')
+    para(doc, 'ERP来源工单通过WorkOrderReleaseConsumer消费MQ消息并创建/恢复MES工单；手工PC下达在服务内快照工序和MBOM，'
+              '并非每次点击下达都发送建单MQ。消息处理须核对租户、来源与幂等事实。')
+    para(doc, '完工门禁：累计完工+报废达到计划数量后，各关键工序必须存在QUALIFIED的IPQC。缺检、待检或不合格阻止工单完工；'
+              '自动建IPQC失败只告警，需补建/补检。普通工单完工事务提交后MQ通知ERP，消息发出不等于ERP已回写或入库；'
+              '返工工单不走这条ERP完工通知。')
 
     # ---------- 8.3 工序派工 ----------
     h2(doc, '8.3 工序派工')
-    para(doc, '操作入口：MES制造执行 > 工序派工')
+    para(doc, '操作入口：PC“工序派工”。派工单由流转卡工序行“派工”创建，列表没有独立新增/编辑/删除表单。')
     para(doc, '列表：搜索派工单号/操作员/状态；列：派工单号、工单编号、流转卡编号、工序、操作员、工作中心、派工数量、已完成、状态。')
     para(doc, '状态流转（mes_dispatch_status）：PENDING待开工→【开工】→IN_PROGRESS进行中→【完工：录良品/不良/报废】→COMPLETED已完工；PENDING可取消。')
     para(doc, '扫码执行：扫描流转卡条码自动定位当前工序→开工（需操作员ID）→完工（填数量），操作后自动刷新。')
     para(doc, '刷脸登录（操作台）：拍照→1:N识别返回top-3候选→手选本人→1:1确认（相似度≥50%通过）→记录操作员上下文。')
+    para(doc, '刷脸验证不签发系统登录Token，不能绕过PC登录、权限和租户。1:N识别需cv:ops:identify，'
+              '1:1需人脸验证权限，候选匹配与确认结果须同时核对。')
+    numbered(doc, '在流转卡详情工序行选择操作员与数量，确认未取消派工合计不超过工序计划量，再派工。')
+    numbered(doc, '派工列表PENDING点击“开工”（mes:pro:dispatch:start），IN_PROGRESS点击“完工”'
+                   '（mes:pro:dispatch:complete）录入良品、不良、报废。三者非负且合计必须等于派工计划量。')
+    numbered(doc, '“扫码执行”（mes:pro:dispatch:scan）定位流转卡与当前工序，核对操作员与数量后执行；'
+                   'PENDING可取消（mes:pro:dispatch:cancel），已开工不得用取消代替纠错。')
+    para(doc, '当前PC列表完工弹窗要求良品数量>0，不能把后端允许的零良品报工写成此弹窗可录。'
+              '全部不良/报废须核对其他实际通道，禁止虚报良品；派工全部完工后系统尝试聚合工序与流转卡。')
 
     # ---------- 8.4 流转卡 ----------
     h2(doc, '8.4 流转卡管理')
@@ -73,26 +100,31 @@ def ch8_mes(doc, h1, h2, h3, para, bullet, numbered, table):
               ['CLOSED 已关闭', '终态，不可再操作'],
           ],
           widths=[6.0, 10.5])
-    para(doc, '工序级状态（mes_step_status）：PENDING待开始→【进站】→IN_PROGRESS进行中→【出站】→COMPLETED已完成；PENDING可【跳站】直接完成（需原因）。')
+    para(doc, '工序级状态：PENDING→进站→IN_PROGRESS→出站→COMPLETED；允许跳过的待开始工序经“跳站”进入SKIPPED，'
+              '保留原因，并非COMPLETED。后端拒绝序号为空或≤1的首道跳站。')
     para(doc, '工序行操作对话框：')
     table(doc,
           ['操作', '适用状态', '字段'],
           [
               ['派工', '工序PENDING+流转卡RELEASED', '操作员*（必填）、派工数量（1~剩余可派）'],
               ['进站开工', '工序PENDING+流转卡RELEASED', '操作员*、工装（可选扫码）、批次（可选）'],
-              ['出站完工', '工序IN_PROGRESS', '良品数量*（默认工序计划量）、不良、报废'],
-              ['跳站', '工序PENDING', '跳站原因*（必填）'],
+              ['出站完工', '工序IN_PROGRESS', '良品、不良、报废非负，合计等于卡计划量'],
+              ['跳站', 'PC：工序PENDING+卡RELEASED', '原因必填；服务端另拒绝首道跳站'],
           ],
           widths=[3.5, 6.0, 7.0])
     para(doc, '操作步骤：')
     numbered(doc, '工单详情页创建流转卡（输入数量）')
     numbered(doc, '列表行“下达”流转卡')
     numbered(doc, '工序行“派工”选操作员与数量')
-    numbered(doc, '工序行“进站开工”→“出站完工”（填良品/不良/报废）逐工序执行')
-    numbered(doc, '所有工序完成后“完工流转卡”→聚合完工数量到工单')
+    numbered(doc, '在按钮可见时执行进站与出站，按事实填数量。当前PC详情将待开始行的派工/进站/跳站按钮限定为卡RELEASED；'
+                   '首道开工卡变IN_PROGRESS，不能承诺后续各道仍可在同一详情点击进站。应核对预先派生的派工单、扫码或已部署Station通道。')
+    numbered(doc, '所有工序COMPLETED/SKIPPED后系统尝试卡级完工，也可在IN_PROGRESS且有mes:pro:flowcard:complete权限时'
+                   '点击“完工流转卡”。无工序或仍有未完成工序拒绝人工完工，数量只聚合一次。')
     numbered(doc, '确认数据无误后“关闭流转卡”')
     para(doc, '注意事项：进站/出站执行工序校验规则（见8.5），校验不通过弹“校验未通过”明细表，'
               '必须处理全部失败项操作才生效。')
+    para(doc, '刷写绑定工序另有SN级门禁：先生成SN，再核对每台SN在对应工序/刷写类型的最新记录。'
+              'FORCE模式无PASS会阻断，WARN模式告警；界面点击或通用CV结果不是刷写合格证据。')
 
     # ---------- 8.5 进站/出站校验 ----------
     h2(doc, '8.5 进站/出站校验与工序指引')
@@ -101,41 +133,54 @@ def ch8_mes(doc, h1, h2, h3, para, bullet, numbered, table):
           ['校验类型', '说明'],
           [
               ['SERIAL_GATE 串行门禁', '上工序必须已完成'],
-              ['SOP_VERSION', '必须已查看指定版本SOP'],
-              ['TOOLING_AVAILABLE', '必须领用工装'],
+              ['SOP_VERSION', '校验绑定SOP已发布，不等于操作员已阅'],
+              ['SOP_ACKNOWLEDGED', '校验操作员对当前发布版的SOP_VIEW签名已阅确认'],
+              ['TOOLING_AVAILABLE', '须提供可用工装；启用规则而不传工装会拒绝'],
               ['LOT_AVAILABLE 批次可用', '必须有可用批次'],
               ['EQUIPMENT_STATUS 设备状态', '关联设备必须正常'],
-              ['MATERIAL_KITTING 物料齐套', '物料必须齐套'],
-              ['OPERATOR_SKILL 人员资质', '操作员必须具备技能'],
+              ['MATERIAL_KITTING 物料齐套', '当前存根，启用时默认PASS并告警'],
+              ['OPERATOR_SKILL 人员资质', '当前存根，不能声称已实现资质门禁'],
               ['QUANTITY_REACHED 数量达标', '数量必须达标'],
               ['INSPECTION_REQUIRED 检验完成', '检验必须已完成'],
               ['EXCEPTION_CLOSED 异常已关闭', '安灯异常必须已关闭'],
-              ['PARAMETER_OK 参数达标', '设备参数必须达标'],
+              ['PARAMETER_OK 参数达标', '当前出站规则为存根，不是参数达标证据'],
           ],
           widths=[6.0, 10.5])
     para(doc, '工序指引（mes/pro/step-guide）：配置工序作业指引（文本或关联SOP），进站时推送现场指导。')
+    para(doc, '规则须明确ENTRY/EXIT、工序、启用状态与排序；串行门禁在entry路径内置，其他规则按配置执行。'
+              '不能把所有开工/报工接口都描述为强制执行全部进出站规则。')
 
     # ---------- 8.6 SN ----------
     h2(doc, '8.6 SN序列号管理')
-    para(doc, '操作入口：MES制造执行 > SN管理')
+    para(doc, '操作入口：PC“SN追溯”（mes/pro/sn/index），行内“追溯”打开SN追溯树。')
     para(doc, 'SN状态流转：IN_PRODUCTION生产中→【完工】→COMPLETED已完成→【发货】→SHIPPED已发货；生产中/已完成可【报废】→SCRAPPED（需原因）。')
     para(doc, '批量生成：选流转卡+生成数量（1-9999）+初始状态（默认生产中）。')
     para(doc, '手动建SN：SN编码*+物料*+可选工单/流转卡/父SN（组装关系）。')
     para(doc, '追溯页：前向追溯树（SN→工序链→子SN）、后向追溯树（SN→父SN链）。')
+    numbered(doc, '批量生成选择流转卡、数量与初始状态；手工建SN核对物料、工单/流转卡及父SN。'
+                   '刷写也可使用流转卡详情IN_PROGRESS时的“生成SN”。')
+    numbered(doc, '按状态及权限完工、报废（填原因）或发货，再核对追溯工序与组件关系。'
+                   'SN“发货”是状态动作，不是物流回执，不能证明客户、运单及售后已完整关联。')
 
     # ---------- 8.7 安灯 ----------
     h2(doc, '8.7 安灯告警')
-    para(doc, '操作入口：MES制造执行 > 安灯')
+    para(doc, '操作入口：PC“安灯看板”（mes:pro:andon:list），呼叫/响应/解决/取消各有独立权限。')
     para(doc, '呼叫类型：质量/物料/设备/其他。')
     para(doc, '状态流转：CALLED已呼叫→【响应】→RESPONDED已响应→【解决】→RESOLVED已解决；已呼叫可取消。')
     para(doc, '发起呼叫：选呼叫类型*（可关联工单/流转卡）+呼叫原因。')
     para(doc, 'SSE实时推送：新呼叫自动弹通知并刷新列表与统计卡片（活跃呼叫/质量异常/物料短缺/设备故障）。')
+    numbered(doc, '“发起呼叫”选择类型，按需关联工单/流转卡，填现场原因；责任人对CALLED响应。')
+    numbered(doc, '排障后对RESPONDED解决并填处理信息，刷新核对负责人、时间与时长；仅CALLED可取消。')
+    para(doc, '状态变更同时产生站内通知与同租户SSE，无人在线仍保留站内通知，不保证实时送达。'
+              'IoT/SPC/保养自动来源须核对适配器和任务运行，不代表异常会自动关闭。')
 
     # ---------- 8.8 组件追溯 ----------
     h2(doc, '8.8 组件追溯')
-    para(doc, '通过SN号查看产品完整追溯信息：')
-    bullet(doc, '前向追溯：原材料批次、工序执行记录（操作员/时间/设备）、质量检验记录')
-    bullet(doc, '后向追溯：发往客户、发货单/物流、售后记录')
+    para(doc, 'PC入口为MES工单详情“组件追溯”页签（mes:pro:trace:query），不是独立“全履历看板”菜单。')
+    bullet(doc, '反向：成品工单→MBOM快照要求组件及已装配组件SN；空记录不等于确认未发生生产。')
+    bullet(doc, '正向：输入组件SN→消费该组件的成品工单及上行父SN链；父SN指向组装成品。')
+    bullet(doc, 'SN追溯树、ERP仓储批次追溯、MES批次追溯与DHR为不同入口，方向名称以各页展示对象为准；'
+                '不能承诺此页覆盖客户、物流和售后全链路。')
 
 
 def ch9_qc(doc, h1, h2, h3, para, bullet, numbered, table):
@@ -144,25 +189,50 @@ def ch9_qc(doc, h1, h2, h3, para, bullet, numbered, table):
 
     h2(doc, '9.1 IQC来料检验')
     para(doc, '操作入口：质量管理 > 来料检验')
-    para(doc, '新增对话框：收货单（可选，ERP入库单选择器）、物料*、供应商名称、检验数量、抽样数量、备注。')
-    para(doc, '检验对话框：检验结果*（合格/不合格，默认合格）、抽样数量、不良品信息（JSON格式，如[{"type":"划痕","qty":2}]）、备注。')
+    para(doc, '新增对话框仍显示可选ERP收货单、物料、供应商名称、检验/抽样数量与备注；'
+              '但后端insertByBo拒绝携带receiveId的普通新增（IQC_RECEIPT_NATIVE_BIRTH_REQUIRED）。'
+              '关联收货IQC须由ERP来源登记+MQ原生建单链路生成，不能把该选择器写成已可手工挂收货单。')
+    para(doc, '列表“详情”（mes:qc:iqc:query）为只读弹窗，展示基础信息、项目快照、标准、样本量、实测值与判定。'
+              '未COMPLETED且具mes:qc:iqc:inspect权限时才可“检验”。')
+    numbered(doc, '先维护并启用“检验标准模板”，建单时匹配并快照项目；后续改模板不会自动改旧单。')
+    numbered(doc, 'IQC“检验项目”页签逐项填数值（多值逗号分隔）或定性OK/NG，再提交判定。'
+                   '提交须覆盖该单全部项目，缺项/空值/无可判定项会拒绝，总体PARTIAL也按UNQUALIFIED处理。')
+    numbered(doc, '无匹配模板或采用人工判定时切“人工判定”，明确选合格/不合格，填抽样量、'
+                   '不良品JSON（例如[{"type":"划痕","qty":2}]）及备注，核对最终状态。默认合格不是检验依据。')
     para(doc, '状态流转（mes_qc_status）：PENDING待检验→【检验】→COMPLETED已检验（结果QUALIFIED/UNQUALIFIED）。')
-    para(doc, '自动创建：ERP收货审批通过后MQ自动创建IQC任务；检验结果回写ERP质检状态。')
+    para(doc, '自动创建：ERP收货来源登记完成后MQ通知MES，原生服务重新核验永久来源身份、单位及数量；'
+              '同来源重放不重复建单。来源事实不成立则消息隔离，需修复事实后重投，不靠新增绕过。')
+    para(doc, 'COMPLETED不可重复检验；不合格同事务创建NCR，并按iqcId回写所有已关联MES批次的PASS/FAIL及隔离状态。'
+              '无关联批次不能声称自动隔离全部来料；批次回写失败回滚检验。提交后MQ回写ERP，须另核对消费结果。')
 
     h2(doc, '9.2 IPQC过程检验')
     para(doc, '操作入口：质量管理 > 过程检验')
     para(doc, '新增对话框：工单*（必填，带出物料）、流转卡（可选）、工序编码/名称、物料*、抽样数量、备注。')
     para(doc, '检验对话框：检验结果*、抽样数量、不良数量、不良品信息（JSON）。')
     para(doc, '触发时机：关键工序报工触发（工单完工门禁）。')
+    para(doc, '当前PC“详情”（mes:qc:ipqc:query）只读展示模板项目/标准/实测值/判定；'
+              '“检验”（mes:qc:ipqc:inspect）仍为人工结果弹窗，没有逐项编辑实测值入口。'
+              '后端inspect-with-details接口会校验全部明细覆盖率，不能据此写成PC已有项目判定按钮。')
+    numbered(doc, '核对工单、可选流转卡、工序和物料；关键工序自动建单缺失时补建正确工序的IPQC，再核对项目快照。')
+    numbered(doc, '按实际检验填写人工判定、样本量和不良件数，不良项目数不等于不良件数；'
+                   '提交后核对COMPLETED及QUALIFIED/UNQUALIFIED。')
+    para(doc, '不合格自动创建NCR；工单完工逐关键工序检查合格IPQC，不是任意一张合格单即可放行。'
+              '补检与异常处理后重新核对卡/工单聚合状态，不承诺检验按钮自动完成全部后续业务。')
 
     h2(doc, '9.3 OQC出货检验')
     para(doc, '操作入口：质量管理 > 出货检验')
     para(doc, '新增对话框：销售订单（可选）、物料*、检验数量、抽样数量、备注。')
     para(doc, '触发时机：销售出库审批通过后MQ自动创建OQC任务。')
+    para(doc, '当前PC“详情”（mes:qc:oqc:query）为只读项目明细；“检验”（mes:qc:oqc:inspect）为人工结果弹窗。'
+              '后端有明细判定与缺项门禁，但PC没有逐项编辑入口，不应与IQC界面混写。')
+    numbered(doc, '核对销售订单、物料与数量；详情检查项目快照，随后填实际人工判定、不良品JSON、抽样量与备注。')
+    numbered(doc, '提交后核对COMPLETED及判定；不合格产生NCR，提交后MQ通知ERP。'
+                   '在ERP确认对应订单/出库状态，OQC完成不等于已发货。')
 
     h2(doc, '9.4 质量追溯与不合格品')
     bullet(doc, '质量追溯：批次→检验记录追溯')
-    bullet(doc, '不合格品处理：检验不合格→批次隔离→NCR单据→返工工单→8D报告（详见第11章）')
+    bullet(doc, '不合格品处理：检验不合格→NCR及可关联批次隔离→签署并处置；'
+                '只有REWORK分支派生返工工单，报废/让步/退货有不同边界。8D不等同于返工完工（详见第11章）。')
 
     h2(doc, '9.5 SPC统计过程控制')
     para(doc, '操作入口：质量管理 > SPC控制图')
@@ -182,12 +252,19 @@ def ch10_eq(doc, h1, h2, h3, para, bullet, numbered, table):
     para(doc, '表单字段：设备编码*、设备名称*、设备类型（数控机床/焊接/装配/包装/注塑/检测/其他）、型号、制造商、出厂编号、工作中心、状态（默认正常）、安装位置、购置日期、保修到期、点检项目（结构化表格：项目+标准，可增删行）、备注。')
     para(doc, '设备状态（mes_equipment_status）：正常/保养中/故障/已报废/IoT离线。')
     para(doc, '关联IoT：设备页“关联IoT”选择IoT设备建立软链接，详情页可查看IoT实时数据。')
+    numbered(doc, '新增设备，维护工作中心、状态及结构化点检项；详情核对基础信息、IoT最新数据、工位终端、维修与保养记录。')
+    numbered(doc, '具mes:eq:equipment:edit权限时“关联IoT”；IoT设备页也有“关联MES”。'
+                   '核对两侧软关联及同步任务，关联成功不等于采集链路已运行。')
+    para(doc, 'MES业务status与IoT连接iotStatus不同：正常/故障/保养不等于联网状态。'
+              'IoT离线联动由EquipmentStatusSyncTask按关联执行，不能把网络离线等同于设备机械故障。')
 
     h2(doc, '10.2 保养计划')
     para(doc, '操作入口：设备管理 > 保养计划')
     para(doc, '表单字段：计划名称*、设备*、保养类型*（日保/周保/月保/季保/年保，默认月保）、周期(天)（留空按类型默认）、下次保养日期（留空自动计算今天+周期）、负责人、保养内容、状态。')
     para(doc, '执行保养：录保养内容/结果（正常/异常）→自动推进下次保养日期。')
     para(doc, '保养到期自动提醒（SnailJob + SSE + 安灯联动），下次保养日期过期红色标记。')
+    numbered(doc, '新增保养计划，确认周期、下次日期与责任人；执行后核对保养结果和下次日期，不以“提醒已发”代替保养完成。')
+    para(doc, '提醒依赖MaintenanceDueTask实际运行与通知链路；代码有任务不代表当前环境已调度。')
 
     h2(doc, '10.3 维修记录')
     para(doc, '操作入口：设备管理 > 维修')
@@ -195,11 +272,15 @@ def ch10_eq(doc, h1, h2, h3, para, bullet, numbered, table):
     para(doc, '状态流转：REPORTED已报修→【开工】→REPAIRING维修中→【完成：停机时长/成本/更换备件】→COMPLETED已完成。')
     para(doc, '注意事项：报修联动设备置故障状态；完成时更换备件联动扣减备件库存；'
               '工具栏“故障分析”跳转统计页。')
+    numbered(doc, '故障报修→维修开工→填写处理、停机时长、费用和实际更换备件→完成；核对维修记录、设备状态及备件流水。'
+                   '库存不足等校验失败应处理后重试，不得只修改设备状态冒充维修完成。')
 
     h2(doc, '10.4 设备点检')
     para(doc, '操作入口：设备管理 > 点检')
     para(doc, '按设备点检项逐项执行：项目名/标准只读，实际值手输，合格开关；未配置点检项可提交空点检；'
               '总体合格开关+备注。')
+    para(doc, '空点检是当前PC页面能力边界，不是设备已按标准逐项点检的证据。Station点检上报是另一设备通道，'
+              '须另核对工作中心设备匹配、不合格联动和真机输入。')
 
     h2(doc, '10.5 OEE看板')
     para(doc, '操作入口：设备管理 > OEE')
@@ -208,6 +289,8 @@ def ch10_eq(doc, h1, h2, h3, para, bullet, numbered, table):
     para(doc, '图表：稼动率/OEE/停机时长趋势、时长分布环形图、停机设备TOP10。')
     para(doc, '手动聚合：按租户+设备+日期幂等聚合（停机时长取自维修单），可重复执行。')
     para(doc, '稼动率着色：≥85%绿/≥60%黄/<60%红。')
+    para(doc, '口径限制：缺少节拍/标准工时来源时表现率为占位，无质量数据时质量率为占位，页面显示不可用提示。'
+              '不得把null、占位或缺数据写成100%或真实OEE达标。手动聚合需mes:eq:oee:aggregate权限并核对日期。')
 
     h2(doc, '10.6 备件管理')
     para(doc, '操作入口：设备管理 > 备件')
@@ -225,11 +308,12 @@ def ch10_eq(doc, h1, h2, h3, para, bullet, numbered, table):
     para(doc, '操作入口：设备管理 > 监控')
     para(doc, '顶部6张状态卡：设备总数、正常运行、故障中、保养中、IoT在线、活跃维修。')
     para(doc, '右侧：活跃维修单表、低库存告警表。30秒自动轮询刷新。')
+    para(doc, '监控是PC轮询汇总，不是设备硬实时控制；“一键生成采购申请”当前禁用，不能写成已可自动补库。')
 
 
 def ch11_lt(doc, h1, h2, h3, para, bullet, numbered, table):
     h1(doc, '第11章 批次/工装/SOP/NCR')
-    para(doc, '本章介绍MES P0系列新增的四个能力模块：批次管理、工装管理、电子SOP、NCR不合格品与返工。')
+    para(doc, '本章按当前批次、工装、SOP与NCR页面及服务核对，不以历史P0任务完成或测试报告证明现网可用。')
 
     h2(doc, '11.1 批次管理')
     para(doc, '操作入口：MES制造执行 > 批次管理')
@@ -240,11 +324,13 @@ def ch11_lt(doc, h1, h2, h3, para, bullet, numbered, table):
               ['IN_STOCK 在库', '批次入库，可消耗/绑定/隔离'],
               ['IN_USE 使用中', '已消耗/绑定，剩余>0'],
               ['CONSUMED 已消耗', '剩余≤0自动'],
-              ['QUARANTINED 已隔离', '隔离（需原因），可放行回在库或报废'],
+              ['QUARANTINED 已隔离', '隔离需原因；可按门禁放行恢复剩余/消耗对应状态或报废'],
               ['SCRAPPED 已报废', '终态'],
           ],
           widths=[5.0, 11.5])
     para(doc, 'QC状态：待检PENDING→【PASS/FAIL】→合格/不合格（检验不合格自动隔离批次）。')
+    para(doc, '批次QC为FAIL时普通“放行”拒绝，不能直接改回在库绕过QC；让步须走NCR签署处置。'
+              'IQC只回写iqcId关联的批次；FEFO、领料与进站批次校验须核对质量、有效期及可用量。')
     para(doc, '表单字段：批次编码（“生成”开关，自动生成）、物料*、供应商、供应商批次、批次数量*、生产日期、有效期（30天内到期黄色警告）、备注。')
     para(doc, '操作：')
     bullet(doc, 'FEFO推荐：物料+需求数量→推荐批次列表（临近到期标记，按推荐顺序）')
@@ -252,6 +338,9 @@ def ch11_lt(doc, h1, h2, h3, para, bullet, numbered, table):
     bullet(doc, 'FEFO领料：工单+物料+需求数量→推荐批次（本次领料数量≤剩余）→多批次确认领料')
     bullet(doc, 'SN-批次绑定：SN+批次+物料（各自带出）')
     bullet(doc, '追溯：批次→工单消耗/SN绑定')
+    para(doc, '批次主档、工单批次消耗、FEFO领料与SN批次绑定为各自页面，权限需分别授予；'
+              'MES批次与ERP仓储wm_batch不可混称同一台账，Station上料B/RC码解析走ERP来源。'
+              '存在消耗或SN绑定记录的批次不可删除，追溯不能靠删除旧记录重建。')
 
     h2(doc, '11.2 工装/模治具管理')
     para(doc, '操作入口：MES制造执行 > 工装管理')
@@ -267,12 +356,18 @@ def ch11_lt(doc, h1, h2, h3, para, bullet, numbered, table):
     para(doc, '表单字段：SOP编码（生成开关）、SOP名称*、SOP类型*（生产作业/检验作业/安全规程/调试作业/清场作业）、文件类型*（PDF/图片/视频/Word）、首版本文件（≤100MB）、说明。')
     para(doc, '版本管理：新增版本（版本号自动递增）、版本历史查看、按版本预览。')
     para(doc, '工序绑定：工序*+SOP*（仅已发布）+指定版本（空=当前发布版）+默认SOP开关。')
-    para(doc, '查看器：按工序/工序记录推送SOP（PDF iframe/图片/视频/Word下载），自动登记查阅记录；'
-              '进站时自动推送SOP到工位。')
+    numbered(doc, '新增SOP并上传首版本，提交审批后由已配置流程或授权审批人处理；通过才发布，驳回返回草稿，停用走归档。')
+    numbered(doc, '修订使用“新增版本”，上传文件并走审批；在版本历史核对已发布版本与待审批稿，不把上传成功当作发布。')
+    numbered(doc, '在“工序绑定”选择已发布SOP与指定版本（空为当前发布版）；“查阅”打开查看器，按要求确认已阅并核对查阅日志。')
+    para(doc, '“预览”仅直接打开文件，不产生已阅签名；“查阅”查看器支持PDF/图片/视频及Word下载，'
+              '点击“我已阅读并确认”才登记留痕。确认与SOP_VIEW签名对应SOP_ACKNOWLEDGED门禁，进站推送不代表已经确认。')
+    para(doc, 'PC查看器与Station SOP拉取/下载为不同入口，私有文件代理及网络须另核对。'
+              '页面虽对ARCHIVED显示编辑，后端已拒绝归档文档编辑；产生查阅/签名的文档不可通过删除破坏追溯。')
 
     h2(doc, '11.4 NCR不合格品与返工')
     para(doc, '操作入口：MES制造执行 > NCR')
-    para(doc, 'NCR状态流转：OPEN待处理→【评审】→REVIEW评审中→【处置】→DISPOSITION已处置（按处置方式可能进入返工）→IN_REWORK返工中→CLOSED已关闭（此后仅可删除）。')
+    para(doc, 'NCR状态流转：OPEN→评审→REVIEW；OPEN/REVIEW均可签署并处置，经过DISPOSITION后按分支进入IN_REWORK或CLOSED。'
+              'CLOSED仍可查询，删除需权限且后端仅允许关闭单，不能把“已关闭”理解为应删审计记录。')
     para(doc, '来源类型：IQC/IPQC/OQC/工序报工/客户投诉。')
     para(doc, '处置方式：返工/报废/让步接收/退货。')
     para(doc, '新增NCR：编号（生成开关）、来源*（默认客户投诉）、物料*、工单（可选）、缺陷数量*（min1）、备注。')
@@ -281,3 +376,12 @@ def ch11_lt(doc, h1, h2, h3, para, bullet, numbered, table):
     bullet(doc, '返工工单：返工编号/原工单/返工工单/返工数量/状态（自动派生）')
     bullet(doc, '8D报告：D1团队组成/D2问题描述/D3遏制措施/D4根因分析/D5永久措施/D6措施验证/D7预防措施/D8关闭总结')
     para(doc, '8D状态流转：草稿→进行中→【完成8D报告】→已完成（终态不可编辑）。')
+    numbered(doc, '从自动来源或客户投诉新增NCR，核对来源、物料、工单、批次及缺陷数量，补录缺陷/根因明细。')
+    numbered(doc, '有mes:ncr:order:review权限时评审；处置选择REWORK/SCRAP/ACCEPT_AS_IS/RETURN并填依据，'
+                   '点击“签署并处置”（mes:ncr:order:dispose），完成二级认证。当前PC无免签处置路径，后端拒绝LOGIN_ONLY。')
+    numbered(doc, '返工：系统派生返工关联和REWORK来源MES工单，去MES工单核对路线/工序、下达、建卡并按正常生产与IPQC门禁执行。'
+                   '返工不是生成即完工；无原工单路线时尤其要核对可下达条件。')
+    numbered(doc, '返工MES工单完工回写返工记录COMPLETED及NCR CLOSED；此分支不自动发送普通ERP工单完工MQ，'
+                   '不能写成自动返工入库已成功。8D按单独权限维护与完成。')
+    para(doc, '报废/让步接收作用于已关联批次，批次动作失败会回滚处置；RETURN当前关闭NCR，不代表ERP退货单/实物退库自动完成。'
+              '自动NCR找不到可关联批次或隔离失败时需人工核对，不承诺所有来源都完成自动隔离。')

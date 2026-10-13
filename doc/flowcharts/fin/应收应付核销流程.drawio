@@ -1,118 +1,168 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="drawio" version="31.1.5">
-  <diagram name="Page-1">
-    <mxGraphModel>
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" modified="2026-10-12T00:00:00.000Z">
+  <diagram id="fin_arap_settlement" name="应收应付核销流程">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1160" pageHeight="1738" background="#ffffff">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="st1" value="① 销售开票（AR）" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="40" width="960" height="520" as="geometry" />
+        <mxCell id="title" value="应收应付核销流程" vertex="1" parent="1" style="text;html=0;fontSize=34;fontStyle=1;align=left;fontFamily=Microsoft YaHei;">
+          <mxGeometry x="30" y="12" width="1100" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="a1" value="销售订单履行事件&#xa;SalesOrderFulfilledEvent 监听器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        <mxCell id="node_invoice" value="销售发票草稿/采购收票&#10;销售审批接入另核" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=24;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="112" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a2" value="自动生成发票草稿 so_invoice&#xa;（统一状态机）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="160" width="340" height="60" as="geometry" />
+        <mxCell id="node_invoice_gl" value="ISSUED事件经MQ&#10;触发发票GL制单" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="286" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a3" value="发票状态机&#xa;DRAFT→ISSUED→VERIFIED&#xa;→CANCELLED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="270" width="340" height="60" as="geometry" />
+        <mxCell id="node_receipt" value="另登记AR收款/AP付款&#10;核对金额与交易对手" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=24;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="460" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a4" value="发票过账 → 生成 AR 子账&#xa;（统驭科目）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="380" width="340" height="60" as="geometry" />
+        <mxCell id="node_confirm" value="确认单据至CONFIRMED&#10;另触发MQ财务制单" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="634" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="st2" value="② 采购进项发票（AP）" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="600" width="960" height="520" as="geometry" />
+        <mxCell id="node_choose" value="核销页选方向与伙伴&#10;选发票及收付款未清项" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="808" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b1" value="三单匹配&#xa;PO + GR（收货）+ Invoice" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="50" width="340" height="72" as="geometry" />
+        <mxCell id="node_amount" value="金额&gt;0且不超过&#10;双方各自未清余额？" vertex="1" parent="1" style="shape=hexagon;whiteSpace=wrap;html=0;fillColor=#fff4d7;strokeColor=#a48026;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="982" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b2" value="pu_invoice（镜像 so）&#xa;含认证子状态机&#xa;UNCERTIFIED→CERTIFIED→DEDUCTED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="170" width="340" height="70" as="geometry" />
+        <mxCell id="node_settle" value="点击核销&#10;写记录并累计双方金额" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1156" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b3" value="发票过账 → 生成 AP 子账&#xa;（退货 → 进项转出 TRANSFERRED）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="290" width="340" height="60" as="geometry" />
+        <mxCell id="node_status" value="部分核销保留未清余额&#10;各自满额才结清状态" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1330" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="st3" value="③ 收付款与核销" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="1160" width="960" height="560" as="geometry" />
+        <mxCell id="node_done" value="核对核销、未清项与GL&#10;错误核销另按权限反核销" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e8ecef;strokeColor=#4b5d69;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1504" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c1" value="收款（AR）FinArApReceipt&#xa;付款（AP）FinArApPayment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        <mxCell id="node_callback" value="独立AR收款回调&#10;客户标识有效且金额&gt;0？" vertex="1" parent="1" style="shape=hexagon;whiteSpace=wrap;html=0;fillColor=#fff4d7;strokeColor=#a48026;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="460" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c2" value="支付回调 PAY_RECEIVED_CALLBACK&#xa;→ 自动收款 / 核销" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="160" width="340" height="60" as="geometry" />
+        <mxCell id="node_callback_receipt" value="幂等建CONFIRMED收款&#10;并发送收款GL消息" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="634" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c3" value="核销 FinArApSettlement&#xa;（发票 ↔ 收付款匹配）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="270" width="340" height="60" as="geometry" />
+        <mxCell id="node_fifo" value="按最旧ISSUED销售发票&#10;FIFO尝试自动核销" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=24;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="808" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c4" value="账龄分析 / 对账" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="380" width="340" height="60" as="geometry" />
+        <mxCell id="node_remaining" value="核销失败或留有余额&#10;保留实际记录并人工核实" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#f0f1f3;strokeColor=#727980;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="982" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="lg" value="图例" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;fontColor=#333333;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="1760" width="560" height="212" as="geometry" />
+        <mxCell id="edge_0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#39798d;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_invoice" target="node_invoice_gl">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg0" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="50" width="30" height="16" as="geometry" />
+        <mxCell id="edge_1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_invoice_gl" target="node_receipt">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg0t" value="单据 / 操作" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="47" width="200" height="20" as="geometry" />
+        <mxCell id="edge_2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_receipt" target="node_confirm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg1" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="88" width="30" height="16" as="geometry" />
+        <mxCell id="edge_3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_confirm" target="node_choose">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg1t" value="匹配判断" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="85" width="200" height="20" as="geometry" />
+        <mxCell id="edge_4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_choose" target="node_amount">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="126" width="30" height="16" as="geometry" />
+        <mxCell id="edge_5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_amount" target="node_settle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg2t" value="系统自动" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="123" width="200" height="20" as="geometry" />
+        <mxCell id="edge_6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_settle" target="node_status">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="164" width="30" height="16" as="geometry" />
+        <mxCell id="edge_7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_status" target="node_done">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg3t" value="状态" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="161" width="200" height="20" as="geometry" />
+        <mxCell id="edge_8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#39798d;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_callback" target="node_callback_receipt">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a1" target="a2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="edge_9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_callback_receipt" target="node_fifo">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a2" target="a3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="edge_10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b94e4e;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_fifo" target="node_remaining">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e3" value="ISSUED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="a3" target="a4">
+        <mxCell id="edge_11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b94e4e;fontSize=22;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=1;entryY=0.5;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_remaining" target="node_choose">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="650" y="340" />
-              <mxPoint x="650" y="450" />
+              <mxPoint x="1152" y="1041.0" />
+              <mxPoint x="1152" y="948" />
+              <mxPoint x="752" y="948" />
+              <mxPoint x="752" y="867.0" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e4" value="匹配通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b1" target="b2">
+        <mxCell id="edge_12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_fifo" target="node_done">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="650" y="686" />
-              <mxPoint x="650" y="800" />
+              <mxPoint x="980.0" y="960" />
+              <mxPoint x="752" y="960" />
+              <mxPoint x="752" y="1482" />
+              <mxPoint x="580.0" y="1482" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e5" value="过账" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b2" target="b3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_0" value="开票/收票确认事件" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#39798d;">
+          <mxGeometry x="486.5" y="244.0" width="187.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a4" target="c1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_1" value="另登记资金单据" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="501.5" y="418.0" width="157.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b3" target="c1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_2" value="显式确认" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="592.0" width="94.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c1" target="c2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_3" value="另行选单核销" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="512.0" y="766.0" width="136.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c2" target="c3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_4" value="输入核销金额" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="512.0" y="940.0" width="136.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c3" target="c4">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_5" value="满足才执行" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="522.5" y="1114.0" width="115.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_6" value="按各自满额判定" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="501.5" y="1288.0" width="157.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_7" value="核对实际结果" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="512.0" y="1462.0" width="136.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_8" value="有效且非重复回调" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#39798d;">
+          <mxGeometry x="891.0" y="592.0" width="178.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_9" value="仅该客户AR发票" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="897.5" y="766.0" width="165.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_10" value="失败/有余款" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#b94e4e;">
+          <mxGeometry x="918.0" y="940.0" width="124.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_11" value="人工核实&#10;后选单" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=20;fillColor=#ffffff;fontColor=#b94e4e;">
+          <mxGeometry x="1059.0" y="929.0" width="90.0" height="50.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_12" value="仍须查核销与GL" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="727.5" y="946.0" width="163.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="人工操作    系统处理    校验/审批    状态/结果    虚线：异步或异常分支" vertex="1" parent="1" style="text;html=0;align=center;fontSize=22;fontColor=#52616b;">
+          <mxGeometry x="30" y="1673" width="1100" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

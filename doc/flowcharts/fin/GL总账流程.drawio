@@ -1,133 +1,158 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="drawio" version="31.1.5">
-  <diagram name="Page-1">
-    <mxGraphModel>
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" modified="2026-10-12T00:00:00.000Z">
+  <diagram id="fin_gl" name="GL总账流程">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1160" pageHeight="1564" background="#ffffff">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="st1" value="① 基础配置" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="40" width="960" height="460" as="geometry" />
+        <mxCell id="title" value="GL总账流程" vertex="1" parent="1" style="text;html=0;fontSize=34;fontStyle=1;align=left;fontFamily=Microsoft YaHei;">
+          <mxGeometry x="30" y="12" width="1100" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="a1" value="科目表 gl_account&#xa;（统驭科目：AR/AP/存货等）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        <mxCell id="node_base" value="配置科目、期间及汇率&#10;凭证日期所在期间OPEN" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=23;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="112" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a2" value="会计期间 gl_period&#xa;（开账 / 月度）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="160" width="340" height="60" as="geometry" />
+        <mxCell id="node_draft" value="手工新增凭证与分录&#10;保存DRAFT草稿" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="286" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a3" value="汇率 gl_currency_rate&#xa;（多币种）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="270" width="340" height="60" as="geometry" />
+        <mxCell id="node_gate" value="借贷平衡、有效末级科目&#10;及OPEN期间满足？" vertex="1" parent="1" style="shape=hexagon;whiteSpace=wrap;html=0;fillColor=#fff4d7;strokeColor=#a48026;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="460" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a4" value="期初余额初始化&#xa;gl_account_balance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
-          <mxGeometry x="160" y="380" width="340" height="60" as="geometry" />
+        <mxCell id="node_post" value="点击过账&#10;服务端重验后更新状态" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="634" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="st2" value="② 凭证处理" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="540" width="960" height="600" as="geometry" />
+        <mxCell id="node_posted" value="POSTED已过账&#10;写分录与科目余额" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="808" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b1" value="业务过账（Poster 接口）&#xa;AR Poster / AP Poster / 存货 Poster&#xa;→ 生成记账凭证 gl_voucher" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="50" width="340" height="70" as="geometry" />
+        <mxCell id="node_report" value="查询来源凭证与试算&#10;核对余额及业务单据" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="982" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b2" value="手工凭证录入&#xa;（借贷平衡校验）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="170" width="340" height="60" as="geometry" />
+        <mxCell id="node_adjust" value="需要调整已过账凭证？&#10;先核对期间是否OPEN" vertex="1" parent="1" style="shape=hexagon;whiteSpace=wrap;html=0;fillColor=#fff4d7;strokeColor=#a48026;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1156" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b3" value="凭证行 gl_voucher_line&#xa;（科目 + 金额 + 辅助核算）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="280" width="340" height="60" as="geometry" />
+        <mxCell id="node_done" value="留存凭证与核对记录&#10;供报表和期末关账使用" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e8ecef;strokeColor=#4b5d69;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1330" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b4" value="凭证审核 → 过账" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="390" width="340" height="72" as="geometry" />
+        <mxCell id="node_event" value="独立业务事件&#10;发票开票或收付款确认" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#f0f1f3;strokeColor=#727980;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="286" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b5" value="更新科目余额&#xa;gl_account_balance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
-          <mxGeometry x="160" y="510" width="340" height="60" as="geometry" />
+        <mxCell id="node_poster" value="MQ路由已实现Poster&#10;校验并制单过账" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="460" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="st3" value="③ 试算与报表" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="1180" width="960" height="460" as="geometry" />
+        <mxCell id="node_unpost" value="OPEN期间显式反过账&#10;回滚余额并返回DRAFT" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=24;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="1156" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c1" value="试算平衡表&#xa;（借贷合计校验）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        <mxCell id="node_cancel" value="另选作废至CANCELLED&#10;已过账须OPEN并回滚" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e8ecef;strokeColor=#4b5d69;strokeWidth=2;fontColor=#25323a;fontSize=23;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="1330" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c2" value="科目余额表 / 明细账" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="160" width="340" height="60" as="geometry" />
+        <mxCell id="edge_0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_base" target="node_draft">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="c3" value="三大报表（资产负债表等）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="160" y="270" width="340" height="60" as="geometry" />
+        <mxCell id="edge_1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_draft" target="node_gate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg" value="图例" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;fontColor=#333333;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="1680" width="560" height="174" as="geometry" />
+        <mxCell id="edge_2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_gate" target="node_post">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg0" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="50" width="30" height="16" as="geometry" />
+        <mxCell id="edge_3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_post" target="node_posted">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg0t" value="单据 / 操作" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="47" width="200" height="20" as="geometry" />
+        <mxCell id="edge_4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#39798d;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_event" target="node_poster">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="lg1" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="88" width="30" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="lg1t" value="审核" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="85" width="200" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="lg2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="126" width="30" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="lg2t" value="系统自动" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="123" width="200" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a1" target="a4">
+        <mxCell id="edge_5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_poster" target="node_posted">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="470" y="150" />
-              <mxPoint x="300" y="150" />
-              <mxPoint x="300" y="420" />
+              <mxPoint x="980.0" y="786" />
+              <mxPoint x="580.0" y="786" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a2" target="a4">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="edge_6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_posted" target="node_report">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=1.0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a3" target="a4">
+        <mxCell id="edge_7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_report" target="node_adjust">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_adjust" target="node_done">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b94e4e;fontSize=22;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_adjust" target="node_unpost">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b94e4e;fontSize=22;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=1;entryY=0.5;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_unpost" target="node_draft">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="470" y="370" />
-              <mxPoint x="650" y="370" />
-              <mxPoint x="650" y="420" />
+              <mxPoint x="1152" y="1215.0" />
+              <mxPoint x="1152" y="426" />
+              <mxPoint x="752" y="426" />
+              <mxPoint x="752" y="345.0" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a4" target="b1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b1" target="b3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b2" target="b3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b3" target="b4">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="r1" value="驳回" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=1.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;dashed=1;strokeColor=#b85450;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b4" target="b3">
+        <mxCell id="edge_11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b94e4e;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_adjust" target="node_cancel">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="190" y="966" />
-              <mxPoint x="190" y="880" />
+              <mxPoint x="580.0" y="1296" />
+              <mxPoint x="980.0" y="1296" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e8" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b4" target="b5">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="650" y="966" />
-              <mxPoint x="650" y="1080" />
-            </Array>
-          </mxGeometry>
+        <mxCell id="label_0" value="手工录入" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="244.0" width="94.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b5" target="c1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_1" value="核对分录" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="418.0" width="94.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c1" target="c2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_2" value="满足才过账" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="522.5" y="592.0" width="115.0" height="28.0" as="geometry" />
         </mxCell>
-        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c2" target="c3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="label_3" value="执行成功" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="766.0" width="94.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_4" value="异步财务消息" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#39798d;">
+          <mxGeometry x="912.0" y="418.0" width="136.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_5" value="查实际制单结果" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="701.5" y="772.0" width="157.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_6" value="核对总账" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="940.0" width="94.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_7" value="是否需更正" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="522.5" y="1114.0" width="115.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_8" value="无需调整" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="1288.0" width="94.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_9" value="需要且O&#10;PEN" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=20;fillColor=#ffffff;fontColor=#b94e4e;">
+          <mxGeometry x="737.0" y="1190.0" width="86.0" height="50.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_10" value="修改后重&#10;新过账" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=20;fillColor=#ffffff;fontColor=#b94e4e;">
+          <mxGeometry x="1059.0" y="795.5" width="90.0" height="50.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_11" value="按作废条件另选" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#b94e4e;">
+          <mxGeometry x="701.5" y="1282.0" width="157.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="人工操作    系统处理    校验/审批    状态/结果    虚线：异步或异常分支" vertex="1" parent="1" style="text;html=0;align=center;fontSize=22;fontColor=#52616b;">
+          <mxGeometry x="30" y="1499" width="1100" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

@@ -1,0 +1,401 @@
+[
+  {
+    "id": "ai_chat_agent_current",
+    "path": "ai/AI对话与Agent编排流程.drawio",
+    "title": "AI对话与Agent编排流程",
+    "chapter": "14.1",
+    "summary": "基于plus分支fe59e4ae、2026-10-12代码：AI智能助手 > 对话与应用 > 智能对话为完整入口，顶部另有全局抽屉。四种模式与显式开关决定执行路径；纯ERP批量明细可直接由查询Agent交付。",
+    "prerequisites": [
+      "账号已登录且已配置相应菜单、角色权限；安装SQL定义不证明存量环境已安装。",
+      "存在可用TEXT/VISION模型和厂商；完整页知识库模式必须明确选定启用且索引READY的授权知识库。",
+      "MCP选择器需ai:mcp:list，工具来源、外部授权和副作用须单独审查。"
+    ],
+    "caveats": [
+      "模式为auto/chat/agent/rag；显式联网优先，深度思考在非显式agent/rag时可覆盖自动路由。顶部抽屉没有完整页的选库及MCP选择器。",
+      "纯ERP问题含全部、逐条、批量等关键词可绕过Supervisor直接查询；不是问题文件导入、多题队列或无限数据导出。",
+      "一般MCP工具可能写入、启动进程或通知，不能套用ERP只读SQL与租户条件保证。外部工具由独立角色使用，不注入ERP查询/报表Agent。",
+      "未显式选工具会复用会话选择或默认启用工具，不等于禁用全部外部工具；仅特定已审资料服务有实际非空读取证据闸门。",
+      "AI_CONTENT_INCREMENT是实际正文；纯查询LENGTH截断不能保存为完成答案。工具结束、部分正文或模型自报成功都不等于最终成功。",
+      "新建、清空、切换会话不取消后端生成；不保证跨窗口并发归属、断线续传或模型事实正确。"
+    ],
+    "sources": [
+      "plus-ui/src/views/ai/assistant/index.vue",
+      "plus-ui/src/views/ai/assistant/knowledgeSelection.ts",
+      "plus-ui/src/views/ai/constants.ts",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiChatController.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/AiServiceFacade.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/CompleteAnswerChatModel.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/facade/McpDocumentCapability.java"
+    ],
+    "nodes": [
+      {"id": "input", "text": "智能对话输入问题\n选择模式、模型和可用能力", "kind": "manual", "row": 0, "col": 1},
+      {"id": "access", "text": "校验输入及模型\n复用会话核对本人和租户", "kind": "check", "row": 1, "col": 1},
+      {"id": "reject", "text": "无可用模型或访问失败\n修正配置，不冒充已完成", "kind": "end", "row": 1, "col": 2},
+      {"id": "route", "text": "显式开关、模式与意图路由", "kind": "check", "row": 2, "col": 1},
+      {"id": "chat", "text": "普通对话、RAG或联网增强\n按配置调用流式模型", "kind": "auto", "row": 3, "col": 0},
+      {"id": "supervisor", "text": "Supervisor协调查询与报表\n外部MCP独立角色", "kind": "auto", "row": 3, "col": 1},
+      {"id": "bulk", "text": "纯ERP批量明细\n直接调用查询Agent", "kind": "auto", "row": 3, "col": 2},
+      {"id": "execute", "text": "异步恢复租户上下文\n推送思考、工具及正文事件", "kind": "auto", "row": 4, "col": 1},
+      {"id": "result", "text": "按路径校验结果\n纯查询完整性、资料读取闸门", "kind": "check", "row": 5, "col": 1},
+      {"id": "error", "text": "失败或纯查询截断\n错误终态，不存为完成答案", "kind": "end", "row": 5, "col": 2},
+      {"id": "save", "text": "保存有效回答与用量\n下发最终正文和AI_DONE", "kind": "auto", "row": 6, "col": 1},
+      {"id": "review", "text": "复核事实及来源\n按权限反馈或导出会话", "kind": "end", "row": 7, "col": 1}
+    ],
+    "edges": [
+      {"from": "input", "to": "access", "label": "发送一条content", "kind": "normal", "route": ""},
+      {"from": "access", "to": "reject", "label": "拒绝", "kind": "exception", "route": ""},
+      {"from": "access", "to": "route", "label": "保存用户消息", "kind": "normal", "route": ""},
+      {"from": "route", "to": "chat", "label": "对话/RAG/联网", "kind": "normal", "route": ""},
+      {"from": "route", "to": "supervisor", "label": "组合Agent任务", "kind": "normal", "route": ""},
+      {"from": "route", "to": "bulk", "label": "纯批量ERP查询", "kind": "normal", "route": ""},
+      {"from": "chat", "to": "execute", "label": "流式回调", "kind": "async", "route": ""},
+      {"from": "supervisor", "to": "execute", "label": "异步Agent", "kind": "async", "route": ""},
+      {"from": "bulk", "to": "execute", "label": "真实正文增量", "kind": "async", "route": ""},
+      {"from": "execute", "to": "result", "label": "响应收尾", "kind": "normal", "route": ""},
+      {"from": "execute", "to": "error", "label": "异常", "kind": "exception", "route": ""},
+      {"from": "result", "to": "error", "label": "本路径校验失败", "kind": "exception", "route": ""},
+      {"from": "result", "to": "save", "label": "有效结果", "kind": "normal", "route": ""},
+      {"from": "save", "to": "review", "label": "完成不等于事实验收", "kind": "normal", "route": ""}
+    ]
+  },
+  {
+    "id": "ai_erp_query_current",
+    "path": "ai/AI数据查询流程.drawio",
+    "title": "AI数据查询流程",
+    "chapter": "14.5",
+    "summary": "智能对话选择数据查询，Agent读取ERP表结构、生成SQL，经SqlSafetyValidator后由ERP数据源执行。返回受行数、超时和工具展示限制；会话Markdown导出不是通用全表导出。",
+    "prerequisites": [
+      "可用对话模型、启用的QUERY/ALL内置工具及ERP数据源连接。",
+      "按授权明确对象、日期、字段和排序；关闭会覆盖路由的显式联网开关。",
+      "管理员已核对允许表前缀、SQL超时、最大行数及租户身份。"
+    ],
+    "caveats": [
+      "仅接受校验器支持的SELECT结构，不保证任意复杂关联和统计均可执行；不得扩大权限绕过拒绝。",
+      "SQL租户隔离不等于全部业务级数据权限，仍须按数据用途和账号授权复核。",
+      "ExecuteSqlQueryTool预览最多10行8列、长值截断；Total是本次返回行数，不是全表总量。",
+      "这些守卫不覆盖LOCAL/REMOTE MCP、HTTP、邮件和Flow外部副作用。",
+      "完整列出不能突破SQL行数、预览及模型Token预算；纯查询截断须分段重问。"
+    ],
+    "sources": [
+      "plus-ui/src/views/ai/assistant/index.vue",
+      "plus-ui/src/views/ai/config/index.vue",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/agent/ErpQueryAgent.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/QueryTableSchemaTool.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/tool/ExecuteSqlQueryTool.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/SqlSafetyValidator.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/query/ErpQueryService.java"
+    ],
+    "nodes": [
+      {"id": "request", "text": "数据查询模式描述范围\n日期、字段及排序", "kind": "manual", "row": 0, "col": 1},
+      {"id": "schema", "text": "发现允许的ERP业务表\n读取真实表结构", "kind": "auto", "row": 1, "col": 1},
+      {"id": "sql", "text": "查询Agent生成候选SQL", "kind": "auto", "row": 2, "col": 1},
+      {"id": "guard", "text": "SELECT、结构和表白名单\n注入并检查租户条件", "kind": "check", "row": 3, "col": 1},
+      {"id": "denied", "text": "安全校验拒绝\n不得执行候选SQL", "kind": "state", "row": 3, "col": 2},
+      {"id": "execute", "text": "ERP数据源只读查询\n应用行数上限与超时", "kind": "auto", "row": 4, "col": 1},
+      {"id": "failed", "text": "连接、执行或超时失败\n不能解释为零条业务记录", "kind": "end", "row": 4, "col": 0},
+      {"id": "preview", "text": "工具返回受限预览\n查询结果不是无限全量", "kind": "auto", "row": 5, "col": 1},
+      {"id": "verify", "text": "核对结果范围与完整性", "kind": "check", "row": 6, "col": 1},
+      {"id": "refine", "text": "缩小日期或业务区间\n补充条件后重新提问", "kind": "manual", "row": 6, "col": 2},
+      {"id": "done", "text": "复核业务事实\n需要时按权限导出会话", "kind": "end", "row": 7, "col": 1}
+    ],
+    "edges": [
+      {"from": "request", "to": "schema", "label": "内置查询工具", "kind": "normal", "route": ""},
+      {"from": "schema", "to": "sql", "label": "真实结构", "kind": "normal", "route": ""},
+      {"from": "sql", "to": "guard", "label": "候选SQL", "kind": "normal", "route": ""},
+      {"from": "guard", "to": "denied", "label": "不支持或不安全", "kind": "exception", "route": ""},
+      {"from": "denied", "to": "request", "label": "人工修正需求", "kind": "exception", "route": "right"},
+      {"from": "guard", "to": "execute", "label": "校验通过", "kind": "normal", "route": ""},
+      {"from": "execute", "to": "failed", "label": "异常", "kind": "exception", "route": ""},
+      {"from": "execute", "to": "preview", "label": "实际返回记录", "kind": "normal", "route": ""},
+      {"from": "preview", "to": "verify", "label": "生成并核对回答", "kind": "normal", "route": ""},
+      {"from": "verify", "to": "refine", "label": "受限或不完整", "kind": "exception", "route": ""},
+      {"from": "refine", "to": "request", "label": "分段查询", "kind": "normal", "route": "right"},
+      {"from": "verify", "to": "done", "label": "完成当前范围核对", "kind": "normal", "route": ""}
+    ]
+  },
+  {
+    "id": "industrial_decision_approval_current",
+    "path": "ai/工业决策审批与执行流程.drawio",
+    "title": "工业决策审批与执行流程",
+    "chapter": "14.9",
+    "summary": "销售订单行交付风险分析启动受控决策，交付风险看板查询运行。可信ERP快照及确定性推演生成事实与方案，模型只解释；审批校验后启动受保护Flow，幂等执行白名单通知或业务草稿。",
+    "prerequisites": [
+      "账号有ai:decision:run/query及目标业务访问权限，工业决策功能和来源数据已配置。",
+      "审批需ai:decision:approve、ai:decision:execute及选中动作业务权限；采购草稿需pu:requisition:add，排产草稿需prd:schedule:run。",
+      "基本单位、库存、需求、产能及采购资格可核验；采购冻结合同门禁必须实际通过。"
+    ],
+    "caveats": [
+      "事实、KPI、风险及排名来自可信快照和确定性推演，LLM不得自行计算指标、补造证据或直接写业务。",
+      "审批携带runVersion、expectedSnapshotHash；来源或权限变化可使运行STALE，须重新分析。",
+      "批准后由受控Flow异步执行，普通结果页没有通用执行/重试按钮；批准不等于执行成功，草稿不等于发布或采购审批完成。",
+      "低风险通知是否自动执行取决于策略，并非所有运行都必须人工批准；业务草稿仍须审批。",
+      "幂等不保证全部跨库动作原子成功；部分成功、失败及回滚须逐项核对，禁止无界重复批准。",
+      "源码及本机记录不证明生产部署、全部案例SLA或人工验收完成。"
+    ],
+    "sources": [
+      "plus-ui/src/views/erp/so/orderheader/index.vue",
+      "plus-ui/src/views/ai/decision/index.vue",
+      "plus-ui/src/views/ai/decision/detail.vue",
+      "plus-ui/src/components/ai/decision/DecisionActionApproval.vue",
+      "plus-ui/src/components/ai/decision/DecisionActionExecutionResults.vue",
+      "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter/DeliveryContextAssembler.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionPolicyGuardService.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionApprovalService.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision/DecisionActionExecutionService.java",
+      "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowAccessGuard.java"
+    ],
+    "nodes": [
+      {"id": "start", "text": "销售订单行启动交付风险分析", "kind": "manual", "row": 0, "col": 1},
+      {"id": "snapshot", "text": "校验访问并采集可信ERP快照\n记录版本和证据", "kind": "auto", "row": 1, "col": 1},
+      {"id": "simulate", "text": "缺料及APS确定性推演\n计算KPI、可行方案和排名", "kind": "auto", "row": 2, "col": 1},
+      {"id": "policy", "text": "模型仅写定性说明\n校验证据与动作白名单策略", "kind": "check", "row": 3, "col": 1},
+      {"id": "blocked", "text": "证据、策略或分析失败\n补齐来源后重新分析", "kind": "end", "row": 3, "col": 2},
+      {"id": "approval", "text": "待审批逐项核对动作\n批准选中项或驳回全部", "kind": "manual", "row": 4, "col": 1},
+      {"id": "reject", "text": "驳回或未选动作\n不得进入该动作执行", "kind": "end", "row": 4, "col": 0},
+      {"id": "fresh", "text": "重读权限、版本和快照\n核验冻结来源及执行身份", "kind": "check", "row": 5, "col": 1},
+      {"id": "stale", "text": "STALE或执行启动失败\n禁止自动继续", "kind": "end", "row": 5, "col": 2},
+      {"id": "execute", "text": "受保护执行Flow\n幂等执行通知或业务草稿", "kind": "auto", "row": 6, "col": 1},
+      {"id": "inspect", "text": "部分成功、失败或回滚\n核查记录和受控恢复条件", "kind": "state", "row": 7, "col": 2},
+      {"id": "done", "text": "逐项查看执行结果\n只读回查ERP实际编号状态", "kind": "end", "row": 8, "col": 1}
+    ],
+    "edges": [
+      {"from": "start", "to": "snapshot", "label": "接受runId后异步分析", "kind": "async", "route": ""},
+      {"from": "snapshot", "to": "simulate", "label": "可信业务上下文", "kind": "normal", "route": ""},
+      {"from": "simulate", "to": "policy", "label": "计算结果与证据", "kind": "normal", "route": ""},
+      {"from": "snapshot", "to": "blocked", "label": "来源不可用", "kind": "exception", "route": ""},
+      {"from": "policy", "to": "blocked", "label": "守卫未通过", "kind": "exception", "route": ""},
+      {"from": "policy", "to": "approval", "label": "需审批动作", "kind": "normal", "route": ""},
+      {"from": "policy", "to": "execute", "label": "策略允许的低风险通知", "kind": "async", "route": "left"},
+      {"from": "approval", "to": "reject", "label": "驳回/未选", "kind": "normal", "route": ""},
+      {"from": "approval", "to": "fresh", "label": "提交批准范围", "kind": "normal", "route": ""},
+      {"from": "fresh", "to": "stale", "label": "过期或启动关联失败", "kind": "exception", "route": ""},
+      {"from": "fresh", "to": "execute", "label": "审批后", "kind": "async", "route": ""},
+      {"from": "execute", "to": "inspect", "label": "异常/部分完成", "kind": "exception", "route": ""},
+      {"from": "execute", "to": "done", "label": "读取持久化结果", "kind": "normal", "route": ""},
+      {"from": "inspect", "to": "done", "label": "核对逐项状态", "kind": "normal", "route": ""}
+    ]
+  },
+  {
+    "id": "flow_definition_instance_current",
+    "path": "ai/Flow流程编排与实例运行流程.drawio",
+    "title": "Flow流程编排与实例运行流程",
+    "chapter": "14.10",
+    "summary": "AI智能助手 > 流程编排 > 流程列表/运行历史列表：独立ruoyi-flow与ruoyi-common-flow实现节点编排、发布版本及实例运行；API保持/ai/flow/**、表保持ai_flow*，不是Flowable/BPMN审批引擎。",
+    "prerequisites": [
+      "部署已配置流程列表、设计器和运行历史，账号具备相应ai:flow:list/add/edit/run等权限。",
+      "模型、HTTP/MQ/OSS和通知服务已配置，测试副作用获得明确授权。",
+      "正式运行使用PUBLISHED定义，草稿测试/单节点测试在适用隔离环境执行。"
+    ],
+    "caveats": [
+      "草稿/单节点测试可使用当前画布配置并真实执行外部动作，不是只读模拟；图校验不证明外部安全。",
+      "发布保存版本快照，已发布流程先下线再编辑；恢复历史版本回到DRAFT且需重新发布。",
+      "实例状态RUNNING/SUCCEEDED/FAILED/STOPPED，停止不能追回已发通知或其他已完成副作用。",
+      "普通失败实例续跑创建新实例并复用部分成功结果；重试不等于回滚，先核对节点幂等及外部结果。",
+      "system_delivery_risk_*及含industrial.*的系统图受保护，通用编辑/运行/测试/Webhook/恢复/实例重试不能替代决策接口。",
+      "Webhook不要求登录，仅配置webhookToken时校验x-flow-token；未配置时flowKey路径即凭据，需单独控制暴露，不公开真实地址或令牌。"
+    ],
+    "sources": [
+      "plus-ui/src/views/ai/flow/index.vue",
+      "plus-ui/src/views/ai/flow/designer/index.vue",
+      "plus-ui/src/views/ai/flow/monitor/index.vue",
+      "plus-ui/src/views/ai/flow/monitor/InstanceDetail.vue",
+      "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/controller/FlowController.java",
+      "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/controller/FlowInstanceController.java",
+      "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/engine/FlowEngineImpl.java",
+      "ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter/DecisionFlowAccessGuard.java",
+      "ruoyi-common/ruoyi-common-flow/src/main/java/com/nexus/common/flow/service/impl/FlowServiceImpl.java"
+    ],
+    "nodes": [
+      {"id": "create", "text": "流程列表新建或从模板创建", "kind": "manual", "row": 0, "col": 1},
+      {"id": "guard", "text": "权限及工业系统图保护校验", "kind": "check", "row": 1, "col": 1},
+      {"id": "deny", "text": "受保护工业图或无权操作\n回到工业决策受控入口", "kind": "end", "row": 1, "col": 2},
+      {"id": "draft", "text": "配置节点与连线\n保存DRAFT草稿", "kind": "manual", "row": 2, "col": 1},
+      {"id": "test", "text": "草稿或单节点测试\n可能真实执行外部动作", "kind": "auto", "row": 3, "col": 0},
+      {"id": "publish", "text": "校验图后发布\n保存版本快照", "kind": "check", "row": 3, "col": 1},
+      {"id": "start", "text": "启动已发布流程\n手动、定时或Webhook", "kind": "auto", "row": 4, "col": 1},
+      {"id": "running", "text": "实例RUNNING\n按配置调度节点与记录快照", "kind": "state", "row": 5, "col": 1},
+      {"id": "stopped", "text": "请求停止后观察STOPPED\n已完成副作用不自动撤销", "kind": "end", "row": 5, "col": 2},
+      {"id": "failed", "text": "FAILED查看节点错误\n先核查外部副作用", "kind": "state", "row": 6, "col": 0},
+      {"id": "done", "text": "SUCCEEDED\n运行历史查看输出和节点记录", "kind": "end", "row": 6, "col": 1},
+      {"id": "retry", "text": "普通失败实例受控续跑\n新实例沿用可复用结果", "kind": "manual", "row": 7, "col": 0}
+    ],
+    "edges": [
+      {"from": "create", "to": "guard", "label": "操作定义", "kind": "normal", "route": ""},
+      {"from": "guard", "to": "deny", "label": "拒绝", "kind": "exception", "route": ""},
+      {"from": "guard", "to": "draft", "label": "普通流程", "kind": "normal", "route": ""},
+      {"from": "draft", "to": "test", "label": "可选隔离测试", "kind": "async", "route": ""},
+      {"from": "test", "to": "draft", "label": "核对并修改画布", "kind": "normal", "route": "left"},
+      {"from": "draft", "to": "publish", "label": "申请发布", "kind": "normal", "route": ""},
+      {"from": "publish", "to": "draft", "label": "图校验失败", "kind": "exception", "route": "right"},
+      {"from": "publish", "to": "start", "label": "PUBLISHED", "kind": "normal", "route": ""},
+      {"from": "start", "to": "running", "label": "异步返回实例ID", "kind": "async", "route": ""},
+      {"from": "running", "to": "stopped", "label": "停止请求生效", "kind": "exception", "route": ""},
+      {"from": "running", "to": "failed", "label": "未恢复的节点错误", "kind": "exception", "route": ""},
+      {"from": "running", "to": "done", "label": "实例完成", "kind": "normal", "route": ""},
+      {"from": "failed", "to": "retry", "label": "满足续跑条件", "kind": "normal", "route": ""},
+      {"from": "retry", "to": "running", "label": "新实例执行", "kind": "async", "route": "left"}
+    ]
+  },
+  {
+    "id": "knowledge_import_retrieval_current",
+    "path": "ai/知识库导入与检索流程.drawio",
+    "title": "知识库导入与检索流程",
+    "chapter": "14.4",
+    "summary": "AI智能助手 > 知识与工具 > 知识库管理：选库上传文档后异步解析、分段、向量化；索引就绪后测试召回，或在完整智能对话页明确选库做RAG问答。",
+    "prerequisites": [
+      "具备知识库/文档权限，选定有效EMBEDDING模型、匹配维度及可用向量存储。",
+      "文档内容和导入用途已获授权，OSS可用；页面预检50MB，实际受部署上传限制。"
+    ],
+    "caveats": [
+      "文档状态0待解析、1解析中、2完成、3失败；上传成功只是已提交，不等于解析或检索可用。",
+      "待解析或失败文档可重试，解析中/完成不能重复入队；重建中或失败索引有导入、重试和检索限制。",
+      "模型、维度或存储变更可能要求重建，需ai:knowledge:rebuild；REBUILDING/FAILED不等于READY。",
+      "混合、图谱及重排按配置和实现启用；普通RAG无召回可退回模型自身知识，不保证回答已获资料证实。",
+      "inmemory重启丢失向量；Milvus不支持未选库跨库搜索。检索失败不等于正常零命中。"
+    ],
+    "sources": [
+      "plus-ui/src/views/ai/knowledge/index.vue",
+      "plus-ui/src/views/ai/assistant/knowledgeSelection.ts",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/controller/AiKnowledgeController.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/KnowledgeProcessService.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/RetrieverService.java",
+      "ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/rag/VectorStoreService.java"
+    ],
+    "nodes": [
+      {"id": "select", "text": "知识库管理选库\n核对模型、存储及维度", "kind": "manual", "row": 0, "col": 1},
+      {"id": "upload", "text": "上传授权文档并保存OSS\n登记0待解析", "kind": "manual", "row": 1, "col": 1},
+      {"id": "parse", "text": "异步认领为1解析中\n解析、分段和向量化", "kind": "auto", "row": 2, "col": 1},
+      {"id": "failed", "text": "3失败或待解析\n修正后人工重试", "kind": "state", "row": 2, "col": 2},
+      {"id": "complete", "text": "2完成\n刷新并检查文档片段", "kind": "state", "row": 3, "col": 1},
+      {"id": "ready", "text": "明确选库并核对索引READY", "kind": "check", "row": 4, "col": 1},
+      {"id": "rebuild", "text": "按权限修正或重建索引\n等待READY再检索", "kind": "manual", "row": 4, "col": 0},
+      {"id": "retrieve", "text": "向量召回\n按配置混合、图谱或重排", "kind": "auto", "row": 5, "col": 1},
+      {"id": "error", "text": "检索失败清理旧结果\n不能冒充正常零命中", "kind": "end", "row": 5, "col": 2},
+      {"id": "review", "text": "复核片段、来源及分数\nRAG答案仍需核实", "kind": "end", "row": 6, "col": 1}
+    ],
+    "edges": [
+      {"from": "select", "to": "upload", "label": "选择目标库", "kind": "normal", "route": ""},
+      {"from": "upload", "to": "parse", "label": "异步处理", "kind": "async", "route": ""},
+      {"from": "parse", "to": "failed", "label": "处理或提交失败", "kind": "exception", "route": ""},
+      {"from": "failed", "to": "parse", "label": "状态允许且人工重试", "kind": "async", "route": "right"},
+      {"from": "parse", "to": "complete", "label": "处理成功", "kind": "normal", "route": ""},
+      {"from": "complete", "to": "ready", "label": "检索测试或RAG", "kind": "normal", "route": ""},
+      {"from": "ready", "to": "rebuild", "label": "非READY或配置变化", "kind": "exception", "route": ""},
+      {"from": "rebuild", "to": "ready", "label": "刷新核对", "kind": "normal", "route": "left"},
+      {"from": "ready", "to": "retrieve", "label": "索引可用", "kind": "normal", "route": ""},
+      {"from": "retrieve", "to": "error", "label": "调用失败", "kind": "exception", "route": ""},
+      {"from": "retrieve", "to": "review", "label": "真实命中或空数组", "kind": "normal", "route": ""}
+    ]
+  },
+  {
+    "id": "im_notification_delivery_current",
+    "path": "im/消息与通知投递流程.drawio",
+    "title": "消息与通知投递流程",
+    "chapter": "15.3",
+    "summary": "聊天页/im/chat与顶部消息盒子是不同入口。私聊/群聊核验目标与成员后保存消息及接收者通知，提交后定向推送；公告、工作流也可生成通知。本人通知、聊天回执和业务办理状态分别核对。",
+    "prerequisites": [
+      "PC聊天路由需im:chat:list，私聊同租户，群聊要求有效群成员身份。",
+      "附件上传具备OSS权限；图片页面上限10MB、文件20MB。",
+      "持久化与实时通道已配置，不能假定默认启用双通道。"
+    ],
+    "caveats": [
+      "顶部消息是通知弹窗，不是固定的消息 > 即时通讯入口。通知由业务动作生成，不在消息盒子新增。",
+      "活动事务提交后推送，无事务时立即推送；保存/推送成功不证明接收者收到、已读或处理。",
+      "单条已读后端成功再更新界面，全部已读先本地更新，失败须刷新；通知已读不等于聊天回执或审批办结。",
+      "撤回仅本人2分钟内，不追回截图、下载或转发。App删除只为本人隐藏，增量游标不是完整可靠更新日志。",
+      "群历史按当前成员资格检查，不保证新人只能见入群后消息；App后端存在不等于客户端真机验收完成。"
+    ],
+    "sources": [
+      "plus-ui/src/views/im/chat/index.vue",
+      "plus-ui/src/router/index.ts",
+      "plus-ui/src/layout/components/notice/index.vue",
+      "ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/support/ImPrivateChatService.java",
+      "ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/support/ImGroupChatService.java",
+      "ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/SysUserNotificationServiceImpl.java",
+      "ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/push/ImRealtimePush.java",
+      "ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/controller/AppImController.java"
+    ],
+    "nodes": [
+      {"id": "send", "text": "聊天页选择私聊或有效群组\n输入消息或上传附件", "kind": "manual", "row": 0, "col": 1},
+      {"id": "access", "text": "核验同租户、成员及内容\n检查客户端消息幂等标识", "kind": "check", "row": 1, "col": 1},
+      {"id": "denied", "text": "无权或目标无效\n不冒充发送成功", "kind": "end", "row": 1, "col": 2},
+      {"id": "save", "text": "保存消息及接收者通知\n等待事务提交", "kind": "auto", "row": 2, "col": 1},
+      {"id": "business", "text": "公告、工作流等业务动作\n在租户内保存通知", "kind": "auto", "row": 2, "col": 0},
+      {"id": "push", "text": "提交后按目标用户推送\n启用的SSE或WebSocket", "kind": "auto", "row": 3, "col": 1},
+      {"id": "offline", "text": "离线或推送异常\n需拉取持久化历史", "kind": "state", "row": 3, "col": 2},
+      {"id": "load", "text": "读取本人历史与实时事件\n按归属提交已读", "kind": "manual", "row": 4, "col": 1},
+      {"id": "readfail", "text": "已读同步失败刷新\n本地清零不算成功", "kind": "state", "row": 4, "col": 2},
+      {"id": "done", "text": "核对通知及聊天回执\n业务办理状态另行确认", "kind": "end", "row": 5, "col": 1}
+    ],
+    "edges": [
+      {"from": "send", "to": "access", "label": "发送请求", "kind": "normal", "route": ""},
+      {"from": "access", "to": "denied", "label": "拒绝", "kind": "exception", "route": ""},
+      {"from": "access", "to": "save", "label": "合法消息", "kind": "normal", "route": ""},
+      {"from": "save", "to": "push", "label": "提交后", "kind": "async", "route": ""},
+      {"from": "business", "to": "push", "label": "通知已保存", "kind": "async", "route": ""},
+      {"from": "push", "to": "offline", "label": "未实时送达", "kind": "exception", "route": ""},
+      {"from": "push", "to": "load", "label": "实时更新可用", "kind": "async", "route": ""},
+      {"from": "offline", "to": "load", "label": "重连或刷新", "kind": "normal", "route": ""},
+      {"from": "load", "to": "readfail", "label": "已读同步失败", "kind": "exception", "route": ""},
+      {"from": "readfail", "to": "load", "label": "重新读取", "kind": "exception", "route": "right"},
+      {"from": "load", "to": "done", "label": "服务端状态已核对", "kind": "normal", "route": ""}
+    ]
+  },
+  {
+    "id": "esign_grant_signature_current",
+    "path": "system/电子签章授权与签署流程.drawio",
+    "title": "电子签章授权与签署流程",
+    "chapter": "22.3",
+    "summary": "系统管理 > 电子签章有印章管理、用章授权、签名记录三个真实页面。公司章授权与实时可用性控制后续使用，业务动作追加只读台账。P2已有销售/采购合同详情PDF操作及后端实现，与P1留痕和验收分别说明。",
+    "prerequisites": [
+      "已核对实际菜单、租户套餐及system:sign:seal/grant/record相关权限。",
+      "个人章归属本人；公司章有匹配用户/部门、场景和窗口的有效授权，印章启用且未过期。",
+      "合同PDF需system:sign:document相关权限及system:oss:download，业务签署还须单据权限和凭证。"
+    ],
+    "caveats": [
+      "印章状态0草稿/1启用/2停用/3销毁，授权状态1启用/0停用；可用章列表不替代提交时实时校验。",
+      "撤销一条不消除其他授权；停用/销毁/撤销不删除历史、不追回下载，不等于证书吊销或合同终止。",
+      "台账append-only，签名记录页只读；业务审批服务端固定PASSWORD，SMS/FACE常量不代表已开放。",
+      "P2已有PDF上传、换版、盖章/CMS、下载及文档验签代码，不是只有计划；存在实现不证明部署和人工验收。",
+      "链验签与按signatureId的PDF文件验签不同，预览章面不是已保存签章，OSS字节不随数据库事务自动回滚。",
+      "P1 Task 17人工端到端验收未完成；P2 PDF为独立范围。自签证书、哈希与技术验签不能保证签章法律效力，不作法律推断。"
+    ],
+    "sources": [
+      "plus-ui/src/views/system/sign/seal/index.vue",
+      "plus-ui/src/views/system/sign/grant/index.vue",
+      "plus-ui/src/views/system/sign/record/index.vue",
+      "plus-ui/src/views/erp/so/contract/detail.vue",
+      "plus-ui/src/views/erp/pu/contract/detail.vue",
+      "plus-ui/src/components/sign/PdfSealPlacer.vue",
+      "ruoyi-common/ruoyi-common-sign/src/main/java/com/nexus/common/sign/controller/EsSealGrantController.java",
+      "ruoyi-common/ruoyi-common-sign/src/main/java/com/nexus/common/sign/controller/EsSignatureController.java",
+      "ruoyi-common/ruoyi-common-sign/src/main/java/com/nexus/common/sign/controller/EsSignDocumentController.java",
+      "ruoyi-common/ruoyi-common-sign/src/main/java/com/nexus/common/sign/service/impl/ESignatureServiceImpl.java"
+    ],
+    "nodes": [
+      {"id": "seal", "text": "印章管理建章并核对有效期\n草稿核准后启用", "kind": "manual", "row": 0, "col": 1},
+      {"id": "grant", "text": "公司章授权用户或部门\n限定场景和有效窗口", "kind": "manual", "row": 1, "col": 1},
+      {"id": "revoke", "text": "停用或删除授权\n同时核对其他有效授权", "kind": "manual", "row": 1, "col": 2},
+      {"id": "business", "text": "业务页核对单据和含义\n选择当前可用章", "kind": "manual", "row": 2, "col": 1},
+      {"id": "pdf", "text": "合同详情上传当前PDF\nP2落位签署为独立范围", "kind": "manual", "row": 2, "col": 0},
+      {"id": "check", "text": "重查租户、授权与有效期\n校验本人身份凭证", "kind": "check", "row": 3, "col": 1},
+      {"id": "denied", "text": "失效、越权或密码错误\n拒签，不降级为成功", "kind": "end", "row": 3, "col": 2},
+      {"id": "sign", "text": "业务留痕或P2文档签署\n成功后追加签名台账", "kind": "auto", "row": 4, "col": 1},
+      {"id": "verify", "text": "只读审计及链验签\n含PDF另按签名ID文档验签", "kind": "manual", "row": 5, "col": 1},
+      {"id": "done", "text": "核对签署及业务结果\n不保证法律效力或人工验收", "kind": "end", "row": 6, "col": 1}
+    ],
+    "edges": [
+      {"from": "seal", "to": "grant", "label": "公司章", "kind": "normal", "route": ""},
+      {"from": "seal", "to": "business", "label": "个人章本人使用", "kind": "normal", "route": "left"},
+      {"from": "grant", "to": "business", "label": "获得授权", "kind": "normal", "route": ""},
+      {"from": "grant", "to": "revoke", "label": "后续撤销管理", "kind": "normal", "route": ""},
+      {"from": "revoke", "to": "check", "label": "后续签署实时重查", "kind": "normal", "route": ""},
+      {"from": "pdf", "to": "business", "label": "当前正文与落位", "kind": "normal", "route": ""},
+      {"from": "business", "to": "check", "label": "提交签署", "kind": "normal", "route": ""},
+      {"from": "check", "to": "denied", "label": "未通过", "kind": "exception", "route": ""},
+      {"from": "check", "to": "sign", "label": "通过对应守卫", "kind": "normal", "route": ""},
+      {"from": "sign", "to": "verify", "label": "签署服务成功", "kind": "normal", "route": ""},
+      {"from": "verify", "to": "done", "label": "核对对应验签结果", "kind": "normal", "route": ""}
+    ]
+  }
+]

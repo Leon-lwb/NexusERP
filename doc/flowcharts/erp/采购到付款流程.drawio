@@ -1,232 +1,142 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="drawio" version="31.1.5">
-  <diagram name="Page-1">
-    <mxGraphModel>
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" modified="2026-10-12T00:00:00.000Z">
+  <diagram id="erp_purchase_to_pay" name="采购到付款流程">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1160" pageHeight="1564" background="#ffffff">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="st1" value="① 采购申请" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="40" width="960" height="400" as="geometry" />
+        <mxCell id="title" value="采购到付款流程" vertex="1" parent="1" style="text;html=0;fontSize=34;fontStyle=1;align=left;fontFamily=Microsoft YaHei;">
+          <mxGeometry x="30" y="12" width="1100" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="a1" value="开始" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
-          <mxGeometry x="300" y="50" width="60" height="40" as="geometry" />
+        <mxCell id="node_po" value="核对认证申请转出的订单&#10;独立确认报价并批准" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="112" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a2" value="创建采购申请 PuPurchaseRequisition&#xa;来源：MRP物料需求 / 低库存预警 / 手工" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
-          <mxGeometry x="200" y="130" width="260" height="60" as="geometry" />
+        <mxCell id="node_arrival" value="按来源办理到货审批&#10;核对关联收货草稿" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="286" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a3" value="审批流&#xa;Flowable" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st1">
-          <mxGeometry x="250" y="240" width="160" height="72" as="geometry" />
+        <mxCell id="node_approval" value="核对实收行及来源&#10;提交收货审批" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="460" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="a4" value="采购申请&#xa;APPROVED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
-          <mxGeometry x="270" y="330" width="120" height="50" as="geometry" />
+        <mxCell id="node_iqc" value="需检时MQ创建IQC&#10;等待真实结果与证据" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="634" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="st2" value="② 采购订单" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="480" width="960" height="500" as="geometry" />
+        <mxCell id="node_gate" value="检验、来源与分配&#10;满足上架入库门禁？" vertex="1" parent="1" style="shape=hexagon;whiteSpace=wrap;html=0;fillColor=#fff4d7;strokeColor=#a48026;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="808" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b1" value="转采购订单 PuPurchaseOrder&#xa;支持合并 / 拆分" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st2">
-          <mxGeometry x="200" y="50" width="260" height="60" as="geometry" />
+        <mxCell id="node_blocked" value="未检、不合格或来源不明&#10;停止上架/入库并核实" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#f0f1f3;strokeColor=#727980;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="830" y="808" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b2" value="审批流&#xa;Flowable" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st2">
-          <mxGeometry x="250" y="160" width="160" height="72" as="geometry" />
+        <mxCell id="node_shelf" value="分配库位并确认上架&#10;SHELVED待入库" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="982" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b3" value="采购订单&#xa;APPROVED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
-          <mxGeometry x="270" y="290" width="120" height="50" as="geometry" />
+        <mxCell id="node_execute" value="点击入库&#10;重验来源并库存过账" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1156" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="b4" value="PO状态机：&#xa;DRAFT→APPROVING→APPROVED&#xa;→PARTIALLY_RECEIVED→RECEIVED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="st2">
-          <mxGeometry x="200" y="400" width="260" height="60" as="geometry" />
+        <mxCell id="node_stock" value="核对FINISHED及库存&#10;另查采购数量MQ回写" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e8ecef;strokeColor=#4b5d69;strokeWidth=2;fontColor=#25323a;fontSize=25;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="430" y="1330" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="st3" value="③ 收货与入库" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="1030" width="960" height="1210" as="geometry" />
+        <mxCell id="node_invoice" value="独立财务子流程&#10;采购发票登记与收票确认" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=22;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="30" y="808" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c1" value="自动生成到货通知&#xa;WmArrivalNotice" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st3">
-          <mxGeometry x="200" y="60" width="260" height="60" as="geometry" />
+        <mxCell id="node_ap_post" value="ISSUED事件经MQ&#10;生成应付GL凭证" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e5f2e8;strokeColor=#497c59;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="30" y="982" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c2" value="到货通知审批" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st3">
-          <mxGeometry x="250" y="170" width="160" height="72" as="geometry" />
+        <mxCell id="node_payment" value="登记AP付款单并确认&#10;另触发付款GL制单" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e4f1f5;strokeColor=#39798d;strokeWidth=2;fontColor=#25323a;fontSize=27;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="30" y="1156" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c3" value="自动创建物料入库单 WmMaterialReceive&#xa;（IQC需检物料→检验后再入库）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st3">
-          <mxGeometry x="170" y="290" width="320" height="70" as="geometry" />
+        <mxCell id="node_settle" value="选发票与付款单核销&#10;核对各自未清余额" vertex="1" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=0;fillColor=#e8ecef;strokeColor=#4b5d69;strokeWidth=2;fontColor=#25323a;fontSize=28;fontFamily=Microsoft YaHei;spacing=12;">
+          <mxGeometry x="30" y="1330" width="300" height="118" as="geometry" />
         </mxCell>
-        <mxCell id="c4" value="入库单审批" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st3">
-          <mxGeometry x="250" y="410" width="160" height="72" as="geometry" />
-        </mxCell>
-        <mxCell id="c5" value="APPROVED 待上架&#xa;（不再直接发 StockInMessage）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="st3">
-          <mxGeometry x="200" y="530" width="260" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="c6" value="上架：添加上架明细（分配库位）→ 确认上架 confirmShelf&#xa;记录上架人 shelfBy + 上架时间 shelfTime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st3">
-          <mxGeometry x="140" y="640" width="380" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="c7" value="SHELVED 待入库" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="st3">
-          <mxGeometry x="230" y="750" width="200" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="c8" value="执行入库 executeReceive&#xa;① 防重校验 hasPosted ② 虚拟库位扣减 + 目标库位增加&#xa;③ 入库单状态→FINISHED ④ 到货通知状态→FINISHED ⑤ 生成条码" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="140" y="850" width="380" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="c9" value="事务提交后 WmMqSendService @Async&#xa;发送 PurchaseReceiveWritebackMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="150" y="980" width="360" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="c10" value="PurchaseReceiveWritebackConsumer&#xa;TenantHelper.dynamic 恢复租户上下文&#xa;① 按物料ID/编码匹配收货行与采购行 ② 累加已收货数量&#xa;③ 采购订单状态→PARTIALLY_RECEIVED / RECEIVED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
-          <mxGeometry x="120" y="1090" width="420" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="st4" value="④ 付款 / 退货" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="2290" width="960" height="390" as="geometry" />
-        </mxCell>
-        <mxCell id="d1" value="发票校验（财务）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st4">
-          <mxGeometry x="260" y="70" width="140" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="d2" value="付款申请 → 付款执行&#xa;支付回调 PAY_RECEIVED_CALLBACK&#xa;→ 自动收款 / 核销" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="st4">
-          <mxGeometry x="210" y="180" width="240" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="d3" value="采购退货 PuPurchaseReturn&#xa;[审批流]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st4">
-          <mxGeometry x="540" y="70" width="200" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d4" value="确认 → 执行退货出库&#xa;→ 扣减库存" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="st4">
-          <mxGeometry x="540" y="190" width="200" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="lg" value="图例" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="140" y="2720" width="600" height="200" as="geometry" />
-        </mxCell>
-        <mxCell id="lg1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="40" width="30" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="lg1t" value="单据 / 操作" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="36" width="120" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="lg2" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="75" width="30" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="lg2t" value="审批 / 判断" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="72" width="120" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="lg3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="110" width="30" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="lg3t" value="系统自动" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="107" width="120" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="lg4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="lg">
-          <mxGeometry x="20" y="145" width="30" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="lg4t" value="状态 / 虚线 = 驳回·退货" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
-          <mxGeometry x="60" y="142" width="200" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="a1" target="a2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="a2" target="a3">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e3" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="a3" target="a4">
+        <mxCell id="edge_0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_po" target="node_arrival">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="560" y="316" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="r1" value="驳回" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=1.0;dashed=1;strokeColor=#b85450;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="a3" target="a2">
+        <mxCell id="edge_1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_arrival" target="node_approval">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="190" y="316" />
-              <mxPoint x="190" y="230" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="a4" target="b1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="b1" target="b2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e6" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b2" target="b3">
+        <mxCell id="edge_2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#39798d;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_approval" target="node_iqc">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="560" y="676" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="r2" value="驳回" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=1.0;dashed=1;strokeColor=#b85450;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b2" target="b1">
+        <mxCell id="edge_3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_iqc" target="node_gate">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="190" y="676" />
-              <mxPoint x="190" y="590" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="b3" target="b4">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="b4" target="c1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c1" target="c2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e10" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c2" target="c3">
+        <mxCell id="edge_4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b94e4e;fontSize=22;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_gate" target="node_blocked">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="560" y="1236" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="r3" value="驳回" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=1.0;dashed=1;strokeColor=#b85450;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c2" target="c1">
+        <mxCell id="edge_5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_gate" target="node_shelf">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="190" y="1236" />
-              <mxPoint x="190" y="1150" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c3" target="c4">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e12" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c4" target="c5">
+        <mxCell id="edge_6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_shelf" target="node_execute">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="560" y="1476" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="r4" value="驳回" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=1.0;dashed=1;strokeColor=#b85450;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c4" target="c3">
+        <mxCell id="edge_7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#39798d;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_execute" target="node_stock">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="190" y="1476" />
-              <mxPoint x="190" y="1390" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c5" target="c6">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c6" target="c7">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c7" target="c8">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c8" target="c9">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c9" target="c10">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="c10" target="d1">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="d1" target="d2">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
-        </mxCell>
-        <mxCell id="e20" value="如需退货" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.0;entryY=0.5;dashed=1;strokeColor=#b85450;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c3" target="d3">
+        <mxCell id="edge_8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#39798d;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="node_invoice" target="node_ap_post">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="1300" y="1355" />
-              <mxPoint x="1300" y="2630" />
-              <mxPoint x="620" y="2630" />
-              <mxPoint x="620" y="2390" />
-            </Array>
+            <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;" edge="1" parent="1" source="d3" target="d4">
-          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        <mxCell id="edge_9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_ap_post" target="node_payment">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#4b5d69;fontSize=22;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="node_payment" target="node_settle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label_0" value="已批准后办理" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="512.0" y="244.0" width="136.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_1" value="核对实收" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="533.0" y="418.0" width="94.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_2" value="通过后按需投递" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#39798d;">
+          <mxGeometry x="501.5" y="592.0" width="157.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_3" value="合格证据或明确免检" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="480.5" y="766.0" width="199.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_4" value="不满足" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#b94e4e;">
+          <mxGeometry x="743.5" y="853.0" width="73.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_5" value="满足" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="554.0" y="940.0" width="52.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_6" value="仍须显式入库" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="512.0" y="1114.0" width="136.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_7" value="过账后通知与回写" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#39798d;">
+          <mxGeometry x="491.0" y="1288.0" width="178.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_8" value="收票确认事件" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#39798d;">
+          <mxGeometry x="112.0" y="940.0" width="136.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_9" value="另行登记付款" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="112.0" y="1114.0" width="136.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="label_10" value="选择实际未清项" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=21;fillColor=#ffffff;fontColor=#4b5d69;">
+          <mxGeometry x="101.5" y="1288.0" width="157.0" height="28.0" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="人工操作    系统处理    校验/审批    状态/结果    虚线：异步或异常分支" vertex="1" parent="1" style="text;html=0;align=center;fontSize=22;fontColor=#52616b;">
+          <mxGeometry x="30" y="1499" width="1100" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

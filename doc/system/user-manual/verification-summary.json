@@ -1,0 +1,91 @@
+{
+  "code_date": "2026-10-12",
+  "generated_date": "2026-10-13",
+  "baseline": {
+    "branch": "plus",
+    "commit": "fe59e4ae"
+  },
+  "manual": {
+    "path": "doc/system/user-manual/NexusERP_用户操作手册.docx",
+    "version": "4.0",
+    "sha256": "0062b7a1c331cee585d9debd078d59d65a82802610d6e14f05ac59ff88c3435c",
+    "bytes": 35309773,
+    "chapters": 23,
+    "tables": 49,
+    "embedded_diagrams": 29
+  },
+  "diagrams": {
+    "count": 29,
+    "nodes": 355,
+    "edges": 374,
+    "source_references": 265,
+    "unique_sources": 230,
+    "geometry_errors": []
+  },
+  "unit_tests": {
+    "command": "python -X utf8 -m unittest discover -s doc/flowcharts/scripts -p \"test_*.py\" -v",
+    "run": 28,
+    "failures": 0,
+    "skipped": 0
+  },
+  "render": {
+    "engine": "WPS",
+    "page_count": 174,
+    "toc_count": 1,
+    "image_occurrences": 29,
+    "image_pages": [
+      12,
+      27,
+      37,
+      46,
+      51,
+      57,
+      65,
+      70,
+      72,
+      75,
+      80,
+      86,
+      90,
+      92,
+      98,
+      102,
+      106,
+      108,
+      111,
+      114,
+      120,
+      124,
+      127,
+      132,
+      138,
+      147,
+      150,
+      155,
+      161
+    ],
+    "geometry_check_passed": true,
+    "known_blank_body_pages": [24],
+    "pagination_optimization_candidate_written_back": false,
+    "subsequent_strict_office_probe_result": "failed_closed_before_open",
+    "issues": [],
+    "visual_sample_pages": [
+      1,
+      2,
+      12,
+      70,
+      98,
+      124,
+      161,
+      174
+    ],
+    "independent_session": true,
+    "input_unchanged_during_render": true,
+    "refreshed_copy_written_back": true
+  },
+  "limitations": [
+    "Repository documentation verification only; not production deployment or business acceptance.",
+    "No database writes, service lifecycle operations, payment transactions, physical device acceptance, or production signatures.",
+    "PDF bounds checks and sampled pages do not replace full human proofreading."
+  ]
+}

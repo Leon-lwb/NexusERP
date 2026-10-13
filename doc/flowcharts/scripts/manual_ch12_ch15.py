@@ -19,7 +19,8 @@ def ch12_iot(doc, h1, h2, h3, para, bullet, numbered, table):
 
     h2(doc, '12.2 IoT产品管理')
     para(doc, '操作入口：IoT平台 > 产品管理')
-    para(doc, '表单字段：产品编码*、产品名称*、产品类型（默认设备DEVICE）、协议类型（MQTT/OPC UA/Modbus/HTTP，默认MQTT）、状态、描述。')
+    para(doc, '表单字段：产品编码*、产品名称*、产品类型（默认设备DEVICE）、协议类型（默认MQTT）、状态、描述。'
+              '协议选项包含OPC UA/Modbus/HTTP不代表对应原生驱动已实现；当前接入链路按MQTT核对。')
 
     h2(doc, '12.3 IoT设备管理')
     para(doc, '操作入口：IoT平台 > 设备管理')
@@ -29,28 +30,33 @@ def ch12_iot(doc, h1, h2, h3, para, bullet, numbered, table):
     para(doc, '关联MES：IoT设备与MES设备双向关联（设备页“关联MES”，MES设备页“关联IoT”）。')
 
     h2(doc, '12.4 MQTT接入')
-    para(doc, '内置MQTT Broker（Moquette内嵌），端口1883。')
-    para(doc, 'Topic规范：按产品/设备组织；设备发布属性数据，系统订阅解析入库。')
-    para(doc, '数据链路：MQTT消息→消息管道解析（Topic解析→属性提取→类型转换）→数据入库→实时缓存。')
+    para(doc, '内置Moquette MQTT Broker，默认端口1883，实际启停、地址、匿名开关和WebSocket端口以环境为准。')
+    para(doc, 'Topic为iot/{tenantId}/{deviceCode}/{bizType}/{action}；属性上报使用property/post，'
+              '设备必须通过ClientID/密钥认证及租户和Topic授权。设备事件和指令回执分流处理，见12.8节。')
+    para(doc, '属性链路：MQTT→Redis Stream→消费者解析与类型转换→IoT数据入库→最新缓存、SSE及告警。'
+              'MQTT发送成功不保证后台已落库。')
 
     h2(doc, '12.5 实时数据')
     para(doc, '操作入口：IoT平台 > 设备管理 > 行内“实时”')
-    para(doc, '实时监控页：设备在线状态、最新数值卡片（按属性逐张）、实时趋势图（SSE订阅，3秒刷新，滚动窗口60点，断线自动重连，连续5次失败停止）、历史数据（近1小时）。')
+    para(doc, '实时监控页：设备在线状态、最新数值卡片（按属性逐张）、实时趋势图（SSE订阅，3秒刷新，滚动窗口60点）、历史数据。'
+              '断线按页面规则自动重连；当前错误累计超过5或连接CLOSED时停止，成功消息不会重置累计计数。')
 
     h2(doc, '12.6 告警检测')
     para(doc, '基于配置规则的实时告警检测，异常数据触发告警通知（SSE推送）。')
-    para(doc, 'MES安灯联动：设备数据异常自动触发安灯（IMesAndonService）。')
+    para(doc, 'MES安灯联动：规则命中后先记录告警，再按已接入渠道尝试通知；'
+              '渠道可为FAILED或SKIPPED，须查看留痕，不保证每次异常都成功触发安灯。')
 
     h2(doc, '12.7 定时任务')
-    bullet(doc, '设备心跳检测：15分钟超时置离线')
-    bullet(doc, '历史数据清理：90天自动清理')
-    bullet(doc, 'Redis Stream裁剪：100K上限')
-    bullet(doc, '数据流归档：IoT自动归档到MES采集记录（SnailJob）')
+    bullet(doc, '设备心跳检测：按最后在线时间与配置阈值判离线，默认阈值15分钟，不替代Station终端3分钟口径。')
+    bullet(doc, '历史数据清理：代码提供保留期和清理任务，默认90天；是否运行及参数须现场核对。')
+    bullet(doc, 'Redis Stream裁剪：默认100K近似长度，需要核对调度、消费进度和实际积压。')
+    bullet(doc, 'MES数据归档：IotDataArchiveTask按租户与已绑定AUTO采集点归档；任务注册、运行及幂等补采须另行核对。')
 
 
 def ch13_cv(doc, h1, h2, h3, para, bullet, numbered, table):
     h1(doc, '第13章 视觉识别')
-    para(doc, '视觉识别模块对接独立Vision服务，提供人脸识别与物料OCR能力。')
+    para(doc, '视觉识别模块对接独立Vision服务，提供人脸识别、物料OCR和金属/PCB单图工业缺陷检测。'
+              '工业检测与考勤FAIL复查是不同对象，不自动判定质检合格或写入生产履历。')
 
     h2(doc, '13.1 人脸底库管理')
     para(doc, '操作入口：视觉识别 > 人脸底库')
@@ -61,7 +67,8 @@ def ch13_cv(doc, h1, h2, h3, para, bullet, numbered, table):
 
     h2(doc, '13.2 人脸验证与考勤打卡')
     para(doc, '人脸1:1验证：单张照片身份核验（考勤打卡场景）。')
-    para(doc, '人脸1:N识别：从底库识别匹配人员（操作台刷脸登录，top-3候选+1:1确认，阈值50%）。')
+    para(doc, '人脸1:N识别：从底库识别匹配人员，派工使用候选识别再1:1确认。'
+              '这里设置的是作业操作员上下文，不签发系统登录Token；阈值和模型须按真实配置核对。')
     para(doc, '考勤集成：打卡时异步人脸验证；视觉服务不可用时自动降级（考勤置NONE），由补跑任务兜底。')
 
     h2(doc, '13.3 物料OCR')
@@ -72,88 +79,183 @@ def ch13_cv(doc, h1, h2, h3, para, bullet, numbered, table):
 
     h2(doc, '13.4 FAIL复查')
     para(doc, '操作入口：视觉识别 > FAIL复查')
-    para(doc, '人脸考勤FAIL记录需在24小时内复核：误判改PASS / 代打卡确认FAIL。')
+    para(doc, '人脸考勤FAIL记录应及时复核：误判改PASS / 代打卡确认FAIL。'
+              '页面提示24小时，但当前服务没有24小时拒绝门禁；降级NONE补跑任务的取数窗口是不同口径。')
     para(doc, '复查操作写入审计备注；照片经后端代理展示（私有桶）。')
 
 
 def ch14_ai(doc, h1, h2, h3, para, bullet, numbered, table):
+    """核对 assistant/constants、common-ai 服务及 ruoyi-ai 控制器，2026-10-12。"""
     h1(doc, '第14章 AI智能助手')
-    para(doc, 'AI智能助手提供智能化的数据查询和业务辅助能力，基于LangChain4j框架，'
-              '支持对话、数据查询Agent、知识库RAG、文生图等能力。')
+    para(doc, '本章按2026-10-12仓库代码核对，涵盖对话、ERP数据查询、知识库、模型和工具管理。'
+              '下述导航名称以当前安装SQL的菜单定义为参考，不代表存量环境已安装或当前账号已获授权；'
+              '菜单缺失时由管理员核对组件路径、租户套餐和角色权限，不要重导初始化SQL。')
 
     h2(doc, '14.1 使用方式')
-    bullet(doc, '顶部工具栏AI按钮：打开全局对话抽屉')
-    bullet(doc, 'AI页面独立对话界面（左侧会话列表+右侧聊天区）')
-    bullet(doc, '业务页面嵌入：特定页面提供专属AI功能')
+    bullet(doc, '顶部工具栏“AI智能助手”打开全局抽屉：plus-ui/src/components/ai/AiChatDrawer.vue。')
+    bullet(doc, '完整会话页：AI 智能助手 > 对话与应用 > 智能对话，组件plus-ui/src/views/ai/assistant/index.vue；'
+                '左侧会话列表、右侧消息和输入区，支持新建、重命名、删除及Markdown导出。')
+    bullet(doc, '指定知识库和选择外部MCP工具请使用完整会话页。抽屉虽有模式切换，但没有完整页的知识库选择器或MCP选择抽屉。')
+    para(doc, '历史、重命名、删除、反馈及导出受会话归属校验约束；导出另需ai:chat:export。'
+              '“清空”只清空当前页面消息，不等于删除已保存会话或取消服务端生成。')
 
     h2(doc, '14.2 对话模式')
-    para(doc, '四种模式：')
     table(doc,
-          ['模式', '说明'],
+          ['页面模式 / 请求值', '实际用途'],
           [
-              ['自动', 'AI自动判断使用对话/Agent/知识库'],
-              ['对话', '普通多轮对话（中英文混合）'],
-              ['数据查询', '数据查询Agent：自然语言→SQL→结果'],
-              ['知识库', '基于知识库的RAG问答'],
+              ['自动 / auto', '按关键词路由；未显式开启联网时，ERP数据查询意图优先于自动联网判断。'],
+              ['对话 / chat', '普通流式多轮对话，不等于读取ERP事实。'],
+              ['数据查询 / agent', 'ERP查询、报表Agent；组合问题可由Supervisor协调。'],
+              ['知识库 / rag', '完整页必须选定一个启用且向量索引READY的可用知识库。'],
           ],
-          widths=[3.5, 13.0])
-    para(doc, '对话功能：流式响应（SSE）、深度思考开关（推理链折叠展示）、联网搜索开关（信息来源卡片）、'
-              'MCP工具选择、工具调用过程展示、消息点赞/点踩反馈、Markdown渲染（含ECharts图表）。')
+          widths=[4.0, 12.5])
+    para(doc, '模式值来自plus-ui/src/views/ai/constants.ts与AiChatRequest，不是CHAT模型类型。'
+              '知识库列表无权限、加载失败、仍在加载或未选可用项时，完整页会阻止知识库模式发送；选库不证明检索已命中。')
+    para(doc, '“联网搜索”显式开关优先于模式路由；“深度思考”在非显式agent/rag时优先使用流式路径。'
+              '思考输出取决于模型及调用协议支持，不保证每个厂商都有推理内容。关闭不需要的开关后再做ERP查询或知识库测试。')
+    bullet(doc, '完整页展示SSE正文、折叠思考、搜索来源、工具过程和Markdown/ECharts结果；保存后的消息可点赞或点踩。')
+    bullet(doc, '收到AI_CONTENT_INCREMENT或完整正文后，当前消息的思考占位会清除；AI_DONE结束加载，AI_ERROR显示失败。'
+                '工具执行成功和出现正文都不能代替最终成功状态及业务事实复核。')
 
     h2(doc, '14.3 AI厂商与模型管理')
-    para(doc, '操作入口：AI > 模型管理（厂商/模型两个页签）')
-    para(doc, '厂商：名称*、API地址*、API Key（列表脱敏显示，编辑可见）、厂商类型*（OpenAI/阿里云DashScope/智谱/Ollama/DeepSeek）、状态。')
-    para(doc, '模型：所属厂商*、模型名称*、模型类型*（对话CHAT/嵌入EMBEDDING/重排RERANK/文生图IMAGE）、最大Token、温度（0-2）、是否默认、输入/输出价格（元/百万Token）。')
-    para(doc, '模型用途：EMBEDDING为知识库数据源；IMAGE供文生图；RERANK供知识库重排序；设为默认一键切换。')
+    para(doc, '操作入口：AI 智能助手 > 模型配置 > 厂商管理 / 模型配置，是两个独立页面，'
+              '组件分别为plus-ui/src/views/ai/model/provider.vue与index.vue。')
+    numbered(doc, '先新增厂商：填写名称、API地址、厂商类型、API Key及状态。列表和编辑详情均返回掩码；'
+                  '编辑框的“显示密码”只能显示收到的掩码，不能取回旧密钥。以****开头的原掩码提交表示保留旧值；更换时输入完整新值。')
+    para(doc, '厂商Key保存时由服务加密；脱敏是显示边界，不替代HTTPS、角色权限或凭证轮换。'
+              '不要把密钥复制进对话、截图、导出文件或错误报告。')
+    para(doc, '当前对话厂商协议策略包括OPENAI、ARK、DEEPSEEK、MOONSHOT、TENCENT_HUNYUAN、MINIMAX、'
+              'XIAOMI、SILICONFLOW、MISTRAL、XAI、OPENROUTER，以及DASHSCOPE、ZHIPU、OLLAMA、ANTHROPIC、GEMINI；'
+              'OPENCODE_GO和CUSTOM_API可选OpenAI Chat Completions、OpenAI Responses或Anthropic Messages。'
+              '以AiProviderPolicyRegistry和实际字典为准，注册对话策略不代表该厂商所有模型能力都已接通。')
+    numbered(doc, '新增模型：选择厂商，填写模型名称、显示名、类型、输入/输出能力、调用协议、上下文窗口、'
+                  '最大输出Token及适用的温度、价格/币种。EMBEDDING需填写向量维度；能力模板和协议选项受服务端校验。')
+    table(doc,
+          ['模型类型', '配置用途与限制'],
+          [
+              ['TEXT / VISION / AUDIO', '文本、视觉、音频能力配置；助手选择器取TEXT,VISION。声明能力不等于页面支持附件或音频工作流。'],
+              ['EMBEDDING', '知识库向量化，输入TEXT、输出VECTOR；维度需与实际模型和索引一致。'],
+              ['RERANK', '检索重排，输入TEXT、输出RANKING；实际实现和回退策略另行核对。'],
+              ['IMAGE', '图片生成；需存在所选厂商的图片生成实现。'],
+          ],
+          widths=[4.0, 12.5])
+    para(doc, '状态0=启用、1=停用；是否默认为Y/N。“设为默认”只取消同类型的其他默认模型，'
+              '不是全类型唯一默认。普通对话优先默认TEXT，其次默认VISION；默认IMAGE、EMBEDDING分别用于对应能力。')
+    numbered(doc, '在模型编辑弹窗点击“测试连接”，核对成功/失败、耗时、协议及实测向量维度，再单独保存。'
+                  '测试不保存模型，但会调用外部模型并可能计费；IMAGE测试有费用二次确认。未知类型、协议不匹配或不支持的能力需修正，不能靠重复测试绕过。')
 
     h2(doc, '14.4 知识库管理')
-    para(doc, '操作入口：AI > 知识库')
-    para(doc, '新增知识库：名称*、Embedding模型*（无可用模型时红字提示先到模型管理添加）、向量存储（Milvus/InMemory）、高级配置（分段分隔符默认#、重叠字符30、文本块大小500、检索条数5、相似度阈值0.5、重排序、混合检索权重）。')
-    para(doc, '文档管理：支持pdf/docx/doc/xlsx/txt/csv/md/html，单文件≤50MB；状态：待解析→解析中→已完成/失败（可重试）；查看分段、检索测试。')
-    para(doc, '知识图谱：构建（分阶段：实体抽取→社区检测→社区摘要，2秒轮询进度）、实体/关系/社区页签、全局检索、节点邻居、全屏。')
+    para(doc, '操作入口：AI 智能助手 > 知识与工具 > 知识库管理，组件plus-ui/src/views/ai/knowledge/index.vue。')
+    numbered(doc, '新增知识库：填写名称、Embedding模型、向量存储和状态。高级配置初始值为分隔符#、'
+                  '重叠30字符、分块500字符、返回5条、相似度0.5；还可配置重排、混合检索权重及系统提示。初始值不是所有存量库的现值。')
+    numbered(doc, '选中知识库，在文档区上传PDF、DOCX、DOC、XLSX、XLS、TXT、CSV、MD或HTML。'
+                  '页面预检上限50MB，实际还受部署上传限制约束。上传成功只是已提交，需刷新核对待解析0、解析中1、完成2或失败3。')
+    bullet(doc, '“重试”仅用于待解析或失败文档，不是把正在处理/已完成文档再次入队。可查看片段，在检索测试中核对召回内容、来源和分数。')
+    bullet(doc, '变更Embedding模型、维度或存储且已有片段时，服务端可能返回REBUILD_INDEX_REQUIRED；'
+                '确认后重建全部向量。独立“重新构建向量索引”需ai:knowledge:rebuild，核对REBUILDING/READY/FAILED及错误信息。'
+                '重建或失败期间存在操作/检索限制，不要重复导入或承诺答案完整。')
+    bullet(doc, 'inmemory为进程内向量，重启丢失，不应描述为持久化生产索引；Milvus连接、集合和维度需与运行参数匹配。')
+    para(doc, '图谱页plus-ui/src/views/ai/knowledge/graph.vue提供构建进度、实体/关系/社区、邻居和全局检索；'
+              '其结果依赖文档、抽取模型及索引，不能作为模型已核实业务事实的证明。')
 
     h2(doc, '14.5 数据查询Agent')
-    bullet(doc, '自然语言描述查询需求，AI自动生成SQL并执行')
-    bullet(doc, '支持多表关联与复杂统计，结果可导出')
-    bullet(doc, '安全限制：仅SELECT、危险关键词黑名单、表前缀白名单、自动注入租户隔离')
-    bullet(doc, 'SQL示例库（Few-shot）提高准确率；Prompt模板（支持{{变量}}）')
+    numbered(doc, '选“数据查询”，写明对象、时间、筛选条件和需要的字段，核对工具执行结果后再使用回答。'
+                  '需要完整明细时采用14.11的分批查询方法，不把自然语言答案当成已完成业务操作。')
+    bullet(doc, 'ERP查询走ErpQueryService的ERP数据源；SqlSafetyValidator限制SELECT、危险关键词、'
+                '表名前缀、租户条件、返回行数及执行超时。仅支持被校验器接受的SQL结构，不能保证任意复杂统计均可执行。')
+    bullet(doc, '租户条件不是全部业务级数据权限的替代；查询结果仍需按账号授权及数据用途复核。'
+                '这些SQL限制不覆盖本地进程、远端MCP、HTTP、邮件或其他外部副作用。')
+    bullet(doc, '提示工程 > SQL示例 / Prompt模板，组件plus-ui/src/views/ai/sqlExample/index.vue与prompt/index.vue；'
+                '模板及Few-shot辅助生成，不替代权限、证据或工业决策审批。会话导出为Markdown，不是通用结果Excel导出。')
 
     h2(doc, '14.6 A/B测试与Token统计')
-    para(doc, 'A/B测试：名称、模型A/B*、测试问题（JSON数组）→执行（异步）→结果按问题并排对比（延迟/Token/星级评分1-5直接保存）。')
-    para(doc, 'Token用量：时间范围+模型筛选；总Token/成本卡片、趋势图、模型/用户排行、明细表；支持回填历史数据。')
+    para(doc, '操作入口：AI 智能助手 > 运营分析 > A/B测试 / Token用量。'
+              'A/B测试填写名称、模型A/B和问题JSON字符串数组，执行后异步逐题分别调用A、B模型；'
+              '结果按问题并排查看回答、耗时、Token，可保存1–5星人工评分。测试会实际消耗模型用量，不等于助手批量导入队列。')
+    para(doc, '运行中的测试拒绝重复执行、修改或删除；后续状态和结果需刷新核对，失败不等于已回答所有问题。'
+              'COMPLETED仍可能包含逐题失败或问题解析错误，需查看实际结果，不能只按状态认定整组通过。'
+              'Token页提供日期/模型筛选、用量和估算成本、趋势及模型/用户排行；回填历史数据需对应权限。'
+              '成本依赖配置价格和记录的Token，不是厂商账单或全部调用费用的保证。')
 
     h2(doc, '14.7 文生图')
-    para(doc, '操作入口：AI > 文生图')
-    para(doc, '提示词（≤500字）、模型（IMAGE类型）、尺寸（1024/1280/720*1280/1280*720）、生成→下载；历史记录缩略图可回填查看。')
+    para(doc, '操作入口：AI 智能助手 > 对话与应用 > 文生图，组件plus-ui/src/views/ai/imageGen/index.vue。'
+              '输入提示词（页面上限500字符），选择输入TEXT/输出IMAGE的IMAGE模型及尺寸：'
+              '1024*1024、1280*1280、720*1280或1280*720；生成后查看或下载，历史可回填查看或删除记录。')
+    para(doc, '当前图片生成实现为DASHSCOPE/通义万相；不能因厂商支持对话或模型类型设为IMAGE就承诺可生成。'
+              '调用可能计费，失败先核对厂商实现、模型、权限及外部服务，避免无界重复提交。')
 
     h2(doc, '14.8 MCP工具管理')
-    para(doc, '操作入口：AI > MCP工具')
-    para(doc, '工具类型：内置BUILTIN/本地STDIO（配置JSON：command/args）/远程HTTP·SSE（baseUrl）。')
-    para(doc, '操作：同步内置工具（一键入库）、测试连接（非内置）、启用/停用。')
-    para(doc, 'MCP市场：市场源管理（名称/URL/描述）+工具列表（版本/描述/已加载）+单个/批量加载（加载默认停用，需到工具管理启用）。')
+    para(doc, '操作入口：AI 智能助手 > 知识与工具 > 工具管理 / MCP市场，组件plus-ui/src/views/ai/mcp/index.vue与market.vue。'
+              '类型码为BUILTIN、LOCAL、REMOTE；LOCAL通过STDIO执行command/args，可含env；'
+              'REMOTE配置baseUrl，当前客户端使用Streamable HTTP，不要把STDIO或SSE写成类型码。')
+    numbered(doc, '新增或从市场加载工具前，先核对服务来源、命令、参数、网络范围、凭证及副作用。'
+                  '新同步内置工具和市场加载工具默认停用，需管理员显式启用；同步不覆盖既有启停状态。')
+    numbered(doc, '行内“测试”检查连接并发现工具名称，不等于逐工具业务调用验证，也不是无副作用沙箱。'
+                  'LOCAL测试可启动配置命令，REMOTE测试会建立连接；经对话或外部客户端试调用工具时可能真实执行写入、通知或其他外部操作。')
+    para(doc, '列表、详情和可选工具接口会处理配置敏感值；不要把掩码当成可恢复凭证，也不要在排错材料中复制configJson的原始密钥。'
+              '管理接口分别检查ai:mcp:list/query/add/edit/remove等权限；能看到列表不代表已获外部系统的业务授权。')
+    para(doc, '完整对话页可选择启用的非内置工具；未选择会按当前默认工具集处理，并非禁用所有工具。'
+              '外部工具在独立角色中执行，不注入ERP查询/报表Agent；仅特定已审资料服务有读取证据闸门。'
+              '一般LOCAL/REMOTE工具不因ERP SQL守卫而自动成为只读、租户安全或可回滚；测试成功也不证明这些边界。')
 
 
 def ch15_im(doc, h1, h2, h3, para, bullet, numbered, table):
+    """来源：views/im/chat、store/modules/im、ruoyi-im controller及support，2026-10-12。"""
     h1(doc, '第15章 即时通讯')
-    para(doc, '即时通讯模块提供站内私聊、群聊与系统通知能力，支持图片/文件/@提及/转发/撤回。')
+    para(doc, '当前PC页面提供私聊、群聊、图片/文件、@提及、转发和限时撤回；'
+              '系统通知另由顶部“消息盒子”查看。消息保存、实时推送和对方已读是三个不同状态，不能承诺可靠或必达投递。')
 
     h2(doc, '15.1 聊天窗口')
-    para(doc, '操作入口：顶部工具栏消息 > 即时通讯')
-    para(doc, '左侧四页签：聊天（会话列表+未读角标）、联系人（选择联系人发起私聊）、群聊（输入名称+选成员创建）、设置（快捷发送Enter/Ctrl+Enter）。')
-    para(doc, '右侧会话窗口：')
-    bullet(doc, '消息气泡：头像/发送人/时间、“@你”标记、发送状态（失败点击重试）')
-    bullet(doc, '图片≤10MB、文件≤20MB（先传OSS再发）')
-    bullet(doc, '@群成员：搜索成员多选，发送携带mentionUserIds')
-    bullet(doc, '撤回（限时）、转发（选目标会话）、已读/未读（私聊）')
-    bullet(doc, '上滑加载更多（保持滚动位置）')
+    para(doc, '组件plus-ui/src/views/im/chat/index.vue，隐藏路由/im/chat由plus-ui/src/router/index.ts注册，'
+              '要求im:chat:list。顶部“消息”实际是通知弹窗，不是固定的“消息 > 即时通讯”菜单；'
+              '聊天入口是否可见以角色路由和部署菜单为准。')
+    para(doc, '左侧页签为聊天、联系人、群聊、设置。联系人页选择对象发起私聊；群聊页填名称并选成员；'
+              '设置页选择Enter或Ctrl+Enter快捷发送。聊天列表有未读角标，右侧可刷新、查看群成员及加载历史。')
+    numbered(doc, '选择会话并输入消息。文本页面上限2000字符；图片预检≤10MB、文件预检≤20MB，'
+                  '先上传OSS再发送文件地址，实际还受服务端上传配置和权限限制。失败可点击重试，客户端复用clientMsgId进行幂等重发。')
+    bullet(doc, '私聊不能发给自己；服务端检查接收用户存在且同租户。PC聊天接口要求登录，群发送/历史/成员操作还检查群状态和成员身份。')
+    bullet(doc, '@成员在群聊中选择，可多选；服务端剔除无效/自身重复项并检查被提及者确为群成员，序列化提及信息受500字符限制。')
+    bullet(doc, '撤回仅限本人已发送消息且在2分钟内；失败/发送中消息不能撤回。撤回是状态变化，不能追回已经下载、截图或另行转发的内容。')
+    bullet(doc, '转发选择目标会话，会重新发送正文/文件地址并带来源标记，目标仍需满足私聊或群发送条件；'
+                'PC不显示已撤回消息的转发按钮。不要把转发解释为对原消息隐私或文件访问权限的保证。')
+    bullet(doc, '打开会话会提交已读；私聊可手动“标已读”，并显示发送消息的已读/未读回执。'
+                '群已读按各接收者通知记录计算，不是一人查看就把全群标已读，也不是全员已读保证。')
+    bullet(doc, '历史每页50条，上滑加载更多；断线或状态不一致时刷新会话/历史，以服务端记录为准。'
+                '本地缓存、角标和实时事件都不能证明对方收到或处理了业务。')
 
     h2(doc, '15.2 群组管理')
-    bullet(doc, '群组创建/解散，成员管理（群主可移除/添加成员）')
-    bullet(doc, '群消息发送/接收')
+    numbered(doc, '在群聊页输入群名（最多50字符），选择同租户用户后创建。创建者成为群主，含创建者至少两名成员；'
+                  '用户存在性和租户范围由服务端核对。')
+    numbered(doc, '打开群会话 > 群成员。群主可添加或移除成员，但不能移除自己；普通成员只可查看其所在有效群组的成员和历史。')
+    para(doc, '当前PC页面未提供退群、解散或群资料修改按钮；这些操作存在于/im/app后端接口，'
+              '不应写成PC页面现有操作。App接口的改名/解散仅群主可用，群主不能直接退群；'
+              '解散状态的群不接受正常消息发送及历史查询。')
+    para(doc, '当前历史查询按当前群成员资格判定，没有入群时间的历史截断承诺。'
+              '添加成员前应审查历史消息和附件是否适合向其开放，不要假定新人只能看到入群后的内容。')
 
     h2(doc, '15.3 系统通知')
-    bullet(doc, '系统通知创建+标记已读（右上角铃铛）')
-    bullet(doc, 'SSE实时推送（ImRealtimePush）')
+    para(doc, '顶部“消息”打开消息盒子，组件plus-ui/src/layout/components/Notice/index.vue；'
+              '按系统、通知、工作流分类，可加载更多、点击详情及“全部已读”。有contentUrl或受支持的业务引用时跳转详情，否则展示正文。')
+    para(doc, '通知由聊天、公告、工作流等业务动作生成，不是普通用户在消息盒子中新增。'
+              '/im/notification/page、/read/{id}、/read/all、/unread/count只操作当前登录用户的通知；'
+              '单条已读校验归属，重复标记为幂等。全部已读失败会提示同步错误，此时刷新核对，不以本地清零视为已成功。')
+    bullet(doc, '系统管理的通知公告在新增启用公告，或从关闭改为启用时，向公告所属租户的启用用户生成通知；'
+                '普通编辑及重复保存不重复补发，关闭公告不生成这一轮通知。')
+    bullet(doc, 'ImRealtimePush在活动事务提交后发送（无事务时立即发送），按目标用户下发；'
+                '实际通道取决于启用的WebSocket/SSE配置，不能把双通道或集群代码当成离线必达、端到端确认或无限自动补偿。')
+    bullet(doc, '通知已读不是单据审批/任务办结，也不等于私聊消息已读。缺少跳转目标、路由权限或标记失败时，应分别核对通知与业务记录。')
 
     h2(doc, '15.4 移动端IM')
-    para(doc, 'App端即时通讯：好友/群组/消息收发、通知接收。')
+    para(doc, '仓库可核对的是ruoyi-modules/ruoyi-im的AppImController（/im/app），'
+              '不是本次已验证的App客户端实现或真机体验。现有接口包含好友申请/接受/拒绝/撤销与备注、'
+              '通讯录、群组、消息发送/历史/已读/撤回/转发、搜索/同步、置顶/免打扰、收藏及输入提示。')
+    bullet(doc, 'App转发先检查原消息未撤回且调用者为私聊收发方或群成员，再通过相同发送服务检查目标。'
+                '删除接口只为当前租户/用户隐藏消息，不删除共享消息记录，也不替其他参与者擦除内容。')
+    bullet(doc, '隐藏记录当前最多10000条，按180天保留期存储，不能解释为永久删除；'
+                '隐藏状态不可读取时服务端拒绝相应查询，需排查缓存而非用其他账号绕过。')
+    bullet(doc, '同步/messages/sync按sinceMessageId升序每批最多500条，返回newSyncToken、hasMore和本人hiddenMessageIds；'
+                '需由客户端继续分页。该游标不是撤回、已读、删除等所有更新的完整可靠事件日志。')
+    bullet(doc, '搜索/messages/search只查近7天未撤回且当前用户可见的消息，默认每页20条、服务端上限100条；'
+                '搜索不到不等于没有更早历史记录。')
+    bullet(doc, '退出/解散、跨租户用户、非成员历史和本人通知归属等以服务端校验为准；'
+                'App是否正确处理隐藏快照、断线恢复、凭证失效及通知导航仍需单独联调，不能仅凭后端接口存在宣称完成。')

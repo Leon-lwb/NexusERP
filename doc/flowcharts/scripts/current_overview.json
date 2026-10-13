@@ -1,0 +1,34 @@
+[
+  {
+    "id": "system_overview",
+    "path": "系统总览-跨模块流转.drawio",
+    "title": "系统总览-跨模块流转",
+    "chapter": "1.2",
+    "summary": "从共同基础数据出发，销售、采购与生产分别进入仓储和 MES 执行链路；IoT、Station 提供现场数据，财务根据业务单据处理账务，AI 提供查询和受控决策。箭头是业务衔接，不代表所有后续单据都由系统自动生成。",
+    "prerequisites": ["管理员已配置菜单、角色和租户，并按需部署对应模块。", "消息联动依赖 RabbitMQ，现场数据依赖对应设备和接入配置。"],
+    "caveats": ["仅说明当前代码的跨模块边界，不代表生产环境已经部署或完成人工验收。", "财务、审批和工业决策需要各自的配置与授权，AI 不能直接写入正式业务单据。"],
+    "sources": ["ruoyi-modules/pom.xml", "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/common/mq/consumer/WorkOrderReleaseConsumer.java", "plus-ui/src/views/ai/decision/index.vue", "plus-ui/src/views/mes/station/device/index.vue"],
+    "nodes": [
+      {"id": "bd", "text": "基础数据与租户权限\n物料、BOM、工艺、伙伴", "kind": "manual", "row": 0, "col": 1},
+      {"id": "sales", "text": "销售订单\n确认需求与交期", "kind": "manual", "row": 1, "col": 0},
+      {"id": "plan", "text": "生产计划与 ERP 工单\n物料需求、排产、审批", "kind": "manual", "row": 1, "col": 1},
+      {"id": "purchase", "text": "采购申请与采购订单\n确定供应商与收货计划", "kind": "manual", "row": 1, "col": 2},
+      {"id": "shipment", "text": "销售出库与发货\n检查库存与质量门禁", "kind": "check", "row": 2, "col": 0},
+      {"id": "mes", "text": "MES 工单与工序执行\n派工、流转卡、报工", "kind": "manual", "row": 2, "col": 1},
+      {"id": "receive", "text": "到货、IQC 与采购入库\n上架后执行库存入账", "kind": "check", "row": 2, "col": 2},
+      {"id": "finance", "text": "财务业务单据\n应收应付、核销、总账", "kind": "manual", "row": 3, "col": 0},
+      {"id": "quality", "text": "三检、SN 与生产追溯\n不合格处理及返工", "kind": "manual", "row": 3, "col": 1},
+      {"id": "station", "text": "Station 工位通道\n过站、上料、SOP、DHR", "kind": "auto", "row": 3, "col": 2},
+      {"id": "iot", "text": "IoT 设备接入\n采集、心跳、告警与安灯", "kind": "auto", "row": 4, "col": 2},
+      {"id": "ai", "text": "AI 查询与工业决策\n可信证据、审批、草稿动作", "kind": "check", "row": 4, "col": 1}
+    ],
+    "edges": [
+      {"from": "bd", "to": "sales"}, {"from": "bd", "to": "plan"}, {"from": "bd", "to": "purchase"},
+      {"from": "sales", "to": "shipment"}, {"from": "plan", "to": "mes", "label": "MQ 下达", "kind": "async"},
+      {"from": "purchase", "to": "receive"}, {"from": "shipment", "to": "finance", "label": "独立处理账务"},
+      {"from": "mes", "to": "quality"}, {"from": "station", "to": "mes", "label": "现场记录", "kind": "async", "route": "right"},
+      {"from": "iot", "to": "mes", "label": "采集 / 安灯", "kind": "async", "route": "right"},
+      {"from": "quality", "to": "ai", "label": "可信业务数据"}
+    ]
+  }
+]

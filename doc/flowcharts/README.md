@@ -1,79 +1,65 @@
-# Nexus-ERP 业务流程流程图集
+# NexusERP 当前业务流程图集
 
-> 生成日期：2026-08-01
-> 生成方式：drawio-skill + 手写正交 XML（`doc/flowcharts/scripts/` 生成脚本）
-> 打开方式：`D:\draw\draw.io\draw.io.exe` 直接打开 `.drawio` 文件（可编辑）；`.preview.png` 为预览图
-> 规范：正交折线、驳回/回退线贴走廊（距容器边缘 50px 内缩）、零交叉零重叠（validate score 0）
+> 核对日期：2026-10-12；代码基线：`plus` / `fe59e4ae`。
+> 描述当前代码和页面，不代表生产部署、第三方服务就绪或人工端到端验收。
 
-## 文件结构
+共 29 张流程图，每张提供可编辑 `.drawio` 和高分辨率 `.preview.png`，已嵌入 V4.0 用户手册。
 
-```
-doc/flowcharts/
-├── 系统总览-跨模块流转.drawio
-├── erp/    （7 张）
-├── mes/    （6 张）
-├── iot/    （2 张）
-├── ai/     （2 张）
-├── fin/    （3 张）
-└── scripts/（生成脚本 + flowchart_lib.py 共享库）
-```
+## 阅读入口
+
+- [Word 用户操作手册](../system/user-manual/NexusERP_用户操作手册.docx)
+- [逐图源码与使用条件](./来源与使用边界.md)
+- [生成清单与几何校验结果](./manifest.json)
 
 ## 图集清单
 
-### 系统总览（1 张）
+| 图号 | 手册章节 | 可编辑流程图 | PNG预览 |
+|------|----------|--------------|---------|
+| 01 | 1.2 | [系统总览-跨模块流转](./系统总览-跨模块流转.drawio) | [预览](./系统总览-跨模块流转.preview.png) |
+| 02 | 3.4 | [销售到收款流程](./erp/销售到收款流程.drawio) | [预览](./erp/销售到收款流程.preview.png) |
+| 03 | 4.4 | [采购到付款流程](./erp/采购到付款流程.drawio) | [预览](./erp/采购到付款流程.preview.png) |
+| 04 | 6.1 | [生产制造流程](./erp/生产制造流程.drawio) | [预览](./erp/生产制造流程.preview.png) |
+| 05 | 6.5 | [委外与返工流程](./erp/委外与返工流程.drawio) | [预览](./erp/委外与返工流程.preview.png) |
+| 06 | 7.4 | [排班考勤流程](./erp/排班考勤流程.drawio) | [预览](./erp/排班考勤流程.preview.png) |
+| 07 | 8.2 | [MES工单下达、派工与流转卡](./mes/工单下达与流转卡流程.drawio) | [预览](./mes/工单下达与流转卡流程.preview.png) |
+| 08 | 8.6 | [SN序列号与组件追溯](./mes/SN追溯体系流程.drawio) | [预览](./mes/SN追溯体系流程.preview.png) |
+| 09 | 8.7 | [安灯呼叫、响应与解决](./mes/安灯系统流程.drawio) | [预览](./mes/安灯系统流程.preview.png) |
+| 10 | 9.1 | [IQC、IPQC、OQC详情与完成门禁](./mes/三检制流程.drawio) | [预览](./mes/三检制流程.preview.png) |
+| 11 | 10.1 | [设备台账、点检、保养与维修](./mes/设备管理流程.drawio) | [预览](./mes/设备管理流程.preview.png) |
+| 12 | 11.4 | [NCR签署处置与返工闭环](./mes/NCR不合格品与返工流程.drawio) | [预览](./mes/NCR不合格品与返工流程.preview.png) |
+| 13 | 12.4 | [Moquette接入与IoT异步数据管道](./iot/数据管道流程.drawio) | [预览](./iot/数据管道流程.preview.png) |
+| 14 | 12.6 | [IoT告警留痕、恢复与心跳检测](./iot/告警与心跳流程.drawio) | [预览](./iot/告警与心跳流程.preview.png) |
+| 15 | 13.5 | [工业缺陷单图检测与人工复核边界](./cv/视觉缺陷检测与复核流程.drawio) | [预览](./cv/视觉缺陷检测与复核流程.preview.png) |
+| 16 | 14.1 | [AI对话与Agent编排流程](./ai/AI对话与Agent编排流程.drawio) | [预览](./ai/AI对话与Agent编排流程.preview.png) |
+| 17 | 14.4 | [知识库导入与检索流程](./ai/知识库导入与检索流程.drawio) | [预览](./ai/知识库导入与检索流程.preview.png) |
+| 18 | 14.5 | [AI数据查询流程](./ai/AI数据查询流程.drawio) | [预览](./ai/AI数据查询流程.preview.png) |
+| 19 | 14.9 | [工业决策审批与执行流程](./ai/工业决策审批与执行流程.drawio) | [预览](./ai/工业决策审批与执行流程.preview.png) |
+| 20 | 14.10 | [Flow流程编排与实例运行流程](./ai/Flow流程编排与实例运行流程.drawio) | [预览](./ai/Flow流程编排与实例运行流程.preview.png) |
+| 21 | 15.3 | [消息与通知投递流程](./im/消息与通知投递流程.drawio) | [预览](./im/消息与通知投递流程.preview.png) |
+| 22 | 16.2 | [GL总账流程](./fin/GL总账流程.drawio) | [预览](./fin/GL总账流程.preview.png) |
+| 23 | 16.6 | [应收应付核销流程](./fin/应收应付核销流程.drawio) | [预览](./fin/应收应付核销流程.preview.png) |
+| 24 | 16.9 | [报表与期末关账流程](./fin/报表与期末关账流程.drawio) | [预览](./fin/报表与期末关账流程.preview.png) |
+| 25 | 18.2 | [审批流流程](./erp/审批流流程.drawio) | [预览](./erp/审批流流程.preview.png) |
+| 26 | 21.3 | [Station设备通道过站、SOP与上料](./mes/Station工位过站与上料流程.drawio) | [预览](./mes/Station工位过站与上料流程.preview.png) |
+| 27 | 21.7 | [DHR批记录与现有生产追溯入口](./mes/生产履历与追溯看板流程.drawio) | [预览](./mes/生产履历与追溯看板流程.preview.png) |
+| 28 | 22.3 | [电子签章授权与签署流程](./system/电子签章授权与签署流程.drawio) | [预览](./system/电子签章授权与签署流程.preview.png) |
+| 29 | 23.1 | [仓储管理流程](./erp/仓储管理流程.drawio) | [预览](./erp/仓储管理流程.preview.png) |
 
-| 文件 | 内容 |
-|------|------|
-| 系统总览-跨模块流转 | BD 基础数据 → SO/PU/PRD/SCH/MES 业务模块 → WM 仓储 + MQ/IoT/IM/财务 集成 |
+## 维护与生成
 
-### ERP（7 张）
+在仓库根目录执行：
 
-| 文件 | 内容 |
-|------|------|
-| 采购到付款流程 | 请购 → 审批 → 订单 → 到货通知 → 收货入库（上架/MQ回写）→ 付款 + 退货分支 |
-| 销售到收款流程 | 报价 → 订单 → 信用检查 → 审批 → 出库发货 → 开票收款 + 退货分支 |
-| 生产制造流程 | 计划 → MRP → 工单 → 领料 → 报工 → 完工入库 + 委外/返工分支 + 倒冲 |
-| 仓储管理流程 | 5 入库通道 + 6 出库通道 + 调拨盘点 + 辅助能力 |
-| 委外与返工流程 | 委外/返工全链路 + MQ 异步联动 |
-| 排班考勤流程 | 班次/班组 → 排班 → 移动端打卡 → 考勤 + 产能日历 |
-| 审批流流程 | 9 类单据统一 Flowable 审批 + 回调联动 |
+```powershell
+python -X utf8 doc/flowcharts/scripts/gen_current_flowcharts.py --check
+python -X utf8 doc/flowcharts/scripts/gen_current_flowcharts.py
+python -X utf8 doc/flowcharts/scripts/gen_manual_v4.py
+python -X utf8 -m unittest discover -s doc/flowcharts/scripts -p "test_*.py" -v
+```
 
-### MES（6 张）
-
-| 文件 | 内容 |
-|------|------|
-| 工单下达与流转卡流程 | ERP 审批 → MQ 同步 → MES 审批 → 流转卡状态机 → 完工联动 |
-| 安灯系统流程 | 4 类呼叫 → 呼叫生命周期 → SSE 看板推送 |
-| SN追溯体系流程 | SN 分配/关联 → 生命周期 → 前向/后向追溯 |
-| 三检制流程 | IQC/IPQC/OQC 三检 + 不良品处理 + NCR 联动 |
-| 设备管理流程 | 台账/保养/维修 |
-| NCR不合格品与返工流程 | 4 触发点 → NCR 状态机 → 返工派生 |
-
-### IoT（2 张）
-
-| 文件 | 内容 |
-|------|------|
-| 数据管道流程 | MQTT 接入 → Redis Streams → MySQL/SSE → 告警检查 |
-| 告警与心跳流程 | 告警检测/生命周期/通知 + SnailJob 心跳 |
-
-### AI（2 张）
-
-| 文件 | 内容 |
-|------|------|
-| AI对话与Agent编排流程 | 请求 → Supervisor 编排 → 子 Agent → 异步执行 → SSE 推送 |
-| AI数据查询流程 | 自然语言 → SQL 生成 → 安全执行 → 结果渲染 |
-
-### 财务（3 张）
-
-| 文件 | 内容 |
-|------|------|
-| GL总账流程 | 科目/期间/汇率 → 凭证 → 审核过账 → 试算报表 |
-| 应收应付核销流程 | 销售开票(AR) + 采购进项(AP) → 收付款 → 核销 → 账龄 |
-| 报表与期末关账流程 | 三大报表 → 月结 → 年结 |
-
-## 技术说明
-
-- **绘图库**：`scripts/flowchart_lib.py` — 统一色板/正交边/走廊内缩/图例
-- **生成脚本**：每张图一个 `gen_*.py`，修改后运行即可重新生成
-- **验证**：所有图 `validate.py --score` 均为 0（0 穿透 / 0 交叉 / 0 重叠）
-- **可编辑性**：`.drawio` 为原生 mxGraph XML，draw.io 中可直接编辑节点/连线/样式
+- 依赖：Python 3.10+、Pillow、python-docx；中文字体可由 `NEXUS_DOC_FONT` 指定。
+- 完整回归包含Windows COM保护测试，需pywin32；非Windows可单独执行 `test_current_docs.py`。
+- 当前事实源：`scripts/current_*.json` 与对应 `manual_ch*.py` / `manual_current*.py`，每图保留真实源码路径。
+- 校验节点位置、连线端点、正交路径、不穿过节点、文字容纳、标签边界和源码存在性。该校验不等同于业务端到端测试，不沿用旧图的“validate score 0”结论。
+- PNG 与 draw.io 使用同一布局。长连线的标签为独立可编辑文字节点；修改图后应同步维护图定义和重生成预览。
+- 旧 `gen_erp_*` / `gen_mes_*` 等单图脚本及 `gen_manual.py` / `gen_manual_v3.py` 留作历史参考，不用于重建当前图集或手册。
+- 本次未运行数据库脚本、启停业务服务、调用生产模型、上传真实文档或进行现场签署。
