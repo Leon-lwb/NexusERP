@@ -16,6 +16,9 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
         this.root=configured.toAbsolutePath().normalize();this.maxBytes=maxBytes;
         try{rejectLinks(root);Files.createDirectories(root);privateAccess(root);this.storeId="local-"+ReportDefinitionService.hash(InetAddress.getLocalHost().getHostName()+"|"+root.toRealPath()).substring(0,24);}catch(IOException e){throw fault();}
     }
+    private DirectoryStream<Path> recoveryFolders, recoveryFiles;
+    private Iterator<Path> folderCursor, fileCursor;
+    private String recoveryTenant;
     public String storeId(){return storeId;}
     private static void rejectLinks(Path path){Path current=path.getRoot();for(Path part:path){current=current.resolve(part);if(Files.isSymbolicLink(current))throw new ReportFault("ARTIFACT_INVALID","私有报表路径不能包含符号链接",500);}}
     private Path tenant(String tenant){
@@ -48,24 +51,52 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
     public void delete(String tenant,String reference){if(reference==null)return;try{Files.deleteIfExists(object(tenant,reference));}catch(IOException e){throw fault();}}
     public void discard(String tenant,Path temporary){if(temporary==null)return;try{Files.deleteIfExists(ownTemporary(tenant,temporary));}catch(IOException e){throw fault();}}
     public String checksum(String tenant,String reference){try(var input=Files.newInputStream(read(tenant,reference))){var digest=MessageDigest.getInstance("SHA-256");byte[] bytes=new byte[8192];int size;while((size=input.read(bytes))>=0)digest.update(bytes,0,size);return HexFormat.of().formatHex(digest.digest());}catch(IOException|NoSuchAlgorithmException e){throw fault();}}
-    /** Age exceeds run retention and execution deadlines; referenced files are never reclaimed. */
-    public void reap(java.time.Instant olderThan,java.util.function.BiPredicate<String,String> referenced){
-        Objects.requireNonNull(olderThan);Objects.requireNonNull(referenced);int examined=0;
-        try(var folders=Files.newDirectoryStream(root)){
-            for(Path folder:folders){
-                String tenantId=folder.getFileName().toString();
-                if(!tenantId.matches("[A-Za-z0-9_-]{1,20}")||Files.isSymbolicLink(folder)||!Files.isDirectory(folder,LinkOption.NOFOLLOW_LINKS))continue;
-                try(var files=Files.newDirectoryStream(folder)){
-                    for(Path file:files){
-                        if(++examined>1000)return;
-                        if(Files.isSymbolicLink(file)||!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS)||!Files.getLastModifiedTime(file,LinkOption.NOFOLLOW_LINKS).toInstant().isBefore(olderThan))continue;
-                        String name=file.getFileName().toString();
-                        if(name.matches("pending-[A-Za-z0-9_-]+\\.(rows|json|plan|pdf|xlsx)\\.tmp"))discard(tenantId,file);
-                        else if(name.matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.(rows|json|plan|pdf|xlsx)")&&!referenced.test(tenantId,name))delete(tenantId,name);
-                    }
+    /** A bounded cursor advances across retained objects and tenants instead of restarting at the head. */
+    public synchronized void reap(java.time.Instant olderThan, java.util.function.BiPredicate<String, String> referenced) {
+        Objects.requireNonNull(olderThan); Objects.requireNonNull(referenced);
+        try {
+            if (recoveryFolders == null) { recoveryFolders = Files.newDirectoryStream(root); folderCursor = recoveryFolders.iterator(); }
+            for (int examined = 0; examined < 1000;) {
+                if (recoveryFiles != null) {
+                    if (fileCursor.hasNext()) { examined++; reapFile(fileCursor.next(), olderThan, referenced); continue; }
+                    recoveryFiles.close(); recoveryFiles = null; fileCursor = null; recoveryTenant = null;
                 }
+                if (!folderCursor.hasNext()) { closeRecovery(); return; }
+                Path folder = folderCursor.next(); examined++;
+                String tenantId = folder.getFileName().toString();
+                if (!tenantId.matches("[A-Za-z0-9_-]{1,20}") || Files.isSymbolicLink(folder) || !Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS)) continue;
+                try { recoveryFiles = Files.newDirectoryStream(folder); }
+                catch (NoSuchFileException | NotDirectoryException concurrentCleanup) { continue; }
+                fileCursor = recoveryFiles.iterator(); recoveryTenant = tenantId;
             }
-        }catch(IOException failure){throw fault();}
+        } catch (IOException | DirectoryIteratorException failure) {
+            resetAfterFailure(failure); throw fault();
+        } catch (RuntimeException failure) { resetAfterFailure(failure); throw failure; }
+    }
+    private void reapFile(Path file, java.time.Instant olderThan, java.util.function.BiPredicate<String, String> referenced) throws IOException {
+        if (Files.isSymbolicLink(file) || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) return;
+        java.time.Instant modified;
+        try { modified = Files.getLastModifiedTime(file, LinkOption.NOFOLLOW_LINKS).toInstant(); }
+        catch (NoSuchFileException concurrentCleanup) { return; }
+        if (!modified.isBefore(olderThan)) return;
+        String name = file.getFileName().toString();
+        if (name.matches("pending-[A-Za-z0-9_-]+\\.(rows|json|plan|pdf|xlsx)\\.tmp")) discard(recoveryTenant, file);
+        else if (name.matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.(rows|json|plan|pdf|xlsx)")
+            && !referenced.test(recoveryTenant, name)) delete(recoveryTenant, name);
+    }
+    private void resetAfterFailure(Throwable original) {
+        try { closeRecovery(); } catch (IOException cleanup) { original.addSuppressed(cleanup); }
+    }
+    private void closeRecovery() throws IOException {
+        var files = recoveryFiles; var folders = recoveryFolders;
+        recoveryFiles = null; recoveryFolders = null; fileCursor = null; folderCursor = null; recoveryTenant = null;
+        IOException failure = null;
+        try { if (files != null) files.close(); } catch (IOException error) { failure = error; }
+        try { if (folders != null) folders.close(); } catch (IOException error) { if (failure == null) failure = error; else failure.addSuppressed(error); }
+        if (failure != null) throw failure;
+    }
+    @Override public synchronized void close() {
+        try { closeRecovery(); } catch (IOException failure) { throw fault(); }
     }
     private static ReportFault fault(){return new ReportFault("ARTIFACT_STORE_UNAVAILABLE","私有报表文件存储不可用",500);}
 }

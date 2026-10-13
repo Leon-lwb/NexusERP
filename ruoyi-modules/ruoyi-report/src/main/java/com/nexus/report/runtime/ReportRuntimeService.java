@@ -22,6 +22,7 @@ public class ReportRuntimeService {
     private final ReportDefinitionService definitions;
     private final ReportCompiler compiler;
     private final ReportSnapshotStore snapshots;
+    private final ReportRenderPlanStore plans;
     private final ReportArtifactStore artifacts;
     private final ReportProperties properties;
     private final ObjectMapper json;
@@ -29,10 +30,11 @@ public class ReportRuntimeService {
     public ReportRuntimeService(JdbcReportStore store, ReportDefinitionService definitions, ReportCompiler compiler,
                                 ReportSnapshotStore snapshots, ReportArtifactStore artifacts, ReportProperties properties, ObjectMapper json) {
         this.store = store; this.definitions = definitions; this.compiler = compiler; this.snapshots = snapshots;
-        this.artifacts = artifacts; this.properties = properties;
+        this.artifacts = artifacts; this.properties = properties; this.plans = new ReportRenderPlanStore(artifacts, json);
         this.json = json.copy().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
     }
-    public record Payload(Map<String, Object> input, String store, String checksum, List<ReportCalculator.SummaryValue> summaries) {
+    public record Payload(Map<String, Object> input, String store, String checksum, List<ReportCalculator.SummaryValue> summaries, String planChecksum) {
+        public Payload(Map<String, Object> input, String store, String checksum, List<ReportCalculator.SummaryValue> summaries) { this(input, store, checksum, summaries, null); }
         public Payload { input = Collections.unmodifiableMap(new LinkedHashMap<>(input == null ? Map.of() : input)); summaries = List.copyOf(summaries == null ? List.of() : summaries); }
     }
     public record PageData(List<ReportDsl.Column> columns, List<Map<String, TypedValue>> rows, long total, String dataTime, String mode, List<ReportCalculator.SummaryValue> summaries) { }
@@ -137,17 +139,53 @@ public class ReportRuntimeService {
     }
 
     public RenderPlan layout(ReportActor actor, String id, String permission, String action) { return layout(access(actor, id, permission, action)); }
-    public RenderPlan layout(Access previous) {
+    public RenderPlan layout(Access previous) { return layout(previous, new ReportCancellation()); }
+    public RenderPlan layout(Access previous, ReportCancellation cancellation) {
+        cancellation.check();
         Access access = recheck(previous);
         Run run = access.run(); ready(run);
         if (!run.mode().equals("SNAPSHOT")) throw new ReportFault("SNAPSHOT_REQUIRED", "文档排版需要完成的快照运行");
         if (run.rows() > 5000) throw ReportFault.capacity();
-        snapshots.verify(run.tenant(), run.snapshot(), access.payload().checksum()); recheck(access);
-        var rows = snapshots.page(run.tenant(), run.snapshot(), 0, 5000);
-        var data = new ReportCalculator.CalculatedData(rows, access.payload().summaries());
-        RenderPlan plan = new DocumentLayoutEngine().layout(access.binding().compiled(), data, access.payload().input(), FontSupport.find(properties.getFontPath()));
+        snapshots.verify(run.tenant(), run.snapshot(), access.payload().checksum());
+        access = recheck(access); cancellation.check();
+        ReportRenderPlanStore.Artifact candidate = null;
+        try {
+            if (access.run().plan() == null) {
+                var rows = snapshots.page(run.tenant(), run.snapshot(), 0, 5000);
+                var data = new ReportCalculator.CalculatedData(rows, access.payload().summaries());
+                Access measured = access;
+                candidate = plans.create(run.tenant(), run.id(), access.payload().checksum(), access.version().engine(),
+                    FontSupport.find(properties.getFontPath()), cancellation,
+                    font -> new DocumentLayoutEngine().layout(measured.binding().compiled(), data, measured.payload().input(), font));
+                cancellation.check(); access = recheck(access);
+                Payload payload = new Payload(access.payload().input(), access.payload().store(), access.payload().checksum(), access.payload().summaries(), candidate.checksum());
+                boolean registered = store.publishRenderPlan(run.tenant(), run.id(), run.snapshot(), candidate.reference(), json(payload), access.lease());
+                access = recheck(access);
+                if (!registered && access.run().plan() == null) throw buildConflict();
+            }
+            RenderPlan plan = plans.read(run.tenant(), access.run().plan(), access.payload().planChecksum(), run.id(),
+                access.payload().checksum(), access.version().engine(), run.rows(), cancellation);
+            cancellation.check(); recheck(access);
+            return plan;
+        } finally {
+            if (candidate != null) {
+                Run current = store.run(run.tenant(), run.id()).orElse(null);
+                if (current == null || !candidate.reference().equals(current.plan())) artifacts.delete(run.tenant(), candidate.reference());
+            }
+        }
+    }
+
+    /** Only server-side exporters receive the private, captured font; no physical path is exposed by the API. */
+    public void withLayoutFont(Access previous, ReportCancellation cancellation, java.util.function.Consumer<java.nio.file.Path> action) {
+        cancellation.check();
+        Access access = recheck(previous); ready(access.run());
+        if (access.run().plan() == null) throw new ReportFault("PLAN_NOT_READY", "排版产物尚未生成", 409);
+        snapshots.verify(access.run().tenant(), access.run().snapshot(), access.payload().checksum());
         recheck(access);
-        return plan;
+        plans.withFont(access.run().tenant(), access.run().plan(), access.payload().planChecksum(), access.run().id(),
+            access.payload().checksum(), access.version().engine(), access.run().rows(), cancellation,
+            font -> { cancellation.check(); recheck(access); action.accept(font); cancellation.check(); recheck(access); });
+        cancellation.check(); recheck(access);
     }
 
     public ExportJob enqueue(ReportActor actor, String origin, String format, String requestKey) {

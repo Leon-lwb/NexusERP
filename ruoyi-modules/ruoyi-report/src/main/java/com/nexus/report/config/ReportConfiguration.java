@@ -18,7 +18,7 @@ import java.util.List;
 public class ReportConfiguration {
     @Bean public ReportProviderRegistry reportProviderRegistry(List<ReportDatasetProvider> providers){return new ReportProviderRegistry(providers);}
     @Bean public ReportCompiler reportCompiler(ObjectMapper json){return new ReportCompiler(json);}
-    @Bean public ReportArtifactStore reportArtifactStore(ReportProperties properties){return new LocalReportArtifactStore(Path.of(properties.getArtifactRoot()),properties.getMaxArtifactBytes());}
+    @Bean(destroyMethod="close") public ReportArtifactStore reportArtifactStore(ReportProperties properties){return new LocalReportArtifactStore(Path.of(properties.getArtifactRoot()),properties.getMaxArtifactBytes());}
     @Bean public ReportSnapshotStore reportSnapshotStore(ReportArtifactStore artifacts,ObjectMapper json){return new ReportSnapshotStore(artifacts,json);}
     @Bean public ReportDefinitionService reportDefinitionService(JdbcReportStore store,ReportProviderRegistry registry,ReportAuthorizationPort authorization,ReportCompiler compiler){return new ReportDefinitionService(store,registry,authorization,compiler);}
     @Bean public ReportRuntimeService reportRuntimeService(JdbcReportStore store,ReportDefinitionService definitions,ReportCompiler compiler,ReportSnapshotStore snapshots,ReportArtifactStore artifacts,ReportProperties properties,ObjectMapper json){return new ReportRuntimeService(store,definitions,compiler,snapshots,artifacts,properties,json);}

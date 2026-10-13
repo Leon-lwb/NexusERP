@@ -15,6 +15,7 @@
 | [plans/2026-10-13-system-reporting-construction-plan.md](./plans/2026-10-13-system-reporting-construction-plan.md) | 分阶段工作包、文件落点与测试矩阵 | 历史首版；以 2026-10-14 执行计划为准 |
 | [plans/2026-10-14-system-report-p0-implementation-plan.md](./plans/2026-10-14-system-report-p0-implementation-plan.md) | 自研报表 P0 实施计划 | 用户批准的 TABLE/DOCUMENT 首期范围 |
 | [plans/2026-10-14-system-report-p0-verification-report.md](./plans/2026-10-14-system-report-p0-verification-report.md) | 自研报表实施与验证结果 | 本机测试与运行证据；不代表生产部署 |
+| [plans/2026-10-14-system-report-p0-continuation-verification.md](./plans/2026-10-14-system-report-p0-continuation-verification.md) | 自研报表首期续开发验证 | 不可变排版/字体与持续存储恢复 |
 | [guides/NexusERP_自研报表模块使用指南.md](./guides/NexusERP_自研报表模块使用指南.md) | 报表用户操作、配置与扩展入口 | 首期支持边界及后续扩展说明 |
 | [specs/2026-09-15-esignature-impl-spec.md](./specs/2026-09-15-esignature-impl-spec.md) | 电子签章 P1 设计与实施差异 | Task 1–16 已实施，人工端到端验收未完成 |
 | [plans/2026-09-15-esignature-p1-implementation-plan.md](./plans/2026-09-15-esignature-p1-implementation-plan.md) | 电子签章分任务执行记录 | Task 17 待人工验收，暂不归档为“全部完成” |

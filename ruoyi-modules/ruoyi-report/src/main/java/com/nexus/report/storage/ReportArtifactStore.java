@@ -2,7 +2,8 @@ package com.nexus.report.storage;
 import java.nio.file.Path;
 import java.io.OutputStream;
 /** Replaceable private storage port. Physical paths never appear in API responses. */
-public interface ReportArtifactStore {
+public interface ReportArtifactStore extends AutoCloseable {
+    @Override default void close() { }
     String storeId();
     Path temporary(String tenant,String kind);
     OutputStream output(String tenant,Path temporary);

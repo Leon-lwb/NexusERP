@@ -540,9 +540,23 @@ public class JdbcReportStore {
         });
     }
 
+    /** A complete snapshot may acquire exactly one immutable layout; workers retain their attempt fence. */
+    public boolean publishRenderPlan(String tenant, String runId, String snapshot, String reference, String payload, ExportJob claimed) {
+        if (reference == null || !reference.matches("[a-f0-9-]{36}\\.plan")) throw ReportFault.invalid("排版产物标识无效");
+        return atomic(() -> {
+            Run run = lockRun(tenant, runId);
+            if (!run.state().equals("SUCCEEDED") || !run.mode().equals("SNAPSHOT") || !run.expires().isAfter(now())
+                || run.plan() != null || snapshot == null || !snapshot.equals(run.snapshot())) return false;
+            if (claimed != null && (!tenant.equals(claimed.tenant()) || !runId.equals(claimed.runId()) || liveJob(claimed, true).isEmpty())) return false;
+            return jdbc.update("UPDATE rpt_run SET plan_ref=?,parameters_json=?,update_time=CURRENT_TIMESTAMP"
+                + " WHERE tenant_id=? AND run_id=? AND state='SUCCEEDED' AND plan_ref IS NULL AND snapshot_ref=?",
+                reference, payload, tenant, number(runId), snapshot) == 1;
+        });
+    }
+
     private static String safeError(String error) {
         if (error == null) return null;
-        return Set.of("STORAGE_UNAVAILABLE", "ARTIFACT_STORE_UNAVAILABLE", "XLSX_EXPORT_FAILED", "PDF_EXPORT_FAILED", "REPORT_EXECUTION_FAILED", "SCOPE_DENIED", "SCOPE_CHANGED", "SNAPSHOT_EXPIRED", "SNAPSHOT_INVALID", "LEASE_LOST", "CANCELLED", "CAPACITY_EXCEEDED", "QUERY_TIMEOUT", "VERSION_UNSUPPORTED", "REPORT_OFFLINE")
+        return Set.of("STORAGE_UNAVAILABLE", "ARTIFACT_STORE_UNAVAILABLE", "XLSX_EXPORT_FAILED", "PDF_EXPORT_FAILED", "REPORT_EXECUTION_FAILED", "SCOPE_DENIED", "SCOPE_CHANGED", "SNAPSHOT_EXPIRED", "SNAPSHOT_INVALID", "PLAN_INVALID", "FONT_UNAVAILABLE", "LEASE_LOST", "CANCELLED", "CAPACITY_EXCEEDED", "QUERY_TIMEOUT", "VERSION_UNSUPPORTED", "REPORT_OFFLINE")
             .contains(error) ? error : "REPORT_EXECUTION_FAILED";
     }
 

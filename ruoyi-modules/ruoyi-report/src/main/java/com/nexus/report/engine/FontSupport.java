@@ -25,7 +25,9 @@ public final class FontSupport {
         public void close() throws IOException { if(collection!=null)collection.close(); }
     }
     public static Handle load(PDDocument document,Path path) throws IOException {
-        if(path.toString().toLowerCase(Locale.ROOT).endsWith(".ttc")){
+        boolean collectionFile;
+        try(var input=Files.newInputStream(path)){collectionFile=Arrays.equals(input.readNBytes(4),new byte[]{'t','t','c','f'});}
+        if(collectionFile){
             var collection=new TrueTypeCollection(path.toFile());var fonts=new ArrayList<TrueTypeFont>();collection.processAllFonts(fonts::add);
             if(fonts.isEmpty()){collection.close();throw new IOException("Font collection is empty");}
             var selected=fonts.stream().filter(font->{try{return font.getName().contains("SC")||font.getName().contains("SimSun");}catch(IOException e){return false;}}).findFirst().orElse(fonts.get(0));

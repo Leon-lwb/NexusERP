@@ -47,3 +47,7 @@ TABLE 与 DOCUMENT 两种模板，自有 v1 DSL 与扩展 SPI；可信业务数�
 完整结果见 [首期实施与验证记录](./2026-10-14-system-report-p0-verification-report.md)。后端相关选择器 252 例通过（报表核心 200），前端报表专项 60 例通过，完整单测、全仓类型检查、生产构建和 admin 打包通过。真实本机 Spring/MySQL 链路及三格式鉴权下载通过；六类业务模板已发布，合成资源已清理。
 
 撤销/重做、有界孤立文件回收、排队任务数据时点，以及 schema/engine/checksum/契约引用保护已纳入首期，未扩入 P1/P2 范围。生产部署、业务签收、集群共享存储与规模 SLA 未由本机验证完成。
+
+## 首期续开发
+
+继续在同一分支补齐不可变排版/字体产物与跨批次存储恢复，见 [续开发计划](./2026-10-14-system-report-p0-continuation-plan.md) 和 [续开发验证记录](./2026-10-14-system-report-p0-continuation-verification.md)。旧记录的用例数对应首个提交，新结果单独记录。
