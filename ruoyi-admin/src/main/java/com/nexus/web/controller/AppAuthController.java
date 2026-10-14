@@ -85,7 +85,7 @@ public class AppAuthController {
     public R<Map<String, Object>> smsCode(@RequestParam @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式错误") String phonenumber) {
         // 回显仅为未接入短信服务时的临时措施，任何请求者均可拿到该手机号的登录凭据
         if (!smsCodeEcho) {
-            return R.fail("短信验证码回显未开启, 请使用真实短信通道");
+            return R.warn("短信登录暂不可用，请联系管理员");
         }
         String key = GlobalConstants.CAPTCHA_CODE_KEY + phonenumber;
         String code = generateSmsCode();
@@ -125,7 +125,7 @@ public class AppAuthController {
 
         SysClientVo client = clientService.queryByClientId(APP_CLIENT_ID);
         if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
-            return R.fail("App客户端已被停用");
+            return R.fail(10020, "App客户端已被停用");
         }
 
         loginService.checkTenant(tenantId);
@@ -161,7 +161,7 @@ public class AppAuthController {
 
         SysClientVo client = clientService.queryByClientId(APP_CLIENT_ID);
         if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
-            return R.fail("App客户端已被停用");
+            return R.fail(10020, "App客户端已被停用");
         }
 
         loginService.checkTenant(tenantId);
@@ -192,7 +192,7 @@ public class AppAuthController {
         String tenantId = body.getOrDefault("tenantId", "");
 
         if (StrUtil.isBlank(source) || StrUtil.isBlank(socialCode)) {
-            return R.fail("社交登录参数不完整");
+            return R.warn("社交登录参数不完整");
         }
 
         // 构造社交登录请求体
@@ -206,7 +206,7 @@ public class AppAuthController {
 
         SysClientVo client = clientService.queryByClientId(APP_CLIENT_ID);
         if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
-            return R.fail("App客户端已被停用");
+            return R.fail(10020, "App客户端已被停用");
         }
 
         loginService.checkTenant(tenantId);
@@ -241,7 +241,7 @@ public class AppAuthController {
         String tenantId = body.getOrDefault("tenantId", "");
 
         if (StrUtil.isBlank(xcxCode)) {
-            return R.fail("小程序code不能为空");
+            return R.warn("微信授权信息不完整，请重新授权");
         }
 
         // 小程序专用客户端ID
@@ -258,7 +258,7 @@ public class AppAuthController {
 
         SysClientVo client = clientService.queryByClientId(xcxClientId);
         if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
-            return R.fail("小程序客户端已被停用");
+            return R.fail(10020, "小程序客户端已被停用");
         }
 
         loginService.checkTenant(tenantId);
