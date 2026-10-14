@@ -43,7 +43,9 @@
           ></el-table-column
         >
         <el-table-column label="类型" width="115"
-          ><template #default="scope">{{ scope.row.kind === 'DOCUMENT' ? '打印单据' : '列表报表' }}</template></el-table-column
+          ><template #default="scope">{{
+            scope.row.kind === 'DOCUMENT' ? '打印单据' : scope.row.kind === 'PIVOT' ? '交叉报表' : '列表报表'
+          }}</template></el-table-column
         >
         <el-table-column label="状态" width="105"
           ><template #default="scope"
@@ -60,7 +62,12 @@
               :disabled="scope.row.status !== 'PUBLISHED'"
               @click="open('viewer', scope.row.id)"
               >运行</el-button
-            ><el-button v-hasPermi="['report:definition:edit']" link type="primary" @click="open('designer', scope.row.id)">设计</el-button
+            ><el-button
+              v-hasPermi="['report:definition:edit']"
+              link
+              type="primary"
+              @click="open(scope.row.kind === 'PIVOT' ? 'pivot' : 'designer', scope.row.id)"
+              >设计</el-button
             ><span v-hasPermi="['report:definition:edit']"
               ><el-button
                 v-hasPermi="['report:definition:add']"
@@ -108,6 +115,8 @@
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, computed, onMounted, onActivated, onUnmounted, onDeactivated } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -118,8 +127,15 @@ import AclDialog from '@/components/report/AclDialog.vue';
 import TemplatePackageDialog from '@/components/report/TemplatePackageDialog.vue';
 import { copyReport, listDatasets } from '@/api/report';
 import type { DatasetView } from '@/types/report';
+/**
+ * 保存当前页面或测试的packageOpen状态。
+ */
 const packageOpen = ref(false);
+/**
+ * 保存当前页面或测试的packageDatasets状态。
+ */
 const packageDatasets = ref<DatasetView[]>([]);
+/** 处理当前报表的 `openPackageImport` 操作。 */
 async function openPackageImport() {
   try {
     const response = await listDatasets();
@@ -127,12 +143,20 @@ async function openPackageImport() {
     packageOpen.value = true;
   } catch {}
 }
+/**
+ * 保存当前页面或测试的copying状态。
+ */
 const copying = ref('');
+/**
+ * 保存当前页面或测试的copyGate状态。
+ */
 const copyGate = new RequestGate();
+/** 处理当前报表的 `stopCopy` 操作。 */
 function stopCopy() {
   copyGate.invalidate();
   copying.value = '';
 }
+/** 处理当前报表的 `duplicate` 操作。 */
 async function duplicate(row: ReportDefinition) {
   if (copying.value) return;
   const ticket = copyGate.begin();
@@ -149,21 +173,69 @@ async function duplicate(row: ReportDefinition) {
   }
 }
 defineOptions({ name: 'ReportCenter' });
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的failed状态。
+ */
 const failed = ref(false);
+/**
+ * 保存当前页面或测试的initializing状态。
+ */
 const initializing = ref(false);
+/**
+ * 保存当前页面或测试的reports状态。
+ */
 const reports = ref<ReportDefinition[]>([]);
+/**
+ * 保存当前页面或测试的catalogs状态。
+ */
 const catalogs = ref<ReportCatalog[]>([]);
+/**
+ * 保存当前页面或测试的keyword状态。
+ */
 const keyword = ref('');
+/**
+ * 保存当前页面或测试的kind状态。
+ */
 const kind = ref('');
+/**
+ * 保存当前页面或测试的catalogId状态。
+ */
 const catalogId = ref('');
+/**
+ * 保存当前页面或测试的aclOpen状态。
+ */
 const aclOpen = ref(false);
+/**
+ * 保存当前页面或测试的aclId状态。
+ */
 const aclId = ref('');
+/**
+ * 保存当前页面或测试的auditOpen状态。
+ */
 const auditOpen = ref(false);
+/**
+ * 保存当前页面或测试的audits状态。
+ */
 const audits = ref<Record<string, unknown>[]>([]);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/**
+ * 保存当前页面或测试的statusText状态。
+ */
 const statusText: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已发布', OFFLINE: '已下线', ARCHIVED: '已归档' };
+/**
+ * 保存当前页面或测试的filtered状态。
+ */
 const filtered = computed(() =>
   reports.value.filter(
     (r) =>
@@ -172,9 +244,11 @@ const filtered = computed(() =>
       (!catalogId.value || r.catalogId === catalogId.value)
   )
 );
+/** 处理当前报表的 `open` 操作。 */
 function open(view: string, id: string) {
   router.push({ path: '/report/' + view, query: { id } });
 }
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   const ticket = gate.begin();
   loading.value = true;
@@ -194,6 +268,7 @@ async function load() {
     if (gate.current(ticket)) loading.value = false;
   }
 }
+/** 显式准备当前管理员有业务权限的初始模板。 */
 async function bootstrap() {
   initializing.value = true;
   try {
@@ -205,6 +280,7 @@ async function bootstrap() {
     initializing.value = false;
   }
 }
+/** 处理当前报表的 `addCatalog` 操作。 */
 async function addCatalog() {
   try {
     const response = await ElMessageBox.prompt('输入目录名称', '新建目录', {
@@ -215,6 +291,7 @@ async function addCatalog() {
     await load();
   } catch {}
 }
+/** 在修订与授权检查后创建不可变发布版本。 */
 async function publish(row: ReportDefinition) {
   try {
     await ElMessageBox.confirm('发布当前保存的草稿？正在运行的报表继续使用原版本。', '发布报表');
@@ -223,6 +300,7 @@ async function publish(row: ReportDefinition) {
     await load();
   } catch {}
 }
+/** 处理当前报表的 `changeState` 操作。 */
 async function changeState(row: ReportDefinition, state: string) {
   try {
     await ElMessageBox.confirm(
@@ -233,6 +311,7 @@ async function changeState(row: ReportDefinition, state: string) {
     await load();
   } catch {}
 }
+/** 处理当前报表的 `audit` 操作。 */
 async function audit() {
   try {
     audits.value = (await listReportAudit()).data;

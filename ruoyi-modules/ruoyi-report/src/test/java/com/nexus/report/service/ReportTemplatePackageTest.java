@@ -11,9 +11,12 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.util.*;
 
+/** 报表模板模板包测试，负责当前模块对应的契约或处理职责。 */
 class ReportTemplatePackageTest {
+    /** 测试私有目录。 */
     @TempDir Path directory;
 
+    /** 验证 {@code packagesCarryOnlyDefinitionsAndRequireLocalContractMapping} 场景下的结果与边界条件。 */
     @Test
     void packagesCarryOnlyDefinitionsAndRequireLocalContractMapping() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -55,6 +58,7 @@ class ReportTemplatePackageTest {
         }
     }
 
+    /** 验证 {@code copyUsesCurrentSavedDefinitionAndFreshAuthorization} 场景下的结果与边界条件。 */
     @Test
     void copyUsesCurrentSavedDefinitionAndFreshAuthorization() {
         try (var f = new RuntimeReviewFixture(directory)) {

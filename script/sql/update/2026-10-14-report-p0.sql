@@ -1,9 +1,9 @@
--- 2026-10-14 Report P0, local master / ry-vue, MySQL 5.7 compatible
--- User authorized direct deletion of unused Jimu assets; no business-table migration.
--- DROP list is explicit; report metadata CREATE and menu insertion are replay-safe.
--- Existing rpt_* definitions are never dropped or reseeded.
--- Known IDs also repair role/package references after the old menu rows are gone.
--- Capture every legacy URL ID before deleting menus; business report menus are not selected.
+/** 2026-10-14 自研报表首期增量，适用于本机系统主库 ry-vue，兼容 MySQL 5.7。 */
+/** 用户授权直接删除未使用积木资源，不迁移业务表。 */
+/** 删除表名使用明确清单；报表建表与菜单插入支持幂等重放。 */
+/** 保留已有 rpt_* 表与定义，不删除或重新植入模板。 */
+/** 旧菜单已删除时，已知标识仍用于修复角色和套餐引用。 */
+/** 删除菜单前捕获旧报表地址菜单标识，不选择业务模块报表菜单。 */
 DROP TEMPORARY TABLE IF EXISTS rpt_p0_legacy_menu_ids;
 CREATE TEMPORARY TABLE rpt_p0_legacy_menu_ids (
   menu_id bigint NOT NULL PRIMARY KEY
@@ -15,8 +15,8 @@ SELECT m.menu_id FROM sys_menu m
 WHERE (m.path LIKE '%/jmreport/%' OR m.path LIKE '%/jmubi/%' OR m.path LIKE '%/jimubi/%'
   OR m.path LIKE '%/drag/%' OR m.path LIKE '%/jmreport-designer/%');
 
--- Rebuild each CSV once from its surviving tokens, rather than updating it once per joined menu.
--- menu_ids is utf8mb4 varchar(3000); allow 12000 bytes and restore the session setting.
+/** 从保留标识一次重建每份逗号列表，避免按关联菜单重复更新。 */
+/** 菜单标识列表使用四字节字符集，允许一万二千字节并恢复会话设置。 */
 DROP TEMPORARY TABLE IF EXISTS rpt_p0_package_menus;
 CREATE TEMPORARY TABLE rpt_p0_package_menus (
   package_id bigint NOT NULL PRIMARY KEY,
@@ -258,7 +258,7 @@ CREATE TABLE IF NOT EXISTS `rpt_audit` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- Native report routes and operation permissions
+/** 原生报表路由和操作权限。 */
 INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by) SELECT 23000,'报表中心',0,8,'report',NULL,1,1,'M','0','0',NULL,'dataAnalysis',1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=23000);
 INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by) SELECT 23001,'报表管理',23000,1,'center','report/center/index',1,1,'C','0','0','report:definition:list','list',1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=23001);
 INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by) SELECT 23002,'数据集目录',23000,2,'dataset','report/dataset/index',1,1,'C','0','0','report:dataset:list','database',1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=23002);
@@ -278,7 +278,7 @@ INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,is_fr
 INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by) SELECT 23019,'查询报表审计',23001,10,'#',NULL,1,1,'F','0','0','report:audit:query','#',1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=23019);
 INSERT INTO sys_role_menu (role_id,menu_id) SELECT r.role_id,m.menu_id FROM sys_role r JOIN sys_menu m ON m.menu_id BETWEEN 23000 AND 23019 WHERE r.role_key IN ('superadmin','admin') AND r.status='0' AND r.del_flag='0' AND NOT EXISTS (SELECT 1 FROM sys_role_menu x WHERE x.role_id=r.role_id AND x.menu_id=m.menu_id);
 
--- Replay-safe addition for a database created earlier in this P0 development.
+/** 为首期开发早期创建的数据库幂等补充缺失字段。 */
 SET @rpt_p0_catalog_index_exists=(SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rpt_catalog' AND INDEX_NAME='uk_report_catalog_name');
 SET @rpt_p0_catalog_index_sql=IF(@rpt_p0_catalog_index_exists=0,'ALTER TABLE rpt_catalog ADD UNIQUE KEY uk_report_catalog_name (tenant_id,parent_id,name)','SELECT 1');
 PREPARE rpt_p0_catalog_index_stmt FROM @rpt_p0_catalog_index_sql;

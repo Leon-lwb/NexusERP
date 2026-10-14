@@ -3,12 +3,22 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
+/**
+ * 保存当前页面或测试的root状态。
+ */
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+/**
+ * 保存当前页面或测试的fileCache状态。
+ */
 const fileCache = new Map();
+/** 读取并检查当前租户私有产物。 */
 const read = (path) => {
   if (!fileCache.has(path)) fileCache.set(path, readFileSync(resolve(root, path), 'utf8'));
   return fileCache.get(path);
 };
+/**
+ * 保存当前页面或测试的legacyTables状态。
+ */
 const legacyTables = [
   'jimu_dict',
   'jimu_dict_item',
@@ -30,26 +40,30 @@ const legacyTables = [
   'tmp_report_data_1',
   'tmp_report_data_income'
 ];
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('unused Jimu starters and authentication bridge are removed while module identity is retained', () => {
   const pom = read('ruoyi-modules/ruoyi-report/pom.xml');
   assert.match(pom, /<artifactId>ruoyi-report<\/artifactId>/);
   assert.equal(/jimureport|jimubi|jeecg/.test(pom), false, 'legacy starters absent');
   assert.equal(existsSync(resolve(root, 'ruoyi-modules/ruoyi-report/src/main/java/com/nexus/report/config/JimuReportTokenService.java')), false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('new report endpoints stay in the normal authentication chain', () => {
   const config = read('ruoyi-admin/src/main/resources/application.yml');
   assert.equal(/- \/(?:jmreport|jmubi|jmreport-designer|drag|report)\/\*\*/.test(config), false, 'report authentication bypass absent');
   assert.equal(/^\s+- jm_(?:report|drag)/m.test(config), false, 'legacy tenant exclusions absent');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('new-install schema removes only unused report product tables', () => {
   const schema = read('script/sql/ry-vue.sql');
   const names = [...schema.matchAll(/CREATE TABLE\s+`([^`]+)`/g)].map((x) => x[1]);
   for (const name of legacyTables) assert.equal(names.includes(name), false, name);
   for (const name of ['sys_user', 'sys_role', 'sys_menu', 'ai_provider']) assert.equal(names.includes(name), true, name);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('nine report core tables have mandatory tenant ownership and version/task constraints', () => {
   const schema = read('script/sql/ry-vue.sql');
-  const tables = new Map([...schema.matchAll(/CREATE TABLE\s+`(rpt_[^`]+)`\s*\(([\s\S]*?)\) ENGINE/g)].map((x) => [x[1], x[2]]));
+  const tables = new Map([...schema.matchAll(/CREATE TABLE(?: IF NOT EXISTS)?\s+`(rpt_[^`]+)`\s*\(([\s\S]*?)\) ENGINE/g)].map((x) => [x[1], x[2]]));
   const expected = [
     'rpt_catalog',
     'rpt_definition',
@@ -61,13 +75,14 @@ test('nine report core tables have mandatory tenant ownership and version/task c
     'rpt_export_job',
     'rpt_audit'
   ];
-  assert.equal(tables.size, expected.length);
+  assert.equal(expected.filter((name) => tables.has(name)).length, 9);
   for (const name of expected) assert.match(tables.get(name) || '', /`tenant_id`[^,\n]*NOT NULL/, name);
   assert.match(tables.get('rpt_definition'), /draft_revision/);
   assert.match(tables.get('rpt_version'), /UNIQUE KEY/);
   assert.match(tables.get('rpt_export_job'), /idempotency_key/);
   assert.match(tables.get('rpt_export_job'), /lease_until/);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('authorized update drops only the explicit unused Jimu table list', () => {
   const path = 'script/sql/update/2026-10-14-report-p0.sql';
   assert.equal(existsSync(resolve(root, path)), true, 'P0 update exists');
@@ -78,8 +93,15 @@ test('authorized update drops only the explicit unused Jimu table list', () => {
   assert.match(update, /CREATE TABLE IF NOT EXISTS `rpt_definition`/);
 });
 
+/**
+ * 保存当前页面或测试的knownLegacyMenuIds状态。
+ */
 const knownLegacyMenuIds = ['3020', '3021', '3022', '2053846181246812161'];
+/**
+ * 保存当前页面或测试的updatePath状态。
+ */
 const updatePath = 'script/sql/update/2026-10-14-report-p0.sql';
+/** 提供报表 `sqlList` 操作入口。 */
 const sqlList = (text) => {
   const values = [];
   let start = 0,
@@ -108,7 +130,9 @@ const sqlList = (text) => {
   values.push(text.slice(start).trim());
   return values;
 };
+/** 提供报表 `sqlLiteral` 操作入口。 */
 const sqlLiteral = (text) => (text === 'NULL' ? null : text.startsWith("'") ? text.slice(1, -1).replace(/''/g, "'") : text);
+/** 提供报表 `seedRows` 操作入口。 */
 const seedRows = (schema, table) => {
   const rows = [];
   let columns;
@@ -132,12 +156,15 @@ const seedRows = (schema, table) => {
   }
   return rows;
 };
+/** 提供报表 `nativeMenus` 操作入口。 */
 const nativeMenus = (sql) =>
   [...sql.matchAll(/^INSERT INTO sys_menu \((.*?)\) SELECT (.*?) FROM DUAL /gm)].map((match) => {
     const values = sqlList(match[2]).map(sqlLiteral);
     return Object.fromEntries(sqlList(match[1]).map((column, i) => [column, values[i]]));
   });
+/** 提供报表 `legacyUrl` 操作入口。 */
 const legacyUrl = (path) => /\/(?:jmreport|jmubi|jimubi|drag|jmreport-designer)\//.test(path || '');
+/** 提供报表 `like` 操作入口。 */
 const like = (value, pattern) =>
   new RegExp(
     '^' +
@@ -148,8 +175,8 @@ const like = (value, pattern) =>
       '$'
   ).test(value || '');
 
-// Interpret the package SELECT expressions from the SQL without a database.
-// This runner supports only the functions needed by this migration.
+/** 在不连接数据库的情况下解释迁移脚本中的套餐查询表达式。 */
+/** 此测试解释器仅支持当前迁移脚本需要的函数。 */
 const sqlExpression = (expression, bindings) => {
   const text = expression.trim();
   if (Object.hasOwn(bindings, text)) return bindings[text];
@@ -171,6 +198,7 @@ const sqlExpression = (expression, bindings) => {
     }
   }
 };
+/** 提供报表 `cleanupFixture` 操作入口。 */
 const cleanupFixture = (sql, input) => {
   const state = structuredClone(input);
   const seed = sql.match(/INSERT INTO rpt_p0_legacy_menu_ids\s*\(menu_id\)\s*VALUES\s*([\s\S]*?);/);
@@ -228,9 +256,12 @@ const cleanupFixture = (sql, input) => {
   state.menus = state.menus.filter((menu) => !ids.has(menu.menu_id));
   return state;
 };
+/** 提供报表 `sampleMenu` 操作入口。 */
 const sampleMenu = (menu_id, path) => ({ menu_id, path });
+/** 提供报表 `fixture` 操作入口。 */
 const fixture = (menu_ids, menus = []) => ({ menus, grants: [], packages: [{ package_id: '1', menu_ids }] });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('bootstrap has one native report root and no legacy relative routes, URL menus or references', () => {
   const schema = read('script/sql/ry-vue.sql');
   const menus = [...seedRows(schema, 'sys_menu'), ...nativeMenus(schema)];
@@ -248,6 +279,7 @@ test('bootstrap has one native report root and no legacy relative routes, URL me
     for (const id of (entry.menu_ids || '').split(',')) assert.equal(knownLegacyMenuIds.includes(id.trim()), false, 'legacy package reference');
   }
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('updater removes the old relative menu tree while preserving native and ERP/MES report menus', () => {
   const keep = [sampleMenu('23000', 'report'), sampleMenu('4001', '/erp/report/stock'), sampleMenu('4002', '/mes/report/quality')];
   const input = fixture('3020,23000,3021,4001,3022,4002', [
@@ -273,6 +305,7 @@ test('updater removes the old relative menu tree while preserving native and ERP
     ['23000']
   );
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('updater removes every discovered URL ID and preserves unrelated IDs and ordering', () => {
   const input = fixture('901,13020,3020,902,23000,903,3021,3022,2053846181246812161,777', [
     sampleMenu('901', '/jmreport/list'),
@@ -287,6 +320,7 @@ test('updater removes every discovered URL ID and preserves unrelated IDs and or
   assert.deepEqual(result.grants, [{ role_id: '8', menu_id: '777' }]);
   assert.deepEqual(cleanupFixture(read(updatePath), result), result, 'second replay with legacy menus gone');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('replay repairs known orphan references when every old menu row is already gone', () => {
   const input = fixture('3022,3020,23000,3021,2053846181246812161', [sampleMenu('23000', 'report')]);
   input.grants = knownLegacyMenuIds.map((menu_id) => ({ role_id: '9', menu_id })).concat({ role_id: '9', menu_id: '23000' });
@@ -295,6 +329,7 @@ test('replay repairs known orphan references when every old menu row is already 
   assert.deepEqual(result.grants, [{ role_id: '9', menu_id: '23000' }]);
   assert.deepEqual(cleanupFixture(read(updatePath), result), result);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('package cleanup handles NULL, empty, all-legacy, duplicate and boundary IDs', () => {
   const input = {
     menus: [],
@@ -310,9 +345,30 @@ test('package cleanup handles NULL, empty, all-legacy, duplicate and boundary ID
     [null, '', '', '23000', '13020,30201,23000,30221']
   );
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('package cleanup preserves lists beyond GROUP_CONCAT default and sequence 1000', () => {
   const keep = Array.from({ length: 1100 }, (_, i) => String(i % 10));
   const before = [...keep.slice(0, 1050), '3020', ...keep.slice(1050), '3021', '3022'].join(',');
   assert.ok(before.length > 1024 && before.length <= 3000);
   assert.equal(cleanupFixture(read(updatePath), fixture(before)).packages[0].menu_ids, keep.join(','));
+});
+
+/** 扩展DDL与主安装一致，所有新资源、执行和容量记录都有隔离或全局命名策略。 */
+test('E2 to E7 extension tables and native menus match fresh install', () => {
+  const schema = read('script/sql/ry-vue.sql'),
+    increment = read('script/sql/update/2026-10-15-report-e2-e7.sql');
+  const names = [...increment.matchAll(/CREATE TABLE IF NOT EXISTS `([^`]+)`/g)].map((match) => match[1]);
+  assert.equal(names.length, 25);
+  for (const name of names) {
+    assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS `' + name + '`'), name);
+    assert.ok(increment.includes(name));
+  }
+  assert.doesNotMatch(increment, /DROP TABLE|DROP DATABASE|DELETE FROM/i);
+  for (const path of ['query', 'pivot', 'assets', 'batch', 'dashboard', 'subscription', 'delivery']) {
+    assert.ok(increment.includes("'report/" + path + "/index'"), path);
+    assert.ok(existsSync(resolve(root, 'plus-ui/src/views/report/' + path + '/index.vue')), path);
+  }
+  assert.match(increment, /uk_rpt_subscription_occurrence/);
+  assert.match(increment, /uk_rpt_delivery_execution/);
+  assert.match(increment, /idx_rpt_manifest_recovery/);
 });

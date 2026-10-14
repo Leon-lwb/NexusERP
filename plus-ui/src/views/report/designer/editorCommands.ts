@@ -1,19 +1,24 @@
 import type { DatasetView, DatasetVersionView, ReportDsl, ReportStyle, ReportColumn } from '@/types/report';
 import { fitColumns } from '../model';
+/** 提供报表 `clone` 操作入口。 */
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+/** 处理当前报表的 `indices` 操作。 */
 function indices(dsl: ReportDsl, selection: number[]): number[] {
   const result = [...new Set(selection)].sort((a, b) => a - b);
   if (!result.length || result.some((i) => !Number.isInteger(i) || i < 0 || i >= dsl.columns.length)) throw Error('请选择有效的明细列');
   return result;
 }
+/** 处理当前报表的 `styleColumns` 操作。 */
 export function styleColumns(dsl: ReportDsl, selection: number[], style: Partial<ReportStyle>): ReportDsl {
   const result = clone(dsl);
   for (const i of indices(dsl, selection)) result.columns[i].style = { ...result.columns[i].style, ...style };
   return result;
 }
+/** 处理当前报表的 `copyColumns` 操作。 */
 export function copyColumns(dsl: ReportDsl, selection: number[]): string {
   return JSON.stringify({ formatVersion: 1, datasetCode: dsl.datasetCode, columns: indices(dsl, selection).map((i) => dsl.columns[i]) });
 }
+/** 处理当前报表的 `pasteColumns` 操作。 */
 export function pasteColumns(dsl: ReportDsl, text: string): ReportDsl {
   if (text.length > 200000) throw Error('剪贴板内容超出限制');
   const value = JSON.parse(text);
@@ -58,6 +63,7 @@ export function pasteColumns(dsl: ReportDsl, text: string): ReportDsl {
   }
   return result;
 }
+/** 处理当前报表的 `upgradeDatasetVersion` 操作。 */
 export function upgradeDatasetVersion(dsl: ReportDsl, target: DatasetVersionView): ReportDsl {
   if (target.code !== dsl.datasetCode || !target.id) throw Error('目标数据契约不匹配');
   const result = clone(dsl);
@@ -75,6 +81,7 @@ export function upgradeDatasetVersion(dsl: ReportDsl, target: DatasetVersionView
   });
   return result;
 }
+/** 处理当前报表的 `boundDataset` 操作。 */
 export function boundDataset(datasets: DatasetView[], dsl: ReportDsl | undefined, version: DatasetVersionView | undefined): DatasetView | undefined {
   if (!dsl) return undefined;
   const head = datasets.find((d) => d.dataset.code === dsl.datasetCode);
@@ -83,10 +90,14 @@ export function boundDataset(datasets: DatasetView[], dsl: ReportDsl | undefined
   return head.dataset.publishedVersion === dsl.datasetVersionId ? head : undefined;
 }
 
+/** 声明EditorIssue结构，保留服务端精确值和固定版本约束。 */
 export interface EditorIssue {
+  /** 保存当前下标。 */
   index: number;
+  /** 保存当前 `message` 值。 */
   message: string;
 }
+/** 处理当前报表的 `editorIssues` 操作。 */
 export function editorIssues(dsl: ReportDsl, descriptor: import('@/types/report').DatasetDescriptor | undefined): EditorIssue[] {
   if (!descriptor) return [];
   const known = new Set(descriptor.fields.map((f) => f.name));

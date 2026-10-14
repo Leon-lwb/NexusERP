@@ -38,6 +38,8 @@
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -45,13 +47,35 @@ import { listReports, listVersions, rollbackReport } from '@/api/report';
 import type { ReportVersion, ReportDefinition } from '@/types/report';
 import { RequestGate } from '@/views/report/model';
 defineOptions({ name: 'ReportHistory' });
+/**
+ * 保存当前页面或测试的route状态。
+ */
 const route = useRoute();
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的versions状态。
+ */
 const versions = ref<ReportVersion[]>([]);
+/**
+ * 保存当前页面或测试的definition状态。
+ */
 const definition = ref<ReportDefinition>();
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的rollingBack状态。
+ */
 const rollingBack = ref('');
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   const id = String(route.query.id || '');
   const ticket = gate.begin();
@@ -72,6 +96,7 @@ async function load() {
     if (gate.current(ticket)) loading.value = false;
   }
 }
+/** 处理当前报表的 `rollback` 操作。 */
 async function rollback(version: ReportVersion) {
   if (!definition.value || rollingBack.value) return;
   const target = definition.value;

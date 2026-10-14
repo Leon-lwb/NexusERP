@@ -13,9 +13,14 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+/** 报表私有电子表格Temp测试，负责当前模块对应的契约或处理职责。 */
 class ReportPrivateSpreadsheetTempTest {
+    /** 测试私有目录。 */
     @TempDir Path directory;
 
+    /**
+     * 验证 {@code sxssfWritesOnlyToPrivateArtifactsAndCleansAfterSuccessOrCancellation} 场景下的结果与边界条件。
+     */
     @Test
     void sxssfWritesOnlyToPrivateArtifactsAndCleansAfterSuccessOrCancellation() throws Exception {
         var artifacts = new LocalReportArtifactStore(directory, 10 * 1024 * 1024);
@@ -54,7 +59,8 @@ class ReportPrivateSpreadsheetTempTest {
                 new ReportCancellation());
         assertTrue(output.size() > 1000);
         try (var files = Files.list(directory.resolve("A"))) {
-            assertEquals(0, files.count());
+            /** 围栏目录保留；可读业务文件及暂存必须全部释放。 */
+            assertEquals(0, files.filter(Files::isRegularFile).count());
         }
         var cancellation = new ReportCancellation();
         assertThrows(
@@ -69,10 +75,12 @@ class ReportPrivateSpreadsheetTempTest {
                                 new ByteArrayOutputStream(),
                                 cancellation));
         try (var files = Files.list(directory.resolve("A"))) {
-            assertEquals(0, files.count());
+            /** 围栏目录保留；可读业务文件及暂存必须全部释放。 */
+            assertEquals(0, files.filter(Files::isRegularFile).count());
         }
     }
 
+    /** 验证 {@code cancellationWhileCreatingGzipWriterClosesTheRawFileStream} 场景下的结果与边界条件。 */
     @Test
     void cancellationWhileCreatingGzipWriterClosesTheRawFileStream() throws Exception {
         var cancellation = new ReportCancellation();
@@ -108,7 +116,8 @@ class ReportPrivateSpreadsheetTempTest {
                         exporter.data(
                                 dsl, consumer -> {}, new ByteArrayOutputStream(), cancellation));
         try (var paths = Files.list(directory.resolve("A"))) {
-            assertEquals(0, paths.count());
+            /** 围栏目录保留；未封存的数据文件不得残留。 */
+            assertEquals(0, paths.filter(Files::isRegularFile).count());
         }
     }
 }

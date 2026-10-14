@@ -12,18 +12,52 @@
           <div v-for="(cell, index) in paper.cells" :key="index" class="paper-cell" :style="cellStyle(cell)">
             <div v-for="(line, lineIndex) in cell.lines" :key="lineIndex">{{ line || ' ' }}</div>
           </div>
+          <!-- 固定计划中的私有PNG与PDF使用相同坐标。 -->
+          <img
+            v-for="(media, index) in paper.media || []"
+            :key="'media-' + index"
+            :src="'data:image/png;base64,' + plan.rasters?.[media.resource]?.png"
+            alt="报表图片或业务条码"
+            :style="{
+              position: 'absolute',
+              left: media.x * ratio + 'px',
+              top: media.y * ratio + 'px',
+              width: media.width * ratio + 'px',
+              height: media.height * ratio + 'px'
+            }"
+          />
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, computed, watch } from 'vue';
 import type { RenderPlan, RenderCell } from '@/types/report';
-const props = defineProps<{ plan: RenderPlan }>();
+/**
+ * 保存当前页面或测试的props状态。
+ */
+const props = defineProps<{
+  /** 保存当前 `plan` 值。 */
+  plan: RenderPlan;
+}>();
+/**
+ * 保存当前页面或测试的ratio状态。
+ */
 const ratio = 4 / 3;
+/**
+ * 保存当前页面或测试的zoom状态。
+ */
 const zoom = ref(0.75);
+/**
+ * 保存当前页面或测试的pageNo状态。
+ */
 const pageNo = ref(1);
+/**
+ * 保存当前页面或测试的paper状态。
+ */
 const paper = computed(() => props.plan.pages[Math.min(pageNo.value - 1, props.plan.pages.length - 1)]);
 watch(
   () => props.plan,
@@ -31,6 +65,7 @@ watch(
     pageNo.value = 1;
   }
 );
+/** 处理当前报表的 `cellStyle` 操作。 */
 function cellStyle(cell: RenderCell) {
   return {
     left: cell.x * ratio + 'px',

@@ -11,9 +11,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 
+/** 报表任务进度测试，负责当前模块对应的契约或处理职责。 */
 class ReportJobProgressTest {
+    /** 测试私有目录。 */
     @TempDir Path directory;
 
+    /** 验证 {@code progressAndManualRetryKeepTheOriginalRunAndMonotonicAttemptFence} 场景下的结果与边界条件。 */
     @Test
     void progressAndManualRetryKeepTheOriginalRunAndMonotonicAttemptFence() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -42,6 +45,7 @@ class ReportJobProgressTest {
         }
     }
 
+    /** 验证 {@code permanentFailuresAndRevokedResourcesCannotRetry} 场景下的结果与边界条件。 */
     @Test
     void permanentFailuresAndRevokedResourcesCannotRetry() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -55,6 +59,9 @@ class ReportJobProgressTest {
         }
     }
 
+    /**
+     * 验证 {@code automaticRetryExhaustionAndQueuedCancellationKeepTheirExecutionPhase} 场景下的结果与边界条件。
+     */
     @Test
     void automaticRetryExhaustionAndQueuedCancellationKeepTheirExecutionPhase() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -82,6 +89,7 @@ class ReportJobProgressTest {
         }
     }
 
+    /** 验证 {@code expiringFinishedJobsSynchronizesStateAndPhase} 场景下的结果与边界条件。 */
     @Test
     void expiringFinishedJobsSynchronizesStateAndPhase() {
         try (var f = new RuntimeReviewFixture(directory)) {

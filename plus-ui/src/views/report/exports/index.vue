@@ -66,6 +66,8 @@
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { ElMessage } from 'element-plus';
 import { saveAs } from 'file-saver';
@@ -73,13 +75,37 @@ import { retryExport, listExportJobs, cancelExport, downloadExport } from '@/api
 import type { ExportJob } from '@/types/report';
 import { jobError, RequestGate } from '@/views/report/model';
 defineOptions({ name: 'ReportExports' });
+/**
+ * 保存当前页面或测试的jobs状态。
+ */
 const jobs = ref<ExportJob[]>([]);
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的downloading状态。
+ */
 const downloading = ref('');
+/**
+ * 保存当前页面或测试的failed状态。
+ */
 const failed = ref(false);
+/**
+ * 保存当前页面或测试的cancelling状态。
+ */
 const cancelling = ref('');
+/**
+ * 保存当前页面或测试的retrying状态。
+ */
 const retrying = ref('');
+/**
+ * 保存当前页面或测试的retryGate状态。
+ */
 const retryGate = new RequestGate();
+/**
+ * 保存当前页面或测试的phases状态。
+ */
 const phases: Record<string, string> = {
   QUEUED: '等待执行',
   PREPARING: '准备中',
@@ -92,6 +118,7 @@ const phases: Record<string, string> = {
   CANCEL_REQUESTED: '正在取消',
   EXPIRED: '到期'
 };
+/** 重新鉴权后请求原任务重试。 */
 async function retry(job: ExportJob) {
   if (!active || retrying.value) return;
   const ticket = retryGate.begin();
@@ -106,12 +133,33 @@ async function retry(job: ExportJob) {
     if (retryGate.current(ticket)) retrying.value = '';
   }
 }
+/**
+ * 保存当前页面或测试的active状态。
+ */
 let active = false;
+/**
+ * 保存当前页面或测试的requests状态。
+ */
 let requests = 0;
+/**
+ * 保存当前页面或测试的timer状态。
+ */
 let timer: ReturnType<typeof setInterval> | undefined;
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/**
+ * 保存当前页面或测试的downloadGate状态。
+ */
 const downloadGate = new RequestGate();
+/**
+ * 保存当前页面或测试的formats状态。
+ */
 const formats: Record<string, string> = { PDF: 'PDF', XLSX_DATA: '明细 XLSX', XLSX_LAYOUT: '样式 XLSX' };
+/**
+ * 保存当前页面或测试的states状态。
+ */
 const states: Record<string, string> = {
   QUEUED: '排队中',
   RUNNING: '生成中',
@@ -121,6 +169,7 @@ const states: Record<string, string> = {
   FAILED: '失败',
   EXPIRED: '已到期'
 };
+/** 处理当前报表的 `load` 操作。 */
 async function load(quiet = false) {
   if (quiet && requests > 0) return;
   const ticket = gate.begin();
@@ -144,22 +193,26 @@ async function load(quiet = false) {
     if (gate.current(ticket)) loading.value = false;
   }
 }
+/** 处理当前报表的 `schedule` 操作。 */
 function schedule() {
   if (timer) return;
   timer = setInterval(() => {
     if (jobs.value.some((j) => ['QUEUED', 'RUNNING', 'CANCEL_REQUESTED'].includes(j.state))) void load(true);
   }, 3000);
 }
+/** 处理当前报表的 `start` 操作。 */
 function start() {
   if (active) return;
   active = true;
   void load();
   schedule();
 }
+/** 处理当前报表的 `pause` 操作。 */
 function pause() {
   if (timer) clearInterval(timer);
   timer = undefined;
 }
+/** 处理当前报表的 `stop` 操作。 */
 function stop() {
   active = false;
   pause();
@@ -170,6 +223,7 @@ function stop() {
   loading.value = false;
   downloading.value = '';
 }
+/** 请求取消当前用户拥有的任务。 */
 async function cancel(job: ExportJob) {
   if (cancelling.value) return;
   cancelling.value = job.id;
@@ -181,6 +235,7 @@ async function cancel(job: ExportJob) {
     cancelling.value = '';
   }
 }
+/** 处理当前报表的 `download` 操作。 */
 async function download(job: ExportJob) {
   if (downloading.value) return;
   const ticket = downloadGate.begin();

@@ -21,21 +21,71 @@
   >
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, watch, onUnmounted } from 'vue';
 import { reportLookup } from '@/api/report';
 import { RequestGate } from '@/views/report/model';
-const props = defineProps<{ modelValue: string; version: string; parameter: string; label: string }>();
-const emit = defineEmits<{ 'update:modelValue': [string] }>();
-const options = ref<{ value: string; label: string }[]>([]);
+/**
+ * 保存当前页面或测试的props状态。
+ */
+const props = defineProps<{
+  /** 保存当前 `modelValue` 值。 */
+  modelValue: string;
+  /** 保存固定版本。 */
+  version: string;
+  /** 保存当前 `parameter` 值。 */
+  parameter: string;
+  /** 保存展示标题。 */
+  label: string;
+}>();
+/**
+ * 保存当前页面或测试的emit状态。
+ */
+const emit = defineEmits<{
+  /** 保存当前 `'update:modelValue'` 值。 */
+  'update:modelValue': [string];
+}>();
+/**
+ * 保存当前页面或测试的options状态。
+ */
+const options = ref<
+  {
+    /** 保存当前 `value` 值。 */
+    value: string;
+    /** 保存展示标题。 */
+    label: string;
+  }[]
+>([]);
+/**
+ * 保存当前页面或测试的total状态。
+ */
 const total = ref(0);
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的initialized状态。
+ */
 const initialized = ref(false);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/**
+ * 保存当前页面或测试的keyword状态。
+ */
 let keyword = '';
+/**
+ * 保存当前页面或测试的page状态。
+ */
 let page = 1;
+/** 处理当前报表的 `opened` 操作。 */
 async function opened(visible: boolean) {
   if (visible && !initialized.value && !loading.value) await search('');
 }
+/** 处理当前报表的 `search` 操作。 */
 async function search(value: string) {
   keyword = value;
   page = 1;
@@ -43,11 +93,13 @@ async function search(value: string) {
   total.value = 0;
   await load(false);
 }
+/** 处理当前报表的 `more` 操作。 */
 async function more() {
   if (loading.value) return;
   page++;
   await load(true);
 }
+/** 处理当前报表的 `load` 操作。 */
 async function load(append: boolean) {
   const ticket = gate.begin();
   loading.value = true;

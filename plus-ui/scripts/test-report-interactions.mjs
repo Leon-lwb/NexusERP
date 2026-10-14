@@ -7,11 +7,16 @@ import { pathToFileURL } from 'node:url';
 import { parse, compileScript } from '@vue/compiler-sfc';
 import { createRenderer, reactive, nextTick, h } from 'vue';
 await mkdir('node_modules/.tmp', { recursive: true });
+/**
+ * 保存当前页面或测试的apiNames状态。
+ */
 const apiNames = [
   'publishedReport',
   'createRun',
   'runPage',
   'runLayout',
+  'runPivot',
+  'runDrill',
   'enqueueExport',
   'listDatasets',
   'listCatalogs',
@@ -48,8 +53,12 @@ const apiNames = [
   'businessReportTemplates',
   'retryExport'
 ];
+/**
+ * 保存当前页面或测试的mockPlugin状态。
+ */
 const mockPlugin = {
   name: 'report-ui-fixtures',
+  /** 处理当前报表的 `setup` 操作。 */
   setup(b) {
     b.onResolve({ filter: /^(@\/api\/report|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/ }, (a) => ({
       path: a.path,
@@ -82,6 +91,9 @@ const mockPlugin = {
     });
   }
 };
+/**
+ * 保存当前页面或测试的componentPaths状态。
+ */
 const componentPaths = {
   acl: 'AclDialog',
   contract: 'DatasetContractBar',
@@ -100,18 +112,57 @@ for (const name of ['viewer', 'designer', 'dataset', 'history', 'exports', 'cent
     external: ['vue'],
     plugins: [mockPlugin]
   });
+/**
+ * 保存当前页面或测试的viewer状态。
+ */
 const viewer = (await import(pathToFileURL(resolve('node_modules/.tmp/report-viewer-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的designer状态。
+ */
 const designer = (await import(pathToFileURL(resolve('node_modules/.tmp/report-designer-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的dataset状态。
+ */
 const dataset = (await import(pathToFileURL(resolve('node_modules/.tmp/report-dataset-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的history状态。
+ */
 const history = (await import(pathToFileURL(resolve('node_modules/.tmp/report-history-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的exportsPage状态。
+ */
 const exportsPage = (await import(pathToFileURL(resolve('node_modules/.tmp/report-exports-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的center状态。
+ */
 const center = (await import(pathToFileURL(resolve('node_modules/.tmp/report-center-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的contract状态。
+ */
 const contract = (await import(pathToFileURL(resolve('node_modules/.tmp/report-contract-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的batch状态。
+ */
 const batch = (await import(pathToFileURL(resolve('node_modules/.tmp/report-batch-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的lookup状态。
+ */
 const lookup = (await import(pathToFileURL(resolve('node_modules/.tmp/report-lookup-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的templateDialog状态。
+ */
 const templateDialog = (await import(pathToFileURL(resolve('node_modules/.tmp/report-package-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的business状态。
+ */
 const business = (await import(pathToFileURL(resolve('node_modules/.tmp/report-business-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的acl状态。
+ */
 const acl = (await import(pathToFileURL(resolve('node_modules/.tmp/report-acl-interaction.mjs')))).default;
+/**
+ * 保存当前页面或测试的renderer状态。
+ */
 const renderer = createRenderer({
   createElement: () => ({}),
   createComment: () => ({}),
@@ -125,6 +176,9 @@ const renderer = createRenderer({
   parentNode: () => null,
   nextSibling: () => null
 });
+/**
+ * 保存当前页面或测试的dsl状态。
+ */
 const dsl = {
   schemaVersion: 1,
   code: 'REPORT_A',
@@ -149,10 +203,12 @@ const dsl = {
   summaries: [],
   repeatHeader: true
 };
+/** 读取可编辑定义详情。 */
 const detail = () => ({
   definition: { id: '9223372036854775806', code: 'REPORT_A', name: '合成样本', kind: 'TABLE', catalogId: null, revision: 7, status: 'DRAFT' },
   dsl: structuredClone(dsl)
 });
+/** 提供报表 `defer` 操作入口。 */
 const defer = () => {
   let resolve;
   let reject;
@@ -162,10 +218,12 @@ const defer = () => {
   });
   return { promise, resolve, reject };
 };
+/** 处理当前报表的 `flush` 操作。 */
 async function flush() {
   await new Promise((r) => setImmediate(r));
   await nextTick();
 }
+/** 处理当前报表的 `mount` 操作。 */
 function mount(component, id = '9223372036854775806', overrides = {}, props = {}) {
   const fixture = {
     route: reactive({ query: { id } }),
@@ -214,6 +272,7 @@ function mount(component, id = '9223372036854775806', overrides = {}, props = {}
   const vm = app.mount({});
   return { fixture, props: inputs, state: vm.$.subTree.component.setupState, unmount: () => app.unmount() };
 }
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('document viewer completes loading when default mode changes to SNAPSHOT', async () => {
   const x = mount(viewer, 'doc', {
     publishedReport: async () => ({ data: { number: 1, versionId: 'version', dsl: { ...structuredClone(dsl), kind: 'DOCUMENT' } } })
@@ -224,6 +283,7 @@ test('document viewer completes loading when default mode changes to SNAPSHOT', 
   assert.equal(x.state.published.dsl.kind, 'DOCUMENT');
   x.unmount();
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late published definition cannot override a newer route', async () => {
   const a = defer();
   const b = defer();
@@ -238,6 +298,7 @@ test('late published definition cannot override a newer route', async () => {
   assert.equal(x.state.loading, false);
   x.unmount();
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('changing input discards a run reply before fetching its page', async () => {
   const pending = defer();
   let pages = 0;
@@ -257,6 +318,7 @@ test('changing input discards a run reply before fetching its page', async () =>
   assert.equal(pages, 0);
   x.unmount();
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('failed designer validation cannot write a definition', async () => {
   let writes = 0;
   const x = mount(designer, '9223372036854775806', {
@@ -273,6 +335,7 @@ test('failed designer validation cannot write a definition', async () => {
   assert.equal(x.state.definition.revision, 7);
   x.unmount();
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('optimistic save uses loaded revision and preserves edits made during the request', async () => {
   const pending = defer();
   let sent;
@@ -295,6 +358,7 @@ test('optimistic save uses loaded revision and preserves edits made during the r
   assert.equal(x.state.dirty, true);
   x.unmount();
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('publishing submits saved revision and never the stale revision', async () => {
   const sequence = [];
   const x = mount(designer, '9223372036854775806', {
@@ -316,13 +380,17 @@ test('publishing submits saved revision and never the stale revision', async () 
   x.unmount();
 });
 
+/** 提供报表 `reportAt` 操作入口。 */
 const reportAt = (id) => ({ definition: { ...detail().definition, id, name: id }, dsl: { ...structuredClone(dsl), title: id } });
+/** 提供报表 `previewResult` 操作入口。 */
 const previewResult = () => ({ rows: [], total: 0, summaries: [], plan: null, dataTime: '2026-10-14T00:00:00Z' });
+/** 提供报表 `datasetFixture` 操作入口。 */
 const datasetFixture = (id) => ({
   dataset: { id, code: id, status: 'ACTIVE' },
   descriptor: { code: id, parameters: [], defaultColumns: [], fields: [] }
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('route change during validation cannot save the prior DSL into the next report', async (t) => {
   const pending = defer();
   const writes = [];
@@ -345,6 +413,7 @@ test('route change during validation cannot save the prior DSL into the next rep
   assert.equal(x.state.definition.id, 'B');
   assert.equal(x.state.dsl.title, 'B');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late save response cannot replace a newer report or redirect its route', async (t) => {
   const pending = defer();
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }), saveReport: () => pending.promise });
@@ -361,6 +430,7 @@ test('late save response cannot replace a newer report or redirect its route', a
   assert.equal(x.state.definition.id, 'B');
   assert.equal(x.state.dsl.title, 'B');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('save and publish does not publish a stale draft when edits arrive during saving', async (t) => {
   const pending = defer();
   let publishes = 0;
@@ -383,6 +453,7 @@ test('save and publish does not publish a stale draft when edits arrive during s
   assert.equal(x.state.dirty, true);
   assert.equal(x.state.dsl.title, 'later edit');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('unapplied definition text is dirty and cannot silently save the previous canvas', async (t) => {
   let writes = 0;
   const x = mount(designer, 'A', {
@@ -401,6 +472,7 @@ test('unapplied definition text is dirty and cannot silently save the previous c
   assert.equal(await x.state.save(), false);
   assert.equal(writes, 0);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('navigation is blocked while a draft write is in flight', async (t) => {
   const pending = defer();
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }), saveReport: () => pending.promise });
@@ -414,6 +486,7 @@ test('navigation is blocked while a draft write is in flight', async (t) => {
   assert.equal(mayLeave, false);
   assert.equal(await x.fixture.guards.leave(), true);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late validated JSON cannot overwrite a newly selected report', async (t) => {
   const pending = defer();
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }), validateDraft: () => pending.promise });
@@ -427,6 +500,7 @@ test('late validated JSON cannot overwrite a newly selected report', async (t) =
   await request;
   assert.equal(x.state.dsl.title, 'B');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('changing draft preview parameters discards pending data and releases the spinner', async (t) => {
   const pending = defer();
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }), previewDraft: () => pending.promise });
@@ -440,6 +514,7 @@ test('changing draft preview parameters discards pending data and releases the s
   assert.equal(x.state.previewData, undefined);
   assert.equal(x.state.previewing, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('changing dataset sample parameters discards pending data', async (t) => {
   const pending = defer();
   const x = mount(dataset, '', { sampleDataset: () => pending.promise });
@@ -454,6 +529,7 @@ test('changing dataset sample parameters discards pending data', async (t) => {
   assert.equal(x.state.sampleData, undefined);
   assert.equal(x.state.sampling, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('switching datasets releases the previous sample spinner', async (t) => {
   const pending = defer();
   const x = mount(dataset, '', { sampleDataset: () => pending.promise });
@@ -468,6 +544,7 @@ test('switching datasets releases the previous sample spinner', async (t) => {
   assert.equal(x.state.sampleData, undefined);
   assert.equal(x.state.selected.dataset.id, 'B');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('ACL opens with its grants loaded and never saves after a failed read', async (t) => {
   let writes = 0;
   const x = mount(
@@ -489,6 +566,7 @@ test('ACL opens with its grants loaded and never saves after a failed read', asy
   assert.equal(writes, 0);
   assert.equal(x.fixture.errors.length, 0);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late ACL save cannot close authorization for another resource', async (t) => {
   const pending = defer();
   const closes = [];
@@ -513,6 +591,7 @@ test('late ACL save cannot close authorization for another resource', async (t) 
   assert.equal(x.state.grants[0].action, 'VIEW');
   assert.equal(x.state.saving, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('rollback confirmation does not write into a newly selected report', async (t) => {
   const pending = defer();
   const writes = [];
@@ -532,6 +611,7 @@ test('rollback confirmation does not write into a newly selected report', async 
   await request;
   assert.deepEqual(writes, []);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('failed export refresh releases loading so the user can retry', async (t) => {
   const x = mount(exportsPage, '', {
     listExportJobs: async () => {
@@ -546,6 +626,7 @@ test('failed export refresh releases loading so the user can retry', async (t) =
   assert.equal(x.state.jobs[0].id, 'job');
   assert.equal(x.state.loading, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('clearing a viewer route during metadata loading releases its overlay', async (t) => {
   const pending = defer();
   const x = mount(viewer, 'A', { publishedReport: () => pending.promise });
@@ -558,6 +639,7 @@ test('clearing a viewer route during metadata loading releases its overlay', asy
   assert.equal(x.state.loading, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('viewer defaults to SNAPSHOT for server-supported lower-case and unary aggregates', async (t) => {
   const x = mount(viewer, 'A', {
     publishedReport: async () => ({
@@ -568,6 +650,7 @@ test('viewer defaults to SNAPSHOT for server-supported lower-case and unary aggr
   await flush();
   assert.equal(x.state.mode, 'SNAPSHOT');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('center refresh retains the newest list when responses arrive backwards', async (t) => {
   const a = defer();
   const b = defer();
@@ -581,6 +664,7 @@ test('center refresh retains the newest list when responses arrive backwards', a
   await flush();
   assert.equal(x.state.reports[0].id, 'B');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('a dataset refresh cannot be overwritten by the preceding response', async (t) => {
   const a = defer();
   const b = defer();
@@ -594,6 +678,7 @@ test('a dataset refresh cannot be overwritten by the preceding response', async 
   await flush();
   assert.equal(x.state.datasets[0].dataset.id, 'B');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('validated JSON does not overwrite canvas edits made during validation', async (t) => {
   const pending = defer();
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }), validateDraft: () => pending.promise });
@@ -606,6 +691,7 @@ test('validated JSON does not overwrite canvas edits made during validation', as
   await request;
   assert.equal(x.state.dsl.title, 'later canvas edit');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('ACL save captures its submitted grants and handles a denied write without closing', async (t) => {
   const pending = defer();
   let sent;
@@ -633,6 +719,7 @@ test('ACL save captures its submitted grants and handles a denied write without 
   assert.equal(x.state.saving, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('export polling resumes after a failed refresh is retried successfully', async (t) => {
   const polls = [];
   t.mock.method(globalThis, 'setInterval', (callback) => {
@@ -651,6 +738,7 @@ test('export polling resumes after a failed refresh is retried successfully', as
   await x.state.load();
   assert.equal(polls.length, 2);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('slow export polling does not repeatedly invalidate an in-flight response', async (t) => {
   let poll;
   let calls = 0;
@@ -673,6 +761,7 @@ test('slow export polling does not repeatedly invalidate an in-flight response',
   assert.equal(x.state.jobs[0].state, 'SUCCEEDED');
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('designer undo and redo restore saved dirty state and preserve exact IDs', async (t) => {
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }) });
   t.after(x.unmount);
@@ -691,6 +780,7 @@ test('designer undo and redo restore saved dirty state and preserve exact IDs', 
   assert.equal(x.state.dirty, true);
   assert.equal(x.state.dsl.datasetVersionId, '9223372036854775807');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('designer new edits clear redo and route loading resets history without false dirty', async (t) => {
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }) });
   t.after(x.unmount);
@@ -710,6 +800,7 @@ test('designer new edits clear redo and route loading resets history without fal
   assert.equal(x.state.canRedo, false);
   assert.equal(x.state.dirty, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('undo reaches the saved snapshot after an edit made while saving and history is excluded from writes', async (t) => {
   const pending = defer();
   let sent;
@@ -738,6 +829,7 @@ test('undo reaches the saved snapshot after an edit made while saving and histor
   assert.equal(x.state.dirty, false);
   assert.deepEqual(Object.keys(sent), Object.keys(dsl));
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('save conflict retains undo and redo while the server revision stays unchanged', async (t) => {
   const x = mount(designer, 'A', {
     reportDetail: async (id) => ({ data: reportAt(id) }),
@@ -758,6 +850,7 @@ test('save conflict retains undo and redo while the server revision stays unchan
   await nextTick();
   assert.equal(x.state.dsl.title, 'conflicting edit');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('applied JSON participates in history and undo refreshes the JSON editor without false dirty', async (t) => {
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }) });
   t.after(x.unmount);
@@ -779,6 +872,7 @@ test('applied JSON participates in history and undo refreshes the JSON editor wi
   assert.equal(x.state.jsonDirty, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('creating a report resets history that could restore a now-immutable kind or code', async (t) => {
   const source = {
     dataset: { id: 'dataset', code: 'TEST', publishedVersion: '9223372036854775807', status: 'ACTIVE' },
@@ -811,6 +905,7 @@ test('creating a report resets history that could restore a now-immutable kind o
   assert.equal(x.state.dsl.kind, 'DOCUMENT');
   assert.equal(x.state.dirty, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late export enqueue does not announce success for a different report', async (t) => {
   const pending = defer();
   const x = mount(viewer, 'A', { enqueueExport: () => pending.promise });
@@ -826,6 +921,7 @@ test('late export enqueue does not announce success for a different report', asy
   assert.equal(x.state.exporting, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('contract control uses the pinned version and discards a late old-version response', async (t) => {
   const old = defer();
   const next = defer();
@@ -849,6 +945,7 @@ test('contract control uses the pinned version and discards a late old-version r
   assert.equal(x.state.version.id, 'new');
   assert.equal(x.state.isCurrent, true);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('contract upgrade does not apply a confirmation to a changed draft', async (t) => {
   const confirmation = defer();
   const updates = [];
@@ -873,6 +970,7 @@ test('contract upgrade does not apply a confirmation to a changed draft', async 
   await changing;
   assert.equal(updates.length, 0);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('remote lookup discards results from an older search and keeps IDs exact', async (t) => {
   const first = defer();
   const last = defer();
@@ -891,6 +989,7 @@ test('remote lookup discards results from an older search and keeps IDs exact', 
   await a;
   assert.equal(x.state.options[0].value, '9223372036854775807');
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('business entry transfers the exact document ID and only the approved parameter', async (t) => {
   const x = mount(business, 'A', {}, { datasetCode: 'ERP_PURCHASE_ORDER_DOCUMENT', parameter: 'orderId', recordId: '9223372036854775807' });
   t.after(x.unmount);
@@ -902,6 +1001,7 @@ test('business entry transfers the exact document ID and only the approved param
   assert.equal(route.query.orderId, '9223372036854775807');
   assert.deepEqual(Object.keys(route.query).sort(), ['id', 'orderId']);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('manual retry sends the displayed round and keeps the original job identity', async (t) => {
   let request;
   const x = mount(exportsPage, 'A', {
@@ -916,6 +1016,7 @@ test('manual retry sends the displayed round and keeps the original job identity
   assert.deepEqual(request, ['job1', 1]);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('lookup popup visibility changes cannot restart the initial query or clear loaded options', async (t) => {
   const pending = defer();
   let calls = 0;
@@ -943,6 +1044,7 @@ test('lookup popup visibility changes cannot restart the initial query or clear 
   assert.equal(x.state.loading, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late failure of an old lookup page cannot roll back the new search page', async (t) => {
   const pending = defer();
   const calls = [];
@@ -968,6 +1070,7 @@ test('late failure of an old lookup page cannot roll back the new search page', 
   assert.deepEqual(calls.at(-1), { keyword: 'new', page: 2 });
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('closing and reopening import discards the previous session response without disturbing the new submission', async (t) => {
   const first = defer();
   const second = defer();
@@ -1012,6 +1115,7 @@ test('closing and reopening import discards the previous session response withou
   assert.equal(x.props.modelValue, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late template file read cannot restore a package into a reopened import session', async (t) => {
   const pending = defer();
   const x = mount(templateDialog, 'A', {}, { modelValue: true, datasets: [] });
@@ -1027,6 +1131,7 @@ test('late template file read cannot restore a package into a reopened import se
   assert.deepEqual(x.state.pack, { current: true });
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late package export for another editor context cannot download under the new report code', async (t) => {
   const pending = defer();
   const x = mount(designer, 'A', { reportDetail: async (id) => ({ data: reportAt(id) }), exportTemplatePackage: () => pending.promise });
@@ -1040,6 +1145,7 @@ test('late package export for another editor context cannot download under the n
   assert.equal(x.fixture.downloads.length, 0);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('late retry after leaving and reentering exports cannot refresh or announce an old action', async (t) => {
   const pending = defer();
   let reads = 0;
@@ -1063,6 +1169,7 @@ test('late retry after leaving and reentering exports cannot refresh or announce
   assert.deepEqual(x.fixture.messages, []);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('cancelled contract upgrade cannot discard a still-loading historical descriptor', async (t) => {
   const pending = defer();
   const x = mount(
@@ -1088,6 +1195,7 @@ test('cancelled contract upgrade cannot discard a still-loading historical descr
   assert.equal(x.state.version?.id, 'old');
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('changing a declared business parameter on the same viewer route discards the previous document', async (t) => {
   const x = mount(viewer, 'A', {
     publishedReport: async () => ({
@@ -1109,6 +1217,7 @@ test('changing a declared business parameter on the same viewer route discards t
   assert.equal(x.state.run, undefined);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('copy confirmation completed after unmount cannot create another draft', async () => {
   const confirmation = defer();
   let writes = 0;
@@ -1126,6 +1235,7 @@ test('copy confirmation completed after unmount cannot create another draft', as
   assert.equal(writes, 0);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('copy response completed after unmount cannot force navigation', async () => {
   const pending = defer();
   const navigation = [];
@@ -1139,6 +1249,7 @@ test('copy response completed after unmount cannot force navigation', async () =
   assert.deepEqual(navigation, []);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('batch selection follows field identity when columns are reordered', async (t) => {
   const first = { ...structuredClone(dsl.columns[0]), field: 'a', label: 'A' };
   const second = { ...structuredClone(dsl.columns[0]), field: 'b', label: 'B' };
@@ -1159,6 +1270,7 @@ test('batch selection follows field identity when columns are reordered', async 
   assert.equal(updates[0].columns.find((c) => c.field === 'b').style.bold, false);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('confirmed contract upgrade exposes newly required parameters in the normal editor model', async (t) => {
   const updates = [];
   const required = { name: 'orderId', label: '单据', type: 'ID', required: true, defaultValue: null };

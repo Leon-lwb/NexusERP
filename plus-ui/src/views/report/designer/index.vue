@@ -226,6 +226,9 @@
               </el-form>
             </aside></div
         ></el-tab-pane>
+        <el-tab-pane v-if="dsl.kind === 'DOCUMENT'" label="新版打印" name="print"
+          ><PrintSettings v-model="dsl" :fields="selectedDataset?.descriptor.fields || []" :disabled="saving || publishing || applying"
+        /></el-tab-pane>
         <el-tab-pane label="纸张与分页" name="paper"
           ><el-form inline label-position="top"
             ><el-form-item v-for="setting in paperSettings" :key="setting.key" :label="setting.label + '（pt）'"
@@ -313,6 +316,8 @@
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, reactive, computed, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -337,47 +342,172 @@ import TypedTable from '@/components/report/TypedTable.vue';
 import ReportPaper from '@/components/report/ReportPaper.vue';
 import DatasetContractBar from '@/components/report/DatasetContractBar.vue';
 import DesignerBatchTools from '@/components/report/DesignerBatchTools.vue';
+import PrintSettings from '@/components/report/PrintSettings.vue';
 import { editorIssues, boundDataset } from './editorCommands';
 import { exportTemplatePackage } from '@/api/report';
 import type { DatasetVersionView } from '@/types/report';
 defineOptions({ name: 'ReportDesigner' });
+/**
+ * 保存当前页面或测试的route状态。
+ */
 const route = useRoute();
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的saving状态。
+ */
 const saving = ref(false);
+/**
+ * 保存当前页面或测试的publishing状态。
+ */
 const publishing = ref(false);
+/**
+ * 保存当前页面或测试的checking状态。
+ */
 const checking = ref(false);
+/**
+ * 保存当前页面或测试的previewing状态。
+ */
 const previewing = ref(false);
+/**
+ * 保存当前页面或测试的definition状态。
+ */
 const definition = ref<ReportDefinition>();
+/**
+ * 保存当前页面或测试的dsl状态。
+ */
 const dsl = ref<ReportDsl>();
+/**
+ * 保存当前页面或测试的datasets状态。
+ */
 const datasets = ref<DatasetView[]>([]);
+/**
+ * 保存当前页面或测试的boundVersion状态。
+ */
 const boundVersion = ref<DatasetVersionView>();
+/**
+ * 保存当前页面或测试的catalogs状态。
+ */
 const catalogs = ref<ReportCatalog[]>([]);
+/**
+ * 保存当前页面或测试的catalogId状态。
+ */
 const catalogId = ref<string | null>(null);
+/**
+ * 保存当前页面或测试的savedJson状态。
+ */
 const savedJson = ref('');
+/**
+ * 保存当前页面或测试的tab状态。
+ */
 const tab = ref('canvas');
+/**
+ * 保存当前页面或测试的jsonText状态。
+ */
 const jsonText = ref('');
+/**
+ * 保存当前页面或测试的jsonBaseline状态。
+ */
 const jsonBaseline = ref('');
+/**
+ * 保存当前页面或测试的applying状态。
+ */
 const applying = ref(false);
+/**
+ * 保存当前页面或测试的editorContext状态。
+ */
 let editorContext = 0;
+/**
+ * 保存当前页面或测试的history状态。
+ */
 const history = reactive(new DslHistory(50));
+/**
+ * 保存当前页面或测试的canUndo状态。
+ */
 const canUndo = computed(() => history.canUndo);
+/**
+ * 保存当前页面或测试的canRedo状态。
+ */
 const canRedo = computed(() => history.canRedo);
+/**
+ * 保存当前页面或测试的parameters状态。
+ */
 const parameters = ref<Record<string, string>>({});
+/**
+ * 保存当前页面或测试的previewData状态。
+ */
 const previewData = ref<DraftPreview>();
+/**
+ * 保存当前页面或测试的previewOpen状态。
+ */
 const previewOpen = ref(false);
+/**
+ * 保存当前页面或测试的summaryField状态。
+ */
 const summaryField = ref('');
+/**
+ * 保存当前页面或测试的loadGate状态。
+ */
 const loadGate = new RequestGate();
+/**
+ * 保存当前页面或测试的previewGate状态。
+ */
 const previewGate = new RequestGate();
+/**
+ * 保存当前页面或测试的dragIndex状态。
+ */
 let dragIndex = -1;
+/** 声明Band结构，保留服务端精确值和固定版本约束。 */
 type Band = 'headerRows' | 'footerRows';
-type Selection = { type: 'column'; index: number } | { type: 'cell'; band: Band; row: number; cell: number };
+/** 声明Selection结构，保留服务端精确值和固定版本约束。 */
+type Selection =
+  | {
+      /** 保存当前 `type` 值。 */
+      type: 'column';
+      /** 保存当前下标。 */
+      index: number;
+    }
+  | {
+      /** 保存当前 `type` 值。 */
+      type: 'cell';
+      /** 保存当前 `band` 值。 */
+      band: Band;
+      /** 保存当前精确业务行。 */
+      row: number;
+      /** 保存当前 `cell` 值。 */
+      cell: number;
+    };
+/**
+ * 保存当前页面或测试的selection状态。
+ */
 const selection = ref<Selection>();
-const bands: { key: Band; label: string }[] = [
+/**
+ * 保存当前页面或测试的bands状态。
+ */
+const bands: {
+  /** 保存当前 `key` 值。 */
+  key: Band;
+  /** 保存展示标题。 */
+  label: string;
+}[] = [
   { key: 'headerRows', label: '固定页眉' },
   { key: 'footerRows', label: '末页固定区' }
 ];
-const paperSettings: { key: keyof ReportPage; label: string }[] = [
+/**
+ * 保存当前页面或测试的paperSettings状态。
+ */
+const paperSettings: {
+  /** 保存当前 `key` 值。 */
+  key: keyof ReportPage;
+  /** 保存展示标题。 */
+  label: string;
+}[] = [
   { key: 'width', label: '纸张宽度' },
   { key: 'height', label: '纸张高度' },
   { key: 'marginTop', label: '上边距' },
@@ -386,20 +516,51 @@ const paperSettings: { key: keyof ReportPage; label: string }[] = [
   { key: 'marginLeft', label: '左边距' },
   { key: 'rowHeight', label: '明细行高' }
 ];
+/**
+ * 保存当前页面或测试的selectedDataset状态。
+ */
 const selectedDataset = computed(() => boundDataset(datasets.value, dsl.value, boundVersion.value));
+/**
+ * 保存当前页面或测试的structuralIssues状态。
+ */
 const structuralIssues = computed(() => (dsl.value ? editorIssues(dsl.value, selectedDataset.value?.descriptor) : []));
+/**
+ * 保存当前页面或测试的selectedColumn状态。
+ */
 const selectedColumn = computed(() => (selection.value?.type === 'column' ? dsl.value?.columns[selection.value.index] : undefined));
+/**
+ * 保存当前页面或测试的selectedBandRow状态。
+ */
 const selectedBandRow = computed(() => (selection.value?.type === 'cell' ? dsl.value?.[selection.value.band][selection.value.row] : undefined));
+/**
+ * 保存当前页面或测试的selectedCell状态。
+ */
 const selectedCell = computed(() => (selection.value?.type === 'cell' ? selectedBandRow.value?.cells[selection.value.cell] : undefined));
+/**
+ * 保存当前页面或测试的remainingBandRows状态。
+ */
 const remainingBandRows = computed(() =>
   selection.value?.type === 'cell' ? (dsl.value?.[selection.value.band].length || 0) - selection.value.row : 1
 );
+/**
+ * 保存当前页面或测试的selectedStyle状态。
+ */
 const selectedStyle = computed(() => selectedColumn.value?.style || selectedCell.value?.style);
+/**
+ * 保存当前页面或测试的jsonDirty状态。
+ */
 const jsonDirty = computed(() => jsonText.value !== jsonBaseline.value);
+/**
+ * 保存当前页面或测试的dirty状态。
+ */
 const dirty = computed(() => jsonDirty.value || (!!dsl.value && JSON.stringify(dsl.value) !== savedJson.value));
+/**
+ * 保存当前页面或测试的summaryFields状态。
+ */
 const summaryFields = computed(
   () => selectedDataset.value?.descriptor.fields.filter((f) => f.aggregatable && ['DECIMAL', 'INTEGER'].includes(f.type)) || []
 );
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   const id = String(route.query.id || '');
   if (id && definition.value?.id === id) return;
@@ -443,6 +604,7 @@ async function load() {
     if (loadGate.current(ticket)) loading.value = false;
   }
 }
+/** 处理当前报表的 `chooseDataset` 操作。 */
 function chooseDataset(id: string) {
   const dataset = datasets.value.find((d) => d.dataset.id === id);
   if (!dataset) return;
@@ -452,6 +614,7 @@ function chooseDataset(id: string) {
   savedJson.value = '';
   history.reset(dsl.value);
 }
+/** 处理当前报表的 `insertField` 操作。 */
 function insertField(field: DatasetField) {
   if (!dsl.value) return;
   try {
@@ -460,14 +623,17 @@ function insertField(field: DatasetField) {
     ElMessage.warning((error as Error).message);
   }
 }
+/** 处理当前报表的 `dragField` 操作。 */
 function dragField(event: DragEvent, name: string) {
   event.dataTransfer?.setData('report-field', name);
 }
+/** 处理当前报表的 `dropField` 操作。 */
 function dropField(event: DragEvent) {
   const name = event.dataTransfer?.getData('report-field');
   const field = selectedDataset.value?.descriptor.fields.find((f) => f.name === name);
   if (field) insertField(field);
 }
+/** 处理当前报表的 `reorder` 操作。 */
 function reorder(index: number) {
   if (dsl.value && dragIndex >= 0) {
     dsl.value = moveColumn(dsl.value, dragIndex, index);
@@ -475,6 +641,7 @@ function reorder(index: number) {
     dragIndex = -1;
   }
 }
+/** 处理当前报表的 `insertFormula` 操作。 */
 async function insertFormula() {
   if (!dsl.value) return;
   try {
@@ -495,11 +662,13 @@ async function insertFormula() {
     selection.value = { type: 'column', index: dsl.value.columns.length - 1 };
   } catch {}
 }
+/** 处理当前报表的 `deleteColumn` 操作。 */
 function deleteColumn() {
   if (!dsl.value || selection.value?.type !== 'column') return;
   dsl.value = removeColumn(dsl.value, selection.value.index);
   selection.value = undefined;
 }
+/** 处理当前报表的 `addBand` 操作。 */
 function addBand(band: Band) {
   if (!dsl.value) return;
   dsl.value[band].push({
@@ -508,12 +677,14 @@ function addBand(band: Band) {
   });
   selection.value = { type: 'cell', band, row: dsl.value[band].length - 1, cell: 0 };
 }
+/** 处理当前报表的 `mergeRow` 操作。 */
 function mergeRow(band: Band, index: number) {
   if (!dsl.value) return;
   const row = dsl.value[band][index];
   row.cells = [{ column: 0, colSpan: dsl.value.columns.length, rowSpan: 1, text: row.cells[0]?.text || '', field: null, style: normalStyle() }];
   selection.value = { type: 'cell', band, row: index, cell: 0 };
 }
+/** 处理当前报表的 `splitRow` 操作。 */
 function splitRow(band: Band, index: number) {
   if (!dsl.value) return;
   const row = dsl.value[band][index];
@@ -527,23 +698,28 @@ function splitRow(band: Band, index: number) {
   }));
   selection.value = { type: 'cell', band, row: index, cell: 0 };
 }
+/** 处理当前报表的 `bindingLabel` 操作。 */
 function bindingLabel(field: string) {
   return '{{' + field + '}}';
 }
+/** 处理当前报表的 `isCellSelected` 操作。 */
 function isCellSelected(band: Band, row: number, cell: number) {
   return selection.value?.type === 'cell' && selection.value.band === band && selection.value.row === row && selection.value.cell === cell;
 }
+/** 处理当前报表的 `bandGrid` 操作。 */
 function bandGrid(band: Band) {
   return {
     gridTemplateColumns: dsl.value!.columns.map((c) => c.width + 'fr').join(' '),
     gridTemplateRows: dsl.value![band].map((r) => Math.max(32, r.height) + 'px').join(' ')
   };
 }
+/** 处理当前报表的 `addSummary` 操作。 */
 function addSummary() {
   const field = summaryFields.value.find((f) => f.name === summaryField.value);
   if (dsl.value && field) dsl.value.summaries.push(summaryFor(field));
   else ElMessage.warning('请选择允许汇总的数值字段');
 }
+/** 检查定义或查询是否满足受限契约。 */
 async function validate() {
   if (!dsl.value || checking.value || saving.value || publishing.value || applying.value) return;
   const context = editorContext;
@@ -557,10 +733,12 @@ async function validate() {
     if (context === editorContext) checking.value = false;
   }
 }
+/** 处理当前报表的 `save` 操作。 */
 async function save(): Promise<boolean> {
   if (publishing.value) return false;
   return persistDraft();
 }
+/** 处理当前报表的 `persistDraft` 操作。 */
 async function persistDraft(): Promise<boolean> {
   if (!dsl.value || saving.value || applying.value) return false;
   if (jsonDirty.value) {
@@ -589,13 +767,25 @@ async function persistDraft(): Promise<boolean> {
     ElMessage.success('草稿已保存');
     return true;
   } catch (error) {
-    if (context === editorContext && (error as { response?: { status: number } })?.response?.status === 409)
+    if (
+      context === editorContext &&
+      (
+        error as {
+          /** 保存当前 `response` 值。 */
+          response?: {
+            /** 保存当前 `status` 值。 */
+            status: number;
+          };
+        }
+      )?.response?.status === 409
+    )
       ElMessage.warning('草稿已被其他人修改，请重新读取后再编辑');
     return false;
   } finally {
     if (context === editorContext) saving.value = false;
   }
 }
+/** 在修订与授权检查后创建不可变发布版本。 */
 async function publish() {
   if (publishing.value || saving.value || applying.value) return;
   const context = editorContext;
@@ -618,10 +808,12 @@ async function publish() {
     if (context === editorContext) publishing.value = false;
   }
 }
+/** 处理当前报表的 `preview` 操作。 */
 function preview() {
   previewOpen.value = true;
   void fetchPreview();
 }
+/** 处理当前报表的 `fetchPreview` 操作。 */
 async function fetchPreview() {
   if (!dsl.value) return;
   const ticket = previewGate.begin();
@@ -634,6 +826,7 @@ async function fetchPreview() {
     if (previewGate.current(ticket)) previewing.value = false;
   }
 }
+/** 处理当前报表的 `applyJson` 操作。 */
 async function applyJson() {
   if (!dsl.value || saving.value || publishing.value || applying.value) return;
   const context = editorContext;
@@ -659,12 +852,15 @@ async function applyJson() {
     if (context === editorContext) applying.value = false;
   }
 }
+/** 处理当前报表的 `undo` 操作。 */
 function undo() {
   restoreHistory('undo');
 }
+/** 处理当前报表的 `redo` 操作。 */
 function redo() {
   restoreHistory('redo');
 }
+/** 处理当前报表的 `restoreHistory` 操作。 */
 function restoreHistory(action: 'undo' | 'redo') {
   if (!dsl.value || saving.value || publishing.value || applying.value || jsonDirty.value) return;
   history.record(dsl.value);
@@ -674,6 +870,7 @@ function restoreHistory(action: 'undo' | 'redo') {
   selection.value = undefined;
   if (tab.value === 'json') jsonText.value = jsonBaseline.value = JSON.stringify(restored, null, 2);
 }
+/** 处理当前报表的 `exportPackage` 操作。 */
 async function exportPackage() {
   if (!definition.value || !dsl.value) return;
   if (dirty.value) {
@@ -689,9 +886,11 @@ async function exportPackage() {
     saveAs(new Blob([JSON.stringify(response.data)], { type: 'application/json' }), code + '.reportpkg');
   } catch {}
 }
+/** 处理当前报表的 `exportDsl` 操作。 */
 function exportDsl() {
   if (dsl.value) saveAs(new Blob([serializeDsl(dsl.value)], { type: 'application/json' }), dsl.value.code + '.report.json');
 }
+/** 处理当前报表的 `editorKeys` 操作。 */
 function editorKeys(event: KeyboardEvent) {
   if (!(event.ctrlKey || event.metaKey)) return;
   if (event.key.toLowerCase() === 's') {
@@ -709,6 +908,7 @@ function editorKeys(event: KeyboardEvent) {
     redo();
   }
 }
+/** 处理当前报表的 `leave` 操作。 */
 async function leave() {
   if (saving.value || publishing.value || applying.value) {
     ElMessage.warning('正在保存、发布或校验定义，请完成后再离开');

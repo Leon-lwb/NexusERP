@@ -13,9 +13,12 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.util.*;
 
+/** 报表选择器权限边界测试，负责当前模块对应的契约或处理职责。 */
 class ReportLookupSecurityTest {
+    /** 测试私有目录。 */
     @TempDir Path directory;
 
+    /** 验证 {@code undeclaredUnsupportedRevokedAndCrossTenantLookupsFail} 场景下的结果与边界条件。 */
     @Test
     void undeclaredUnsupportedRevokedAndCrossTenantLookupsFail() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -29,10 +32,23 @@ class ReportLookupSecurityTest {
                     new ReportLookupBinding("SECURE_TEST", 1, "customerId", "客户", "wm:stock:list");
             var provider =
                     new ReportLookupProvider() {
+                        /**
+                         * 列出固定契约已安装且有权限的选择器。
+                         *
+                         * @return 当前处理返回的固定结果
+                         */
                         public List<ReportLookupBinding> bindings() {
                             return List.of(binding);
                         }
 
+                        /**
+                         * 执行受控只读查询。
+                         *
+                         * @param b 当前操作的 {@code b} 输入
+                         * @param context 服务端执行上下文
+                         * @param query 已声明字段和筛选参数
+                         * @return 当前处理返回的固定结果
+                         */
                         public Result query(
                                 ReportLookupBinding b,
                                 ReportExecutionContext context,
@@ -84,6 +100,9 @@ class ReportLookupSecurityTest {
         }
     }
 
+    /**
+     * 验证 {@code lookupEntityUsesItsOwnBusinessScopeInsteadOfTheReportEntitiesScope} 场景下的结果与边界条件。
+     */
     @Test
     void lookupEntityUsesItsOwnBusinessScopeInsteadOfTheReportEntitiesScope() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -107,10 +126,23 @@ class ReportLookupSecurityTest {
                     new ReportLookupBinding("SECURE_TEST", 1, "customerId", "客户", "bd:client:list");
             var provider =
                     new ReportLookupProvider() {
+                        /**
+                         * 列出固定契约已安装且有权限的选择器。
+                         *
+                         * @return 当前处理返回的固定结果
+                         */
                         public List<ReportLookupBinding> bindings() {
                             return List.of(binding);
                         }
 
+                        /**
+                         * 执行受控只读查询。
+                         *
+                         * @param b 当前操作的 {@code b} 输入
+                         * @param context 服务端执行上下文
+                         * @param query 已声明字段和筛选参数
+                         * @return 当前处理返回的固定结果
+                         */
                         public Result query(
                                 ReportLookupBinding b,
                                 ReportExecutionContext context,

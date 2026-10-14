@@ -1,8 +1,13 @@
 package com.nexus.report.mapper;
 
+import static com.nexus.report.mapper.ReportStoreFixture.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.common.report.ReportActor;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.domain.ReportRecords.Grant;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessException;
@@ -10,17 +15,29 @@ import org.springframework.dao.DataAccessException;
 import java.time.Instant;
 import java.util.List;
 
-import static com.nexus.report.mapper.ReportStoreFixture.*;
-import static org.junit.jupiter.api.Assertions.*;
-
+/** 报表存储测试，负责当前模块对应的契约或处理职责。 */
 class ReportStoreTest {
+    /** 保存当前 {@code f} 值。 */
     private final ReportStoreFixture f = new ReportStoreFixture();
+
+    /** 租户化元数据或私有存储。 */
     private final JdbcReportStore store = f.store;
+
+    /** 保存当前 {@code creator} 值。 */
     private final ReportActor creator = actor("A", 7);
 
-    @AfterEach void close() { f.close(); }
+    /** 释放当前对象持有的文件或扫描句柄。 */
+    @AfterEach
+    void close() {
+        f.close();
+    }
 
-    @Test void optimisticDraftChangesCannotOverwriteAnotherWriterAndTenantIdsCannotCross() {
+    /**
+     * 验证 {@code optimisticDraftChangesCannotOverwriteAnotherWriterAndTenantIdsCannotCross}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void optimisticDraftChangesCannotOverwriteAnotherWriterAndTenantIdsCannotCross() {
         var definition = f.definition(creator);
         store.saveDraft(creator, definition.id(), 1, "新版", "{}");
         assertFault(409, () -> store.saveDraft(creator, definition.id(), 1, "覆盖", "{}"));
@@ -28,85 +45,188 @@ class ReportStoreTest {
         assertEquals(2, store.definition("A", definition.id()).orElseThrow().revision());
     }
 
-    @Test void publicationAndRollbackUseImmutableVersions() {
+    /** 验证 {@code publicationAndRollbackUseImmutableVersions} 场景下的结果与边界条件。 */
+    @Test
+    void publicationAndRollbackUseImmutableVersions() {
         var dataset = f.dataset(creator);
-        var definition = store.createDefinition(creator, "TEST_REPORT", "测试", "TABLE", null, "{\"a\":1}");
-        var v1 = store.publish(creator, definition.id(), 1, "{\"a\":1}", "hash1", dataset.publishedVersion());
+        var definition =
+                store.createDefinition(creator, "TEST_REPORT", "测试", "TABLE", null, "{\"a\":1}");
+        var v1 =
+                store.publish(
+                        creator,
+                        definition.id(),
+                        1,
+                        "{\"a\":1}",
+                        "hash1",
+                        dataset.publishedVersion());
         long revision = store.definition("A", definition.id()).orElseThrow().revision();
         var draft = store.saveDraft(creator, definition.id(), revision, "更新", "{\"a\":2}");
-        var v2 = store.publish(creator, definition.id(), draft.revision(), draft.json(), "hash2", dataset.publishedVersion());
+        var v2 =
+                store.publish(
+                        creator,
+                        definition.id(),
+                        draft.revision(),
+                        draft.json(),
+                        "hash2",
+                        dataset.publishedVersion());
         assertEquals("{\"a\":1}", store.version("A", v1.id()).orElseThrow().json());
         assertNotEquals(v1.id(), v2.id());
         store.rollback(creator, definition.id(), v1.id());
-        assertEquals(v1.id(), store.definition("A", definition.id()).orElseThrow().publishedVersion());
+        assertEquals(
+                v1.id(), store.definition("A", definition.id()).orElseThrow().publishedVersion());
     }
 
-    @Test void resourceAclIsTenantBoundAndDoesNotGrantDataFromAnotherResource() {
+    /** 验证 {@code resourceAclIsTenantBoundAndDoesNotGrantDataFromAnotherResource} 场景下的结果与边界条件。 */
+    @Test
+    void resourceAclIsTenantBoundAndDoesNotGrantDataFromAnotherResource() {
         var viewer = actor("A", 8);
         var definition = f.definition(creator);
-        assertFalse(store.allowed(viewer, "REPORT", definition.id(), viewer.userId(), "VIEW"), "Caller-supplied owner is untrusted");
-        store.replaceAcl(creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "VIEW")));
+        assertFalse(
+                store.allowed(viewer, "REPORT", definition.id(), viewer.userId(), "VIEW"),
+                "Caller-supplied owner is untrusted");
+        store.replaceAcl(
+                creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "VIEW")));
         assertTrue(store.allowed(viewer, "REPORT", definition.id(), 7, "VIEW"));
         assertFalse(store.allowed(actor("B", 8), "REPORT", definition.id(), 7, "VIEW"));
         assertFalse(store.allowed(viewer, "REPORT", definition.id(), 7, "EXPORT"));
         assertFalse(store.allowed(viewer, "REPORT", f.definition(creator).id(), 7, "VIEW"));
     }
 
-    @Test void publicationRejectsMissingOrForeignDatasetVersionsWithoutInsertingChildren() {
+    /**
+     * 验证 {@code publicationRejectsMissingOrForeignDatasetVersionsWithoutInsertingChildren}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void publicationRejectsMissingOrForeignDatasetVersionsWithoutInsertingChildren() {
         var definition = f.definition(creator);
-        assertFault(404, () -> store.publish(creator, definition.id(), definition.revision(), "{}", "hash", "11"));
+        assertFault(
+                404,
+                () ->
+                        store.publish(
+                                creator,
+                                definition.id(),
+                                definition.revision(),
+                                "{}",
+                                "hash",
+                                "11"));
         var foreign = f.dataset(actor("B", 7));
-        assertFault(404, () -> store.publish(creator, definition.id(), definition.revision(), "{}", "hash", foreign.publishedVersion()));
+        assertFault(
+                404,
+                () ->
+                        store.publish(
+                                creator,
+                                definition.id(),
+                                definition.revision(),
+                                "{}",
+                                "hash",
+                                foreign.publishedVersion()));
         assertEquals(0, f.count("rpt_version"));
         assertNull(store.definition("A", definition.id()).orElseThrow().publishedVersion());
     }
 
-    @Test void publicationConsumesTheRevisionAndDoesNotPublishTheSameRevisionTwice() {
+    /**
+     * 验证 {@code publicationConsumesTheRevisionAndDoesNotPublishTheSameRevisionTwice} 场景下的结果与边界条件。
+     */
+    @Test
+    void publicationConsumesTheRevisionAndDoesNotPublishTheSameRevisionTwice() {
         var definition = f.definition(creator);
         var first = f.publish(creator, definition);
-        assertFault(409, () -> store.publish(creator, definition.id(), definition.revision(), "{}", "hash", first.datasetVersion()));
+        assertFault(
+                409,
+                () ->
+                        store.publish(
+                                creator,
+                                definition.id(),
+                                definition.revision(),
+                                "{}",
+                                "hash",
+                                first.datasetVersion()));
         assertEquals(1, store.versions("A", definition.id()).size());
-        assertFault(409, () -> store.saveDraft(creator, definition.id(), definition.revision(), "过期草稿", "{}"));
+        assertFault(
+                409,
+                () ->
+                        store.saveDraft(
+                                creator, definition.id(), definition.revision(), "过期草稿", "{}"));
     }
 
-    @Test void offlineAndRollbackFencePreviouslyReadDrafts() {
+    /** 验证 {@code offlineAndRollbackFencePreviouslyReadDrafts} 场景下的结果与边界条件。 */
+    @Test
+    void offlineAndRollbackFencePreviouslyReadDrafts() {
         var definition = f.definition(creator);
         var version = f.publish(creator, definition);
         var beforeOffline = store.definition("A", definition.id()).orElseThrow();
         store.definitionState(creator, definition.id(), "OFFLINE");
-        assertFault(409, () -> store.publish(creator, definition.id(), beforeOffline.revision(), "{}", "hash", version.datasetVersion()));
+        assertFault(
+                409,
+                () ->
+                        store.publish(
+                                creator,
+                                definition.id(),
+                                beforeOffline.revision(),
+                                "{}",
+                                "hash",
+                                version.datasetVersion()));
         var beforeRollback = store.definition("A", definition.id()).orElseThrow();
         store.rollback(creator, definition.id(), version.id());
-        assertFault(409, () -> store.saveDraft(creator, definition.id(), beforeRollback.revision(), "过期草稿", "{}"));
+        assertFault(
+                409,
+                () ->
+                        store.saveDraft(
+                                creator, definition.id(), beforeRollback.revision(), "过期草稿", "{}"));
     }
 
-    @Test void archiveCannotBeReopenedByOfflinePublishRollbackOrDraftWrites() {
+    /** 验证 {@code archiveCannotBeReopenedByOfflinePublishRollbackOrDraftWrites} 场景下的结果与边界条件。 */
+    @Test
+    void archiveCannotBeReopenedByOfflinePublishRollbackOrDraftWrites() {
         var definition = f.definition(creator);
         var version = f.publish(creator, definition);
         store.definitionState(creator, definition.id(), "ARCHIVED");
         var archived = store.definition("A", definition.id()).orElseThrow();
         assertFault(409, () -> store.definitionState(creator, definition.id(), "OFFLINE"));
         assertFault(409, () -> store.rollback(creator, definition.id(), version.id()));
-        assertFault(409, () -> store.publish(creator, definition.id(), archived.revision(), "{}", "hash", version.datasetVersion()));
-        assertFault(409, () -> store.saveDraft(creator, definition.id(), archived.revision(), "更改", "{}"));
+        assertFault(
+                409,
+                () ->
+                        store.publish(
+                                creator,
+                                definition.id(),
+                                archived.revision(),
+                                "{}",
+                                "hash",
+                                version.datasetVersion()));
+        assertFault(
+                409,
+                () -> store.saveDraft(creator, definition.id(), archived.revision(), "更改", "{}"));
         assertEquals("ARCHIVED", store.definition("A", definition.id()).orElseThrow().status());
         store.definitionState(creator, definition.id(), "ARCHIVED");
     }
 
-    @Test void versionReadsRequireATenantOwnedParent() {
+    /** 验证 {@code versionReadsRequireATenantOwnedParent} 场景下的结果与边界条件。 */
+    @Test
+    void versionReadsRequireATenantOwnedParent() {
         var definition = f.definition(creator);
         var version = f.publish(creator, definition);
         var foreignDefinition = f.definition(actor("B", 8));
-        f.jdbc.update("UPDATE rpt_version SET report_id=? WHERE version_id=?", Long.valueOf(foreignDefinition.id()), Long.valueOf(version.id()));
+        f.jdbc.update(
+                "UPDATE rpt_version SET report_id=? WHERE version_id=?",
+                Long.valueOf(foreignDefinition.id()),
+                Long.valueOf(version.id()));
         assertTrue(store.version("A", version.id()).isEmpty());
         assertTrue(store.versions("A", foreignDefinition.id()).isEmpty());
         var dataset = f.dataset(creator);
         var foreignDataset = f.dataset(actor("B", 8));
-        f.jdbc.update("UPDATE rpt_dataset_version SET dataset_id=? WHERE version_id=?", Long.valueOf(foreignDataset.id()), Long.valueOf(dataset.publishedVersion()));
+        f.jdbc.update(
+                "UPDATE rpt_dataset_version SET dataset_id=? WHERE version_id=?",
+                Long.valueOf(foreignDataset.id()),
+                Long.valueOf(dataset.publishedVersion()));
         assertTrue(store.datasetVersion("A", dataset.publishedVersion()).isEmpty());
     }
 
-    @Test void catalogsRejectForeignParentsAndRootCreationReturnsTheCanonicalRoot() {
+    /**
+     * 验证 {@code catalogsRejectForeignParentsAndRootCreationReturnsTheCanonicalRoot} 场景下的结果与边界条件。
+     */
+    @Test
+    void catalogsRejectForeignParentsAndRootCreationReturnsTheCanonicalRoot() {
         var foreign = store.createCatalog(actor("B", 8), null, "外部目录");
         assertFault(404, () -> store.createCatalog(creator, foreign.id(), "子目录"));
         var root = store.createCatalog(creator, "0", "报表中心");
@@ -116,94 +236,232 @@ class ReportStoreTest {
         assertEquals(1, store.catalogs("A").size());
     }
 
-    @Test void datasetRegistrationIsIdempotentAndKeepsOfflineStateAndOldVersions() {
+    /** 验证 {@code datasetRegistrationIsIdempotentAndKeepsOfflineStateAndOldVersions} 场景下的结果与边界条件。 */
+    @Test
+    void datasetRegistrationIsIdempotentAndKeepsOfflineStateAndOldVersions() {
         var dataset = f.dataset(creator);
         assertEquals(dataset.publishedVersion(), f.dataset(creator).publishedVersion());
         store.datasetState(creator, dataset.id(), "OFFLINE");
-        var updated = store.registerDataset(creator, descriptor("TEST_DATA", 2), "{\"v\":2}", "data-hash-2");
+        var updated =
+                store.registerDataset(
+                        creator, descriptor("TEST_DATA", 2), "{\"v\":2}", "data-hash-2");
         assertEquals("OFFLINE", updated.status());
         assertNotEquals(dataset.publishedVersion(), updated.publishedVersion());
-        assertEquals("{\"v\":1}", store.datasetVersion("A", dataset.publishedVersion()).orElseThrow().json());
+        assertEquals(
+                "{\"v\":1}",
+                store.datasetVersion("A", dataset.publishedVersion()).orElseThrow().json());
         assertEquals(2, f.count("rpt_dataset_version"));
     }
 
-    @Test void failedDatasetVersionInsertRollsBackTheNewParent() {
-        assertThrows(DataAccessException.class, () -> store.registerDataset(creator, descriptor("BROKEN_DATA", 1), "{}", "x".repeat(65)));
+    /** 验证 {@code failedDatasetVersionInsertRollsBackTheNewParent} 场景下的结果与边界条件。 */
+    @Test
+    void failedDatasetVersionInsertRollsBackTheNewParent() {
+        assertThrows(
+                DataAccessException.class,
+                () ->
+                        store.registerDataset(
+                                creator, descriptor("BROKEN_DATA", 1), "{}", "x".repeat(65)));
         assertTrue(store.datasetByCode("A", "BROKEN_DATA").isEmpty());
         assertEquals(0, f.count("rpt_dataset_version"));
     }
 
-    @Test void nonOwnerCannotGrantThemselvesAclManagementOrExportRights() {
+    /** 验证 {@code nonOwnerCannotGrantThemselvesAclManagementOrExportRights} 场景下的结果与边界条件。 */
+    @Test
+    void nonOwnerCannotGrantThemselvesAclManagementOrExportRights() {
         var definition = f.definition(creator);
         var viewer = actor("A", 8);
-        assertFault(403, () -> store.replaceAcl(viewer, "REPORT", definition.id(), List.of(new Grant("USER", "8", "EXPORT"))));
-        store.replaceAcl(creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "EDIT")));
-        assertFault(403, () -> store.replaceAcl(viewer, "REPORT", definition.id(), List.of(new Grant("USER", "8", "ACL"))));
-        assertEquals(List.of(new Grant("USER", "8", "EDIT")), store.acl("A", "REPORT", definition.id()));
+        assertFault(
+                403,
+                () ->
+                        store.replaceAcl(
+                                viewer,
+                                "REPORT",
+                                definition.id(),
+                                List.of(new Grant("USER", "8", "EXPORT"))));
+        store.replaceAcl(
+                creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "EDIT")));
+        assertFault(
+                403,
+                () ->
+                        store.replaceAcl(
+                                viewer,
+                                "REPORT",
+                                definition.id(),
+                                List.of(new Grant("USER", "8", "ACL"))));
+        assertEquals(
+                List.of(new Grant("USER", "8", "EDIT")), store.acl("A", "REPORT", definition.id()));
     }
 
-    @Test void aclReplacementValidatesBeforeDeletingAndCanonicalizesRepeatedSubjects() {
+    /**
+     * 验证 {@code aclReplacementValidatesBeforeDeletingAndCanonicalizesRepeatedSubjects} 场景下的结果与边界条件。
+     */
+    @Test
+    void aclReplacementValidatesBeforeDeletingAndCanonicalizesRepeatedSubjects() {
         var definition = f.definition(creator);
-        store.replaceAcl(creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "VIEW")));
-        assertFault(400, () -> store.replaceAcl(creator, "REPORT", definition.id(), List.of(new Grant("TENANT", "8", "VIEW"))));
-        assertFault(400, () -> store.replaceAcl(creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "*"))));
-        assertEquals(List.of(new Grant("USER", "8", "VIEW")), store.acl("A", "REPORT", definition.id()));
-        store.replaceAcl(creator, "REPORT", definition.id(), List.of(new Grant("USER", "0008", "VIEW"), new Grant("USER", "8", "VIEW")));
-        assertEquals(List.of(new Grant("USER", "8", "VIEW")), store.acl("A", "REPORT", definition.id()));
+        store.replaceAcl(
+                creator, "REPORT", definition.id(), List.of(new Grant("USER", "8", "VIEW")));
+        assertFault(
+                400,
+                () ->
+                        store.replaceAcl(
+                                creator,
+                                "REPORT",
+                                definition.id(),
+                                List.of(new Grant("TENANT", "8", "VIEW"))));
+        assertFault(
+                400,
+                () ->
+                        store.replaceAcl(
+                                creator,
+                                "REPORT",
+                                definition.id(),
+                                List.of(new Grant("USER", "8", "*"))));
+        assertEquals(
+                List.of(new Grant("USER", "8", "VIEW")), store.acl("A", "REPORT", definition.id()));
+        store.replaceAcl(
+                creator,
+                "REPORT",
+                definition.id(),
+                List.of(new Grant("USER", "0008", "VIEW"), new Grant("USER", "8", "VIEW")));
+        assertEquals(
+                List.of(new Grant("USER", "8", "VIEW")), store.acl("A", "REPORT", definition.id()));
     }
 
-    @Test void invalidAclActionsDoNotBecomeValidThroughOwnership() {
+    /** 验证 {@code invalidAclActionsDoNotBecomeValidThroughOwnership} 场景下的结果与边界条件。 */
+    @Test
+    void invalidAclActionsDoNotBecomeValidThroughOwnership() {
         var definition = f.definition(creator);
         assertFalse(store.allowed(creator, "REPORT", definition.id(), 7, "ROOT"));
         assertFault(400, () -> store.acl("A", "rpt_definition", definition.id()));
     }
 
-    @Test void runCreationRejectsForeignOrUnrelatedVersionsAndOfflineDefinitions() {
+    /** 验证 {@code runCreationRejectsForeignOrUnrelatedVersionsAndOfflineDefinitions} 场景下的结果与边界条件。 */
+    @Test
+    void runCreationRejectsForeignOrUnrelatedVersionsAndOfflineDefinitions() {
         var definition = f.definition(creator);
         var version = f.publish(creator, definition);
         var other = f.definition(creator);
         var unrelated = f.publish(creator, other);
-        assertFault(404, () -> store.createRun(creator, definition.id(), unrelated.id(), "SNAPSHOT", "{}", "scope", Instant.now().plusSeconds(100)));
-        assertFault(404, () -> store.createRun(actor("B", 7), definition.id(), version.id(), "SNAPSHOT", "{}", "scope", Instant.now().plusSeconds(100)));
+        assertFault(
+                404,
+                () ->
+                        store.createRun(
+                                creator,
+                                definition.id(),
+                                unrelated.id(),
+                                "SNAPSHOT",
+                                "{}",
+                                "scope",
+                                Instant.now().plusSeconds(100)));
+        assertFault(
+                404,
+                () ->
+                        store.createRun(
+                                actor("B", 7),
+                                definition.id(),
+                                version.id(),
+                                "SNAPSHOT",
+                                "{}",
+                                "scope",
+                                Instant.now().plusSeconds(100)));
         store.definitionState(creator, definition.id(), "OFFLINE");
-        assertFault(409, () -> store.createRun(creator, definition.id(), version.id(), "SNAPSHOT", "{}", "scope", Instant.now().plusSeconds(100)));
+        assertFault(
+                409,
+                () ->
+                        store.createRun(
+                                creator,
+                                definition.id(),
+                                version.id(),
+                                "SNAPSHOT",
+                                "{}",
+                                "scope",
+                                Instant.now().plusSeconds(100)));
         assertEquals(0, f.count("rpt_run"));
     }
 
-    @Test void exportCreationRequiresAnOwnedSuccessfulUnexpiredSnapshotRun() {
+    /** 验证 {@code exportCreationRequiresAnOwnedSuccessfulUnexpiredSnapshotRun} 场景下的结果与边界条件。 */
+    @Test
+    void exportCreationRequiresAnOwnedSuccessfulUnexpiredSnapshotRun() {
         var run = f.completedRun(creator);
         assertFault(404, () -> f.job(actor("A", 8), run, "other-user"));
         assertFault(404, () -> f.job(actor("B", 7), run, "other-tenant"));
         f.jdbc.update("UPDATE rpt_run SET state='RUNNING' WHERE run_id=?", Long.valueOf(run.id()));
         assertFault(409, () -> f.job(creator, run, "not-ready"));
-        f.jdbc.update("UPDATE rpt_run SET state='SUCCEEDED',expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE run_id=?", Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET state='SUCCEEDED',expires_at=CURRENT_TIMESTAMP-INTERVAL '1'"
+                        + " MINUTE WHERE run_id=?",
+                Long.valueOf(run.id()));
         assertFault(410, () -> f.job(creator, run, "expired"));
         assertEquals(0, f.count("rpt_export_job"));
     }
 
-    @Test void idempotencySurvivesQuotaAndRejectsReusedKeysWithAnotherRunFormatOrHash() {
+    /**
+     * 验证 {@code idempotencySurvivesQuotaAndRejectsReusedKeysWithAnotherRunFormatOrHash}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void idempotencySurvivesQuotaAndRejectsReusedKeysWithAnotherRunFormatOrHash() {
         var run = f.completedRun(creator);
         var another = f.completedRun(creator);
         var job = f.job(creator, run, "repeat-key");
         assertEquals(job.id(), f.job(creator, run, "repeat-key").id());
-        assertFault(409, () -> store.createJob(creator, another.id(), "PDF", "repeat-key", "request-hash", Instant.now().plusSeconds(100)));
-        assertFault(409, () -> store.createJob(creator, run.id(), "XLSX_DETAIL", "repeat-key", "request-hash", Instant.now().plusSeconds(100)));
-        assertFault(409, () -> store.createJob(creator, run.id(), "PDF", "repeat-key", "other-hash", Instant.now().plusSeconds(100)));
+        assertFault(
+                409,
+                () ->
+                        store.createJob(
+                                creator,
+                                another.id(),
+                                "PDF",
+                                "repeat-key",
+                                "request-hash",
+                                Instant.now().plusSeconds(100)));
+        assertFault(
+                409,
+                () ->
+                        store.createJob(
+                                creator,
+                                run.id(),
+                                "XLSX_DETAIL",
+                                "repeat-key",
+                                "request-hash",
+                                Instant.now().plusSeconds(100)));
+        assertFault(
+                409,
+                () ->
+                        store.createJob(
+                                creator,
+                                run.id(),
+                                "PDF",
+                                "repeat-key",
+                                "other-hash",
+                                Instant.now().plusSeconds(100)));
         assertEquals(1, f.count("rpt_export_job"));
-        assertEquals(1, store.catalogs("A").stream().filter(c -> c.name().equals("报表中心") && c.parentId().equals("0")).count());
+        assertEquals(
+                1,
+                store.catalogs("A").stream()
+                        .filter(c -> c.name().equals("报表中心") && c.parentId().equals("0"))
+                        .count());
     }
 
-    @Test void terminalRunStateCannotBeOverwrittenByLateCompletion() {
+    /** 验证 {@code terminalRunStateCannotBeOverwrittenByLateCompletion} 场景下的结果与边界条件。 */
+    @Test
+    void terminalRunStateCannotBeOverwrittenByLateCompletion() {
         var run = f.completedRun(creator);
         store.runState("A", run.id(), "FAILED", null, null, 0, "{}", "LATE_ERROR");
         assertEquals("SUCCEEDED", store.run("A", run.id()).orElseThrow().state());
         f.jdbc.update("UPDATE rpt_run SET state='EXPIRED' WHERE run_id=?", Long.valueOf(run.id()));
         store.runState("A", run.id(), "SUCCEEDED", "resurrected", "resurrected", 10, "{}", null);
         assertEquals("EXPIRED", store.run("A", run.id()).orElseThrow().state());
-        assertFault(400, () -> store.runState("A", run.id(), "PUBLISHED", null, null, 0, "{}", null));
+        assertFault(
+                400, () -> store.runState("A", run.id(), "PUBLISHED", null, null, 0, "{}", null));
     }
 
-    @Test void anExpiredWorkerCannotHeartbeatOrFinishAndAnOldAttemptCannotUseAReusedOwner() {
+    /**
+     * 验证 {@code anExpiredWorkerCannotHeartbeatOrFinishAndAnOldAttemptCannotUseAReusedOwner}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void anExpiredWorkerCannotHeartbeatOrFinishAndAnOldAttemptCannotUseAReusedOwner() {
         var job = f.job(creator, f.completedRun(creator), "lease");
         assertTrue(store.claim(job, "worker", Instant.now().plusSeconds(60)));
         var first = f.reload(job);
@@ -219,7 +477,9 @@ class ReportStoreTest {
         assertEquals("new-file", f.reload(job).file());
     }
 
-    @Test void cancellationSurvivesLeaseReclaimAndCannotBeOverwrittenBySuccess() {
+    /** 验证 {@code cancellationSurvivesLeaseReclaimAndCannotBeOverwrittenBySuccess} 场景下的结果与边界条件。 */
+    @Test
+    void cancellationSurvivesLeaseReclaimAndCannotBeOverwrittenBySuccess() {
         var job = f.job(creator, f.completedRun(creator), "cancel");
         assertTrue(store.claim(job, "first", Instant.now().plusSeconds(60)));
         store.cancel(creator, job.id());
@@ -235,7 +495,9 @@ class ReportStoreTest {
         assertNull(f.reload(job).leaseOwner());
     }
 
-    @Test void cancellationOfQueuedAndTerminalJobsIsIdempotentAndActorBound() {
+    /** 验证 {@code cancellationOfQueuedAndTerminalJobsIsIdempotentAndActorBound} 场景下的结果与边界条件。 */
+    @Test
+    void cancellationOfQueuedAndTerminalJobsIsIdempotentAndActorBound() {
         var job = f.job(creator, f.completedRun(creator), "queued-cancel");
         store.cancel(actor("A", 8), job.id());
         assertEquals("QUEUED", f.reload(job).state());
@@ -250,7 +512,9 @@ class ReportStoreTest {
         assertEquals("SUCCEEDED", f.reload(success).state());
     }
 
-    @Test void finishRejectsNonTerminalStatesAndHeartbeatCannotShortenTheLease() {
+    /** 验证 {@code finishRejectsNonTerminalStatesAndHeartbeatCannotShortenTheLease} 场景下的结果与边界条件。 */
+    @Test
+    void finishRejectsNonTerminalStatesAndHeartbeatCannotShortenTheLease() {
         var job = f.job(creator, f.completedRun(creator), "state");
         assertTrue(store.claim(job, "worker", Instant.now().plusSeconds(120)));
         var running = f.reload(job);
@@ -260,10 +524,13 @@ class ReportStoreTest {
         assertFalse(store.finishJob(running, "other-worker", "FAILED", null, null, "FAIL"));
     }
 
-    @Test void retryExhaustionTerminatesAbandonedJobsAndReleasesAdmissionQuota() {
+    /** 验证 {@code retryExhaustionTerminatesAbandonedJobsAndReleasesAdmissionQuota} 场景下的结果与边界条件。 */
+    @Test
+    void retryExhaustionTerminatesAbandonedJobsAndReleasesAdmissionQuota() {
         var job = f.job(creator, f.completedRun(creator), "exhaustion");
         for (int attempt = 0; attempt < 3; attempt++) {
-            assertTrue(store.claim(f.reload(job), "worker-" + attempt, Instant.now().plusSeconds(60)));
+            assertTrue(
+                    store.claim(f.reload(job), "worker-" + attempt, Instant.now().plusSeconds(60)));
             f.expireLease(job);
         }
         assertTrue(store.claimableJobs().stream().noneMatch(j -> j.id().equals(job.id())));
@@ -273,32 +540,54 @@ class ReportStoreTest {
         assertNotNull(f.job(creator, f.completedRun(creator), "replacement"));
     }
 
-    @Test void expiredJobsCannotBeClaimedAndExpiryRechecksTimeAndActiveLease() {
+    /** 验证 {@code expiredJobsCannotBeClaimedAndExpiryRechecksTimeAndActiveLease} 场景下的结果与边界条件。 */
+    @Test
+    void expiredJobsCannotBeClaimedAndExpiryRechecksTimeAndActiveLease() {
         var job = f.job(creator, f.completedRun(creator), "expiry");
         store.expireJob(job);
-        assertEquals("QUEUED", f.reload(job).state(), "A stale expiry request must not expire a future job");
-        f.jdbc.update("UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE job_id=?", Long.valueOf(job.id()));
+        assertEquals(
+                "QUEUED",
+                f.reload(job).state(),
+                "A stale expiry request must not expire a future job");
+        f.jdbc.update(
+                "UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " job_id=?",
+                Long.valueOf(job.id()));
         assertFalse(store.claim(f.reload(job), "worker", Instant.now().plusSeconds(60)));
         assertTrue(store.claimableJobs().stream().noneMatch(j -> j.id().equals(job.id())));
         assertEquals("EXPIRED", f.reload(job).state());
     }
 
-    @Test void runExpiryWaitsForAnActiveExportLease() {
+    /** 验证 {@code runExpiryWaitsForAnActiveExportLease} 场景下的结果与边界条件。 */
+    @Test
+    void runExpiryWaitsForAnActiveExportLease() {
         var run = f.completedRun(creator);
         var job = f.job(creator, run, "active-export");
         assertTrue(store.claim(job, "worker", Instant.now().plusSeconds(60)));
-        f.jdbc.update("UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE run_id=?", Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " run_id=?",
+                Long.valueOf(run.id()));
         assertTrue(store.expiredRuns().stream().noneMatch(r -> r.id().equals(run.id())));
         store.runState("A", run.id(), "EXPIRED", null, null, 0, "{}", null);
         assertEquals("SUCCEEDED", store.run("A", run.id()).orElseThrow().state());
     }
 
-
-    @Test void lifecycleOverloadsRejectStaleRevisionAndStatusPreconditions() {
+    /** 验证 {@code lifecycleOverloadsRejectStaleRevisionAndStatusPreconditions} 场景下的结果与边界条件。 */
+    @Test
+    void lifecycleOverloadsRejectStaleRevisionAndStatusPreconditions() {
         var definition = f.definition(creator);
         var version = f.publish(creator, definition);
-        assertFault(409, () -> store.rollback(creator, definition.id(), version.id(), definition.revision()));
-        assertFault(409, () -> store.definitionState(creator, definition.id(), "OFFLINE", definition.revision()));
+        assertFault(
+                409,
+                () ->
+                        store.rollback(
+                                creator, definition.id(), version.id(), definition.revision()));
+        assertFault(
+                409,
+                () ->
+                        store.definitionState(
+                                creator, definition.id(), "OFFLINE", definition.revision()));
         var current = store.definition("A", definition.id()).orElseThrow();
         store.definitionState(creator, definition.id(), "OFFLINE", current.revision());
         var dataset = f.dataset(creator);
@@ -307,37 +596,67 @@ class ReportStoreTest {
         assertEquals("OFFLINE", store.dataset("A", dataset.id()).orElseThrow().status());
     }
 
-    @Test void archivedDatasetCannotBeReactivatedByRegistrationOrExplicitStateChanges() {
+    /**
+     * 验证 {@code archivedDatasetCannotBeReactivatedByRegistrationOrExplicitStateChanges}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void archivedDatasetCannotBeReactivatedByRegistrationOrExplicitStateChanges() {
         var dataset = f.dataset(creator);
         store.datasetState(creator, dataset.id(), "ARCHIVED");
         assertFault(409, () -> store.datasetState(creator, dataset.id(), "ACTIVE"));
-        assertFault(409, () -> store.registerDataset(creator, descriptor("TEST_DATA", 2), "{}", "changed-checksum"));
+        assertFault(
+                409,
+                () ->
+                        store.registerDataset(
+                                creator, descriptor("TEST_DATA", 2), "{}", "changed-checksum"));
         assertEquals("ARCHIVED", f.dataset(creator).status());
         assertEquals(1, f.count("rpt_dataset_version"));
     }
 
-    @Test void claimReturnsTheAcquiredAttemptAndStaleCandidatesCannotAcquireLaterAttempts() {
+    /**
+     * 验证 {@code claimReturnsTheAcquiredAttemptAndStaleCandidatesCannotAcquireLaterAttempts}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void claimReturnsTheAcquiredAttemptAndStaleCandidatesCannotAcquireLaterAttempts() {
         var queued = f.job(creator, f.completedRun(creator), "claim-fence");
         var first = store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).orElseThrow();
         assertEquals(1, first.attempts());
         assertEquals("worker", first.leaseOwner());
         f.expireLease(first);
         assertTrue(store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).isEmpty());
-        var second = store.claimJob(f.reload(first), "worker", Instant.now().plusSeconds(60)).orElseThrow();
+        var second =
+                store.claimJob(f.reload(first), "worker", Instant.now().plusSeconds(60))
+                        .orElseThrow();
         assertEquals(2, second.attempts());
         assertFalse(store.finishJob(first, "worker", "FAILED", null, null, "OLD_ATTEMPT"));
         assertTrue(store.finishJob(second, "worker", "SUCCEEDED", "current-file", 10L, null));
     }
 
-    @Test void thirdAttemptCancellationRemainsClaimableForCleanupAndDoesNotRestartExport() {
+    /**
+     * 验证 {@code thirdAttemptCancellationRemainsClaimableForCleanupAndDoesNotRestartExport}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void thirdAttemptCancellationRemainsClaimableForCleanupAndDoesNotRestartExport() {
         var queued = f.job(creator, f.completedRun(creator), "third-cancel");
         for (int attempt = 0; attempt < 3; attempt++) {
-            assertTrue(store.claim(f.reload(queued), "attempt-" + attempt, Instant.now().plusSeconds(60)));
+            assertTrue(
+                    store.claim(
+                            f.reload(queued), "attempt-" + attempt, Instant.now().plusSeconds(60)));
             f.expireLease(queued);
         }
         store.cancel(creator, queued.id());
-        assertTrue(store.claimableJobs().stream().anyMatch(j -> j.id().equals(queued.id()) && j.state().equals("CANCEL_REQUESTED")));
-        var cleanup = store.claimJob(f.reload(queued), "cleanup", Instant.now().plusSeconds(60)).orElseThrow();
+        assertTrue(
+                store.claimableJobs().stream()
+                        .anyMatch(
+                                j ->
+                                        j.id().equals(queued.id())
+                                                && j.state().equals("CANCEL_REQUESTED")));
+        var cleanup =
+                store.claimJob(f.reload(queued), "cleanup", Instant.now().plusSeconds(60))
+                        .orElseThrow();
         assertTrue(cleanup.cancelled());
         assertEquals("CANCEL_REQUESTED", cleanup.state());
         assertFalse(store.finishJob(cleanup, "cleanup", "SUCCEEDED", "forbidden-file", 10L, null));
@@ -345,11 +664,19 @@ class ReportStoreTest {
         assertEquals("CANCELLED", f.reload(queued).state());
     }
 
-    @Test void conditionalExpiryDoesNotClearFutureArtifactsAndReturnsWhetherCleanupWon() {
+    /**
+     * 验证 {@code conditionalExpiryDoesNotClearFutureArtifactsAndReturnsWhetherCleanupWon}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void conditionalExpiryDoesNotClearFutureArtifactsAndReturnsWhetherCleanupWon() {
         var run = f.completedRun(creator);
         assertFalse(store.expireRun(run));
         assertNotNull(store.run("A", run.id()).orElseThrow().snapshot());
-        f.jdbc.update("UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE run_id=?", Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " run_id=?",
+                Long.valueOf(run.id()));
         assertTrue(store.expireRun(run));
         assertFalse(store.expireRun(run));
         assertEquals(run.snapshot(), store.run("A", run.id()).orElseThrow().snapshot());
@@ -362,7 +689,10 @@ class ReportStoreTest {
         var succeeded = f.reload(queued);
         assertFalse(store.tryExpireJob(succeeded));
         assertEquals("retained-file", f.reload(queued).file());
-        f.jdbc.update("UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE job_id=?", Long.valueOf(queued.id()));
+        f.jdbc.update(
+                "UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " job_id=?",
+                Long.valueOf(queued.id()));
         assertTrue(store.tryExpireJob(succeeded));
         assertFalse(store.tryExpireJob(succeeded));
         assertEquals("retained-file", f.reload(queued).file());
@@ -371,10 +701,15 @@ class ReportStoreTest {
         assertNull(f.reload(queued).bytes());
     }
 
-    @Test void expiryWaitsForAValidLeaseEvenWhenTheJobExpiryTimeHasPassed() {
+    /** 验证 {@code expiryWaitsForAValidLeaseEvenWhenTheJobExpiryTimeHasPassed} 场景下的结果与边界条件。 */
+    @Test
+    void expiryWaitsForAValidLeaseEvenWhenTheJobExpiryTimeHasPassed() {
         var queued = f.job(creator, f.completedRun(creator), "active-expiry");
         assertTrue(store.claim(queued, "worker", Instant.now().plusSeconds(60)));
-        f.jdbc.update("UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE job_id=?", Long.valueOf(queued.id()));
+        f.jdbc.update(
+                "UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " job_id=?",
+                Long.valueOf(queued.id()));
         assertFalse(store.tryExpireJob(f.reload(queued)));
         assertTrue(store.expiredJobs().stream().noneMatch(j -> j.id().equals(queued.id())));
         store.claimableJobs();
@@ -384,10 +719,18 @@ class ReportStoreTest {
         assertEquals("EXPIRED", f.reload(queued).state());
     }
 
-
-    @Test void heartbeatExtendsAnOwnedLeaseAndExportExpiryIsBoundedByItsSnapshot() {
+    /** 验证 {@code heartbeatExtendsAnOwnedLeaseAndExportExpiryIsBoundedByItsSnapshot} 场景下的结果与边界条件。 */
+    @Test
+    void heartbeatExtendsAnOwnedLeaseAndExportExpiryIsBoundedByItsSnapshot() {
         var run = f.completedRun(creator);
-        var queued = store.createJob(creator, run.id(), "PDF", "bounded-expiry", "hash", run.expires().plusSeconds(3600));
+        var queued =
+                store.createJob(
+                        creator,
+                        run.id(),
+                        "PDF",
+                        "bounded-expiry",
+                        "hash",
+                        run.expires().plusSeconds(3600));
         assertEquals(run.expires(), queued.expires());
         var claimed = store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).orElseThrow();
         assertTrue(store.heartbeat(claimed, "worker", Instant.now().plusSeconds(120)));
@@ -395,32 +738,80 @@ class ReportStoreTest {
         assertTrue(store.finishJob(claimed, "worker", "SUCCEEDED", "file", 10L, null));
     }
 
-    @Test void requestBoundsAreRejectedAsClientFaultsWithoutInsertingJobs() {
+    /** 验证 {@code requestBoundsAreRejectedAsClientFaultsWithoutInsertingJobs} 场景下的结果与边界条件。 */
+    @Test
+    void requestBoundsAreRejectedAsClientFaultsWithoutInsertingJobs() {
         var run = f.completedRun(creator);
-        assertFault(400, () -> store.createJob(creator, run.id(), "PDF", "x".repeat(81), "hash", Instant.now().plusSeconds(100)));
-        assertFault(400, () -> store.createJob(creator, run.id(), "x".repeat(33), "key", "hash", Instant.now().plusSeconds(100)));
-        assertFault(400, () -> store.createJob(creator, run.id(), "PDF", "key", "x".repeat(65), Instant.now().plusSeconds(100)));
+        assertFault(
+                400,
+                () ->
+                        store.createJob(
+                                creator,
+                                run.id(),
+                                "PDF",
+                                "x".repeat(81),
+                                "hash",
+                                Instant.now().plusSeconds(100)));
+        assertFault(
+                400,
+                () ->
+                        store.createJob(
+                                creator,
+                                run.id(),
+                                "x".repeat(33),
+                                "key",
+                                "hash",
+                                Instant.now().plusSeconds(100)));
+        assertFault(
+                400,
+                () ->
+                        store.createJob(
+                                creator,
+                                run.id(),
+                                "PDF",
+                                "key",
+                                "x".repeat(65),
+                                Instant.now().plusSeconds(100)));
         assertEquals(0, f.count("rpt_export_job"));
     }
 
-    @Test void datasetActivationRejectsAPublishedPointerOwnedByAnotherDataset() {
+    /** 验证 {@code datasetActivationRejectsAPublishedPointerOwnedByAnotherDataset} 场景下的结果与边界条件。 */
+    @Test
+    void datasetActivationRejectsAPublishedPointerOwnedByAnotherDataset() {
         var dataset = f.dataset(creator);
-        var other = store.registerDataset(creator, descriptor("OTHER_DATA", 1), "{}", "other-data-checksum");
+        var other =
+                store.registerDataset(
+                        creator, descriptor("OTHER_DATA", 1), "{}", "other-data-checksum");
         store.datasetState(creator, dataset.id(), "OFFLINE");
-        f.jdbc.update("UPDATE rpt_dataset SET published_version_id=? WHERE dataset_id=?", Long.valueOf(other.publishedVersion()), Long.valueOf(dataset.id()));
+        f.jdbc.update(
+                "UPDATE rpt_dataset SET published_version_id=? WHERE dataset_id=?",
+                Long.valueOf(other.publishedVersion()),
+                Long.valueOf(dataset.id()));
         assertFault(404, () -> store.datasetState(creator, dataset.id(), "ACTIVE"));
         assertEquals("OFFLINE", store.dataset("A", dataset.id()).orElseThrow().status());
     }
 
-
-    @Test void retryIsFencedAndStopsAfterTheThirdAttemptWithoutSavingExceptionMessages() {
+    /**
+     * 验证 {@code retryIsFencedAndStopsAfterTheThirdAttemptWithoutSavingExceptionMessages}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void retryIsFencedAndStopsAfterTheThirdAttemptWithoutSavingExceptionMessages() {
         var queued = f.job(creator, f.completedRun(creator), "retry");
         for (int attempt = 1; attempt <= 3; attempt++) {
-            var claimed = store.claimJob(f.reload(queued), "worker", Instant.now().plusSeconds(60)).orElseThrow();
-            assertTrue(store.retryJob(claimed, "worker", attempt == 1 ? "raw exception details" : "PDF_EXPORT_FAILED"));
+            var claimed =
+                    store.claimJob(f.reload(queued), "worker", Instant.now().plusSeconds(60))
+                            .orElseThrow();
+            assertTrue(
+                    store.retryJob(
+                            claimed,
+                            "worker",
+                            attempt == 1 ? "raw exception details" : "PDF_EXPORT_FAILED"));
             var retried = f.reload(queued);
             assertEquals(attempt < 3 ? "QUEUED" : "FAILED", retried.state());
-            assertEquals(attempt == 1 ? "REPORT_EXECUTION_FAILED" : "PDF_EXPORT_FAILED", retried.error());
+            assertEquals(
+                    attempt == 1 ? "REPORT_EXECUTION_FAILED" : "PDF_EXPORT_FAILED",
+                    retried.error());
             assertNull(retried.leaseOwner());
             assertNull(retried.leaseUntil());
             assertEquals(attempt, retried.attempts());
@@ -428,7 +819,9 @@ class ReportStoreTest {
         assertFalse(store.claim(f.reload(queued), "worker", Instant.now().plusSeconds(60)));
     }
 
-    @Test void retryPreservesCancellationAndDoesNotRequeueARequestedCancellation() {
+    /** 验证 {@code retryPreservesCancellationAndDoesNotRequeueARequestedCancellation} 场景下的结果与边界条件。 */
+    @Test
+    void retryPreservesCancellationAndDoesNotRequeueARequestedCancellation() {
         var queued = f.job(creator, f.completedRun(creator), "cancel-retry");
         var claimed = store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).orElseThrow();
         store.cancel(creator, queued.id());
@@ -438,13 +831,17 @@ class ReportStoreTest {
         assertNull(f.reload(queued).leaseOwner());
     }
 
-    @Test void oldExpiredAndTerminalAttemptsCannotRetryOrOverwriteTheCurrentJob() {
+    /** 验证 {@code oldExpiredAndTerminalAttemptsCannotRetryOrOverwriteTheCurrentJob} 场景下的结果与边界条件。 */
+    @Test
+    void oldExpiredAndTerminalAttemptsCannotRetryOrOverwriteTheCurrentJob() {
         var queued = f.job(creator, f.completedRun(creator), "stale-retry");
         var first = store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).orElseThrow();
         assertFalse(store.retryJob(first, "other-owner", "STORAGE_UNAVAILABLE"));
         f.expireLease(first);
         assertFalse(store.retryJob(first, "worker", "STORAGE_UNAVAILABLE"));
-        var second = store.claimJob(f.reload(queued), "worker", Instant.now().plusSeconds(60)).orElseThrow();
+        var second =
+                store.claimJob(f.reload(queued), "worker", Instant.now().plusSeconds(60))
+                        .orElseThrow();
         assertFalse(store.retryJob(first, "worker", "XLSX_EXPORT_FAILED"));
         assertTrue(store.finishJob(second, "worker", "SUCCEEDED", "file", 10L, null));
         assertFalse(store.retryJob(second, "worker", "PDF_EXPORT_FAILED"));
@@ -453,78 +850,235 @@ class ReportStoreTest {
         assertNull(f.reload(queued).error());
     }
 
-    @Test void retryRejectsExpiredJobAndSnapshotEvenIfTheLeaseHasNotExpired() {
+    /** 验证 {@code retryRejectsExpiredJobAndSnapshotEvenIfTheLeaseHasNotExpired} 场景下的结果与边界条件。 */
+    @Test
+    void retryRejectsExpiredJobAndSnapshotEvenIfTheLeaseHasNotExpired() {
         var run = f.completedRun(creator);
         var queued = f.job(creator, run, "expired-retry");
         var claimed = store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).orElseThrow();
-        f.jdbc.update("UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE run_id=?", Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " run_id=?",
+                Long.valueOf(run.id()));
         assertFalse(store.retryJob(claimed, "worker", "STORAGE_UNAVAILABLE"));
-        f.jdbc.update("UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP+INTERVAL '1' HOUR WHERE run_id=?", Long.valueOf(run.id()));
-        f.jdbc.update("UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE job_id=?", Long.valueOf(queued.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP+INTERVAL '1' HOUR WHERE run_id=?",
+                Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " job_id=?",
+                Long.valueOf(queued.id()));
         assertFalse(store.retryJob(claimed, "worker", "STORAGE_UNAVAILABLE"));
         assertEquals("RUNNING", f.reload(queued).state());
     }
 
-
-    @Test void snapshotCheckpointIsExclusiveAndOnlyItsLiveWorkerCanPublishTheArtifact() {
+    /**
+     * 验证 {@code snapshotCheckpointIsExclusiveAndOnlyItsLiveWorkerCanPublishTheArtifact}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void snapshotCheckpointIsExclusiveAndOnlyItsLiveWorkerCanPublishTheArtifact() {
         var definition = f.definition(creator);
         var version = f.publish(creator, definition);
-        var run = store.createRun(creator, definition.id(), version.id(), "SNAPSHOT", "{}", "scope", Instant.now().plusSeconds(3600));
+        var run =
+                store.createRun(
+                        creator,
+                        definition.id(),
+                        version.id(),
+                        "SNAPSHOT",
+                        "{}",
+                        "scope",
+                        Instant.now().plusSeconds(3600));
         assertTrue(store.beginSnapshot("A", run.id(), "build/preview/one", null));
         assertFalse(store.beginSnapshot("A", run.id(), "build/preview/two", null));
-        assertFalse(store.finishSnapshot("A", run.id(), "build/preview/two", null, "SUCCEEDED", "wrong-file", 1, "{}", null));
-        assertTrue(store.finishSnapshot("A", run.id(), "build/preview/one", null, "SUCCEEDED", "canonical-file", 1, "{}", null));
-        assertFalse(store.finishSnapshot("A", run.id(), "build/preview/one", null, "FAILED", null, 0, "{}", "REPORT_EXECUTION_FAILED"));
+        assertFalse(
+                store.finishSnapshot(
+                        "A",
+                        run.id(),
+                        "build/preview/two",
+                        null,
+                        "SUCCEEDED",
+                        "wrong-file",
+                        1,
+                        "{}",
+                        null));
+        assertTrue(
+                store.finishSnapshot(
+                        "A",
+                        run.id(),
+                        "build/preview/one",
+                        null,
+                        "SUCCEEDED",
+                        "canonical-file",
+                        1,
+                        "{}",
+                        null));
+        assertFalse(
+                store.finishSnapshot(
+                        "A",
+                        run.id(),
+                        "build/preview/one",
+                        null,
+                        "FAILED",
+                        null,
+                        0,
+                        "{}",
+                        "REPORT_EXECUTION_FAILED"));
         assertEquals("canonical-file", store.run("A", run.id()).orElseThrow().snapshot());
     }
 
-    @Test void reclaimedSnapshotBuildRejectsTheOldAttemptAndKeepsOnlyTheNewArtifact() {
+    /**
+     * 验证 {@code reclaimedSnapshotBuildRejectsTheOldAttemptAndKeepsOnlyTheNewArtifact} 场景下的结果与边界条件。
+     */
+    @Test
+    void reclaimedSnapshotBuildRejectsTheOldAttemptAndKeepsOnlyTheNewArtifact() {
         var origin = f.completedLiveRun(creator);
         var originalVersion = store.version("A", origin.version()).orElseThrow();
-        var newer = store.saveDraft(creator, origin.reportId(), store.definition("A", origin.reportId()).orElseThrow().revision(), "新版", "{}");
-        store.publish(creator, origin.reportId(), newer.revision(), newer.json(), "new-hash", originalVersion.datasetVersion());
-        var job = store.createExportJob(creator, origin.id(), "PDF", "atomic-clone", "origin-hash", origin.expires());
+        var newer =
+                store.saveDraft(
+                        creator,
+                        origin.reportId(),
+                        store.definition("A", origin.reportId()).orElseThrow().revision(),
+                        "新版",
+                        "{}");
+        store.publish(
+                creator,
+                origin.reportId(),
+                newer.revision(),
+                newer.json(),
+                "new-hash",
+                originalVersion.datasetVersion());
+        var job =
+                store.createExportJob(
+                        creator,
+                        origin.id(),
+                        "PDF",
+                        "atomic-clone",
+                        "origin-hash",
+                        origin.expires());
         var clone = store.run("A", job.runId()).orElseThrow();
         assertEquals(origin.version(), clone.version());
         assertEquals("QUEUED", clone.state());
         var first = store.claimJob(job, "worker", Instant.now().plusSeconds(60)).orElseThrow();
-        assertTrue(store.beginSnapshot("A", clone.id(), "build/job/" + first.id() + "/" + first.attempts() + "/old", first));
+        assertTrue(
+                store.beginSnapshot(
+                        "A",
+                        clone.id(),
+                        "build/job/" + first.id() + "/" + first.attempts() + "/old",
+                        first));
         f.expireLease(first);
-        assertFalse(store.finishSnapshot("A", clone.id(), "build/job/" + first.id() + "/" + first.attempts() + "/old", first, "SUCCEEDED", "old-file", 1, "{}", null));
-        var second = store.claimJob(f.reload(job), "worker", Instant.now().plusSeconds(60)).orElseThrow();
-        assertTrue(store.beginSnapshot("A", clone.id(), "build/job/" + second.id() + "/" + second.attempts() + "/new", second));
-        assertFalse(store.finishSnapshot("A", clone.id(), "build/job/" + first.id() + "/" + first.attempts() + "/old", first, "FAILED", null, 0, "{}", "REPORT_EXECUTION_FAILED"));
-        assertTrue(store.finishSnapshot("A", clone.id(), "build/job/" + second.id() + "/" + second.attempts() + "/new", second, "SUCCEEDED", "new-file", 1, "{}", null));
+        assertFalse(
+                store.finishSnapshot(
+                        "A",
+                        clone.id(),
+                        "build/job/" + first.id() + "/" + first.attempts() + "/old",
+                        first,
+                        "SUCCEEDED",
+                        "old-file",
+                        1,
+                        "{}",
+                        null));
+        var second =
+                store.claimJob(f.reload(job), "worker", Instant.now().plusSeconds(60))
+                        .orElseThrow();
+        assertTrue(
+                store.beginSnapshot(
+                        "A",
+                        clone.id(),
+                        "build/job/" + second.id() + "/" + second.attempts() + "/new",
+                        second));
+        assertFalse(
+                store.finishSnapshot(
+                        "A",
+                        clone.id(),
+                        "build/job/" + first.id() + "/" + first.attempts() + "/old",
+                        first,
+                        "FAILED",
+                        null,
+                        0,
+                        "{}",
+                        "REPORT_EXECUTION_FAILED"));
+        assertTrue(
+                store.finishSnapshot(
+                        "A",
+                        clone.id(),
+                        "build/job/" + second.id() + "/" + second.attempts() + "/new",
+                        second,
+                        "SUCCEEDED",
+                        "new-file",
+                        1,
+                        "{}",
+                        null));
         assertEquals("new-file", store.run("A", clone.id()).orElseThrow().snapshot());
     }
 
-    @Test void atomicExportAdmissionCreatesOnlyOneCloneForRepeatedKeysAndNoCloneOnQuotaFailure() {
+    /**
+     * 验证 {@code atomicExportAdmissionCreatesOnlyOneCloneForRepeatedKeysAndNoCloneOnQuotaFailure}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void atomicExportAdmissionCreatesOnlyOneCloneForRepeatedKeysAndNoCloneOnQuotaFailure() {
         var origin = f.completedLiveRun(creator);
-        var job = store.createExportJob(creator, origin.id(), "PDF", "one-clone", "origin-hash", origin.expires());
-        assertEquals(job.id(), store.createExportJob(creator, origin.id(), "PDF", "one-clone", "origin-hash", origin.expires()).id());
+        var job =
+                store.createExportJob(
+                        creator, origin.id(), "PDF", "one-clone", "origin-hash", origin.expires());
+        assertEquals(
+                job.id(),
+                store.createExportJob(
+                                creator,
+                                origin.id(),
+                                "PDF",
+                                "one-clone",
+                                "origin-hash",
+                                origin.expires())
+                        .id());
         assertEquals(2, f.count("rpt_run"));
-        assertFault(429, () -> store.createExportJob(creator, origin.id(), "PDF", "quota", "other-hash", origin.expires()));
+        assertFault(
+                429,
+                () ->
+                        store.createExportJob(
+                                creator,
+                                origin.id(),
+                                "PDF",
+                                "quota",
+                                "other-hash",
+                                origin.expires()));
         assertEquals(2, f.count("rpt_run"));
         assertEquals(job.id(), store.jobByRequest(creator, "one-clone").orElseThrow().id());
         assertTrue(store.jobByRequest(actor("B", 7), "one-clone").isEmpty());
     }
 
-
-    @Test void expiryRetainsReferencesUntilPhysicalCleanupIsAcknowledgedAndCanBeRetried() {
+    /**
+     * 验证 {@code expiryRetainsReferencesUntilPhysicalCleanupIsAcknowledgedAndCanBeRetried}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void expiryRetainsReferencesUntilPhysicalCleanupIsAcknowledgedAndCanBeRetried() {
         var run = f.completedRun(creator);
         var queued = f.job(creator, run, "cleanup-retry");
         var claimed = store.claimJob(queued, "worker", Instant.now().plusSeconds(60)).orElseThrow();
         assertTrue(store.finishJob(claimed, "worker", "SUCCEEDED", "private-file", 10L, null));
-        f.jdbc.update("UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE job_id=?", Long.valueOf(queued.id()));
+        f.jdbc.update(
+                "UPDATE rpt_export_job SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " job_id=?",
+                Long.valueOf(queued.id()));
         var succeeded = f.reload(queued);
         assertTrue(store.tryExpireJob(succeeded));
         var expiredJob = f.reload(queued);
         assertEquals("private-file", expiredJob.file());
-        assertTrue(store.expiredJobs().stream().anyMatch(j -> j.id().equals(queued.id()) && j.file().equals("private-file")));
+        assertTrue(
+                store.expiredJobs().stream()
+                        .anyMatch(
+                                j ->
+                                        j.id().equals(queued.id())
+                                                && j.file().equals("private-file")));
         assertTrue(store.ackJobCleanup(expiredJob));
         assertNull(f.reload(queued).file());
         assertTrue(store.expiredJobs().stream().noneMatch(j -> j.id().equals(queued.id())));
-        f.jdbc.update("UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE run_id=?", Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " run_id=?",
+                Long.valueOf(run.id()));
         assertTrue(store.expireRun(run));
         var expiredRun = store.run("A", run.id()).orElseThrow();
         assertEquals(run.snapshot(), expiredRun.snapshot());
@@ -535,33 +1089,74 @@ class ReportStoreTest {
         assertTrue(store.expiredRuns().stream().noneMatch(r -> r.id().equals(run.id())));
     }
 
-    @Test void cleanupAcknowledgementCannotClearLiveOrReplacedReferences() {
+    /** 验证 {@code cleanupAcknowledgementCannotClearLiveOrReplacedReferences} 场景下的结果与边界条件。 */
+    @Test
+    void cleanupAcknowledgementCannotClearLiveOrReplacedReferences() {
         var run = f.completedRun(creator);
         assertFalse(store.ackRunCleanup(run));
-        f.jdbc.update("UPDATE rpt_run SET state='EXPIRED',snapshot_ref='replacement-file' WHERE run_id=?", Long.valueOf(run.id()));
+        f.jdbc.update(
+                "UPDATE rpt_run SET state='EXPIRED',snapshot_ref='replacement-file' WHERE run_id=?",
+                Long.valueOf(run.id()));
         assertFalse(store.ackRunCleanup(run));
         assertEquals("replacement-file", store.run("A", run.id()).orElseThrow().snapshot());
         assertTrue(store.ackRunCleanup(store.run("A", run.id()).orElseThrow()));
     }
 
+    /**
+     * 完成 {@code assertFault} 对应的报表存储测试处理。
+     *
+     * @param status 当前操作的 {@code status} 输入
+     * @param action 资源操作
+     */
     private static void assertFault(int status, org.junit.jupiter.api.function.Executable action) {
         assertEquals(status, assertThrows(ReportFault.class, action).status());
     }
-    @Test void artifactRecoveryReferenceChecksRespectTenantAndUnacknowledgedExpiry() {
-        var run=f.completedRun(creator);
-        assertTrue(store.artifactReferenced("A",run.snapshot()));assertTrue(store.artifactReferenced("A",run.plan()));
-        assertFalse(store.artifactReferenced("B",run.snapshot()));assertFalse(store.artifactReferenced("A","unregistered-object"));
-        f.jdbc.update("UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE run_id=?",Long.valueOf(run.id()));
-        assertTrue(store.expireRun(run));assertTrue(store.artifactReferenced("A",run.snapshot()));
-        assertTrue(store.ackRunCleanup(store.run("A",run.id()).orElseThrow()));assertFalse(store.artifactReferenced("A",run.snapshot()));
+
+    /**
+     * 验证 {@code artifactRecoveryReferenceChecksRespectTenantAndUnacknowledgedExpiry} 场景下的结果与边界条件。
+     */
+    @Test
+    void artifactRecoveryReferenceChecksRespectTenantAndUnacknowledgedExpiry() {
+        var run = f.completedRun(creator);
+        assertTrue(store.artifactReferenced("A", run.snapshot()));
+        assertTrue(store.artifactReferenced("A", run.plan()));
+        assertFalse(store.artifactReferenced("B", run.snapshot()));
+        assertFalse(store.artifactReferenced("A", "unregistered-object"));
+        f.jdbc.update(
+                "UPDATE rpt_run SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1' MINUTE WHERE"
+                        + " run_id=?",
+                Long.valueOf(run.id()));
+        assertTrue(store.expireRun(run));
+        assertTrue(store.artifactReferenced("A", run.snapshot()));
+        assertTrue(store.ackRunCleanup(store.run("A", run.id()).orElseThrow()));
+        assertFalse(store.artifactReferenced("A", run.snapshot()));
     }
-    @Test void snapshotDataTimeIsTheAcquiredExecutionStartRatherThanQueueAdmissionTime() {
-        var definition=f.definition(creator);var version=f.publish(creator,definition);
-        var run=store.createRun(creator,definition.id(),version.id(),"SNAPSHOT","{}","scope",Instant.now().plusSeconds(3600));
-        f.jdbc.update("UPDATE rpt_run SET data_time=? WHERE run_id=?",java.sql.Timestamp.from(Instant.parse("2000-01-01T00:00:00Z")),Long.valueOf(run.id()));
-        assertTrue(store.beginSnapshot("A",run.id(),"build/preview/time",null));
-        var started=store.run("A",run.id()).orElseThrow();assertTrue(started.dataTime().isAfter(Instant.parse("2000-01-02T00:00:00Z")));
-        assertFalse(store.beginSnapshot("A",run.id(),"build/preview/stale",null));
-        assertEquals(started.dataTime(),store.run("A",run.id()).orElseThrow().dataTime());
+
+    /**
+     * 验证 {@code snapshotDataTimeIsTheAcquiredExecutionStartRatherThanQueueAdmissionTime}
+     * 场景下的结果与边界条件。
+     */
+    @Test
+    void snapshotDataTimeIsTheAcquiredExecutionStartRatherThanQueueAdmissionTime() {
+        var definition = f.definition(creator);
+        var version = f.publish(creator, definition);
+        var run =
+                store.createRun(
+                        creator,
+                        definition.id(),
+                        version.id(),
+                        "SNAPSHOT",
+                        "{}",
+                        "scope",
+                        Instant.now().plusSeconds(3600));
+        f.jdbc.update(
+                "UPDATE rpt_run SET data_time=? WHERE run_id=?",
+                java.sql.Timestamp.from(Instant.parse("2000-01-01T00:00:00Z")),
+                Long.valueOf(run.id()));
+        assertTrue(store.beginSnapshot("A", run.id(), "build/preview/time", null));
+        var started = store.run("A", run.id()).orElseThrow();
+        assertTrue(started.dataTime().isAfter(Instant.parse("2000-01-02T00:00:00Z")));
+        assertFalse(store.beginSnapshot("A", run.id(), "build/preview/stale", null));
+        assertEquals(started.dataTime(), store.run("A", run.id()).orElseThrow().dataTime());
     }
 }

@@ -13,14 +13,22 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.util.*;
 
+/** 报表数据集版本测试，负责当前模块对应的契约或处理职责。 */
 class ReportDatasetVersionTest {
+    /** 测试私有目录。 */
     @TempDir Path directory;
 
+    /** 验证 {@code oldContractRemainsVisibleAfterAnotherVersionIsPublished} 场景下的结果与边界条件。 */
     @Test
     void oldContractRemainsVisibleAfterAnotherVersionIsPublished() {
         try (var f = new RuntimeReviewFixture(directory)) {
             var next =
                     new ReportDatasetProvider() {
+                        /**
+                         * 读取固定代码契约描述。
+                         *
+                         * @return 当前处理返回的固定结果
+                         */
                         public DatasetDescriptor descriptor() {
                             return new DatasetDescriptor(
                                     "SECURE_TEST",
@@ -35,6 +43,13 @@ class ReportDatasetVersionTest {
                                     List.of("code"));
                         }
 
+                        /**
+                         * 执行受控只读查询。
+                         *
+                         * @param c 当前操作的 {@code c} 输入
+                         * @param q 当前操作的 {@code q} 输入
+                         * @return 当前处理返回的固定结果
+                         */
                         public DatasetResult query(ReportExecutionContext c, DatasetQuery q) {
                             throw new UnsupportedOperationException();
                         }
@@ -42,10 +57,25 @@ class ReportDatasetVersionTest {
             var registry = new ReportProviderRegistry(List.of(f.provider, next));
             var authorization =
                     new ReportAuthorizationPort() {
+                        /**
+                         * 重新解析当前账户和业务权限。
+                         *
+                         * @param tenant 当前租户标识
+                         * @param user 当前操作的 {@code user} 输入
+                         * @return 当前处理返回的固定结果
+                         */
                         public ReportActor resolve(String tenant, long user) {
                             return f.definitions.resolve(tenant, user);
                         }
 
+                        /**
+                         * 校验授权主体属于当前租户。
+                         *
+                         * @param t 当前操作的 {@code t} 输入
+                         * @param k 当前操作的 {@code k} 输入
+                         * @param id 资源标识
+                         * @return 当前检查或条件操作是否成功
+                         */
                         public boolean subjectExists(String t, String k, long id) {
                             return true;
                         }
@@ -103,6 +133,7 @@ class ReportDatasetVersionTest {
         }
     }
 
+    /** 验证 {@code tamperedOrDisabledContractsAreNotReturned} 场景下的结果与边界条件。 */
     @Test
     void tamperedOrDisabledContractsAreNotReturned() {
         try (var f = new RuntimeReviewFixture(directory)) {

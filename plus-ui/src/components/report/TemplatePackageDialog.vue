@@ -19,20 +19,55 @@
   >
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, watch, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { importTemplatePackage } from '@/api/report';
 import { RequestGate } from '@/views/report/model';
 import type { DatasetView } from '@/types/report';
+/**
+ * 保存当前页面或测试的open状态。
+ */
 const open = defineModel<boolean>({ default: false });
-defineProps<{ datasets: DatasetView[] }>();
-const emit = defineEmits<{ imported: [string] }>();
+defineProps<{
+  /** 保存当前 `datasets` 值。 */
+  datasets: DatasetView[];
+}>();
+/**
+ * 保存当前页面或测试的emit状态。
+ */
+const emit = defineEmits<{
+  /** 保存当前 `imported` 值。 */
+  imported: [string];
+}>();
+/**
+ * 保存当前页面或测试的pack状态。
+ */
 const pack = ref<unknown>();
+/**
+ * 保存当前页面或测试的version状态。
+ */
 const version = ref('');
+/**
+ * 保存当前页面或测试的code状态。
+ */
 const code = ref('');
+/**
+ * 保存当前页面或测试的title状态。
+ */
 const title = ref('');
+/**
+ * 保存当前页面或测试的saving状态。
+ */
 const saving = ref(false);
+/**
+ * 保存当前页面或测试的session状态。
+ */
 const session = ref(0);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
 watch(
   open,
@@ -45,6 +80,7 @@ watch(
   },
   { flush: 'sync' }
 );
+/** 读取并检查当前租户私有产物。 */
 async function read(event: Event) {
   const ticket = gate.begin();
   const file = (event.target as HTMLInputElement).files?.[0];
@@ -61,6 +97,7 @@ async function read(event: Event) {
     if (gate.current(ticket)) ElMessage.warning('模板包格式无效');
   }
 }
+/** 处理当前报表的 `submit` 操作。 */
 async function submit() {
   if (saving.value || !open.value || !pack.value || !version.value || !code.value || !title.value) return;
   const ticket = gate.begin();

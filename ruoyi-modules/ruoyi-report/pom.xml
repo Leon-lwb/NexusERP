@@ -5,6 +5,9 @@
     <artifactId>ruoyi-report</artifactId>
     <description>Nexus 自研报表定义、运行引擎与设计器服务</description>
     <dependencies>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-job</artifactId></dependency>
+        <dependency><groupId>software.amazon.awssdk</groupId><artifactId>s3</artifactId></dependency>
+        <dependency><groupId>com.google.zxing</groupId><artifactId>core</artifactId><version>3.5.3</version></dependency>
         <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-core</artifactId></dependency>
         <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-report</artifactId></dependency>
         <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-core</artifactId></dependency>

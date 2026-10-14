@@ -94,6 +94,8 @@
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -104,23 +106,77 @@ import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import AclDialog from '@/components/report/AclDialog.vue';
 defineOptions({ name: 'ReportDataset' });
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的failed状态。
+ */
 const failed = ref(false);
+/**
+ * 保存当前页面或测试的loadGate状态。
+ */
 const loadGate = new RequestGate();
+/**
+ * 保存当前页面或测试的datasets状态。
+ */
 const datasets = ref<DatasetView[]>([]);
+/**
+ * 保存当前页面或测试的providers状态。
+ */
 const providers = ref<DatasetDescriptor[]>([]);
+/**
+ * 保存当前页面或测试的providerOpen状态。
+ */
 const providerOpen = ref(false);
+/**
+ * 保存当前页面或测试的registering状态。
+ */
 const registering = ref('');
+/**
+ * 保存当前页面或测试的detailOpen状态。
+ */
 const detailOpen = ref(false);
+/**
+ * 保存当前页面或测试的selected状态。
+ */
 const selected = ref<DatasetView>();
+/**
+ * 保存当前页面或测试的tab状态。
+ */
 const tab = ref('fields');
+/**
+ * 保存当前页面或测试的parameters状态。
+ */
 const parameters = ref<Record<string, string>>({});
+/**
+ * 保存当前页面或测试的sampling状态。
+ */
 const sampling = ref(false);
+/**
+ * 保存当前页面或测试的sampleData状态。
+ */
 const sampleData = ref<DraftPreview>();
+/**
+ * 保存当前页面或测试的aclId状态。
+ */
 const aclId = ref('');
+/**
+ * 保存当前页面或测试的aclOpen状态。
+ */
 const aclOpen = ref(false);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/**
+ * 保存当前页面或测试的sampleColumns状态。
+ */
 const sampleColumns = computed<ReportColumn[]>(
   () =>
     selected.value?.descriptor.defaultColumns.map((name) => {
@@ -128,6 +184,7 @@ const sampleColumns = computed<ReportColumn[]>(
       return { field: name, label: field.label, width: 120, scale: field.type === 'DECIMAL' ? 4 : 0, expression: null, style: normalStyle() };
     }) || []
 );
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   const ticket = loadGate.begin();
   loading.value = true;
@@ -144,12 +201,14 @@ async function load() {
     if (loadGate.current(ticket)) loading.value = false;
   }
 }
+/** 处理当前报表的 `openProviders` 操作。 */
 async function openProviders() {
   try {
     providers.value = (await listProviders()).data;
     providerOpen.value = true;
   } catch {}
 }
+/** 处理当前报表的 `register` 操作。 */
 async function register(descriptor: DatasetDescriptor) {
   registering.value = descriptor.code;
   try {
@@ -161,6 +220,7 @@ async function register(descriptor: DatasetDescriptor) {
     registering.value = '';
   }
 }
+/** 处理当前报表的 `inspect` 操作。 */
 function inspect(dataset: DatasetView) {
   invalidateSample();
   selected.value = dataset;
@@ -169,6 +229,7 @@ function inspect(dataset: DatasetView) {
   detailOpen.value = true;
   tab.value = 'fields';
 }
+/** 处理当前报表的 `sample` 操作。 */
 async function sample() {
   if (!selected.value) return;
   const ticket = gate.begin();
@@ -181,6 +242,7 @@ async function sample() {
     if (gate.current(ticket)) sampling.value = false;
   }
 }
+/** 处理当前报表的 `toggle` 操作。 */
 async function toggle(dataset: DatasetView) {
   try {
     const state = dataset.dataset.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
@@ -189,6 +251,7 @@ async function toggle(dataset: DatasetView) {
     await load();
   } catch {}
 }
+/** 处理当前报表的 `invalidateSample` 操作。 */
 function invalidateSample() {
   gate.invalidate();
   sampling.value = false;

@@ -7,10 +7,26 @@ import com.nexus.report.engine.ReportCompiler;
 
 import java.util.*;
 
-/** Portable definitions contain no tenant grants, business defaults or runtime artifacts. */
+/** 可移植模板包不包含租户授权、业务标识默认值或运行产物。 */
 public final class ReportTemplatePackageService {
+    /**
+     * Dependency，负责当前模块对应的契约或处理职责。
+     *
+     * @param code 当前契约的code配置或状态
+     * @param providerVersion 当前契约的providerVersion配置或状态
+     * @param checksum 实际内容的SHA-256校验和
+     */
     public record Dependency(String code, int providerVersion, String checksum) {}
 
+    /**
+     * 模板模板包，负责当前模块对应的契约或处理职责。
+     *
+     * @param formatVersion 契约格式版本
+     * @param engine 当前契约的engine配置或状态
+     * @param dsl 不可变的报表定义
+     * @param dependency 当前契约的dependency配置或状态
+     * @param checksum 实际内容的SHA-256校验和
+     */
     public record TemplatePackage(
             int formatVersion,
             String engine,
@@ -18,18 +34,42 @@ public final class ReportTemplatePackageService {
             Dependency dependency,
             String checksum) {}
 
+    /**
+     * Content，负责当前模块对应的契约或处理职责。
+     *
+     * @param formatVersion 契约格式版本
+     * @param engine 当前契约的engine配置或状态
+     * @param dsl 不可变的报表定义
+     * @param dependency 当前契约的dependency配置或状态
+     */
     private record Content(
             int formatVersion, String engine, ReportDsl dsl, Dependency dependency) {}
 
+    /** 保存当前 {@code definitions} 值。 */
     private final ReportDefinitionService definitions;
+
+    /** 报表编译器。 */
     private final ReportCompiler compiler;
 
+    /**
+     * 初始化报表模板模板包服务并保存所需依赖或不可变值。
+     *
+     * @param definitions 当前操作的 {@code definitions} 输入
+     * @param compiler 报表编译器
+     */
     public ReportTemplatePackageService(
             ReportDefinitionService definitions, ReportCompiler compiler) {
         this.definitions = definitions;
         this.compiler = compiler;
     }
 
+    /**
+     * 导出不包含租户授权和运行数据的模板包。
+     *
+     * @param actor 当前服务端身份
+     * @param id 资源标识
+     * @return 当前处理返回的固定结果
+     */
     public TemplatePackage export(ReportActor actor, String id) {
         var current = definitions.resolve(actor.tenantId(), actor.userId());
         var definition = definitions.detail(current, id);
@@ -48,6 +88,16 @@ public final class ReportTemplatePackageService {
         return new TemplatePackage(1, content.engine(), portable, dependency, checksum);
     }
 
+    /**
+     * 复制已授权定义并清除业务标识默认值。
+     *
+     * @param actor 当前服务端身份
+     * @param source 来源定义或资源
+     * @param code 业务编码
+     * @param title 当前操作的 {@code title} 输入
+     * @param catalog 当前操作的 {@code catalog} 输入
+     * @return 当前处理返回的固定结果
+     */
     public Definition copy(
             ReportActor actor, String source, String code, String title, String catalog) {
         var pack = export(actor, source);
@@ -57,6 +107,17 @@ public final class ReportTemplatePackageService {
         return importDraft(current, pack, dsl.datasetVersionId(), code, title, catalog);
     }
 
+    /**
+     * 校验依赖和包完整性后创建本租户草稿。
+     *
+     * @param actor 当前服务端身份
+     * @param pack 当前操作的 {@code pack} 输入
+     * @param datasetVersion 当前操作的 {@code datasetVersion} 输入
+     * @param code 业务编码
+     * @param title 当前操作的 {@code title} 输入
+     * @param catalog 当前操作的 {@code catalog} 输入
+     * @return 当前处理返回的固定结果
+     */
     public Definition importDraft(
             ReportActor actor,
             TemplatePackage pack,
@@ -90,6 +151,15 @@ public final class ReportTemplatePackageService {
         return definitions.create(current, dsl, catalog);
     }
 
+    /**
+     * 完成 {@code portable} 对应的报表模板模板包服务处理。
+     *
+     * @param source 来源定义或资源
+     * @param code 业务编码
+     * @param title 当前操作的 {@code title} 输入
+     * @param version 固定版本
+     * @return 当前处理返回的固定结果
+     */
     private static ReportDsl portable(ReportDsl source, String code, String title, String version) {
         return new ReportDsl(
                 source.schemaVersion(),

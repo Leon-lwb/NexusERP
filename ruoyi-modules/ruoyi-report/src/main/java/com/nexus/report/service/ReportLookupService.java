@@ -5,16 +5,41 @@ import com.nexus.report.domain.ReportFault;
 
 import java.util.*;
 
-/** Resolves a fixed dataset parameter and rechecks current scopes after the business lookup. */
+/** 解析固定数据集参数，业务候选查询完成后再次检查当前权限范围。 */
 public final class ReportLookupService {
+    /**
+     * Key，负责当前模块对应的契约或处理职责。
+     *
+     * @param code 当前契约的code配置或状态
+     * @param version 当前契约的version配置或状态
+     * @param parameter 当前契约的parameter配置或状态
+     */
     private record Key(String code, int version, String parameter) {}
 
+    /**
+     * Registered，负责当前模块对应的契约或处理职责。
+     *
+     * @param binding 当前契约的binding配置或状态
+     * @param provider 当前契约的provider配置或状态
+     */
     private record Registered(ReportLookupBinding binding, ReportLookupProvider provider) {}
 
+    /** 保存当前 {@code installed} 值。 */
     private final Map<Key, Registered> installed = new HashMap<>();
+
+    /** 保存当前 {@code versions} 值。 */
     private final ReportDatasetVersionService versions;
+
+    /** 保存当前 {@code definitions} 值。 */
     private final ReportDefinitionService definitions;
 
+    /**
+     * 初始化报表选择器服务并保存所需依赖或不可变值。
+     *
+     * @param versions 当前操作的 {@code versions} 输入
+     * @param definitions 当前操作的 {@code definitions} 输入
+     * @param providers 当前操作的 {@code providers} 输入
+     */
     public ReportLookupService(
             ReportDatasetVersionService versions,
             ReportDefinitionService definitions,
@@ -37,6 +62,13 @@ public final class ReportLookupService {
             }
     }
 
+    /**
+     * 列出固定契约已安装且有权限的选择器。
+     *
+     * @param actor 当前服务端身份
+     * @param version 固定版本
+     * @return 当前处理返回的固定结果
+     */
     public List<ReportLookupBinding> bindings(ReportActor actor, String version) {
         var descriptor = versions.forRuntime(actor, version).descriptor();
         var current = definitions.resolve(actor.tenantId(), actor.userId());
@@ -48,6 +80,15 @@ public final class ReportLookupService {
                 .toList();
     }
 
+    /**
+     * 执行受控只读查询。
+     *
+     * @param actor 当前服务端身份
+     * @param version 固定版本
+     * @param parameter 当前操作的 {@code parameter} 输入
+     * @param query 已声明字段和筛选参数
+     * @return 当前处理返回的固定结果
+     */
     public ReportLookupProvider.Result query(
             ReportActor actor, String version, String parameter, ReportLookupProvider.Query query) {
         var current = definitions.resolve(actor.tenantId(), actor.userId());
@@ -57,8 +98,8 @@ public final class ReportLookupService {
         var entry = installed.get(new Key(descriptor.code(), descriptor.version(), parameter));
         if (entry == null) throw new ReportFault("LOOKUP_UNSUPPORTED", "该参数没有安装选择器", 404);
         ReportDefinitionService.require(current, entry.binding().permission());
-        // Report permission was checked by the contract reader. Apply each entity's organization
-        // policy to its own table.
+        /** 契约读取阶段已校验报表权限；各实体表分别应用其自身业务组织范围。 */
+        /** 每张业务表使用对应实体的访问策略。 */
         var scopes = List.of(current.scopeFor(entry.binding().permission()));
         var result =
                 entry.provider()

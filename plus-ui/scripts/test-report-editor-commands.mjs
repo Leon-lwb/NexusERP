@@ -10,7 +10,13 @@ await build({
   format: 'esm',
   platform: 'node'
 });
+/**
+ * 保存当前页面或测试的m状态。
+ */
 const m = await import(pathToFileURL(resolve('node_modules/.tmp/report-editor-commands.mjs')));
+/**
+ * 保存当前页面或测试的dsl状态。
+ */
 const dsl = {
   schemaVersion: 1,
   datasetCode: 'TEST',
@@ -39,12 +45,14 @@ const dsl = {
   summaries: [],
   repeatHeader: true
 };
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('batch styles are immutable and affect only selected columns', () => {
   const next = m.styleColumns(dsl, [1], { bold: true });
   assert.equal(next.columns[1].style.bold, true);
   assert.equal(next.columns[0].style.bold, false);
   assert.equal(dsl.columns[1].style.bold, false);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('copy paste creates distinct computed bindings and preserves source', () => {
   const text = m.copyColumns(dsl, [0]);
   const next = m.pasteColumns(dsl, text);
@@ -53,11 +61,13 @@ test('copy paste creates distinct computed bindings and preserves source', () =>
   assert.equal(next.columns[2].expression, 'a');
   assert.equal(dsl.columns.length, 2);
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('clipboard rejects foreign datasets, over-capacity and illegal payloads', () => {
   assert.throws(() => m.pasteColumns({ ...dsl, datasetCode: 'OTHER' }, m.copyColumns(dsl, [0])));
   assert.throws(() => m.pasteColumns(dsl, '<script>'));
   assert.throws(() => m.styleColumns(dsl, [10], { bold: true }));
 });
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('bound descriptors cannot silently follow a newer head or a foreign response', () => {
   const heads = [{ dataset: { code: 'TEST', publishedVersion: '200' }, descriptor: { version: 2 }, canManage: true }];
   assert.equal(m.boundDataset(heads, dsl, undefined), undefined);
@@ -65,12 +75,14 @@ test('bound descriptors cannot silently follow a newer head or a foreign respons
   assert.equal(m.boundDataset(heads, dsl, { id: '100', code: 'TEST', descriptor: { version: 1 } }).descriptor.version, 1);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('structural errors identify their exact editable column without computing values', () => {
   const issues = m.editorIssues({ ...dsl, columns: [...dsl.columns, { ...dsl.columns[0] }] }, { fields: [{ name: 'a' }] });
   assert.ok(issues.some((i) => i.index === 1 && i.message.includes('b')));
   assert.ok(issues.some((i) => i.index === 2 && i.message.includes('重复')));
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('document paste keeps printable width and full-width fixed bands', () => {
   const row = { height: 24, cells: [{ column: 0, colSpan: 2, rowSpan: 1, text: '标题', field: null, style: dsl.columns[0].style }] };
   const original = {
@@ -87,6 +99,7 @@ test('document paste keeps printable width and full-width fixed bands', () => {
   assert.equal(original.headerRows[0].cells[0].colSpan, 2);
 });
 
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('contract upgrade adds required parameters and removes or resets incompatible definitions', () => {
   const original = {
     ...structuredClone(dsl),

@@ -1,5 +1,7 @@
 import type { ReportDsl, DatasetDescriptor, DatasetField, ReportStyle, TypedValue, ReportSummary, ExportFormat } from '@/types/report';
+/** 返回原生报表默认文字样式。 */
 export const normalStyle = (): ReportStyle => ({ fontSize: 10, bold: false, align: 'LEFT', color: '#1f2937', background: '#ffffff' });
+/** 格式化精确值，十进制舍入使用整数文本而不转换为浮点数。 */
 export function formatTyped(value: TypedValue | null | undefined, scale = 2): string {
   if (!value || value.value === null) return '';
   if (value.type === 'BOOLEAN') return value.value === 'true' ? '是' : '否';
@@ -13,6 +15,7 @@ export function formatTyped(value: TypedValue | null | undefined, scale = 2): st
   const result = integer.toString().padStart(scale + 1, '0');
   return (negative && integer !== 0n ? '-' : '') + (scale ? result.slice(0, -scale) + '.' + result.slice(-scale) : result);
 }
+/** 按已授权契约创建原生草稿并复制声明参数。 */
 export function createDsl(descriptor: DatasetDescriptor, datasetVersionId: string, code: string): ReportDsl {
   const names = descriptor.defaultColumns.length ? descriptor.defaultColumns : descriptor.fields.slice(0, 5).map((f) => f.name);
   const columns = names.map((name) => {
@@ -42,6 +45,7 @@ export function createDsl(descriptor: DatasetDescriptor, datasetVersionId: strin
   }
   return dsl;
 }
+/** 按相对宽度适配纸张可用区域。 */
 export function fitColumns(dsl: ReportDsl): void {
   const width = dsl.page.width - dsl.page.marginLeft - dsl.page.marginRight;
   const total = dsl.columns.reduce((sum, c) => sum + c.width, 0);
@@ -49,9 +53,11 @@ export function fitColumns(dsl: ReportDsl): void {
     c.width = (width * c.width) / total;
   });
 }
+/** 复制已授权定义并清除业务标识默认值。 */
 function copy(dsl: ReportDsl): ReportDsl {
   return JSON.parse(JSON.stringify(dsl));
 }
+/** 不可变添加可信字段并维护整行固定区域覆盖。 */
 export function addField(dsl: ReportDsl, field: DatasetField): ReportDsl {
   if (dsl.columns.length >= 40 || dsl.columns.some((c) => c.field === field.name)) throw new Error('该字段已添加或已达到 40 列上限');
   const next = copy(dsl);
@@ -72,6 +78,7 @@ export function addField(dsl: ReportDsl, field: DatasetField): ReportDsl {
   if (next.kind === 'DOCUMENT') fitColumns(next);
   return next;
 }
+/** 不可变删除明细列并保持至少一列及合并一致。 */
 export function removeColumn(dsl: ReportDsl, index: number): ReportDsl {
   if (dsl.columns.length <= 1 || index < 0 || index >= dsl.columns.length) throw new Error('至少保留一列明细');
   const next = copy(dsl);
@@ -86,6 +93,7 @@ export function removeColumn(dsl: ReportDsl, index: number): ReportDsl {
   if (next.kind === 'DOCUMENT') fitColumns(next);
   return next;
 }
+/** 重排明细列并检查有效下标。 */
 export function moveColumn(dsl: ReportDsl, from: number, to: number): ReportDsl {
   if (from < 0 || to < 0 || from >= dsl.columns.length || to >= dsl.columns.length) throw new Error('列位置无效');
   const next = copy(dsl);
@@ -93,15 +101,18 @@ export function moveColumn(dsl: ReportDsl, from: number, to: number): ReportDsl 
   next.columns.splice(to, 0, column);
   return next;
 }
+/** 仅保留非空字符串参数，默认值由服务器按契约解析。 */
 export function parameterInput(input: Record<string, string>): Record<string, string> {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== '' && value !== undefined));
 }
+/** 处理当前报表的 `summaryFor` 操作。 */
 export function summaryFor(field: DatasetField): ReportSummary {
   if (!field.aggregatable || !['DECIMAL', 'INTEGER'].includes(field.type)) throw new Error('请选择允许汇总的数值字段');
   return { field: field.name, function: 'SUM', groupBy: [...field.aggregationKeys], label: field.label + '合计', scale: 4 };
 }
+/** 处理当前报表的 `requiresSnapshot` 操作。 */
 export function requiresSnapshot(dsl: ReportDsl): boolean {
-  if (dsl.kind === 'DOCUMENT' || dsl.summaries.some((s) => s.function !== 'COUNT_ROWS' || s.groupBy.length > 0)) return true;
+  if (dsl.kind !== 'TABLE' || dsl.summaries.some((s) => s.function !== 'COUNT_ROWS' || s.groupBy.length > 0)) return true;
   return dsl.columns.some((column) => {
     const expression = column.expression || '';
     for (const match of expression.matchAll(/\b(SUM|COUNT|MIN|MAX)\s*\(/gi)) {
@@ -118,9 +129,13 @@ export function requiresSnapshot(dsl: ReportDsl): boolean {
     return false;
   });
 }
+/** 按运行模式和行数决定允许的导出格式。 */
 export function exportFormats(mode: string, rows: number): ExportFormat[] {
   return rows > 5000 ? ['XLSX_DATA'] : ['PDF', 'XLSX_DATA', 'XLSX_LAYOUT'];
 }
+/**
+ * 保存当前页面或测试的keys状态。
+ */
 const keys = new Set([
   'schemaVersion',
   'code',
@@ -134,15 +149,20 @@ const keys = new Set([
   'headerRows',
   'footerRows',
   'summaries',
-  'repeatHeader'
+  'repeatHeader',
+  'pivot',
+  'print'
 ]);
+/** 序列化自有定义并拒绝混入编辑器状态。 */
 export function serializeDsl(dsl: ReportDsl): string {
   if (Object.keys(dsl).some((key) => !keys.has(key))) throw new Error('编辑状态不得进入报表定义');
   return JSON.stringify(dsl);
 }
-/** Editor-only snapshots; these states are never part of the persisted DSL. */
+/** 仅用于编辑器的历史快照，不写入持久化报表定义。 */
 export class DslHistory {
+  /** 保存当前 `states` 值。 */
   private states: string[] = [];
+  /** 保存当前 `cursor` 值。 */
   private cursor = -1;
   constructor(private readonly limit = 50) {}
   get canUndo(): boolean {
@@ -151,10 +171,12 @@ export class DslHistory {
   get canRedo(): boolean {
     return this.cursor + 1 < this.states.length;
   }
+  /** 处理当前报表的 `reset` 操作。 */
   reset(dsl?: ReportDsl): void {
     this.states = dsl ? [serializeDsl(dsl)] : [];
     this.cursor = this.states.length - 1;
   }
+  /** 记录有界阶段和结果指标。 */
   record(dsl: ReportDsl): void {
     const snapshot = serializeDsl(dsl);
     if (this.states[this.cursor] === snapshot) return;
@@ -163,27 +185,35 @@ export class DslHistory {
     if (this.states.length > this.limit) this.states.shift();
     this.cursor = this.states.length - 1;
   }
+  /** 处理当前报表的 `undo` 操作。 */
   undo(): ReportDsl | undefined {
     if (!this.canUndo) return;
     return JSON.parse(this.states[--this.cursor]);
   }
+  /** 处理当前报表的 `redo` 操作。 */
   redo(): ReportDsl | undefined {
     if (!this.canRedo) return;
     return JSON.parse(this.states[++this.cursor]);
   }
 }
+/** 声明请求Gate结构，保留服务端精确值和固定版本约束。 */
 export class RequestGate {
+  /** 保存当前 `serial` 值。 */
   private serial = 0;
+  /** 处理当前报表的 `begin` 操作。 */
   begin(): number {
     return ++this.serial;
   }
+  /** 处理当前报表的 `current` 操作。 */
   current(serial: number): boolean {
     return serial === this.serial;
   }
+  /** 处理当前报表的 `invalidate` 操作。 */
   invalidate(): void {
     this.serial += 1;
   }
 }
+/** 处理当前报表的 `jobError` 操作。 */
 export function jobError(code: string | null): string {
   const messages: Record<string, string> = {
     SCOPE_CHANGED: '权限范围已变化，请重新运行',

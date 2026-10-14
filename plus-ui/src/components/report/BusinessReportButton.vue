@@ -15,15 +15,47 @@
   >
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, watch, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { businessReportTemplates } from '@/api/report';
 import { RequestGate } from '@/views/report/model';
-const props = defineProps<{ datasetCode: string; parameter: string; recordId: string | number | undefined }>();
+/**
+ * 保存当前页面或测试的props状态。
+ */
+const props = defineProps<{
+  /** 保存当前 `datasetCode` 值。 */
+  datasetCode: string;
+  /** 保存当前 `parameter` 值。 */
+  parameter: string;
+  /** 保存当前 `recordId` 值。 */
+  recordId: string | number | undefined;
+}>();
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
-const reports = ref<{ id: string; name: string }[]>([]);
+/**
+ * 保存当前页面或测试的reports状态。
+ */
+const reports = ref<
+  {
+    /** 保存资源标识。 */
+    id: string;
+    /** 保存当前 `name` 值。 */
+    name: string;
+  }[]
+>([]);
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   const ticket = gate.begin();
   loading.value = true;
@@ -36,6 +68,7 @@ async function load() {
     if (gate.current(ticket)) loading.value = false;
   }
 }
+/** 处理当前报表的 `open` 操作。 */
 function open(id: string) {
   if (props.recordId == null) return;
   router.push({ path: '/report/viewer', query: { id, [props.parameter]: String(props.recordId) } });

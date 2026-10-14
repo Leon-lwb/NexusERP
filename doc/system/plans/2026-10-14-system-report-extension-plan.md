@@ -1,13 +1,13 @@
 # NexusERP 自研报表功能扩展计划
 
-> 文档编号：NexusERP-REPORT-2026-003；版本：v1.0。
-> 状态：E0 + E1 已于 2026-10-14 获用户批准，并完成实施计划中的代码与本机验证；其他阶段待审。
-> 创建 / 更新日期：2026-10-14；代码基线：codex/report-module-plan@8bacd044。
+> 文档编号：NexusERP-REPORT-2026-003；版本：v1.1。
+> 状态：E0/E1已实施；E2–E7已获用户批准并完成主要代码、中文文档注释与隔离回归。最终证据及未部署边界见[E2–E7验证报告](2026-10-15-system-report-e2-e7-verification-report.md)。
+> 创建日期：2026-10-14；更新日期：2026-10-15；代码基线：codex/report-module-plan@8bacd044。
 > 关联：[原建设设计](../specs/2026-10-13-system-reporting-design.md)、[源码调研](../specs/2026-10-13-system-reporting-research.md)、[首期验证](./2026-10-14-system-report-p0-verification-report.md)、[首期补齐验证](./2026-10-14-system-report-p0-continuation-verification.md)、[使用指南](../guides/NexusERP_自研报表模块使用指南.md)。
 
 目标：将现有 TABLE / DOCUMENT 报表升级为业务人员可持续维护的报表平台，逐步具备自助取数、交叉分析、业务单据打印、仪表盘和自动化交付能力。继续使用 ruoyi-report，自研定义、运行、设计器和策略核心；基础库负责文档编码、图表绘制、条码及存储协议。
 
-## 1. 已有能力与实际边界
+## 1. 建设前基线与实际边界
 
 基线已交付：自有 DSL v1 / engine 1.0.0，可信 provider 与精确类型，报表及数据集 ACL，草稿 revision，不可变发布与回滚，LIVE / SNAPSHOT，中文测量和分页，持久 PDF / 明细 XLSX / 样式 XLSX 任务，原生设计器和运行页面，6 类初始业务模板。最新补齐固定运行的 RenderPlan 与字体，以及跨批次私有存储恢复。
 
@@ -243,3 +243,5 @@ npm run build:prod
 | [Apache POI SXSSF](https://poi.apache.org/components/spreadsheet/how-to.html#sxssf)                    | 流式写入仍有临时文件与部分内存结构，需显式 dispose 和容量规划 | E0/E6 验证临时文件权限、清理、磁盘及 RSS，不只测能否导出                                |
 
 拟新增条码等库在对应阶段再核对许可证、字体/图片嵌入许可、漏洞和构建锁定，不把未经探针的依赖写为既定选择。每个阶段冻结边界后可进一步拆成独立设计与实现子计划，并以实际提交与验收报告更新状态。
+
+2026-10-15实施更新：E2查询规划版本、E3精确透视、E4私有打印资源/批次、E5仪表盘、E6S3硬配额/确定路径围栏/索引字体/双JVM重启、E7固定订阅和接收人交付均已接入原生模块。新模块默认开关和34表安装结构见使用指南；此次现有库未执行E2–E7迁移。

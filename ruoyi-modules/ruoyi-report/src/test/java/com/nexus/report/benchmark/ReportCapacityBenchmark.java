@@ -15,11 +15,13 @@ import java.time.Instant;
 import java.util.*;
 import java.util.zip.ZipFile;
 
-/**
- * Standalone, synthetic-only capacity probe; never opens application configuration or a business
- * database.
- */
+/** 独立的合成数据容量探针，不读取应用配置或业务数据库。 */
 public class ReportCapacityBenchmark {
+    /**
+     * 完成 {@code main} 对应的报表容量基准处理。
+     *
+     * @param args 当前操作的 {@code args} 输入
+     */
     public static void main(String[] args) throws Exception {
         int rows = Integer.parseInt(args[0]);
         boolean document = args[1].equals("DOCUMENT");
@@ -53,14 +55,33 @@ public class ReportCapacityBenchmark {
                         fields.stream().map(DatasetField::name).toList());
         var provider =
                 new ReportDatasetProvider() {
+                    /**
+                     * 读取固定代码契约描述。
+                     *
+                     * @return 当前处理返回的固定结果
+                     */
                     public DatasetDescriptor descriptor() {
                         return descriptor;
                     }
 
+                    /**
+                     * 执行受控只读查询。
+                     *
+                     * @param c 当前操作的 {@code c} 输入
+                     * @param q 当前操作的 {@code q} 输入
+                     * @return 当前处理返回的固定结果
+                     */
                     public DatasetResult query(ReportExecutionContext c, DatasetQuery q) {
                         return new DatasetResult(List.of(row(0)), rows, Instant.now());
                     }
 
+                    /**
+                     * 在取消与容量控制下逐行读取。
+                     *
+                     * @param c 当前操作的 {@code c} 输入
+                     * @param q 当前操作的 {@code q} 输入
+                     * @param consume 当前操作的 {@code consume} 输入
+                     */
                     public void stream(
                             ReportExecutionContext c,
                             DatasetQuery q,
@@ -71,6 +92,12 @@ public class ReportCapacityBenchmark {
                         }
                     }
 
+                    /**
+                     * 完成 {@code row} 对应的报表处理。
+                     *
+                     * @param number 当前序号
+                     * @return 当前处理返回的固定结果
+                     */
                     private Map<String, Object> row(int number) {
                         var value = new LinkedHashMap<String, Object>();
                         for (int i = 0; i < 10; i++)

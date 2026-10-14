@@ -16,9 +16,12 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/** 报表引擎Compatibility测试，负责当前模块对应的契约或处理职责。 */
 class ReportEngineCompatibilityTest {
+    /** 测试私有目录。 */
     @TempDir Path directory;
 
+    /** 验证 {@code defaultChangesDoNotReplaceTheExecutorForAnExistingPublication} 场景下的结果与边界条件。 */
     @Test
     void defaultChangesDoNotReplaceTheExecutorForAnExistingPublication() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -34,11 +37,24 @@ class ReportEngineCompatibilityTest {
             var calls = new AtomicInteger();
             var next =
                     new V1ReportEngineExecutor(f.compiler) {
+                        /**
+                         * 读取不可变执行器版本标识。
+                         *
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public String engineVersion() {
                             return "1.1.0";
                         }
 
+                        /**
+                         * 编译定义并检查字段、类型和业务权限。
+                         *
+                         * @param dsl 报表定义
+                         * @param descriptor 可信数据集契约
+                         * @param actor 当前服务端身份
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public CompiledReport compile(
                                 ReportDsl dsl, DatasetDescriptor descriptor, ReportActor actor) {
@@ -50,10 +66,25 @@ class ReportEngineCompatibilityTest {
                     new ReportEngineRegistry(List.of(old, next), Map.of(1, "1.1.0"), Set.of());
             var auth =
                     new ReportAuthorizationPort() {
+                        /**
+                         * 重新解析当前账户和业务权限。
+                         *
+                         * @param tenant 当前租户标识
+                         * @param id 资源标识
+                         * @return 当前处理返回的固定结果
+                         */
                         public ReportActor resolve(String tenant, long id) {
                             return f.actors.get(id);
                         }
 
+                        /**
+                         * 校验授权主体属于当前租户。
+                         *
+                         * @param tenant 当前租户标识
+                         * @param type 当前操作的 {@code type} 输入
+                         * @param id 资源标识
+                         * @return 当前检查或条件操作是否成功
+                         */
                         public boolean subjectExists(String tenant, String type, long id) {
                             return true;
                         }
@@ -84,6 +115,7 @@ class ReportEngineCompatibilityTest {
         }
     }
 
+    /** 验证 {@code duplicateUnknownAndDisabledExecutorsAreExplicitlyRejected} 场景下的结果与边界条件。 */
     @Test
     void duplicateUnknownAndDisabledExecutorsAreExplicitlyRejected() {
         var compiler = new ReportCompiler(new com.fasterxml.jackson.databind.ObjectMapper());
@@ -105,6 +137,7 @@ class ReportEngineCompatibilityTest {
         assertFalse(disabled.capabilities().get(0).enabled());
     }
 
+    /** 验证 {@code snapshotKeepsTheSelectedExecutorsCalculatedSummaries} 场景下的结果与边界条件。 */
     @Test
     void snapshotKeepsTheSelectedExecutorsCalculatedSummaries() {
         try (var f = new RuntimeReviewFixture(directory)) {
@@ -131,6 +164,14 @@ class ReportEngineCompatibilityTest {
                             "executor-summary", Map.of(), TypedValue.of(ValueType.INTEGER, 9));
             var executor =
                     new V1ReportEngineExecutor(f.compiler) {
+                        /**
+                         * 基于精确值计算列与汇总。
+                         *
+                         * @param report 已编译报表
+                         * @param rows 待处理业务行
+                         * @param input 待校验输入
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public ReportCalculator.CalculatedData calculate(
                                 CompiledReport report,
@@ -155,6 +196,10 @@ class ReportEngineCompatibilityTest {
         }
     }
 
+    /**
+     * 验证 {@code actualLiveSnapshotLayoutAndExportUseThePublishedExecutorAfterDefaultChanges}
+     * 场景下的结果与边界条件。
+     */
     @Test
     void actualLiveSnapshotLayoutAndExportUseThePublishedExecutorAfterDefaultChanges()
             throws Exception {
@@ -163,6 +208,14 @@ class ReportEngineCompatibilityTest {
             var nextCalls = new AtomicInteger();
             var old =
                     new V1ReportEngineExecutor(f.compiler) {
+                        /**
+                         * 基于精确值计算列与汇总。
+                         *
+                         * @param c 当前操作的 {@code c} 输入
+                         * @param r 当前操作的 {@code r} 输入
+                         * @param p 当前操作的 {@code p} 输入
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public ReportCalculator.CalculatedData calculate(
                                 CompiledReport c,
@@ -172,6 +225,14 @@ class ReportEngineCompatibilityTest {
                             return super.calculate(c, r, p);
                         }
 
+                        /**
+                         * 计算单行精确展示值。
+                         *
+                         * @param c 当前操作的 {@code c} 输入
+                         * @param r 当前操作的 {@code r} 输入
+                         * @param p 当前操作的 {@code p} 输入
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public Map<String, TypedValue> calculateRow(
                                 CompiledReport c, Map<String, Object> r, Map<String, Object> p) {
@@ -179,6 +240,15 @@ class ReportEngineCompatibilityTest {
                             return super.calculateRow(c, r, p);
                         }
 
+                        /**
+                         * 使用固定字体计算页面坐标和断行。
+                         *
+                         * @param c 当前操作的 {@code c} 输入
+                         * @param d 当前操作的 {@code d} 输入
+                         * @param p 当前操作的 {@code p} 输入
+                         * @param font 可信私有字体路径
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public RenderPlan layout(
                                 CompiledReport c,
@@ -191,11 +261,24 @@ class ReportEngineCompatibilityTest {
                     };
             var next =
                     new V1ReportEngineExecutor(f.compiler) {
+                        /**
+                         * 读取不可变执行器版本标识。
+                         *
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public String engineVersion() {
                             return "1.1.0";
                         }
 
+                        /**
+                         * 编译定义并检查字段、类型和业务权限。
+                         *
+                         * @param d 当前操作的 {@code d} 输入
+                         * @param s 当前操作的 {@code s} 输入
+                         * @param a 当前操作的 {@code a} 输入
+                         * @return 当前处理返回的固定结果
+                         */
                         @Override
                         public CompiledReport compile(
                                 ReportDsl d, DatasetDescriptor s, ReportActor a) {
@@ -205,10 +288,25 @@ class ReportEngineCompatibilityTest {
                     };
             var auth =
                     new ReportAuthorizationPort() {
+                        /**
+                         * 重新解析当前账户和业务权限。
+                         *
+                         * @param tenant 当前租户标识
+                         * @param id 资源标识
+                         * @return 当前处理返回的固定结果
+                         */
                         public ReportActor resolve(String tenant, long id) {
                             return f.actors.get(id);
                         }
 
+                        /**
+                         * 校验授权主体属于当前租户。
+                         *
+                         * @param t 当前操作的 {@code t} 输入
+                         * @param k 当前操作的 {@code k} 输入
+                         * @param id 资源标识
+                         * @return 当前检查或条件操作是否成功
+                         */
                         public boolean subjectExists(String t, String k, long id) {
                             return true;
                         }

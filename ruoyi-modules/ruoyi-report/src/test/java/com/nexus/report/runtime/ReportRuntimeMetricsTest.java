@@ -6,7 +6,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import org.junit.jupiter.api.Test;
 
+/** 报表运行指标测试，负责当前模块对应的契约或处理职责。 */
 class ReportRuntimeMetricsTest {
+    /** 验证 {@code recordsSuccessfulAndFailedPhasesWithoutBusinessLabels} 场景下的结果与边界条件。 */
     @Test
     void recordsSuccessfulAndFailedPhasesWithoutBusinessLabels() {
         var registry = new SimpleMeterRegistry();

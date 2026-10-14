@@ -11,7 +11,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.*;
 
+/** 报表选择器提供者测试，负责当前模块对应的契约或处理职责。 */
 class ReportLookupProviderTest {
+    /** 验证 {@code lookupBindsSearchAndEveryTenantAndDepartmentScope} 场景下的结果与边界条件。 */
     @Test
     void lookupBindsSearchAndEveryTenantAndDepartmentScope() {
         var source = new JdbcDataSource();

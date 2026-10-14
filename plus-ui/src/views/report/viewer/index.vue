@@ -52,7 +52,8 @@
           ><span>数据时间：{{ data.dataTime }}</span
           ><span>共 {{ data.total }} 条</span><span>运行版本：{{ run.version }}</span>
         </div>
-        <ReportPaper v-if="plan && run" :plan="plan" />
+        <PivotTable v-if="run && published?.dsl.kind === 'PIVOT'" :run-id="run.id" />
+        <ReportPaper v-else-if="plan && run" :plan="plan" />
         <template v-else-if="data && run"
           ><TypedTable :columns="data.columns" :rows="data.rows" :sortable="run.mode === 'LIVE'" @sort="sortChanged" /><el-pagination
             v-model:current-page="page"
@@ -81,6 +82,8 @@
   </div>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
@@ -91,29 +94,97 @@ import { parameterInput, exportFormats, requiresSnapshot as snapshotRequired, Re
 import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import ReportPaper from '@/components/report/ReportPaper.vue';
+import PivotTable from '@/components/report/PivotTable.vue';
 defineOptions({ name: 'ReportViewer' });
+/**
+ * 保存当前页面或测试的route状态。
+ */
 const route = useRoute();
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的published状态。
+ */
 const published = ref<PublishedReport>();
+/**
+ * 保存当前页面或测试的parameters状态。
+ */
 const parameters = ref<Record<string, string>>({});
+/**
+ * 保存当前页面或测试的mode状态。
+ */
 const mode = ref('LIVE');
+/**
+ * 保存当前页面或测试的run状态。
+ */
 const run = ref<ReportRun>();
+/**
+ * 保存当前页面或测试的data状态。
+ */
 const data = ref<PageData>();
+/**
+ * 保存当前页面或测试的plan状态。
+ */
 const plan = ref<RenderPlan>();
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的running状态。
+ */
 const running = ref(false);
+/**
+ * 保存当前页面或测试的exporting状态。
+ */
 const exporting = ref(false);
+/**
+ * 保存当前页面或测试的page状态。
+ */
 const page = ref(1);
+/**
+ * 保存当前页面或测试的size状态。
+ */
 const size = ref(50);
+/**
+ * 保存当前页面或测试的sort状态。
+ */
 let sort: string | undefined;
+/**
+ * 保存当前页面或测试的descending状态。
+ */
 let descending = false;
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/**
+ * 保存当前页面或测试的pageGate状态。
+ */
 const pageGate = new RequestGate();
+/**
+ * 保存当前页面或测试的exportGate状态。
+ */
 const exportGate = new RequestGate();
+/**
+ * 保存当前页面或测试的keys状态。
+ */
 const keys = new Map<string, string>();
+/**
+ * 保存当前页面或测试的formatLabels状态。
+ */
 const formatLabels: Record<ExportFormat, string> = { PDF: 'PDF 打印文件', XLSX_DATA: '明细 Excel', XLSX_LAYOUT: '样式 Excel' };
+/**
+ * 保存当前页面或测试的requiresSnapshot状态。
+ */
 const requiresSnapshot = computed(() => !!published.value && snapshotRequired(published.value.dsl));
+/**
+ * 保存当前页面或测试的availableFormats状态。
+ */
 const availableFormats = computed(() => exportFormats(run.value?.mode || 'LIVE', data.value?.total || 0));
+/** 处理当前报表的 `invalidate` 操作。 */
 function invalidate() {
   gate.invalidate();
   pageGate.invalidate();
@@ -125,6 +196,7 @@ function invalidate() {
   keys.clear();
   running.value = false;
 }
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   invalidate();
   published.value = undefined;
@@ -149,6 +221,7 @@ async function load() {
     if (gate.current(ticket)) loading.value = false;
   }
 }
+/** 以当前任务围栏执行取数和导出。 */
 async function execute() {
   if (!published.value) return;
   invalidate();
@@ -176,6 +249,7 @@ async function execute() {
     if (gate.current(ticket)) running.value = false;
   }
 }
+/** 处理当前报表的 `loadPage` 操作。 */
 async function loadPage() {
   if (!run.value) return;
   const ticket = pageGate.begin();
@@ -190,16 +264,19 @@ async function loadPage() {
     }
   }
 }
+/** 处理当前报表的 `sizeChanged` 操作。 */
 function sizeChanged() {
   page.value = 1;
   void loadPage();
 }
+/** 处理当前报表的 `sortChanged` 操作。 */
 function sortChanged(field: string | undefined, desc: boolean) {
   sort = field;
   descending = desc;
   page.value = 1;
   void loadPage();
 }
+/** 处理当前报表的 `exportReport` 操作。 */
 async function exportReport(format: ExportFormat) {
   if (!run.value || exporting.value || !availableFormats.value.includes(format)) return;
   const ticket = exportGate.begin();

@@ -1,6 +1,6 @@
 <template>
   <el-dialog :model-value="open" title="资源授权" width="760px" @update:model-value="emit('update:open', $event)">
-    <el-alert title="授予报表或数据集的操作权限；数据范围仍由用户的业务角色决定。" type="info" :closable="false" class="mb-4" />
+    <el-alert title="配置当前资源的操作权限；关联报表、数据集和业务范围会分别校验。" type="info" :closable="false" class="mb-4" />
     <el-alert v-if="failed" title="授权载入失败，请重试后再修改。" type="error" :closable="false" class="mb-4" />
     <el-button v-if="failed" class="mb-4" @click="load">重试</el-button>
     <el-form :disabled="loading || saving || !loaded">
@@ -50,19 +50,58 @@
   </el-dialog>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, watch, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { listGrants, saveGrants } from '@/api/report';
 import type { ResourceGrant } from '@/types/report';
 import { RequestGate } from '@/views/report/model';
-const props = defineProps<{ open: boolean; resourceType: 'REPORT' | 'DATASET'; resourceId: string }>();
-const emit = defineEmits<{ 'update:open': [value: boolean] }>();
+/**
+ * 保存当前页面或测试的props状态。
+ */
+const props = defineProps<{
+  /** 保存当前 `open` 值。 */
+  open: boolean;
+  /** 保存当前 `resourceType` 值。 */
+  resourceType: 'REPORT' | 'DATASET' | 'QUERY' | 'DASHBOARD' | 'SUBSCRIPTION' | 'ASSET' | 'BATCH';
+  /** 保存当前 `resourceId` 值。 */
+  resourceId: string;
+}>();
+/**
+ * 保存当前页面或测试的emit状态。
+ */
+const emit = defineEmits<{
+  /** 保存当前 `'update:open'` 值。 */
+  'update:open': [value: boolean];
+}>();
+/**
+ * 保存当前页面或测试的grants状态。
+ */
 const grants = ref<ResourceGrant[]>([]);
+/**
+ * 保存当前页面或测试的loading状态。
+ */
 const loading = ref(false);
+/**
+ * 保存当前页面或测试的saving状态。
+ */
 const saving = ref(false);
+/**
+ * 保存当前页面或测试的loaded状态。
+ */
 const loaded = ref(false);
+/**
+ * 保存当前页面或测试的failed状态。
+ */
 const failed = ref(false);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
+/**
+ * 保存当前页面或测试的actions状态。
+ */
 const actions = [
   { value: 'VIEW', label: '查看' },
   { value: 'EDIT', label: '编辑' },
@@ -70,6 +109,7 @@ const actions = [
   { value: 'EXPORT', label: '导出' },
   { value: 'MANAGE', label: '管理授权' }
 ];
+/** 处理当前报表的 `load` 操作。 */
 async function load() {
   const ticket = gate.begin();
   grants.value = [];
@@ -91,6 +131,7 @@ async function load() {
   }
 }
 watch(() => [props.open, props.resourceType, props.resourceId], load, { immediate: true, flush: 'sync' });
+/** 处理当前报表的 `save` 操作。 */
 async function save(): Promise<boolean> {
   if (!props.open || !props.resourceId || !loaded.value || loading.value || saving.value) return false;
   if (grants.value.some((g) => !/^[1-9]\d{0,18}$/.test(g.subjectId))) {

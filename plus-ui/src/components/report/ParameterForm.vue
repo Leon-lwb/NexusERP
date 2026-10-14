@@ -44,14 +44,38 @@
   </el-form>
 </template>
 <script setup lang="ts">
+/** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
+
 import { ref, watch, onUnmounted } from 'vue';
 import ParameterLookup from './ParameterLookup.vue';
 import { reportLookupBindings, type LookupBinding } from '@/api/report';
 import { RequestGate } from '@/views/report/model';
 import type { ReportParameter } from '@/types/report';
-const props = defineProps<{ parameters: ReportParameter[]; modelValue: Record<string, string>; datasetVersionId?: string }>();
-const emit = defineEmits<{ 'update:modelValue': [value: Record<string, string>] }>();
+/**
+ * 保存当前页面或测试的props状态。
+ */
+const props = defineProps<{
+  /** 保存按契约解析的输入参数。 */
+  parameters: ReportParameter[];
+  /** 保存当前 `modelValue` 值。 */
+  modelValue: Record<string, string>;
+  /** 保存当前 `datasetVersionId` 值。 */
+  datasetVersionId?: string;
+}>();
+/**
+ * 保存当前页面或测试的emit状态。
+ */
+const emit = defineEmits<{
+  /** 保存当前 `'update:modelValue'` 值。 */
+  'update:modelValue': [value: Record<string, string>];
+}>();
+/**
+ * 保存当前页面或测试的bindings状态。
+ */
 const bindings = ref<LookupBinding[]>([]);
+/**
+ * 保存当前页面或测试的gate状态。
+ */
 const gate = new RequestGate();
 watch(
   () => props.datasetVersionId,
@@ -67,6 +91,7 @@ watch(
   { immediate: true }
 );
 onUnmounted(() => gate.invalidate());
+/** 处理当前报表的 `set` 操作。 */
 function set(name: string, value: unknown) {
   emit('update:modelValue', { ...props.modelValue, [name]: value == null ? '' : String(value) });
 }

@@ -8,10 +8,18 @@ import com.nexus.report.mapper.JdbcReportStore;
 
 import java.util.*;
 
-/**
- * Read immutable installed contracts, with the same live resource and field guards as execution.
- */
+/** 读取不可变且已安装的契约，并应用与执行相同的当前资源和字段权限。 */
 public final class ReportDatasetVersionService {
+    /**
+     * View，负责当前模块对应的契约或处理职责。
+     *
+     * @param id 固定标识，按字符串传输以保留完整精度
+     * @param datasetId 当前契约的datasetId配置或状态
+     * @param code 当前契约的code配置或状态
+     * @param number 当前契约的number配置或状态
+     * @param current 当前契约的current配置或状态
+     * @param descriptor 当前契约的descriptor配置或状态
+     */
     public record View(
             String id,
             String datasetId,
@@ -20,19 +28,59 @@ public final class ReportDatasetVersionService {
             boolean current,
             DatasetDescriptor descriptor) {}
 
+    /**
+     * Change，负责当前模块对应的契约或处理职责。
+     *
+     * @param category 当前契约的category配置或状态
+     * @param name 契约名称
+     * @param kind 当前契约的kind配置或状态
+     * @param breaking 当前契约的breaking配置或状态
+     */
     public record Change(String category, String name, String kind, boolean breaking) {}
 
+    /**
+     * Diff，负责当前模块对应的契约或处理职责。
+     *
+     * @param from 当前契约的from配置或状态
+     * @param to 当前契约的to配置或状态
+     * @param breaking 当前契约的breaking配置或状态
+     * @param changes 当前契约的changes配置或状态
+     */
     public record Diff(String from, String to, boolean breaking, List<Change> changes) {
+
+        /**
+         * 初始化Diff并保存所需依赖或不可变值。
+         *
+         * @param from 当前操作的 {@code from} 输入
+         * @param to 当前操作的 {@code to} 输入
+         * @param breaking 当前操作的 {@code breaking} 输入
+         * @param changes 当前操作的 {@code changes} 输入
+         */
         public Diff {
             changes = List.copyOf(changes);
         }
     }
 
+    /** 租户化元数据或私有存储。 */
     private final JdbcReportStore store;
+
+    /** 代码契约注册表。 */
     private final ReportProviderRegistry registry;
+
+    /** 保存当前 {@code definitions} 值。 */
     private final ReportDefinitionService definitions;
+
+    /** 报表编译器。 */
     private final ReportCompiler compiler;
 
+    /**
+     * 初始化报表数据集版本服务并保存所需依赖或不可变值。
+     *
+     * @param store 租户化元数据或私有存储
+     * @param registry 代码契约注册表
+     * @param definitions 当前操作的 {@code definitions} 输入
+     * @param compiler 报表编译器
+     */
     public ReportDatasetVersionService(
             JdbcReportStore store,
             ReportProviderRegistry registry,
@@ -44,14 +92,36 @@ public final class ReportDatasetVersionService {
         this.compiler = compiler;
     }
 
+    /**
+     * 读取并检查当前租户私有产物。
+     *
+     * @param actor 当前服务端身份
+     * @param id 资源标识
+     * @return 当前处理返回的固定结果
+     */
     public View read(ReportActor actor, String id) {
         return read(actor, id, false);
     }
 
+    /**
+     * 完成 {@code forRuntime} 对应的报表数据集版本服务处理。
+     *
+     * @param actor 当前服务端身份
+     * @param id 资源标识
+     * @return 当前处理返回的固定结果
+     */
     public View forRuntime(ReportActor actor, String id) {
         return read(actor, id, true);
     }
 
+    /**
+     * 读取并检查当前租户私有产物。
+     *
+     * @param actor 当前服务端身份
+     * @param id 资源标识
+     * @param runtime 当前操作的 {@code runtime} 输入
+     * @return 当前处理返回的固定结果
+     */
     private View read(ReportActor actor, String id, boolean runtime) {
         var current = definitions.resolve(actor.tenantId(), actor.userId());
         ReportDefinitionService.require(
@@ -65,7 +135,7 @@ public final class ReportDatasetVersionService {
         if (!dataset.status().equals("ACTIVE")
                 || !store.allowed(current, "DATASET", dataset.id(), dataset.owner(), "VIEW"))
             throw ReportFault.denied();
-        var descriptor = registry.get(version.provider(), version.providerVersion()).descriptor();
+        var descriptor = definitions.resolveDataset(current, version).descriptor();
         if (!dataset.code().equals(descriptor.code())
                 || !ReportDefinitionService.hash(version.json()).equals(version.checksum())
                 || !ReportDefinitionService.hash(compiler.json(descriptor))
@@ -108,6 +178,14 @@ public final class ReportDatasetVersionService {
                 visible);
     }
 
+    /**
+     * 比较两份已授权历史契约并复核撤权。
+     *
+     * @param actor 当前服务端身份
+     * @param from 当前操作的 {@code from} 输入
+     * @param to 当前操作的 {@code to} 输入
+     * @return 当前处理返回的固定结果
+     */
     public Diff diff(ReportActor actor, String from, String to) {
         var left = read(actor, from);
         var right = read(actor, to);
@@ -125,14 +203,23 @@ public final class ReportDatasetVersionService {
                 DatasetParameter::name,
                 "PARAMETER",
                 changes);
-        // Both reads are repeated after comparison so a revocation cannot leak an earlier
-        // descriptor.
+        /** 比较后重新读取两份契约，防止撤权后泄露较早读取的描述。 */
+        /** 数据集契约描述。 */
         if (!left.descriptor().equals(read(actor, from).descriptor())
                 || !right.descriptor().equals(read(actor, to).descriptor()))
             throw new ReportFault("SCOPE_CHANGED", "数据契约可见范围已变化", 409);
         return new Diff(from, to, changes.stream().anyMatch(Change::breaking), changes);
     }
 
+    /**
+     * 完成 {@code compare} 对应的报表数据集版本服务处理。
+     *
+     * @param old 当前操作的 {@code old} 输入
+     * @param next 当前操作的 {@code next} 输入
+     * @param name 当前操作的 {@code name} 输入
+     * @param category 当前操作的 {@code category} 输入
+     * @param changes 当前操作的 {@code changes} 输入
+     */
     private static <T> void compare(
             List<T> old,
             List<T> next,

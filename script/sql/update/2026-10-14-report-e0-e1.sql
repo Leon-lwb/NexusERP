@@ -1,5 +1,5 @@
--- Nexus report E0/E1 metadata extension; local/other environments require an approved matching baseline.
--- Applies only after 2026-10-14-report-p0; MySQL 5.7; no bootstrap import or business-table change.
+/** 自研报表 E0/E1 元数据增量，执行前必须核对目标环境和已授权基线。 */
+/** 仅在首期增量已完成后执行，兼容 MySQL 5.7，不重导初始化或修改业务表。 */
 SET @report_e01_ddl = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='rpt_export_job' AND column_name='execution_phase')=0, 'ALTER TABLE rpt_export_job ADD COLUMN execution_phase varchar(24) NOT NULL DEFAULT ''QUEUED''', 'SELECT 1');
 PREPARE report_e01_stmt FROM @report_e01_ddl;
 EXECUTE report_e01_stmt;

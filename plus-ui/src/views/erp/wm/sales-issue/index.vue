@@ -99,6 +99,7 @@
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
+          <!-- 使用当前单据的精确标识进入已授权报表，服务端再次校验业务范围。 -->
           <BusinessReportButton dataset-code="ERP_DELIVERY_DOCUMENT" parameter="issueId" :record-id="scope.row.issueId" />
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button
@@ -187,12 +188,27 @@ import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的{ proxy }状态。
+ */
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+/**
+ * 保存当前页面或测试的{ wm_sales_status }状态。
+ */
 const { wm_sales_status } = toRefs<any>(proxy.useDict('wm_sales_status'));
 
+/**
+ * 保存当前页面或测试的dateRange状态。
+ */
 const dateRange = ref([]);
 
+/**
+ * 保存当前页面或测试的queryParams状态。
+ */
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -206,6 +222,22 @@ const queryParams = ref({
 });
 
 // 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+/**
+ * 保存当前页面或测试的{
+  loading,
+  list: salesIssueList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+}状态。
+ */
 const {
   loading,
   list: salesIssueList,

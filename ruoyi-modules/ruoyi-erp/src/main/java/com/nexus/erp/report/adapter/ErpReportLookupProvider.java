@@ -8,12 +8,35 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/** Erp报表选择器提供者，负责当前模块对应的契约或处理职责。 */
 @Service
 @DS("erp")
 public class ErpReportLookupProvider implements ReportLookupProvider {
+    /**
+     * Rule，负责当前模块对应的契约或处理职责。
+     *
+     * @param binding 当前契约的binding配置或状态
+     * @param table 当前契约的table配置或状态
+     * @param key 当前契约的key配置或状态
+     * @param code 当前契约的code配置或状态
+     * @param label 用户可见标签
+     */
     private record Rule(
             ReportLookupBinding binding, String table, String key, String code, String label) {}
 
+    /**
+     * 完成 {@code rule} 对应的Erp报表选择器提供者处理。
+     *
+     * @param dataset 当前操作的 {@code dataset} 输入
+     * @param parameter 当前操作的 {@code parameter} 输入
+     * @param label 展示标题
+     * @param permission 待核对权限
+     * @param table 当前操作的 {@code table} 输入
+     * @param key 当前操作的 {@code key} 输入
+     * @param code 业务编码
+     * @param name 当前操作的 {@code name} 输入
+     * @return 当前处理返回的固定结果
+     */
     private static Rule rule(
             String dataset,
             String parameter,
@@ -31,6 +54,7 @@ public class ErpReportLookupProvider implements ReportLookupProvider {
                 name);
     }
 
+    /** 保存当前 {@code RULES} 值。 */
     private static final List<Rule> RULES =
             List.of(
                     rule(
@@ -87,17 +111,37 @@ public class ErpReportLookupProvider implements ReportLookupProvider {
                             "material_code",
                             "material_code",
                             "material_name"));
+
+    /** 保存当前 {@code jdbc} 值。 */
     private final JdbcTemplate jdbc;
 
+    /**
+     * 初始化Erp报表选择器提供者并保存所需依赖或不可变值。
+     *
+     * @param jdbc 当前操作的 {@code jdbc} 输入
+     */
     public ErpReportLookupProvider(JdbcTemplate jdbc) {
         this.jdbc = new JdbcTemplate(Objects.requireNonNull(jdbc.getDataSource()));
         this.jdbc.setQueryTimeout(10);
     }
 
+    /**
+     * 列出固定契约已安装且有权限的选择器。
+     *
+     * @return 当前处理返回的固定结果
+     */
     public List<ReportLookupBinding> bindings() {
         return RULES.stream().map(Rule::binding).toList();
     }
 
+    /**
+     * 执行受控只读查询。
+     *
+     * @param binding 当前操作的 {@code binding} 输入
+     * @param context 服务端执行上下文
+     * @param query 已声明字段和筛选参数
+     * @return 当前处理返回的固定结果
+     */
     public Result query(ReportLookupBinding binding, ReportExecutionContext context, Query query) {
         var rule =
                 RULES.stream()
