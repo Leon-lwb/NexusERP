@@ -68,7 +68,7 @@ class ReportDefinitionControllerTest {
     @Test void publishedDetailRechecksDatasetAndFieldPermissionsBeforeReturningDsl(){
         var version=new Version("4","1",1,1,"1.0.0",compiler.json(dsl()),"checksum","3",2,Instant.now());
         when(definitions.published(actor,"1","VIEW","report:runtime:preview")).thenReturn(version);
-        when(definitions.bind(eq(actor),any())).thenThrow(ReportFault.denied());
+        when(definitions.bindVersion(actor,version)).thenThrow(ReportFault.denied());
         assertEquals("SCOPE_DENIED",assertThrows(ReportFault.class,()->controller.published("1")).code());
     }
 

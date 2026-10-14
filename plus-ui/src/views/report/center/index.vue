@@ -1,5 +1,11 @@
 <template>
   <div class="p-4 report-center">
+    <el-button v-hasPermi="['report:definition:add']" class="mb-3" @click="openPackageImport">导入模板包</el-button>
+    <TemplatePackageDialog
+      v-model="packageOpen"
+      :datasets="packageDatasets"
+      @imported="(id) => router.push({ path: '/report/designer', query: { id } })"
+    />
     <el-card shadow="never"
       ><template #header
         ><div class="center-heading">
@@ -45,7 +51,7 @@
           ></el-table-column
         >
         <el-table-column label="更新时间" prop="updatedAt" min-width="200" />
-        <el-table-column label="操作" width="390"
+        <el-table-column label="操作" width="450"
           ><template #default="scope"
             ><el-button
               v-hasPermi="['report:runtime:preview']"
@@ -55,6 +61,15 @@
               @click="open('viewer', scope.row.id)"
               >运行</el-button
             ><el-button v-hasPermi="['report:definition:edit']" link type="primary" @click="open('designer', scope.row.id)">设计</el-button
+            ><span v-hasPermi="['report:definition:edit']"
+              ><el-button
+                v-hasPermi="['report:definition:add']"
+                link
+                :loading="copying === scope.row.id"
+                :disabled="!!copying"
+                @click="duplicate(scope.row)"
+                >复制</el-button
+              ></span
             ><el-button v-hasPermi="['report:definition:list']" link @click="open('history', scope.row.id)">版本</el-button
             ><el-button v-hasPermi="['report:definition:publish']" link type="success" @click="publish(scope.row)">发布</el-button
             ><el-button
@@ -100,6 +115,39 @@ import { listReports, listCatalogs, createCatalog, bootstrapReports, publishRepo
 import type { ReportDefinition, ReportCatalog } from '@/types/report';
 import { RequestGate } from '@/views/report/model';
 import AclDialog from '@/components/report/AclDialog.vue';
+import TemplatePackageDialog from '@/components/report/TemplatePackageDialog.vue';
+import { copyReport, listDatasets } from '@/api/report';
+import type { DatasetView } from '@/types/report';
+const packageOpen = ref(false);
+const packageDatasets = ref<DatasetView[]>([]);
+async function openPackageImport() {
+  try {
+    const response = await listDatasets();
+    packageDatasets.value = response.data;
+    packageOpen.value = true;
+  } catch {}
+}
+const copying = ref('');
+const copyGate = new RequestGate();
+function stopCopy() {
+  copyGate.invalidate();
+  copying.value = '';
+}
+async function duplicate(row: ReportDefinition) {
+  if (copying.value) return;
+  const ticket = copyGate.begin();
+  copying.value = row.id;
+  try {
+    const result = await ElMessageBox.prompt('输入新的报表编码', '复制为草稿', { inputPattern: /^[A-Z][A-Z0-9_]{0,63}$/ });
+    if (!copyGate.current(ticket)) return;
+    const copied = await copyReport(row.id, result.value, row.name + '（副本）', row.catalogId);
+    if (!copyGate.current(ticket)) return;
+    router.push({ path: '/report/designer', query: { id: copied.data.id } });
+  } catch {
+  } finally {
+    if (copyGate.current(ticket)) copying.value = '';
+  }
+}
 defineOptions({ name: 'ReportCenter' });
 const router = useRouter();
 const loading = ref(false);
@@ -195,8 +243,12 @@ onMounted(load);
 onActivated(() => {
   if (!loading.value) void load();
 });
-onUnmounted(() => gate.invalidate());
+onUnmounted(() => {
+  gate.invalidate();
+  stopCopy();
+});
 onDeactivated(() => {
+  stopCopy();
   gate.invalidate();
   loading.value = false;
 });

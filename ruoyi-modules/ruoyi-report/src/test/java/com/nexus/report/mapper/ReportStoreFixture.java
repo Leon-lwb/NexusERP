@@ -99,7 +99,9 @@ final class ReportStoreFixture implements AutoCloseable {
     }
 
     Dataset dataset(ReportActor actor) {
-        return store.registerDataset(actor, descriptor("TEST_DATA", 1), "{\"v\":1}", "data-hash-1");
+        var dataset=store.registerDataset(actor, descriptor("TEST_DATA", 1), "{\"v\":1}", "data-hash-1");
+        if(dataset.owner()!=actor.userId()){var grants=new java.util.ArrayList<>(store.acl(actor.tenantId(),"DATASET",dataset.id()));grants.add(new Grant("USER",Long.toString(actor.userId()),"VIEW"));store.replaceAcl(actor(actor.tenantId(),dataset.owner()),"DATASET",dataset.id(),grants);}
+        return dataset;
     }
 
     Definition definition(ReportActor actor) {

@@ -12,7 +12,7 @@
       >
       <el-empty v-if="!published && !loading" description="请选择已发布且有权访问的报表" />
       <template v-if="published"
-        ><ParameterForm v-model="parameters" :parameters="published.dsl.parameters" />
+        ><ParameterForm :dataset-version-id="published?.dsl.datasetVersionId" v-model="parameters" :parameters="published.dsl.parameters" />
         <div class="run-toolbar">
           <el-radio-group v-model="mode" :disabled="published.dsl.kind === 'DOCUMENT' || requiresSnapshot"
             ><el-radio-button value="LIVE">实时分页</el-radio-button><el-radio-button value="SNAPSHOT">固定快照</el-radio-button></el-radio-group
@@ -138,6 +138,10 @@ async function load() {
     const response = await publishedReport(id);
     if (gate.current(ticket)) {
       published.value = response.data;
+      for (const parameter of response.data.dsl.parameters) {
+        const value = route.query[parameter.name];
+        if (typeof value === 'string' && value.length <= 200) parameters.value[parameter.name] = value;
+      }
       mode.value = response.data.dsl.kind === 'DOCUMENT' || requiresSnapshot.value ? 'SNAPSHOT' : 'LIVE';
     }
   } catch {
@@ -214,7 +218,7 @@ async function exportReport(format: ExportFormat) {
     if (exportGate.current(ticket)) exporting.value = false;
   }
 }
-watch(() => route.query.id, load, { immediate: true, flush: 'sync' });
+watch(() => route.query, load, { immediate: true, deep: true, flush: 'sync' });
 watch(
   parameters,
   () => {

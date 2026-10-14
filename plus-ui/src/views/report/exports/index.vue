@@ -24,6 +24,20 @@
           ><template #default="scope">{{ scope.row.bytes == null ? '—' : (scope.row.bytes / 1024).toFixed(1) + ' KB' }}</template></el-table-column
         ><el-table-column prop="expires" label="到期时间" min-width="210" /><el-table-column label="结果说明" min-width="220"
           ><template #default="scope">{{ jobError(scope.row.error) }}</template></el-table-column
+        ><el-table-column label="执行进度" min-width="190"
+          ><template #default="scope"
+            ><div>{{ phases[scope.row.phase] || scope.row.phase }}</div>
+            <el-progress
+              :percentage="
+                scope.row.state === 'SUCCEEDED'
+                  ? 100
+                  : scope.row.totalRows
+                    ? Math.min(99, Math.floor(((scope.row.processedRows || 0) * 100) / scope.row.totalRows))
+                    : 0
+              "
+              :indeterminate="!scope.row.totalRows && scope.row.state === 'RUNNING'"
+            /><span>{{ scope.row.processedRows || 0 }} / {{ scope.row.totalRows ?? '待确定' }} 行</span></template
+          ></el-table-column
         ><el-table-column label="操作" width="140"
           ><template #default="scope"
             ><el-button
@@ -35,6 +49,7 @@
               :loading="downloading === scope.row.id"
               @click="download(scope.row)"
               >下载</el-button
+            ><el-button v-if="scope.row.canRetry" :loading="retrying === scope.row.id" link @click="retry(scope.row)">重试原任务</el-button
             ><el-button
               v-if="['QUEUED', 'RUNNING', 'CANCEL_REQUESTED'].includes(scope.row.state)"
               v-hasPermi="['report:runtime:export']"
@@ -54,7 +69,7 @@
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { ElMessage } from 'element-plus';
 import { saveAs } from 'file-saver';
-import { listExportJobs, cancelExport, downloadExport } from '@/api/report';
+import { retryExport, listExportJobs, cancelExport, downloadExport } from '@/api/report';
 import type { ExportJob } from '@/types/report';
 import { jobError, RequestGate } from '@/views/report/model';
 defineOptions({ name: 'ReportExports' });
@@ -63,6 +78,34 @@ const loading = ref(false);
 const downloading = ref('');
 const failed = ref(false);
 const cancelling = ref('');
+const retrying = ref('');
+const retryGate = new RequestGate();
+const phases: Record<string, string> = {
+  QUEUED: '等待执行',
+  PREPARING: '准备中',
+  SNAPSHOT: '生成快照',
+  LAYOUT: '固定排版',
+  WRITING: '写入文件',
+  COMPLETED: '完成',
+  FAILED: '失败',
+  CANCELLED: '取消',
+  CANCEL_REQUESTED: '正在取消',
+  EXPIRED: '到期'
+};
+async function retry(job: ExportJob) {
+  if (!active || retrying.value) return;
+  const ticket = retryGate.begin();
+  retrying.value = job.id;
+  try {
+    await retryExport(job.id, job.retryRound || 0);
+    if (!active || !retryGate.current(ticket)) return;
+    ElMessage.success('已重试原任务，数据与有效期保持固定');
+    await load();
+  } catch {
+  } finally {
+    if (retryGate.current(ticket)) retrying.value = '';
+  }
+}
 let active = false;
 let requests = 0;
 let timer: ReturnType<typeof setInterval> | undefined;
@@ -122,6 +165,8 @@ function stop() {
   pause();
   gate.invalidate();
   downloadGate.invalidate();
+  retryGate.invalidate();
+  retrying.value = '';
   loading.value = false;
   downloading.value = '';
 }

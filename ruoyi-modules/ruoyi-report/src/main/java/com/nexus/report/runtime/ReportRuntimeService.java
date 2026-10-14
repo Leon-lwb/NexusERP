@@ -26,6 +26,10 @@ public class ReportRuntimeService {
     private final ReportArtifactStore artifacts;
     private final ReportProperties properties;
     private final ObjectMapper json;
+    private ReportRuntimeMetrics metrics=ReportRuntimeMetrics.local();
+    public void metrics(ReportRuntimeMetrics value){this.metrics=java.util.Objects.requireNonNull(value);}
+    public void recordDelivery(boolean success,long nanos){metrics.record(ReportRuntimeMetrics.Phase.DELIVERY,success,nanos);}
+    public void recordExport(boolean success,long nanos){metrics.record(ReportRuntimeMetrics.Phase.EXPORT,success,nanos);}
 
     public ReportRuntimeService(JdbcReportStore store, ReportDefinitionService definitions, ReportCompiler compiler,
                                 ReportSnapshotStore snapshots, ReportArtifactStore artifacts, ReportProperties properties, ObjectMapper json) {
@@ -51,10 +55,12 @@ public class ReportRuntimeService {
         catch (Exception invalid) { throw new ReportFault("SERIALIZATION_FAILED", "运行配置无法序列化", 500); }
     }
 
+    public com.nexus.report.export.ReportSpreadsheetExporter spreadsheetExporter(Access previous,long budget){var access=recheck(previous);return new com.nexus.report.export.ReportSpreadsheetExporter(artifacts,access.actor().tenantId(),budget);}
+    public java.util.List<ReportDefinitionService.BusinessTemplate> businessTemplates(ReportActor actor,String code){return definitions.businessTemplates(actor,code);}
     public Run create(ReportActor actor, String report, String requestedMode, Map<String, Object> input) {
         ReportActor current = definitions.resolve(actor.tenantId(), actor.userId());
         Version version = definitions.published(current, report, "VIEW", PREVIEW);
-        Binding binding = definitions.bind(current, definitions.versionDsl(version));
+        Binding binding = definitions.bindVersion(current, version);
         String mode = binding.compiled().dsl().kind() == ReportDsl.Kind.DOCUMENT ? "SNAPSHOT" : requestedMode;
         if (mode == null || !Set.of("LIVE", "SNAPSHOT").contains(mode)) throw new ReportFault("INVALID_PARAMETER", "运行模式无效");
         if (mode.equals("LIVE") && (binding.compiled().aggregateExpressions()
@@ -70,7 +76,7 @@ public class ReportRuntimeService {
         }
         current = definitions.resolve(current.tenantId(), current.userId());
         definitions.definition(current, version.reportId(), "VIEW", PREVIEW);
-        binding = definitions.bind(current, definitions.versionDsl(version));
+        binding = definitions.bindVersion(current, version);
         if (!scope.equals(definitions.fingerprint(current, binding))) throw scopeChanged();
         Run run = store.createRun(current, version.reportId(), version.id(), mode, json(payload), scope,
             Instant.now().plusSeconds(properties.getRetentionHours() * 3600L));
@@ -94,7 +100,7 @@ public class ReportRuntimeService {
         if (!definition.status().equals("PUBLISHED")) throw new ReportFault("REPORT_OFFLINE", "报表已经下线", 409);
         Version version = store.version(current.tenantId(), run.version()).orElseThrow(ReportRuntimeService::missing);
         if (!version.reportId().equals(run.reportId())) throw missing();
-        Binding binding = definitions.bind(current, definitions.versionDsl(version));
+        Binding binding = definitions.bindVersion(current, version);
         if ("EXPORT".equals(action)) definitions.requireDatasetExport(current, binding);
         if (!Objects.equals(run.scopeHash(), definitions.fingerprint(current, binding))) throw scopeChanged();
         Payload payload = payload(run);
@@ -128,9 +134,9 @@ public class ReportRuntimeService {
             if (sort != null && binding.compiled().dsl().columns().stream().noneMatch(column -> column.field().equals(sort) && !binding.compiled().expressions().containsKey(sort))) {
                 throw new ReportFault("INVALID_PARAMETER", "只能按当前可见的可信字段排序");
             }
-            var source = binding.provider().query(binding.compiled().context(access.actor()), new DatasetQuery(access.payload().input(), binding.compiled().requiredFields(), page, size, false, sort, descending));
+            var source = metrics.measure(ReportRuntimeMetrics.Phase.QUERY,()->binding.provider().query(binding.compiled().context(access.actor()), new DatasetQuery(access.payload().input(), binding.compiled().requiredFields(), page, size, false, sort, descending)));
             if (source.rows().size() > size) throw ReportFault.capacity();
-            var calculated = new ReportCalculator().calculate(binding.compiled(), source.rows(), access.payload().input());
+            var calculated = metrics.measure(ReportRuntimeMetrics.Phase.CALCULATION,()->binding.engine().calculate(binding.compiled(), source.rows(), access.payload().input()));
             var summaries = binding.compiled().dsl().summaries().stream().map(summary -> new ReportCalculator.SummaryValue(summary.label(), Map.of(), TypedValue.of(ValueType.INTEGER, source.total()))).toList();
             result = new PageData(binding.compiled().dsl().columns(), ReportDefinitionService.project(calculated.rows(), binding.compiled().dsl()), source.total(), source.dataTime().toString(), "LIVE", summaries);
         }
@@ -156,7 +162,7 @@ public class ReportRuntimeService {
                 Access measured = access;
                 candidate = plans.create(run.tenant(), run.id(), access.payload().checksum(), access.version().engine(),
                     FontSupport.find(properties.getFontPath()), cancellation,
-                    font -> new DocumentLayoutEngine().layout(measured.binding().compiled(), data, measured.payload().input(), font));
+                    font -> metrics.measure(ReportRuntimeMetrics.Phase.LAYOUT,()->measured.binding().engine().layout(measured.binding().compiled(), data, measured.payload().input(), font)));
                 cancellation.check(); access = recheck(access);
                 Payload payload = new Payload(access.payload().input(), access.payload().store(), access.payload().checksum(), access.payload().summaries(), candidate.checksum());
                 boolean registered = store.publishRenderPlan(run.tenant(), run.id(), run.snapshot(), candidate.reference(), json(payload), access.lease());
@@ -221,6 +227,9 @@ public class ReportRuntimeService {
             catch (ReportFault denied) { return false; }
         }).toList();
     }
+    public void retry(ReportActor actor,String id){retry(actor,id,job(actor,id).retryRound());}
+    public void retry(ReportActor actor,String id,int expectedRound){var current=definitions.resolve(actor.tenantId(),actor.userId());var job=job(current,id);access(current,job.runId(),EXPORT,"EXPORT");if(!store.manualRetry(current,id,expectedRound))throw new ReportFault("RETRY_NOT_ALLOWED","任务不可重试或已处理",409);store.audit(current,null,"EXPORT_RETRY","REQUESTED",null);}
+    public void progress(Access access,String phase,long rows,Long total,ReportCancellation cancellation){cancellation.check();if(access.lease()!=null&&!store.progressJob(access.lease(),phase,rows,total)){cancellation.cancel("LEASE_LOST");throw leaseLost();}}
     public void cancel(ReportActor actor, String id) {
         ReportActor current = definitions.resolve(actor.tenantId(), actor.userId());
         ReportDefinitionService.require(current, EXPORT);
@@ -257,7 +266,8 @@ public class ReportRuntimeService {
         ReportSnapshotStore.Snapshot snapshot = null;
         try {
             cancellation.check(); access = recheck(access);
-            snapshot = snapshots.create(access.binding().compiled(), access.binding().provider(), access.actor(), access.payload().input(), cancellation, maximum);
+            Access building=access;
+            snapshot = metrics.measure(ReportRuntimeMetrics.Phase.SNAPSHOT,()->snapshots.create(building.binding().compiled(), building.binding().provider(), building.actor(), building.payload().input(), cancellation, maximum,building.binding().engine(),rows->progress(building,"SNAPSHOT",rows,null,cancellation)));
             cancellation.check(); access = recheck(access); cancellation.check();
             Payload payload = new Payload(access.payload().input(), artifacts.storeId(), snapshot.checksum(), snapshot.summaries());
             if (!store.finishSnapshot(run.tenant(), run.id(), checkpoint, access.lease(), "SUCCEEDED", snapshot.reference(), snapshot.rows(), json(payload), null)) throw leaseLost();
@@ -284,6 +294,7 @@ public class ReportRuntimeService {
             cancellation.check();
             if (rows[0]++ % 128 == 0) recheck(access);
             consumer.accept(row);
+            if(rows[0]%128==0)progress(access,"WRITING",rows[0],access.run().rows(),cancellation);
         }, cancellation);
         cancellation.check(); recheck(access);
     }

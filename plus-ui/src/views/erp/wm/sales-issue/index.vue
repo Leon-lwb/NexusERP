@@ -99,6 +99,7 @@
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
+          <BusinessReportButton dataset-code="ERP_DELIVERY_DOCUMENT" parameter="issueId" :record-id="scope.row.issueId" />
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button
             v-if="scope.row.status === 'DRAFT'"
@@ -170,6 +171,7 @@
 </template>
 
 <script setup lang="ts" name="SalesIssue">
+import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import {
   listSalesIssue,
   getSalesIssue,

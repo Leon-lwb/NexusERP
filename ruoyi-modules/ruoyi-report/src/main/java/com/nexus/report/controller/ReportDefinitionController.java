@@ -26,14 +26,14 @@ public class ReportDefinitionController {
     public record Detail(Definition definition,ReportDsl dsl) { }
     public record Published(String versionId,int number,ReportDsl dsl) { }
     public record SampleView(List<Map<String,TypedValue>> rows,long total,Instant dataTime) { }
-    private ReportDsl dsl(JsonNode node){if(node==null)throw ReportFault.invalid("报表定义不能为空");return compiler.parse(node.toString());}
+    private ReportDsl dsl(JsonNode node){if(node==null)throw ReportFault.invalid("报表定义不能为空");return definitions.parseDraft(node.toString());}
     private static long revision(Long value){if(value==null||value<1)throw ReportFault.invalid("请提供当前草稿版本号");return value;}
     @SaCheckPermission("report:definition:list") @GetMapping("/definitions")
     public R<List<Definition>> list(){return R.ok(definitions.list(actors.current()));}
     @SaCheckPermission("report:definition:edit") @GetMapping("/definitions/{id}")
-    public R<Detail> detail(@PathVariable String id){var actor=actors.current();var definition=definitions.detail(actor,id);var dsl=compiler.parse(definition.json());definitions.bind(actor,dsl);return R.ok(new Detail(definition,dsl));}
+    public R<Detail> detail(@PathVariable String id){var actor=actors.current();var definition=definitions.detail(actor,id);var dsl=definitions.parseDraft(definition.json());definitions.bind(actor,dsl);return R.ok(new Detail(definition,dsl));}
     @SaCheckPermission("report:runtime:preview") @GetMapping("/definitions/{id}/published")
-    public R<Published> published(@PathVariable String id){var actor=actors.current();var version=definitions.published(actor,id,"VIEW","report:runtime:preview");var dsl=compiler.parse(version.json());definitions.bind(actor,dsl);return R.ok(new Published(version.id(),version.number(),dsl));}
+    public R<Published> published(@PathVariable String id){var actor=actors.current();var version=definitions.published(actor,id,"VIEW","report:runtime:preview");var dsl=definitions.versionDsl(version);definitions.bindVersion(actor,version);return R.ok(new Published(version.id(),version.number(),dsl));}
     @SaCheckPermission("report:definition:add") @PostMapping("/definitions")
     public R<Definition> create(@RequestBody DraftRequest body){return R.ok(definitions.create(actors.current(),dsl(body.dsl()),body.catalogId()));}
     @SaCheckPermission("report:definition:edit") @PutMapping("/definitions/{id}")

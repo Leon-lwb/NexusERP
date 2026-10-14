@@ -63,3 +63,39 @@ export const listExportJobs = (): Api<ExportJob[]> => request({ url: '/report/ru
 export const cancelExport = (id: string): Api<void> => request({ url: '/report/runtime/exports/' + id + '/cancel', method: 'post' });
 export const downloadExport = (id: string): Promise<Blob> =>
   request({ url: '/report/runtime/exports/' + id + '/file', responseType: 'blob', timeout: 120000 });
+
+export const datasetVersion = (id: string): Api<import('@/types/report').DatasetVersionView> => request({ url: '/report/datasets/versions/' + id });
+export const datasetVersionDiff = (from: string, target: string): Api<import('@/types/report').DatasetVersionDiff> =>
+  request({ url: '/report/datasets/versions/' + from + '/diff', params: { target } });
+export const reportEngines = (): Api<import('@/types/report').ReportEngineCapability[]> => request({ url: '/report/engines' });
+
+export const exportTemplatePackage = (id: string): Api<unknown> => request({ url: '/report/templates/' + id + '/package' });
+export const importTemplatePackage = (data: {
+  templatePackage: unknown;
+  datasetVersionId: string;
+  code: string;
+  title: string;
+  catalogId: string | null;
+}): Api<ReportDefinition> => request({ url: '/report/templates/import', method: 'post', data });
+export const copyReport = (id: string, code: string, title: string, catalogId: string | null): Api<ReportDefinition> =>
+  request({ url: '/report/templates/' + id + '/copy', method: 'post', data: { code, title, catalogId } });
+export interface LookupBinding {
+  datasetCode: string;
+  providerVersion: number;
+  parameter: string;
+  label: string;
+  permission: string;
+}
+export const reportLookupBindings = (version: string): Api<LookupBinding[]> => request({ url: '/report/lookups/' + version });
+export const reportLookup = (
+  version: string,
+  parameter: string,
+  keyword: string,
+  page = 1
+): Api<{ options: { value: string; label: string }[]; total: number }> =>
+  request({ url: '/report/lookups/' + version + '/' + parameter, params: { keyword, page, size: 20 } });
+export const businessReportTemplates = (datasetCode: string): Api<{ id: string; name: string }[]> =>
+  request({ url: '/report/runtime/templates', params: { datasetCode } });
+
+export const retryExport = (id: string, retryRound: number): Api<void> =>
+  request({ url: '/report/runtime/exports/' + id + '/retry', method: 'post', data: { retryRound } });

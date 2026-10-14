@@ -202,6 +202,12 @@ export interface ReportRun {
 }
 export type ExportFormat = 'PDF' | 'XLSX_DATA' | 'XLSX_LAYOUT';
 export interface ExportJob {
+  phase?: string;
+  processedRows?: number;
+  totalRows?: number | null;
+  retryRound?: number;
+  heartbeat?: string | null;
+  canRetry?: boolean;
   id: string;
   runId: string;
   format: ExportFormat;
@@ -215,4 +221,26 @@ export interface ResourceGrant {
   subjectType: 'USER' | 'ROLE' | 'DEPT';
   subjectId: string;
   action: 'VIEW' | 'EDIT' | 'PUBLISH' | 'EXPORT' | 'MANAGE';
+}
+
+export interface DatasetVersionView {
+  id: string;
+  datasetId: string;
+  code: string;
+  number: number;
+  current: boolean;
+  descriptor: DatasetDescriptor;
+}
+export interface DatasetVersionDiff {
+  from: string;
+  to: string;
+  breaking: boolean;
+  changes: { category: string; name: string; kind: string; breaking: boolean }[];
+}
+export interface ReportEngineCapability {
+  schemaVersion: number;
+  engineVersion: string;
+  features: string[];
+  enabled: boolean;
+  defaultForDraft: boolean;
 }

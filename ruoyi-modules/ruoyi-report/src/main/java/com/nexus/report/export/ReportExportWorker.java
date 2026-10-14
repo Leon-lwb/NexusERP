@@ -84,13 +84,15 @@ public class ReportExportWorker implements AutoCloseable {
             else if(job.cancelled()||job.state().equals("CANCEL_REQUESTED"))cancellation.cancel("CANCELLED");
             checkLease(job,cancellation,deadline);String kind=kind(job);
             monitor=heartbeat.scheduleAtFixedRate(()->renewLease(job,cancellation,deadline),5,5,TimeUnit.SECONDS);
-            var access=runtime.execution(job);cancellation.check();access=runtime.buildSnapshot(access,cancellation,100000);
+            var access=runtime.execution(job);cancellation.check();runtime.progress(access,"SNAPSHOT",0,null,cancellation);access=runtime.buildSnapshot(access,cancellation,100000);
+            runtime.progress(access,job.format().equals("XLSX_DATA")?"WRITING":"LAYOUT",0,access.run()==null?null:access.run().rows(),cancellation);
             checkLease(job,cancellation,deadline);
             temporary=artifacts.temporary(job.tenant(),kind);final long[] bytes={0};
             try(var output=new FilterOutputStream(artifacts.output(job.tenant(),temporary)){
                 @Override public void write(int value)throws IOException{out.write(value);bytes[0]++;}
                 @Override public void write(byte[] data,int offset,int length)throws IOException{out.write(data,offset,length);bytes[0]+=length;}
             }){renderer.write(job,access,output,cancellation);}
+            if(access.run()!=null)runtime.progress(access,"WRITING",access.run().rows(),access.run().rows(),cancellation);
             checkLease(job,cancellation,deadline);runtime.execution(job);checkLease(job,cancellation,deadline);
             file=artifacts.commit(job.tenant(),temporary,kind);temporary=null;
             checkLease(job,cancellation,deadline);

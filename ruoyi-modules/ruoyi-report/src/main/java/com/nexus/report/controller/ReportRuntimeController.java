@@ -19,11 +19,14 @@ public class ReportRuntimeController {
     private final ReportRequestActor actors;private final ReportRuntimeService runtime;private final ReportArtifactStore artifacts;
     public ReportRuntimeController(ReportRequestActor actors,ReportRuntimeService runtime,ReportArtifactStore artifacts){this.actors=actors;this.runtime=runtime;this.artifacts=artifacts;}
     public record RunRequest(String reportId,String mode,Map<String,Object> parameters) { }
+    public record RetryRequest(Integer retryRound) { }
     public record ExportRequest(String format,String requestKey) { }
     public record RunView(String id,String reportId,String version,String mode,String state,long rows,Instant dataTime,Instant expires,String error) { }
-    public record JobView(String id,String runId,String format,String state,int attempts,Long bytes,Instant expires,String error) { }
+    public record JobView(String id,String runId,String format,String state,int attempts,Long bytes,Instant expires,String error,String phase,long processedRows,Long totalRows,int retryRound,Instant heartbeat,boolean canRetry) { }
     static RunView view(Run run){return new RunView(run.id(),run.reportId(),run.version(),run.mode(),run.state(),run.rows(),run.dataTime(),run.expires(),run.error());}
-    static JobView view(ExportJob job){return new JobView(job.id(),job.runId(),job.format(),job.state(),job.attempts(),job.bytes(),job.expires(),job.error());}
+    static JobView view(ExportJob job){return new JobView(job.id(),job.runId(),job.format(),job.state(),job.attempts(),job.bytes(),job.expires(),job.error(),job.phase(),job.processedRows(),job.totalRows(),job.retryRound(),job.heartbeat(),com.nexus.report.mapper.JdbcReportStore.manualRetryable(job));}
+    @SaCheckPermission("report:runtime:preview") @GetMapping("/templates")
+    public R<java.util.List<com.nexus.report.service.ReportDefinitionService.BusinessTemplate>> templates(@RequestParam String datasetCode){return R.ok(runtime.businessTemplates(actors.current(),datasetCode));}
     @SaCheckPermission("report:runtime:preview") @PostMapping("/runs")
     public R<RunView> create(@RequestBody RunRequest body){return R.ok(view(runtime.create(actors.current(),body.reportId(),body.mode(),body.parameters())));}
     @SaCheckPermission("report:runtime:preview") @GetMapping("/runs/{id}")
@@ -38,6 +41,8 @@ public class ReportRuntimeController {
     public R<List<JobView>> jobs(){return R.ok(runtime.jobs(actors.current()).stream().map(ReportRuntimeController::view).toList());}
     @SaCheckPermission("report:runtime:export") @GetMapping("/exports/{id}")
     public R<JobView> job(@PathVariable String id){return R.ok(view(runtime.job(actors.current(),id)));}
+    @SaCheckPermission("report:runtime:export") @PostMapping("/exports/{id}/retry")
+    public R<Void> retry(@PathVariable String id,@RequestBody RetryRequest body){if(body.retryRound()==null)throw ReportFault.invalid("请提供任务重试轮次");runtime.retry(actors.current(),id,body.retryRound());return R.ok();}
     @SaCheckPermission("report:runtime:export") @PostMapping("/exports/{id}/cancel")
     public R<Void> cancel(@PathVariable String id){runtime.cancel(actors.current(),id);return R.ok();}
     @SaCheckPermission("report:runtime:export") @GetMapping("/exports/{id}/file")
@@ -47,11 +52,12 @@ public class ReportRuntimeController {
         if(!job.state().equals("SUCCEEDED")||job.file()==null)throw new ReportFault("RUN_NOT_READY","导出文件尚未生成",409);
         var file=artifacts.read(actor.tenantId(),job.file());String extension=job.format().equals("PDF")?"pdf":"xlsx";
         long size=Files.size(file);
+        long started=System.nanoTime();boolean delivered=false;
         try(var input=Files.newInputStream(file)){
             response.setContentType(extension.equals("pdf")?"application/pdf":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Cache-Control","no-store, private");response.setHeader("X-Content-Type-Options","nosniff");
             response.setHeader("Content-Disposition",ContentDisposition.attachment().filename("nexus-report-"+job.id()+"."+extension).build().toString());
-            response.setContentLengthLong(size);input.transferTo(response.getOutputStream());
-        }
+            response.setContentLengthLong(size);input.transferTo(response.getOutputStream());delivered=true;
+        }finally{runtime.recordDelivery(delivered,System.nanoTime()-started);}
     }
 }

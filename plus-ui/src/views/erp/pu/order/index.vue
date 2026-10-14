@@ -31,6 +31,7 @@
 
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
+      <BusinessReportButton dataset-code="ERP_PURCHASE_ORDER_DOCUMENT" parameter="orderId" :record-id="ids.length === 1 ? ids[0] : undefined" />
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:order:add']"> 新增 </el-button>
       </el-col>
@@ -150,6 +151,7 @@
 </template>
 
 <script setup lang="ts" name="PurchaseOrder">
+import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import {
   listPurchaseOrder,
   getPurchaseOrder,

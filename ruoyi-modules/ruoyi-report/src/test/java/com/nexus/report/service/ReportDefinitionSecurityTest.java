@@ -142,6 +142,7 @@ class ReportDefinitionSecurityTest {
         try (var f = new RuntimeReviewFixture(directory)) {
             var foreignOwner = RuntimeReviewFixture.actor(9, Set.of("*:*:*"), ReportScope.all(9));
             var hidden = f.store.createDefinition(foreignOwner, "BASE_SECURE_TEST", "隐藏模板", "TABLE", null, f.compiler.json(f.dsl("BASE_SECURE_TEST")));
+            var datasetGrants=new ArrayList<>(f.store.acl("A","DATASET",f.dataset.id()));datasetGrants.add(new Grant("USER","9","VIEW"));f.store.replaceAcl(f.root,"DATASET",f.dataset.id(),datasetGrants);
             f.store.publish(foreignOwner, hidden.id(), hidden.revision(), hidden.json(), "hash", f.dataset.publishedVersion());
             assertTrue(f.definitions.bootstrap(f.owner).stream().noneMatch(d -> d.id().equals(hidden.id())));
             f.store.definitionState(foreignOwner, hidden.id(), "ARCHIVED");
@@ -150,4 +151,5 @@ class ReportDefinitionSecurityTest {
             assertEquals(1, f.store.catalogs("A").stream().filter(c -> c.parentId().equals("0") && c.name().equals("报表中心")).count());
         }
     }
+    @Test void datasetViewRevokedAfterCompileCannotPublishANewVersion(){try(var f=new RuntimeReviewFixture(directory)){var current=f.definitions.detail(f.owner,f.definition.id());f.provider.onDescriptor=()->f.store.replaceAcl(f.root,"DATASET",f.dataset.id(),List.of());assertEquals("SCOPE_DENIED",assertThrows(ReportFault.class,()->f.definitions.publish(f.owner,current.id(),current.revision())).code());assertEquals(1,f.store.versions("A",current.id()).size());}}
 }

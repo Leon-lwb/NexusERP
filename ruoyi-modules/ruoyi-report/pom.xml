@@ -5,6 +5,7 @@
     <artifactId>ruoyi-report</artifactId>
     <description>Nexus 自研报表定义、运行引擎与设计器服务</description>
     <dependencies>
+        <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-core</artifactId></dependency>
         <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-report</artifactId></dependency>
         <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-core</artifactId></dependency>
         <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-satoken</artifactId></dependency>

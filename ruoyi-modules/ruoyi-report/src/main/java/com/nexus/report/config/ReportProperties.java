@@ -2,6 +2,8 @@ package com.nexus.report.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix="nexus.report")
 public class ReportProperties {
+    private java.util.Set<String> disabledEngines=java.util.Set.of();
+    public java.util.Set<String> getDisabledEngines(){return disabledEngines;}public void setDisabledEngines(java.util.Set<String> values){disabledEngines=java.util.Set.copyOf(values);}
     private String artifactRoot="./data/report";private String fontPath;private int workers=4;private int retentionHours=24;private int taskSeconds=240;private long maxArtifactBytes=100L*1024*1024;
     public String getArtifactRoot(){return artifactRoot;}public void setArtifactRoot(String value){artifactRoot=value;}
     public String getFontPath(){return fontPath;}public void setFontPath(String value){fontPath=value;}

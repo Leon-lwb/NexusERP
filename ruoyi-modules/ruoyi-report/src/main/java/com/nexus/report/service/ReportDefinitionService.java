@@ -4,6 +4,7 @@ import com.nexus.report.config.*;
 import com.nexus.report.domain.*;
 import com.nexus.report.domain.ReportRecords.*;
 import com.nexus.report.engine.*;
+import com.nexus.report.version.*;
 import com.nexus.report.mapper.JdbcReportStore;
 import org.springframework.dao.DuplicateKeyException;
 import java.nio.charset.StandardCharsets;
@@ -11,9 +12,13 @@ import java.security.*;
 import java.util.*;
 /** Lifecycle and resource guard. Business facts are read only through versioned providers. */
 public class ReportDefinitionService {
-    private final JdbcReportStore store;private final ReportProviderRegistry registry;private final ReportAuthorizationPort authorization;private final ReportCompiler compiler;
-    public ReportDefinitionService(JdbcReportStore store,ReportProviderRegistry registry,ReportAuthorizationPort authorization,ReportCompiler compiler){this.store=store;this.registry=registry;this.authorization=authorization;this.compiler=compiler;}
-    public record Binding(CompiledReport compiled,Dataset dataset,DatasetVersion version,ReportDatasetProvider provider) { }
+    private final JdbcReportStore store;private final ReportProviderRegistry registry;private final ReportAuthorizationPort authorization;private final ReportCompiler compiler;private final ReportEngineRegistry engines;private final com.nexus.report.runtime.ReportRuntimeMetrics metrics;
+    public ReportDefinitionService(JdbcReportStore store,ReportProviderRegistry registry,ReportAuthorizationPort authorization,ReportCompiler compiler){this(store,registry,authorization,compiler,ReportEngineRegistry.v1(compiler));}
+    public ReportDefinitionService(JdbcReportStore store,ReportProviderRegistry registry,ReportAuthorizationPort authorization,ReportCompiler compiler,ReportEngineRegistry engines){this(store,registry,authorization,compiler,engines,com.nexus.report.runtime.ReportRuntimeMetrics.local());}
+    public ReportDefinitionService(JdbcReportStore store,ReportProviderRegistry registry,ReportAuthorizationPort authorization,ReportCompiler compiler,ReportEngineRegistry engines,com.nexus.report.runtime.ReportRuntimeMetrics metrics){this.store=store;this.registry=registry;this.authorization=authorization;this.compiler=compiler;this.engines=engines;this.metrics=metrics;}
+    public ReportDsl parseDraft(String text){var node=compiler.read(text,com.fasterxml.jackson.databind.JsonNode.class);var schema=node==null?null:node.get("schemaVersion");if(schema==null||!schema.isIntegralNumber()||!schema.canConvertToInt())throw ReportFault.invalid("报表格式版本无效");return engines.draft(schema.intValue()).parse(text);}
+    public List<ReportEngineRegistry.Capability> capabilities(ReportActor actor){require(actor,"report:definition:list");return engines.capabilities();}
+    public record Binding(CompiledReport compiled,Dataset dataset,DatasetVersion version,ReportDatasetProvider provider,ReportEngineExecutor engine) { }
     public record DatasetView(Dataset dataset,DatasetDescriptor descriptor,boolean canManage) { }
     public record DraftPreview(List<Map<String,TypedValue>> rows,long total,String dataTime,List<ReportCalculator.SummaryValue> summaries,RenderPlan plan) { }
     public ReportActor resolve(String tenant, long actor) {
@@ -24,6 +29,8 @@ public class ReportDefinitionService {
     public static void require(ReportActor actor,String permission){if(!actor.has(permission))throw ReportFault.denied();}
     public List<Definition> list(ReportActor actor){require(actor,"report:definition:list");return store.definitions(actor).stream().map(d->new Definition(d.id(),d.tenant(),d.code(),d.name(),d.kind(),d.catalogId(),null,d.revision(),d.publishedVersion(),d.status(),d.owner(),d.updatedAt())).toList();}
     public Definition definition(ReportActor actor,String id,String action,String operation){require(actor,operation);var d=store.definition(actor.tenantId(),id).orElseThrow(ReportDefinitionService::missing);if(d.status().equals("ARCHIVED")||!store.allowed(actor,"REPORT",d.id(),d.owner(),action))throw ReportFault.denied();return d;}
+    public record BusinessTemplate(String id,String name) { }
+    public List<BusinessTemplate> businessTemplates(ReportActor actor,String code){var current=resolve(actor.tenantId(),actor.userId());require(current,"report:runtime:preview");if(code==null||!code.matches("[A-Z][A-Z0-9_]{0,63}"))throw ReportFault.invalid("数据集编码无效");var result=new ArrayList<BusinessTemplate>();for(var definition:store.definitions(current)){if(!definition.status().equals("PUBLISHED"))continue;try{var version=published(current,definition.id(),"VIEW","report:runtime:preview");var dsl=versionDsl(version);if(!dsl.datasetCode().equals(code))continue;bindVersion(current,version);result.add(new BusinessTemplate(definition.id(),definition.name()));}catch(ReportFault denied){if(!Set.of("SCOPE_DENIED","VERSION_UNSUPPORTED","ENGINE_DISABLED").contains(denied.code()))throw denied;}}return List.copyOf(result);}
     public Definition detail(ReportActor actor,String id){return definition(actor,id,"EDIT","report:definition:edit");}
     public List<DatasetDescriptor> providers(ReportActor actor){require(actor,"report:dataset:manage");return registry.latest().stream().map(ReportDatasetProvider::descriptor).filter(d->actor.has(d.permission())).map(d->masked(d,actor)).toList();}
     public List<DatasetView> datasets(ReportActor actor){require(actor,"report:dataset:list");return store.datasets(actor).stream().filter(d->d.publishedVersion()!=null).map(d->{var version=store.datasetVersion(actor.tenantId(),d.publishedVersion()).orElseThrow(ReportDefinitionService::missing);var descriptor=registry.get(version.provider(),version.providerVersion()).descriptor();return new DatasetView(d,masked(descriptor,actor),actor.has("report:dataset:manage")&&store.allowed(actor,"DATASET",d.id(),d.owner(),"EDIT"));}).filter(view->actor.has(view.descriptor.permission())).toList();}
@@ -41,12 +48,14 @@ public class ReportDefinitionService {
         store.datasetState(current, id, state, expectedStatus);
         store.audit(current, id, "DATASET_STATE", "SUCCEEDED", null);
     }
-    public Binding bind(ReportActor actor,ReportDsl dsl){
+    public Binding bind(ReportActor actor,ReportDsl dsl){return bind(actor,dsl,engines.draft(dsl.schemaVersion()));}
+    public Binding bindVersion(ReportActor actor,Version version){return bind(actor,versionDsl(version),engines.require(version.schema(),version.engine()));}
+    private Binding bind(ReportActor actor,ReportDsl dsl,ReportEngineExecutor executor){
         var version=store.datasetVersion(actor.tenantId(),dsl.datasetVersionId()).orElseThrow(ReportDefinitionService::missing);var dataset=store.dataset(actor.tenantId(),version.datasetId()).orElseThrow(ReportDefinitionService::missing);
         if(!dataset.code().equals(dsl.datasetCode())||!dataset.status().equals("ACTIVE")||!store.allowed(actor,"DATASET",dataset.id(),dataset.owner(),"VIEW"))throw ReportFault.denied();
         var provider=registry.get(version.provider(),version.providerVersion());var descriptor=provider.descriptor();
         if(!hash(compiler.json(descriptor)).equals(version.checksum()))throw new ReportFault("VERSION_UNSUPPORTED","数据集契约已变化，请发布新数据集版本并重新绑定");
-        return new Binding(compiler.compile(dsl,descriptor,actor),dataset,version,provider);
+        return new Binding(metrics.measure(com.nexus.report.runtime.ReportRuntimeMetrics.Phase.COMPILE,()->executor.compile(dsl,descriptor,actor)),dataset,version,provider,executor);
     }
     public void requireDatasetExport(ReportActor actor,Binding binding) {
         if(!store.allowed(actor,"DATASET",binding.dataset().id(),binding.dataset().owner(),"EXPORT")) throw ReportFault.denied();
@@ -69,12 +78,13 @@ public class ReportDefinitionService {
         ReportActor current = resolve(actor.tenantId(), actor.userId());
         Definition definition = definition(current, id, "PUBLISH", "report:definition:publish");
         checkRevision(definition, revision);
-        ReportDsl dsl = compiler.parse(definition.json());
+        ReportDsl dsl = parseDraft(definition.json());
         bind(current, dsl);
         current = resolve(actor.tenantId(), actor.userId());
         checkRevision(definition(current, id, "PUBLISH", "report:definition:publish"), revision);
         String text = compiler.json(dsl);
-        var result = store.publish(current, id, revision, text, hash(text), dsl.datasetVersionId());
+        var executor=bind(current,dsl).engine();
+        var result = store.publish(current, id, revision, text, hash(text), dsl.datasetVersionId(),executor.schemaVersion(),executor.engineVersion());
         store.audit(current, id, "PUBLISH", "SUCCEEDED", "{\"version\":" + result.number() + "}");
         return result;
     }
@@ -89,7 +99,7 @@ public class ReportDefinitionService {
         checkRevision(definition(current, id, "PUBLISH", "report:definition:publish"), revision);
         Version target = store.version(current.tenantId(), version).orElseThrow(ReportDefinitionService::missing);
         if (!id.equals(target.reportId())) throw missing();
-        bind(current, versionDsl(target));
+        bindVersion(current,target);
         current = resolve(actor.tenantId(), actor.userId());
         checkRevision(definition(current, id, "PUBLISH", "report:definition:publish"), revision);
         store.rollback(current, id, version, revision);
@@ -159,9 +169,9 @@ public class ReportDefinitionService {
         Map<String, Object> parameters = parameters(binding, input);
         var result = binding.provider().query(binding.compiled().context(current), new DatasetQuery(parameters, binding.compiled().requiredFields(), 1, 200, false, null, false));
         if (result.rows().size() > 200) throw ReportFault.capacity();
-        var data = new ReportCalculator().calculate(binding.compiled(), result.rows(), parameters);
+        var data = binding.engine().calculate(binding.compiled(), result.rows(), parameters);
         RenderPlan plan = dsl.kind() == ReportDsl.Kind.DOCUMENT
-            ? new DocumentLayoutEngine().layout(binding.compiled(), data, parameters, FontSupport.find(font)) : null;
+            ? binding.engine().layout(binding.compiled(), data, parameters, FontSupport.find(font)) : null;
         current = resolve(actor.tenantId(), actor.userId());
         previewPermission(current, id, dsl);
         if (!fingerprint.equals(fingerprint(current, bind(current, dsl)))) throw scopeChanged();
@@ -233,11 +243,10 @@ public class ReportDefinitionService {
     }
     /** Published references are immutable and are executed only by their declared compatible engine. */
     public ReportDsl versionDsl(Version version) {
-        if(version.schema()!=1 || !ReportCompiler.ENGINE_VERSION.equals(version.engine()))
-            throw new ReportFault("VERSION_UNSUPPORTED", "所需报表引擎或格式版本未安装");
+        var executor=engines.require(version.schema(),version.engine());
         if(version.json()==null || !hash(version.json()).equals(version.checksum()))
             throw new ReportFault("VERSION_INVALID", "已发布报表校验失败", 409);
-        var dsl=compiler.parse(version.json());
+        var dsl=executor.parse(version.json());
         if(dsl.schemaVersion()!=version.schema() || !Objects.equals(dsl.datasetVersionId(),version.datasetVersion()))
             throw new ReportFault("VERSION_INVALID", "已发布报表引用不一致", 409);
         return dsl;

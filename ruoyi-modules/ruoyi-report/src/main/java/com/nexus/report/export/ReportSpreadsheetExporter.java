@@ -14,9 +14,13 @@ import java.util.function.Consumer;
 
 /** Explicit STRING cells prevent formula injection; values beyond Excel precision remain exact text. */
 public final class ReportSpreadsheetExporter {
+    private final com.nexus.report.storage.ReportArtifactStore artifacts;private final String tenant;private final long temporaryBudget;
+    public ReportSpreadsheetExporter(){this(null,"standalone",200L*1024*1024);}
+    public ReportSpreadsheetExporter(com.nexus.report.storage.ReportArtifactStore artifacts,String tenant,long temporaryBudget){this.artifacts=artifacts;this.tenant=tenant;this.temporaryBudget=temporaryBudget;}
     @FunctionalInterface public interface RowReader { void read(Consumer<Map<String,TypedValue>> consumer); }
     public void data(ReportDsl dsl, RowReader reader, OutputStream output, ReportCancellation cancellation) {
-        var workbook=new SXSSFWorkbook(200);workbook.setCompressTempFiles(true);
+        cancellation.check();var staging=artifacts!=null?artifacts:new com.nexus.report.storage.LocalReportArtifactStore(java.nio.file.Path.of(System.getProperty("java.io.tmpdir"),"nexus-report-private"),temporaryBudget);
+        var workbook=new ReportPrivateWorkbook(staging,tenant,temporaryBudget,cancellation);
         try {
             var sheet=workbook.createSheet("明细");sheet.createFreezePane(0,1);
             var header=sheet.createRow(0);for(int c=0;c<dsl.columns().size();c++){
@@ -30,9 +34,9 @@ public final class ReportSpreadsheetExporter {
                     if(cell.getCellType()==CellType.NUMERIC)cell.setCellStyle(formats.computeIfAbsent(column.scale(),scale->{var style=workbook.createCellStyle();style.setDataFormat(workbook.createDataFormat().getFormat(numberFormat(scale)));return style;}));
                 }
             });
-            cancellation.check();workbook.write(output);
+            cancellation.check();workbook.writeAvoidingTempFiles(output);
         } catch(IOException e){throw new ReportFault("XLSX_EXPORT_FAILED","Excel 生成失败",500);}
-        finally{try{workbook.close();}catch(IOException ignored){}workbook.dispose();}
+        finally{workbook.prepareRelease();try{workbook.close();}catch(IOException|RuntimeException ignored){}try{workbook.dispose();}catch(RuntimeException ignored){}finally{workbook.release();}}
     }
     public void layout(RenderPlan plan, OutputStream output, ReportCancellation cancellation) {
         try(var workbook=new XSSFWorkbook()){

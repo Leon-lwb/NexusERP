@@ -9,5 +9,7 @@ public final class ReportRecords {
     public record DatasetVersion(String id,String datasetId,int number,String provider,int providerVersion,String json,String checksum,long owner) { }
     public record Grant(String subjectType,String subjectId,String action) { }
     public record Run(String id,String tenant,long actor,String reportId,String version,String mode,String state,String parameters,String scopeHash,String snapshot,String plan,long rows,Instant dataTime,Instant expires,String error) { }
-    public record ExportJob(String id,String tenant,long actor,String runId,String format,String requestKey,String requestHash,String state,int attempts,String leaseOwner,Instant leaseUntil,boolean cancelled,String file,Long bytes,Instant expires,String error) { }
+    public record ExportJob(String id,String tenant,long actor,String runId,String format,String requestKey,String requestHash,String state,int attempts,String leaseOwner,Instant leaseUntil,boolean cancelled,String file,Long bytes,Instant expires,String error,String phase,long processedRows,Long totalRows,int retryRound,Instant heartbeat) {
+        public ExportJob(String id,String tenant,long actor,String runId,String format,String requestKey,String requestHash,String state,int attempts,String leaseOwner,Instant leaseUntil,boolean cancelled,String file,Long bytes,Instant expires,String error){this(id,tenant,actor,runId,format,requestKey,requestHash,state,attempts,leaseOwner,leaseUntil,cancelled,file,bytes,expires,error,state,0,null,0,null);}
+    }
 }

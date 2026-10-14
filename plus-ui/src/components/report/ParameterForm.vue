@@ -6,8 +6,16 @@
       :label="parameter.label"
       :required="parameter.required && !parameter.defaultValue"
     >
+      <ParameterLookup
+        v-if="datasetVersionId && bindings.some((b) => b.parameter === parameter.name)"
+        :model-value="modelValue[parameter.name] || ''"
+        :version="datasetVersionId"
+        :parameter="parameter.name"
+        :label="parameter.label"
+        @update:model-value="set(parameter.name, $event)"
+      />
       <el-date-picker
-        v-if="parameter.type === 'DATE'"
+        v-else-if="parameter.type === 'DATE'"
         :model-value="modelValue[parameter.name] || ''"
         type="date"
         value-format="YYYY-MM-DD"
@@ -36,9 +44,29 @@
   </el-form>
 </template>
 <script setup lang="ts">
+import { ref, watch, onUnmounted } from 'vue';
+import ParameterLookup from './ParameterLookup.vue';
+import { reportLookupBindings, type LookupBinding } from '@/api/report';
+import { RequestGate } from '@/views/report/model';
 import type { ReportParameter } from '@/types/report';
-const props = defineProps<{ parameters: ReportParameter[]; modelValue: Record<string, string> }>();
+const props = defineProps<{ parameters: ReportParameter[]; modelValue: Record<string, string>; datasetVersionId?: string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: Record<string, string>] }>();
+const bindings = ref<LookupBinding[]>([]);
+const gate = new RequestGate();
+watch(
+  () => props.datasetVersionId,
+  async (version) => {
+    const ticket = gate.begin();
+    bindings.value = [];
+    if (!version) return;
+    try {
+      const response = await reportLookupBindings(version);
+      if (gate.current(ticket)) bindings.value = response.data;
+    } catch {}
+  },
+  { immediate: true }
+);
+onUnmounted(() => gate.invalidate());
 function set(name: string, value: unknown) {
   emit('update:modelValue', { ...props.modelValue, [name]: value == null ? '' : String(value) });
 }

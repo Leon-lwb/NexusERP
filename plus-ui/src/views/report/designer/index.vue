@@ -1,6 +1,6 @@
 <template>
-  <div v-loading="loading" class="p-4 report-designer">
-    <el-card shadow="never"
+  <div v-loading="loading" class="p-4 report-designer" :class="{ 'with-preview': previewOpen }" tabindex="0" @keydown="editorKeys">
+    <el-card class="designer-main" shadow="never"
       ><template #header
         ><div class="designer-heading">
           <div>
@@ -9,7 +9,8 @@
             ><el-tag v-else-if="definition" class="ml-3" type="success">已保存 · 修订 {{ definition.revision }}</el-tag>
           </div>
           <div class="flex gap-2">
-            <el-button @click="router.push('/report/center')">返回</el-button
+            <el-button v-if="definition" @click="exportPackage">导出模板包</el-button
+            ><el-button @click="router.push('/report/center')">返回</el-button
             ><el-button :disabled="!canUndo || saving || publishing || applying || jsonDirty" title="撤销；最多保留 50 个设计状态" @click="undo"
               >撤销</el-button
             ><el-button :disabled="!canRedo || saving || publishing || applying || jsonDirty" title="重做；新的编辑会清除重做记录" @click="redo"
@@ -76,6 +77,22 @@
       <el-empty v-if="!dsl" description="选择业务数据集开始设计；尚无数据集时，请先在数据集目录注册。"
         ><el-button @click="router.push('/report/dataset')">前往数据集目录</el-button></el-empty
       >
+      <DatasetContractBar v-if="dsl" v-model="dsl" :datasets="datasets" :busy="saving || publishing || applying" @contract="boundVersion = $event" />
+      <DesignerBatchTools v-if="dsl" v-model="dsl" :disabled="saving || publishing || applying" />
+      <div v-if="structuralIssues.length" class="my-3 p-3 bg-red-50">
+        <strong>设计问题（点击定位列）</strong
+        ><el-button
+          v-for="issue in structuralIssues"
+          :key="issue.index + issue.message"
+          link
+          type="danger"
+          @click="
+            selection = { type: 'column', index: issue.index };
+            tab = 'canvas';
+          "
+          >{{ issue.message }}</el-button
+        >
+      </div>
       <el-tabs v-if="dsl" v-model="tab" v-loading="saving || publishing || applying">
         <el-tab-pane label="设计画布" name="canvas"
           ><div v-loading="saving" class="designer-grid">
@@ -274,9 +291,15 @@
         >
       </el-tabs>
     </el-card>
-    <el-dialog v-model="previewOpen" title="草稿数据预览" width="90%"
-      ><template v-if="dsl"
-        ><ParameterForm v-model="parameters" :parameters="dsl.parameters" /><el-button type="primary" :loading="previewing" @click="fetchPreview"
+    <el-card v-if="previewOpen" class="designer-preview" shadow="never">
+      <template #header
+        ><div class="preview-heading"><strong>草稿数据预览</strong><el-button @click="previewOpen = false">关闭预览</el-button></div></template
+      >
+      <template v-if="dsl"
+        ><ParameterForm :dataset-version-id="dsl?.datasetVersionId" v-model="parameters" :parameters="dsl.parameters" /><el-button
+          type="primary"
+          :loading="previewing"
+          @click="fetchPreview"
           >刷新预览</el-button
         ><el-alert
           title="草稿样例最多 200 行。全量汇总与打印分页请保存发布后使用固定快照验证。"
@@ -286,7 +309,7 @@
           v-else-if="previewData"
           :columns="dsl.columns"
           :rows="previewData.rows" /></template
-    ></el-dialog>
+    ></el-card>
   </div>
 </template>
 <script setup lang="ts">
@@ -312,6 +335,11 @@ import {
 import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import ReportPaper from '@/components/report/ReportPaper.vue';
+import DatasetContractBar from '@/components/report/DatasetContractBar.vue';
+import DesignerBatchTools from '@/components/report/DesignerBatchTools.vue';
+import { editorIssues, boundDataset } from './editorCommands';
+import { exportTemplatePackage } from '@/api/report';
+import type { DatasetVersionView } from '@/types/report';
 defineOptions({ name: 'ReportDesigner' });
 const route = useRoute();
 const router = useRouter();
@@ -323,6 +351,7 @@ const previewing = ref(false);
 const definition = ref<ReportDefinition>();
 const dsl = ref<ReportDsl>();
 const datasets = ref<DatasetView[]>([]);
+const boundVersion = ref<DatasetVersionView>();
 const catalogs = ref<ReportCatalog[]>([]);
 const catalogId = ref<string | null>(null);
 const savedJson = ref('');
@@ -357,7 +386,8 @@ const paperSettings: { key: keyof ReportPage; label: string }[] = [
   { key: 'marginLeft', label: '左边距' },
   { key: 'rowHeight', label: '明细行高' }
 ];
-const selectedDataset = computed(() => datasets.value.find((d) => d.dataset.code === dsl.value?.datasetCode));
+const selectedDataset = computed(() => boundDataset(datasets.value, dsl.value, boundVersion.value));
+const structuralIssues = computed(() => (dsl.value ? editorIssues(dsl.value, selectedDataset.value?.descriptor) : []));
 const selectedColumn = computed(() => (selection.value?.type === 'column' ? dsl.value?.columns[selection.value.index] : undefined));
 const selectedBandRow = computed(() => (selection.value?.type === 'cell' ? dsl.value?.[selection.value.band][selection.value.row] : undefined));
 const selectedCell = computed(() => (selection.value?.type === 'cell' ? selectedBandRow.value?.cells[selection.value.cell] : undefined));
@@ -384,6 +414,7 @@ async function load() {
   previewOpen.value = false;
   definition.value = undefined;
   dsl.value = undefined;
+  boundVersion.value = undefined;
   selection.value = undefined;
   previewData.value = undefined;
   previewGate.invalidate();
@@ -643,8 +674,40 @@ function restoreHistory(action: 'undo' | 'redo') {
   selection.value = undefined;
   if (tab.value === 'json') jsonText.value = jsonBaseline.value = JSON.stringify(restored, null, 2);
 }
+async function exportPackage() {
+  if (!definition.value || !dsl.value) return;
+  if (dirty.value) {
+    ElMessage.warning('请先保存草稿后导出模板包');
+    return;
+  }
+  try {
+    const context = editorContext;
+    const id = definition.value.id;
+    const code = dsl.value.code;
+    const response = await exportTemplatePackage(id);
+    if (context !== editorContext || definition.value?.id !== id) return;
+    saveAs(new Blob([JSON.stringify(response.data)], { type: 'application/json' }), code + '.reportpkg');
+  } catch {}
+}
 function exportDsl() {
   if (dsl.value) saveAs(new Blob([serializeDsl(dsl.value)], { type: 'application/json' }), dsl.value.code + '.report.json');
+}
+function editorKeys(event: KeyboardEvent) {
+  if (!(event.ctrlKey || event.metaKey)) return;
+  if (event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    if (!saving.value && !publishing.value) void save();
+    return;
+  }
+  if ((event.target as HTMLElement)?.closest('input,textarea,[contenteditable=true]')) return;
+  if (event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    event.shiftKey ? redo() : undo();
+  }
+  if (event.key.toLowerCase() === 'y') {
+    event.preventDefault();
+    redo();
+  }
 }
 async function leave() {
   if (saving.value || publishing.value || applying.value) {
@@ -688,12 +751,57 @@ onUnmounted(() => {
 });
 </script>
 <style scoped>
+.report-designer.with-preview {
+  display: grid;
+  grid-template-columns: minmax(660px, 1.4fr) minmax(400px, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.with-preview .designer-grid {
+  grid-template-columns: 170px minmax(280px, 1fr);
+}
+.with-preview .property-panel {
+  grid-column: 1 / -1;
+}
+.designer-preview {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+}
+.preview-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 1100px) {
+  .report-designer.with-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .designer-preview {
+    position: static;
+    max-height: none;
+  }
+}
+
 .designer-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+.designer-heading > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.designer-heading .el-button {
+  margin-left: 0;
+}
+.designer-main {
+  min-width: 0;
 }
 .designer-config {
   display: flex;

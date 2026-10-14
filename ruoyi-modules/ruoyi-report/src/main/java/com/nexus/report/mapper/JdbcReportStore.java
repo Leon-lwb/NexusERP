@@ -70,7 +70,7 @@ public class JdbcReportStore {
     private static final RowMapper<Dataset> DATASET=(r,i)->new Dataset(textId(r,"dataset_id"),r.getString("tenant_id"),r.getString("code"),r.getString("name"),r.getString("provider_code"),textId(r,"published_version_id"),r.getString("status"),r.getLong("create_by"));
     private static final RowMapper<DatasetVersion> DATASET_VERSION=(r,i)->new DatasetVersion(textId(r,"version_id"),textId(r,"dataset_id"),r.getInt("version_no"),r.getString("provider_code"),r.getInt("provider_version"),r.getString("descriptor_json"),r.getString("checksum"),r.getLong("create_by"));
     private static final RowMapper<Run> RUN=(r,i)->new Run(textId(r,"run_id"),r.getString("tenant_id"),r.getLong("actor_id"),textId(r,"report_id"),textId(r,"version_id"),r.getString("mode"),r.getString("state"),r.getString("parameters_json"),r.getString("scope_hash"),r.getString("snapshot_ref"),r.getString("plan_ref"),r.getLong("row_count"),time(r,"data_time"),time(r,"expires_at"),r.getString("error_code"));
-    private static final RowMapper<ExportJob> JOB=(r,i)->new ExportJob(textId(r,"job_id"),r.getString("tenant_id"),r.getLong("actor_id"),textId(r,"run_id"),r.getString("format"),r.getString("idempotency_key"),r.getString("request_hash"),r.getString("state"),r.getInt("attempts"),r.getString("lease_owner"),time(r,"lease_until"),r.getBoolean("cancel_requested"),r.getString("file_ref"),(Long)r.getObject("file_size"),time(r,"expires_at"),r.getString("error_code"));
+    private static final RowMapper<ExportJob> JOB=(r,i)->new ExportJob(textId(r,"job_id"),r.getString("tenant_id"),r.getLong("actor_id"),textId(r,"run_id"),r.getString("format"),r.getString("idempotency_key"),r.getString("request_hash"),r.getString("state"),r.getInt("attempts"),r.getString("lease_owner"),time(r,"lease_until"),r.getBoolean("cancel_requested"),r.getString("file_ref"),(Long)r.getObject("file_size"),time(r,"expires_at"),r.getString("error_code"),r.getString("execution_phase"),r.getLong("processed_rows"),(Long)r.getObject("total_rows"),r.getInt("retry_round"),time(r,"last_heartbeat"));
 
     public List<Catalog> catalogs(String tenant) {
         return jdbc.query("SELECT catalog_id,parent_id,name,create_by FROM rpt_catalog WHERE tenant_id=? ORDER BY sort_order,catalog_id", CATALOG, tenant);
@@ -145,17 +145,22 @@ public class JdbcReportStore {
     }
 
     public Version publish(ReportActor actor, String report, long revision, String dsl, String checksum, String datasetVersion) {
+        return publish(actor,report,revision,dsl,checksum,datasetVersion,1,"1.0.0");
+    }
+    public Version publish(ReportActor actor,String report,long revision,String dsl,String checksum,String datasetVersion,int schema,String engine) {
+        if(schema<1||engine==null||!engine.matches("[0-9]+\\.[0-9]+\\.[0-9]+"))throw ReportFault.invalid("报表引擎版本无效");
         return atomic(() -> {
             Definition definition = lockDefinition(actor, report);
             editable(definition, revision);
-            requireActiveDatasetVersion(actor.tenantId(), datasetVersion);
+            var target=requireActiveDatasetVersion(actor.tenantId(), datasetVersion);
+            if(!allowed(actor,"DATASET",target.datasetId(),0,"VIEW")||!allowed(actor,"REPORT",report,definition.owner(),"PUBLISH"))throw ReportFault.denied();
             Integer previous = jdbc.queryForObject("SELECT COALESCE(MAX(version_no),0) FROM rpt_version WHERE tenant_id=? AND report_id=?",
                 Integer.class, actor.tenantId(), number(report));
             int next = (previous == null ? 0 : previous) + 1;
             if (next > 1000) throw ReportFault.capacity();
             String id = id();
-            jdbc.update("INSERT INTO rpt_version(version_id,report_id,version_no,schema_version,engine_version,dsl_json,checksum,dataset_version_id,tenant_id,create_dept,create_by) VALUES(?,?,?,1,'1.0.0',?,?,?,?,?,?)",
-                number(id), number(report), next, dsl, checksum, number(datasetVersion), actor.tenantId(), actor.departmentId(), actor.userId());
+            jdbc.update("INSERT INTO rpt_version(version_id,report_id,version_no,schema_version,engine_version,dsl_json,checksum,dataset_version_id,tenant_id,create_dept,create_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                number(id), number(report), next, schema, engine, dsl, checksum, number(datasetVersion), actor.tenantId(), actor.departmentId(), actor.userId());
             jdbc.update("UPDATE rpt_definition SET published_version_id=?,status='PUBLISHED',draft_revision=draft_revision+1,update_by=?,update_time=CURRENT_TIMESTAMP WHERE tenant_id=? AND report_id=?",
                 number(id), actor.userId(), actor.tenantId(), number(report));
             return version(actor.tenantId(), id).orElseThrow(JdbcReportStore::missing);
@@ -566,9 +571,9 @@ public class JdbcReportStore {
         + " AND r.expires_at>CURRENT_TIMESTAMP AND d.status='PUBLISHED')";
     private static final String INACTIVE_LEASE = "(j.lease_until IS NULL OR j.lease_until<=CURRENT_TIMESTAMP)";
     private static final String CLAIMABLE = "j.expires_at>CURRENT_TIMESTAMP AND " + VALID_JOB_RUN
-        + " AND ((j.state='QUEUED' AND j.cancel_requested=0 AND j.attempts<3)"
+        + " AND ((j.state='QUEUED' AND j.cancel_requested=0 AND j.attempts<3*(j.retry_round+1))"
         // Cancelled reclaims only acquire a cleanup lease; no export runs after its third execution attempt.
-        + " OR (j.state IN ('RUNNING','CANCEL_REQUESTED') AND " + INACTIVE_LEASE + " AND (j.attempts<3 OR j.cancel_requested=1)))";
+        + " OR (j.state IN ('RUNNING','CANCEL_REQUESTED') AND " + INACTIVE_LEASE + " AND (j.attempts<3*(j.retry_round+1) OR j.cancel_requested=1)))";
 
     /** Scheduler-only cross-tenant maintenance/scan; each candidate is re-authorized before data access. */
     public List<ExportJob> claimableJobs() {
@@ -579,11 +584,11 @@ public class JdbcReportStore {
     /** Resolve dead leases; abandoned third attempts must not hold admission slots forever. */
     public int reconcileJobs() {
         return atomic(() -> {
-            int changed = jdbc.update("UPDATE rpt_export_job j SET state='EXPIRED',lease_owner=NULL,lease_until=NULL,error_code='SNAPSHOT_EXPIRED',update_time=CURRENT_TIMESTAMP"
+            int changed = jdbc.update("UPDATE rpt_export_job j SET state='EXPIRED',execution_phase='EXPIRED',lease_owner=NULL,lease_until=NULL,error_code='SNAPSHOT_EXPIRED',update_time=CURRENT_TIMESTAMP"
                 + " WHERE j.state IN ('QUEUED','RUNNING','CANCEL_REQUESTED') AND (j.state='QUEUED' OR " + INACTIVE_LEASE + ")"
                 + " AND (j.expires_at<=CURRENT_TIMESTAMP OR NOT " + VALID_JOB_RUN + ")");
-            changed += jdbc.update("UPDATE rpt_export_job j SET state='FAILED',lease_owner=NULL,lease_until=NULL,error_code='RETRY_EXHAUSTED',update_time=CURRENT_TIMESTAMP"
-                + " WHERE j.state IN ('QUEUED','RUNNING') AND j.cancel_requested=0 AND j.attempts>=3 AND " + INACTIVE_LEASE);
+            changed += jdbc.update("UPDATE rpt_export_job j SET state='FAILED',execution_phase='FAILED',lease_owner=NULL,lease_until=NULL,error_code='RETRY_EXHAUSTED',update_time=CURRENT_TIMESTAMP"
+                + " WHERE j.state IN ('QUEUED','RUNNING') AND j.cancel_requested=0 AND j.attempts>=3*(j.retry_round+1) AND " + INACTIVE_LEASE);
             return changed;
         });
     }
@@ -596,7 +601,7 @@ public class JdbcReportStore {
         return atomic(() -> {
             if (!lease.isAfter(now())) return Optional.empty();
             int changed = jdbc.update("UPDATE rpt_export_job j SET state=CASE WHEN cancel_requested=1 THEN 'CANCEL_REQUESTED' ELSE 'RUNNING' END,"
-                + " attempts=attempts+1,lease_owner=?,lease_until=LEAST(?,expires_at),update_time=CURRENT_TIMESTAMP"
+                + " execution_phase='PREPARING',processed_rows=0,total_rows=NULL,attempts=attempts+1,lease_owner=?,lease_until=LEAST(?,expires_at),update_time=CURRENT_TIMESTAMP"
                 + " WHERE j.tenant_id=? AND j.job_id=? AND j.attempts=? AND " + CLAIMABLE,
                 owner, Timestamp.from(lease), job.tenant(), number(job.id()), job.attempts());
             return changed == 1 ? job(job.tenant(), job.id()) : Optional.empty();
@@ -610,7 +615,7 @@ public class JdbcReportStore {
     }
     public boolean heartbeat(ExportJob job, String owner, Instant lease) {
         if (owner == null || owner.isBlank() || lease == null) return false;
-        return jdbc.update("UPDATE rpt_export_job j SET lease_until=LEAST(?,expires_at),update_time=CURRENT_TIMESTAMP"
+        return jdbc.update("UPDATE rpt_export_job j SET lease_until=LEAST(?,expires_at),last_heartbeat=CURRENT_TIMESTAMP,update_time=CURRENT_TIMESTAMP"
             + " WHERE j.tenant_id=? AND j.job_id=? AND j.lease_owner=? AND j.attempts=? AND j.state IN ('RUNNING','CANCEL_REQUESTED')"
             + " AND j.lease_until>CURRENT_TIMESTAMP AND j.expires_at>CURRENT_TIMESTAMP AND LEAST(?,j.expires_at)>=j.lease_until AND " + VALID_JOB_RUN,
             Timestamp.from(lease), job.tenant(), number(job.id()), owner, attemptFence(job, owner), Timestamp.from(lease)) == 1;
@@ -623,10 +628,10 @@ public class JdbcReportStore {
         String guard = success ? " AND j.cancel_requested=0 AND j.state='RUNNING' AND " + VALID_JOB_RUN
             + " AND EXISTS (SELECT 1 FROM rpt_run r WHERE r.run_id=j.run_id AND r.tenant_id=j.tenant_id AND r.state='SUCCEEDED')" : "";
         return jdbc.update("UPDATE rpt_export_job j SET state=CASE WHEN cancel_requested=1 THEN 'CANCELLED' ELSE ? END,"
-            + " file_ref=?,file_size=?,error_code=?,lease_owner=NULL,lease_until=NULL,update_time=CURRENT_TIMESTAMP"
+            + " execution_phase=CASE WHEN cancel_requested=1 THEN 'CANCELLED' WHEN ?='CANCELLED' THEN 'CANCELLED' WHEN ?='SUCCEEDED' THEN 'COMPLETED' ELSE 'FAILED' END,file_ref=?,file_size=?,error_code=?,lease_owner=NULL,lease_until=NULL,update_time=CURRENT_TIMESTAMP"
             + " WHERE j.tenant_id=? AND j.job_id=? AND j.lease_owner=? AND j.attempts=? AND j.state IN ('RUNNING','CANCEL_REQUESTED')"
             + " AND j.lease_until>CURRENT_TIMESTAMP AND j.expires_at>CURRENT_TIMESTAMP" + guard,
-            state, success ? file : null, success ? bytes : null, error, job.tenant(), number(job.id()), owner, attemptFence(job, owner)) == 1;
+            state, state, state, success ? file : null, success ? bytes : null, error, job.tenant(), number(job.id()), owner, attemptFence(job, owner)) == 1;
     }
 
 
@@ -634,16 +639,37 @@ public class JdbcReportStore {
     public boolean retryJob(ExportJob job, String owner, String error) {
         String code = Set.of("STORAGE_UNAVAILABLE", "ARTIFACT_STORE_UNAVAILABLE", "XLSX_EXPORT_FAILED", "PDF_EXPORT_FAILED", "REPORT_EXECUTION_FAILED")
             .contains(error == null ? "" : error) ? error : "REPORT_EXECUTION_FAILED";
-        return jdbc.update("UPDATE rpt_export_job j SET state=CASE WHEN cancel_requested=1 THEN 'CANCELLED' WHEN attempts<3 THEN 'QUEUED' ELSE 'FAILED' END,"
-            + " file_ref=NULL,file_size=NULL,error_code=?,lease_owner=NULL,lease_until=NULL,update_time=CURRENT_TIMESTAMP"
+        return jdbc.update("UPDATE rpt_export_job j SET state=CASE WHEN cancel_requested=1 THEN 'CANCELLED' WHEN attempts<3*(retry_round+1) THEN 'QUEUED' ELSE 'FAILED' END,"
+            + " execution_phase=CASE WHEN cancel_requested=1 THEN 'CANCELLED' WHEN attempts<3*(retry_round+1) THEN 'QUEUED' ELSE 'FAILED' END,processed_rows=CASE WHEN cancel_requested=0 AND attempts<3*(retry_round+1) THEN 0 ELSE processed_rows END,total_rows=CASE WHEN cancel_requested=0 AND attempts<3*(retry_round+1) THEN NULL ELSE total_rows END,file_ref=NULL,file_size=NULL,error_code=?,lease_owner=NULL,lease_until=NULL,update_time=CURRENT_TIMESTAMP"
             + " WHERE j.tenant_id=? AND j.job_id=? AND j.lease_owner=? AND j.attempts=? AND j.state IN ('RUNNING','CANCEL_REQUESTED')"
             + " AND j.lease_until>CURRENT_TIMESTAMP AND j.expires_at>CURRENT_TIMESTAMP"
             + " AND EXISTS (SELECT 1 FROM rpt_run r WHERE r.run_id=j.run_id AND r.tenant_id=j.tenant_id AND r.actor_id=j.actor_id AND r.expires_at>CURRENT_TIMESTAMP)",
             code, job.tenant(), number(job.id()), owner, attemptFence(job, owner)) == 1;
     }
 
+    public boolean progressJob(ExportJob job,String phase,long processed,Long total){
+        if(!Set.of("PREPARING","SNAPSHOT","LAYOUT","WRITING").contains(phase)||processed<0||processed>100000||total!=null&&(total<processed||total>100000))throw ReportFault.invalid("任务进度无效");
+        return jdbc.update("UPDATE rpt_export_job j SET execution_phase=?,processed_rows=?,total_rows=?,update_time=CURRENT_TIMESTAMP WHERE j.tenant_id=? AND j.job_id=? AND j.lease_owner=? AND j.attempts=? AND j.state='RUNNING' AND j.cancel_requested=0 AND j.lease_until>CURRENT_TIMESTAMP AND j.expires_at>CURRENT_TIMESTAMP AND (CASE j.execution_phase WHEN 'PREPARING' THEN 0 WHEN 'SNAPSHOT' THEN 1 WHEN 'LAYOUT' THEN 2 WHEN 'WRITING' THEN 3 ELSE 0 END)<=? AND (j.execution_phase<>? OR j.processed_rows<=?) AND " + VALID_JOB_RUN,
+            phase,processed,total,job.tenant(),number(job.id()),job.leaseOwner(),job.attempts(),phase.equals("PREPARING")?0:phase.equals("SNAPSHOT")?1:phase.equals("LAYOUT")?2:3,phase,processed)==1;
+    }
+    public static boolean manualRetryable(ExportJob job){return job.state().equals("FAILED")&&!job.cancelled()&&job.retryRound()<2&&job.expires().isAfter(Instant.now())&&job.error()!=null&&Set.of("ARTIFACT_STORE_UNAVAILABLE","STORAGE_UNAVAILABLE","STORAGE_FAILED","PDF_EXPORT_FAILED","XLSX_EXPORT_FAILED","REPORT_EXECUTION_FAILED","RETRY_EXHAUSTED").contains(job.error());}
+    public boolean manualRetry(ReportActor actor,String id,int expectedRound){if(expectedRound<0||expectedRound>1)throw ReportFault.invalid("重试轮次无效");return atomic(()->{
+        ensureRootCatalog(actor);var job=job(actor.tenantId(),id).orElseThrow(JdbcReportStore::missing);var run=lockRun(actor.tenantId(),job.runId());if(job.actor()!=actor.userId())throw ReportFault.denied();if(job.retryRound()>expectedRound)return true;
+        if(job.retryRound()!=expectedRound||!manualRetryable(job)||!run.expires().isAfter(now())||run.state().equals("EXPIRED"))return false;
+            Long userCount = jdbc.queryForObject("SELECT COUNT(*) FROM rpt_export_job WHERE tenant_id=? AND actor_id=? AND state IN ('QUEUED','RUNNING','CANCEL_REQUESTED')",
+                Long.class, actor.tenantId(), actor.userId());
+            Long tenantCount = jdbc.queryForObject("SELECT COUNT(*) FROM rpt_export_job WHERE tenant_id=? AND state IN ('QUEUED','RUNNING','CANCEL_REQUESTED')", Long.class, actor.tenantId());
+            Long queued = jdbc.queryForObject("SELECT COUNT(*) FROM rpt_export_job WHERE state='QUEUED'", Long.class);
+            if (userCount != null && userCount >= 1 || tenantCount != null && tenantCount >= 2 || queued != null && queued >= 100) {
+                throw new ReportFault("QUEUE_FULL", "导出队列已满，请稍后重试", 429);
+            }
+
+        return jdbc.update("UPDATE rpt_export_job SET state='QUEUED',execution_phase='QUEUED',processed_rows=0,total_rows=NULL,retry_round=retry_round+1,lease_owner=NULL,lease_until=NULL,error_code=NULL,update_time=CURRENT_TIMESTAMP WHERE tenant_id=? AND job_id=? AND actor_id=? AND state='FAILED' AND cancel_requested=0 AND attempts=? AND retry_round=? AND expires_at>CURRENT_TIMESTAMP",actor.tenantId(),number(id),actor.userId(),job.attempts(),job.retryRound())==1;
+    });}
+
+
     public void cancel(ReportActor actor, String job) {
-        jdbc.update("UPDATE rpt_export_job SET cancel_requested=1,state=CASE WHEN state='QUEUED' THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED' END,update_time=CURRENT_TIMESTAMP"
+        jdbc.update("UPDATE rpt_export_job SET cancel_requested=1,execution_phase=CASE WHEN state='QUEUED' THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED' END,state=CASE WHEN state='QUEUED' THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED' END,update_time=CURRENT_TIMESTAMP"
             + " WHERE tenant_id=? AND actor_id=? AND job_id=? AND state IN ('QUEUED','RUNNING','CANCEL_REQUESTED')",
             actor.tenantId(), actor.userId(), number(job));
     }
@@ -655,7 +681,7 @@ public class JdbcReportStore {
 
     /** Cleanup must delete private files only after this conditional transition succeeds. */
     public boolean tryExpireJob(ExportJob job) {
-        return jdbc.update("UPDATE rpt_export_job j SET state='EXPIRED',lease_owner=NULL,lease_until=NULL,update_time=CURRENT_TIMESTAMP"
+        return jdbc.update("UPDATE rpt_export_job j SET state='EXPIRED',execution_phase='EXPIRED',lease_owner=NULL,lease_until=NULL,update_time=CURRENT_TIMESTAMP"
             + " WHERE j.tenant_id=? AND j.job_id=? AND j.expires_at<=CURRENT_TIMESTAMP AND j.state<>'EXPIRED'"
             + " AND (j.state NOT IN ('RUNNING','CANCEL_REQUESTED') OR " + INACTIVE_LEASE + ")", job.tenant(), number(job.id())) == 1;
     }
