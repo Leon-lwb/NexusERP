@@ -261,6 +261,8 @@ export interface ReportDetail {
 }
 /** 声明Published报表结构，保留服务端精确值和固定版本约束。 */
 export interface PublishedReport {
+  /** 固定数据集与模板合并后的默认提示，不修改已发布DSL。 */
+  effectiveParameters?: ReportParameter[];
   /** 保存当前 `versionId` 值。 */
   versionId: string;
   /** 保存当前序号。 */

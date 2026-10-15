@@ -1692,3 +1692,144 @@ test('候选分页空页即停止且保留已加载候选', async (t) => {
   assert.deepEqual(calls, [1, 2]);
   assert.equal(x.state.options[0].value, '1');
 });
+
+/** 局域网HTTP缺少randomUUID时仍能创建导出，失败重试沿用同一安全请求键。 */
+test('HTTP环境创建导出兼容缺失randomUUID并保留重试幂等键', async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  const native = globalThis.crypto;
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { getRandomValues: native.getRandomValues.bind(native) } });
+  t.after(() => Object.defineProperty(globalThis, 'crypto', original));
+  const keys = [];
+  const x = mount(viewer, 'A', {
+    enqueueExport: async (_run, _format, key) => {
+      keys.push(key);
+      if (keys.length === 1) throw Error('合成网络失败');
+      return { data: { id: 'job', state: 'QUEUED' } };
+    }
+  });
+  t.after(x.unmount);
+  await flush();
+  x.state.run = { id: 'run-A', mode: 'SNAPSHOT' };
+  await x.state.exportReport('PDF');
+  await x.state.exportReport('PDF');
+  assert.equal(keys.length, 2);
+  assert.equal(keys[0], keys[1]);
+  assert.match(keys[0], /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+});
+/** 不具备安全随机能力的环境显示可操作错误，不产生未捕获Promise或错误请求。 */
+test('无法生成安全导出请求键时显示反馈且释放按钮', async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: undefined });
+  t.after(() => Object.defineProperty(globalThis, 'crypto', original));
+  let calls = 0;
+  const x = mount(viewer, 'A', {
+    enqueueExport: async () => {
+      calls++;
+      return { data: { state: 'QUEUED' } };
+    }
+  });
+  t.after(x.unmount);
+  await flush();
+  x.state.run = { id: 'run-A', mode: 'SNAPSHOT' };
+  await assert.doesNotReject(() => x.state.exportReport('PDF'));
+  assert.equal(calls, 0);
+  assert.equal(x.state.exporting, false);
+  assert.ok(x.fixture.messages.some((m) => String(m).includes('安全随机')));
+});
+/** 单据报表缺少关联单据时，显示业务提示并阻止无效取数。 */
+test('未选择必填单据时运行报表不调用接口', async (t) => {
+  let calls = 0;
+  const x = mount(viewer, 'A', {
+    publishedReport: async () => ({
+      data: {
+        number: 1,
+        versionId: '1',
+        dsl: { ...structuredClone(dsl), parameters: [{ name: 'orderId', label: '采购订单', type: 'ID', required: true }] }
+      }
+    }),
+    createRun: async () => {
+      calls++;
+      throw Error('不得调用');
+    }
+  });
+  t.after(x.unmount);
+  await flush();
+  await x.state.execute();
+  assert.equal(calls, 0);
+  assert.match(x.state.runFailed, /采购订单/);
+  assert.equal(x.state.running, false);
+});
+/** 全部参数可选的台账不应强迫选择业务对象，允许查询授权范围。 */
+test('可选筛选留空仍允许运行报表', async (t) => {
+  const inputs = [];
+  const x = mount(viewer, 'A', {
+    publishedReport: async () => ({
+      data: {
+        number: 1,
+        versionId: '1',
+        dsl: { ...structuredClone(dsl), parameters: [{ name: 'warehouseId', label: '仓库', type: 'ID', required: false }] }
+      }
+    }),
+    createRun: async (_id, _mode, input) => {
+      inputs.push(input);
+      return { data: { id: 'run', mode: 'LIVE' } };
+    },
+    runPage: async () => ({ data: { columns: [], rows: [], total: 0, summaries: [] } })
+  });
+  t.after(x.unmount);
+  await flush();
+  await x.state.execute();
+  assert.deepEqual(inputs, [{}]);
+  assert.equal(x.state.run.id, 'run');
+});
+
+/** 发布接口提供有效默认值时，viewer仍允许留空运行，后端在执行时解析日期。 */
+test('运行页继承发布接口有效参数默认值', async (t) => {
+  let calls = 0;
+  const parameter = { name: 'toDate', label: '结束日期', type: 'DATE', required: true, defaultValue: null };
+  const x = mount(viewer, 'A', {
+    publishedReport: async () => ({
+      data: {
+        number: 1,
+        versionId: '1',
+        dsl: { ...structuredClone(dsl), parameters: [parameter] },
+        effectiveParameters: [{ ...parameter, defaultValue: 'TODAY' }]
+      }
+    }),
+    createRun: async () => {
+      calls++;
+      return { data: { id: 'run', mode: 'LIVE' } };
+    },
+    runPage: async () => ({ data: { columns: [], rows: [], total: 0, summaries: [] } })
+  });
+  t.after(x.unmount);
+  await flush();
+  await x.state.execute();
+  assert.equal(calls, 1);
+});
+/** 草稿预览按固定数据集的有效默认值校验，不强迫填写可继承的日期。 */
+test('设计器预览继承固定数据集默认日期', async (t) => {
+  let calls = 0;
+  const x = mount(designer, 'A', {
+    previewDraft: async () => {
+      calls++;
+      return { data: { columns: [], rows: [], total: 0, summaries: [] } };
+    }
+  });
+  t.after(x.unmount);
+  await flush();
+  x.state.dsl.parameters = [{ name: 'toDate', label: '结束日期', type: 'DATE', required: true, defaultValue: null }];
+  x.state.datasets = [
+    {
+      dataset: { id: '1', code: x.state.dsl.datasetCode, publishedVersion: x.state.dsl.datasetVersionId },
+      descriptor: {
+        code: x.state.dsl.datasetCode,
+        fields: [],
+        defaultColumns: [],
+        parameters: [{ name: 'toDate', label: '结束日期', type: 'DATE', required: true, defaultValue: 'TODAY' }]
+      }
+    }
+  ];
+  await x.state.fetchPreview();
+  assert.equal(calls, 1);
+});

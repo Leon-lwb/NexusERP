@@ -15,6 +15,7 @@
 | [system/plans/2026-10-14-system-report-p0-continuation-verification.md](./system/plans/2026-10-14-system-report-p0-continuation-verification.md) | 自研报表首期续开发验证                                                                     |
 | [system/plans/2026-10-14-system-report-extension-plan.md](./system/plans/2026-10-14-system-report-extension-plan.md)                             | 自研报表扩展计划 — E0/E1已实施，其余阶段范围、依赖和验收                                   |
 | [E0/E1 实施记录](./system/plans/2026-10-14-system-report-e0-e1-implementation-plan.md)                                                           | 自研报表版本、设计、复用、业务接入与任务扩展                                               |
+| [HTTP修复与本地基础报表初始化记录](./system/plans/2026-10-15-report-http-runtime-fixes-verification.md) | 导出兼容、空条件校验；本机14个数据集与17份基础报表初始化及幂等验证 |
 | [E0/E1 验证报告](./system/plans/2026-10-14-system-report-e0-e1-verification-report.md)                                                           | 实际测试、集成、基准、迁移及未验证范围                                                     |
 | [system/specs/2026-10-13-system-reporting-design.md](./system/specs/2026-10-13-system-reporting-design.md)                                       | 自研报表建设方案 — 源码调研、独立模块设计，2026-10-14 已批准首期实施                       |
 | [system/数据库增量变更记录.md](./system/数据库增量变更记录.md)                                                                                   | 🗄️ 数据库变更登记（新装主 SQL / 存量迁移需区分）                                           |

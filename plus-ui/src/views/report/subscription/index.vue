@@ -141,6 +141,7 @@
   />
 </template>
 <script setup lang="ts">
+import { createRequestKey } from '@/utils/requestKey';
 /** 区分资源目录载入失败与当前账号暂无可见资源。 */
 const loadFailed = ref(false);
 import ReportPage from '@/components/report/ReportPage.vue';
@@ -391,8 +392,16 @@ async function run(id: string) {
   const ticket = editorGate.begin();
   busy.value = true;
   try {
-    const key = keys.get(id) || crypto.randomUUID();
-    keys.set(id, key);
+    let key = keys.get(id);
+    if (!key) {
+      try {
+        key = createRequestKey();
+      } catch {
+        ElMessage.error('当前浏览器缺少安全随机能力，无法创建订阅执行请求，请更新浏览器后重试');
+        return;
+      }
+      keys.set(id, key);
+    }
     await runSubscription(id, key);
     if (editorGate.current(ticket)) {
       keys.delete(id);

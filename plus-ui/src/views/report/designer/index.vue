@@ -333,7 +333,10 @@
         ><div class="preview-heading"><strong>草稿数据预览</strong><el-button @click="previewOpen = false">关闭预览</el-button></div></template
       >
       <template v-if="dsl"
-        ><ParameterForm :dataset-version-id="dsl?.datasetVersionId" v-model="parameters" :parameters="dsl.parameters" /><el-button
+        ><ParameterForm
+          :dataset-version-id="dsl?.datasetVersionId"
+          v-model="parameters"
+          :parameters="effectiveReportParameters(dsl.parameters, selectedDataset?.descriptor.parameters)" /><el-button
           type="primary"
           :loading="previewing"
           @click="fetchPreview"
@@ -374,6 +377,8 @@ import {
   fitColumns,
   normalStyle,
   parameterInput,
+  requiredParameterMessage,
+  effectiveReportParameters,
   summaryFor,
   serializeDsl,
   DslHistory,
@@ -864,6 +869,14 @@ function preview() {
 /** 处理当前报表的 `fetchPreview` 操作。 */
 async function fetchPreview() {
   if (!dsl.value) return;
+  const invalid = requiredParameterMessage(dsl.value.parameters, parameters.value, selectedDataset.value?.descriptor.parameters);
+  if (invalid) {
+    previewGate.invalidate();
+    previewData.value = undefined;
+    previewing.value = false;
+    ElMessage.warning(invalid);
+    return;
+  }
   const ticket = previewGate.begin();
   previewing.value = true;
   try {

@@ -156,4 +156,20 @@ class ReportExceptionHandlerTest {
                 .andReturn()
                 .getResponse();
     }
+
+    /** 非结构化参数异常只返回固定提示，仍不泄露内部异常或提交的业务值。 */
+    @Test
+    void invalidParametersReturnUsefulSafeMessageWithoutRawDetails() throws Exception {
+        when(runtime.create(any(), anyString(), anyString(), any()))
+                .thenThrow(
+                        new DatasetAccessException(
+                                "INVALID_PARAMETER", "private SQL and submitted-value"));
+        var response = request();
+        var body = json.readTree(response.getContentAsString());
+        assertEquals(400, response.getStatus());
+        assertEquals("INVALID_PARAMETER", body.get("errorCode").asText());
+        assertTrue(body.get("msg").asText().contains("筛选条件"));
+        assertFalse(response.getContentAsString().contains("private SQL"));
+        assertFalse(response.getContentAsString().contains("submitted-value"));
+    }
 }

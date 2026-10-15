@@ -35,7 +35,7 @@
           v-if="published.dsl.parameters.length"
           :dataset-version-id="published.dsl.datasetVersionId"
           v-model="parameters"
-          :parameters="published.dsl.parameters"
+          :parameters="published.effectiveParameters ?? published.dsl.parameters"
         />
         <div class="run-toolbar">
           <el-radio-group v-model="mode" :disabled="published.dsl.kind === 'DOCUMENT' || requiresSnapshot" aria-label="报表运行模式"
@@ -120,12 +120,13 @@
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
 
 import { ref, computed, watch, onUnmounted } from 'vue';
+import { createRequestKey } from '@/utils/requestKey';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { publishedReport, createRun, runPage, runLayout, enqueueExport } from '@/api/report';
 import type { PublishedReport, ReportRun, PageData, RenderPlan, ExportFormat } from '@/types/report';
-import { parameterInput, exportFormats, requiresSnapshot as snapshotRequired, RequestGate } from '@/views/report/model';
+import { parameterInput, requiredParameterMessage, exportFormats, requiresSnapshot as snapshotRequired, RequestGate } from '@/views/report/model';
 import { summaryGroupText } from '@/views/report/presentation';
 import ReportPage from '@/components/report/ReportPage.vue';
 import ParameterForm from '@/components/report/ParameterForm.vue';
@@ -270,7 +271,14 @@ async function load() {
 }
 /** 以当前任务围栏执行取数和导出。 */
 async function execute() {
-  if (!published.value) return;
+  if (!published.value || running.value) return;
+  const invalid = requiredParameterMessage(published.value.effectiveParameters ?? published.value.dsl.parameters, parameters.value);
+  if (invalid) {
+    invalidate();
+    runFailed.value = invalid;
+    ElMessage.warning(invalid);
+    return;
+  }
   invalidate();
   const ticket = gate.begin();
   running.value = true;
@@ -334,8 +342,16 @@ async function exportReport(format: ExportFormat) {
   const ticket = exportGate.begin();
   const origin = run.value.id;
   const signature = origin + ':' + format;
-  const requestKey = keys.get(signature) || crypto.randomUUID();
-  keys.set(signature, requestKey);
+  let requestKey = keys.get(signature);
+  if (!requestKey) {
+    try {
+      requestKey = createRequestKey();
+    } catch {
+      ElMessage.error('当前浏览器缺少安全随机能力，无法创建导出请求，请更新浏览器后重试');
+      return;
+    }
+    keys.set(signature, requestKey);
+  }
   exporting.value = true;
   try {
     const result = await enqueueExport(origin, format, requestKey);

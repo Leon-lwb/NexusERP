@@ -844,6 +844,33 @@ public class ReportDefinitionService {
     }
 
     /**
+     * 提供与固定数据集契约一致的有效默认提示，不改写已发布定义或提前计算日期。
+     *
+     * @param binding 已授权且编译完成的固定版本绑定
+     * @return 模板默认值优先、数据集默认值兜底的独立参数列表
+     */
+    public List<ReportDsl.Parameter> effectiveParameters(Binding binding) {
+        return binding.compiled().dsl().parameters().stream()
+                .map(
+                        parameter -> {
+                            var registered =
+                                    binding.compiled().descriptor().parameters().stream()
+                                            .filter(item -> item.name().equals(parameter.name()))
+                                            .findFirst()
+                                            .orElseThrow(() -> ReportFault.invalid("报表参数与数据集不匹配"));
+                            String value = parameter.defaultValue();
+                            if (value == null || value.isBlank()) value = registered.defaultValue();
+                            return new ReportDsl.Parameter(
+                                    parameter.name(),
+                                    parameter.label(),
+                                    parameter.type(),
+                                    parameter.required(),
+                                    value);
+                        })
+                .toList();
+    }
+
+    /**
      * 完成 {@code parameters} 对应的报表定义服务处理。
      *
      * @param binding 当前操作的 {@code binding} 输入
@@ -865,8 +892,25 @@ public class ReportDefinitionService {
                     value = java.time.LocalDate.now().minusMonths(6).toString();
                 values.put(parameter.name(), value);
             }
-        if (input != null) values.putAll(input);
-        return DatasetQueryValidator.parameters(binding.provider().descriptor(), values);
+        if (input != null)
+            input.forEach(
+                    (name, value) -> {
+                        if (value != null && !(value instanceof String text && text.isBlank()))
+                            values.put(name, value);
+                    });
+        var descriptor = binding.provider().descriptor();
+        for (var parameter : binding.compiled().dsl().parameters()) {
+            var registered =
+                    descriptor.parameters().stream()
+                            .filter(item -> item.name().equals(parameter.name()))
+                            .findFirst()
+                            .orElseThrow(() -> ReportFault.invalid("报表参数与数据集不匹配"));
+            if (parameter.required()
+                    && !values.containsKey(parameter.name())
+                    && (registered.defaultValue() == null || registered.defaultValue().isBlank()))
+                throw new ReportFault("INVALID_PARAMETER", "请先填写必填条件：" + registered.label(), 400);
+        }
+        return DatasetQueryValidator.parameters(descriptor, values);
     }
 
     /**

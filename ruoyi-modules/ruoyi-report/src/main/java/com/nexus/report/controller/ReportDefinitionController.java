@@ -123,8 +123,13 @@ public class ReportDefinitionController {
      * @param versionId 不可变发布版本标识
      * @param number 当前契约的number配置或状态
      * @param dsl 不可变的报表定义
+     * @param effectiveParameters 已授权固定契约和模板合并后的默认提示
      */
-    public record Published(String versionId, int number, ReportDsl dsl) {}
+    public record Published(
+            String versionId,
+            int number,
+            ReportDsl dsl,
+            List<ReportDsl.Parameter> effectiveParameters) {}
 
     /**
      * SampleView，负责当前模块对应的契约或处理职责。
@@ -196,8 +201,13 @@ public class ReportDefinitionController {
         var actor = actors.current();
         var version = definitions.published(actor, id, "VIEW", "report:runtime:preview");
         var dsl = definitions.versionDsl(version);
-        definitions.bindVersion(actor, version);
-        return R.ok(new Published(version.id(), version.number(), dsl));
+        var binding = definitions.bindVersion(actor, version);
+        return R.ok(
+                new Published(
+                        version.id(),
+                        version.number(),
+                        dsl,
+                        definitions.effectiveParameters(binding)));
     }
 
     /**

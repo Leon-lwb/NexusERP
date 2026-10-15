@@ -164,3 +164,25 @@ test('new editor edits clear the redo branch and resetting a load discards prior
   assert.equal(history.canUndo, false);
   assert.equal(history.canRedo, false);
 });
+
+/** 必填参数逐项提示，空字符串视为未填写，false和完整ID不被误判。 */
+test('报表必填筛选提示尊重默认值和原始字符串', () => {
+  const parameters = [
+    { name: 'orderId', label: '采购订单', required: true },
+    { name: 'date', label: '截止日期', required: true, defaultValue: 'TODAY' },
+    { name: 'optional', label: '物料', required: false }
+  ];
+  assert.match(m.requiredParameterMessage(parameters, { orderId: '  ' }), /采购订单/);
+  assert.equal(m.requiredParameterMessage(parameters, { orderId: '9223372036854775807' }), '');
+  assert.equal(m.requiredParameterMessage([{ name: 'enabled', label: '包含停用', required: true }], { enabled: 'false' }), '');
+  assert.equal(m.requiredParameterMessage([], {}), '');
+});
+
+/** 必填条件继承固定数据集默认值时，前端不能误拦截合法请求。 */
+test('必填校验继承固定数据集日期默认值', () => {
+  const template = [{ name: 'toDate', label: '结束日期', type: 'DATE', required: true, defaultValue: null }];
+  const fixed = [{ name: 'toDate', label: '结束日期', type: 'DATE', required: false, defaultValue: 'TODAY' }];
+  assert.equal(m.requiredParameterMessage(template, {}, fixed), '');
+  assert.equal(m.effectiveReportParameters(template, fixed)[0].defaultValue, 'TODAY');
+  assert.equal(template[0].defaultValue, null);
+});

@@ -1,4 +1,13 @@
-import type { ReportDsl, DatasetDescriptor, DatasetField, ReportStyle, TypedValue, ReportSummary, ExportFormat } from '@/types/report';
+import type {
+  ReportDsl,
+  ReportParameter,
+  DatasetDescriptor,
+  DatasetField,
+  ReportStyle,
+  TypedValue,
+  ReportSummary,
+  ExportFormat
+} from '@/types/report';
 /** 返回原生报表默认文字样式。 */
 export const normalStyle = (): ReportStyle => ({ fontSize: 10, bold: false, align: 'LEFT', color: '#1f2937', background: '#ffffff' });
 /** 格式化精确值，十进制舍入使用整数文本而不转换为浮点数。 */
@@ -227,4 +236,39 @@ export function jobError(code: string | null): string {
     RETRY_EXHAUSTED: '任务重试次数已耗尽'
   };
   return code ? messages[code] || '导出失败，请重新运行或联系管理员' : '';
+}
+
+/**
+ * 合并固定数据集和模板的默认提示，显式模板默认值优先，保留原定义不变。
+ * @param parameters 当前报表声明的参数
+ * @param datasetParameters 当前固定数据集契约参数
+ * @returns 带有效默认标记的独立参数列表，不计算具体日期或业务值
+ */
+export function effectiveReportParameters(
+  parameters: ReportParameter[],
+  datasetParameters: Pick<ReportParameter, 'name' | 'defaultValue'>[] = []
+): ReportParameter[] {
+  return parameters.map((parameter) => ({
+    ...parameter,
+    defaultValue: parameter.defaultValue?.trim()
+      ? parameter.defaultValue
+      : (datasetParameters.find((item) => item.name === parameter.name)?.defaultValue ?? null)
+  }));
+}
+/**
+ * 在调用接口前提示缺少的必填条件，可选项留空和可信默认值保持原有行为。
+ * @param parameters 当前固定报表或数据集声明的参数
+ * @param input 用户填写的原始字符串，标识符不转为Number
+ * @param datasetParameters 固定数据集的默认值，可用于继承默认标记
+ * @returns 缺失条件的中文提示，全部满足时为空字符串
+ */
+export function requiredParameterMessage(
+  parameters: ReportParameter[],
+  input: Record<string, string>,
+  datasetParameters: Pick<ReportParameter, 'name' | 'defaultValue'>[] = []
+): string {
+  const missing = effectiveReportParameters(parameters, datasetParameters).filter(
+    (parameter) => parameter.required && !input[parameter.name]?.trim() && !parameter.defaultValue?.trim()
+  );
+  return missing.length ? '请先填写必填条件：' + missing.map((parameter) => parameter.label || parameter.name).join('、') : '';
 }

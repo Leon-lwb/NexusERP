@@ -47,8 +47,11 @@ public class ReportExceptionHandler {
     @ExceptionHandler(DatasetAccessException.class)
     public ResponseEntity<Failure> dataset(DatasetAccessException fault) {
         int status = fault.code().contains("DENIED") ? 403 : 400;
-        return ResponseEntity.status(status)
-                .body(new Failure(status, "报表数据查询被拒绝或已停止", fault.code()));
+        String message =
+                "INVALID_PARAMETER".equals(fault.code())
+                        ? "报表筛选条件无效，请检查必填项、日期和完整ID格式"
+                        : "报表数据查询被拒绝或已停止";
+        return ResponseEntity.status(status).body(new Failure(status, message, fault.code()));
     }
 
     /**

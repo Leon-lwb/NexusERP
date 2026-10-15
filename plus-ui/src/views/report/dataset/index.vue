@@ -100,7 +100,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listDatasets, listProviders, registerDataset, datasetState, sampleDataset } from '@/api/report';
 import type { DatasetView, DatasetDescriptor, DraftPreview, ReportColumn } from '@/types/report';
-import { normalStyle, parameterInput, RequestGate } from '@/views/report/model';
+import { normalStyle, parameterInput, requiredParameterMessage, RequestGate } from '@/views/report/model';
 import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import AclDialog from '@/components/report/AclDialog.vue';
@@ -231,6 +231,14 @@ function inspect(dataset: DatasetView) {
 /** 处理当前报表的 `sample` 操作。 */
 async function sample() {
   if (!selected.value) return;
+  const invalid = requiredParameterMessage(selected.value.descriptor.parameters, parameters.value);
+  if (invalid) {
+    gate.invalidate();
+    sampleData.value = undefined;
+    sampling.value = false;
+    ElMessage.warning(invalid);
+    return;
+  }
   const ticket = gate.begin();
   sampling.value = true;
   try {

@@ -351,7 +351,11 @@ test('subscription source switching preserves string IDs and rejects stale contr
   f.unmount();
 });
 /** 网络失败重试使用原始整体手动键，不制造另一组接收人任务。 */
-test('subscription manual retry retains occurrence request key until success', async () => {
+test('subscription manual retry retains occurrence request key until success', async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  const native = globalThis.crypto;
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { getRandomValues: native.getRandomValues.bind(native) } });
+  t.after(() => Object.defineProperty(globalThis, 'crypto', original));
   const keys = [];
   const f = mount(components.subscription, {
     runSubscription: async (id, key) => {
