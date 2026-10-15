@@ -1,7 +1,15 @@
 <template>
-  <el-dialog v-model="open" title="导入模板包" width="560px"
-    ><el-form label-width="90px" :disabled="saving"
-      ><el-form-item label="模板包"><input :key="session" :disabled="saving" type="file" accept=".json,.reportpkg" @change="read" /></el-form-item
+  <el-dialog v-model="open" title="导入模板包" width="min(560px, calc(100vw - 32px))"
+    ><el-form label-position="top" :disabled="saving"
+      ><el-form-item label="模板包"
+        ><input
+          :key="session"
+          :disabled="saving"
+          type="file"
+          accept=".json,.reportpkg"
+          aria-label="选择报表模板包"
+          style="max-width: 100%"
+          @change="read" /></el-form-item
       ><el-form-item label="目标契约"
         ><el-select v-model="version" style="width: 100%"
           ><el-option

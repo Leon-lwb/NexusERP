@@ -1,17 +1,16 @@
 <template>
-  <div class="p-4">
-    <el-card shadow="never"
-      ><template #header
-        ><div class="flex items-center justify-between">
-          <div>
-            <strong class="text-xl">导出中心</strong>
-            <p class="text-gray-500 mb-0">下载个人导出任务。文件到期或业务权限变化后，需要重新运行报表。</p>
-          </div>
-          <el-button icon="Refresh" @click="load()">刷新</el-button>
-        </div></template
-      >
+  <ReportPage title="导出中心" description="查看个人导出任务的进度，领取已完成的文件。" icon="i-ep-download" class="report-exports">
+    <template #actions><el-button :loading="loading" icon="Refresh" @click="load()">刷新任务</el-button></template>
+    <el-card shadow="never">
       <el-alert v-if="failed" title="导出任务载入失败，请刷新重试。" type="error" :closable="false" class="mb-4" />
-      <el-table v-loading="loading" :data="jobs" border
+      <div class="report-section-heading">
+        <div>
+          <h2>我的导出任务</h2>
+          <p class="report-section-description">文件到期或业务权限变化后，需要重新运行报表。</p>
+        </div>
+        <el-tag type="info" effect="plain">{{ jobs.length }} 项</el-tag>
+      </div>
+      <el-table v-loading="loading" :data="jobs" empty-text="暂无导出任务，在报表运行页创建导出后可在此查看" border
         ><el-table-column prop="id" label="任务编号" min-width="190" /><el-table-column label="格式" width="125"
           ><template #default="scope">{{ formats[scope.row.format] }}</template></el-table-column
         ><el-table-column label="状态" width="135"
@@ -63,9 +62,10 @@
         ></el-table
       >
     </el-card>
-  </div>
+  </ReportPage>
 </template>
 <script setup lang="ts">
+import ReportPage from '@/components/report/ReportPage.vue';
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
 
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';

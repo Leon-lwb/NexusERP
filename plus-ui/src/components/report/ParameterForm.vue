@@ -28,7 +28,6 @@
         :model-value="modelValue[parameter.name] || ''"
         clearable
         placeholder="请选择"
-        style="width: 180px"
         @update:model-value="set(parameter.name, $event)"
         ><el-option label="是" value="true" /><el-option label="否" value="false"
       /></el-select>
@@ -37,7 +36,6 @@
         :model-value="modelValue[parameter.name] || ''"
         :placeholder="parameter.defaultValue ? '留空使用默认值' : parameter.label"
         clearable
-        style="width: 200px"
         @update:model-value="set(parameter.name, $event)"
       />
     </el-form-item>
@@ -96,3 +94,30 @@ function set(name: string, value: unknown) {
   emit('update:modelValue', { ...props.modelValue, [name]: value == null ? '' : String(value) });
 }
 </script>
+
+<style scoped>
+.report-parameters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 18px;
+}
+.report-parameters :deep(.el-form-item) {
+  margin-right: 0;
+  min-width: 0;
+}
+.report-parameters :deep(.el-form-item__label) {
+  font-size: 12px;
+  font-weight: 500;
+}
+.report-parameters :deep(.el-select),
+.report-parameters :deep(.el-date-editor),
+.report-parameters :deep(.el-input) {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 540px) {
+  .report-parameters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

@@ -1,15 +1,18 @@
 <template>
-  <div class="p-4">
-    <el-card shadow="never"
-      ><template #header
-        ><div class="flex items-center justify-between">
-          <strong>发布历史 · {{ definition?.name }}</strong
-          ><el-button @click="router.push('/report/center')">返回报表中心</el-button>
-        </div></template
-      ><el-alert title="每个发布版本独立保存。回滚后，已有运行继续使用创建时的版本。" type="info" :closable="false" class="mb-4" /><el-table
-        v-loading="loading"
-        :data="versions"
-        border
+  <ReportPage
+    :title="'发布历史' + (definition?.name ? ' · ' + definition.name : '')"
+    description="查看每次发布的固定版本，按需回滚。"
+    icon="i-ep-clock"
+    class="report-history"
+  >
+    <template #actions><el-button icon="Back" @click="router.push('/report/center')">返回报表中心</el-button></template>
+    <el-card shadow="never">
+      <el-alert v-if="loadFailed" title="目录载入失败，请刷新重试。" type="error" show-icon :closable="false" class="mb-4" /><el-alert
+        title="每个发布版本独立保存。回滚后，已有运行继续使用创建时的版本。"
+        type="info"
+        :closable="false"
+        class="mb-4"
+      /><el-table v-loading="loading" :data="versions" empty-text="此报表还没有发布版本" border
         ><el-table-column label="版本" width="100"
           ><template #default="scope">v{{ scope.row.number }}</template></el-table-column
         ><el-table-column prop="createdAt" label="发布时间" min-width="210" /><el-table-column
@@ -35,9 +38,12 @@
         ></el-table
       ></el-card
     >
-  </div>
+  </ReportPage>
 </template>
 <script setup lang="ts">
+/** 区分资源目录载入失败与当前账号暂无可见资源。 */
+const loadFailed = ref(false);
+import ReportPage from '@/components/report/ReportPage.vue';
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
 
 import { ref, watch, onUnmounted } from 'vue';
@@ -85,6 +91,7 @@ async function load() {
   loading.value = false;
   if (!id) return;
   loading.value = true;
+  loadFailed.value = false;
   try {
     const [a, b] = await Promise.all([listReports(), listVersions(id)]);
     if (gate.current(ticket)) {
@@ -92,6 +99,10 @@ async function load() {
       versions.value = b.data;
     }
   } catch {
+    if (gate.current(ticket)) {
+      loadFailed.value = true;
+      versions.value = [];
+    }
   } finally {
     if (gate.current(ticket)) loading.value = false;
   }

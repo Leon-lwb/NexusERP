@@ -92,7 +92,10 @@ const mockPlugin = {
   /** 处理当前报表的 `setup` 操作。 */
   setup(b) {
     b.onResolve(
-      { filter: /^(@\/api\/report(?:\/query|\/dashboard|\/subscription)?|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/ },
+      {
+        filter:
+          /^(@\/api\/report(?:\/query|\/dashboard|\/subscription)?|@\/utils\/permission|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/
+      },
       (a) => ({
         path: a.path,
         namespace: 'fixtures'
@@ -100,6 +103,7 @@ const mockPlugin = {
     );
     b.onLoad({ filter: /.*/, namespace: 'fixtures' }, (a) => {
       let contents = '';
+      if (a.path === '@/utils/permission') contents = 'export const checkPermi=()=>true;';
       if (a.path.startsWith('@/api/report'))
         contents = apiNames.map((n) => 'export const ' + n + '=(...args)=>globalThis.__reportExt.api["' + n + '"](...args);').join('\n');
       if (a.path === 'vue-router')
@@ -400,3 +404,26 @@ test('extension resource ACL uses exact resource type and ID', async () => {
     f.unmount();
   }
 });
+
+/** 新增目录错误反馈可重试且不会吞掉仍在使用的新目录数据。 */
+for (const [page, api, list] of [
+  ['dashboard', 'listDashboards', 'dashboards'],
+  ['subscription', 'listSubscriptions', 'subscriptions'],
+  ['delivery', 'listReportDeliveries', 'deliveries']
+]) {
+  test(page + '目录载入失败与重试使用独立状态', async () => {
+    const x = mount(components[page], {
+      [api]: async () => {
+        throw Error('合成网络失败');
+      }
+    });
+    await flush();
+    assert.equal(x.state.loadFailed, true);
+    assert.equal(x.state.loading, false);
+    x.fixture.api[api] = async () => ({ data: [{ id: '9223372036854775807' }] });
+    await x.state.load();
+    assert.equal(x.state.loadFailed, false);
+    assert.equal(x.state[list][0].id, '9223372036854775807');
+    x.unmount();
+  });
+}

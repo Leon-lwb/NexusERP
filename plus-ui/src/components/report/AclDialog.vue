@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="open" title="资源授权" width="760px" @update:model-value="emit('update:open', $event)">
+  <el-dialog :model-value="open" title="资源授权" width="min(760px, calc(100vw - 32px))" @update:model-value="emit('update:open', $event)">
     <el-alert title="配置当前资源的操作权限；关联报表、数据集和业务范围会分别校验。" type="info" :closable="false" class="mb-4" />
     <el-alert v-if="failed" title="授权载入失败，请重试后再修改。" type="error" :closable="false" class="mb-4" />
     <el-button v-if="failed" class="mb-4" @click="load">重试</el-button>

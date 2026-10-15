@@ -60,12 +60,13 @@ const mockPlugin = {
   name: 'report-ui-fixtures',
   /** 处理当前报表的 `setup` 操作。 */
   setup(b) {
-    b.onResolve({ filter: /^(@\/api\/report|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/ }, (a) => ({
+    b.onResolve({ filter: /^(@\/api\/report|@\/utils\/permission|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/ }, (a) => ({
       path: a.path,
       namespace: 'fixtures'
     }));
     b.onLoad({ filter: /.*/, namespace: 'fixtures' }, (a) => {
       let contents = '';
+      if (a.path === '@/utils/permission') contents = 'export const checkPermi=()=>true;';
       if (a.path === '@/api/report')
         contents = apiNames.map((n) => 'export const ' + n + '=(...args)=>globalThis.__reportUI.api["' + n + '"](...args);').join('\n');
       if (a.path === 'vue-router')
@@ -1295,4 +1296,136 @@ test('confirmed contract upgrade exposes newly required parameters in the normal
   assert.equal(updates.length, 1);
   assert.equal(updates[0].datasetVersionId, 'new');
   assert.deepEqual(updates[0].parameters, [required]);
+});
+
+/** 组合筛选和清空通过真实页面状态执行，交叉资源与完整目录 ID 不丢失。 */
+test('报表中心的组合筛选、统计和清空共享当前可见资源', async () => {
+  const rows = [
+    {
+      id: '9223372036854775807',
+      name: '合成交叉分析',
+      code: 'SYNTHETIC_PIVOT',
+      kind: 'PIVOT',
+      status: 'PUBLISHED',
+      catalogId: '9223372036854775806'
+    },
+    { id: '9223372036854775806', name: '合成草稿', code: 'SYNTHETIC_DRAFT', kind: 'TABLE', status: 'DRAFT', catalogId: null }
+  ];
+  const x = mount(center, '', { listReports: async () => ({ data: rows }) });
+  await flush();
+  x.state.kind = 'PIVOT';
+  x.state.status = 'PUBLISHED';
+  x.state.catalogId = rows[0].catalogId;
+  x.state.keyword = ' synthetic_pivot ';
+  assert.equal(x.state.filtered.length, 1);
+  assert.equal(x.state.filtered[0].id, rows[0].id);
+  assert.equal(x.state.counts.all, 2);
+  assert.equal(x.state.hasFilters, true);
+  x.state.resetFilters();
+  assert.equal(x.state.filtered.length, 2);
+  assert.equal(x.state.hasFilters, false);
+  x.unmount();
+});
+/** 卡片与列表操作入口均把交叉资源导向专用设计器。 */
+test('报表中心交叉资源的设计操作保持完整 ID 与专用路由', async () => {
+  const x = mount(center, '');
+  await flush();
+  const paths = [];
+  x.fixture.router.push = (value) => paths.push(value);
+  x.state.act('design', { id: '9223372036854775807', kind: 'PIVOT' });
+  assert.deepEqual(paths, [{ path: '/report/pivot', query: { id: '9223372036854775807' } }]);
+  x.unmount();
+});
+/** 字段搜索只改变可见候选，不影响草稿定义或未保存标识。 */
+test('设计器字段检索不改变已绑定列和草稿修订', async () => {
+  const x = mount(designer);
+  await flush();
+  x.state.boundVersion = {
+    id: dsl.datasetVersionId,
+    code: dsl.datasetCode,
+    descriptor: {
+      code: dsl.datasetCode,
+      name: '合成契约',
+      fields: [
+        { name: 'id', label: '记录ID', type: 'ID' },
+        { name: 'amount', label: '金额', type: 'DECIMAL' }
+      ],
+      parameters: []
+    }
+  };
+  x.state.datasets = [
+    { dataset: { id: 'dataset', code: dsl.datasetCode, publishedVersion: dsl.datasetVersionId }, descriptor: x.state.boundVersion.descriptor }
+  ];
+  const before = JSON.stringify(x.state.dsl);
+  x.state.fieldSearch = ' decimal ';
+  assert.deepEqual(
+    x.state.visibleFields.map((field) => field.name),
+    ['amount']
+  );
+  x.state.fieldSearch = '不存在';
+  assert.equal(x.state.visibleFields.length, 0);
+  assert.equal(JSON.stringify(x.state.dsl), before);
+  x.state.fieldSearch = '';
+  assert.equal(x.state.visibleFields.length, 2);
+  x.unmount();
+});
+/** 运行失败有独立提示，重新运行成功会清理错误反馈。 */
+test('运行页失败重试清理错误并展示新结果', async () => {
+  const x = mount(viewer, 'report', {
+    createRun: async () => {
+      throw Error('合成失败');
+    }
+  });
+  await flush();
+  await x.state.execute();
+  assert.match(x.state.runFailed, /运行未完成/);
+  assert.equal(x.state.running, false);
+  x.fixture.api.createRun = async () => ({ data: { id: 'run', mode: 'LIVE' } });
+  x.fixture.api.runPage = async () => ({ data: { columns: [], rows: [], summaries: [], total: 0 } });
+  await x.state.execute();
+  assert.equal(x.state.runFailed, '');
+  assert.equal(x.state.run.id, 'run');
+  x.unmount();
+});
+/** 翻页错误结束独立加载，切换参数时不留下旧运行或错误。 */
+test('翻页失败和参数失效均结束结果区加载', async () => {
+  const x = mount(viewer);
+  await flush();
+  x.state.run = { id: 'old-run', mode: 'LIVE' };
+  x.fixture.api.runPage = async () => {
+    throw Error('合成翻页失败');
+  };
+  await x.state.loadPage();
+  assert.equal(x.state.pageLoading, false);
+  assert.match(x.state.runFailed, /载入失败/);
+  x.state.parameters = { name: 'new' };
+  await nextTick();
+  assert.equal(x.state.runFailed, '');
+  assert.equal(x.state.run, undefined);
+  x.unmount();
+});
+/** 旧定义请求失败不能覆盖已经成功载入的新页面。 */
+test('运行页的旧载入失败不污染新的成功定义', async () => {
+  const pending = defer();
+  const x = mount(viewer, 'A', {
+    publishedReport: (id) => (id === 'A' ? pending.promise : Promise.resolve({ data: { number: 2, versionId: 'B', dsl: structuredClone(dsl) } }))
+  });
+  x.fixture.route.query.id = 'B';
+  await flush();
+  pending.reject(Error('旧请求失败'));
+  await flush();
+  assert.equal(x.state.loadFailed, false);
+  assert.equal(x.state.published.versionId, 'B');
+  x.unmount();
+});
+
+/** 尚未安装扩展菜单的环境不能出现指向404的快捷入口。 */
+test('报表中心快捷入口只接受实际注册路由，拒绝404兜底匹配', async () => {
+  const x = mount(center, '');
+  await flush();
+  x.fixture.router.resolve = () => ({ matched: [{ path: '/:pathMatch(.*)*' }] });
+  assert.equal(x.state.routeAvailable('/report/dashboard'), false);
+  x.fixture.router.resolve = () => ({ matched: [{ path: '/report' }, { path: '/report/dashboard' }] });
+  assert.equal(x.state.routeAvailable('/report/dashboard'), true);
+  x.unmount();
 });

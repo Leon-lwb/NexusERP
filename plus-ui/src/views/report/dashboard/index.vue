@@ -1,26 +1,33 @@
 <template>
-  <div class="p-4">
-    <el-card
-      ><template #header
-        ><div class="flex justify-between">
-          <strong>个人仪表盘</strong><el-button v-hasPermi="['report:dashboard:edit']" @click="newDashboard">新建仪表盘</el-button>
-        </div></template
-      >
-      <div class="flex gap-3 flex-wrap">
+  <ReportPage title="个人仪表盘" description="把关键指标、图表与明细组合在同一个工作视图。" icon="i-ep-data-board" class="report-dashboard">
+    <template #actions
+      ><el-button :loading="loading" icon="Refresh" @click="load">刷新目录</el-button
+      ><el-button v-hasPermi="['report:dashboard:edit']" type="primary" icon="Plus" @click="newDashboard">新建仪表盘</el-button></template
+    >
+    <el-card shadow="never" v-loading="loading">
+      <el-alert v-if="loadFailed" title="仪表盘目录载入失败，请刷新重试。" type="error" show-icon :closable="false" class="mb-4" />
+      <div class="report-section-heading">
+        <div>
+          <h2>我的仪表盘</h2>
+          <p class="report-section-description">选择已发布视图运行，或编辑组件布局。</p>
+        </div>
+        <el-tag v-if="editing && dirty" type="warning" effect="plain">设计尚未保存</el-tag>
+      </div>
+      <div class="dashboard-picker">
         <el-button v-for="row in dashboards" :key="row.id" :type="selected === row.id ? 'primary' : 'default'" @click="open(row.id)"
           >{{ favorites.includes(row.id) ? '★ ' : '' }}{{ row.title }}</el-button
         ><el-button v-if="selected" @click="favorite">{{ favorites.includes(selected) ? '取消收藏' : '收藏' }}</el-button
         ><el-button v-if="selected" v-hasPermi="['report:dashboard:edit']" @click="edit(selected)">编辑</el-button>
       </div>
       <el-button v-if="selected" v-hasPermi="['report:acl:manage']" class="mt-3" @click="aclId = selected">资源授权</el-button
-      ><template v-if="published && !editing"
+      ><el-alert v-if="error" :title="error" type="error" show-icon :closable="false" class="mt-3" /><template v-if="published && !editing"
         ><ParameterForm v-model="parameters" :parameters="published.parameters" class="mt-4" />
-        <div class="flex gap-3 mt-3">
+        <div class="dashboard-runtime-toolbar">
           <el-button type="primary" :loading="rendering" @click="refresh">刷新组件</el-button
           ><el-switch v-model="paused" active-text="暂停自动刷新" /><span>刷新间隔{{ published.refreshSeconds }}秒；页面隐藏时暂停</span
           ><el-button v-if="selections.length" @click="clearSelections">清除联动筛选</el-button>
         </div>
-        <el-alert v-if="error" :title="error" type="error" :closable="false" class="mt-3" />
+
         <div class="dashboard-grid mt-4">
           <DashboardWidget
             v-for="view in rendered"
@@ -30,7 +37,7 @@
             @select="(value) => link(view.id, value)"
           /></div
       ></template>
-      <el-form v-if="editing && model" :disabled="busy" label-width="110px" class="mt-4"
+      <el-form v-if="editing && model" :disabled="busy" label-width="110px" class="mt-4 report-editor-form"
         ><el-form-item label="编码与标题"
           ><el-input v-model="code" :disabled="!!resource" placeholder="仪表盘编码" /><el-input
             v-model="model.title"
@@ -42,7 +49,7 @@
             >添加参数</el-button
           ></el-form-item
         >
-        <div v-for="(parameter, i) in model.parameters" :key="i" class="flex gap-2 mb-3">
+        <div v-for="(parameter, i) in model.parameters" :key="i" class="report-form-row mb-3">
           <el-input v-model="parameter.name" placeholder="名称" /><el-input v-model="parameter.label" placeholder="标题" /><el-select
             v-model="parameter.type"
             ><el-option v-for="type in valueTypes" :key="type" :value="type" :label="type" /></el-select
@@ -52,7 +59,7 @@
         ><el-card v-for="(widget, index) in model.widgets" :key="widget.id" class="mb-3"
           ><div class="flex gap-2 mb-3">
             <el-input v-model="widget.title" placeholder="组件标题" /><el-select v-model="widget.type"
-              ><el-option v-for="type in widgetTypes" :key="type" :value="type" :label="type" /></el-select
+              ><el-option v-for="type in widgetTypes" :key="type" :value="type" :label="widgetLabels[type] || type" /></el-select
             ><el-select :model-value="widget.reportVersionId" placeholder="固定报告版本" @change="(value) => chooseReport(widget, String(value))"
               ><el-option
                 v-for="report in reports"
@@ -69,7 +76,8 @@
               ><el-option v-for="field in sources[widget.id]?.fields || []" :key="field.name" :value="field.name" :label="field.label" /></el-select
             ><el-select v-model="widget.valueField" placeholder="指标字段"
               ><el-option v-for="field in sources[widget.id]?.fields || []" :key="field.name" :value="field.name" :label="field.label" /></el-select
-            ><el-select v-model="widget.function"><el-option v-for="fn in functions" :key="fn" :value="fn" :label="fn" /></el-select
+            ><el-select v-model="widget.function"
+              ><el-option v-for="fn in functions" :key="fn" :value="fn" :label="aggregateLabels[fn] || fn" /></el-select
             ><el-select v-if="widget.type === 'METRIC'" v-model="widget.comparison"
               ><el-option label="不比较" value="NONE" /><el-option label="上一期间" value="PREVIOUS_PERIOD" /><el-option
                 label="上一日历年"
@@ -108,7 +116,7 @@
             @click="widget.links.push({ targetWidget: '', sourceField: widget.categoryField || '', targetParameter: '' })"
             >添加类型化联动</el-button
           >
-          <div v-for="(mapping, i) in widget.links" :key="i" class="flex gap-2 mt-3">
+          <div v-for="(mapping, i) in widget.links" :key="i" class="report-form-row mt-3">
             <el-select v-model="mapping.targetWidget" placeholder="目标组件"
               ><el-option
                 v-for="target in model.widgets.filter((value) => value.id !== widget.id)"
@@ -130,9 +138,9 @@
           ><el-button v-hasPermi="['report:dashboard:publish']" :disabled="!resource || dirty" @click="publish">发布固定版本</el-button
           ><el-button @click="cancelEdit">退出设计</el-button></el-form-item
         > </el-form
-      ><el-empty v-if="!published && !editing" description="选择已发布仪表盘，或创建自己的组件布局"
+      ><el-empty v-if="!published && !editing && !loadFailed && !error && !loading" description="选择已发布仪表盘，或创建自己的组件布局"
     /></el-card>
-  </div>
+  </ReportPage>
   <AclDialog
     :open="!!aclId"
     resource-type="DASHBOARD"
@@ -145,6 +153,16 @@
   />
 </template>
 <script setup lang="ts">
+/** 仪表盘组件类型的可读名称。 */
+const widgetLabels: Record<string, string> = { METRIC: '指标卡', TABLE: '明细表', PIVOT: '交叉表', BAR: '柱状图', LINE: '折线图', PIE: '饼图' };
+/** 聚合函数的中文选项文案，实际提交仍使用契约枚举。 */
+const aggregateLabels: Record<string, string> = { SUM: '求和', COUNT: '计数', COUNT_ROWS: '记录条数', AVG: '平均值', MIN: '最小值', MAX: '最大值' };
+/** 仪表盘目录请求的加载反馈。 */
+const loading = ref(false);
+/** 目录失败时保留明确的刷新入口。 */
+const loadFailed = ref(false);
+import ReportPage from '@/components/report/ReportPage.vue';
+import ReportStatus from '@/components/report/ReportStatus.vue';
 import AclDialog from '@/components/report/AclDialog.vue';
 /** 当前弹窗绑定的资源ID，关闭或切换时由弹窗请求围栏保护。 */
 const aclId = ref('');
@@ -224,10 +242,22 @@ const dirty = computed(() => editing.value && JSON.stringify({ code: code.value,
 /** 目录与收藏分别刷新，收藏不隐式获得权限。 */
 async function load() {
   const ticket = gate.begin();
-  const [a, b] = await Promise.all([listDashboards(), dashboardFavorites()]);
-  if (gate.current(ticket)) {
-    dashboards.value = a.data;
-    favorites.value = b.data;
+  loading.value = true;
+  loadFailed.value = false;
+  try {
+    const [a, b] = await Promise.all([listDashboards(), dashboardFavorites()]);
+    if (gate.current(ticket)) {
+      dashboards.value = a.data;
+      favorites.value = b.data;
+    }
+  } catch {
+    if (gate.current(ticket)) {
+      dashboards.value = [];
+      favorites.value = [];
+      loadFailed.value = true;
+    }
+  } finally {
+    if (gate.current(ticket)) loading.value = false;
   }
 }
 /** 保留未保存设计的选择机会，迟到确认不覆盖新会话。 */
@@ -501,5 +531,33 @@ onUnmounted(() => {
     order: var(--mobile-order);
     min-height: 280px;
   }
+}
+.dashboard-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: var(--report-muted);
+  border: 1px solid var(--report-line);
+  border-radius: 10px;
+}
+.dashboard-picker .el-button {
+  max-width: 100%;
+  white-space: normal;
+  height: auto;
+  min-height: 32px;
+}
+.dashboard-runtime-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.dashboard-runtime-toolbar .el-switch {
+  flex-shrink: 0;
 }
 </style>

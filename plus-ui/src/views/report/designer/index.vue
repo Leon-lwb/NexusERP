@@ -1,47 +1,52 @@
 <template>
-  <div v-loading="loading" class="p-4 report-designer" :class="{ 'with-preview': previewOpen }" tabindex="0" @keydown="editorKeys">
-    <el-card class="designer-main" shadow="never"
-      ><template #header
-        ><div class="designer-heading">
-          <div>
-            <strong class="text-xl">{{ definition ? '设计 · ' + dsl?.title : '新建报表' }}</strong
-            ><el-tag v-if="dirty" class="ml-3" type="warning">未保存</el-tag
-            ><el-tag v-else-if="definition" class="ml-3" type="success">已保存 · 修订 {{ definition.revision }}</el-tag>
-          </div>
-          <div class="flex gap-2">
-            <el-button v-if="definition" @click="exportPackage">导出模板包</el-button
-            ><el-button @click="router.push('/report/center')">返回</el-button
-            ><el-button :disabled="!canUndo || saving || publishing || applying || jsonDirty" title="撤销；最多保留 50 个设计状态" @click="undo"
-              >撤销</el-button
-            ><el-button :disabled="!canRedo || saving || publishing || applying || jsonDirty" title="重做；新的编辑会清除重做记录" @click="redo"
-              >重做</el-button
-            ><el-button :disabled="!dsl || saving || publishing || applying" :loading="checking" @click="validate">校验</el-button
-            ><el-button :disabled="!dsl || saving || publishing || applying" :loading="previewing" @click="preview">数据预览</el-button
-            ><el-button
-              v-if="dsl"
-              :key="definition ? 'edit' : 'add'"
-              v-hasPermi="[definition ? 'report:definition:edit' : 'report:definition:add']"
-              type="primary"
-              :disabled="publishing || applying"
-              :loading="saving"
-              @click="save()"
-              >保存草稿</el-button
-            ><span
-              v-if="dsl"
-              :key="definition ? 'publish-edit' : 'publish-add'"
-              v-hasPermi="[definition ? 'report:definition:edit' : 'report:definition:add']"
-              ><el-button
-                v-hasPermi="['report:definition:publish']"
-                type="success"
-                :disabled="saving || applying"
-                :loading="publishing"
-                @click="publish"
-                >保存并发布</el-button
-              ></span
-            >
-          </div>
-        </div></template
-      >
+  <ReportPage
+    v-loading="loading"
+    :title="definition ? '设计 · ' + (dsl?.title || definition.name) : '新建报表'"
+    description="选择业务字段，编排版式，校验后保存或发布。"
+    icon="i-ep-edit"
+    class="report-designer"
+    :class="{ 'with-preview': previewOpen }"
+    tabindex="0"
+    @keydown="editorKeys"
+  >
+    <template #badge
+      ><el-tag v-if="dirty" type="warning" effect="plain">未保存</el-tag
+      ><el-tag v-else-if="definition" type="success" effect="plain">已保存 · 修订 {{ definition.revision }}</el-tag></template
+    >
+    <template #actions>
+      <el-button v-if="definition" @click="exportPackage">导出模板包</el-button><el-button @click="router.push('/report/center')">返回</el-button
+      ><el-button :disabled="!canUndo || saving || publishing || applying || jsonDirty" title="撤销；最多保留 50 个设计状态" @click="undo"
+        >撤销</el-button
+      ><el-button :disabled="!canRedo || saving || publishing || applying || jsonDirty" title="重做；新的编辑会清除重做记录" @click="redo"
+        >重做</el-button
+      ><el-button :disabled="!dsl || saving || publishing || applying" :loading="checking" @click="validate">校验</el-button
+      ><el-button :disabled="!dsl || saving || publishing || applying" :loading="previewing" @click="preview">数据预览</el-button
+      ><el-button
+        v-if="dsl"
+        :key="definition ? 'edit' : 'add'"
+        v-hasPermi="[definition ? 'report:definition:edit' : 'report:definition:add']"
+        type="primary"
+        :disabled="publishing || applying"
+        :loading="saving"
+        @click="save()"
+        >保存草稿</el-button
+      ><span
+        v-if="dsl"
+        :key="definition ? 'publish-edit' : 'publish-add'"
+        v-hasPermi="[definition ? 'report:definition:edit' : 'report:definition:add']"
+        ><el-button v-hasPermi="['report:definition:publish']" type="success" :disabled="saving || applying" :loading="publishing" @click="publish"
+          >保存并发布</el-button
+        ></span
+      ></template
+    >
+    <el-card class="designer-main" shadow="never">
+      <div class="report-section-heading">
+        <div>
+          <h2>报表配置</h2>
+          <p class="report-section-description">先选择数据集，再设置编码、标题与报表类型。</p>
+        </div>
+        <span v-if="dsl" class="report-secondary">{{ dsl.columns.length }} 列 · {{ dsl.parameters.length }} 个参数</span>
+      </div>
       <div class="designer-config">
         <el-select
           :model-value="selectedDataset?.dataset.id"
@@ -79,7 +84,7 @@
       >
       <DatasetContractBar v-if="dsl" v-model="dsl" :datasets="datasets" :busy="saving || publishing || applying" @contract="boundVersion = $event" />
       <DesignerBatchTools v-if="dsl" v-model="dsl" :disabled="saving || publishing || applying" />
-      <div v-if="structuralIssues.length" class="my-3 p-3 bg-red-50">
+      <div v-if="structuralIssues.length" class="designer-issues">
         <strong>设计问题（点击定位列）</strong
         ><el-button
           v-for="issue in structuralIssues"
@@ -97,19 +102,40 @@
         <el-tab-pane label="设计画布" name="canvas"
           ><div v-loading="saving" class="designer-grid">
             <aside class="field-palette">
-              <h3>可用字段</h3>
-              <p class="text-gray-500 text-xs">双击添加，或拖入明细区。</p>
-              <div
-                v-for="field in selectedDataset?.descriptor.fields"
-                :key="field.name"
-                class="field-item"
-                draggable="true"
-                @dragstart="dragField($event, field.name)"
-                @dblclick="insertField(field)"
-              >
-                <span>{{ field.label }}</span
-                ><small>{{ field.type }}</small>
+              <div class="palette-heading">
+                <h3>可用字段</h3>
+                <span class="report-secondary">{{ visibleFields.length }}</span>
               </div>
+              <el-input
+                v-model="fieldSearch"
+                clearable
+                size="small"
+                prefix-icon="Search"
+                placeholder="搜索字段或类型"
+                aria-label="搜索可用字段"
+                class="palette-search"
+              />
+              <p class="report-secondary">点击添加，或拖入明细区。</p>
+              <div class="field-list">
+                <button
+                  v-for="field in visibleFields"
+                  :key="field.name"
+                  type="button"
+                  class="field-item"
+                  draggable="true"
+                  :disabled="saving || publishing || applying"
+                  :aria-label="'添加字段：' + field.label"
+                  @dragstart="dragField($event, field.name)"
+                  @click="insertField(field)"
+                >
+                  <span class="field-item__name"
+                    >{{ field.label }}<small>{{ field.name }}</small></span
+                  ><span class="field-item__type">{{ field.type }}</span>
+                </button>
+              </div>
+              <el-empty v-if="!visibleFields.length" :image-size="50" description="没有匹配字段"
+                ><el-button v-if="fieldSearch" link type="primary" @click="fieldSearch = ''">清空搜索</el-button></el-empty
+              >
               <el-button class="mt-3" @click="insertFormula">添加计算列</el-button
               ><el-button v-if="dsl.kind === 'DOCUMENT'" class="mt-2" @click="fitColumns(dsl)">适配纸张宽度</el-button>
             </aside>
@@ -126,6 +152,10 @@
                       v-for="(cell, c) in row.cells"
                       :key="r + '-' + c"
                       class="band-cell"
+                      role="button"
+                      tabindex="0"
+                      @keydown.enter.prevent="selection = { type: 'cell', band: band.key, row: r, cell: c }"
+                      @keydown.space.prevent="selection = { type: 'cell', band: band.key, row: r, cell: c }"
                       :class="{ selected: isCellSelected(band.key, r, c) }"
                       :style="{
                         gridColumn: cell.column + 1 + ' / span ' + cell.colSpan,
@@ -161,6 +191,10 @@
                   v-for="(column, index) in dsl.columns"
                   :key="column.field"
                   class="column-tile"
+                  role="button"
+                  tabindex="0"
+                  @keydown.enter.prevent="selection = { type: 'column', index }"
+                  @keydown.space.prevent="selection = { type: 'column', index }"
                   :class="{ selected: selection?.type === 'column' && selection.index === index }"
                   :style="{ minWidth: Math.max(80, column.width) + 'px' }"
                   draggable="true"
@@ -170,11 +204,11 @@
                   @click="selection = { type: 'column', index }"
                 >
                   <strong>{{ column.label }}</strong>
-                  <div class="text-xs text-gray-500">{{ column.field }}</div>
+                  <div class="text-xs report-secondary">{{ column.field }}</div>
                   <div class="example-cell">{{ column.expression ? '= ' + column.expression : '明细值' }}</div>
                 </div>
               </div>
-              <p class="text-gray-500 text-xs">拖动列调整顺序；点选列或固定区域单元格，在右侧设置样式和绑定。</p>
+              <p class="report-secondary text-xs">拖动列调整顺序；点选列或固定区域单元格，在右侧设置样式和绑定。</p>
             </main>
             <aside class="property-panel">
               <h3>属性</h3>
@@ -187,7 +221,7 @@
                   ><el-form-item label="计算表达式"
                     ><el-input v-model="selectedColumn.expression" placeholder="例如 ROUND(quantity * unitPrice, 2)" type="textarea" :rows="3"
                   /></el-form-item>
-                  <p class="text-xs text-gray-500">支持十进制运算、IF、ROUND、COALESCE、SUM 和 COUNT。</p>
+                  <p class="text-xs report-secondary">支持十进制运算、IF、ROUND、COALESCE、SUM 和 COUNT。</p>
                   <el-button type="danger" link :disabled="dsl.columns.length === 1" @click="deleteColumn">移除列</el-button></template
                 >
                 <template v-if="selectedCell"
@@ -283,7 +317,7 @@
               ></el-table-column
             ></el-table
           >
-          <p class="text-gray-500">金额、数量的币种、物料或单位分区将由数据契约强制检查。</p></el-tab-pane
+          <p class="report-secondary">金额、数量的币种、物料或单位分区将由数据契约强制检查。</p></el-tab-pane
         >
         <el-tab-pane label="定义文件" name="json"
           ><el-input v-model="jsonText" :disabled="saving || publishing || applying" type="textarea" :rows="22" class="dsl-json" />
@@ -313,7 +347,7 @@
           :columns="dsl.columns"
           :rows="previewData.rows" /></template
     ></el-card>
-  </div>
+  </ReportPage>
 </template>
 <script setup lang="ts">
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
@@ -323,7 +357,15 @@ import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vu
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { saveAs } from 'file-saver';
 import { listDatasets, listCatalogs, reportDetail, createReport, saveReport, validateDraft, previewDraft, publishReport } from '@/api/report';
-import type { DatasetView, DatasetField, ReportDsl, ReportDefinition, ReportCatalog, ReportPage, DraftPreview } from '@/types/report';
+import type {
+  DatasetView,
+  DatasetField,
+  ReportDsl,
+  ReportDefinition,
+  ReportCatalog,
+  ReportPage as ReportPageSettings,
+  DraftPreview
+} from '@/types/report';
 import {
   createDsl,
   addField,
@@ -337,6 +379,8 @@ import {
   DslHistory,
   RequestGate
 } from '@/views/report/model';
+import ReportPage from '@/components/report/ReportPage.vue';
+import { filterFields } from '@/views/report/presentation';
 import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import ReportPaper from '@/components/report/ReportPaper.vue';
@@ -504,7 +548,7 @@ const bands: {
  */
 const paperSettings: {
   /** 保存当前 `key` 值。 */
-  key: keyof ReportPage;
+  key: keyof ReportPageSettings;
   /** 保存展示标题。 */
   label: string;
 }[] = [
@@ -523,6 +567,10 @@ const selectedDataset = computed(() => boundDataset(datasets.value, dsl.value, b
 /**
  * 保存当前页面或测试的structuralIssues状态。
  */
+/** 字段搜索仅过滤契约描述，不修改已选列或数据集绑定。 */
+const fieldSearch = ref('');
+/** 在可用字段区展示匹配名称、绑定名或类型的字段。 */
+const visibleFields = computed(() => filterFields(selectedDataset.value?.descriptor.fields || [], fieldSearch.value));
 const structuralIssues = computed(() => (dsl.value ? editorIssues(dsl.value, selectedDataset.value?.descriptor) : []));
 /**
  * 保存当前页面或测试的selectedColumn状态。
@@ -951,14 +999,14 @@ onUnmounted(() => {
 });
 </script>
 <style scoped>
-.report-designer.with-preview {
+.report-designer.with-preview :deep(.report-page__content) {
   display: grid;
-  grid-template-columns: minmax(660px, 1.4fr) minmax(400px, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   align-items: start;
   gap: 16px;
 }
 .with-preview .designer-grid {
-  grid-template-columns: 170px minmax(280px, 1fr);
+  grid-template-columns: 180px minmax(0, 1fr);
 }
 .with-preview .property-panel {
   grid-column: 1 / -1;
@@ -976,7 +1024,7 @@ onUnmounted(() => {
   gap: 12px;
 }
 @media (max-width: 1100px) {
-  .report-designer.with-preview {
+  .report-designer.with-preview :deep(.report-page__content) {
     grid-template-columns: minmax(0, 1fr);
   }
   .designer-preview {
@@ -985,21 +1033,6 @@ onUnmounted(() => {
   }
 }
 
-.designer-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.designer-heading > div:last-child {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.designer-heading .el-button {
-  margin-left: 0;
-}
 .designer-main {
   min-width: 0;
 }
@@ -1011,15 +1044,15 @@ onUnmounted(() => {
 }
 .designer-grid {
   display: grid;
-  grid-template-columns: 190px minmax(300px, 1fr) 245px;
+  grid-template-columns: 210px minmax(0, 1fr) 245px;
   gap: 16px;
   min-height: 550px;
 }
 .field-palette,
 .property-panel {
   padding: 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--report-muted);
+  border: 1px solid var(--report-line);
   border-radius: 6px;
 }
 .field-palette h3,
@@ -1032,20 +1065,20 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 9px;
   margin-bottom: 6px;
-  background: #fff;
-  border: 1px solid #dce4ed;
+  background: var(--report-surface);
+  border: 1px solid var(--report-line);
   border-radius: 4px;
   cursor: grab;
 }
 .field-item small {
-  color: #94a3b8;
+  color: var(--el-text-color-placeholder);
   font-size: 10px;
 }
 .canvas-area {
   overflow: auto;
   padding: 20px;
-  background: #eef2f6;
-  border: 1px solid #dbe3eb;
+  background: var(--el-fill-color);
+  border: 1px solid var(--el-border-color);
   border-radius: 6px;
 }
 .canvas-title {
@@ -1053,7 +1086,7 @@ onUnmounted(() => {
   text-align: center;
   font-size: 20px;
   font-weight: 600;
-  background: #fff;
+  background: var(--report-surface);
 }
 .band-section {
   margin-top: 12px;
@@ -1065,16 +1098,16 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 8px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--el-text-color-secondary);
 }
 .band-grid {
   display: grid;
-  background: #fff;
+  background: var(--report-surface);
   position: relative;
 }
 .band-cell {
   padding: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--el-border-color);
   overflow: hidden;
   cursor: pointer;
 }
@@ -1090,10 +1123,10 @@ onUnmounted(() => {
 .column-strip {
   display: flex;
   overflow: auto;
-  background: #fff;
+  background: var(--report-surface);
 }
 .column-tile {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--el-border-color);
   padding: 10px;
   cursor: grab;
   max-width: 300px;
@@ -1101,13 +1134,13 @@ onUnmounted(() => {
 }
 .example-cell {
   margin-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--report-line);
   padding-top: 10px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--el-text-color-secondary);
 }
 .selected {
-  outline: 2px solid #409eff;
+  outline: 2px solid var(--el-color-primary);
   outline-offset: -2px;
 }
 .dsl-json :deep(textarea) {
@@ -1115,10 +1148,93 @@ onUnmounted(() => {
 }
 @media (max-width: 1200px) {
   .designer-grid {
-    grid-template-columns: 170px minmax(250px, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
   }
   .property-panel {
     grid-column: 1 / -1;
+  }
+}
+
+.palette-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.palette-search {
+  margin-bottom: 4px;
+}
+.field-list {
+  max-height: 440px;
+  overflow: auto;
+  margin: 12px -4px;
+  padding: 4px;
+}
+.field-item {
+  width: 100%;
+  text-align: left;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  color: var(--el-text-color-regular);
+}
+.field-item:hover {
+  border-color: var(--el-color-primary-light-5);
+  color: var(--el-color-primary);
+}
+.field-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.field-item__name {
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.field-item__name small {
+  display: block;
+  margin-top: 4px;
+  font-family: Consolas, monospace;
+}
+.field-item__type {
+  font-size: 9px;
+  color: var(--el-text-color-secondary);
+  background: var(--report-muted);
+  padding: 3px 4px;
+  border-radius: 4px;
+}
+.designer-issues {
+  background: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+  padding: 14px;
+  border-radius: 8px;
+  margin: 14px 0;
+}
+.designer-config > .el-input,
+.designer-config > .el-select {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.property-panel,
+.field-palette,
+.canvas-area {
+  min-width: 0;
+}
+@media (max-width: 768px) {
+  .designer-grid,
+  .with-preview .designer-grid {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: auto;
+  }
+  .field-list {
+    max-height: 200px;
+  }
+  .canvas-area {
+    padding: 12px;
+    min-height: 320px;
+  }
+  .property-panel {
+    grid-column: auto;
   }
 }
 </style>

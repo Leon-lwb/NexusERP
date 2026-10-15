@@ -1,18 +1,13 @@
 <template>
-  <div class="p-4">
-    <el-card shadow="never"
-      ><template #header
-        ><div class="flex items-center justify-between">
-          <div>
-            <strong class="text-xl">数据集目录</strong>
-            <div class="text-gray-500 mt-2">选择已有业务契约，为报表提供当前用户有权读取的数据。</div>
-          </div>
-          <el-button v-hasPermi="['report:dataset:manage']" type="primary" @click="openProviders">注册数据集</el-button>
-        </div></template
-      >
+  <ReportPage title="数据集目录" description="查看业务字段与数据样例，为报表选择合适的数据来源。" icon="i-ep-coin" class="report-dataset">
+    <template #actions
+      ><el-button :loading="loading" icon="Refresh" @click="load">刷新</el-button
+      ><el-button v-hasPermi="['report:dataset:manage']" type="primary" @click="openProviders">注册数据集</el-button></template
+    >
+    <el-card shadow="never">
       <el-alert v-if="failed" title="数据集载入失败，请刷新重试。" type="error" :closable="false" class="mb-4" />
-      <el-button class="mb-4" icon="Refresh" @click="load">刷新</el-button>
-      <el-table v-loading="loading" :data="datasets" border
+
+      <el-table v-loading="loading" :data="datasets" empty-text="暂无可见数据集，注册业务数据集后开始设计" border
         ><el-table-column prop="dataset.name" label="名称" min-width="180" /><el-table-column
           prop="dataset.code"
           label="编码"
@@ -50,7 +45,7 @@
         ></el-table
       >
     </el-card>
-    <el-dialog v-model="providerOpen" title="注册业务数据集" width="750px"
+    <el-dialog v-model="providerOpen" title="注册业务数据集" width="min(750px, calc(100vw - 32px))"
       ><el-table :data="providers" border
         ><el-table-column prop="name" label="名称" /><el-table-column prop="code" label="编码" min-width="270" /><el-table-column
           label="版本"
@@ -87,13 +82,14 @@
               @click="sample"
               >查询样例</el-button
             >
-            <p class="text-gray-500">最多展示 50 行当前权限范围内的数据。</p>
+            <p class="report-secondary">最多展示 50 行当前权限范围内的数据。</p>
             <TypedTable v-if="sampleData" :columns="sampleColumns" :rows="sampleData.rows" /></el-tab-pane></el-tabs></template
     ></el-drawer>
     <AclDialog v-model:open="aclOpen" resource-type="DATASET" :resource-id="aclId" />
-  </div>
+  </ReportPage>
 </template>
 <script setup lang="ts">
+import ReportPage from '@/components/report/ReportPage.vue';
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
 
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';

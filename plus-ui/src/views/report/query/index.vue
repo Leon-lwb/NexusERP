@@ -1,17 +1,22 @@
 <template>
-  <div class="p-4 report-query">
+  <ReportPage title="受控查询" description="选择批准的业务实体、输出字段与筛选条件，发布为报表数据集。" icon="i-ep-search" class="report-query"
+    ><template #actions
+      ><el-button :loading="loading" icon="Refresh" @click="load">刷新目录</el-button
+      ><el-button v-hasPermi="['report:query:add']" type="primary" icon="Plus" @click="startNew">新建查询</el-button></template
+    >
     <el-alert title="通过批准的ERP逻辑目录取数。发布固定查询后，可在报表设计器选择生成的数据集。" type="info" :closable="false" class="mb-4" />
     <div class="query-grid">
       <el-card shadow="never"
         ><template #header
           ><div class="query-heading">
-            <strong>受控查询</strong><el-button @click="startNew">新建</el-button><el-button :loading="loading" @click="load">刷新</el-button>
+            <strong>查询目录</strong><el-tag type="info" effect="plain">{{ resources.length }} 项</el-tag>
           </div></template
         >
         <el-alert v-if="failed" title="查询目录载入失败，请重试。" type="error" :closable="false" />
-        <el-table :data="resources" highlight-current-row @row-click="edit"
-          ><el-table-column prop="title" label="查询" /><el-table-column prop="status" label="状态" width="105"
-        /></el-table>
+        <el-table v-loading="loading" :data="resources" empty-text="暂无查询，点击新建查询开始配置" highlight-current-row @row-click="edit"
+          ><el-table-column prop="title" label="查询" /><el-table-column label="状态" width="105"
+            ><template #default="scope"><ReportStatus :status="scope.row.status" /></template></el-table-column
+        ></el-table>
       </el-card>
       <el-card shadow="never"
         ><template #header
@@ -33,7 +38,7 @@
           </div></template
         >
         <el-alert v-if="assembled.error" :title="assembled.error" type="error" :closable="false" />
-        <el-form inline
+        <el-form class="query-config" label-position="top"
           ><el-form-item label="编码"><el-input v-model="code" :disabled="!!resource || busy" /></el-form-item
           ><el-form-item label="标题"><el-input v-model="title" :disabled="busy" /></el-form-item>
           <el-form-item label="目录版本"
@@ -63,7 +68,7 @@
           <el-table-column label="聚合" width="120"
             ><template #default="scope"
               ><el-select v-model="scope.row.aggregate" clearable :disabled="busy"
-                ><el-option v-for="fn in aggregates" :key="fn" :label="fn" :value="fn" /></el-select></template
+                ><el-option v-for="fn in aggregates" :key="fn" :label="aggregateLabels[fn] || fn" :value="fn" /></el-select></template
           ></el-table-column>
           <el-table-column label="分组" width="70"
             ><template #default="scope"><el-checkbox v-model="scope.row.group" :disabled="busy" /></template
@@ -85,7 +90,7 @@
           <el-table-column label="条件" width="115"
             ><template #default="scope"
               ><el-select v-model="scope.row.operator" :disabled="busy"
-                ><el-option v-for="op in operators" :key="op" :label="op" :value="op" /></el-select></template
+                ><el-option v-for="op in operators" :key="op" :label="operatorLabels[op] || op" :value="op" /></el-select></template
           ></el-table-column>
           <el-table-column label="参数名" min-width="140"
             ><template #default="scope"
@@ -111,7 +116,7 @@
         /></template>
       </el-card>
     </div>
-  </div>
+  </ReportPage>
   <AclDialog
     :open="!!aclId"
     resource-type="QUERY"
@@ -124,6 +129,26 @@
   />
 </template>
 <script setup lang="ts">
+/** 受控条件的中文名称，保留服务端操作符值。 */
+const operatorLabels: Record<string, string> = {
+  EQ: '等于',
+  NE: '不等于',
+  GT: '大于',
+  GE: '大于等于',
+  GTE: '大于等于',
+  LT: '小于',
+  LE: '小于等于',
+  LTE: '小于等于',
+  LIKE: '包含',
+  IN: '属于',
+  IS_NULL: '为空',
+  NOT_NULL: '不为空',
+  BETWEEN: '范围内'
+};
+/** 聚合函数的中文选项文案，实际提交仍使用契约枚举。 */
+const aggregateLabels: Record<string, string> = { SUM: '求和', COUNT: '计数', COUNT_ROWS: '记录条数', AVG: '平均值', MIN: '最小值', MAX: '最大值' };
+import ReportPage from '@/components/report/ReportPage.vue';
+import ReportStatus from '@/components/report/ReportStatus.vue';
 import AclDialog from '@/components/report/AclDialog.vue';
 /** 当前弹窗绑定的资源ID，关闭或切换时由弹窗请求围栏保护。 */
 const aclId = ref('');
@@ -433,7 +458,7 @@ onUnmounted(() => {
 <style scoped>
 .query-grid {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 16px;
 }
 .query-heading {
@@ -445,6 +470,26 @@ onUnmounted(() => {
 @media (max-width: 1050px) {
   .query-grid {
     grid-template-columns: 1fr;
+  }
+}
+.query-grid > * {
+  min-width: 0;
+}
+.query-config {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+  margin-top: 16px;
+}
+.query-config :deep(.el-select) {
+  width: 100% !important;
+}
+.query-heading strong {
+  margin-right: auto;
+}
+@media (max-width: 600px) {
+  .query-config {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

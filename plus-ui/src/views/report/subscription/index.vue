@@ -1,12 +1,13 @@
 <template>
-  <div class="p-4">
-    <el-card v-loading="loading"
-      ><template #header
-        ><div class="flex justify-between">
-          <strong>固定报表订阅</strong
-          ><el-button v-hasPermi="['report:subscription:manage']" :disabled="busy" @click="newSubscription">新建订阅</el-button>
-        </div></template
-      ><el-alert
+  <ReportPage title="报表订阅" description="设置固定报表、接收人和执行计划，跟踪每次交付。" icon="i-ep-alarm-clock" class="report-subscription">
+    <template #actions
+      ><el-button :loading="loading" icon="Refresh" @click="load">刷新</el-button
+      ><el-button v-hasPermi="['report:subscription:manage']" :disabled="busy" type="primary" icon="Plus" @click="newSubscription"
+        >新建订阅</el-button
+      ></template
+    >
+    <el-card shadow="never" v-loading="loading">
+      <el-alert v-if="loadFailed" title="目录载入失败，请刷新重试。" type="error" show-icon :closable="false" class="mb-4" /><el-alert
         :title="
           '自动调度：' +
           (capabilities.schedulingEnabled ? '已启用' : '未启用，可使用手动运行') +
@@ -16,7 +17,7 @@
         type="info"
         :closable="false"
       />
-      <el-form v-if="model" :disabled="busy" label-width="120px" class="mt-4"
+      <el-form v-if="model" :disabled="busy" label-width="120px" class="mt-4 report-editor-form"
         ><el-form-item label="编码与标题"
           ><el-input v-model="code" :disabled="!!resource" placeholder="订阅编码" /><el-input
             v-model="title"
@@ -74,12 +75,19 @@
           ><el-button v-hasPermi="['report:subscription:publish']" :disabled="!resource || dirty" @click="publish"
             >发布固定订阅</el-button
           ></el-form-item
-        > </el-form
-      ><el-table :data="subscriptions" class="mt-4"
-        ><el-table-column prop="title" label="名称" /><el-table-column prop="code" label="编码" /><el-table-column
-          prop="status"
-          label="状态"
-        /><el-table-column label="操作" min-width="290"
+        >
+      </el-form>
+      <div class="report-section-heading mt-5">
+        <div>
+          <h2>订阅目录</h2>
+          <p class="report-section-description">共 {{ subscriptions.length }} 个可见订阅，执行记录按接收人分别展示。</p>
+        </div>
+        <el-tag v-if="model && dirty" type="warning" effect="plain">草稿尚未保存</el-tag>
+      </div>
+      <el-table :data="subscriptions" empty-text="暂无订阅，点击新建订阅设置交付计划" class="mt-4"
+        ><el-table-column prop="title" label="名称" /><el-table-column prop="code" label="编码" /><el-table-column label="状态" width="120"
+          ><template #default="scope"><ReportStatus :status="scope.row.status" /></template></el-table-column
+        ><el-table-column label="操作" min-width="290"
           ><template #default="scope"
             ><el-button v-hasPermi="['report:acl:manage']" link :disabled="busy" @click="aclId = scope.row.id">资源授权</el-button
             ><el-button v-hasPermi="['report:subscription:manage']" link @click="edit(scope.row.id)">编辑</el-button
@@ -101,11 +109,18 @@
         :type="schedule.enabled ? 'info' : 'warning'"
         :closable="false"
         class="mt-3"
-      /><el-table v-if="selected" :data="executions"
+      />
+      <div v-if="selected" class="report-section-heading mt-5">
+        <h2>执行记录</h2>
+        <span class="report-secondary">{{ selected }}</span>
+      </div>
+      <el-table v-if="selected" :data="executions" empty-text="当前订阅还没有执行记录"
         ><el-table-column prop="recipient" label="接收人" /><el-table-column prop="scheduledAt" label="固定时刻" /><el-table-column
           prop="eventType"
           label="触发类型"
-        /><el-table-column prop="state" label="状态" /><el-table-column prop="error" label="结果码" /><el-table-column label="操作"
+        /><el-table-column label="状态" width="120"
+          ><template #default="scope"><ReportStatus :status="scope.row.state" /></template></el-table-column
+        ><el-table-column prop="error" label="结果码" /><el-table-column label="操作"
           ><template #default="scope"
             ><el-button v-hasPermi="['report:subscription:manage']" link :disabled="busy" @click="retry(scope.row.id)">重试</el-button
             ><el-button v-hasPermi="['report:subscription:manage']" link :disabled="busy" @click="cancel(scope.row.id)">取消</el-button></template
@@ -113,7 +128,7 @@
         ></el-table
       ></el-card
     >
-  </div>
+  </ReportPage>
   <AclDialog
     :open="!!aclId"
     resource-type="SUBSCRIPTION"
@@ -126,6 +141,10 @@
   />
 </template>
 <script setup lang="ts">
+/** 区分资源目录载入失败与当前账号暂无可见资源。 */
+const loadFailed = ref(false);
+import ReportPage from '@/components/report/ReportPage.vue';
+import ReportStatus from '@/components/report/ReportStatus.vue';
 import AclDialog from '@/components/report/AclDialog.vue';
 /** 当前弹窗绑定的资源ID，关闭或切换时由弹窗请求围栏保护。 */
 const aclId = ref('');
@@ -201,11 +220,17 @@ const dirty = computed(
 async function load() {
   const ticket = gate.begin();
   loading.value = true;
+  loadFailed.value = false;
   try {
     const [a, b] = await Promise.all([listSubscriptions(), subscriptionCapabilities()]);
     if (gate.current(ticket)) {
       subscriptions.value = a.data;
       capabilities.value = b.data;
+    }
+  } catch {
+    if (gate.current(ticket)) {
+      loadFailed.value = true;
+      subscriptions.value = [];
     }
   } finally {
     if (gate.current(ticket)) loading.value = false;

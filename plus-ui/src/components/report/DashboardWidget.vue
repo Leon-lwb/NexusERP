@@ -1,5 +1,5 @@
 <template>
-  <el-card class="dashboard-widget"
+  <el-card class="dashboard-widget" shadow="never"
     ><template #header
       ><div class="flex justify-between">
         <strong>{{ view.title }}</strong
@@ -10,7 +10,10 @@
         {{ metric.value?.value ?? '—'
         }}<small v-if="metric.rate">变化率：{{ metric.rate.value === null ? '基期为零或空，未定义' : metric.rate.value + '%' }}</small>
       </div>
-      <div v-else-if="['BAR', 'LINE', 'PIE'].includes(view.type)" ref="chartElement" class="chart" />
+      <div v-else-if="['BAR', 'LINE', 'PIE'].includes(view.type)" class="widget-chart">
+        <el-empty v-if="!chartData?.points.length" description="当前范围暂无图表数据" :image-size="64" />
+        <div v-else ref="chartElement" class="chart" />
+      </div>
       <TypedTable v-else-if="view.type === 'TABLE'" :columns="table.columns || []" :rows="table.rows || []" />
       <div v-else-if="view.type === 'PIVOT'" class="pivot-inline">
         <table>
@@ -23,7 +26,8 @@
         </table>
       </div>
       <div class="widget-meta">
-        {{ view.datasetCode }} · {{ view.dataTime }} · {{ view.consistency
+        {{ view.datasetCode }} · {{ view.dataTime }} ·
+        {{ view.consistency === 'SNAPSHOT' ? '固定快照' : view.consistency === 'LIVE' ? '实时分页' : view.consistency
         }}<span v-if="view.type === 'TABLE'"> · 预览{{ table.visibleRows }}行 / 共{{ view.total }}行</span>
       </div>
       <div v-if="chartData" class="widget-meta">坐标比例：{{ chartData.scale }}，悬浮查看精确值</div></template
@@ -57,6 +61,9 @@ const props = defineProps<{
 /**
  * 保存当前页面或测试的chart、observer、serial状态。
  */
+/** 主题切换时重绘图表样式，不重新获取或计算业务值。 */
+let themeObserver: MutationObserver | undefined;
+/** 图表实例和尺寸观察器随组件销毁。 */
 let chart: echarts.ECharts | undefined,
   observer: ResizeObserver | undefined,
   serial = 0;
@@ -96,8 +103,8 @@ async function draw() {
   observer?.disconnect();
   observer = undefined;
   if (!chartElement.value || !chartData.value || props.view.error) return;
-  chart = echarts.init(chartElement.value);
-  chart.setOption(chartOption(props.view.type, chartData.value));
+  chart = echarts.init(chartElement.value, document.documentElement.classList.contains('dark') ? 'dark' : undefined);
+  chart.setOption({ ...chartOption(props.view.type, chartData.value), backgroundColor: 'transparent' });
   chart.on('click', (event: unknown) => {
     const index = (
       event as {
@@ -114,23 +121,51 @@ async function draw() {
   observer.observe(chartElement.value);
 }
 watch(() => props.view, draw, { deep: true });
-onMounted(draw);
+onMounted(() => {
+  void draw();
+  if (typeof MutationObserver !== 'undefined' && document.documentElement) {
+    themeObserver = new MutationObserver(() => void draw());
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+});
 onUnmounted(() => {
   serial++;
   observer?.disconnect();
+  themeObserver?.disconnect();
   chart?.dispose();
 });
 </script>
 <style scoped>
 .dashboard-widget {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 3px solid var(--el-color-primary-light-7);
+}
+.dashboard-widget :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+.dashboard-widget :deep(.el-card__header) {
+  flex-shrink: 0;
+}
+.widget-chart {
+  flex: 1;
+  min-height: 120px;
 }
 .chart {
-  height: 260px;
+  height: 100%;
+  min-height: 120px;
 }
 .metric-value {
   font-size: 30px;
-  font-weight: 600;
+  font-weight: 650;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 .metric-value small {
@@ -140,6 +175,7 @@ onUnmounted(() => {
   margin-top: 10px;
 }
 .widget-meta {
+  flex-shrink: 0;
   margin-top: 12px;
   font-size: 12px;
   color: var(--el-text-color-secondary);

@@ -1,17 +1,17 @@
 <template>
-  <div class="p-4">
-    <el-card v-loading="loading"
-      ><template #header
-        ><div class="flex justify-between">
-          <strong>交叉报表设计</strong><el-button :disabled="busy" @click="startNew">新建交叉报表</el-button>
-        </div></template
-      >
+  <ReportPage title="交叉报表设计" description="配置行列维度与指标，在固定快照上进行交叉分析。" icon="i-ep-grid" class="report-pivot">
+    <template #actions
+      ><el-button :loading="loading" icon="Refresh" @click="load">刷新目录</el-button
+      ><el-button :disabled="busy" type="primary" icon="Plus" @click="startNew">新建交叉报表</el-button></template
+    >
+    <el-card shadow="never" v-loading="loading">
+      <el-alert v-if="loadFailed" title="交叉报表目录载入失败，请刷新重试。" type="error" show-icon :closable="false" class="mb-4" />
       <el-alert
         title="交叉报表使用固定快照；所有汇总和钻取由服务器完成。数值指标必须在行维度保留物料、单位或币种口径。"
         type="info"
         :closable="false"
       />
-      <el-form v-if="dsl" label-width="110px" class="mt-4" :disabled="busy"
+      <el-form v-if="dsl" label-width="110px" class="mt-4 report-editor-form" :disabled="busy"
         ><el-form-item label="编码与标题"
           ><el-input v-model="dsl.code" :disabled="!!resource" placeholder="报表编码" /><el-input v-model="dsl.title" placeholder="标题" class="mt-2"
         /></el-form-item>
@@ -39,7 +39,8 @@
                   :key="field.name"
                   :value="field.name"
                   :label="field.label" /></el-select
-              ><el-select v-model="measure.function"><el-option v-for="fn in functions" :key="fn" :value="fn" :label="fn" /></el-select
+              ><el-select v-model="measure.function"
+                ><el-option v-for="fn in functions" :key="fn" :value="fn" :label="aggregateLabels[fn] || fn" /></el-select
               ><el-input v-model="measure.label" placeholder="指标标题" /><el-input-number v-model="measure.scale" :min="0" :max="12" /><el-button
                 :disabled="dsl.pivot.measures.length === 1"
                 @click="dsl.pivot.measures.splice(i, 1)"
@@ -59,12 +60,18 @@
           ><el-button v-hasPermi="['report:definition:publish']" :disabled="!resource || dirty" @click="publish">发布固定版本</el-button
           ><el-button :disabled="!resource?.publishedVersion" @click="view">运行</el-button></el-form-item
         > </el-form
-      ><el-empty v-else description="请先在数据集目录注册并授权数据集" />
-      <el-table :data="reports" class="mt-4"
-        ><el-table-column prop="name" label="交叉报表" /><el-table-column prop="code" label="编码" /><el-table-column
-          prop="status"
-          label="状态"
-        /><el-table-column label="操作"
+      ><el-empty v-else-if="!loadFailed && !loading" description="请先在数据集目录注册并授权数据集" />
+      <div class="report-section-heading mt-5">
+        <div>
+          <h2>交叉报表目录</h2>
+          <p class="report-section-description">共 {{ reports.length }} 份当前可见的交叉报表</p>
+        </div>
+        <el-tag v-if="dsl && dirty" type="warning" effect="plain">设计尚未保存</el-tag>
+      </div>
+      <el-table empty-text="暂无交叉报表，保存草稿后会出现在此处" :data="reports" class="mt-4"
+        ><el-table-column prop="name" label="交叉报表" /><el-table-column prop="code" label="编码" /><el-table-column label="状态" width="120"
+          ><template #default="scope"><ReportStatus :status="scope.row.status" /></template></el-table-column
+        ><el-table-column label="操作"
           ><template #default="scope"
             ><el-button link @click="edit(scope.row.id)">设计</el-button
             ><el-button v-if="scope.row.publishedVersion" link @click="router.push({ path: '/report/viewer', query: { id: scope.row.id } })"
@@ -74,9 +81,15 @@
         ></el-table
       >
     </el-card>
-  </div>
+  </ReportPage>
 </template>
 <script setup lang="ts">
+/** 聚合函数的中文选项文案，实际提交仍使用契约枚举。 */
+const aggregateLabels: Record<string, string> = { SUM: '求和', COUNT: '计数', COUNT_ROWS: '记录条数', AVG: '平均值', MIN: '最小值', MAX: '最大值' };
+/** 数据集或报表目录失败时显示刷新入口。 */
+const loadFailed = ref(false);
+import ReportPage from '@/components/report/ReportPage.vue';
+import ReportStatus from '@/components/report/ReportStatus.vue';
 /** 专用交叉设计器管理schema2草稿，不修改旧发布定义。 */
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
@@ -153,12 +166,19 @@ async function startNew() {
 async function load() {
   const ticket = gate.begin();
   loading.value = true;
+  loadFailed.value = false;
   try {
     const [a, b] = await Promise.all([listDatasets(), listReports()]);
     if (!gate.current(ticket)) return;
     datasets.value = a.data;
     reports.value = b.data.filter((item) => item.kind === 'PIVOT');
     if (!dsl.value) reset();
+  } catch {
+    if (gate.current(ticket)) {
+      loadFailed.value = true;
+      datasets.value = [];
+      reports.value = [];
+    }
   } finally {
     if (gate.current(ticket)) loading.value = false;
   }
