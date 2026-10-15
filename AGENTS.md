@@ -69,6 +69,7 @@ ruoyi-common/             — 共享库 (当前 31 个子模块；具体依赖�
   ruoyi-common-flow/      —    流程编排公共层: 实体类 (Flow/FlowInstance/FlowNodeRun/FlowVersion)、Mapper、BO/VO、Service
   ruoyi-common-cv/        —    视觉识别客户端 (VisionClient — 封装 Vision 服务: 人脸注册/1:1验证/1:N识别、物料OCR、探活)
   ruoyi-common-oss/       —    对象存储 (Minio / S3 协议)
+  ruoyi-common-report/    —    报表公共契约: typed value、provider、租户/业务权限范围及安全 JDBC 查询
   ruoyi-common-flowable/  —    Flowable 工作流引擎集成
   ... 以及更多 (任务、日志、短信、邮件、社交、Excel、加密等)
 ruoyi-modules/            — 业务模块 (当前 15 个子模块)
@@ -84,7 +85,7 @@ ruoyi-modules/            — 业务模块 (当前 15 个子模块)
   ruoyi-job/              —    分布式任务调度 (SnailJob)
   ruoyi-demo/             —    演示/示例代码
   ruoyi-online/           —    在线低代码表单构建器
-  ruoyi-report/           —    报表 (JimuReport 积木报表，独立数据源 + Token 鉴权)
+  ruoyi-report/           —    自研报表 (DSL v1/v2、TABLE/DOCUMENT/PIVOT、受控查询/打印/仪表盘/订阅、私有运行与资源 ACL)
   ruoyi-pay/              —    支付 (支付订单、发票、对账)
 ruoyi-extend/             — 独立服务
   ruoyi-monitor-admin/    —    Spring Boot Admin 监控服务端
@@ -351,3 +352,14 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - **多数据源切换**: AI 数据查询走 `@DS("erp")` (ry-erp 库)，系统配置走默认 master (ry-vue 库)；跨库调用注意 `@DS` 注解必须放在被实际调用的 Service 方法上，同类内部方法调用不会触发 AOP 切换。
 - **API 加密默认开启但不替代 HTTPS**: 前后端开关与密钥需一致；调试解密失败先核对配置。仓库可能含演示用密钥/默认值，生产必须替换，绝不在日志、文档、回复中打印私钥、Token 或完整配置。
 - **Sa-Token 认证异常被通用处理器抢先捕获**: `NotLoginException`/`NotPermissionException`/`NotRoleException` 均继承自 `RuntimeException`。全局有多个 `@RestControllerAdvice`，其中 `GlobalExceptionHandler` 标了 `@Order(1)` 且含 `@ExceptionHandler(RuntimeException.class)`，若不提升 `SaTokenExceptionHandler` 优先级，认证异常会被它抢先捕获，执行 `R.fail(e.getMessage())` 返回 500 且把 "token 已被冻结：eyJ…" 等 JWT 明文暴露给前端。`SaTokenExceptionHandler` 已加 `@Order(Ordered.HIGHEST_PRECEDENCE)` 确保认证/鉴权异常优先返回 401/403。新增其它 `@RestControllerAdvice` 时，若其处理 `RuntimeException` 子类，务必用 `@Order` 控制优先级，否则同样会被 `GlobalExceptionHandler` 抢先。
+
+### 自研报表模块（2026-10-15）
+
+- 继续使用ruoyi-report；P0/E0/E1原生能力保留，新增E2受控QueryModel目录、E3交叉聚合/同快照钻取、E4私有图片/条码/分组/批次、E5固定仪表盘、E6S3/硬配额/索引/字体共享/公平执行、E7订阅/outbox/接收人私有交付。原积木清理是历史已授权范围，不因扩展重跑。
+- 元数据只走master：核心rpt九表加[E2–E7增量](script/sql/update/2026-10-15-report-e2-e7.sql)25表，共34。当前存量开发库只执行过P0/E0/E1；本次扩展仅隔离H2/MinIO验证，未迁移现有库或生产，执行目标库增量仍须核对授权。
+- 业务取数走common-report SPI及ERP/MES代码固定字段；QueryModel只能用批准的逻辑目录，规划语义版本进入固定依赖/范围指纹。独立查询账户默认禁用且须验证SELECT-only授权，禁止复用写账户。身份、资源ACL、业务范围和字段权限全部生效。
+- schema1/engine1.0.0与schema2/engine2.0.0显式注册；发布不可变、草稿revision、ID/DECIMAL字符串，浏览器不重算业务值。原生菜单根23000，新扩展23030–23090；授权入口支持REPORT/DATASET/QUERY/DASHBOARD/ASSET/BATCH/SUBSCRIPTION。
+- LOCAL默认私有./data/report；storage.manifestEnabled默认false以兼容旧结构。S3必须启用清单、专用私有未版本桶/无自动生命周期、同一storageId、独立节点暂存。不得公开URL或预签名交付。删除先提交DELETE_PENDING再物理封存确认释放配额；永久.fences/retired是一次性引用围栏元数据，不可被外部清理。IO不跨持全局配额锁，暂存只由稳定原节点回收。
+- 新计划格式2使用按租户checksum共享字体及读取租约/计划引用；格式1仍可读。快照索引校验真实块，S3 Range无需整份物化。字体路径和受控候选仍遵循nexus.report.font-path。
+- 订阅调度/真实通知默认false；已有授权outbox/交付维护独立运行。参数在校验前按scheduled Instant/ZoneId冻结，手动occurrence固定全接收人集合；取消不可复活；领取及通用导出实时复核创建者和接收人权限。只使用合成通知测试，不因维护自动创建订阅或真实通知。
+- 所有本次报表Java源码使用中文Javadoc，TS/Vue使用中文JSDoc；后续变更遵循相同注释和非零回归要求。详情见[使用指南](doc/system/guides/NexusERP_自研报表模块使用指南.md)、[E2–E7验证报告](doc/system/plans/2026-10-15-system-report-e2-e7-verification-report.md)。

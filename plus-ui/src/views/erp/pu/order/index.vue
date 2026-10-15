@@ -31,6 +31,8 @@
 
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
+      <!-- 使用当前单据的精确标识进入已授权报表，服务端再次校验业务范围。 -->
+      <BusinessReportButton dataset-code="ERP_PURCHASE_ORDER_DOCUMENT" parameter="orderId" :record-id="ids.length === 1 ? ids[0] : undefined" />
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:order:add']"> 新增 </el-button>
       </el-col>
@@ -150,6 +152,7 @@
 </template>
 
 <script setup lang="ts" name="PurchaseOrder">
+import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import {
   listPurchaseOrder,
   getPurchaseOrder,
@@ -170,18 +173,42 @@ import { createBusinessSession, normalizeBusinessId } from '@/utils/certified-bu
 import type { CertifiedBusinessSession } from '@/utils/certified-business';
 import CertifiedOrderWorkflowDialog from './CertifiedOrderWorkflowDialog.vue';
 
+/**
+ * 保存当前页面或测试的router状态。
+ */
 const router = useRouter();
+/**
+ * 保存当前页面或测试的certifiedOrderRef状态。
+ */
 const certifiedOrderRef = ref<InstanceType<typeof CertifiedOrderWorkflowDialog>>();
+/**
+ * 保存当前页面或测试的mutationReadPending状态。
+ */
 const mutationReadPending = ref(false);
+/**
+ * 保存当前页面或测试的{ proxy }状态。
+ */
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+/**
+ * 保存当前页面或测试的{ pu_purchase_order_status }状态。
+ */
 const { pu_purchase_order_status } = toRefs<any>(proxy.useDict('pu_purchase_order_status'));
 
 // 订单明细行（展开行按需加载）
+/**
+ * 保存当前页面或测试的orderLinesMap状态。
+ */
 const orderLinesMap = ref<Record<number, any[]>>({});
 // el-table expand-row-keys 要求 string[]（与 row-key 字符串匹配）
+/**
+ * 保存当前页面或测试的expandedRows状态。
+ */
 const expandedRows = ref<string[]>([]);
 
 // 查询参数
+/**
+ * 保存当前页面或测试的queryParams状态。
+ */
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -191,6 +218,21 @@ const queryParams = ref({
 });
 
 // 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+/**
+ * 保存当前页面或测试的{
+  loading,
+  list: orderList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleExport,
+  handleSelectionChange
+}状态。
+ */
 const {
   loading,
   list: orderList,
@@ -239,6 +281,11 @@ function handleCertified(row?: any) {
     proxy.$modal.msgWarning('原订单身份不完整，不猜测ID。');
   }
 }
+/**
+ * 处理当前报表的readOrdinaryOrder契约或受控操作。
+ * @param id 固定标识，按字符串传输以保留完整精度
+ * @param session 当前契约的session配置或状态
+ */
 async function readOrdinaryOrder(id: string, session?: CertifiedBusinessSession) {
   const fixed = session ?? createBusinessSession(() => getToken());
   const actor = await getCertifiedOrderContext(fixed);
@@ -259,6 +306,10 @@ async function readOrdinaryOrder(id: string, session?: CertifiedBusinessSession)
     (h.requisitionId == null || h.requisitionSourceType === 'MANUAL');
   return { session: fixed, native, ordinary };
 }
+/**
+ * 处理当前报表的handleUpdate契约或受控操作。
+ * @param row 当前契约的row配置或状态
+ */
 async function handleUpdate(row?: any) {
   if (mutationReadPending.value) return;
   const value = row?.orderId ?? (ids.value.length === 1 ? ids.value[0] : null);
@@ -282,6 +333,10 @@ async function handleUpdate(row?: any) {
     mutationReadPending.value = false;
   }
 }
+/**
+ * 处理当前报表的handleDelete契约或受控操作。
+ * @param row 当前契约的row配置或状态
+ */
 async function handleDelete(row?: any) {
   if (mutationReadPending.value) return;
   const selected = (row?.orderId != null ? [row.orderId] : ids.value).map(normalizeBusinessId);
@@ -342,6 +397,9 @@ const handleExpandChange = (row: any, expandedRows: any[]) => {
 const fmtAmount = (v: number | undefined | null): string =>
   Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/**
+ * 保存当前页面或测试的getReceiveStatusType状态。
+ */
 const getReceiveStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
   const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     NOT_RECEIVED: 'info',
@@ -353,6 +411,9 @@ const getReceiveStatusType = (status: string): 'success' | 'warning' | 'danger' 
   return map[status] || 'info';
 };
 
+/**
+ * 保存当前页面或测试的getReceiveStatusLabel状态。
+ */
 const getReceiveStatusLabel = (status: string): string => {
   const map: Record<string, string> = {
     NOT_RECEIVED: '未收货',
@@ -364,6 +425,9 @@ const getReceiveStatusLabel = (status: string): string => {
   return map[status] || status || '未知';
 };
 
+/**
+ * 保存当前页面或测试的calcReceiveProgress状态。
+ */
 const calcReceiveProgress = (row: any): number => {
   if (!row.orderQuantity || row.orderQuantity === 0) return 0;
   const received = row.receivedQuantity || 0;
@@ -377,6 +441,9 @@ const netOrderQuantity = (row: any) => {
   return Math.max(ordered - returned, 0);
 };
 
+/**
+ * 保存当前页面或测试的getProgressColor状态。
+ */
 const getProgressColor = (row: any): string => {
   const progress = calcReceiveProgress(row);
   if (progress >= 100) return '#67c23a';

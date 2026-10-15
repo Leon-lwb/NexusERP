@@ -104,3 +104,6 @@ doc/ai/benchmark/delivery-risk/reports/latest.md
 # 本地竞赛与方案文档（已跟踪文件需另行取消跟踪）
 /doc/ai/competition/
 /docs/
+
+# Private self-developed report snapshots and exports
+/data/report/

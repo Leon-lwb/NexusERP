@@ -462,6 +462,11 @@
                 <artifactId>ruoyi-report</artifactId>
                 <version>${revision}</version>
             </dependency>
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-common-report</artifactId>
+                <version>${revision}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>
@@ -585,15 +590,7 @@
             </releases>
         </repository>
         <!-- JEECG 仓库 (积木报表) -->
-        <repository>
-            <id>jeecg</id>
-            <name>jeecg nexus</name>
-            <url>https://nexus.jeecg.org/repository/jeecg-public/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-    </repositories>
+</repositories>
 
     <pluginRepositories>
         <pluginRepository>

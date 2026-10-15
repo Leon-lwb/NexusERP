@@ -1,73 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>com.nexus</groupId>
-        <artifactId>ruoyi-modules</artifactId>
-        <version>${revision}</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
+    <parent><groupId>com.nexus</groupId><artifactId>ruoyi-modules</artifactId><version>${revision}</version></parent>
     <artifactId>ruoyi-report</artifactId>
-
-    <description>
-        积木报表 (JimuReport) 模块
-    </description>
-
+    <description>Nexus 自研报表定义、运行引擎与设计器服务</description>
     <dependencies>
-
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-satoken</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-tenant</artifactId>
-        </dependency>
-
-        <!-- 积木报表 Spring Boot 3 Starter -->
-        <dependency>
-            <groupId>org.jeecgframework.jimureport</groupId>
-            <artifactId>jimureport-spring-boot3-starter</artifactId>
-            <version>2.3.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-reload4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- 积木报表大屏设计器 (JimuBI) -->
-        <dependency>
-            <groupId>org.jeecgframework.jimureport</groupId>
-            <artifactId>jimubi-spring-boot3-starter</artifactId>
-            <version>2.3.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-reload4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-job</artifactId></dependency>
+        <dependency><groupId>software.amazon.awssdk</groupId><artifactId>s3</artifactId></dependency>
+        <dependency><groupId>com.google.zxing</groupId><artifactId>core</artifactId><version>3.5.3</version></dependency>
+        <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-core</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-report</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-core</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-satoken</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-mybatis</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-web</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-tenant</artifactId></dependency>
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-excel</artifactId></dependency>
+        <dependency><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId></dependency>
+        <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.3.232</version><scope>test</scope></dependency>
     </dependencies>
-
 </project>

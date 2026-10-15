@@ -126,6 +126,7 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-report</artifactId></dependency>
     </dependencies>
 
 </project>
