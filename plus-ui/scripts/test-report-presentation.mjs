@@ -11,7 +11,8 @@ await build({
   platform: 'node'
 });
 /** 导入只处理界面资源和字段描述的展示辅助函数。 */
-const { filterReports, reportCounts, filterFields, statusPresentation } = await import('../node_modules/.tmp/report-presentation.mjs');
+const { filterReports, reportCounts, filterFields, statusPresentation, summaryGroupText } =
+  await import('../node_modules/.tmp/report-presentation.mjs');
 /** 使用超过安全整数范围的字符串 ID，避免测试意外容忍数值转换。 */
 const reports = [
   { id: '9223372036854775807', name: '库存余额', code: 'STOCK_BALANCE', kind: 'TABLE', status: 'PUBLISHED', catalogId: '9223372036854775806' },
@@ -64,4 +65,20 @@ test('中文状态覆盖任务和资源，未知状态安全回退', () => {
   assert.equal(statusPresentation('CANCEL_REQUESTED').label, '取消中');
   assert.deepEqual(statusPresentation('FUTURE_STATE'), { label: 'FUTURE_STATE', type: 'info' });
   assert.equal(statusPresentation(null).label, '—');
+});
+
+/** 汇总维度使用中文业务标题，仍原样展示服务端精确值。 */
+test('汇总分区优先列标题并保留完整ID和小数文本', () => {
+  const group = {
+    materialCode: { type: 'STRING', value: '00001' },
+    unitName: { type: 'STRING', value: 'KG' },
+    currency: { type: 'STRING', value: 'CNY' },
+    customId: { type: 'ID', value: '9223372036854775807' },
+    customDecimal: { type: 'DECIMAL', value: '0.100000000000000001' }
+  };
+  assert.equal(
+    summaryGroupText(group, [{ field: 'customId', label: '批次标识' }]),
+    '物料编码=00001，单位=KG，币种=CNY，批次标识=9223372036854775807，customDecimal=0.100000000000000001'
+  );
+  assert.equal(summaryGroupText({}), '');
 });

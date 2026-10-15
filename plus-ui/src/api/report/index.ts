@@ -141,6 +141,17 @@ export interface LookupBinding {
   /** 保存待核对权限。 */
   permission: string;
 }
+/** 业务选择器的人类可读标签与完整字符串值。 */
+export interface LookupOption {
+  /** 完整ID或业务编码，不经过Number转换。 */
+  value: string;
+  /** 经服务端权限复核的业务编码与名称。 */
+  label: string;
+}
+/** 按固定版本及参数回显已传入的ID，服务端对对象重新鉴权。 */
+export const reportLookupSelected = (version: string, parameter: string, value: string): Api<LookupOption | null> =>
+  request({ url: '/report/lookups/' + version + '/' + parameter + '/selected', params: { value } });
+
 /** 提供报表 `reportLookupBindings` 操作入口。 */
 export const reportLookupBindings = (version: string): Api<LookupBinding[]> => request({ url: '/report/lookups/' + version });
 /** 提供报表 `reportLookup` 操作入口。 */

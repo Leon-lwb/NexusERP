@@ -115,6 +115,18 @@ public final class ReportDatasetVersionService {
     }
 
     /**
+     * 选择器同时服务报表运行和数据集样例，仍复用对应的资源及字段检查。
+     *
+     * @param actor 当前服务端身份
+     * @param id 固定数据集版本ID
+     * @return 当前用户可见的固定契约
+     */
+    public View forLookup(ReportActor actor, String id) {
+        var current = definitions.resolve(actor.tenantId(), actor.userId());
+        return read(current, id, current.has("report:runtime:preview"));
+    }
+
+    /**
      * 读取并检查当前租户私有产物。
      *
      * @param actor 当前服务端身份

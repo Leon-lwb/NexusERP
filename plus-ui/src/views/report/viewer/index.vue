@@ -108,13 +108,7 @@
           <div v-for="(summary, index) in data.summaries" :key="index">
             <span
               >{{ summary.label
-              }}<small v-if="Object.keys(summary.group).length"
-                >（{{
-                  Object.entries(summary.group)
-                    .map(([k, v]) => k + '=' + v.value)
-                    .join('，')
-                }}）</small
-              ></span
+              }}<small v-if="Object.keys(summary.group).length">（{{ summaryGroupText(summary.group, published.dsl.columns) }}）</small></span
             ><strong>{{ summary.value.value ?? '—' }}</strong>
           </div>
         </div>
@@ -132,6 +126,7 @@ import { ArrowDown } from '@element-plus/icons-vue';
 import { publishedReport, createRun, runPage, runLayout, enqueueExport } from '@/api/report';
 import type { PublishedReport, ReportRun, PageData, RenderPlan, ExportFormat } from '@/types/report';
 import { parameterInput, exportFormats, requiresSnapshot as snapshotRequired, RequestGate } from '@/views/report/model';
+import { summaryGroupText } from '@/views/report/presentation';
 import ReportPage from '@/components/report/ReportPage.vue';
 import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';

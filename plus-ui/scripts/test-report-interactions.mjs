@@ -50,6 +50,7 @@ const apiNames = [
   'copyReport',
   'reportLookup',
   'reportLookupBindings',
+  'reportLookupSelected',
   'businessReportTemplates',
   'retryExport'
 ];
@@ -100,6 +101,7 @@ const componentPaths = {
   contract: 'DatasetContractBar',
   batch: 'DesignerBatchTools',
   lookup: 'ParameterLookup',
+  parameterForm: 'ParameterForm',
   business: 'BusinessReportButton',
   package: 'TemplatePackageDialog'
 };
@@ -149,6 +151,8 @@ const batch = (await import(pathToFileURL(resolve('node_modules/.tmp/report-batc
  * 保存当前页面或测试的lookup状态。
  */
 const lookup = (await import(pathToFileURL(resolve('node_modules/.tmp/report-lookup-interaction.mjs')))).default;
+/** 挂载参数表单以验证业务名称和完整ID输入契约。 */
+const parameterForm = (await import(pathToFileURL(resolve('node_modules/.tmp/report-parameterForm-interaction.mjs')))).default;
 /**
  * 保存当前页面或测试的templateDialog状态。
  */
@@ -244,6 +248,7 @@ function mount(component, id = '9223372036854775806', overrides = {}, props = {}
       publishedReport: async () => ({ data: { versionId: 'version', number: 1, dsl: structuredClone(dsl) } }),
       listDatasets: async () => ({ data: [] }),
       reportLookupBindings: async () => ({ data: [] }),
+      reportLookupSelected: async () => ({ data: null }),
       reportLookup: async () => ({ data: { options: [], total: 0 } }),
       datasetVersion: async () => ({
         data: {
@@ -1428,4 +1433,262 @@ test('报表中心快捷入口只接受实际注册路由，拒绝404兜底匹�
   x.fixture.router.resolve = () => ({ matched: [{ path: '/report' }, { path: '/report/dashboard' }] });
   assert.equal(x.state.routeAvailable('/report/dashboard'), true);
   x.unmount();
+});
+
+/** 预选ID回显名称，始终保留原字符串参数，不额外触发参数改变。 */
+test('预选雪花ID按值回显业务名称且不自动改写参数', async (t) => {
+  const changes = [];
+  const x = mount(
+    lookup,
+    '',
+    { reportLookupSelected: async (_v, _p, value) => ({ data: { value, label: 'PO-SYNTH · 合成供应商' } }) },
+    {
+      modelValue: '9223372036854775807',
+      version: 'v',
+      parameter: 'orderId',
+      label: '采购订单',
+      'onUpdate:modelValue': (value) => changes.push(value)
+    }
+  );
+  t.after(x.unmount);
+  await flush();
+  assert.equal(x.state.selected.label, 'PO-SYNTH · 合成供应商');
+  assert.equal(x.state.resolving, false);
+  assert.deepEqual(changes, []);
+});
+/** 快速切换业务对象，旧名称不能覆盖新的选择。 */
+test('ID回显迟到结果不能替换新选中对象', async (t) => {
+  const old = defer(),
+    current = defer();
+  const x = mount(
+    lookup,
+    '',
+    { reportLookupSelected: (_v, _p, value) => (value === '1' ? old.promise : current.promise) },
+    { modelValue: '1', version: 'v', parameter: 'orderId', label: '订单' }
+  );
+  t.after(x.unmount);
+  x.props.modelValue = '9223372036854775807';
+  await nextTick();
+  current.resolve({ data: { value: '9223372036854775807', label: '最新名称' } });
+  await flush();
+  old.resolve({ data: { value: '1', label: '旧名称' } });
+  await flush();
+  assert.equal(x.state.selected.label, '最新名称');
+});
+/** 已选对象可固定显示，搜索分页去重不把固定对象算入已加载数量。 */
+test('候选分页去重并保留已选名称', async (t) => {
+  const x = mount(
+    lookup,
+    '',
+    {
+      reportLookupSelected: async () => ({ data: { value: '1', label: '固定已选' } }),
+      reportLookup: async (_v, _p, _k, page) => ({
+        data: {
+          total: 2,
+          options:
+            page === 1
+              ? [{ value: '2', label: '候选二' }]
+              : [
+                  { value: '2', label: '候选二' },
+                  { value: '3', label: '候选三' }
+                ]
+        }
+      })
+    },
+    { modelValue: '1', version: 'v', parameter: 'orderId', label: '订单' }
+  );
+  t.after(x.unmount);
+  await flush();
+  await x.state.search('合成');
+  await x.state.more();
+  assert.deepEqual(
+    x.state.options.map((option) => option.value),
+    ['2', '3']
+  );
+  assert.equal(x.state.selected.label, '固定已选');
+  assert.equal(x.state.total, 2);
+});
+/** 回显失败或对象不可见不会悄悄清空原参数；可显式重试名称读取。 */
+test('名称回显失败可重试且不清空完整ID', async (t) => {
+  const changes = [];
+  const x = mount(
+    lookup,
+    '',
+    {
+      reportLookupSelected: async () => {
+        throw Error('合成网络失败');
+      }
+    },
+    { modelValue: '9223372036854775807', version: 'v', parameter: 'orderId', label: '订单', 'onUpdate:modelValue': (value) => changes.push(value) }
+  );
+  t.after(x.unmount);
+  await flush();
+  assert.equal(x.state.selectionFailed, true);
+  assert.equal(x.props.modelValue, '9223372036854775807');
+  assert.deepEqual(changes, []);
+  x.fixture.api.reportLookupSelected = async () => ({ data: null });
+  await x.state.resolveSelected();
+  assert.equal(x.state.selectionUnavailable, true);
+  assert.equal(x.state.selectionFailed, false);
+  assert.deepEqual(changes, []);
+});
+/** 搜索失败不会增加已提交页码，重试保持相同筛选条件。 */
+test('候选搜索错误明确反馈且重试同一页', async (t) => {
+  const calls = [];
+  const x = mount(
+    lookup,
+    '',
+    {
+      reportLookup: async (_v, _p, keyword, page) => {
+        calls.push({ keyword, page });
+        throw Error('合成失败');
+      }
+    },
+    { modelValue: '', version: 'v', parameter: 'orderId', label: '订单' }
+  );
+  t.after(x.unmount);
+  await x.state.search('PO');
+  assert.equal(x.state.failed, true);
+  x.fixture.api.reportLookup = async (_v, _p, keyword, page) => {
+    calls.push({ keyword, page });
+    return { data: { total: 1, options: [{ value: '1', label: 'PO' }] } };
+  };
+  await x.state.retry();
+  assert.deepEqual(calls, [
+    { keyword: 'PO', page: 1 },
+    { keyword: 'PO', page: 1 }
+  ]);
+  assert.equal(x.state.failed, false);
+});
+/** 旧上下文中的延迟搜索不能对新的数据集参数发起查询。 */
+test('候选检索防抖在契约切换和卸载时取消', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const calls = [];
+  const x = mount(
+    lookup,
+    '',
+    {
+      reportLookup: async (...args) => {
+        calls.push(args);
+        return { data: { options: [], total: 0 } };
+      }
+    },
+    { modelValue: '', version: 'old', parameter: 'orderId', label: '订单' }
+  );
+  x.state.queueSearch('old');
+  x.props.version = 'new';
+  await nextTick();
+  t.mock.timers.tick(300);
+  await flush();
+  assert.equal(calls.length, 0);
+  x.state.queueSearch('first');
+  x.state.queueSearch('last');
+  t.mock.timers.tick(300);
+  await flush();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'new');
+  assert.equal(calls[0][2], 'last');
+  x.state.queueSearch('after');
+  x.unmount();
+  t.mock.timers.tick(300);
+  await flush();
+  assert.equal(calls.length, 1);
+});
+/** 数字型程序值已经可能损失精度，组件不能通过String转换伪装成完整ID。 */
+test('业务选择只接受字符串值，数字输入不向外提交', async (t) => {
+  const changes = [];
+  const x = mount(
+    lookup,
+    '',
+    {},
+    { modelValue: '', version: 'v', parameter: 'orderId', label: '订单', 'onUpdate:modelValue': (value) => changes.push(value) }
+  );
+  t.after(x.unmount);
+  x.state.select(9007199254740993);
+  x.state.select('9223372036854775807');
+  x.state.select(null);
+  assert.deepEqual(changes, ['9223372036854775807', '']);
+});
+/** 参数标签使用已授权业务名称，ID模型不接受已经舍入的Number。 */
+test('参数表单使用业务标签并保留完整ID类型', async (t) => {
+  const changes = [];
+  const parameter = { name: 'orderId', label: '采购订单ID', type: 'ID', required: true };
+  const x = mount(
+    parameterForm,
+    '',
+    { reportLookupBindings: async () => ({ data: [{ parameter: 'orderId', label: '采购订单' }] }) },
+    { datasetVersionId: 'v', parameters: [parameter], modelValue: {}, 'onUpdate:modelValue': (value) => changes.push(value) }
+  );
+  t.after(x.unmount);
+  await flush();
+  assert.equal(x.state.parameterLabel(parameter), '采购订单');
+  x.state.set('orderId', 9007199254740993);
+  x.state.set('orderId', '9223372036854775807');
+  assert.deepEqual(changes, [{ orderId: '9223372036854775807' }]);
+});
+
+/** 动态日期规则以清晰中文提示，日期计算由后端执行。 */
+test('参数表单显示受控日期默认规则', async (t) => {
+  const x = mount(parameterForm, '', {}, { parameters: [], modelValue: {} });
+  t.after(x.unmount);
+  assert.equal(x.state.datePlaceholder({ defaultValue: 'TODAY' }), '留空使用今天');
+  assert.equal(x.state.datePlaceholder({ defaultValue: 'MONTHS_AGO_6' }), '留空使用六个月前');
+  assert.equal(x.state.datePlaceholder({ defaultValue: null }), '选择日期');
+});
+
+/** OFFSET分页发生重叠时，原始已消费条数和空页决定结束，不受去重数影响。 */
+test('候选分页遇到重复和末页后停止加载', async (t) => {
+  const calls = [];
+  const x = mount(
+    lookup,
+    '',
+    {
+      reportLookup: async (_v, _p, _k, page) => {
+        calls.push(page);
+        return {
+          data: {
+            total: 41,
+            options:
+              page === 1
+                ? Array.from({ length: 20 }, (_, i) => ({ value: String(i + 1), label: '对象' + (i + 1) }))
+                : page === 2
+                  ? Array.from({ length: 20 }, (_, i) => ({ value: String(i + 20), label: '对象' + (i + 20) }))
+                  : page === 3
+                    ? [{ value: '40', label: '对象40' }]
+                    : []
+          }
+        };
+      }
+    },
+    { modelValue: '', version: 'v', parameter: 'materialId', label: '物料' }
+  );
+  t.after(x.unmount);
+  await x.state.search('');
+  await x.state.more();
+  await x.state.more();
+  await x.state.more();
+  await x.state.more();
+  assert.equal(x.state.options.length, 40);
+  assert.deepEqual(calls, [1, 2, 3]);
+});
+/** 总数过期仍须以空页结束，避免不断请求不存在的后续页。 */
+test('候选分页空页即停止且保留已加载候选', async (t) => {
+  const calls = [];
+  const x = mount(
+    lookup,
+    '',
+    {
+      reportLookup: async (_v, _p, _k, page) => {
+        calls.push(page);
+        return { data: { total: 200, options: page === 1 ? [{ value: '1', label: '已存在' }] : [] } };
+      }
+    },
+    { modelValue: '', version: 'v', parameter: 'materialId', label: '物料' }
+  );
+  t.after(x.unmount);
+  await x.state.search('');
+  await x.state.more();
+  await x.state.more();
+  assert.deepEqual(calls, [1, 2]);
+  assert.equal(x.state.options[0].value, '1');
 });

@@ -1,9 +1,9 @@
 <template>
-  <ReportPage title="报表中心" description="查找业务报表与打印单据，按已发布版本运行。" class="report-center">
+  <ReportPage title="报表中心" description="查找业务台账、执行明细与打印单据，按已发布版本运行。" class="report-center">
     <template #actions>
       <el-button v-hasPermi="['report:catalog:manage']" class="center-mobile-catalog" @click="addCatalog">新建目录</el-button>
       <el-button v-hasPermi="['report:definition:add']" @click="openPackageImport">导入模板包</el-button>
-      <el-button v-hasPermi="['report:dataset:manage']" :loading="initializing" @click="bootstrap">创建初始模板</el-button>
+      <el-button v-hasPermi="['report:dataset:manage']" :loading="initializing" @click="bootstrap">创建基础报表</el-button>
       <el-button v-hasPermi="['report:definition:add']" type="primary" icon="Plus" @click="router.push('/report/designer')">新建报表</el-button>
     </template>
     <div class="center-stats" aria-label="按发布状态筛选当前可见报表">
@@ -370,12 +370,12 @@ async function load() {
     if (gate.current(ticket)) loading.value = false;
   }
 }
-/** 显式准备当前管理员有业务权限的初始模板。 */
+/** 按当前业务与字段权限增量创建基础报表。 */
 async function bootstrap() {
   initializing.value = true;
   try {
     const response = await bootstrapReports();
-    ElMessage.success('已准备 ' + response.data.length + ' 个当前业务权限可用的初始模板');
+    ElMessage.success('已准备 ' + response.data.length + ' 个当前权限可用的基础报表');
     await load();
   } catch {
   } finally {

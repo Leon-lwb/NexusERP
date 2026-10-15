@@ -74,7 +74,10 @@
               ></el-table
             ></el-tab-pane
           ><el-tab-pane label="数据样例" name="sample"
-            ><ParameterForm v-model="parameters" :parameters="selected.descriptor.parameters" /><el-button
+            ><ParameterForm
+              v-model="parameters"
+              :dataset-version-id="selected.dataset.publishedVersion || undefined"
+              :parameters="selected.descriptor.parameters" /><el-button
               v-hasPermi="['report:dataset:list']"
               type="primary"
               :loading="sampling"

@@ -70,4 +70,17 @@ public interface ReportLookupProvider {
      * @return 当前处理返回的固定结果
      */
     Result query(ReportLookupBinding binding, ReportExecutionContext context, Query query);
+
+    /**
+     * 按已传入的完整值回显当前有权访问的业务对象。
+     *
+     * @param binding 代码注册的固定契约及参数绑定
+     * @param context 当前身份和业务范围
+     * @param value 未经浮点转换的完整ID或编码
+     * @return 可见对象；旧提供者未实现时保持为空，不扩大候选范围
+     */
+    default Optional<Option> selected(
+            ReportLookupBinding binding, ReportExecutionContext context, String value) {
+        return Optional.empty();
+    }
 }

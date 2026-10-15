@@ -57,8 +57,7 @@ public final class ReportLookupService {
                                                 binding.providerVersion(),
                                                 binding.parameter()),
                                         new Registered(binding, provider))
-                                != null)
-                    throw new IllegalStateException("Invalid or duplicate report lookup");
+                                != null) throw new IllegalStateException("报表选择器绑定无效或重复");
             }
     }
 
@@ -70,7 +69,7 @@ public final class ReportLookupService {
      * @return 当前处理返回的固定结果
      */
     public List<ReportLookupBinding> bindings(ReportActor actor, String version) {
-        var descriptor = versions.forRuntime(actor, version).descriptor();
+        var descriptor = versions.forLookup(actor, version).descriptor();
         var current = definitions.resolve(actor.tenantId(), actor.userId());
         return descriptor.parameters().stream()
                 .map(p -> installed.get(new Key(descriptor.code(), descriptor.version(), p.name())))
@@ -92,7 +91,7 @@ public final class ReportLookupService {
     public ReportLookupProvider.Result query(
             ReportActor actor, String version, String parameter, ReportLookupProvider.Query query) {
         var current = definitions.resolve(actor.tenantId(), actor.userId());
-        var descriptor = versions.forRuntime(current, version).descriptor();
+        var descriptor = versions.forLookup(current, version).descriptor();
         if (descriptor.parameters().stream().noneMatch(p -> p.name().equals(parameter)))
             throw ReportFault.invalid("选择器参数未声明");
         var entry = installed.get(new Key(descriptor.code(), descriptor.version(), parameter));
@@ -114,7 +113,63 @@ public final class ReportLookupService {
                                                 || o.label().length() > 500))
             throw ReportFault.capacity();
         var refreshed = definitions.resolve(current.tenantId(), current.userId());
-        versions.forRuntime(refreshed, version);
+        versions.forLookup(refreshed, version);
+        if (!refreshed.equals(current)) throw new ReportFault("SCOPE_CHANGED", "选择器权限已变化", 409);
+        return result;
+    }
+
+    /**
+     * 按完整ID或编码读取名称，单独校验当前参数，不要求填写其余报表参数。
+     *
+     * @param actor 当前服务端身份
+     * @param version 固定数据集版本ID
+     * @param parameter 已声明的业务参数
+     * @param value 未经浮点转换的完整值
+     * @return 当前可见对象；不存在或不可见时为空
+     */
+    public Optional<ReportLookupProvider.Option> selected(
+            ReportActor actor, String version, String parameter, String value) {
+        var current = definitions.resolve(actor.tenantId(), actor.userId());
+        var descriptor = versions.forLookup(current, version).descriptor();
+        var declared =
+                descriptor.parameters().stream()
+                        .filter(p -> p.name().equals(parameter))
+                        .findFirst()
+                        .orElseThrow(() -> ReportFault.invalid("选择器参数未声明"));
+        var entry = installed.get(new Key(descriptor.code(), descriptor.version(), parameter));
+        if (entry == null) throw new ReportFault("LOOKUP_UNSUPPORTED", "该参数没有安装选择器", 404);
+        ReportDefinitionService.require(current, entry.binding().permission());
+        if (value == null || value.isBlank() || value.length() > 500)
+            throw ReportFault.invalid("候选值无效");
+        var single =
+                new DatasetDescriptor(
+                        descriptor.code(),
+                        descriptor.name(),
+                        descriptor.version(),
+                        descriptor.permission(),
+                        descriptor.document(),
+                        descriptor.fields(),
+                        List.of(declared),
+                        descriptor.defaultColumns());
+        String normalized =
+                DatasetQueryValidator.parameters(single, Map.of(parameter, value))
+                        .get(parameter)
+                        .toString();
+        var scopes = List.of(current.scopeFor(entry.binding().permission()));
+        var result =
+                entry.provider()
+                        .selected(
+                                entry.binding(),
+                                new ReportExecutionContext(current, scopes),
+                                normalized);
+        if (result == null
+                || result.isPresent()
+                        && (!normalized.equals(result.get().value())
+                                || result.get().label() == null
+                                || result.get().label().length() > 500))
+            throw ReportFault.capacity();
+        var refreshed = definitions.resolve(current.tenantId(), current.userId());
+        versions.forLookup(refreshed, version);
         if (!refreshed.equals(current)) throw new ReportFault("SCOPE_CHANGED", "选择器权限已变化", 409);
         return result;
     }

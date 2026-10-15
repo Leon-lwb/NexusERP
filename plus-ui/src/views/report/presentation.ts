@@ -1,4 +1,4 @@
-import type { ReportDefinition } from '@/types/report';
+import type { ReportDefinition, ReportColumn, TypedValue } from '@/types/report';
 
 /** 报表展示筛选；目录和资源 ID 始终保留完整字符串。 */
 export interface ReportFilters {
@@ -84,4 +84,20 @@ export function reportCounts(rows: Pick<ReportDefinition, 'status'>[]) {
 export function filterFields<T extends { name: string; label: string; type: string }>(fields: T[], search: string): T[] {
   const keyword = search.trim().toLocaleLowerCase();
   return fields.filter((field) => !keyword || [field.label, field.name, field.type].some((value) => value.toLocaleLowerCase().includes(keyword)));
+}
+
+/**
+ * 将服务端汇总分区的字段名替换为业务标签，原样保留精确值。
+ * @param group 服务端已计算的汇总维度
+ * @param columns 当前已授权报表列，可提供用户自定义标题
+ * @returns 可直接展示的分区说明
+ */
+export function summaryGroupText(group: Record<string, TypedValue>, columns: Pick<ReportColumn, 'field' | 'label'>[] = []): string {
+  const labels: Record<string, string> = { currency: '币种', materialCode: '物料编码', unitName: '单位' };
+  return Object.entries(group)
+    .map(
+      ([name, value]) =>
+        (columns.find((column) => column.field === name)?.label || (Object.hasOwn(labels, name) ? labels[name] : name)) + '=' + (value.value ?? '—')
+    )
+    .join('，');
 }

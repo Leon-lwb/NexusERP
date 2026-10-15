@@ -1,9 +1,12 @@
 <template>
   <el-form inline label-position="top" class="report-parameters" @submit.prevent>
+    <div v-if="bindingsFailed" class="report-parameters__notice" role="status">
+      <span>业务筛选配置读取失败，原参数已保留</span><el-button link type="primary" @click="loadBindings">重试筛选配置</el-button>
+    </div>
     <el-form-item
       v-for="parameter in parameters"
       :key="parameter.name"
-      :label="parameter.label"
+      :label="parameterLabel(parameter)"
       :required="parameter.required && !parameter.defaultValue"
     >
       <ParameterLookup
@@ -11,7 +14,7 @@
         :model-value="modelValue[parameter.name] || ''"
         :version="datasetVersionId"
         :parameter="parameter.name"
-        :label="parameter.label"
+        :label="parameterLabel(parameter)"
         @update:model-value="set(parameter.name, $event)"
       />
       <el-date-picker
@@ -20,7 +23,7 @@
         type="date"
         value-format="YYYY-MM-DD"
         clearable
-        :placeholder="parameter.defaultValue ? '留空使用默认日期' : '选择日期'"
+        :placeholder="datePlaceholder(parameter)"
         @update:model-value="set(parameter.name, $event)"
       />
       <el-select
@@ -34,7 +37,16 @@
       <el-input
         v-else
         :model-value="modelValue[parameter.name] || ''"
-        :placeholder="parameter.defaultValue ? '留空使用默认值' : parameter.label"
+        :placeholder="
+          parameter.type === 'ID'
+            ? bindingsLoading
+              ? '正在读取业务筛选配置…'
+              : '输入完整ID，按文本保存'
+            : parameter.defaultValue
+              ? '留空使用默认值'
+              : parameter.label
+        "
+        :disabled="parameter.type === 'ID' && bindingsLoading"
         clearable
         @update:model-value="set(parameter.name, $event)"
       />
@@ -75,27 +87,62 @@ const bindings = ref<LookupBinding[]>([]);
  * 保存当前页面或测试的gate状态。
  */
 const gate = new RequestGate();
-watch(
-  () => props.datasetVersionId,
-  async (version) => {
-    const ticket = gate.begin();
-    bindings.value = [];
-    if (!version) return;
-    try {
-      const response = await reportLookupBindings(version);
-      if (gate.current(ticket)) bindings.value = response.data;
-    } catch {}
-  },
-  { immediate: true }
-);
+/** 读取固定版本的候选绑定期间，避免把ID误认为普通名称输入。 */
+const bindingsLoading = ref(false);
+/** 绑定读取失败可重试，原参数仍保持完整文本。 */
+const bindingsFailed = ref(false);
+/** 根据可信默认标记解释日期范围，具体日期由服务端按运行时解析。 */
+function datePlaceholder(parameter: ReportParameter): string {
+  if (parameter.defaultValue === 'TODAY') return '留空使用今天';
+  if (parameter.defaultValue === 'MONTHS_AGO_6') return '留空使用六个月前';
+  return parameter.defaultValue ? '留空使用默认日期' : '选择日期';
+}
+/** 根据固定版本读取当前有业务权限的候选，不更改参数值。 */
+async function loadBindings() {
+  const ticket = gate.begin();
+  bindings.value = [];
+  bindingsLoading.value = false;
+  bindingsFailed.value = false;
+  const version = props.datasetVersionId;
+  if (!version || !props.parameters.length) return;
+  bindingsLoading.value = true;
+  try {
+    const response = await reportLookupBindings(version);
+    if (gate.current(ticket)) bindings.value = response.data;
+  } catch {
+    if (gate.current(ticket)) bindingsFailed.value = true;
+  } finally {
+    if (gate.current(ticket)) bindingsLoading.value = false;
+  }
+}
+/** 已注册参数优先展示业务对象名称，保留未注册自定义参数的原标签。 */
+function parameterLabel(parameter: ReportParameter): string {
+  return bindings.value.find((binding) => binding.parameter === parameter.name)?.label || parameter.label;
+}
+watch(() => [props.datasetVersionId, props.parameters.map((parameter) => parameter.name + ':' + parameter.type).join('|')], loadBindings, {
+  immediate: true,
+  flush: 'sync'
+});
 onUnmounted(() => gate.invalidate());
 /** 处理当前报表的 `set` 操作。 */
 function set(name: string, value: unknown) {
+  if (props.parameters.find((parameter) => parameter.name === name)?.type === 'ID' && value != null && typeof value !== 'string') return;
   emit('update:modelValue', { ...props.modelValue, [name]: value == null ? '' : String(value) });
 }
 </script>
 
 <style scoped>
+.report-parameters__notice {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--el-color-warning);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
 .report-parameters {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -106,6 +153,8 @@ function set(name: string, value: unknown) {
   min-width: 0;
 }
 .report-parameters :deep(.el-form-item__label) {
+  width: auto;
+  max-width: 100%;
   font-size: 12px;
   font-weight: 500;
 }

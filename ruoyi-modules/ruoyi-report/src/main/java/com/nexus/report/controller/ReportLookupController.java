@@ -1,6 +1,7 @@
 package com.nexus.report.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 
 import com.nexus.common.core.domain.R;
 import com.nexus.common.report.*;
@@ -13,7 +14,9 @@ import java.util.*;
 /** 固定契约参数的候选接口，不接收表名、SQL或身份。 */
 @RestController
 @RequestMapping("/report/lookups")
-@SaCheckPermission("report:runtime:preview")
+@SaCheckPermission(
+        value = {"report:runtime:preview", "report:dataset:list"},
+        mode = SaMode.OR)
 public class ReportLookupController {
     /** 保存当前 {@code actors} 值。 */
     private final ReportRequestActor actors;
@@ -66,5 +69,21 @@ public class ReportLookupController {
                         version,
                         parameter,
                         new ReportLookupProvider.Query(keyword, page, size)));
+    }
+
+    /**
+     * 回显已传入的业务对象名称，值始终由服务端重新鉴权解析。
+     *
+     * @param version 固定数据集版本ID
+     * @param parameter 已声明参数名
+     * @param value 完整ID或业务编码
+     * @return 当前可见候选或空值
+     */
+    @GetMapping("/{version}/{parameter}/selected")
+    public R<ReportLookupProvider.Option> selected(
+            @PathVariable String version,
+            @PathVariable String parameter,
+            @RequestParam String value) {
+        return R.ok(lookups.selected(actors.current(), version, parameter, value).orElse(null));
     }
 }

@@ -982,30 +982,31 @@ public class ReportDefinitionService {
             var descriptor = provider.descriptor();
             if (!current.has(descriptor.permission())) continue;
             Dataset dataset = registerDataset(current, descriptor.code(), descriptor.version());
-            String code = "BASE_" + descriptor.code();
-            var existing = store.definitionByCode(current.tenantId(), code);
-            if (existing.isPresent()) {
-                addExistingTemplate(results, current, existing.get());
-                continue;
+            for (var dsl :
+                    ReportTemplates.foundation(
+                            masked(descriptor, current), dataset.publishedVersion())) {
+                String code = dsl.code();
+                var existing = store.definitionByCode(current.tenantId(), code);
+                if (existing.isPresent()) {
+                    addExistingTemplate(results, current, existing.get());
+                    continue;
+                }
+                if (dsl.columns().isEmpty()) continue;
+                Definition created;
+                try {
+                    created = create(current, dsl, catalog);
+                } catch (DuplicateKeyException race) {
+                    Definition canonical =
+                            store.definitionByCode(current.tenantId(), code)
+                                    .orElseThrow(ReportDefinitionService::revisionConflict);
+                    addExistingTemplate(results, current, canonical);
+                    continue;
+                }
+                publish(current, created.id(), created.revision());
+                results.add(
+                        store.definition(current.tenantId(), created.id())
+                                .orElseThrow(ReportDefinitionService::missing));
             }
-            var dsl =
-                    ReportTemplates.initial(
-                            masked(descriptor, current), dataset.publishedVersion(), code);
-            if (dsl.columns().isEmpty()) continue;
-            Definition created;
-            try {
-                created = create(current, dsl, catalog);
-            } catch (DuplicateKeyException race) {
-                Definition canonical =
-                        store.definitionByCode(current.tenantId(), code)
-                                .orElseThrow(ReportDefinitionService::revisionConflict);
-                addExistingTemplate(results, current, canonical);
-                continue;
-            }
-            publish(current, created.id(), created.revision());
-            results.add(
-                    store.definition(current.tenantId(), created.id())
-                            .orElseThrow(ReportDefinitionService::missing));
         }
         return List.copyOf(results);
     }

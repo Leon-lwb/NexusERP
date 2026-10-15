@@ -428,4 +428,43 @@ class ReportDefinitionSecurityTest {
             assertEquals(1, f.store.versions("A", current.id()).size());
         }
     }
+
+    /** 验证重复创建基础报表保留用户自定义内容、修订以及下线和归档状态。 */
+    @Test
+    void foundationBootstrapNeverOverwritesCustomizedOrOfflineReports() {
+        try (var f = new RuntimeReviewFixture(directory)) {
+            var created =
+                    f.definitions.bootstrap(f.owner).stream()
+                            .filter(d -> d.code().equals("BASE_SECURE_TEST"))
+                            .findFirst()
+                            .orElseThrow();
+            var original = f.compiler.read(created.json(), ReportDsl.class);
+            var customized =
+                    new ReportDsl(
+                            original.schemaVersion(),
+                            original.code(),
+                            "自定义基础标题",
+                            original.kind(),
+                            original.datasetCode(),
+                            original.datasetVersionId(),
+                            original.columns(),
+                            original.parameters(),
+                            original.page(),
+                            original.headerRows(),
+                            original.footerRows(),
+                            original.summaries(),
+                            original.repeatHeader());
+            f.definitions.save(f.owner, created.id(), created.revision(), customized);
+            f.store.definitionState(f.owner, created.id(), "OFFLINE");
+            var before = f.store.definition("A", created.id()).orElseThrow();
+            f.definitions.bootstrap(f.owner);
+            assertEquals(before, f.store.definition("A", created.id()).orElseThrow());
+            f.store.definitionState(f.owner, created.id(), "ARCHIVED");
+            var archived = f.store.definition("A", created.id()).orElseThrow();
+            assertTrue(
+                    f.definitions.bootstrap(f.owner).stream()
+                            .noneMatch(d -> d.id().equals(created.id())));
+            assertEquals(archived, f.store.definition("A", created.id()).orElseThrow());
+        }
+    }
 }

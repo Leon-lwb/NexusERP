@@ -81,6 +81,7 @@ const apiNames = [
   'copyReport',
   'reportLookup',
   'reportLookupBindings',
+  'reportLookupSelected',
   'businessReportTemplates',
   'retryExport'
 ];
