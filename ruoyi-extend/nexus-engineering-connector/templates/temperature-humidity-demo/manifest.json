@@ -1,0 +1,29 @@
+{
+  "id": "temperature-humidity-demo",
+  "version": "1.0.0",
+  "name": "温湿度采集板集成演示模板",
+  "sha256": "0d603c67a2a7c9625bb202b54b4464a1961848fefcffc91f69d408170ea95b0d",
+  "projectFile": "NexusSensor.eprj3",
+  "reviewStatus": "INTEGRATION_DEMO_ONLY",
+  "canManufacture": false,
+  "validatedEditorVersion": "4.1.60.198f38ab",
+  "parameters": {
+    "boardWidthMm": {
+      "min": "40",
+      "max": "100",
+      "default": "50"
+    },
+    "boardHeightMm": {
+      "min": "30",
+      "max": "100",
+      "default": "35"
+    },
+    "layers": {
+      "enum": [
+        2
+      ],
+      "default": 2
+    }
+  },
+  "description": "自建SHT30布局与部分I2C走线样例，缺少完整原理图和电源布线，须工程师审查，不能投产。"
+}

@@ -1,0 +1,6 @@
+{
+  "serverUrl": "https://nexus.example.test",
+  "executable": "C:/Program Files/lceda-pro/lceda-pro.exe",
+  "workspaceRoot": "./.runtime",
+  "development": false
+}

@@ -20,6 +20,8 @@ interface ImportMetaEnv {
   VITE_APP_CLIENT_ID: string;
   VITE_APP_WEBSOCKET: string;
   VITE_APP_SSE: string;
+  /** 工程连接器前端入口，缺省关闭；后端开关仍独立校验。 */
+  VITE_APP_ENGINEERING_ENABLED?: string;
 }
 interface ImportMeta {
   readonly env: ImportMetaEnv;

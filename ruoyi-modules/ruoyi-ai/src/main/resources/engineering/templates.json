@@ -1,0 +1,41 @@
+{
+  "protocolVersion": "nexus-engineering/1",
+  "templates": [
+    {
+      "templateId": "temperature-humidity-demo",
+      "templateVersion": "1.0.0",
+      "templateSha256": "0d603c67a2a7c9625bb202b54b4464a1961848fefcffc91f69d408170ea95b0d",
+      "title": "温湿度采集板集成演示模板",
+      "parameters": {
+        "boardWidthMm": {
+          "required": true,
+          "min": "40",
+          "max": "100",
+          "defaultValue": "50",
+          "enumValues": []
+        },
+        "boardHeightMm": {
+          "required": true,
+          "min": "30",
+          "max": "100",
+          "defaultValue": "35",
+          "enumValues": []
+        },
+        "layers": {
+          "required": true,
+          "min": null,
+          "max": null,
+          "defaultValue": 2,
+          "enumValues": [
+            2
+          ]
+        }
+      },
+      "optionalModules": [],
+      "reviewStatus": "INTEGRATION_DEMO_ONLY",
+      "description": "自建SHT30布局与部分I2C走线样例，缺少完整原理图和电源布线，须工程师审查，不能投产。",
+      "validatedEditorVersion": "4.1.60.198f38ab",
+      "canManufacture": false
+    }
+  ]
+}

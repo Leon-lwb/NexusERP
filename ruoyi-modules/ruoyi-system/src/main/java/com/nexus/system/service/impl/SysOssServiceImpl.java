@@ -1,6 +1,7 @@
 package com.nexus.system.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.nexus.common.ai.engineering.EngineeringObjectNamespace;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -67,7 +68,8 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     public TableDataInfo<SysOssVo> queryPageList(SysOssBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SysOss> lqw = buildQueryWrapper(bo);
         Page<SysOssVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        List<SysOssVo> filterResult = StreamUtils.toList(result.getRecords(), this::matchingUrl);
+        List<SysOssVo> filterResult = result.getRecords().stream()
+            .filter(row -> !EngineeringObjectNamespace.isEngineering(row.getFileName())).map(this::matchingUrl).toList();
         result.setRecords(filterResult);
         return TableDataInfo.build(result);
     }
@@ -146,6 +148,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     private LambdaQueryWrapper<SysOss> buildQueryWrapper(SysOssBo bo) {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysOss> lqw = Wrappers.lambdaQuery();
+        lqw.notLikeRight(SysOss::getFileName, "engineering/");
         lqw.like(StringUtils.isNotBlank(bo.getFileName()), SysOss::getFileName, bo.getFileName());
         lqw.like(StringUtils.isNotBlank(bo.getOriginalName()), SysOss::getOriginalName, bo.getOriginalName());
         lqw.eq(StringUtils.isNotBlank(bo.getFileSuffix()), SysOss::getFileSuffix, bo.getFileSuffix());
@@ -164,10 +167,11 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
      * @param ossId 文件在数据库中的唯一标识
      * @return SysOssVo 对象，包含文件信息
      */
-    @Cacheable(cacheNames = CacheNames.SYS_OSS, key = "#ossId")
     @Override
     public SysOssVo getById(Long ossId) {
-        return baseMapper.selectVoById(ossId);
+        SysOssVo value = baseMapper.selectVoById(ossId);
+        // 必须每次核对保留命名空间，旧的通用缓存不能成为工程授权旁路。
+        return value != null && EngineeringObjectNamespace.isEngineering(value.getFileName()) ? null : value;
     }
 
 
@@ -266,6 +270,9 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
             // 做一些业务上的校验,判断是否需要校验
         }
         List<SysOss> list = baseMapper.selectByIds(ids);
+        if (list.stream().anyMatch(row -> EngineeringObjectNamespace.isEngineering(row.getFileName()))) {
+            throw new ServiceException("工程私有产物必须通过任务权限接口访问，禁止通用OSS删除");
+        }
         for (SysOss sysOss : list) {
             OssClient storage = OssFactory.instance(sysOss.getService());
             storage.delete(sysOss.getUrl());
@@ -280,6 +287,9 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
      * @return oss 匹配Url的OSS对象
      */
     private SysOssVo matchingUrl(SysOssVo oss) {
+        if (EngineeringObjectNamespace.isEngineering(oss.getFileName())) {
+            throw new ServiceException("工程私有产物不提供通用下载地址");
+        }
         OssClient storage = OssFactory.instance(oss.getService());
         // 仅修改桶类型为 private 的URL，临时URL时长为120s
         if (AccessPolicyType.PRIVATE == storage.getAccessPolicy()) {

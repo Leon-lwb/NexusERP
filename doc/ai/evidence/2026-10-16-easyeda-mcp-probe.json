@@ -1,0 +1,156 @@
+{
+  "timestamp": "2026-10-16T05:26:22.688Z",
+  "diagnostic": {
+    "protocolVersion": "nexus-engineering/1",
+    "nodeVersion": "v24.21.0",
+    "platform": "win32",
+    "connected": true,
+    "bridgeVersion": "4.1.60.198f38ab",
+    "versionMatch": true
+  },
+  "transportMode": "CLI_COMPAT",
+  "template": {
+    "id": "temperature-humidity-demo",
+    "version": "1.0.0",
+    "sha256": "0d603c67a2a7c9625bb202b54b4464a1961848fefcffc91f69d408170ea95b0d"
+  },
+  "scope": "LOCAL_STDIO_MCP_AND_OFFICIAL_CLI_ONLY_NO_NEXUS_OSS",
+  "tasks": [
+    {
+      "taskId": "1792128327629726",
+      "parameters": {
+        "boardWidthMm": 50,
+        "boardHeightMm": 35,
+        "layers": 2
+      },
+      "stages": [
+        "GENERATING",
+        "CHECKING_DRC",
+        "EXPORTING",
+        "EXPORTING",
+        "EXPORTING",
+        "EXPORTING"
+      ],
+      "errors": [],
+      "artifacts": [
+        {
+          "type": "PCB_MODEL_MTL",
+          "relativePath": "model/board.mtl",
+          "size": 745,
+          "sha256": "7634f8ecfdd51d38f66aa1cc1fc3de6a6ecb98c63cc9c637a5464b4995cb6188"
+        },
+        {
+          "type": "PCB_MODEL_OBJ",
+          "relativePath": "model/board.obj",
+          "size": 686802,
+          "sha256": "9aaad77d5e4be1b001d7cc73e47b6bdf072761404b926d46a0f15ef958a3fba3"
+        },
+        {
+          "type": "PCB_PREVIEW_2D",
+          "relativePath": "preview/top.png",
+          "size": 171510,
+          "sha256": "362bee4a4491a5ae637307dca23aafeded75f0bdfd8c81c8eacff7464bc3bc0f"
+        },
+        {
+          "type": "PCB_BOM",
+          "relativePath": "reports/bom.json",
+          "size": 898,
+          "sha256": "c36d821fdb4b87df1806b36802391bb3a2a98f114ecba63c8d1b5b54eda30a76"
+        },
+        {
+          "type": "PCB_DRC_REPORT",
+          "relativePath": "reports/drc.json",
+          "size": 1374,
+          "sha256": "8bd8726f834cc6ad90bb16be36a164a83c6f3d6e5875514055d732d52e9d8699"
+        },
+        {
+          "type": "PCB_NETLIST",
+          "relativePath": "reports/netlist.net",
+          "size": 10131,
+          "sha256": "f2534a057e43088d7274e2a3e69410c8af3b8b8f807edc6a21326558bb727e2a"
+        },
+        {
+          "type": "PCB_SOURCE",
+          "relativePath": "source.zip",
+          "size": 26481,
+          "sha256": "a51f8397b5fe9330741f3521928cf3a9969f3a6fafdd35208e5d683b2086a3e5"
+        }
+      ],
+      "drc": {
+        "status": "VIOLATIONS",
+        "errorCount": 8,
+        "warningCount": 0,
+        "truncated": false
+      },
+      "canManufacture": false
+    },
+    {
+      "taskId": "1792128352836535",
+      "parameters": {
+        "boardWidthMm": 60,
+        "boardHeightMm": 40,
+        "layers": 2
+      },
+      "stages": [
+        "GENERATING",
+        "CHECKING_DRC",
+        "EXPORTING",
+        "EXPORTING",
+        "EXPORTING",
+        "EXPORTING"
+      ],
+      "errors": [],
+      "artifacts": [
+        {
+          "type": "PCB_MODEL_MTL",
+          "relativePath": "model/board.mtl",
+          "size": 745,
+          "sha256": "7634f8ecfdd51d38f66aa1cc1fc3de6a6ecb98c63cc9c637a5464b4995cb6188"
+        },
+        {
+          "type": "PCB_MODEL_OBJ",
+          "relativePath": "model/board.obj",
+          "size": 686798,
+          "sha256": "b5b3f0e53738242f3f7693bd122868c96c8400a29deb6fcba94bd54519dab228"
+        },
+        {
+          "type": "PCB_PREVIEW_2D",
+          "relativePath": "preview/top.png",
+          "size": 151948,
+          "sha256": "f41c234e1a8022903e457327b890f85ecf4d1b56b78febf133dc8d1317a99553"
+        },
+        {
+          "type": "PCB_BOM",
+          "relativePath": "reports/bom.json",
+          "size": 898,
+          "sha256": "c36d821fdb4b87df1806b36802391bb3a2a98f114ecba63c8d1b5b54eda30a76"
+        },
+        {
+          "type": "PCB_DRC_REPORT",
+          "relativePath": "reports/drc.json",
+          "size": 1374,
+          "sha256": "8bd8726f834cc6ad90bb16be36a164a83c6f3d6e5875514055d732d52e9d8699"
+        },
+        {
+          "type": "PCB_NETLIST",
+          "relativePath": "reports/netlist.net",
+          "size": 10131,
+          "sha256": "df982e904f7c25b51520bff856fea451cd7859013c187031dc118cc54ed507fa"
+        },
+        {
+          "type": "PCB_SOURCE",
+          "relativePath": "source.zip",
+          "size": 26481,
+          "sha256": "6e764f3d5b96c500e76b1f0b6bf933e7f8e6db3f909532c00464c12bd9b24308"
+        }
+      ],
+      "drc": {
+        "status": "VIOLATIONS",
+        "errorCount": 8,
+        "warningCount": 0,
+        "truncated": false
+      },
+      "canManufacture": false
+    }
+  ]
+}

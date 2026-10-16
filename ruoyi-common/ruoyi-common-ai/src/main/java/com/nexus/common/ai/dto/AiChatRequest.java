@@ -76,4 +76,9 @@ public class AiChatRequest implements Serializable {
      * 用于长输出调用场景按调用封顶输出体量（配合 prompt 体量约束双保险，防失控超长输出）。</p>
      */
     private Integer maxOutputTokens;
+    /** 本次工程请求显式选择的本人设备；空值禁止自动选取其他设备。 */
+    private Long engineeringDeviceId;
+
+    /** 前端为本轮工程请求生成的稳定标识，服务端按 action 派生幂等键，模型无权覆盖。 */
+    private String engineeringRequestId;
 }

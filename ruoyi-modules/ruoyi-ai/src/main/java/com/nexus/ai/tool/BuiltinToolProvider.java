@@ -44,7 +44,7 @@ public interface BuiltinToolProvider {
     /**
      * 获取工具类别标签（用于 Agent 工具差异化注入）
      * <p>返回工具所属的类别，多个类别用逗号分隔。默认返回 "ALL" 表示适用于所有 Agent。</p>
-     * <p>可选值：QUERY（数据查询类）、REPORT（报表可视化类）、ALL（通用）</p>
+     * <p>可选值：QUERY（数据查询类）、REPORT（报表可视化类）、ALL（通用）、ENGINEERING（仅受控工程角色，禁止通用注入）</p>
      *
      * @return 工具类别标签，默认 "ALL"
      */

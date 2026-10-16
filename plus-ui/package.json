@@ -12,6 +12,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test:unit": "node scripts/ai-knowledge-mcp-unit-entry.mjs \"esbuild src/utils/safeExpression.ts --bundle --format=esm --outfile=node_modules/.tmp/safe-expression.mjs && node scripts/test-safe-expression.mjs && npm run test:decision-config && esbuild src/views/ai/decision/decisionViewModel.ts --bundle --format=esm --outfile=node_modules/.tmp/decision-view-model.mjs && node scripts/test-decision-view-model.mjs && node scripts/test-decision-ui-entries.mjs && esbuild src/views/ai/flow/designer/useFlowStore.ts --bundle --format=esm --platform=node --packages=external --outfile=node_modules/.tmp/system-flow-store.mjs && node scripts/test-system-flow-layout.mjs && npm run test:full-flow-ui && npm run test:competition-demo && node --test --test-concurrency=1 scripts/test-mes-spare-management.mjs scripts/test-mes-tooling-reference.mjs scripts/test-list-initialization.mjs scripts/test-cv-defect.mjs\" && npm run test:report",
+    "test:engineering": "node --test --test-concurrency=1 scripts/test-engineering-model.mjs scripts/test-engineering-artifacts.mjs scripts/test-engineering-obj.mjs scripts/test-engineering-chat.mjs",
     "test:decision-config": "esbuild src/views/ai/config/decisionValidation.ts --bundle --format=esm --outfile=node_modules/.tmp/decision-config.mjs && node scripts/test-decision-config.mjs",
     "lint:eslint": "eslint",
     "lint:eslint:fix": "eslint --fix",

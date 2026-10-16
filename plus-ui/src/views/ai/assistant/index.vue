@@ -159,6 +159,7 @@
             <span v-if="knowledgeLoadError" class="text-red-500">{{ knowledgeLoadError }}</span>
             <span v-else class="text-gray-500">仅显示匹配的前100项；选库不等于已命中资料</span>
           </div>
+          <EngineeringChatPanel :controller="engineering" :disabled="loading" />
           <el-input
             v-model="inputText"
             type="textarea"
@@ -268,6 +269,8 @@ import { AI_CHAT_MODE_OPTIONS } from '../constants';
 import DeepThinking from '@/components/ai/DeepThinking.vue';
 import WebSearchToggle from '@/components/ai/WebSearchToggle.vue';
 import ModelSelect from '@/components/ai/ModelSelect.vue';
+import EngineeringChatPanel from '@/components/ai/engineering/EngineeringChatPanel.vue';
+import { useEngineeringChat } from '@/components/ai/engineering/useEngineeringChat';
 import 'github-markdown-css';
 
 const { proxy } = getCurrentInstance() as any;
@@ -303,7 +306,10 @@ const loading = ref(false);
 const sessionLoading = ref(false);
 const messageListRef = ref<HTMLElement>();
 const sessions = ref<AiSession[]>([]);
-const currentSessionId = ref<number | string | null>(null);
+const currentSessionId = ref<string | null>(null);
+/** 会话切换后拒绝旧请求的迟到回执。 */
+const chatEpoch = ref(0);
+const engineering = useEngineeringChat(currentSessionId);
 const chatMode = ref('auto');
 /** 只使用已授权列表中的明确知识库，不自动选首项或回退跨库检索。 */
 const selectedKnowledgeId = ref('');
@@ -607,8 +613,10 @@ async function loadSessions() {
 
 /** 切换会话 */
 async function switchSession(sessionId: number | string) {
-  if (currentSessionId.value === sessionId) return;
-  currentSessionId.value = sessionId as any;
+  const normalizedSessionId = String(sessionId);
+  if (currentSessionId.value === normalizedSessionId) return;
+  chatEpoch.value++;
+  currentSessionId.value = normalizedSessionId;
   messages.value = [];
   loading.value = true;
   try {
@@ -642,6 +650,7 @@ async function switchSession(sessionId: number | string) {
 
 /** 新建会话 */
 function newSession() {
+  chatEpoch.value++;
   currentSessionId.value = null;
   messages.value = [];
   thinking.value = false;
@@ -663,17 +672,22 @@ async function sendMessage() {
     return;
   }
 
+  const epoch = chatEpoch.value;
+  const requestSessionId = currentSessionId.value;
+  const engineeringFields = engineering.prepare(text);
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
 
   await nextTick();
   scrollToBottom();
+  if (epoch !== chatEpoch.value) return;
 
   try {
     const res = await sendAiMessage({
+      ...engineeringFields,
       content: text,
-      sessionId: currentSessionId.value ?? undefined,
+      sessionId: requestSessionId ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
       knowledgeId: knowledgeRequest.knowledgeId,
       model: selectedModel.value || undefined,
@@ -682,11 +696,15 @@ async function sendMessage() {
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
     });
     // 后端返回 sessionId（新会话时为新 ID）
+    if (epoch !== chatEpoch.value) return;
     const sid = res?.data ?? res;
-    if (sid && (typeof sid === 'number' || typeof sid === 'string')) {
-      currentSessionId.value = sid as any;
+    if (sid && (typeof sid === 'string' || (typeof sid === 'number' && Number.isSafeInteger(sid)))) {
+      currentSessionId.value = String(sid);
+      engineering.sent();
     }
   } catch (e: any) {
+    if (epoch !== chatEpoch.value) return;
+    if (engineeringFields.engineeringRequestId) inputText.value = text;
     loading.value = false;
     thinking.value = false;
     messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` });
@@ -710,7 +728,7 @@ async function openToolDrawer() {
 async function refreshTokenUsage() {
   if (!currentSessionId.value) return;
   try {
-    const res = await getTokenUsage(currentSessionId.value as number);
+    const res = await getTokenUsage(currentSessionId.value);
     tokenUsage.value = res?.data?.totalTokens ?? 0;
   } catch {
     // 忽略
@@ -888,6 +906,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  chatEpoch.value++;
   knowledgeRequestVersion++;
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   window.removeEventListener('click', onGlobalClick);

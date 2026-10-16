@@ -1,6 +1,7 @@
 import { createWebHistory, createRouter, RouteRecordRaw } from 'vue-router';
 /** 页面布局容器。 */
 import Layout from '@/layout/index.vue';
+import { ENGINEERING_TASK_LIST_PATH, LEGACY_ENGINEERING_TASK_LIST_PATH } from '../views/ai/engineering/navigation';
 
 /**
  * 路由配置项说明
@@ -93,6 +94,26 @@ export const constantRoutes: RouteRecordRaw[] = [
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes: RouteRecordRaw[] = [
+  {
+    path: LEGACY_ENGINEERING_TASK_LIST_PATH,
+    redirect: ENGINEERING_TASK_LIST_PATH,
+    hidden: true,
+    permissions: ['ai:engineering:query']
+  },
+  {
+    path: '/ai/engineering/task/:taskId',
+    component: Layout,
+    hidden: true,
+    permissions: ['ai:engineering:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/ai/engineering/preview/index.vue'),
+        name: 'EngineeringPreview',
+        meta: { title: '工程任务详情', activeMenu: ENGINEERING_TASK_LIST_PATH, noCache: true }
+      }
+    ]
+  },
   {
     path: '/im',
     component: Layout,
