@@ -391,3 +391,175 @@ test('切换模板重置默认值与可选模块，不继承上个模板参数',
     page.unmount();
   }
 });
+
+const connectionTask = (state, diagnostic) => ({
+  taskId: '2111024604854018050',
+  deviceId: '1',
+  action: 'CHECK_CONNECTION',
+  state,
+  attempt: 1,
+  connectionDiagnostic: diagnostic
+});
+test('connection result exposes the actual conclusion and historical checks do not invent versions', () => {
+  assert.equal(typeof m.connectionCheckPresentation, 'function');
+  const result = m.connectionCheckPresentation(connectionTask('SUCCEEDED', { connected: true, cliVersion: '4.1.60', transportMode: 'CLI_COMPAT' }));
+  assert.equal(result.type, 'success');
+  assert.match(result.title, /连接检查通过/);
+  const legacy = m.connectionCheckPresentation(connectionTask('SUCCEEDED'));
+  assert.match(legacy.description, /历史|未保存/);
+  assert.equal(legacy.description.includes('4.1.60'), false);
+  assert.equal(m.connectionCheckPresentation(connectionTask('RUNNING')).type, 'info');
+  assert.equal(m.connectionCheckPresentation(connectionTask('FAILED', { connected: false })).type, 'error');
+});
+
+test('completion notifications follow a live terminal transition and do not replay history', () => {
+  assert.equal(typeof m.engineeringCompletionNotice, 'function');
+  const pending = connectionTask('RUNNING');
+  const completed = connectionTask('SUCCEEDED', { connected: true });
+  assert.match(m.engineeringCompletionNotice(pending, completed).message, /连接检查通过/);
+  assert.equal(m.engineeringCompletionNotice(undefined, completed), undefined);
+  assert.equal(m.engineeringCompletionNotice(completed, completed), undefined);
+  assert.equal(m.engineeringCompletionNotice({ ...pending, taskId: '2' }, completed), undefined);
+  assert.equal(m.engineeringCompletionNotice(pending, connectionTask('RUNNING')), undefined);
+});
+
+test('connection detail reads the task result without requesting a PCB artifact manifest', async () => {
+  let manifests = 0;
+  engineeringUIEnvironment({
+    getEngineeringTask: async (taskId) => ({
+      data: { ...connectionTask('SUCCEEDED', { connected: true, cliVersion: '4.1.60', transportMode: 'CLI_COMPAT' }), taskId }
+    }),
+    getEngineeringManifest: async (taskId) => {
+      manifests++;
+      return { data: { taskId, artifacts: [], missingTypes: [], canManufacture: false } };
+    }
+  });
+  const component = await loadEngineeringUI('src/views/ai/engineering/preview/index.vue');
+  const mounted = await mountEngineeringUI(component.default);
+  try {
+    await mounted.flush();
+    assert.equal(manifests, 0);
+  } finally {
+    mounted.unmount();
+  }
+});
+
+test('actual connection result template renders diagnosis and clears details for a historical task', async () => {
+  engineeringUIEnvironment();
+  const component = await loadEngineeringUI('src/components/ai/engineering/ConnectionCheckResult.vue', true, { renderTemplate: true });
+  const mounted = await mountEngineeringUI(
+    component.default,
+    { task: connectionTask('SUCCEEDED', { connected: true, cliVersion: '4.1.60', transportMode: 'CLI_COMPAT' }) },
+    { renderTemplate: true }
+  );
+  try {
+    assert.equal(mounted.findAll((node) => node.tag === 'ElAlert')[0].props.title, '连接检查通过');
+    assert.ok(mounted.findAll((node) => String(node.text || '').includes('4.1.60')).length > 0);
+    mounted.state.task = connectionTask('SUCCEEDED');
+    await mounted.flush();
+    assert.match(mounted.findAll((node) => node.tag === 'ElAlert')[0].props.description, /未保存/);
+    assert.equal(mounted.findAll((node) => String(node.text || '').includes('4.1.60')).length, 0);
+  } finally {
+    mounted.unmount();
+  }
+});
+
+test('engineering return button uses the real menu path', async () => {
+  const destinations = [];
+  engineeringUIEnvironment({
+    router: { push: async (path) => destinations.push(path) },
+    getEngineeringTask: async (taskId) => ({ data: { ...connectionTask('SUCCEEDED'), taskId } })
+  });
+  const component = await loadEngineeringUI('src/views/ai/engineering/preview/index.vue', true, { renderTemplate: true });
+  const page = await mountEngineeringUI(component.default, {}, { renderTemplate: true });
+  try {
+    const back = page.findAll((node) => node.props?.onBack || node.props?.['aria-label'] === '返回任务列表')[0];
+    assert.ok(back, 'result page provides a return action');
+    await (back.props.onBack || back.props.onClick)();
+    assert.deepEqual(destinations, ['/ai/chat/engineering/task']);
+  } finally {
+    page.unmount();
+  }
+});
+
+async function engineeringRouter() {
+  const { createRequire } = await import('node:module');
+  const routerPath = createRequire(import.meta.url).resolve('vue-router');
+  const module = await loadEngineeringModule('src/router/index.ts', [
+    {
+      name: 'engineering-memory-router',
+      setup(builder) {
+        builder.initialOptions.define = { 'import.meta.env.VITE_APP_CONTEXT_PATH': '"/"', window: 'undefined', document: 'undefined' };
+        builder.onResolve({ filter: /^vue-router$/ }, () => ({ path: 'router', namespace: 'engineering-router' }));
+        builder.onLoad({ filter: /.*/, namespace: 'engineering-router' }, () => ({
+          contents: 'export * from "engineering-real-router"; export { createMemoryHistory as createWebHistory } from "engineering-real-router";'
+        }));
+        builder.onResolve({ filter: /^engineering-real-router$/ }, () => ({ path: routerPath }));
+        builder.onResolve({ filter: /\.vue$/ }, () => ({ path: 'component', namespace: 'engineering-route-component' }));
+        builder.onLoad({ filter: /.*/, namespace: 'engineering-route-component' }, () => ({ contents: 'export default { render: () => null };' }));
+      }
+    }
+  ]);
+  for (const route of module.dynamicRoutes.filter((route) => route.path.startsWith('/ai/engineering/'))) module.default.addRoute(route);
+  module.default.addRoute({ path: '/ai/chat/engineering/task', name: 'ActualEngineeringTaskList', component: { render: () => null } });
+  return module.default;
+}
+
+test('engineering detail selects the canonical task list in the sidebar', async () => {
+  const router = await engineeringRouter();
+  assert.equal(router.resolve('/ai/engineering/task/9223372036854775807').meta.activeMenu, '/ai/chat/engineering/task');
+});
+
+test('legacy engineering task list redirects to the real registered list', async () => {
+  const router = await engineeringRouter();
+  await router.push('/ai/engineering/task');
+  assert.equal(router.currentRoute.value.path, '/ai/chat/engineering/task');
+  assert.equal(router.currentRoute.value.name, 'ActualEngineeringTaskList');
+});
+
+const partialDraft = () => ({
+  taskId: '2111100775474065409',
+  deviceId: '1',
+  action: 'CREATE_PCB_DRAFT',
+  revision: 3,
+  state: 'PARTIAL_SUCCESS',
+  errorCode: 'EXPORT_FAILED',
+  errorMessage: '草稿已归档，产物缺失或DRC存在违规，须工程师审查'
+});
+test('complete artifacts with DRC violations show the real review requirement', () => {
+  assert.equal(typeof m.engineeringTaskOutcome, 'function');
+  const result = m.engineeringTaskOutcome(partialDraft(), {
+    artifacts: Array.from({ length: 7 }, () => ({})),
+    missingTypes: [],
+    drc: { status: 'VIOLATIONS', errorCount: 8, warningCount: 0 }
+  });
+  assert.equal(result.type, 'warning');
+  assert.equal(result.focus, 'drc');
+  assert.match(result.title, /DRC/);
+  assert.match(result.description, /7/);
+  assert.match(result.description, /8/);
+  assert.doesNotMatch(result.title, /导出失败|投产|全部通过/);
+});
+
+test('missing files remain visible even when an available DRC report has violations', () => {
+  assert.equal(typeof m.engineeringTaskOutcome, 'function');
+  const result = m.engineeringTaskOutcome(partialDraft(), {
+    artifacts: [{}],
+    missingTypes: ['PCB_SOURCE'],
+    drc: { status: 'VIOLATIONS', errorCount: 8 }
+  });
+  assert.equal(result.type, 'warning');
+  assert.equal(result.focus, 'files');
+  assert.match(result.title, /产物/);
+  assert.match(result.description, /缺失|尚未归档/);
+});
+
+test('unavailable manifests and failed tasks never imply that artifacts were confirmed', () => {
+  assert.equal(typeof m.engineeringTaskOutcome, 'function');
+  const partial = m.engineeringTaskOutcome(partialDraft());
+  assert.equal(partial.type, 'warning');
+  assert.doesNotMatch(partial.title, /产物齐全|全部归档|DRC 通过/);
+  const failed = m.engineeringTaskOutcome({ ...partialDraft(), state: 'FAILED', errorMessage: '私有归档未完成' });
+  assert.equal(failed.type, 'error');
+  assert.match(failed.description, /私有归档未完成/);
+});

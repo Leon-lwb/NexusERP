@@ -1,71 +1,109 @@
 <template>
-  <div class="app-container">
-    <el-alert v-if="!ENGINEERING_ENABLED" :title="ENGINEERING_DISABLED_NOTICE" type="info" :closable="false" class="mb-3" />
-    <el-form v-if="ENGINEERING_ENABLED" :model="query" class="list-search" @submit.prevent="search">
-      <el-row :gutter="16">
-        <el-col :span="6"
-          ><el-form-item label="任务状态"
+  <div class="app-container engineering-page engineering-task-list">
+    <header class="engineering-heading">
+      <div class="engineering-heading__main">
+        <div class="engineering-heading__icon">
+          <el-icon><FolderOpened /></el-icon>
+        </div>
+        <div>
+          <span class="engineering-eyebrow">工程设计</span>
+          <h1>工程任务</h1>
+          <p>跟踪设备执行进度，查看连接诊断、PCB 草稿与设计产物。</p>
+        </div>
+      </div>
+      <el-button v-if="ENGINEERING_ENABLED" :icon="Refresh" :loading="loading" @click="refresh">刷新列表</el-button>
+    </header>
+    <el-alert v-if="!ENGINEERING_ENABLED" :title="ENGINEERING_DISABLED_NOTICE" type="info" :closable="false" show-icon />
+    <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon />
+    <section v-if="ENGINEERING_ENABLED" class="engineering-panel task-filter-panel" aria-label="筛选任务">
+      <el-form :model="query" label-position="top" @submit.prevent="search">
+        <div class="task-filter-grid">
+          <el-form-item label="任务状态"
             ><el-select v-model="query.state" clearable placeholder="全部状态"
-              ><el-option v-for="(item, key) in ENGINEERING_STATES" :key="key" :label="item.label" :value="key" /></el-select></el-form-item
-        ></el-col>
-        <el-col :span="6"
-          ><el-form-item label="会话 ID"><el-input v-model="sessionFilter" clearable placeholder="可选，按会话筛选" /></el-form-item
-        ></el-col>
-        <el-col :span="6" class="search-actions"
-          ><el-button type="primary" icon="Search" @click="search">搜索</el-button><el-button icon="Refresh" @click="reset">重置</el-button></el-col
-        >
-      </el-row>
-    </el-form>
-    <el-alert v-if="error" :title="error" type="error" :closable="false" class="mb-3" />
-    <el-card v-if="ENGINEERING_ENABLED" shadow="never">
-      <template #header
-        ><div class="flex items-center justify-between">
-          <span>PCB 工程任务</span><el-button icon="Refresh" @click="refresh">刷新</el-button>
-        </div></template
-      >
-      <el-table v-loading="loading" :data="tasks" border empty-text="暂无工程任务，可在 AI 对话中主动选择设备后发起">
-        <el-table-column prop="taskId" label="任务 ID" min-width="200" />
-        <el-table-column label="状态" min-width="140"
+              ><el-option v-for="(item, key) in ENGINEERING_STATES" :key="key" :label="item.label" :value="key" /></el-select
+          ></el-form-item>
+          <el-form-item label="会话 ID"
+            ><el-input v-model="sessionFilter" clearable placeholder="输入会话 ID 筛选" @keyup.enter="search"
+          /></el-form-item>
+          <div class="filter-actions">
+            <el-button type="primary" :icon="Search" @click="search">搜索任务</el-button><el-button @click="reset">重置</el-button>
+          </div>
+        </div>
+      </el-form>
+    </section>
+    <section v-if="ENGINEERING_ENABLED" class="engineering-panel task-table-panel" aria-label="工程任务列表">
+      <div class="engineering-section-heading task-list-heading">
+        <div>
+          <h2>
+            任务列表 <span class="task-total">{{ total }}</span>
+          </h2>
+          <p>连接检查与草稿生成分别保存，点击任务查看实际结果。</p>
+        </div>
+        <span class="list-page-note">当前页 {{ tasks.length }} 条</span>
+      </div>
+      <el-table v-loading="loading" :data="tasks" empty-text="暂无工程任务，可在 AI 对话中选择设备后发起">
+        <el-table-column label="任务" min-width="280"
           ><template #default="{ row }"
-            ><el-tag :type="ENGINEERING_STATES[row.state]?.type || 'info'">{{ ENGINEERING_STATES[row.state]?.label || row.state }}</el-tag
-            ><span v-if="row.cancelRequested">（取消确认中）</span></template
+            ><div class="task-identity">
+              <span class="task-type-icon" :class="{ 'task-type-icon--connection': row.action === 'CHECK_CONNECTION' }"
+                ><el-icon><component :is="row.action === 'CHECK_CONNECTION' ? Connection : Document" /></el-icon
+              ></span>
+              <div>
+                <div class="task-action-name">{{ engineeringActionLabel(row.action) }}</div>
+                <div class="engineering-id engineering-muted">{{ row.taskId }}</div>
+              </div>
+            </div></template
           ></el-table-column
         >
-        <el-table-column label="阶段" min-width="150"
-          ><template #default="{ row }">{{ ENGINEERING_STAGES[row.stage] || '—' }}</template></el-table-column
+        <el-table-column label="状态 / 阶段" min-width="170"
+          ><template #default="{ row }"
+            ><el-tag :type="ENGINEERING_STATES[row.state]?.type || 'info'" effect="light" round>{{
+              ENGINEERING_STATES[row.state]?.label || row.state
+            }}</el-tag>
+            <div class="task-stage">{{ row.cancelRequested ? '取消确认中' : ENGINEERING_STAGES[row.stage] || '等待设备确认' }}</div></template
+          ></el-table-column
         >
-        <el-table-column label="设备" min-width="180"
-          ><template #default="{ row }">{{ row.deviceName || row.deviceId }}</template></el-table-column
+        <el-table-column label="执行设备" min-width="170"
+          ><template #default="{ row }"
+            ><span :class="{ 'engineering-id': !row.deviceName }">{{ row.deviceName || row.deviceId }}</span></template
+          ></el-table-column
         >
-        <el-table-column label="创建时间" min-width="190"
-          ><template #default="{ row }">{{ engineeringTime(row.createdAt || row.createTime) }}</template></el-table-column
+        <el-table-column label="创建时间" min-width="175"
+          ><template #default="{ row }"
+            ><span class="task-time">{{ engineeringTime(row.createdAt || row.createTime) }}</span></template
+          ></el-table-column
         >
-        <el-table-column label="缺失产物" min-width="190"
-          ><template #default="{ row }">{{
-            row.missingTypes?.length ? row.missingTypes.map((type) => ARTIFACT_LABELS[type] || type).join('、') : '—'
-          }}</template></el-table-column
+        <el-table-column label="产物情况" min-width="160"
+          ><template #default="{ row }"
+            ><span v-if="row.action === 'CHECK_CONNECTION'" class="engineering-muted">连接诊断</span
+            ><span
+              v-else-if="row.missingTypes?.length"
+              class="missing-types"
+              :title="row.missingTypes.map((type) => ARTIFACT_LABELS[type] || type).join('、')"
+              >待补齐 {{ row.missingTypes.length }} 类产物</span
+            ><span v-else class="engineering-muted">查看产物清单</span></template
+          ></el-table-column
         >
-        <el-table-column label="操作" min-width="220" fixed="right"
-          ><template #default="{ row }">
-            <el-button v-hasPermi="['ai:engineering:query']" link type="primary" @click="router.push(`/ai/engineering/task/${row.taskId}`)"
-              >详情</el-button
-            >
-            <el-button
+        <el-table-column label="操作" min-width="230" fixed="right"
+          ><template #default="{ row }"
+            ><el-button v-hasPermi="['ai:engineering:query']" link type="primary" @click="router.push(`/ai/engineering/task/${row.taskId}`)">{{
+              row.action === 'CHECK_CONNECTION' ? '查看检查结果' : '查看预览'
+            }}</el-button
+            ><el-button
               v-if="shouldPoll(row.state) && !row.cancelRequested"
               v-hasPermi="['ai:engineering:task']"
               link
               type="danger"
               @click="cancel(row)"
-              >取消</el-button
-            >
-            <el-button v-if="!shouldPoll(row.state)" v-hasPermi="['ai:engineering:task']" link type="primary" @click="retry(row)"
-              >新任务重试</el-button
-            >
-          </template></el-table-column
+              >取消任务</el-button
+            ><el-button v-if="!shouldPoll(row.state)" v-hasPermi="['ai:engineering:task']" link @click="retry(row)">新任务重试</el-button></template
+          ></el-table-column
         >
       </el-table>
-      <pagination v-show="total > 0" v-model:total="total" v-model:page="query.pageNum" v-model:limit="query.pageSize" @pagination="refresh" />
-    </el-card>
+      <div class="task-pagination">
+        <pagination v-show="total > 0" v-model:total="total" v-model:page="query.pageNum" v-model:limit="query.pageSize" @pagination="refresh" />
+      </div>
+    </section>
     <el-dialog v-model="retryVisible" title="确认新的 PCB 草稿任务" width="640px" :close-on-click-modal="false">
       <el-alert title="原任务不会被重放。请核对实际结果后，为新草稿明确选择已审核模板及设计参数。" type="warning" :closable="false" class="mb-4" />
       <el-alert v-if="retryError" :title="retryError" type="error" :closable="false" class="mb-3" />
@@ -104,6 +142,7 @@
 <script setup lang="ts" name="EngineeringTask">
 import { computed, getCurrentInstance, onBeforeUnmount, reactive, ref, watch, type ComponentInternalInstance } from 'vue';
 import { useRouter } from 'vue-router';
+import { Connection, Document, FolderOpened, Refresh, Search } from '@element-plus/icons-vue';
 import {
   listEngineeringTasks,
   listEngineeringTemplates,
@@ -114,7 +153,16 @@ import {
   type EngineeringTask,
   type EngineeringTaskQuery
 } from '@/api/ai/engineering';
-import { ARTIFACT_LABELS, ENGINEERING_STATES, ENGINEERING_STAGES, engineeringError, engineeringId, engineeringTime, shouldPoll } from '../model';
+import {
+  ARTIFACT_LABELS,
+  ENGINEERING_STATES,
+  ENGINEERING_STAGES,
+  engineeringActionLabel,
+  engineeringError,
+  engineeringId,
+  engineeringTime,
+  shouldPoll
+} from '../model';
 import { useEngineeringPolling } from '../useEngineeringPolling';
 import { ENGINEERING_ENABLED, ENGINEERING_DISABLED_NOTICE } from '../engineering-config';
 import { templateDraftDefaults, templateLayerOptions, validateDraftParameters } from '../template-parameters';
@@ -298,3 +346,131 @@ async function submitRetry() {
 }
 onBeforeUnmount(() => retryController?.abort());
 </script>
+
+<style scoped lang="scss">
+@use '../engineering-pages';
+.engineering-task-list > .engineering-heading {
+  align-items: center;
+}
+.task-filter-panel {
+  padding: 20px 24px;
+}
+.task-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.3fr) auto;
+  align-items: end;
+  gap: 20px;
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+  }
+  :deep(.el-form-item__label) {
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+  .el-select {
+    width: 100%;
+  }
+}
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  .el-button {
+    margin: 0;
+  }
+}
+.task-table-panel {
+  padding: 22px 24px 8px;
+}
+.task-list-heading {
+  margin-bottom: 22px;
+}
+.task-total {
+  display: inline-block;
+  min-width: 24px;
+  margin-left: 7px;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+.list-page-note,
+.task-stage {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.task-stage {
+  margin-top: 7px;
+}
+.task-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.task-type-icon {
+  display: inline-flex;
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  font-size: 18px;
+}
+.task-type-icon--connection {
+  background: var(--el-color-success-light-9);
+  color: var(--el-color-success);
+}
+.task-action-name {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.task-time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.missing-types {
+  color: var(--el-color-warning);
+  font-size: 12px;
+}
+.task-pagination {
+  min-height: 48px;
+  padding-top: 8px;
+  :deep(.pagination-container) {
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+@media (max-width: 900px) {
+  .task-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .task-filter-panel,
+  .task-table-panel {
+    padding: 18px;
+  }
+  .task-filter-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .task-identity {
+    gap: 8px;
+  }
+  .task-pagination {
+    overflow-x: auto;
+  }
+}
+</style>

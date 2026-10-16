@@ -29,6 +29,7 @@ import java.util.List;
  * @param parameters 仅允许目录声明的有界结构化板参数
  * @param leaseExpiresAt UTC ISO-8601 租约到期时间
  * @param deadlineAt UTC ISO-8601 运行总截止时间
+ * @param connectionDiagnostic 已保存的连接检查摘要，历史任务可以为空
  */
 public record EngineeringTaskVo(
         String taskId,
@@ -54,4 +55,5 @@ public record EngineeringTaskVo(
         String templateSha256,
         java.util.Map<String, Object> parameters,
         String leaseExpiresAt,
-        String deadlineAt) {}
+        String deadlineAt,
+        EngineeringConnectionDiagnostic connectionDiagnostic) {}

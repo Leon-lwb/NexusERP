@@ -89,7 +89,16 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
         metadata.setCreateBy(write.actor().userId());
         metadata.setFileName(key);
         metadata.setOriginalName(write.originalFilename());
-        metadata.setFileSuffix(".engineering");
+        // sys_oss.file_suffix 只有 10 字符；工程隔离标记存放在 ext1 和私有命名空间中。
+        metadata.setFileSuffix(switch (write.artifactType()) {
+            case PCB_SOURCE -> ".zip";
+            case PCB_PREVIEW_2D -> ".png";
+            case PCB_BOM, PCB_DRC_REPORT -> ".json";
+            case PCB_NETLIST -> ".net";
+            case PCB_MODEL_OBJ -> ".obj";
+            case PCB_MODEL_MTL -> ".mtl";
+            case PCB_MODEL_TEXTURE -> "image/jpeg".equals(write.mimeType()) ? ".jpg" : ".png";
+        });
         metadata.setService(configKey);
         metadata.setUrl("");
         metadata.setExt1("ENGINEERING_PRIVATE");

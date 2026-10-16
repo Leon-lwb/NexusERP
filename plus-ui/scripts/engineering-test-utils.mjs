@@ -147,7 +147,23 @@ export async function mountEngineeringUI(component, props = {}, options = {}) {
     render: () => h(mountedComponent, { ...state, ref: (value) => (instance = value) })
   });
   if (options.renderTemplate) {
-    for (const name of ['ElAlert', 'ElEmpty', 'ElSelect', 'ElOption', 'ElButton', 'ElTag'])
+    for (const name of [
+      'ElAlert',
+      'ElEmpty',
+      'ElSelect',
+      'ElOption',
+      'ElButton',
+      'ElTag',
+      'ElCard',
+      'ElDescriptions',
+      'ElDescriptionsItem',
+      'ElPageHeader',
+      'ElTabs',
+      'ElTabPane',
+      'ElTable',
+      'ElTableColumn',
+      'ElIcon'
+    ])
       app.component(name, {
         setup:
           (_props, { attrs, slots }) =>
@@ -156,7 +172,13 @@ export async function mountEngineeringUI(component, props = {}, options = {}) {
       });
     app.directive('loading', {});
   }
-  app.config.globalProperties.$modal = { confirm: async () => {}, msgSuccess: () => {}, msgWarning: () => {}, msgError: () => {} };
+  app.config.globalProperties.$modal = {
+    confirm: async () => {},
+    msgSuccess: () => {},
+    msgWarning: () => {},
+    msgError: () => {},
+    ...(options.modal || {})
+  };
   const root = { children: [] };
   app.mount(root);
   const flush = async () => {

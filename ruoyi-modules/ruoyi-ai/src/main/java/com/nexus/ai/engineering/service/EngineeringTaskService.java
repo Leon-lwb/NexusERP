@@ -14,6 +14,7 @@ import com.nexus.common.ai.mapper.AiSessionMapper;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DuplicateKeyException;
@@ -25,6 +26,7 @@ import java.util.*;
 import java.util.function.Function;
 
 /** 工程任务有界创建、CAS 领取与租约状态机；事务内只访问元数据，不执行编辑器和对象存储 IO。 */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @DS("master")
@@ -37,6 +39,7 @@ public class EngineeringTaskService {
     private final EngineeringProperties properties;
     private final Clock clock;
     private final AiSessionMapper sessions;
+    private final EngineeringTaskNotifier notifier;
     private static final Set<String> PARAMS =
             Set.of("boardWidthMm", "boardHeightMm", "layers", "optionalModules");
     private static final Set<String> ERRORS =
@@ -777,7 +780,7 @@ public class EngineeringTaskService {
             Long taskId,
             EngineeringLease lease,
             Function<AiEngineeringTask, Completion> resolver) {
-        return repository.transaction(
+        var completed = repository.transaction(
                 () -> {
                     var task = lockActiveLease(principal, taskId, lease, true, false);
                     var outcome = resolver.apply(task);
@@ -794,13 +797,14 @@ public class EngineeringTaskService {
                     int changed =
                             repository.update(
                                     "update ai_engineering_task set"
-                                        + " state=?,stage='FINALIZING',revision=revision+1,error_code=?,error_message=?,updated_at=?"
+                                        + " state=?,stage='FINALIZING',revision=revision+1,error_code=?,error_message=?,step_journal=?,updated_at=?"
                                         + " where task_id=? and tenant_id=? and user_id=? and"
                                         + " device_id=? and attempt=? and revision=? and"
                                         + " state='RUNNING' and cancel_requested=false",
                                     outcome.state().name(),
                                     outcome.errorCode(),
                                     outcome.message(),
+                                    completionJournal(task, outcome),
                                     now(),
                                     taskId,
                                     task.getTenantId(),
@@ -812,6 +816,31 @@ public class EngineeringTaskService {
                     clearBusy(task);
                     return view(ownedTask(principal.actor(), taskId));
                 });
+        try {
+            notifier.completed(principal.actor(), completed);
+        } catch (RuntimeException unavailable) {
+            log.warn("工程任务完成通知失败，任务 {} 可通过查询恢复", completed.taskId());
+        }
+        return completed;
+    }
+
+    private String completionJournal(AiEngineeringTask task, Completion result) {
+        String saved = task.getStepJournal() == null ? "[]" : task.getStepJournal();
+        if (result.connectionDiagnostic() == null) return saved;
+        var entries = new ArrayList<>(Arrays.asList(EngineeringJson.read(saved, Journal[].class)));
+        if (entries.isEmpty()) {
+            entries.add(new Journal(
+                    1, EngineeringSecrets.hash("complete:" + task.getTaskId() + ":" + task.getRevision()),
+                    "FINALIZING", "连接检查结果已保存",
+                    new EngineeringTaskReceipt(task.getTaskId().toString(), task.getAttempt(),
+                            task.getRevision() + 1, result.state().name(), "FINALIZING", false),
+                    result.connectionDiagnostic()));
+        } else {
+            var last = entries.get(entries.size() - 1);
+            entries.set(entries.size() - 1, new Journal(last.sequence(), last.digest(), last.stage(),
+                    last.message(), last.receipt(), result.connectionDiagnostic()));
+        }
+        return EngineeringJson.write(entries);
     }
 
     /** 有界扫描等待超期及运行不确定任务，CAS 防止多实例重复终结；绝不自动重排。 */
@@ -926,7 +955,8 @@ public class EngineeringTaskService {
                 request.templateSha256(),
                 request.parameters(),
                 time(t.getLeaseExpiresAt()),
-                time(t.getDeadlineAt()));
+                time(t.getDeadlineAt()),
+                journal.length == 0 ? null : journal[journal.length - 1].connectionDiagnostic());
     }
 
     private EngineeringTaskClaim claimView(AiEngineeringTask t, String token) {
@@ -974,7 +1004,13 @@ public class EngineeringTaskService {
             String digest,
             String stage,
             String message,
-            EngineeringTaskReceipt receipt) {}
+            EngineeringTaskReceipt receipt,
+            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+            EngineeringConnectionDiagnostic connectionDiagnostic) {
+        public Journal(int sequence, String digest, String stage, String message, EngineeringTaskReceipt receipt) {
+            this(sequence, digest, stage, message, receipt, null);
+        }
+    }
 
     /**
      * 面向用户的有界步骤摘要。
@@ -993,5 +1029,10 @@ public class EngineeringTaskService {
      * @param errorCode 稳定协议错误类别，不包含原始异常信息
      * @param message 供用户阅读的有界摘要
      */
-    public record Completion(EngineeringTaskState state, String errorCode, String message) {}
+    public record Completion(EngineeringTaskState state, String errorCode, String message,
+            EngineeringConnectionDiagnostic connectionDiagnostic) {
+        public Completion(EngineeringTaskState state, String errorCode, String message) {
+            this(state, errorCode, message, null);
+        }
+    }
 }

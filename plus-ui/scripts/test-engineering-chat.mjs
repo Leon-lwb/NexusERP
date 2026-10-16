@@ -203,3 +203,25 @@ test('实际控制器仅接受当前类型化回执，成功文字不能伪造�
   assert.equal(controller.tasks[0].state, 'PARTIAL_SUCCESS');
   mounted.unmount();
 });
+
+test('actual task card notifies once on completion and does not notify restored history', async () => {
+  engineeringUIEnvironment();
+  const cardComponent = (await loadEngineeringUI('src/components/ai/engineering/EngineeringTaskCard.vue')).default;
+  const messages = [];
+  const task = { taskId: '2111024604854018050', deviceId: '1', action: 'CHECK_CONNECTION', state: 'RUNNING', revision: 1 };
+  const options = { modal: { msgSuccess: (message) => messages.push(message) } };
+  const card = await mountEngineeringUI(cardComponent, { task }, options);
+  try {
+    card.state.task = { ...task, state: 'SUCCEEDED', revision: 2, connectionDiagnostic: { connected: true, cliVersion: '4.1.60' } };
+    await card.flush();
+    assert.deepEqual(messages, ['连接检查通过']);
+    card.state.task = { ...card.state.task, revision: 3 };
+    await card.flush();
+    assert.equal(messages.length, 1);
+  } finally {
+    card.unmount();
+  }
+  const restored = await mountEngineeringUI(cardComponent, { task: { ...task, state: 'SUCCEEDED' } }, options);
+  restored.unmount();
+  assert.equal(messages.length, 1);
+});

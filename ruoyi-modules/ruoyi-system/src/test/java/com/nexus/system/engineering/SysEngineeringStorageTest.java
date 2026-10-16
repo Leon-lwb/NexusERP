@@ -12,6 +12,10 @@ import com.nexus.system.mapper.SysOssMapper;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.h2.jdbcx.JdbcDataSource;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.*;
 import java.util.Set;
@@ -123,4 +127,54 @@ class SysEngineeringStorageTest {
             verify(mapper, never()).deleteById(anyLong());
         }
     }
+
+    @ParameterizedTest
+    @EnumSource(EngineeringArtifactType.class)
+    void privateMetadataFitsTheInstalledOssSchema(EngineeringArtifactType type) throws Exception {
+        var source = new JdbcDataSource();
+        source.setURL("jdbc:h2:mem:engineering-oss-" + type + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var jdbc = new JdbcTemplate(source);
+        // Same suffix budget as the installed sys_oss table; never widen the user's schema.
+        jdbc.execute("create table sys_oss(oss_id bigint primary key, file_suffix varchar(10) not null,"
+                + " url varchar(500) not null, ext1 varchar(255), service varchar(64))");
+        var client = mock(OssClient.class);
+        var mapper = mock(SysOssMapper.class);
+        var artifacts = mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class);
+        when(client.getAccessPolicy()).thenReturn(AccessPolicyType.PRIVATE);
+        when(mapper.insert(any(SysOss.class))).thenAnswer(call -> {
+            var metadata = call.getArgument(0, SysOss.class);
+            return jdbc.update("insert into sys_oss(oss_id,file_suffix,url,ext1,service) values(?,?,?,?,?)",
+                    metadata.getOssId(), metadata.getFileSuffix(), metadata.getUrl(),
+                    metadata.getExt1(), metadata.getService());
+        });
+        var staged = temp.resolve(type + ".validated");
+        Files.writeString(staged, "validated synthetic artifact");
+        var reservation = new com.nexus.common.ai.domain.entity.AiEngineeringArtifact();
+        reservation.setArtifactId(9L);
+        reservation.setOssId(9L);
+        reservation.setTenantId("000001");
+        reservation.setUserId(7L);
+        reservation.setTaskId(8L);
+        reservation.setObjectKey("engineering/000001/7/8/9");
+        reservation.setService("private-engineering");
+        reservation.setSha256("a".repeat(64));
+        reservation.setSize(Files.size(staged));
+        reservation.setStatus("RESERVED");
+        when(artifacts.selectById(9L)).thenReturn(reservation);
+        try (var factory = mockStatic(OssFactory.class)) {
+            factory.when(() -> OssFactory.instance("private-engineering")).thenReturn(client);
+            var adapter = new SysEngineeringStorageAdapter(mapper, artifacts, "private-engineering");
+            assertDoesNotThrow(() -> adapter.write(new EngineeringArtifactWrite(
+                    new EngineeringActor("000001", 7L, Set.of()), 8L, 9L, type, staged,
+                    "a".repeat(64), Files.size(staged),
+                    type == EngineeringArtifactType.PCB_MODEL_TEXTURE ? "image/png" : "text/plain",
+                    "artifact")));
+            String suffix = jdbc.queryForObject("select file_suffix from sys_oss where oss_id=9", String.class);
+            assertTrue(suffix != null && suffix.matches("\\.[a-z0-9]{1,9}"));
+            assertEquals("", jdbc.queryForObject("select url from sys_oss where oss_id=9", String.class));
+            assertEquals("ENGINEERING_PRIVATE", jdbc.queryForObject("select ext1 from sys_oss where oss_id=9", String.class));
+            assertEquals("private-engineering", jdbc.queryForObject("select service from sys_oss where oss_id=9", String.class));
+        }
+    }
+
 }

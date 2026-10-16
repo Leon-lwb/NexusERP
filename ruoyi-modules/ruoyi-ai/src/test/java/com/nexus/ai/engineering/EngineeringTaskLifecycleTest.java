@@ -16,9 +16,10 @@ class EngineeringTaskLifecycleTest {
     static class Tasks extends EngineeringFixture {
         final AiSessionMapper sessions = mock(AiSessionMapper.class);
         final EngineeringTemplateCatalog catalog = new EngineeringTemplateCatalog();
+        final EngineeringTaskNotifier notifier = mock(EngineeringTaskNotifier.class);
         final EngineeringTaskService tasks =
                 new EngineeringTaskService(
-                        repository, devices, access, catalog, properties, clock, sessions);
+                        repository, devices, access, catalog, properties, clock, sessions, notifier);
 
         EngineeringTaskCommand command(String device, String key) {
             return new EngineeringTaskCommand(

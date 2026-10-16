@@ -1,4 +1,4 @@
-import type { DrcStatus, EngineeringArtifact, EngineeringDevice, EngineeringStage, EngineeringState } from '@/api/ai/engineering';
+import type { DrcStatus, EngineeringArtifact, EngineeringDevice, EngineeringStage, EngineeringState, EngineeringTask } from '@/api/ai/engineering';
 
 /** 工程标识只能采用后端提供的正整数文本，拒绝已失真的数字。 */
 export function engineeringId(value: unknown): string {
@@ -26,7 +26,7 @@ export const ENGINEERING_STATES: Record<EngineeringState, { label: string; type:
   CREATED: { label: '已创建', type: 'info' },
   WAITING_DEVICE: { label: '等待设备', type: 'warning' },
   RUNNING: { label: '执行中', type: 'primary' },
-  SUCCEEDED: { label: '草稿产物完成', type: 'success' },
+  SUCCEEDED: { label: '已完成', type: 'success' },
   PARTIAL_SUCCESS: { label: '部分成功', type: 'warning' },
   FAILED: { label: '失败', type: 'danger' },
   CANCELED: { label: '已取消', type: 'info' },
@@ -233,3 +233,66 @@ export function normalizeEngineeringDevice(value: unknown, now = Date.now()): En
     createTime: text(row.createTime) || text(row.createdAt)
   };
 }
+
+/** 动作名称来自受控协议，连接检查与文件生成分别展示。 */
+export function engineeringActionLabel(action?: string): string {
+  const labels: Record<string, string> = {
+    CHECK_CONNECTION: '连接检查',
+    OPEN_PROJECT: '打开工程',
+    CREATE_PCB_DRAFT: 'PCB 草稿生成',
+    EXPORT_ARTIFACTS: '导出产物',
+    RUN_DRC: 'DRC 检查',
+    SUBMIT_DRAFT: '草稿归档'
+  };
+  return labels[action || ''] || '工程任务';
+}
+export interface EngineeringResultPresentation {
+  type: 'success' | 'warning' | 'info' | 'error';
+  title: string;
+  description: string;
+}
+/** 历史任务只根据已保存的终态展示结论，不补造客户端版本或当前设备事实。 */
+export function connectionCheckPresentation(
+  task: Pick<EngineeringTask, 'state' | 'connectionDiagnostic' | 'errorMessage'>
+): EngineeringResultPresentation {
+  const diagnostic = task.connectionDiagnostic;
+  if (task.state === 'SUCCEEDED') {
+    if (diagnostic?.connected === false) return { type: 'warning', title: '检查结果需要核对', description: '任务状态与连接诊断不一致，请刷新后核对' };
+    return {
+      type: 'success',
+      title: '连接检查通过',
+      description: diagnostic ? '嘉立创编辑器已连接' : '连接检查已完成。该历史任务未保存版本等详细诊断。'
+    };
+  }
+  if (task.state === 'FAILED')
+    return { type: 'error', title: '连接检查失败', description: task.errorMessage || '未能连接嘉立创编辑器，请检查本机客户端和连接器' };
+  if (task.state === 'CANCELED') return { type: 'warning', title: '连接检查已取消', description: '本次检查已取消' };
+  if (task.state === 'EXPIRED')
+    return { type: 'warning', title: '连接检查已超时', description: task.errorMessage || '请核对设备在线状态后重新发起检查' };
+  if (task.state === 'PARTIAL_SUCCESS')
+    return { type: 'warning', title: '连接检查存在异常', description: task.errorMessage || '请核对返回的连接诊断' };
+  return { type: 'info', title: task.state === 'RUNNING' ? '正在检查连接' : '等待设备检查', description: '等待配对设备返回检查结果' };
+}
+/** 仅提示同一任务从活动态进入终态；读取历史或重复终态不会重复通知。 */
+export function engineeringCompletionNotice(
+  previous: EngineeringTask | undefined,
+  current: EngineeringTask
+): { type: 'success' | 'warning' | 'error'; message: string } | undefined {
+  if (
+    !previous ||
+    previous.taskId !== current.taskId ||
+    !shouldPoll(previous.state) ||
+    !['SUCCEEDED', 'PARTIAL_SUCCESS', 'FAILED', 'CANCELED', 'EXPIRED'].includes(current.state)
+  )
+    return;
+  if (current.action === 'CHECK_CONNECTION') {
+    const result = connectionCheckPresentation(current);
+    return { type: result.type === 'info' ? 'warning' : result.type, message: result.title };
+  }
+  const label = engineeringActionLabel(current.action);
+  if (current.state === 'SUCCEEDED') return { type: 'success', message: `${label}已完成` };
+  if (current.state === 'FAILED') return { type: 'error', message: current.errorMessage || `${label}失败` };
+  return { type: 'warning', message: current.errorMessage || `${label}：${ENGINEERING_STATES[current.state].label}` };
+}
+
+export { engineeringTaskOutcome } from './task-presentation';

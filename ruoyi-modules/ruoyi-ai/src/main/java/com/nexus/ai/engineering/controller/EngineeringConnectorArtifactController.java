@@ -37,8 +37,9 @@ public class EngineeringConnectorArtifactController {
     public R<com.nexus.ai.engineering.domain.EngineeringTaskVo> complete(
             HttpServletRequest http,
             @PathVariable Long taskId,
-            @RequestBody com.nexus.ai.engineering.domain.EngineeringLease lease) {
-        return R.ok(artifacts.complete(EngineeringConnectorFilter.principal(http), taskId, lease));
+            @RequestBody com.nexus.ai.engineering.domain.EngineeringCompletionRequest request) {
+        return R.ok(artifacts.complete(
+                EngineeringConnectorFilter.principal(http), taskId, request.lease(), request.diagnostic()));
     }
 
     /** 申请绑定类型、路径、大小和真实摘要的五分钟票据。 */

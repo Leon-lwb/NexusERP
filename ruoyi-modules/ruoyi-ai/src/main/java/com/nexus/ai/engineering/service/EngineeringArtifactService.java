@@ -76,6 +76,13 @@ public class EngineeringArtifactService {
      */
     public EngineeringTaskVo complete(
             EngineeringDevicePrincipal principal, Long taskId, EngineeringLease lease) {
+        return complete(principal, taskId, lease, null);
+    }
+
+    /** 在原有 owner/设备/租约校验内处理连接器的有界诊断，旧客户端可不提交。 */
+    public EngineeringTaskVo complete(
+            EngineeringDevicePrincipal principal, Long taskId, EngineeringLease lease,
+            EngineeringConnectionDiagnostic diagnostic) {
         return tasks.finish(
                 principal,
                 taskId,
@@ -87,12 +94,23 @@ public class EngineeringArtifactService {
                     rows.forEach(
                             a -> types.add(EngineeringArtifactType.valueOf(a.getArtifactType())));
                     var action = EngineeringAction.valueOf(task.getAction());
+                    var connectionDiagnostic = diagnostic == null ? null : diagnostic.validated();
+                    require(connectionDiagnostic == null || action == EngineeringAction.CHECK_CONNECTION,
+                            422, "INVALID_RESULT", "此任务动作不接受连接诊断");
                     String error = task.getErrorCode();
                     if (error != null
                             && !Set.of("EXPORT_FAILED", "DRC_UNAVAILABLE").contains(error))
-                        return completion(EngineeringTaskState.FAILED, error, "本地工程动作失败，已保留可用诊断产物");
-                    if (action == EngineeringAction.CHECK_CONNECTION
-                            || action == EngineeringAction.OPEN_PROJECT)
+                        return new EngineeringTaskService.Completion(
+                                EngineeringTaskState.FAILED, error, "本地工程动作失败，已保留可用诊断产物", connectionDiagnostic);
+                    if (action == EngineeringAction.CHECK_CONNECTION) {
+                        if (connectionDiagnostic != null && !Boolean.TRUE.equals(connectionDiagnostic.connected()))
+                            return new EngineeringTaskService.Completion(
+                                    EngineeringTaskState.FAILED, "EDITOR_UNAVAILABLE", "嘉立创编辑器未连接", connectionDiagnostic);
+                        return new EngineeringTaskService.Completion(
+                                error == null ? EngineeringTaskState.SUCCEEDED : EngineeringTaskState.PARTIAL_SUCCESS,
+                                error, error == null ? null : "连接检查完成但存在异常", connectionDiagnostic);
+                    }
+                    if (action == EngineeringAction.OPEN_PROJECT)
                         return completion(
                                 error == null
                                         ? EngineeringTaskState.SUCCEEDED

@@ -135,9 +135,17 @@ export interface EngineeringTaskCommand {
   parentTaskId?: string;
   parameters?: EngineeringParameters;
 }
+/** 任务实际返回的有界连接诊断；历史任务可以没有该字段。 */
+export interface EngineeringConnectionDiagnostic {
+  connected: boolean;
+  cliVersion?: string | null;
+  editorVersion?: string | null;
+  transportMode?: 'CLI_COMPAT' | null;
+}
 export interface EngineeringTask extends Omit<EngineeringTaskCommand, 'idempotencyKey'> {
   taskId: string;
   state: EngineeringState;
+  connectionDiagnostic?: EngineeringConnectionDiagnostic | null;
   stage?: EngineeringStage;
   revision: number | string;
   deviceName?: string;

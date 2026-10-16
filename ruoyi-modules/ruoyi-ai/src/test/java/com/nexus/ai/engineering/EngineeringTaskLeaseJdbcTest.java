@@ -74,7 +74,8 @@ class EngineeringTaskLeaseJdbcTest {
                         f.catalog,
                         f.properties,
                         f.clock,
-                        f.sessions);
+                        f.sessions,
+                        f.notifier);
         var executor = Executors.newSingleThreadExecutor();
         try {
             var result = executor.submit(() -> tasks.claim(principal));
