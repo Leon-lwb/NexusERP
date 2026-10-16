@@ -270,6 +270,16 @@ public class AiSseMessageHelper {
         }
     }
 
+    /** 只根据真实工程任务回执发送卡片；模型文本、虚构ID和自行拼接的URL不能触发此事件。 */
+    public static void sendEngineeringTask(Long userId,com.nexus.ai.engineering.domain.EngineeringTaskVo task) {
+        try {
+            Map<String,Object> payload=new java.util.LinkedHashMap<>();
+            payload.put("taskId",task.taskId());payload.put("state",task.state());payload.put("action",task.action());
+            payload.put("deviceId",task.deviceId());payload.put("sessionId",task.sessionId());payload.put("requestId",task.requestId());payload.put("previewPath",task.previewPath());
+            send(userId,"AI_ENGINEERING_TASK",MAPPER.writeValueAsString(payload));
+        } catch(Exception e) {log.warn("发送工程任务卡片失败，可通过会话任务列表恢复");}
+    }
+
     /**
      * 统一发送方法，将消息编码为 JSON 格式并通过 Redis Pub/Sub 广播
      *

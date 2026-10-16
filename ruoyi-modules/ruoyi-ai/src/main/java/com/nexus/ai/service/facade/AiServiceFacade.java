@@ -102,6 +102,10 @@ public class AiServiceFacade {
     /** 只读查询当前租户所选工具身份；资料能力只识别本次已审部署，不改写工具权限。 */
     private final AiToolMapper aiToolMapper;
 
+    /** 工程功能显式启用时才装配；普通路由无需工程表或私有桶。 */
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private com.nexus.ai.engineering.service.EngineeringAgentFactory engineeringAgentFactory;
+
     /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */
     private static final ObjectMapper DRAIN_MAPPER = new ObjectMapper();
 
@@ -215,6 +219,12 @@ public class AiServiceFacade {
         final String finalUserName = userName;
 
         // 5. 智能路由：显式行为开关优先，其次前端显式指定模式，最后关键词自动判断
+
+        // 工程只在显式设备与工程动作意图共同成立时进入独立角色；普通库存/MCP/RAG路由沿用原语义。
+        if (engineeringAgentFactory != null && engineeringAgentFactory.requested(request)) {
+            invokeWithAgent(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
+            return sessionId;
+        }
 
         // 5a. 显式开关优先（独立于 mode，用户主动开启时覆盖路由）
         if (Boolean.TRUE.equals(request.getEnableWebSearch())) {
@@ -401,6 +411,9 @@ public class AiServiceFacade {
     private void runAgent(AiModel modelConfig, AiChatRequest request,
                           Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr,
                           AiChatSseLifecycle lifecycle) {
+        final com.nexus.ai.engineering.service.EngineeringToolContext.Context engineeringContext =
+            engineeringAgentFactory == null ? null : engineeringAgentFactory.capture(request, userId, sessionId, tenantId);
+
         // Agent 模式使用低 temperature（0.1），提高 SQL 生成准确性
         ChatModel chatModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
 
@@ -437,7 +450,7 @@ public class AiServiceFacade {
         }
         enhancedSb.append("【用户问题】\n").append(contextualQuery);
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
-        boolean directBulkQuery = isDirectBulkDataQuery(request.getContent());
+        boolean directBulkQuery = engineeringContext == null && isDirectBulkDataQuery(request.getContent());
         ChatModel queryModel = isPureDataQuery(request.getContent()) ? new CompleteAnswerChatModel(chatModel,
             chatModelFactory.getStreamingChatModel(modelConfig.getId(), request),
             token -> lifecycle.progress(() -> AiSseMessageHelper.sendContentIncrement(userId, token)),
@@ -474,6 +487,10 @@ public class AiServiceFacade {
             enhancedSb.insert(0, "【当前请求外部工具能力】\n" + mcpCapability.description() + "\n"
                 + mcpCapability.instructions() + "\n\n");
         }
+        if (engineeringContext != null) {
+            subAgents.add(engineeringAgentFactory.build(chatModel, engineeringContext));
+            enhancedSb.insert(0, "【受控工程能力】本次请求已绑定设备，只能由工程角色调用easyeda_具名任务工具。工具返回任务派发回执，不能宣称编辑器已经完成设计。\n\n");
+        }
         final String enhancedQuery = enhancedSb.toString();
         // 增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数。
         SupervisorAgent supervisor = directBulkQuery ? null : AgenticServices.supervisorBuilder()
@@ -496,6 +513,7 @@ public class AiServiceFacade {
                     modelConfig.getId(), modelConfig.getModelName());
                 // 设置当前知识库ID，供 KnowledgeGraphTool 限定图谱范围
                 AiRequestContext.setKnowledgeId(request.getKnowledgeId());
+                com.nexus.ai.engineering.service.EngineeringToolContext.set(engineeringContext);
                 // 设置 ThreadLocal OutputChannel，使 AiToolExecutedListener 能推送事件
                 AiToolExecutedListener.setChannel(channel);
 
@@ -505,9 +523,11 @@ public class AiServiceFacade {
                 // 推送 Agent 开始思考
                 AgentStreamHelper.sendThinking(channel, executionAgentName, "开始分析您的问题...");
 
-                String result = directBulkQuery ? queryAgent.query(enhancedQuery) : supervisor.invoke(enhancedQuery);
-                // 先验证正文与本请求的真实读取证据；失败不得落库、推送 content/done 或正常 complete。
-                mcpCapability.requireSuccessfulResult(result);
+                String rawResult = directBulkQuery ? queryAgent.query(enhancedQuery) : supervisor.invoke(enhancedQuery);
+                // 资料证据闸门继续校验真实模型结果，工程角色不能绕过既有MCP读取证据。
+                mcpCapability.requireSuccessfulResult(rawResult);
+                final String result = engineeringContext == null ? rawResult
+                    : engineeringAgentFactory.verifiedResult(engineeringContext, rawResult);
 
                 long duration = System.currentTimeMillis() - startTime;
                 aiAgentListener.onAgentComplete(executionAgentName, duration, 0);
@@ -526,6 +546,7 @@ public class AiServiceFacade {
                 channel.completeWithError(e);
             } finally {
                 AiToolExecutedListener.clearChannel();
+                com.nexus.ai.engineering.service.EngineeringToolContext.clear();
                 AiRequestContext.clear();
                 OutputChannel.remove(requestId);
             }
