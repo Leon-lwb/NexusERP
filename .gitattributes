@@ -2,3 +2,7 @@ plus-ui/public/manual/index.html text eol=lf
 plus-ui/public/manual/manifest.json text eol=lf
 plus-ui/public/manual/index.html.gz binary
 plus-ui/public/manual/assets/* binary
+
+# Keep the install SQL identical to its dated archive and SHA-256 on every platform.
+/script/sql/ry-vue.sql text eol=lf
+/script/sql/snapshots/**/*.sql.gz binary

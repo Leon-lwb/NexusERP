@@ -1,0 +1,144 @@
+{
+  "verifiedOn": "2026-10-17",
+  "targetBranch": "plus",
+  "featureBranch": "codex/easyeda-pcb-draft-preview-20261016",
+  "featureFixCommit": "50040e80",
+  "preservedDocsCommit": "ab0ea8a5",
+  "mergeCommit": "1cab0e47",
+  "relatedTests": [
+    {
+      "name": "backend-engineering-and-system-storage",
+      "suites": 20,
+      "tests": 75,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "connector",
+      "tests": 49,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "name": "engineering-ui",
+      "tests": 81,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "name": "report-ui-and-install-schema",
+      "tests": 142,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "name": "warehouse-rule-menu-case",
+      "tests": 6,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "relatedTestTotal": 353,
+  "frontendTypeCheck": true,
+  "connectorTypeCheck": true,
+  "productionBuild": {
+    "passed": true,
+    "engineeringEnabled": true,
+    "modules": 4639,
+    "duration": "1m21s"
+  },
+  "sqlStaticChecks": {
+    "baselineAtMerge": {
+      "testsRun": 6,
+      "failures": 33,
+      "errors": 0,
+      "skipped": 0,
+      "failureIds": [
+        "sql_baseline_contract.P1PurchaseDdlContract.test_guard_and_detail_to_line_ledger_with_snowflake_ids",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_legacy_source_id_definition_unchanged",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='ai_decision_action')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='ai_decision_run')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='pu_requirement_allocation_event')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='pu_requirement_allocation_ledger')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='pu_requirement_material_guard')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_system_contract_is_nullable_and_never_certifies_unknown_runs",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='allow_split')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='moq_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='order_multiple')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='order_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_effective_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_expires_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_verified_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_version')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='units_per_pack')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='verified_moq_qty')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_unit_of_measure', column='conversion_verified_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_unit_of_measure', column='conversion_version')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_unit_of_measure', column='quantity_scale')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='allow_split')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='moq_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='order_multiple')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='order_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_effective_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_expires_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_verified_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_version')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='units_per_pack')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='verified_moq_qty')"
+      ],
+      "errorIds": []
+    },
+    "currentSnapshot": {
+      "testsRun": 6,
+      "failures": 31,
+      "errors": 0,
+      "skipped": 0,
+      "failureIds": [
+        "sql_baseline_contract.P1PurchaseDdlContract.test_guard_and_detail_to_line_ledger_with_snowflake_ids",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_legacy_source_id_definition_unchanged",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='pu_requirement_allocation_event')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='pu_requirement_allocation_ledger')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_purchase_and_decision_contracts_belong_to_their_install_schema (table='pu_requirement_material_guard')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_system_contract_is_nullable_and_never_certifies_unknown_runs",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='allow_split')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='moq_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='order_multiple')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='order_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_effective_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_expires_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_verified_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='terms_version')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='units_per_pack')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_material_vendor', column='verified_moq_qty')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_unit_of_measure', column='conversion_verified_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_unit_of_measure', column='conversion_version')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_column_types_preserve_current_purchase_contract (table='bd_unit_of_measure', column='quantity_scale')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='allow_split')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='moq_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='order_multiple')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='order_uom_id')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_effective_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_expires_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_verified_at')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='terms_version')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='units_per_pack')",
+        "sql_baseline_contract.P1PurchaseDdlContract.test_vendor_and_uom_terms_are_unknown_for_existing_and_seed_rows (table='bd_material_vendor', column='verified_moq_qty')"
+      ],
+      "errorIds": []
+    },
+    "sameFailureIds": false
+  },
+  "newSqlStaticFailureIds": [],
+  "databaseEvidence": [
+    "../../../script/sql/snapshots/2026-10-17/restore-verification.json",
+    "../../../script/sql/snapshots/2026-10-17/mysql8-restore-verification.json"
+  ],
+  "sourceDatabaseWrites": 0,
+  "existingFrontendBackendConnectorPreserved": true,
+  "productionDeployed": false
+}
