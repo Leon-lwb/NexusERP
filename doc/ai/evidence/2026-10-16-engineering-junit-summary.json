@@ -1,0 +1,181 @@
+{
+  "scope": "ISOLATED_H2_AND_ADAPTERS_NO_EXISTING_DATABASE",
+  "suites": [
+    {
+      "name": "com.nexus.ai.engineering.EngineeringArtifactAccessTest",
+      "tests": "2",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "4.815"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringArtifactFormatTest",
+      "tests": "3",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.074"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringArtifactManifestTest",
+      "tests": "5",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.21"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringArtifactUploadFailureTest",
+      "tests": "4",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.558"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringArtifactUploadTest",
+      "tests": "5",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.194"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringConnectorBoundaryTest",
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.774"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringDeviceAuthTest",
+      "tests": "7",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.092"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringDisabledConfigurationTest",
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.232"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringSchemaTest",
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.016"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringSecurityReviewTest",
+      "tests": "5",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.195"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringTaskLeaseJdbcTest",
+      "tests": "3",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.101"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringTaskLifecycleTest",
+      "tests": "7",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.229"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringTaskStateTest",
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.002"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringTemplateCatalogTest",
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.008"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringToolContextTest",
+      "tests": "3",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.102"
+    },
+    {
+      "name": "com.nexus.ai.engineering.EngineeringToolRoutingTest",
+      "tests": "3",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.187"
+    },
+    {
+      "name": "com.nexus.ai.mcp.service.McpClientManagerTest",
+      "tests": "18",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.691"
+    },
+    {
+      "name": "com.nexus.ai.mcp.service.McpLocalEndpointAllowlistTest",
+      "tests": "8",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.409"
+    },
+    {
+      "name": "com.nexus.ai.service.facade.AiServiceFacadeMcpGateTest",
+      "tests": "16",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.373"
+    },
+    {
+      "name": "com.nexus.system.engineering.SysEngineeringIdentityTest",
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "2.114"
+    },
+    {
+      "name": "com.nexus.system.engineering.SysEngineeringOssBoundaryTest",
+      "tests": "2",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.301"
+    },
+    {
+      "name": "com.nexus.system.engineering.SysEngineeringStorageTest",
+      "tests": "3",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.302"
+    }
+  ]
+}

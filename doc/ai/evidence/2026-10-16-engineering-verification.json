@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-16",
+  "branch": "codex/easyeda-pcb-draft-preview-20261016",
+  "scope": "ISOLATED_TESTS_AND_LOCAL_EDITOR_NOT_DEPLOYMENT",
+  "checks": [
+    {
+      "name": "connector",
+      "command": "npm test",
+      "tests": 46,
+      "pass": 46,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-engineering",
+      "command": "npm run test:engineering",
+      "tests": 70,
+      "pass": 70,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-chat",
+      "command": "node --test tests/ai-knowledge-mcp/chat-stream-state.test.mjs tests/ai-knowledge-mcp/f06-tool-duration.test.mjs",
+      "tests": 39,
+      "pass": 39,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "name": "backend",
+      "tests": 100,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-type-check",
+      "command": "npm run type-check",
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-production-build",
+      "command": "npm run build:prod",
+      "modules": 4631,
+      "elapsed": "1m40s",
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-targeted-eslint-and-prettier",
+      "exitCode": 0
+    },
+    {
+      "name": "connector-type-check",
+      "command": "npm run type-check",
+      "exitCode": 0
+    }
+  ]
+}
