@@ -94,6 +94,20 @@ export const constantRoutes: RouteRecordRaw[] = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes: RouteRecordRaw[] = [
   {
+    path: '/ai/engineering/task/:taskId',
+    component: Layout,
+    hidden: true,
+    permissions: ['ai:engineering:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/ai/engineering/preview/index.vue'),
+        name: 'EngineeringPreview',
+        meta: { title: 'PCB 工程任务详情', activeMenu: '/ai/engineering/task', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/im',
     component: Layout,
     hidden: true,

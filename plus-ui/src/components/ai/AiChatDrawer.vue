@@ -44,6 +44,7 @@
           </el-radio-group>
           <ModelSelect v-model="selectedModel" model-type="TEXT,VISION" placeholder="默认模型" style="width: 130px" />
         </div>
+        <EngineeringChatPanel :controller="engineering" :disabled="loading" />
         <el-input
           v-model="inputText"
           type="textarea"
@@ -72,6 +73,8 @@ import { createAiRenderer, sanitizeHtml, sanitizeOption } from '@/utils/aiRender
 import DeepThinking from '@/components/ai/DeepThinking.vue';
 import WebSearchToggle from '@/components/ai/WebSearchToggle.vue';
 import ModelSelect from '@/components/ai/ModelSelect.vue';
+import EngineeringChatPanel from '@/components/ai/engineering/EngineeringChatPanel.vue';
+import { useEngineeringChat } from '@/components/ai/engineering/useEngineeringChat';
 import 'github-markdown-css';
 
 /**
@@ -100,7 +103,10 @@ const messages = ref<ChatMessage[]>([]);
 const thinking = ref(false);
 const loading = ref(false);
 const messageListRef = ref<HTMLElement>();
-const sessionId = ref<number | null>(null);
+const sessionId = ref<string | null>(null);
+/** 会话切换后拒绝旧请求的迟到回执。 */
+const chatEpoch = ref(0);
+const engineering = useEngineeringChat(sessionId, visible);
 const chatMode = ref('auto');
 const enableThinking = ref(false);
 const enableWebSearch = ref(false);
@@ -259,27 +265,36 @@ async function sendMessage() {
   const text = inputText.value.trim();
   if (!text || loading.value) return;
 
+  const epoch = chatEpoch.value;
+  const requestSessionId = sessionId.value;
+  const engineeringFields = engineering.prepare(text);
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
 
   await nextTick();
   scrollToBottom();
+  if (epoch !== chatEpoch.value) return;
 
   try {
     const res = await sendAiMessage({
+      ...engineeringFields,
       content: text,
-      sessionId: sessionId.value ?? undefined,
+      sessionId: requestSessionId ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
       model: selectedModel.value || undefined,
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined
     });
+    if (epoch !== chatEpoch.value) return;
     const sid = res?.data ?? res;
-    if (sid && typeof sid === 'number') {
-      sessionId.value = sid;
+    if (sid && (typeof sid === 'string' || (typeof sid === 'number' && Number.isSafeInteger(sid)))) {
+      sessionId.value = String(sid);
+      engineering.sent();
     }
   } catch (e: any) {
+    if (epoch !== chatEpoch.value) return;
+    if (engineeringFields.engineeringRequestId) inputText.value = text;
     loading.value = false;
     thinking.value = false;
     messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` });
@@ -287,6 +302,7 @@ async function sendMessage() {
 }
 
 function newChat() {
+  chatEpoch.value++;
   sessionId.value = null;
   messages.value = [];
   thinking.value = false;
@@ -313,6 +329,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  chatEpoch.value++;
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   // 释放图表与尺寸观察者：本组件全局常驻，多轮对话会持续累积实例
   mountedCharts.forEach(({ chart, ro }) => {

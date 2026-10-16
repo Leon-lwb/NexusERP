@@ -38,6 +38,10 @@ export function sendAiMessage(data: {
   enableWebSearch?: boolean;
   /** 本次对话启用的 MCP 工具 ID 列表 */
   enabledToolIds?: number[];
+  /** 用户主动选择的工程设备标识，雪花 ID 按字符串传输。 */
+  engineeringDeviceId?: string;
+  /** 同一条工程请求的 UUID，网络重试复用以避免重复改图。 */
+  engineeringRequestId?: string;
 }) {
   return request({
     url: '/ai/chat/send',
