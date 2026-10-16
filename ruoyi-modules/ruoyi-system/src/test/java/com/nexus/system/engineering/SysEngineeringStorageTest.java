@@ -9,6 +9,7 @@ import com.nexus.common.oss.enums.AccessPolicyType;
 import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.system.domain.SysOss;
 import com.nexus.system.mapper.SysOssMapper;
+import com.nexus.system.service.ISysOssConfigService;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,6 +25,30 @@ class SysEngineeringStorageTest {
     @TempDir Path temp;
 
     @Test
+    void coldStartInitializesConfigurationBeforePrivateBucketValidation() {
+        var initialized = new java.util.concurrent.atomic.AtomicBoolean(false);
+        var configs = mock(ISysOssConfigService.class);
+        doAnswer(call -> {
+            initialized.set(true);
+            return null;
+        }).when(configs).init();
+        var client = mock(OssClient.class);
+        when(client.getAccessPolicy()).thenReturn(AccessPolicyType.PRIVATE);
+        try (var factory = mockStatic(OssFactory.class)) {
+            factory.when(() -> OssFactory.instance("private-engineering")).thenAnswer(call -> {
+                if (!initialized.get()) throw new IllegalStateException("OSS cache is cold");
+                return client;
+            });
+            var adapter = new SysEngineeringStorageAdapter(
+                    mock(SysOssMapper.class),
+                    mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class),
+                    "private-engineering", configs);
+            assertDoesNotThrow(adapter::verifyConfiguration);
+            verify(configs).init();
+        }
+    }
+
+    @Test
     void publicOrImplicitBucketIsRejectedBeforeAnyUpload() {
         var client = mock(OssClient.class);
         var mapper = mock(SysOssMapper.class);
@@ -31,13 +56,14 @@ class SysEngineeringStorageTest {
         try (var factory = mockStatic(OssFactory.class)) {
             factory.when(() -> OssFactory.instance("private-engineering")).thenReturn(client);
             var adapter =
-                    new SysEngineeringStorageAdapter(mapper, artifacts, "private-engineering");
+                    new SysEngineeringStorageAdapter(
+                            mapper, artifacts, "private-engineering", mock(ISysOssConfigService.class));
             when(client.getAccessPolicy()).thenReturn(AccessPolicyType.PUBLIC);
             assertThrows(IllegalStateException.class, adapter::verifyConfiguration);
             assertThrows(
                     IllegalStateException.class,
                     () ->
-                            new SysEngineeringStorageAdapter(mapper, artifacts, "")
+                            new SysEngineeringStorageAdapter(mapper, artifacts, "", mock(ISysOssConfigService.class))
                                     .verifyConfiguration());
             verifyNoInteractions(mapper);
         }
@@ -54,7 +80,8 @@ class SysEngineeringStorageTest {
         try (var factory = mockStatic(OssFactory.class)) {
             factory.when(() -> OssFactory.instance("private-engineering")).thenReturn(client);
             var adapter =
-                    new SysEngineeringStorageAdapter(mapper, artifacts, "private-engineering");
+                    new SysEngineeringStorageAdapter(
+                            mapper, artifacts, "private-engineering", mock(ISysOssConfigService.class));
             adapter.verifyConfiguration();
             var reservation = new com.nexus.common.ai.domain.entity.AiEngineeringArtifact();
             reservation.setArtifactId(9L);
@@ -112,7 +139,8 @@ class SysEngineeringStorageTest {
         try (var factory = mockStatic(OssFactory.class)) {
             factory.when(() -> OssFactory.instance("private-engineering")).thenReturn(client);
             var adapter =
-                    new SysEngineeringStorageAdapter(mapper, artifacts, "private-engineering");
+                    new SysEngineeringStorageAdapter(
+                            mapper, artifacts, "private-engineering", mock(ISysOssConfigService.class));
             assertThrows(
                     IllegalStateException.class,
                     () ->
@@ -163,7 +191,8 @@ class SysEngineeringStorageTest {
         when(artifacts.selectById(9L)).thenReturn(reservation);
         try (var factory = mockStatic(OssFactory.class)) {
             factory.when(() -> OssFactory.instance("private-engineering")).thenReturn(client);
-            var adapter = new SysEngineeringStorageAdapter(mapper, artifacts, "private-engineering");
+            var adapter = new SysEngineeringStorageAdapter(
+                            mapper, artifacts, "private-engineering", mock(ISysOssConfigService.class));
             assertDoesNotThrow(() -> adapter.write(new EngineeringArtifactWrite(
                     new EngineeringActor("000001", 7L, Set.of()), 8L, 9L, type, staged,
                     "a".repeat(64), Files.size(staged),

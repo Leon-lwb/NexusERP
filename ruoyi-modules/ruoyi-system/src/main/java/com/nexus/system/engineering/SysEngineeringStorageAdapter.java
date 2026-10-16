@@ -7,6 +7,7 @@ import com.nexus.common.oss.enums.AccessPolicyType;
 import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.system.domain.SysOss;
 import com.nexus.system.mapper.SysOssMapper;
+import com.nexus.system.service.ISysOssConfigService;
 
 import jakarta.annotation.PostConstruct;
 
@@ -26,6 +27,7 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
     private final SysOssMapper mapper;
     private final com.nexus.common.ai.mapper.AiEngineeringArtifactMapper artifacts;
     private final String configKey;
+    private final ISysOssConfigService ossConfigs;
 
     /**
      * 注入工程私桶及 master 元数据契约，禁止回落默认 OSS。
@@ -33,14 +35,17 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
      * @param mapper 内部 sys_oss 元数据映射器
      * @param artifacts 工程产物映射器，用于证明 RESERVED/CONFIRMED/CLEANING 状态
      * @param configKey 显式配置的专用私桶键
+     * @param ossConfigs 在私桶校验前从主库初始化可信OSS配置
      */
     public SysEngineeringStorageAdapter(
             SysOssMapper mapper,
             com.nexus.common.ai.mapper.AiEngineeringArtifactMapper artifacts,
-            @Value("${nexus.ai.engineering.oss-config-key:}") String configKey) {
+            @Value("${nexus.ai.engineering.oss-config-key:}") String configKey,
+            ISysOssConfigService ossConfigs) {
         this.mapper = mapper;
         this.artifacts = artifacts;
         this.configKey = configKey;
+        this.ossConfigs = ossConfigs;
     }
 
     /**
@@ -50,6 +55,8 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
      */
     @PostConstruct
     public void verifyConfiguration() {
+        // ApplicationRunner runs after @PostConstruct; a new/cleared Redis cache must not block boot.
+        ossConfigs.init();
         client();
     }
 
