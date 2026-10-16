@@ -290,3 +290,35 @@ test('完成响应丢失后以详情终态清除恢复记录', async () => {
   assert.equal(store.value, null);
   assert.equal(b.state.calls.filter((c) => c.path.endsWith('/complete')).length, 1);
 });
+/** DRC正文已在产物文件中归档，不应占用受保护恢复信封的有限空间。 */
+test('大DRC报告只保留上传元数据，不会使恢复记录超限而丢失执行结果', async () => {
+  const b = backend();
+  const snapshots = [];
+  const store = {
+    async load() {
+      return null;
+    },
+    async save(state) {
+      const json = JSON.stringify(state);
+      if (Buffer.byteLength(json) > 256 * 1024) throw new Error('RESUME_STATE_TOO_LARGE');
+      snapshots.push(JSON.parse(json));
+    },
+    async clear() {}
+  };
+  const drc = {
+    status: 'VIOLATIONS',
+    errorCount: 10000,
+    items: Array.from({ length: 10000 }, (_, index) => ({ code: String(index), message: '合成DRC详情'.repeat(12) }))
+  };
+  const executor = {
+    async execute() {
+      return { artifacts: [], errors: [], diagnostic: { connected: true }, drc };
+    }
+  };
+  const result = await new TaskRunner(b.api, executor, 'unused', { renewIntervalMs: 0, resumeStore: store }).executeLease(b.lease);
+  assert.equal(result.state, 'SUCCEEDED');
+  assert.equal(b.state.errorCode, null);
+  assert.ok(snapshots.some((state) => state.phase === 'EXECUTED'));
+  assert.ok(snapshots.every((state) => !state.result || state.result.drc === undefined));
+  assert.equal(drc.items.length, 10000);
+});

@@ -252,11 +252,14 @@ export class TaskRunner {
         state.phase = 'EXECUTING';
         await persist();
         signal.throwIfAborted();
-        state.result = await this.executor.execute(task, signal, async (next, stageSignal) => {
+        const executed = await this.executor.execute(task, signal, async (next, stageSignal) => {
           signal.throwIfAborted();
           await event(next, {}, stageSignal ? AbortSignal.any([signal, stageSignal]) : signal);
           signal.throwIfAborted();
         });
+        if (!executed || !Array.isArray(executed.artifacts)) throw new Error('INVALID_EXECUTION_RESULT');
+        // 报告正文只保留在产物文件；恢复仅需上传元数据，避免大DRC挤满DPAPI信封。
+        state.result = { artifacts: executed.artifacts, diagnostic: executed.diagnostic, errors: executed.errors };
         state.phase = 'EXECUTED';
         await serialize(persist);
       }
