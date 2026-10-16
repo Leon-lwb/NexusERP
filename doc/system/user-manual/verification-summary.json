@@ -1,17 +1,18 @@
 {
-  "code_date": "2026-10-12",
-  "generated_date": "2026-10-13",
+  "code_date": "2026-10-17",
+  "generated_date": "2026-10-17",
   "baseline": {
     "branch": "plus",
-    "commit": "fe59e4ae"
+    "commit": "b154279b",
+    "scope": "reports and engineering; other chapters/diagrams retain fe59e4ae (2026-10-12)"
   },
   "manual": {
     "path": "doc/system/user-manual/NexusERP_用户操作手册.docx",
-    "version": "4.0",
-    "sha256": "0062b7a1c331cee585d9debd078d59d65a82802610d6e14f05ac59ff88c3435c",
-    "bytes": 35309773,
+    "version": "4.1",
+    "sha256": "a50dd4951b0adebd8fdb01318f1d5f708e9fba688b49e048c3782f3e5e38d2b9",
+    "bytes": 34162971,
     "chapters": 23,
-    "tables": 49,
+    "tables": 52,
     "embedded_diagrams": 29
   },
   "diagrams": {
@@ -24,68 +25,79 @@
   },
   "unit_tests": {
     "command": "python -X utf8 -m unittest discover -s doc/flowcharts/scripts -p \"test_*.py\" -v",
-    "run": 28,
+    "run": 30,
     "failures": 0,
     "skipped": 0
   },
   "render": {
-    "engine": "WPS",
-    "page_count": 174,
-    "toc_count": 1,
-    "image_occurrences": 29,
-    "image_pages": [
-      12,
-      27,
-      37,
-      46,
-      51,
-      57,
-      65,
-      70,
-      72,
-      75,
-      80,
-      86,
-      90,
-      92,
-      98,
-      102,
-      106,
-      108,
-      111,
-      114,
-      120,
-      124,
-      127,
-      132,
-      138,
-      147,
-      150,
-      155,
-      161
-    ],
-    "geometry_check_passed": true,
-    "known_blank_body_pages": [24],
-    "pagination_optimization_candidate_written_back": false,
-    "subsequent_strict_office_probe_result": "failed_closed_before_open",
-    "issues": [],
-    "visual_sample_pages": [
-      1,
-      2,
-      12,
-      70,
-      98,
-      124,
-      161,
-      174
-    ],
-    "independent_session": true,
-    "input_unchanged_during_render": true,
-    "refreshed_copy_written_back": true
+    "status": "not_run_for_v4.1",
+    "toc_fields": "update in Word/WPS",
+    "pagination_verified": false
   },
   "limitations": [
-    "Repository documentation verification only; not production deployment or business acceptance.",
-    "No database writes, service lifecycle operations, payment transactions, physical device acceptance, or production signatures.",
-    "PDF bounds checks and sampled pages do not replace full human proofreading."
-  ]
+    "Document structure and browser checks are distinct from production deployment and business acceptance.",
+    "V4.1 has not been rendered or repaginated in Office/WPS; historical PDF evidence belongs to V4.0.",
+    "Windows connector pairing and real EDA execution require an online authorized Windows device."
+  ],
+  "historical_render": {
+    "version": "4.0",
+    "sha256": "0062b7a1c331cee585d9debd078d59d65a82802610d6e14f05ac59ff88c3435c",
+    "render": {
+      "engine": "WPS",
+      "page_count": 174,
+      "toc_count": 1,
+      "image_occurrences": 29,
+      "image_pages": [
+        12,
+        27,
+        37,
+        46,
+        51,
+        57,
+        65,
+        70,
+        72,
+        75,
+        80,
+        86,
+        90,
+        92,
+        98,
+        102,
+        106,
+        108,
+        111,
+        114,
+        120,
+        124,
+        127,
+        132,
+        138,
+        147,
+        150,
+        155,
+        161
+      ],
+      "geometry_check_passed": true,
+      "known_blank_body_pages": [
+        24
+      ],
+      "pagination_optimization_candidate_written_back": false,
+      "subsequent_strict_office_probe_result": "failed_closed_before_open",
+      "issues": [],
+      "visual_sample_pages": [
+        1,
+        2,
+        12,
+        70,
+        98,
+        124,
+        161,
+        174
+      ],
+      "independent_session": true,
+      "input_unchanged_during_render": true,
+      "refreshed_copy_written_back": true
+    }
+  }
 }

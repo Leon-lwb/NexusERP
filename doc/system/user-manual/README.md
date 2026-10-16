@@ -32,10 +32,10 @@ python -X utf8 -m unittest discover -s doc/flowcharts/scripts -p "test_*.py" -v
 章节内容在 `../../flowcharts/scripts/manual_ch*.py` 和 `manual_current*.py`，图定义在 `current_*.json`。
 生成脚本检查每张图是否放入真实章节；不要只修改 Word 或 PNG 后声称已同步所有源文件。
 网页生成器输出独立的 `index.html`、`index.html.gz`、`manifest.json` 和 `assets/`；检查后将整个输出目录同步到 `plus-ui/public/manual/`，生产环境只需原子替换 `/manual/`，不需要重新打包主前端。
-当前交付文件的目录和页码已更新；以后重新生成时需再次使用Word/WPS更新域。
+重新生成Word后需使用Word/WPS更新目录和页码域；网页目录直接从正文标题生成，不依赖Word域。
 本机实际渲染证据见更新记录，不将结构校验当作纸面排版验收。
-当前正式交付保留最后实际核验的174页版，第24页为仅页眉页脚的空白页。
-生成器已修正章节分页；后续安全工具在本机WPS无法确认只读实例归属，故没有以未重新渲染的优化候选覆盖交付版，详见更新记录。
+当前交付为V4.1（2026-10-17），报表与工程连接器按plus/b154279b核对；第19章替换为自研报表，第14章新增14.14—14.16工程操作。其他章节与29张流程图沿用2026-10-12基线。
+本版已验证Word/HTML结构、图表完整性及网页显示；未重新调用Office/WPS排版，也未更新自动目录域或核验本版PDF页数。历史V4.0的174页记录只适用于旧文件，不能作为V4.1纸面验收证据。打开Word/WPS后可更新整个目录并复核分页。
 
 ## 本机排版核验
 
@@ -51,4 +51,4 @@ python -X utf8 doc/flowcharts/scripts/verify_document_layout.py --input $manual 
 检查报告记录PDF页数、图片出现次数、文字/图片边界与抽查页面；最终交付前仍应查看实际页面。
 
 `manual-outline.md`、`manual-outline-erp.md` 和旧 V2/V3 生成器是历史写作资料，不能作为当前状态或生产验收依据。
-本次没有执行数据库迁移、写入业务数据、上传真实印章/合同或调用生产模型服务。
+文档生成与校验不代表生产数据库迁移或业务验收。当前发布过程与结果另见2026-10-17发布记录。

@@ -53,7 +53,7 @@ def configure(doc):
         style.paragraph_format.keep_together = True
         style.paragraph_format.space_before = Pt(10)
     header = section.header.paragraphs[0]
-    base.set_font(header.add_run('NexusERP 用户操作手册 | V4.0'), size=8, color=RGBColor.from_string('62717A'))
+    base.set_font(header.add_run('NexusERP 用户操作手册 | V4.1'), size=8, color=RGBColor.from_string('62717A'))
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
     base.set_font(footer.add_run('NexusERP  /  '), size=8)
@@ -62,11 +62,11 @@ def configure(doc):
     update = OxmlElement('w:updateFields')
     update.set(qn('w:val'), 'true')
     settings.append(update)
-    doc.core_properties.title = 'NexusERP 用户操作手册 V4.0'
+    doc.core_properties.title = 'NexusERP 用户操作手册 V4.1'
     doc.core_properties.subject = 'Current operations and evidence-backed process diagrams'
     doc.core_properties.author = 'NexusERP'
-    doc.core_properties.version = '4.0'
-    doc.core_properties.comments = 'Documentation baseline: plus/fe59e4ae, 2026-10-12. Not production acceptance.'
+    doc.core_properties.version = '4.1'
+    doc.core_properties.comments = 'Reports/engineering baseline: plus/b154279b, 2026-10-17; other chapters/diagrams: plus/fe59e4ae, 2026-10-12. Not production acceptance.'
 
 
 class Chapters:
@@ -128,7 +128,7 @@ def front_matter(doc):
     base.para(doc, 'NexusERP', size=30, bold=True, color=base.ACCENT, align=WD_ALIGN_PARAGRAPH.CENTER, after=12)
     base.para(doc, '用户操作手册', size=24, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER, after=14)
     base.para(doc, 'ERP · MES · IoT · AI', size=14, color=RGBColor.from_string('62717A'), align=WD_ALIGN_PARAGRAPH.CENTER, after=34)
-    for text in ('文档版本：V4.0', '核对日期：2026-10-12', '代码基线：plus / fe59e4ae', '编制：项目文档维护'):
+    for text in ('文档版本：V4.1', '报表/工程核对日期：2026-10-17', '报表/工程代码基线：plus / b154279b', '编制：项目文档维护'):
         base.para(doc, text, size=11, align=WD_ALIGN_PARAGRAPH.CENTER, after=8)
     base.para(doc, '当前代码的操作指南，不替代现场部署与人工验收。', size=10, align=WD_ALIGN_PARAGRAPH.CENTER, after=12)
     doc.add_page_break()
@@ -136,7 +136,7 @@ def front_matter(doc):
     base.para(doc, '面向业务操作人员、管理员和现场支持人员。原有二十章保留，追加工位/履历、签章和仓储章节；'
                    '各流程图放置在关联章节，并保留可编辑源图。角色授权和环境菜单不同，实际可见入口可能不同。')
     base.table(doc, ['事项', '本手册口径'], [
-        ['代码事实', '核对 plus 分支 fe59e4ae，2026-10-12；关联源码见图集来源索引。'],
+        ['代码事实', '自研报表与工程连接器：plus/b154279b，2026-10-17；其他章节与29张流程图沿用2026-10-12的fe59e4ae基线。关联源码见图集来源索引。'],
         ['普通用户', '依据按钮、实际资料和当前对象状态执行；看见菜单或查询结果不等于可以写入。'],
         ['配置 / 部署', '模型、Vision、MQ、OSS、设备、SnailJob 和流程定义需管理员另行配置与核对。'],
         ['人工验收', '没有验证生产数据、Station 真机、移动端全链路或签章人工端到端验收。'],
@@ -223,6 +223,8 @@ def normalize_numbering(doc):
 def build(output=OUTPUT):
     from manual_current_operations import ch21_station, extend_iot, extend_cv
     from manual_current_intelligence import extend_ai, ch22_esign
+    from manual_current_engineering import extend_engineering
+    from manual_current_report import ch19_report
     specs = load_specs()
     if len(specs) < 29:
         raise ValueError('Current diagram set is incomplete')
@@ -247,8 +249,9 @@ def build(output=OUTPUT):
     extend_cv(*callbacks)
     base.ch14_ai(*callbacks)
     extend_ai(*callbacks)
+    extend_engineering(*callbacks)
     for chapter in (base.ch15_im, base.ch16_fin, base.ch17_pay, base.ch18_workflow,
-                    base.ch19_report, base.ch20_system, ch21_station, ch22_esign, ch23_warehouse):
+                    ch19_report, base.ch20_system, ch21_station, ch22_esign, ch23_warehouse):
         chapter(*callbacks)
     base.appendix(*callbacks)
     diagram_appendix(doc, chapters)

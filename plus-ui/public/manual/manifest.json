@@ -1,14 +1,15 @@
 {
   "source": "E:\\Nexus\\nexus-erp\\doc\\system\\user-manual\\NexusERP_用户操作手册.docx",
-  "source_sha256": "0062b7a1c331cee585d9debd078d59d65a82802610d6e14f05ac59ff88c3435c",
-  "generated_at": "2026-10-13T10:48:51+08:00",
-  "version": "4.0",
+  "source_sha256": "a50dd4951b0adebd8fdb01318f1d5f708e9fba688b49e048c3782f3e5e38d2b9",
+  "generated_at": "2026-10-17T01:47:42+08:00",
+  "version": "4.1",
+  "review_date": "2026-10-17",
   "chapters": 23,
-  "headings": 218,
-  "tables": 49,
+  "headings": 228,
+  "tables": 52,
   "images": 29,
-  "index_bytes": 367512,
-  "gzip_bytes": 121083,
+  "index_bytes": 379472,
+  "gzip_bytes": 125435,
   "assets_bytes": 35043639,
   "assets": [
     {

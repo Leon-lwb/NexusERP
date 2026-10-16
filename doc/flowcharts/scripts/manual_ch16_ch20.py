@@ -309,27 +309,9 @@ def ch18_workflow(doc, h1, h2, h3, para, bullet, numbered, table):
 
 
 def ch19_report(doc, h1, h2, h3, para, bullet, numbered, table):
-    h1(doc, '第19章 报表管理')
-    para(doc, '报表模块基于JimuReport（积木报表），以iframe方式集成仪表盘与设计器，'
-              '与16.9财务报表的科目余额计算入口不同。页面依赖报表服务地址、独立数据源和登录鉴权；'
-              '前端壳页面存在不代表仪表盘、数据集或生产服务已经配置完成。')
-
-    h2(doc, '19.1 报表仪表盘')
-    para(doc, '菜单定位：报表管理 > 仪表盘；页面：plus-ui/src/views/report/dashboard/index.vue。')
-    para(doc, '页面读取VITE_APP_JMUREPORT_DASHBOARD_URL并附登录token加载iframe；'
-              '展示内容取决于报表端已保存的仪表盘与数据集。空白或无权限时先核对配置地址、登录态、'
-              '报表服务可达性及目标数据源，不能凭静态菜单判断业务报表已可用。')
-
-    h2(doc, '19.2 报表设计器')
-    para(doc, '菜单定位：报表管理 > 设计器；页面：plus-ui/src/views/report/design/index.vue，'
-              '从VITE_APP_JMUREPORT_DESIGN_URL加载并携带登录token。')
-    para(doc, '设计操作由所部署JimuReport界面提供，本仓库前端只提供嵌入入口：')
-    bullet(doc, '数据源/SQL分析：由报表端维护；修改连接或SQL前须确认目标库、租户过滤、只读账号与业务数据授权')
-    bullet(doc, '图表和数据集：可配置的组件以实际部署版本为准，不能由iframe入口推定所有图表或模板已具备')
-    bullet(doc, '分享与定时推送：当前Vue入口和Token桥接未提供独立操作实现，不作为本手册承诺的已上线功能')
-    bullet(doc, '权限：JimuReportTokenService沿用Sa-Token登录用户、租户、角色和菜单权限；已认证用户追加查看取数权限，设计/数据源高危权限仅向超级管理员或superadmin/admin角色追加')
-    para(doc, '不要在截图、日志或分享链接中暴露带token的iframe地址。Token桥接不等于任意SQL自动按租户隔离；'
-              '具体数据集过滤、查看/编辑/导出规则仍需在报表服务和实际权限配置中核验。')
+    # Keep historical generator entrypoints consistent with the current report module.
+    from manual_current_report import ch19_report as current_report
+    return current_report(doc, h1, h2, h3, para, bullet, numbered, table)
 
 
 def ch20_system(doc, h1, h2, h3, para, bullet, numbered, table):
@@ -514,8 +496,8 @@ def appendix(doc, h1, h2, h3, para, bullet, numbered, table):
           ],
           widths=[3.0, 4.5, 8.5])
 
-    h2(doc, 'B.3 V4（2026-10-12）源码核对记录')
-    para(doc, '本次以plus分支fe59e4ae及核对时的实际服务、控制器、前端页面/API为事实来源，'
+    h2(doc, 'B.3 V4（2026-10-12）历史源码核对记录')
+    para(doc, '以下保留2026-10-12历史核对结果；报表现已替换为第19章自研模块，工程连接器见14.14—14.16。历史记录以plus分支fe59e4ae及核对时的实际服务、控制器、前端页面/API为事实来源，'
               '保留第16-20章与附录的操作细节，直接修正旧版状态、菜单及联动描述；'
               '不运行数据库写脚本、不以历史方案、旧测试报告或演示数据代替当前实现。')
     table(doc,

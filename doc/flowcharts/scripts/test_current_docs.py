@@ -138,7 +138,9 @@ class CurrentManualTests(unittest.TestCase):
         cls.text = "\n".join(p.text for p in cls.doc.paragraphs)
 
     def test_manual_has_current_version_and_baseline(self):
-        self.assertIn("V4.0", self.text)
+        self.assertIn("V4.1", self.text)
+        self.assertIn("2026-10-17", self.text)
+        self.assertIn("b154279b", self.text)
         self.assertIn("2026-10-12", self.text)
         self.assertIn("fe59e4ae", self.text)
 

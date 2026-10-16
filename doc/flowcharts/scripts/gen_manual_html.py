@@ -202,7 +202,7 @@ def navigation_html(headings: list[dict]) -> str:
     return "".join(items)
 
 
-def page_template(*, article: str, cover: str, navigation: str, source_sha256: str, generated_at: str) -> str:
+def page_template(*, article: str, cover: str, navigation: str, source_sha256: str, generated_at: str, title: str, version: str, review_date: str) -> str:
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -211,7 +211,7 @@ def page_template(*, article: str, cover: str, navigation: str, source_sha256: s
   <meta name="source-sha256" content="{source_sha256}">
   <meta name="generated-at" content="{html.escape(generated_at, quote=True)}">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23087f72'/%3E%3Cpath d='M16 47V17h8l16 19V17h8v30h-8L24 28v19z' fill='white'/%3E%3C/svg%3E">
-  <title>NexusERP 用户操作手册 V4.0</title>
+  <title>{html.escape(title)}</title>
   <style>
     :root {{
       color-scheme: light;
@@ -362,7 +362,7 @@ def page_template(*, article: str, cover: str, navigation: str, source_sha256: s
   <header class="topbar">
     <button class="menu-button" id="menu-button" type="button" aria-label="打开目录" aria-expanded="false"><span></span><span></span><span></span></button>
     <div class="topbar-title">NexusERP 用户操作手册</div>
-    <div class="topbar-version">V4.0 · 核对日期 2026-10-12</div>
+    <div class="topbar-version">V{html.escape(version)} · 核对日期 {html.escape(review_date)}</div>
   </header>
   <aside class="sidebar" id="sidebar">
     <div class="search-box">
@@ -586,12 +586,18 @@ def generate_manual_html(source: Path | str, output: Path | str) -> dict:
     source_hash = sha256_file(source)
     generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
     chapter_count = sum(item["kind"] == "chapter" for item in headings)
+    version = document.core_properties.version or "unknown"
+    title = document.core_properties.title or "NexusERP 用户操作手册"
+    review_date = next((re.search(r"20\d{2}-\d{2}-\d{2}", line).group(0)
+                        for line in cover_lines
+                        if "核对日期" in line and re.search(r"20\d{2}-\d{2}-\d{2}", line)), "见正文")
     page = page_template(
         article="".join(article_parts),
         cover=render_cover(cover_lines),
         navigation=navigation_html(headings),
         source_sha256=source_hash,
         generated_at=generated_at,
+        title=title, version=version, review_date=review_date,
     )
     index = output / "index.html"
     index.write_text(page, encoding="utf-8", newline="\n")
@@ -603,7 +609,8 @@ def generate_manual_html(source: Path | str, output: Path | str) -> dict:
         "source": str(source),
         "source_sha256": source_hash,
         "generated_at": generated_at,
-        "version": "4.0",
+        "version": version,
+        "review_date": review_date,
         "chapters": chapter_count,
         "headings": len(headings),
         "tables": table_count,

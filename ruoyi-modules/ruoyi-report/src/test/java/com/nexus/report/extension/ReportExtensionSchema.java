@@ -16,7 +16,8 @@ public final class ReportExtensionSchema {
         try {
             var sql =
                     Files.readString(
-                            Path.of("../../script/sql/update/2026-10-15-report-e2-e7.sql"));
+                            Path.of("../../script/sql/update/2026-10-15-report-e2-e7.sql"))
+                            .replace("\r\n", "\n");
             var tables =
                     Pattern.compile(
                                     "CREATE TABLE IF NOT EXISTS \u0060rpt_[^\u0060]+\u0060"

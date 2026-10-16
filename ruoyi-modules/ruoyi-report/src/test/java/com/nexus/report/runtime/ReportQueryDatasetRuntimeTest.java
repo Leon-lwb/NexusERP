@@ -32,7 +32,8 @@ class ReportQueryDatasetRuntimeTest {
         try (var f = new RuntimeReviewFixture(directory)) {
             String increment =
                     Files.readString(
-                            Path.of("../../script/sql/update/2026-10-15-report-e2-e7.sql"));
+                            Path.of("../../script/sql/update/2026-10-15-report-e2-e7.sql"))
+                            .replace("\r\n", "\n");
             var ddl =
                     Pattern.compile(
                                     "CREATE TABLE IF NOT EXISTS `rpt_query[^`]*` \\([\\s\\S]*?\\)"
