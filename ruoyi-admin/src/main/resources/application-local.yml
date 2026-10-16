@@ -1,0 +1,23 @@
+# 本地环境复用共享连接契约，不额外激活dev profile。
+# 后一份文档覆盖导入值；config/application-local.yml仍可作外部私有覆盖。
+spring:
+  config:
+    import: classpath:application-dev.yml
+
+--- # 本地资源与访问边界
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+spring:
+  datasource:
+    dynamic:
+      p6spy: false
+      hikari:
+        maxPoolSize: 8
+        minIdle: 1
+flowable:
+  # 系统初始化SQL已提供引擎表；本地启动不自动修改现有库结构。
+  database-schema-update: false
+nexus:
+  ai:
+    mcp:
+      allowed-local-endpoints: ''

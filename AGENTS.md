@@ -292,7 +292,8 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 
 ### 配置注意事项
 
-- `application.yml` 使用 Maven 资源过滤 (`@property@` 语法) 来设置环境相关值
+- `application.yml` 使用 Maven 资源过滤 (`@property@` 语法) 来设置环境相关值。
+- 2026-10-16初始化配置：`application-dev.yml`为无个人密码/密文的共享配置，`application-local.yml`导入共享契约但实际profile仍为local；默认只监听回环且关闭可选支付、监控/调度、MQTT、搜索/视觉等。短信厂商额外激活sms，第三方登录额外激活social。真实prod/secret与两个example文件均由admin资源/JAR规则排除；生产按示例准备外部`config/`，根Compose只读挂载，不得因示例变更覆盖现有私有文件。Maven运行目录为仓库根，IDE需同样设置；其他目录使用明确的配置路径。
 - 多租户默认开启 (`tenant.enable: true`)，特定表被排除 (例如 `sys_menu`、`sys_tenant`)
 - API 加密默认开启 — 如果不需要，必须前后端同时禁用
 - 默认通知机制为 SSE 推送；WebSocket 默认禁用
@@ -353,10 +354,10 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - **API 加密默认开启但不替代 HTTPS**: 前后端开关与密钥需一致；调试解密失败先核对配置。仓库可能含演示用密钥/默认值，生产必须替换，绝不在日志、文档、回复中打印私钥、Token 或完整配置。
 - **Sa-Token 认证异常被通用处理器抢先捕获**: `NotLoginException`/`NotPermissionException`/`NotRoleException` 均继承自 `RuntimeException`。全局有多个 `@RestControllerAdvice`，其中 `GlobalExceptionHandler` 标了 `@Order(1)` 且含 `@ExceptionHandler(RuntimeException.class)`，若不提升 `SaTokenExceptionHandler` 优先级，认证异常会被它抢先捕获，执行 `R.fail(e.getMessage())` 返回 500 且把 "token 已被冻结：eyJ…" 等 JWT 明文暴露给前端。`SaTokenExceptionHandler` 已加 `@Order(Ordered.HIGHEST_PRECEDENCE)` 确保认证/鉴权异常优先返回 401/403。新增其它 `@RestControllerAdvice` 时，若其处理 `RuntimeException` 子类，务必用 `@Order` 控制优先级，否则同样会被 `GlobalExceptionHandler` 抢先。
 
-### 自研报表模块（2026-10-15）
+### 自研报表模块（2026-10-16）
 
 - 继续使用ruoyi-report；P0/E0/E1原生能力保留，新增E2受控QueryModel目录、E3交叉聚合/同快照钻取、E4私有图片/条码/分组/批次、E5固定仪表盘、E6S3/硬配额/索引/字体共享/公平执行、E7订阅/outbox/接收人私有交付。原积木清理是历史已授权范围，不因扩展重跑。
-- 元数据只走master：核心rpt九表加[E2–E7增量](script/sql/update/2026-10-15-report-e2-e7.sql)25表，共34。当前存量开发库只执行过P0/E0/E1；本次扩展仅隔离H2/MinIO验证，未迁移现有库或生产，执行目标库增量仍须核对授权。
+- 元数据只走master：核心rpt九表加[E2–E7增量](script/sql/update/2026-10-15-report-e2-e7.sql)25表，共34。2026-10-16已按用户明确授权在本机localhost:3306/ry-vue（MySQL 5.7.20-log）无备份执行P0/E0/E1/E2–E7，删除19张旧积木及样例表，登记33条菜单/管理员授权，并通过正常bootstrap初始化14个数据集、17份已发布基础报表；见[本地迁移记录](doc/system/plans/2026-10-16-report-local-migration-verification.md)。其他环境及生产未据此迁移，后续只补实际缺失增量，不重跑P0清理。
 - 业务取数走common-report SPI及ERP/MES代码固定字段；QueryModel只能用批准的逻辑目录，规划语义版本进入固定依赖/范围指纹。独立查询账户默认禁用且须验证SELECT-only授权，禁止复用写账户。身份、资源ACL、业务范围和字段权限全部生效。
 - schema1/engine1.0.0与schema2/engine2.0.0显式注册；发布不可变、草稿revision、ID/DECIMAL字符串，浏览器不重算业务值。原生菜单根23000，新扩展23030–23090；授权入口支持REPORT/DATASET/QUERY/DASHBOARD/ASSET/BATCH/SUBSCRIPTION。
 - LOCAL默认私有./data/report；storage.manifestEnabled默认false以兼容旧结构。S3必须启用清单、专用私有未版本桶/无自动生命周期、同一storageId、独立节点暂存。不得公开URL或预签名交付。删除先提交DELETE_PENDING再物理封存确认释放配额；永久.fences/retired是一次性引用围栏元数据，不可被外部清理。IO不跨持全局配额锁，暂存只由稳定原节点回收。

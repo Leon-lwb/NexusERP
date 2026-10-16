@@ -66,6 +66,8 @@ replay_pid*
 ######################################################################
 # 本机秘密配置
 **/application-secret.yml
+# 运行目录中的私有环境覆盖，不含源码中的脱敏示例
+/config/application*.yml
 **/*.run.xml.local
 !*/build/*.html
 !*/build/*.xml

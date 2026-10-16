@@ -131,15 +131,33 @@ services:
       TZ: Asia/Shanghai
       SERVER_PORT: 8080
       SNAIL_PORT: 28080
+      # 生产配置来自只读外部目录，JAR不包含私有配置。
+      SPRING_PROFILES_ACTIVE: ${NEXUS_PROFILES:-prod}
+      NEXUS_CONFIG_DIR: /ruoyi/server/config
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/ruoyi/server/config/application-prod.yml
+      MONITOR_USERNAME: ${MONITOR_USERNAME:-nexus-monitor}
+      MONITOR_PASSWORD: ${MONITOR_PASSWORD:?请设置生产运维鉴权密码}
+      API_RSA_PUBLIC_KEY: ${API_RSA_PUBLIC_KEY:?请设置与前端匹配的API公钥}
+      API_RSA_PRIVATE_KEY: ${API_RSA_PRIVATE_KEY:?请设置与前端匹配的API私钥}
+      PROD_DB_HOST: ${PROD_DB_HOST:-127.0.0.1}
+      PROD_DB_PORT: ${PROD_DB_PORT:-3306}
+      PROD_DB_SSL: ${PROD_DB_SSL:-true}
+      PROD_DB_USERNAME: ${PROD_DB_USERNAME:-root}
+      PROD_REDIS_HOST: ${PROD_REDIS_HOST:-127.0.0.1}
+      PROD_REDIS_PORT: ${PROD_REDIS_PORT:-6379}
+      PROD_MQ_HOST: ${PROD_MQ_HOST:-127.0.0.1}
+      PROD_MQ_PORT: ${PROD_MQ_PORT:-5672}
+      PROD_MQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-nexus}
+      PROD_MQ_VHOST: ${PROD_MQ_VHOST:-/erp}
       # JVM 参数（4C4G：NexusServer JVM 512M；SnailJob 调度客户端禁用，调度中心在辅助服务器）
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxMetaspaceSize=256m -XX:+UseZGC -Dsnail-job.enabled=false"
-      # ===== 安全密钥（从同目录 .env 读取，application-prod.yml 已改为 ${VAR:默认值} 引用）=====
+      # ===== 安全密钥：由同目录.env传入；外部生产示例对必需凭证不提供默认值 =====
       # JWT 秘钥（不设则用仓库默认值，生产必须覆盖）
       SA_TOKEN_JWT_SECRET_KEY: ${SA_TOKEN_JWT_SECRET_KEY}
       # Jasypt 加密口令（生产独立口令；须与生产库 ai_provider 密文加密口令一致）
       JASYPT_PASSWORD: ${JASYPT_PASSWORD}
       # 生产数据库密码（与 nexus-mysql 的 MYSQL_ROOT_PASSWORD 一致）
-      PROD_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PROD_DB_PASSWORD: ${PROD_DB_PASSWORD:-${MYSQL_ROOT_PASSWORD}}
       # 生产 Redis 密码（redis.conf 的 requirepass）
       PROD_REDIS_PASSWORD: ${PROD_REDIS_PASSWORD}
       # 生产 RabbitMQ 密码（与 RABBITMQ_DEFAULT_PASS 一致）
@@ -149,6 +167,7 @@ services:
       # SnailJob 调度 token（调度中心在辅助服务器）
       SNAIL_JOB_TOKEN: ${SNAIL_JOB_TOKEN:-SJ_cKqBTPzCsWA3VyuCfFoccmuIEGXjr5KT}
     volumes:
+      - ./config/:/ruoyi/server/config/:ro
       # 日志目录
       - /docker/server/logs/:/ruoyi/server/logs/
       # 自研报表私有快照与导出文件（单节点；集群需共享存储实现）

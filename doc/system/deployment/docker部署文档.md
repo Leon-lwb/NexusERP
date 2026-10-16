@@ -208,6 +208,51 @@ sudo systemctl restart docker
 
 ## 五、打包与上传
 
+### 5.0 准备私有生产配置（2026-10-16更新）
+
+主服务JAR只包含公共/开发/本地配置，不包含真实prod/secret及示例文件。首次部署从源码中的两个示例准备外部配置，**不要覆盖已有私有文件**：
+
+```powershell
+# 在仓库根目录执行；已有文件先对照新示例审核迁移
+New-Item -ItemType Directory -Path config -Force | Out-Null
+if (-not (Test-Path config/application-prod.yml)) {
+    Copy-Item ruoyi-admin/src/main/resources/application-prod.example.yml config/application-prod.yml
+}
+if (-not (Test-Path config/application-secret.yml)) {
+    Copy-Item ruoyi-admin/src/main/resources/application-secret.example.yml config/application-secret.yml
+}
+```
+
+根目录Compose将 `./config/` 只读挂载到 `/ruoyi/server/config/`，显式选择 `prod`，并将该目录内的application-prod.yml设为必需的额外配置文件，缺失时立即拒绝启动。外部生产配置会覆盖JAR中的公共值；密钥文件按 `NEXUS_CONFIG_DIR` 可选导入。
+
+| 必需变量 | 本仓库Compose传递方式 |
+|----------|----------------------|
+| `MYSQL_ROOT_PASSWORD` | 数据库容器密码，默认作为应用的 `PROD_DB_PASSWORD`；独立应用账户通过 `PROD_DB_USERNAME/PROD_DB_PASSWORD` 覆盖 |
+| `PROD_REDIS_PASSWORD` | Redis服务及应用密码保持一致 |
+| `RABBITMQ_DEFAULT_PASS` | 映射为应用的 `PROD_MQ_PASSWORD`；账号、vhost同样需要一致 |
+| `SA_TOKEN_JWT_SECRET_KEY` | 独立的生产JWT签名密钥 |
+| `JASYPT_PASSWORD` | 加密配置所用主密钥，不沿用开发默认值 |
+| `API_RSA_PUBLIC_KEY` / `API_RSA_PRIVATE_KEY` | 按既有API加密协议准备并与前端匹配 |
+| `MES_API_KEY` | 工位/设备通道生产密钥 |
+| `MONITOR_PASSWORD` | Actuator Basic鉴权密码；监控客户端即使关闭，鉴权仍读取该配置 |
+
+上述真实值通过受保护的服务器 `.env` 或等效部署环境传入，不写入文档、Git或构建日志。`.env`只供Compose插值，不会自动将全部变量传入容器；当前environment列出的变量才会传递。邮件、短信、支付或第三方登录密钥可填写在私有secret文件中，或显式扩展应用environment映射。
+
+`PROD_DB_HOST/PORT/USERNAME/SSL`、Redis和MQ的地址/端口等支持Compose环境覆盖，默认适配现行host网络。示例默认请求数据库SSL，需要核对实际MySQL TLS能力；更改连接安全参数应明确审核。默认监控/调度/支付等可选集成关闭；现行Compose还通过JAVA_OPTS强制关闭SnailJob客户端，启用时须同时核对系统属性优先级。确需短信/第三方登录时使用 `NEXUS_PROFILES=prod,sms` / `prod,social` 并准备对应厂商凭证。
+
+**旧文件迁移注意：** 原来源码目录的私有prod可能仍写着必需的 `classpath:application-secret.yml`。新JAR不再携带该文件，不能原样外置后假定可启动。请对照新示例保留个人连接与业务参数，将密钥导入迁移为示例中的可选外部路径，并审核必需凭证；本次代码不会改写现有私有文件。
+
+系统初始化SQL已包含Flowable引擎表，生产示例关闭自动改表；既有环境仍需单独核对引擎结构与版本。配置样例、构建成功和隔离测试不代表生产连接、迁移或端到端业务验收完成。
+
+直接运行JAR时，从包含config目录的工作目录执行，或显式指定路径，例如：
+
+```bash
+java -jar ruoyi-admin.jar --spring.profiles.active=prod --spring.config.additional-location=file:/etc/nexus/config/application-prod.yml --NEXUS_CONFIG_DIR=/etc/nexus/config
+```
+
+服务器上先审核配置，再执行后续镜像部署。配置文件与镜像分开交付，密钥变更通常无需重打JAR。
+
+
 ### 5.1 本地打包
 
 在 Windows 本地执行：
@@ -227,12 +272,17 @@ cd ..
 
 ### 5.2 上传到主服务器 (159.75.14.226)
 
+首次部署先完成7.1节的目录准备；上传私有文件前确认目标内容和覆盖授权。
+
 ```powershell
 # 上传后端配置文件
+ssh root@159.75.14.226 "mkdir -p /nexus/nexus-erp/config"
 scp docker-compose-main.yml root@159.75.14.226:/nexus/nexus-erp/
 scp docker-compose-assist.yml root@159.75.14.226:/nexus/nexus-erp/
 scp -r script/ root@159.75.14.226:/nexus/nexus-erp/script/
-scp ruoyi-admin/src/main/resources/application-prod.yml root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/src/main/resources/
+# 私有配置单独交付到只读挂载的目录；先确认服务器目标文件及覆盖授权
+scp config/application-prod.yml root@159.75.14.226:/nexus/nexus-erp/config/
+scp config/application-secret.yml root@159.75.14.226:/nexus/nexus-erp/config/
 
 # 上传 Dockerfile
 scp ruoyi-admin/Dockerfile root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/
@@ -269,81 +319,29 @@ scp ruoyi-extend/ruoyi-snailjob-server/src/main/resources/application-prod.yml r
 
 ---
 
-## 六、配置文件准备
+## 六、生产配置与凭证
 
-### 6.1 数据库密码配置
+### 6.1 数据源、基础依赖与必需环境变量
 
-在 `application-prod.yml` 中配置数据库密码（明文或 Jasypt 加密）：
+以5.0节的外部生产示例为基线，核对四个数据源分别指向系统、ERP、MES、IoT库，再准备Redis与RabbitMQ。数据库初始化/迁移必须按环境和授权执行；应用启动不会替代这些步骤。
 
-**方式 A：明文密码（简单，适合内网环境）**
+真实值写在受保护的服务器 `.env` 或等效部署环境中。当前Compose将数据库容器的 `MYSQL_ROOT_PASSWORD` 默认映射为应用 `PROD_DB_PASSWORD`；使用独立应用账号时设置 `PROD_DB_USERNAME/PROD_DB_PASSWORD` 并预先授予对应业务权限，应用密码不必等于root密码。`PROD_REDIS_PASSWORD` 与Redis服务配置匹配，MQ用户名、密码与vhost也需一致。
 
-```yaml
-spring:
-  datasource:
-    dynamic:
-      datasource:
-        master:
-          username: root
-          password: xxx  # 明文密码
-        erp:
-          username: root
-          password: xxx  # 明文密码
-```
+必需的JWT/Jasypt/API/设备/运维凭证及传递方式见5.0节。不要把开发默认值或示例中的空值作为生产凭证；API加密密钥须与前端共同配置。旧私有配置使用ENC密文时，应保留相匹配的Jasypt主密钥，避免仅改密码后无法解密。
 
-**方式 B：Jasypt 加密（安全，适合生产环境）**
-
-加密算法：`PBEWITHHMACSHA512ANDAES_256`
-
-```yaml
-spring:
-  datasource:
-    dynamic:
-      datasource:
-        master:
-          username: root
-          password: ENC(IbQ7QDkGO3jJKpujQv/j+wRrg8BBZvYxiPx/BgweywjGzv8D4otQxGK+YyW1dRXk)
-```
-
-使用 Jasypt 加密时，需要在 `docker-compose-main.yml` 中配置密钥：
-```yaml
-environment:
-  JASYPT_PASSWORD: "your-jasypt-key-here"
-```
-
-> **注意**：`docker-compose-main.yml` 中的 `MYSQL_ROOT_PASSWORD` 必须与 `application-prod.yml` 中的密码一致！
-
-### 6.2 配置 application-secret.yml
-
-在主服务器上创建：
+验证Compose语法时使用下列命令，避免将完整解析配置及真实凭证打印到终端：
 
 ```bash
-mkdir -p /nexus/nexus-erp/ruoyi-admin/src/main/resources/
-
-cat > /nexus/nexus-erp/ruoyi-admin/src/main/resources/application-secret.yml << 'EOF'
-sms:
-  config1:
-    access-key-id: ""
-    access-key-secret: ""
-    signature: ""
-    sdk-app-id: ""
-
-mail:
-  from: ""
-  user: ""
-  pass: ""
-
-pay:
-  alipay:
-    app-id: ""
-    app-private-key: ""
-    alipay-public-key: ""
-
-justauth:
-  gitee:
-    client-id: ""
-    client-secret: ""
-EOF
+docker compose --env-file .env -f docker-compose-main.yml config --quiet
 ```
+
+### 6.2 可选集成密钥与私有文件
+
+主服务从运行目录 `config/application-prod.yml` 加载生产契约，按需加载同目录 `application-secret.yml`。从两个example准备文件的方法见5.0节；源码目录内现存的私有prod/secret不作为新JAR的交付入口。
+
+邮件、支付默认关闭；短信/第三方登录还需额外的sms/social profile。不开这些功能时，不需要填写对应厂商密钥。启用前填写私有secret中的匹配字段，或显式将环境变量传入应用容器；本地.env存在不代表所有变量都会进入Spring。
+
+根目录 `config/application*.yml` 与 `.env` 均被Git忽略。服务器限制这些文件的访问权限，Compose以只读方式挂载。配置变更按发布流程重新创建/启动应用容器使其读取新值，不需要仅为修改外置配置重打JAR；代码变更仍需构建并发布新镜像。
 
 ### 6.3 配置 SSL 证书（可选）
 
@@ -362,7 +360,7 @@ mkdir -p /nexus/nexus-erp/ruoyi-extend/ruoyi-monitor-admin/target/
 mkdir -p /nexus/nexus-erp/ruoyi-extend/ruoyi-snailjob-server/target/
 mkdir -p /nexus/nexus-erp/script/sql/
 mkdir -p /nexus/nexus-erp/script/docker/redis/conf/
-mkdir -p /nexus/nexus-erp/ruoyi-admin/src/main/resources/
+mkdir -p /nexus/nexus-erp/config/
 ```
 
 ### 7.2 执行部署
@@ -506,7 +504,9 @@ mvn clean package -DskipTests -Pprod
 scp ruoyi-admin/target/ruoyi-admin.jar root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/target/
 
 # 如果修改了配置文件，也需要上传
-scp ruoyi-admin/src/main/resources/application-prod.yml root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/src/main/resources/
+# 私有配置单独交付到只读挂载的目录；先确认服务器目标文件及覆盖授权
+scp config/application-prod.yml root@159.75.14.226:/nexus/nexus-erp/config/
+scp config/application-secret.yml root@159.75.14.226:/nexus/nexus-erp/config/
 ```
 
 **主服务器执行：**
@@ -758,7 +758,7 @@ JAVA_OPTS: "-Xms256m -Xmx384m -XX:MaxMetaspaceSize=256m -XX:+UseZGC"
 
 **现象**：`java.lang.NoClassDefFoundError: io/grpc/InternalGlobalInterceptors`
 
-**解决方案**：临时禁用 SnailJob（在 `application-prod.yml` 中设置 `snail-job.enabled: false`），然后重新打包。
+**解决方案**：核对外部 `config/application-prod.yml` 的 `snail-job.enabled` 及Compose的JAVA_OPTS；临时关闭后按发布流程重新创建应用容器，不需要仅为外置配置变更重打JAR。
 
 ### 问题 9：容器 unhealthy
 
@@ -808,8 +808,10 @@ docker compose -f /nexus/nexus-erp/docker-compose-main.yml up -d --force-recreat
 | `ruoyi-admin/Dockerfile` | 主后端服务镜像构建 | 主服务器 |
 | `ruoyi-extend/ruoyi-monitor-admin/Dockerfile` | 监控中心镜像构建 | 辅助服务器 |
 | `ruoyi-extend/ruoyi-snailjob-server/Dockerfile` | SnailJob 镜像构建 | 辅助服务器 |
-| `ruoyi-admin/src/main/resources/application-prod.yml` | 主服务正式环境配置 | 主服务器 |
-| `ruoyi-admin/src/main/resources/application-secret.yml` | 敏感配置（短信、支付、第三方登录） | 主服务器 |
+| `config/application-prod.yml` | 主服务私有生产配置，独立于JAR并只读挂载 | 主服务器 |
+| `config/application-secret.yml` | 私有可选集成密钥，不入Git/JAR | 主服务器 |
+| `ruoyi-admin/src/main/resources/application-prod.example.yml` | 脱敏生产契约，首次准备配置时参考 | 源码/运维工作区 |
+| `ruoyi-admin/src/main/resources/application-secret.example.yml` | 完整密钥结构示例，需实际填值且不会自动启用功能 | 源码/运维工作区 |
 | `ruoyi-extend/ruoyi-snailjob-server/src/main/resources/application-prod.yml` | SnailJob 正式环境配置 | 辅助服务器 |
 | `script/docker/redis/conf/redis.conf` | Redis 配置文件 | 主服务器 |
 | `script/sql/ry-vue.sql` | MySQL 系统库初始化脚本 | 主服务器 |
@@ -817,6 +819,8 @@ docker compose -f /nexus/nexus-erp/docker-compose-main.yml up -d --force-recreat
 
 ---
 
-*文档版本：v2.1*
-*更新日期：2026-07-26*
-*更新内容：主服务器迁移至 159.75.14.226（4C4G / MySQL 5.7 / MinIO 9005-minio / RabbitMQ / JVM 512M）；修正 `docker restart` 不换镜像（改用 `--force-recreate`）与前端 volume 挂载两个部署坑；新增 optimized.yml 说明*
+*文档版本：v2.2*
+*更新日期：2026-10-16*
+*本次更新：外置生产配置、脱敏示例、凭证注入、只读挂载及JAR分发边界。*
+
+*历史更新（2026-07-26）：主服务器迁移至 159.75.14.226（4C4G / MySQL 5.7 / MinIO 9005-minio / RabbitMQ / JVM 512M）；修正 `docker restart` 不换镜像（改用 `--force-recreate`）与前端 volume 挂载两个部署坑；新增 optimized.yml 说明*

@@ -50,7 +50,7 @@ class McpLocalEndpointConfigurationTest {
 
     @Test
     void productionConfigurationDoesNotAllowLocalEndpointsByDefault() throws IOException {
-        assertLocalEndpointDenied(load("application-prod.yml"));
+        assertLocalEndpointDenied(load("application-prod.example.yml"));
     }
 
     private void assertLocalEndpointDenied(MockEnvironment environment) {
@@ -62,7 +62,9 @@ class McpLocalEndpointConfigurationTest {
     private MockEnvironment load(String resource) throws IOException {
         MockEnvironment environment = new MockEnvironment();
         var loader = new YamlPropertySourceLoader();
-        for (var source : loader.load(resource, new ClassPathResource(resource))) {
+        for (var source : loader.load(resource, resource.endsWith(".example.yml")
+            ? new org.springframework.core.io.FileSystemResource("src/main/resources/" + resource)
+            : new ClassPathResource(resource))) {
             environment.getPropertySources().addLast(source);
         }
         return environment;

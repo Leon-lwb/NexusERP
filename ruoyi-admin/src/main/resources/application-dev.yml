@@ -1,354 +1,172 @@
---- # 设备自动化上报接口密钥(开发/测试: 上位机请求头 X-API-KEY 携带; 生产密钥见 application-prod.yml)
+# 可提交的共享开发配置。无真实密码、密文或token；Maven默认dev，本地建议-P local。
+# 私有文件可选导入；外部config/application-dev.yml会覆盖打包配置。
+
+--- # 工位接口：按需设置MES_API_KEY，不提供共享密钥
 mes:
-  api-key: nexus-mes-api-2026
-  # 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭(无SN工单始终放行)
+  api-key: ${MES_API_KEY:}
   flash:
     gate:
       mode: FORCE
 
---- # 验证码配置
-# PC登录需要图形验证码，APP短信登录无需，APP密码登录在提交时弹出验证码
+--- # 验证码
 captcha:
   enable: false
 
---- # 监控中心配置
+--- # 监控客户端：默认关闭；运维Basic鉴权凭证仍需独立配置
 spring.boot.admin.client:
-  # 增加客户端开关
-  enabled: true
-  url: http://localhost:9090/admin
+  enabled: ${MONITOR_ENABLED:false}
+  url: ${MONITOR_URL:http://localhost:9090/admin}
   instance:
     service-host-type: IP
     metadata:
       username: ${spring.boot.admin.client.username}
       userpassword: ${spring.boot.admin.client.password}
-  username: @monitor.username@
-  password: @monitor.password@
+  username: ${MONITOR_USERNAME:local-monitor}
+  password: ${MONITOR_PASSWORD:}
 
---- # snail-job 配置
+--- # 任务调度：默认关闭，启用前配置服务和token
 snail-job:
-  enabled: true
-  # 需要在 SnailJob 后台组管理创建对应名称的组,然后创建任务的时候选择对应的组,才能正确分派任务
-  group: "ruoyi_group"
-  # SnailJob 接入验证令牌 详见 script/sql/ry_job.sql `sj_group_config` 表
-  token: "SJ_cKqBTPzCsWA3VyuCfFoccmuIEGXjr5KT"
+  enabled: ${SNAIL_JOB_ENABLED:false}
+  group: ${SNAIL_JOB_GROUP:ruoyi_group}
+  token: ${SNAIL_JOB_TOKEN:}
   server:
-    host: 127.0.0.1
-    port: 17888
-  # 命名空间UUID 详见 script/sql/ry_job.sql `sj_namespace`表`unique_id`字段
-  namespace: ${spring.profiles.active}
-  # 随主应用端口漂移
+    host: ${SNAIL_JOB_HOST:127.0.0.1}
+    port: ${SNAIL_JOB_SERVER_PORT:17888}
+  namespace: ${SNAIL_JOB_NAMESPACE:${spring.profiles.active}}
   port: 2${server.port}
-  # 客户端ip指定
-  host:
+  host: null
 
---- # 数据源配置
+--- # 四个业务数据源：本人凭证通过DB_*环境变量或外部profile覆盖
 spring:
   config:
-    import: classpath:application-secret.yml
+    import:
+    - optional:file:${NEXUS_CONFIG_DIR:./config}/application-secret.yml
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
     dynamic:
-      # 性能分析插件(有性能损耗 不建议生产环境使用)
       p6spy: true
-      # 设置默认的数据源或者数据源组,默认值即为 master
       primary: master
-      # 严格模式 匹配不到数据源则报错
       strict: true
       datasource:
-        # 主库数据源
         master:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
-          # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-          username: root
-          # Jasypt加密: 原明文 root, 加密算法 PBEWITHHMACSHA512ANDAES_256
-          password: ENC(6S/XgAeC+6zx3mhxAtjtVTWD3OCGIl4FU7XP+YIfHXEsfVtR4Ys2UKAOeSU4S6bQ)
-        # ERP业务库
+          url: ${DB_MASTER_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_MASTER_NAME:ry-vue}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${DB_SSL:false}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+          username: ${DB_MASTER_USERNAME:${DB_USERNAME:root}}
+          password: ${DB_MASTER_PASSWORD:${DB_PASSWORD:}}
         erp:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
-          # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://localhost:3306/ry-erp?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-          username: root
-          # Jasypt加密: 原明文 root, 加密算法 PBEWITHHMACSHA512ANDAES_256
-          password: ENC(6S/XgAeC+6zx3mhxAtjtVTWD3OCGIl4FU7XP+YIfHXEsfVtR4Ys2UKAOeSU4S6bQ)
-        # MES制造执行库
+          url: ${DB_ERP_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_ERP_NAME:ry-erp}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${DB_SSL:false}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+          username: ${DB_ERP_USERNAME:${DB_USERNAME:root}}
+          password: ${DB_ERP_PASSWORD:${DB_PASSWORD:}}
         mes:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://localhost:3306/ry-mes?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-          username: root
-          password: ENC(6S/XgAeC+6zx3mhxAtjtVTWD3OCGIl4FU7XP+YIfHXEsfVtR4Ys2UKAOeSU4S6bQ)
-        # IoT物联网库
+          url: ${DB_MES_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_MES_NAME:ry-mes}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${DB_SSL:false}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+          username: ${DB_MES_USERNAME:${DB_USERNAME:root}}
+          password: ${DB_MES_PASSWORD:${DB_PASSWORD:}}
         iot:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://localhost:3306/ry-iot?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-          username: root
-          password: ENC(6S/XgAeC+6zx3mhxAtjtVTWD3OCGIl4FU7XP+YIfHXEsfVtR4Ys2UKAOeSU4S6bQ)
-#        # 从库数据源
-#        slave:
-#          lazy: true
-#          type: ${spring.datasource.type}
-#          driverClassName: com.mysql.cj.jdbc.Driver
-#          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
-#          username:
-#          password:
-#        oracle:
-#          type: ${spring.datasource.type}
-#          driverClassName: oracle.jdbc.OracleDriver
-#          url: jdbc:oracle:thin:@//localhost:1521/XE
-#          username: ROOT
-#          password: root
-#        postgres:
-#          type: ${spring.datasource.type}
-#          driverClassName: org.postgresql.Driver
-#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
-#          username: root
-#          password: root
-#        sqlserver:
-#          type: ${spring.datasource.type}
-#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
-#          username: SA
-#          password: root
+          url: ${DB_IOT_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_IOT_NAME:ry-iot}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${DB_SSL:false}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+          username: ${DB_IOT_USERNAME:${DB_USERNAME:root}}
+          password: ${DB_IOT_PASSWORD:${DB_PASSWORD:}}
       hikari:
-        # 最大连接池数量
         maxPoolSize: 20
-        # 最小空闲线程数量
         minIdle: 10
-        # 配置获取连接等待超时的时间
         connectionTimeout: 30000
-        # 校验超时时间
         validationTimeout: 5000
-        # 空闲连接存活最大时间，默认10分钟
         idleTimeout: 600000
-        # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
         maxLifetime: 1800000
-        # 多久检查一次连接的活性
         keepaliveTime: 30000
-        # 连接泄漏检测，超过 60s 未归还则告警（开销极小）
         leakDetectionThreshold: 60000
 
---- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
+--- # Redis与Redisson
 spring.data:
   redis:
-    # 地址
-    host: localhost
-    # 端口，默认为6379
-    port: 6379
-    # 数据库索引
-    database: 0
-    # redis 密码必须配置
-    password: ruoyi123
-    # 连接超时时间
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${REDIS_PASSWORD:}
     timeout: 10s
-    # 是否开启ssl
     ssl.enabled: false
-
-# redisson 配置
 redisson:
-  # redis key前缀
-  keyPrefix:
-  # 线程池数量
+  keyPrefix: null
   threads: 4
-  # Netty线程池数量
   nettyThreads: 8
-  # 单节点配置
   singleServerConfig:
-    # 客户端名称 不能用中文
     clientName: RuoYi-Vue-Plus
-    # 最小空闲连接数
     connectionMinimumIdleSize: 8
-    # 连接池大小
     connectionPoolSize: 32
-    # 连接空闲超时，单位：毫秒
     idleConnectionTimeout: 10000
-    # 命令等待超时，单位：毫秒
     timeout: 3000
-    # 发布和订阅连接池大小
     subscriptionConnectionPoolSize: 50
 
---- # mail 邮件发送
+--- # 邮件：默认关闭，使用secret命名空间
 mail:
-  enabled: false
-  host: smtp.163.com
-  port: 465
-  # 是否需要用户名密码验证
+  enabled: ${MAIL_ENABLED:false}
+  host: ${MAIL_HOST:smtp.example.com}
+  port: ${MAIL_PORT:465}
   auth: true
-  # 发送方，遵循RFC-822标准
-  from: ${secret.mail.from}
-  # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
-  user: ${secret.mail.user}
-  # 密码（注意，某些邮箱需要为SMTP服务单独设置密码，详情查看相关帮助）
-  pass: ${secret.mail.pass}
-  # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
+  from: ${secret.mail.from:}
+  user: ${secret.mail.user:}
+  pass: ${secret.mail.pass:}
   starttlsEnable: true
-  # 使用SSL安全连接
   sslEnable: true
-  # SMTP超时时长，单位毫秒，缺省值不超时
-  timeout: 0
-  # Socket连接超时值，单位毫秒，缺省值不超时
-  connectionTimeout: 0
+  timeout: 10000
+  connectionTimeout: 10000
 
---- # sms 短信 支持 阿里云 腾讯云 云片 等等各式各样的短信服务商
-# https://sms4j.com/doc3/ 差异配置文档地址 支持单厂商多配置，可以配置多个同时使用
+--- # 短信基础配置：厂商仅在额外sms profile中装配
 sms:
-  # 配置源类型用于标定配置来源(interface,yaml)
   config-type: yaml
-  # 用于标定yml中的配置是否开启短信拦截，接口配置不受此限制
   restricted: true
-  # 短信拦截限制单手机号每分钟最大发送，只对开启了拦截的配置有效
   minute-max: 1
-  # 短信拦截限制单手机号每日最大发送量，只对开启了拦截的配置有效
   account-max: 30
-  # 以下配置来自于 com.nexus.sms4j.provider.config.BaseConfig类中
-  blends:
-    # 唯一ID 用于发送短信寻找具体配置 随便定义别用中文即可
-    # 可以同时存在两个相同厂商 例如: ali1 ali2 两个不同的阿里短信账号 也可用于区分租户
-    config1:
-      # 框架定义的厂商名称标识，标定此配置是哪个厂商，详细请看厂商标识介绍部分
-      supplier: alibaba
-      # 有些称为accessKey有些称之为apiKey，也有称为sdkKey或者appId。
-      access-key-id: ${secret.sms.config1.access-key-id}
-      # 称为accessSecret有些称之为apiSecret
-      access-key-secret: ${secret.sms.config1.access-key-secret}
-      signature: ${secret.sms.config1.signature}
-      sdk-app-id: ${secret.sms.config1.sdk-app-id}
-    config2:
-      # 厂商标识，标定此配置是哪个厂商，详细请看厂商标识介绍部分
-      supplier: tencent
-      access-key-id: ${secret.sms.config2.access-key-id}
-      access-key-secret: ${secret.sms.config2.access-key-secret}
-      signature: ${secret.sms.config2.signature}
-      sdk-app-id: ${secret.sms.config2.sdk-app-id}
+  blends: {}
 
-
---- # 三方授权
+--- # 第三方登录基础配置：供应商仅在额外social profile中装配
 justauth:
-  # 前端外网访问地址
-  address: http://localhost:80
-  type:
-    maxkey:
-      # maxkey 服务器地址
-      # 注意 如下均配置均不需要修改 maxkey 已经内置好了数据
-      server-url: http://sso.maxkey.top
-      client-id: ${secret.justauth.maxkey.client-id}
-      client-secret: ${secret.justauth.maxkey.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=maxkey
-    topiam:
-      # topiam 服务器地址
-      server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
-      client-id: ${secret.justauth.topiam.client-id}
-      client-secret: ${secret.justauth.topiam.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=topiam
-      scopes: [openid, email, phone, profile]
-    qq:
-      client-id: ${secret.justauth.qq.client-id}
-      client-secret: ${secret.justauth.qq.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=qq
-      union-id: false
-    weibo:
-      client-id: ${secret.justauth.weibo.client-id}
-      client-secret: ${secret.justauth.weibo.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=weibo
-    gitee:
-      client-id: ${secret.justauth.gitee.client-id}
-      client-secret: ${secret.justauth.gitee.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=gitee
-    dingtalk:
-      client-id: ${secret.justauth.dingtalk.client-id}
-      client-secret: ${secret.justauth.dingtalk.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=dingtalk
-    baidu:
-      client-id: ${secret.justauth.baidu.client-id}
-      client-secret: ${secret.justauth.baidu.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=baidu
-    csdn:
-      client-id: ${secret.justauth.csdn.client-id}
-      client-secret: ${secret.justauth.csdn.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=csdn
-    coding:
-      client-id: ${secret.justauth.coding.client-id}
-      client-secret: ${secret.justauth.coding.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=coding
-      coding-group-name: xx
-    oschina:
-      client-id: ${secret.justauth.oschina.client-id}
-      client-secret: ${secret.justauth.oschina.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=oschina
-    alipay_wallet:
-      client-id: ${secret.justauth.alipay-wallet.client-id}
-      client-secret: ${secret.justauth.alipay-wallet.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
-      alipay-public-key: ${secret.justauth.alipay-wallet.alipay-public-key}
-    wechat_open:
-      client-id: ${secret.justauth.wechat-open.client-id}
-      client-secret: ${secret.justauth.wechat-open.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=wechat_open
-    wechat_mp:
-      client-id: ${secret.justauth.wechat-mp.client-id}
-      client-secret: ${secret.justauth.wechat-mp.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
-    wechat_enterprise:
-      client-id: ${secret.justauth.wechat-enterprise.client-id}
-      client-secret: ${secret.justauth.wechat-enterprise.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
-      agent-id: 1000002
-    gitlab:
-      client-id: ${secret.justauth.gitlab.client-id}
-      client-secret: ${secret.justauth.gitlab.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=gitlab
-    gitea:
-      # 前端改动 https://gitee.com/JavaLionLi/plus-ui/pulls/204
-      # gitea 服务器地址
-      server-url: https://demo.gitea.com
-      client-id: ${secret.justauth.gitea.client-id}
-      client-secret: ${secret.justauth.gitea.client-secret}
-      redirect-uri: ${justauth.address}/social-callback?source=gitea
+  address: ${SOCIAL_CALLBACK_BASE:http://localhost:80}
+  type: {}
 
---- # 支付配置
+--- # 支付：默认关闭，启用前准备密钥和可达回调地址
 pay:
   alipay:
-    enabled: true
-    appId: ${secret.pay.alipay.app-id}
-    appPrivateKey: ${secret.pay.alipay.app-private-key}
-    alipayPublicKey: ${secret.pay.alipay.alipay-public-key}
-    notifyUrl: http://59e5381d.r23.cpolar.top/pay/alipay/notify
+    enabled: ${PAY_ALIPAY_ENABLED:false}
+    appId: ${secret.pay.alipay.app-id:}
+    appPrivateKey: ${secret.pay.alipay.app-private-key:}
+    alipayPublicKey: ${secret.pay.alipay.alipay-public-key:}
+    notifyUrl: ${ALIPAY_NOTIFY_URL:http://localhost:8080/pay/alipay/notify}
     signType: RSA2
     gatewayHost: openapi-sandbox.dl.alipaydev.com
     protocol: https
   wechat:
-    enabled: false
-    merchantId: ${secret.pay.wechat.merchant-id}
-    merchantSerialNumber: ${secret.pay.wechat.merchant-serial-number}
-    apiV3Key: ${secret.pay.wechat.api-v3-key}
-    privateKeyPath: classpath:cert/wechat/apiclient_key.pem
-    appId: ${secret.pay.wechat.app-id}
-    notifyUrl: http://your-domain/pay/wechat/notify
+    enabled: ${PAY_WECHAT_ENABLED:false}
+    merchantId: ${secret.pay.wechat.merchant-id:}
+    merchantSerialNumber: ${secret.pay.wechat.merchant-serial-number:}
+    apiV3Key: ${secret.pay.wechat.api-v3-key:}
+    privateKeyPath: ${WECHAT_PRIVATE_KEY_PATH:}
+    appId: ${secret.pay.wechat.app-id:}
+    notifyUrl: ${WECHAT_NOTIFY_URL:http://localhost:8080/pay/wechat/notify}
   sqb:
-    enabled: false
+    enabled: ${PAY_SQB_ENABLED:false}
     apiDomain: https://api.shouqianba.com
-    terminalSn: ${secret.pay.sqb.terminal-sn}
-    terminalKey: ${secret.pay.sqb.terminal-key}
-    appId: ${secret.pay.sqb.app-id}
-    vendorSn: ${secret.pay.sqb.vendor-sn}
-    vendorKey: ${secret.pay.sqb.vendor-key}
-    notifyUrl: http://your-domain/pay/sqb/notify
-    publicKey: classpath:cert/sqb/public_key.pem
+    terminalSn: ${secret.pay.sqb.terminal-sn:}
+    terminalKey: ${secret.pay.sqb.terminal-key:}
+    appId: ${secret.pay.sqb.app-id:}
+    vendorSn: ${secret.pay.sqb.vendor-sn:}
+    vendorKey: ${secret.pay.sqb.vendor-key:}
+    notifyUrl: ${SQB_NOTIFY_URL:http://localhost:8080/pay/sqb/notify}
+    publicKey: ${SQB_PUBLIC_KEY:}
 
---- # rabbitmq 消息队列配置
+--- # RabbitMQ是ERP/MES业务依赖，凭证通过MQ_*配置
 spring.rabbitmq:
-  host: localhost
-  port: 5672
-  username: nexus
-  # Jasypt加密: 原明文 nexus, 加密算法 PBEWITHHMACSHA512ANDAES_256
-  password: ENC(ueud44irMHvqqBtSu6fZJ6BcbO7fi+wuvAmueBEsGmiJ9kVeV96G/+TRN/iZVBZO)
-  virtual-host: /erp
+  host: ${MQ_HOST:localhost}
+  port: ${MQ_PORT:5672}
+  username: ${MQ_USERNAME:nexus}
+  password: ${MQ_PASSWORD:}
+  virtual-host: ${MQ_VHOST:/erp}
   publisher-confirm-type: correlated
   publisher-returns: true
   listener:
@@ -356,14 +174,138 @@ spring.rabbitmq:
       acknowledge-mode: manual
       prefetch: 10
 
---- # App 认证: 开发环境开启短信验证码回显 (生产环境严禁开启；开关值由环境变量 APP_SMS_CODE_ECHO 控制)
+--- # 开发环境边界：默认回环监听，保留精确的开发MCP白名单
 app:
   auth:
-    sms-code-echo: ${APP_SMS_CODE_ECHO:true}
-
-# 开发环境本机MCP端点配置
+    sms-code-echo: ${APP_SMS_CODE_ECHO:false}
 nexus:
   ai:
     mcp:
-      # 仅允许这两个完整URI；不开放其他本机路径、端口或内网地址。
-      allowed-local-endpoints: "http://127.0.0.1:19540/mcp,http://127.0.0.1:19540/catalog"
+      allowed-local-endpoints: http://127.0.0.1:19540/mcp,http://127.0.0.1:19540/catalog
+    web-search:
+      enabled: ${WEB_SEARCH_ENABLED:false}
+  vision:
+    enabled: ${VISION_ENABLED:false}
+  iot:
+    mqtt:
+      enabled: ${IOT_MQTT_ENABLED:false}
+    pipeline:
+      consumer-enabled: ${IOT_PIPELINE_ENABLED:false}
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+websocket:
+  enabled: ${WEBSOCKET_ENABLED:false}
+flowable:
+  database-schema-update: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+--- # 显式使用dev,sms或local,sms并提供短信凭证后启用
+spring:
+  config:
+    activate:
+      on-profile: sms
+sms:
+  blends:
+    config1:
+      supplier: alibaba
+      access-key-id: ${secret.sms.config1.access-key-id:}
+      access-key-secret: ${secret.sms.config1.access-key-secret:}
+      signature: ${secret.sms.config1.signature:}
+      sdk-app-id: ${secret.sms.config1.sdk-app-id:}
+    config2:
+      supplier: tencent
+      access-key-id: ${secret.sms.config2.access-key-id:}
+      access-key-secret: ${secret.sms.config2.access-key-secret:}
+      signature: ${secret.sms.config2.signature:}
+      sdk-app-id: ${secret.sms.config2.sdk-app-id:}
+
+--- # 显式使用dev,social或local,social并提供登录凭证后启用
+spring:
+  config:
+    activate:
+      on-profile: social
+justauth:
+  type:
+    maxkey:
+      server-url: http://sso.maxkey.top
+      client-id: ${secret.justauth.maxkey.client-id:}
+      client-secret: ${secret.justauth.maxkey.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=maxkey
+    topiam:
+      server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
+      client-id: ${secret.justauth.topiam.client-id:}
+      client-secret: ${secret.justauth.topiam.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=topiam
+      scopes:
+      - openid
+      - email
+      - phone
+      - profile
+    qq:
+      client-id: ${secret.justauth.qq.client-id:}
+      client-secret: ${secret.justauth.qq.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=qq
+      union-id: false
+    weibo:
+      client-id: ${secret.justauth.weibo.client-id:}
+      client-secret: ${secret.justauth.weibo.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=weibo
+    gitee:
+      client-id: ${secret.justauth.gitee.client-id:}
+      client-secret: ${secret.justauth.gitee.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=gitee
+    dingtalk:
+      client-id: ${secret.justauth.dingtalk.client-id:}
+      client-secret: ${secret.justauth.dingtalk.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=dingtalk
+    baidu:
+      client-id: ${secret.justauth.baidu.client-id:}
+      client-secret: ${secret.justauth.baidu.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=baidu
+    csdn:
+      client-id: ${secret.justauth.csdn.client-id:}
+      client-secret: ${secret.justauth.csdn.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=csdn
+    coding:
+      client-id: ${secret.justauth.coding.client-id:}
+      client-secret: ${secret.justauth.coding.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=coding
+      coding-group-name: xx
+    oschina:
+      client-id: ${secret.justauth.oschina.client-id:}
+      client-secret: ${secret.justauth.oschina.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=oschina
+    alipay_wallet:
+      client-id: ${secret.justauth.alipay-wallet.client-id:}
+      client-secret: ${secret.justauth.alipay-wallet.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
+      alipay-public-key: ${secret.justauth.alipay-wallet.alipay-public-key:}
+    wechat_open:
+      client-id: ${secret.justauth.wechat-open.client-id:}
+      client-secret: ${secret.justauth.wechat-open.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_open
+    wechat_mp:
+      client-id: ${secret.justauth.wechat-mp.client-id:}
+      client-secret: ${secret.justauth.wechat-mp.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
+    wechat_enterprise:
+      client-id: ${secret.justauth.wechat-enterprise.client-id:}
+      client-secret: ${secret.justauth.wechat-enterprise.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
+      agent-id: ${WECHAT_ENTERPRISE_AGENT_ID:0}
+    gitlab:
+      client-id: ${secret.justauth.gitlab.client-id:}
+      client-secret: ${secret.justauth.gitlab.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=gitlab
+    gitea:
+      server-url: ${GITEA_SERVER_URL:https://gitea.example.com}
+      client-id: ${secret.justauth.gitea.client-id:}
+      client-secret: ${secret.justauth.gitea.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=gitea

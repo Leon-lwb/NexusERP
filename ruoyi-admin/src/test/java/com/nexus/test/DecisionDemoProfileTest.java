@@ -22,7 +22,7 @@ class DecisionDemoProfileTest {
     private static final String DATASOURCE = "spring.datasource.dynamic.datasource.";
 
     /**
-     * 验证日常开发配置仍连接 plus 环境，不继承演示资源和后台任务开关。
+     * 验证共享开发连接不继承演示资源，且可选监控与调度客户端默认关闭。
      */
     @Test
     void plainDevKeepsDailyPlusResources() {
@@ -37,8 +37,8 @@ class DecisionDemoProfileTest {
             assertEquals("6379", environment.getProperty("spring.data.redis.port"));
             assertEquals("localhost", environment.getProperty("spring.rabbitmq.host"));
             assertEquals("5672", environment.getProperty("spring.rabbitmq.port"));
-            assertEquals("true", environment.getProperty("snail-job.enabled"));
-            assertEquals("true", environment.getProperty("spring.boot.admin.client.enabled"));
+            assertEquals("false", environment.getProperty("snail-job.enabled"));
+            assertEquals("false", environment.getProperty("spring.boot.admin.client.enabled"));
             // 本地验证码可由用户明确关闭；验证实际日常配置被加载，不强迫改写其工作区。
             var daily = new org.springframework.beans.factory.config.YamlPropertiesFactoryBean();
             daily.setResources(new org.springframework.core.io.ClassPathResource("application-dev.yml"));

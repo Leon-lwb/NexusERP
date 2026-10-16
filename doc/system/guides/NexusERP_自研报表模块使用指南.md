@@ -1,6 +1,6 @@
 # NexusERP 自研报表模块使用指南
 
-> 更新日期：2026-10-15；模块名仍为 ruoyi-report。DSL v1 / engine 1.0.0 保留；新增 DSL v2 / engine 2.0.0，E2–E7 代码与隔离验证见最新报告。
+> 更新日期：2026-10-16；模块名仍为 ruoyi-report。DSL v1 / engine 1.0.0 保留；新增 DSL v2 / engine 2.0.0。E2–E7 代码与隔离验证见下列报告，当前本机增量执行结果见[2026-10-16本地迁移记录](../plans/2026-10-16-report-local-migration-verification.md)。
 > 实施范围与证据见 [首期验证记录](../plans/2026-10-14-system-report-p0-verification-report.md) 、[首期续开发验证记录](../plans/2026-10-14-system-report-p0-continuation-verification.md) 、[E0/E1验证记录](../plans/2026-10-14-system-report-e0-e1-verification-report.md) 、[E2–E7验证记录](../plans/2026-10-15-system-report-e2-e7-verification-report.md) 、[前端界面升级验证记录](../plans/2026-10-15-report-ui-upgrade-verification.md) 和 [业务筛选与基础报表扩展验证记录](../plans/2026-10-15-report-filters-foundation-verification.md)。
 
 ## 开始使用
@@ -159,4 +159,4 @@ LOCAL仍为默认，storage.manifestEnabled默认false以兼容仅安装P0/E0/E1
 
 ## 安装扩展结构
 
-[2026-10-15增量](../../../script/sql/update/2026-10-15-report-e2-e7.sql)新增25张系统元数据表，与核心九表共34张；只含CREATE IF NOT EXISTS及幂等菜单授权登记。全新安装主SQL已同步。此次DDL只在隔离H2中验证，当前已有开发库和生产库均未执行该增量；启用新页面前须核对master的P0/E0/E1基线并获得目标库执行授权。不得向存量库导入主安装SQL或重跑积木删除脚本。
+[2026-10-15增量](../../../script/sql/update/2026-10-15-report-e2-e7.sql)新增25张系统元数据表，与核心九表共34张；只含CREATE IF NOT EXISTS及幂等菜单授权登记。全新安装主SQL已同步。2026-10-16已按用户明确授权在本机localhost:3306/ry-vue（MySQL 5.7.20-log）完成P0、E0/E1和E2–E7，并通过正常初始化服务创建14个启用数据集、17份已发布基础报表；执行与回读见[本地迁移记录](../plans/2026-10-16-report-local-migration-verification.md)。其他存量环境仍须核对master基线和目标库授权，只补缺失增量；不得重导主安装SQL或因扩展升级重跑P0中的旧积木清理。查询执行源、共享存储、调度和通知的配置及业务验收另行核对。

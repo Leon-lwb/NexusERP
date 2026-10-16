@@ -1,0 +1,325 @@
+# 脱敏生产示例。复制为config/application-prod.yml后审核连接/权限/证书；原私有文件不覆盖。
+# 本示例及真实prod/secret均不打进admin JAR。生产从外部config目录或显式additional-location加载。
+# 无默认值的凭证是必填项；基础库先按对应系统/业务SQL准备。
+
+--- # 工位接口：按需设置MES_API_KEY，不提供共享密钥
+mes:
+  api-key: ${MES_API_KEY}
+  flash:
+    gate:
+      mode: FORCE
+
+--- # 验证码
+captcha:
+  enable: true
+
+--- # 监控客户端：默认关闭；运维Basic鉴权凭证仍需独立配置
+spring.boot.admin.client:
+  enabled: ${MONITOR_ENABLED:false}
+  url: ${MONITOR_URL:http://localhost:9090/admin}
+  instance:
+    service-host-type: IP
+    metadata:
+      username: ${spring.boot.admin.client.username}
+      userpassword: ${spring.boot.admin.client.password}
+  username: ${MONITOR_USERNAME:nexus-monitor}
+  password: ${MONITOR_PASSWORD}
+
+--- # 任务调度：默认关闭，启用前配置服务和token
+snail-job:
+  enabled: ${SNAIL_JOB_ENABLED:false}
+  group: ${SNAIL_JOB_GROUP:ruoyi_group}
+  token: ${SNAIL_JOB_TOKEN:}
+  server:
+    host: ${SNAIL_JOB_HOST:127.0.0.1}
+    port: ${SNAIL_JOB_SERVER_PORT:17888}
+  namespace: ${SNAIL_JOB_NAMESPACE:prod}
+  port: 2${server.port}
+  host: null
+
+--- # 四个业务数据源：本人凭证通过DB_*环境变量或外部profile覆盖
+spring:
+  config:
+    import:
+    - optional:file:${NEXUS_CONFIG_DIR:./config}/application-secret.yml
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    dynamic:
+      p6spy: false
+      primary: master
+      strict: true
+      datasource:
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: ${PROD_DB_MASTER_URL:jdbc:mysql://${PROD_DB_HOST:127.0.0.1}:${PROD_DB_PORT:3306}/${PROD_DB_MASTER_NAME:ry-vue}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${PROD_DB_SSL:true}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=false&nullCatalogMeansCurrent=true}
+          username: ${PROD_DB_MASTER_USERNAME:${PROD_DB_USERNAME:root}}
+          password: ${PROD_DB_MASTER_PASSWORD:${PROD_DB_PASSWORD}}
+        erp:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: ${PROD_DB_ERP_URL:jdbc:mysql://${PROD_DB_HOST:127.0.0.1}:${PROD_DB_PORT:3306}/${PROD_DB_ERP_NAME:ry-erp}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${PROD_DB_SSL:true}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=false&nullCatalogMeansCurrent=true}
+          username: ${PROD_DB_ERP_USERNAME:${PROD_DB_USERNAME:root}}
+          password: ${PROD_DB_ERP_PASSWORD:${PROD_DB_PASSWORD}}
+        mes:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: ${PROD_DB_MES_URL:jdbc:mysql://${PROD_DB_HOST:127.0.0.1}:${PROD_DB_PORT:3306}/${PROD_DB_MES_NAME:ry-mes}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${PROD_DB_SSL:true}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=false&nullCatalogMeansCurrent=true}
+          username: ${PROD_DB_MES_USERNAME:${PROD_DB_USERNAME:root}}
+          password: ${PROD_DB_MES_PASSWORD:${PROD_DB_PASSWORD}}
+        iot:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: ${PROD_DB_IOT_URL:jdbc:mysql://${PROD_DB_HOST:127.0.0.1}:${PROD_DB_PORT:3306}/${PROD_DB_IOT_NAME:ry-iot}?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=${PROD_DB_SSL:true}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=false&nullCatalogMeansCurrent=true}
+          username: ${PROD_DB_IOT_USERNAME:${PROD_DB_USERNAME:root}}
+          password: ${PROD_DB_IOT_PASSWORD:${PROD_DB_PASSWORD}}
+      hikari:
+        maxPoolSize: 20
+        minIdle: 10
+        connectionTimeout: 30000
+        validationTimeout: 5000
+        idleTimeout: 600000
+        maxLifetime: 1800000
+        keepaliveTime: 30000
+        leakDetectionThreshold: 60000
+
+--- # Redis与Redisson
+spring.data:
+  redis:
+    host: ${PROD_REDIS_HOST:127.0.0.1}
+    port: ${PROD_REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${PROD_REDIS_PASSWORD}
+    timeout: 10s
+    ssl.enabled: false
+redisson:
+  keyPrefix: null
+  threads: 4
+  nettyThreads: 8
+  singleServerConfig:
+    clientName: RuoYi-Vue-Plus
+    connectionMinimumIdleSize: 8
+    connectionPoolSize: 32
+    idleConnectionTimeout: 10000
+    timeout: 3000
+    subscriptionConnectionPoolSize: 50
+
+--- # 邮件：默认关闭，使用secret命名空间
+mail:
+  enabled: ${MAIL_ENABLED:false}
+  host: ${MAIL_HOST:smtp.example.com}
+  port: ${MAIL_PORT:465}
+  auth: true
+  from: ${secret.mail.from:}
+  user: ${secret.mail.user:}
+  pass: ${secret.mail.pass:}
+  starttlsEnable: true
+  sslEnable: true
+  timeout: 10000
+  connectionTimeout: 10000
+
+--- # 短信基础配置：厂商仅在额外sms profile中装配
+sms:
+  config-type: yaml
+  restricted: true
+  minute-max: 1
+  account-max: 30
+  blends: {}
+
+--- # 第三方登录基础配置：供应商仅在额外social profile中装配
+justauth:
+  address: ${SOCIAL_CALLBACK_BASE:http://localhost:80}
+  type: {}
+
+--- # 支付：默认关闭，启用前准备密钥和可达回调地址
+pay:
+  alipay:
+    enabled: ${PAY_ALIPAY_ENABLED:false}
+    appId: ${secret.pay.alipay.app-id:}
+    appPrivateKey: ${secret.pay.alipay.app-private-key:}
+    alipayPublicKey: ${secret.pay.alipay.alipay-public-key:}
+    notifyUrl: ${ALIPAY_NOTIFY_URL:http://localhost:8080/pay/alipay/notify}
+    signType: RSA2
+    gatewayHost: openapi.alipay.com
+    protocol: https
+  wechat:
+    enabled: ${PAY_WECHAT_ENABLED:false}
+    merchantId: ${secret.pay.wechat.merchant-id:}
+    merchantSerialNumber: ${secret.pay.wechat.merchant-serial-number:}
+    apiV3Key: ${secret.pay.wechat.api-v3-key:}
+    privateKeyPath: ${WECHAT_PRIVATE_KEY_PATH:}
+    appId: ${secret.pay.wechat.app-id:}
+    notifyUrl: ${WECHAT_NOTIFY_URL:http://localhost:8080/pay/wechat/notify}
+  sqb:
+    enabled: ${PAY_SQB_ENABLED:false}
+    apiDomain: https://api.shouqianba.com
+    terminalSn: ${secret.pay.sqb.terminal-sn:}
+    terminalKey: ${secret.pay.sqb.terminal-key:}
+    appId: ${secret.pay.sqb.app-id:}
+    vendorSn: ${secret.pay.sqb.vendor-sn:}
+    vendorKey: ${secret.pay.sqb.vendor-key:}
+    notifyUrl: ${SQB_NOTIFY_URL:http://localhost:8080/pay/sqb/notify}
+    publicKey: ${SQB_PUBLIC_KEY:}
+
+--- # RabbitMQ是ERP/MES业务依赖，凭证通过MQ_*配置
+spring.rabbitmq:
+  host: ${PROD_MQ_HOST:127.0.0.1}
+  port: ${PROD_MQ_PORT:5672}
+  username: ${PROD_MQ_USERNAME:nexus}
+  password: ${PROD_MQ_PASSWORD}
+  virtual-host: ${PROD_MQ_VHOST:/erp}
+  publisher-confirm-type: correlated
+  publisher-returns: true
+  listener:
+    simple:
+      acknowledge-mode: manual
+      prefetch: 10
+
+--- # 生产环境边界：默认回环监听，保留精确的关闭本机MCP白名单
+app:
+  auth:
+    sms-code-echo: false
+nexus:
+  ai:
+    mcp:
+      allowed-local-endpoints: ''
+    web-search:
+      enabled: ${WEB_SEARCH_ENABLED:false}
+  vision:
+    enabled: ${VISION_ENABLED:false}
+  iot:
+    mqtt:
+      enabled: ${IOT_MQTT_ENABLED:false}
+    pipeline:
+      consumer-enabled: ${IOT_PIPELINE_ENABLED:false}
+server:
+  address: ${SERVER_ADDRESS:0.0.0.0}
+websocket:
+  enabled: ${WEBSOCKET_ENABLED:false}
+flowable:
+  database-schema-update: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+--- # 生产密钥必须显式注入；API密钥须与前端匹配
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD}
+sa-token:
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY}
+api-decrypt:
+  publicKey: ${API_RSA_PUBLIC_KEY}
+  privateKey: ${API_RSA_PRIVATE_KEY}
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:false}
+
+--- # 可选短信：仅显式prod,sms时装配
+spring:
+  config:
+    activate:
+      on-profile: sms
+sms:
+  blends:
+    config1:
+      supplier: alibaba
+      access-key-id: ${secret.sms.config1.access-key-id:}
+      access-key-secret: ${secret.sms.config1.access-key-secret:}
+      signature: ${secret.sms.config1.signature:}
+      sdk-app-id: ${secret.sms.config1.sdk-app-id:}
+    config2:
+      supplier: tencent
+      access-key-id: ${secret.sms.config2.access-key-id:}
+      access-key-secret: ${secret.sms.config2.access-key-secret:}
+      signature: ${secret.sms.config2.signature:}
+      sdk-app-id: ${secret.sms.config2.sdk-app-id:}
+
+--- # 可选社交登录：仅显式prod,social时装配
+spring:
+  config:
+    activate:
+      on-profile: social
+justauth:
+  type:
+    maxkey:
+      server-url: http://sso.maxkey.top
+      client-id: ${secret.justauth.maxkey.client-id:}
+      client-secret: ${secret.justauth.maxkey.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=maxkey
+    topiam:
+      server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
+      client-id: ${secret.justauth.topiam.client-id:}
+      client-secret: ${secret.justauth.topiam.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=topiam
+      scopes:
+      - openid
+      - email
+      - phone
+      - profile
+    qq:
+      client-id: ${secret.justauth.qq.client-id:}
+      client-secret: ${secret.justauth.qq.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=qq
+      union-id: false
+    weibo:
+      client-id: ${secret.justauth.weibo.client-id:}
+      client-secret: ${secret.justauth.weibo.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=weibo
+    gitee:
+      client-id: ${secret.justauth.gitee.client-id:}
+      client-secret: ${secret.justauth.gitee.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=gitee
+    dingtalk:
+      client-id: ${secret.justauth.dingtalk.client-id:}
+      client-secret: ${secret.justauth.dingtalk.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=dingtalk
+    baidu:
+      client-id: ${secret.justauth.baidu.client-id:}
+      client-secret: ${secret.justauth.baidu.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=baidu
+    csdn:
+      client-id: ${secret.justauth.csdn.client-id:}
+      client-secret: ${secret.justauth.csdn.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=csdn
+    coding:
+      client-id: ${secret.justauth.coding.client-id:}
+      client-secret: ${secret.justauth.coding.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=coding
+      coding-group-name: xx
+    oschina:
+      client-id: ${secret.justauth.oschina.client-id:}
+      client-secret: ${secret.justauth.oschina.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=oschina
+    alipay_wallet:
+      client-id: ${secret.justauth.alipay-wallet.client-id:}
+      client-secret: ${secret.justauth.alipay-wallet.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
+      alipay-public-key: ${secret.justauth.alipay-wallet.alipay-public-key:}
+    wechat_open:
+      client-id: ${secret.justauth.wechat-open.client-id:}
+      client-secret: ${secret.justauth.wechat-open.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_open
+    wechat_mp:
+      client-id: ${secret.justauth.wechat-mp.client-id:}
+      client-secret: ${secret.justauth.wechat-mp.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
+    wechat_enterprise:
+      client-id: ${secret.justauth.wechat-enterprise.client-id:}
+      client-secret: ${secret.justauth.wechat-enterprise.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
+      agent-id: ${WECHAT_ENTERPRISE_AGENT_ID:0}
+    gitlab:
+      client-id: ${secret.justauth.gitlab.client-id:}
+      client-secret: ${secret.justauth.gitlab.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=gitlab
+    gitea:
+      server-url: ${GITEA_SERVER_URL:https://gitea.example.com}
+      client-id: ${secret.justauth.gitea.client-id:}
+      client-secret: ${secret.justauth.gitea.client-secret:}
+      redirect-uri: ${justauth.address}/social-callback?source=gitea

@@ -231,7 +231,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 - **扫码接入**：键盘楔、机型广播、摄像头和手输；广播参数与打印驱动需在选定机型验证。
 - **离线待同步**：支持离线写通道的网络类失败可进入队列，恢复后按原幂等键重放；业务校验失败不能用离线重试绕过，待同步不代表已过账，切换账号需清理原任务。
 
-当前客户端为试点范围，具体页面、配置、安装包和发布门禁以 [PDA 仓库文档](https://gitee.com/NexusERP/nexus-pda)为准。流程见 [PDA 扫码作业与追溯](doc/flowcharts/pda/PDA扫码作业与追溯流程.md)，真机扫码、打印、网络恢复和幂等重放仍需按部署环境验收。
+当前客户端为试点范围，具体页面、配置、安装包和发布门禁以 [PDA 仓库文档](https://gitee.com/NexusERP/nexus-pda)为准。流程见 [PDA 扫码作业与追溯](doc/flowcharts/pda/PDA扫码作业与追溯流程.md)。
 
 ### Station 工位执行（Nexus-Station）
 
@@ -273,7 +273,16 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 #### 自研报表
 
-采用自有 JSON DSL、运行与布局引擎和原生 Vue 3 设计器，支持列表报表、业务打印单据、版本发布/回滚、精确计算、固定快照及 PDF/明细与样式 XLSX。数据集接入 ERP/MES 并遵守租户、业务角色范围和资源授权。详见 [首期实施与验证](doc/system/plans/2026-10-14-system-report-p0-verification-report.md)。
+独立模块 `ruoyi-report` 使用自有 JSON DSL、运行与布局引擎和原生 Vue 3 设计器，已实现 P0、E0/E1 与 E2–E7 能力，覆盖报表设计、业务打印、交叉分析、仪表盘和订阅交付。
+
+- **原生设计与版本管理**：支持列表（TABLE）、单据（DOCUMENT）和交叉（PIVOT）报表；DSL v1/v2 与对应引擎显式绑定，提供草稿、不可变发布版本、历史回滚和固定快照。
+- **ERP / MES 基础报表**：14 类代码数据集支撑当前权限下最多 17 类基础模板，覆盖库存余额与流水、销售/采购执行及明细、采购订单/送货单打印、物料/客户/供应商台账、工单跟踪和来料检验。业务选择器、必填条件和字段权限沿用真实业务规则，管理员可按权限增量创建缺少的模板。
+- **受控查询与交叉分析**：通过批准的逻辑实体、关系和字段编排查询；支持精确聚合、小计、分区总计、TopN 与同快照钻取，金额和计量单位按分区计算。
+- **打印与导出**：支持私有图片、二维码 / Code128、横向纸张、分组小计、重复页脚和批量单据，提供 PDF、明细 XLSX 与样式 XLSX，导出任务可查看进度和状态。
+- **个人仪表盘**：组件固定报表发布版本与参数，支持指标、柱状图、折线图、饼图、表格和交叉表，提供参数联动、刷新控制和个人收藏。
+- **订阅与私有交付**：订阅固定报表版本、格式、接收人及时间规则，通过幂等调度、outbox 和接收人专属交付记录管理文件；领取与下载实时复核权限。
+- **权限与存储治理**：`ruoyi-common-report` 提供数据契约与授权边界，统一检查租户、业务角色范围、字段权限和资源 ACL；支持本地私有存储及可选 S3、硬配额、快照索引、共享字体和公平执行。
+
 
 #### 支付管理（Pay）
 
@@ -401,6 +410,12 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 ### 自研报表
 
+以下为隔离合成样例，展示报表工作台、仪表盘和原生设计器。
+
+| 报表工作台 | 个人仪表盘 |
+|------------|------------|
+| ![报表工作台（合成样例）](doc/system/assets/report-ui/center-desktop-synthetic.jpg) | ![个人仪表盘（合成样例）](doc/system/assets/report-ui/dashboard-desktop-synthetic.jpg) |
+
 ![原生报表设计器（合成样例）](doc/system/assets/report-p0/designer-synthetic.png)
 
 ### 支付管理
@@ -430,7 +445,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 | 消息队列 | RabbitMQ（工单下发、质检联动、数据采集等业务消息桥接） |
 | MQTT | Moquette 内嵌 MQTT Broker（IoT 设备接入） |
 | 工作流与编排 | Flowable 7.0 审批 + 独立 Flow DAG 自动化编排 |
-| 报表 | Nexus 自研 DSL/运行/设计器；PDFBox、POI 基础库 |
+| 报表 | 自有 JSON DSL v1/v2、Vue 3 原生设计器与运行引擎；PDFBox、POI、ZXing；受控查询、交叉分析、仪表盘与订阅交付 |
 | 任务调度 | SnailJob |
 | 文件存储 | Minio（S3 协议） |
 | AI 框架 | LangChain4j 1.18.0 + LangChain4j Agentic 1.18.0-beta28（Supervisor Agent、MCP、知识图谱） |
@@ -449,7 +464,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 ```
 nexus-erp/
 ├── ruoyi-admin/              # Spring Boot 入口 (com.nexus.NexusApplication)，App/PDA 聚合接口
-├── ruoyi-common/             # 共享库 (核心、认证、ORM、租户、AI/Flow 契约、CV 客户端、签章、MQ、SSE 等)
+├── ruoyi-common/             # 共享库 (核心、认证、ORM、租户、AI/Flow/报表契约、CV 客户端、签章、MQ、SSE 等)
 ├── ruoyi-modules/            # 业务模块
 │   ├── ruoyi-system/         #   系统管理（用户、角色、菜单、部门、租户、字典等）
 │   ├── ruoyi-erp/            #   ERP 业务（基础数据、销售、采购、排产、仓储、财务核心、视觉识别接入）
@@ -460,7 +475,7 @@ nexus-erp/
 │   ├── ruoyi-flow/           #   独立 DAG 流程编排（引擎、节点、实例、定时、工业决策适配）
 │   ├── ruoyi-im/             #   即时通讯（私聊、群聊、消息推送）
 │   ├── ruoyi-pay/            #   支付管理
-│   ├── ruoyi-report/         #   自研报表定义、运行、布局及导出
+│   ├── ruoyi-report/         #   自研报表设计/版本、受控查询、交叉分析、打印、仪表盘、导出与订阅交付
 │   ├── ruoyi-online/         #   在线低代码表单
 │   ├── ruoyi-flowable/       #   Flowable 工作流 REST API
 │   ├── ruoyi-generator/      #   代码生成器
@@ -532,13 +547,58 @@ cd nexus-erp
 - 多租户与 API 加密默认开启；前后端加密配置必须一致，不能以接口加密代替 HTTPS。
 - 密钥、数据库密码和模型凭证应安全注入，不输出完整配置，也不把仓库默认值当作生产安全值。
 
+### 本地与生产配置
+
+| 配置 | 用途 |
+|------|------|
+| `application.yml` | 公共框架配置，包含 Maven 过滤占位符 |
+| [application-dev.yml](ruoyi-admin/src/main/resources/application-dev.yml) | 可共享的开发连接契约；数据库、Redis、MQ 使用环境变量，可选集成默认关闭 |
+| [application-local.yml](ruoyi-admin/src/main/resources/application-local.yml) | 本地环境，导入共享开发配置并收紧监听、连接池和MCP边界；实际激活的仍是 `local` |
+| [application-prod.example.yml](ruoyi-admin/src/main/resources/application-prod.example.yml) | 完整脱敏生产示例；复制到运行目录 `config/application-prod.yml` 后审核配置 |
+| [application-secret.example.yml](ruoyi-admin/src/main/resources/application-secret.example.yml) | 可选集成密钥结构；按需复制为 `config/application-secret.yml` |
+
+真实 `application-prod.yml` / `application-secret.yml` 和两个示例均不进入 admin JAR；示例不会自动加载。仓库根 `config/application*.yml` 已忽略Git，可保存个人环境覆盖。已有私有文件应对照示例迁移，不直接覆盖。
+
+先准备系统、ERP、MES、IoT四个数据库以及Redis、RabbitMQ，再在**仓库根目录**配置本机凭证。以下是PowerShell示例，中文占位值需替换：
+
+```powershell
+$env:DB_PASSWORD = '填写本机数据库密码'
+# 四库可分别使用DB_MASTER_PASSWORD、DB_ERP_PASSWORD、DB_MES_PASSWORD、DB_IOT_PASSWORD
+$env:REDIS_PASSWORD = '填写Redis密码；无认证时可留空'
+$env:MQ_USERNAME = 'nexus'
+$env:MQ_PASSWORD = '填写RabbitMQ密码'
+$env:MQ_VHOST = '/erp'
+```
+
+地址默认使用localhost，支持 `DB_HOST/DB_PORT`、`REDIS_HOST/REDIS_PORT`、`MQ_HOST/MQ_PORT`；库名、账号和完整JDBC URL也可按数据源分别覆盖。环境变量只对当前进程树生效，独立 `.env` 文件不会由Spring自动加载。
+
+有可选集成时，再按需准备私有文件；已经存在的文件保留：
+
+```powershell
+New-Item -ItemType Directory -Path config -Force | Out-Null
+if (-not (Test-Path config/application-secret.yml)) {
+    Copy-Item ruoyi-admin/src/main/resources/application-secret.example.yml config/application-secret.yml
+}
+```
+
+`dev/local` 的私有密钥导入是可选的；外部 `config/application-local.yml` 或 `config/application-dev.yml` 可覆盖对应环境，目录可通过 `NEXUS_CONFIG_DIR` 指定密钥位置。非默认目录中的环境文件还需通过 `SPRING_CONFIG_ADDITIONAL_LOCATION` 指定，路径末尾保留 `/`。IDE运行请将工作目录设为仓库根，显式激活 `local`。 局域网App、PDA或工位测试需要设置 `SERVER_ADDRESS=0.0.0.0` 并核对认证及防火墙。
+
+支付、邮件、监控、SnailJob、MQTT、联网搜索、视觉和WebSocket默认关闭，启用前按配置中的环境变量准备实际服务与凭证。短信厂商额外激活 `sms`，第三方登录供应商额外激活 `social`，例如：
+
+```powershell
+mvn -pl ruoyi-admin spring-boot:run -P local "-Dspring-boot.run.profiles=local,sms"
+```
+
+启用额外profile不会自动填充密钥；回调地址需从外部访问验证。API加密的前后端配置需要匹配。生产示例显式要求数据库、Redis、MQ、JWT、Jasypt、API密钥、工位密钥及运维鉴权密码，不沿用开发默认值；外部挂载与 `.env` 传递范围见[Docker部署说明](doc/system/deployment/docker部署文档.md#五打包与上传)。
+
+
 ### 数据库初始化
 
 仅在**已明确授权的全新空库**中按配置导入对应主 SQL；目标库名以环境配置为准，不把不同业务库的表全部导入 ERP 库。
 
 | 主 SQL | 对应范围 |
 |--------|----------|
-| [ry-vue.sql](script/sql/ry-vue.sql) | 系统库：用户、菜单、权限、AI / Flow / IM 与签章等共享定义 |
+| [ry-vue.sql](script/sql/ry-vue.sql) | 系统库：用户、菜单、权限、AI / Flow / IM、签章与自研报数据 |
 | [ry-erp.sql](script/sql/ry-erp.sql) | ERP 库：基础数据、销售、采购、生产计划、仓储与财务 |
 | [ry-mes.sql](script/sql/ry-mes.sql) | MES 库：制造执行、质量、设备、SOP、DHR 等 |
 | [ry-iot.sql](script/sql/ry-iot.sql) | IoT 库：产品、设备、属性与告警 |
@@ -549,7 +609,7 @@ cd nexus-erp
 
 ### 后端启动
 
-下面是部署时按需执行的命令，文档维护 / 预览不需要编译或启动服务。先在根目录构建并安装模块依赖，再只运行应用入口模块：
+先完成上述本地依赖与凭证配置，在仓库根目录构建并安装模块依赖，再只运行应用入口模块。Spring Boot Maven插件的运行目录已统一为仓库根：
 
 ```bash
 mvn clean install -DskipTests -P local
@@ -635,7 +695,7 @@ npm run build:prod
 
 现行入口为仓库**根目录** [docker-compose-main.yml](docker-compose-main.yml) 与 [docker-compose-assist.yml](docker-compose-assist.yml)：主服务器承载数据库、Redis、RabbitMQ、MinIO、前端与业务应用，辅助服务器承载 MonitorAdmin 和 SnailJobServer。
 
-部署前核对 `.env`、网络地址、密钥、备份与目标数据库。部署步骤见 [Docker 部署文档](doc/system/deployment/docker部署文档.md)；本文不自动启停服务，也不把历史编排副本当作现行部署入口。
+部署前核对 `.env`、网络地址、密钥、备份与目标数据库。部署步骤见 [Docker 部署文档](doc/system/deployment/docker部署文档.md)。
 
 ---
 
@@ -662,7 +722,7 @@ Nexus-ERP 的长期目标不只是"能用"，而是逐步成长为一个具备�
 ### 长期目标
 
 - 在已有总账、应收应付、固定资产代码基础上完善成本核算与经营分析，分别核对业务联调和部署验收。
-- 建立更完善的报表与 BI 能力，支持管理层从数据视角查看经营状态。
+- 在已落地的自研报表、交叉分析、仪表盘和订阅交付基础上深化经营分析，扩展行业模板，并持续验证真实业务口径、性能与现场交付。
 - 持续增强工作流和自动化能力，让业务系统从"记录工具"升级为"流程驱动平台"。
 - 沉淀出更适合中小制造企业的 ERP 实践方案，形成可复用、可演进的行业模板。
 - 打造 AI 驱动的智能 ERP 平台，实现自然语言交互式业务操作、智能决策辅助与自动化流程执行。
