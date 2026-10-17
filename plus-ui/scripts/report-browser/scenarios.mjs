@@ -6,13 +6,14 @@ import { runBusinessScenarios } from './business-scenarios.mjs';
 import { runDesignerScenarios } from './designer-scenarios.mjs';
 import { assertVisualReady, waitForVisualReady } from './visual.mjs';
 import { runLifecycleScenario } from './lifecycle-scenario.mjs';
+import { runNavigationScenarios } from './navigation-scenarios.mjs';
 
 /** 运行真实组件初始回归；后续props与业务场景可在本文件追加。 */
 export async function runScenarios(cdp, host) {
   const { command, evaluate, ready, healthy } = cdp;
   const completed = host.checks;
   const suite = process.env.REPORT_TEST_SUITE || 'all';
-  assert.ok(['all', 'business'].includes(suite), '未知REPORT_TEST_SUITE：' + suite);
+  assert.ok(['all', 'business', 'navigation'].includes(suite), '未知REPORT_TEST_SUITE：' + suite);
 
   /** 每个计数对应完整断言和异常、网络、页面宽度检查。 */
   async function scenario(name, action) {
@@ -123,6 +124,10 @@ export async function runScenarios(cdp, host) {
   }
 
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
+  if (suite === 'navigation') {
+    await runNavigationScenarios(cdp, host, scenario, click);
+    return { suite, passed: completed.length, scenarios: completed };
+  }
   await command('Page.navigate', { url: host.origin });
   await ready('window.__reportHarness && document.querySelectorAll(".fixed-cell").length === 5');
 
@@ -332,5 +337,6 @@ export async function runScenarios(cdp, host) {
 
   await runDesignerScenarios(cdp, host, scenario, { click, button, escape, rendered });
   await runLifecycleScenario(cdp, host, scenario, { click, button, rendered });
+  await runNavigationScenarios(cdp, host, scenario, click);
   return { suite, passed: completed.length, scenarios: completed };
 }

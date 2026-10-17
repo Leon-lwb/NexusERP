@@ -79,8 +79,8 @@
       </el-table>
     </el-card>
     <BatchResultPanel v-if="selected && canList" :state="resultState" @new-batch="newBatch" />
+    <AclDialog v-model:open="aclOpen" resource-type="BATCH" :resource-id="aclId" />
   </ReportPage>
-  <AclDialog v-model:open="aclOpen" resource-type="BATCH" :resource-id="aclId" />
 </template>
 <script setup lang="ts">
 import { ref, computed, reactive, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';

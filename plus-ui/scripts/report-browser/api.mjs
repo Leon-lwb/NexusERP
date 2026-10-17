@@ -21,7 +21,10 @@ export const fixture = Object.freeze({
     'report:definition:list',
     'report:dataset:list',
     'report:batch:manage',
-    'report:batch:list'
+    'report:batch:list',
+    'report:query:list',
+    'report:dashboard:list',
+    'report:subscription:list'
   ]
 });
 

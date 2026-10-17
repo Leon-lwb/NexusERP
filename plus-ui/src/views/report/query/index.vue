@@ -116,17 +116,17 @@
         /></template>
       </el-card>
     </div>
+    <AclDialog
+      :open="!!aclId"
+      resource-type="QUERY"
+      :resource-id="aclId"
+      @update:open="
+        (value) => {
+          if (!value) aclId = '';
+        }
+      "
+    />
   </ReportPage>
-  <AclDialog
-    :open="!!aclId"
-    resource-type="QUERY"
-    :resource-id="aclId"
-    @update:open="
-      (value) => {
-        if (!value) aclId = '';
-      }
-    "
-  />
 </template>
 <script setup lang="ts">
 /** 受控条件的中文名称，保留服务端操作符值。 */

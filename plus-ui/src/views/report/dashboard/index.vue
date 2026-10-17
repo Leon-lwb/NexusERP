@@ -140,17 +140,17 @@
         > </el-form
       ><el-empty v-if="!published && !editing && !loadFailed && !error && !loading" description="选择已发布仪表盘，或创建自己的组件布局"
     /></el-card>
+    <AclDialog
+      :open="!!aclId"
+      resource-type="DASHBOARD"
+      :resource-id="aclId"
+      @update:open="
+        (value) => {
+          if (!value) aclId = '';
+        }
+      "
+    />
   </ReportPage>
-  <AclDialog
-    :open="!!aclId"
-    resource-type="DASHBOARD"
-    :resource-id="aclId"
-    @update:open="
-      (value) => {
-        if (!value) aclId = '';
-      }
-    "
-  />
 </template>
 <script setup lang="ts">
 /** 仪表盘组件类型的可读名称。 */

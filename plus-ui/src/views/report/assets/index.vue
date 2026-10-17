@@ -66,17 +66,17 @@
         ></el-table
       >
     </el-card>
+    <AclDialog
+      :open="!!aclId"
+      resource-type="ASSET"
+      :resource-id="aclId"
+      @update:open="
+        (value) => {
+          if (!value) aclId = '';
+        }
+      "
+    />
   </ReportPage>
-  <AclDialog
-    :open="!!aclId"
-    resource-type="ASSET"
-    :resource-id="aclId"
-    @update:open="
-      (value) => {
-        if (!value) aclId = '';
-      }
-    "
-  />
 </template>
 <script setup lang="ts">
 /** 区分资源目录载入失败与当前账号暂无可见资源。 */

@@ -128,17 +128,17 @@
         ></el-table
       ></el-card
     >
+    <AclDialog
+      :open="!!aclId"
+      resource-type="SUBSCRIPTION"
+      :resource-id="aclId"
+      @update:open="
+        (value) => {
+          if (!value) aclId = '';
+        }
+      "
+    />
   </ReportPage>
-  <AclDialog
-    :open="!!aclId"
-    resource-type="SUBSCRIPTION"
-    :resource-id="aclId"
-    @update:open="
-      (value) => {
-        if (!value) aclId = '';
-      }
-    "
-  />
 </template>
 <script setup lang="ts">
 import { createRequestKey } from '@/utils/requestKey';

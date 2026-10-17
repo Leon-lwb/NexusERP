@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import AutoImport from 'unplugin-auto-import/vite';
 import { fixture } from './api.mjs';
 import { businessMock } from './business-api.mjs';
 
@@ -80,6 +81,26 @@ export async function startServer(runDirectory) {
     if (request.headers['x-report-test-user'] !== fixture.userId || request.headers['x-report-test-tenant'] !== fixture.tenant)
       return reply(403, { code: 403, msg: '合成会话没有资源访问权限', errorCode: 'SCOPE_DENIED' });
     const route = path.slice('/__report_mock'.length);
+    if (request.method === 'GET') {
+      const navigationLists = {
+        '/report/definitions': { permission: 'report:definition:list', data: [business.definition] },
+        '/report/queries': { permission: 'report:query:list', data: [] },
+        '/report/queries/catalog': { permission: 'report:query:list', data: [] },
+        '/report/dashboards': { permission: 'report:dashboard:list', data: [] },
+        '/report/dashboards/favorites': { permission: 'report:dashboard:list', data: [] },
+        '/report/subscriptions': { permission: 'report:subscription:list', data: [] },
+        '/report/subscriptions/capabilities': {
+          permission: 'report:subscription:list',
+          data: { schedulingEnabled: false, notificationsEnabled: false, minSeconds: 60, maxRecipients: 50 }
+        },
+        '/report/batches': { permission: 'report:batch:list', data: [] }
+      };
+      const list = navigationLists[route];
+      if (list)
+        return permissions.includes(list.permission)
+          ? reply(200, { code: 200, data: list.data })
+          : reply(403, { code: 403, msg: '没有合成目录读取权限', errorCode: 'SCOPE_DENIED' });
+    }
     if (await business.handle({ request, response, route, permissions, reply, entry })) return;
     if (route === '/report/assets' && request.method === 'GET') {
       if (!permissions.includes('report:asset:list')) return reply(403, { code: 403, msg: '没有图片目录权限', errorCode: 'SCOPE_DENIED' });
@@ -142,6 +163,7 @@ export async function startServer(runDirectory) {
     logLevel: 'error',
     plugins: [
       vue(),
+      AutoImport({ imports: ['vue', 'vue-router'], dts: false }),
       {
         name: 'isolated-report-mock',
         configureServer(vite) {

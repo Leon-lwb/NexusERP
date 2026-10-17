@@ -117,7 +117,8 @@ export async function connectCdp(url, failures, signal) {
     const target = new URL(value);
     return (
       ['data:', 'blob:', 'about:'].includes(target.protocol) ||
-      (target.origin === origin && /^\/(?:$|main\.ts|App\.vue|api\.mjs|user\.mjs|@|src\/|node_modules\/|__report_mock\/)/.test(target.pathname))
+      (target.origin === origin &&
+        /^\/(?:$|main\.ts|App\.vue|NavigationApp\.vue|api\.mjs|user\.mjs|@|src\/|node_modules\/|__report_mock\/)/.test(target.pathname))
     );
   }
 

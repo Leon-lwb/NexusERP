@@ -5,17 +5,27 @@ import * as icons from '@element-plus/icons-vue';
 import 'element-plus/dist/index.css';
 import 'element-plus/theme-chalk/dark/css-vars.css';
 import App from './App.vue';
+import NavigationApp, { navigationRoutes } from './NavigationApp.vue';
+import { createPinia } from 'pinia';
+import animate from '@/animate';
 import { session } from './api.mjs';
 
 /** 合成页面仍执行真实权限语义，不能使用放行所有按钮的空指令。 */
-const app = createApp(App);
+const navigation = new URLSearchParams(location.search).has('navigation');
+const app = createApp(navigation ? NavigationApp : App);
+app.use(createPinia());
+app.config.globalProperties.animate = animate;
+(window as any).__reportNavigationWarnings = [];
+if (navigation) app.config.warnHandler = (warning) => (window as any).__reportNavigationWarnings.push(warning);
 /** 内存路由用于断言业务抽屉始终保留原页面。 */
 const router = createRouter({
   history: createMemoryHistory(),
-  routes: [
-    { path: '/report/designer', component: () => import('@/views/report/designer/index.vue') },
-    { path: '/:pathMatch(.*)*', component: { render: () => null } }
-  ]
+  routes: navigation
+    ? navigationRoutes
+    : [
+        { path: '/report/designer', component: () => import('@/views/report/designer/index.vue') },
+        { path: '/:pathMatch(.*)*', component: { render: () => null } }
+      ]
 });
 (window as any).__reportNavigation = [];
 router.afterEach((route) => (window as any).__reportNavigation.push(route.fullPath));

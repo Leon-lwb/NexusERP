@@ -12,6 +12,8 @@ HTTP 服务以 Vite 中间件模式监听 `127.0.0.1:0`，CDP 通过独立 profi
 
 `scenarios.mjs` 覆盖基础组件，`business-scenarios.mjs` 覆盖真实单张/批次入口与恢复，`designer-scenarios.mjs` 覆盖真实设计器整页、键盘、媒体属性及窄屏侧栏。390px以独立文档首次加载，专注编辑的布局切换仍在同一真实画布上检查。每个场景检查脚本异常、未处理拒绝和页面横向溢出，不能通过过滤或清空异常来放行。
 
+`navigation-scenarios.mjs` 使用正式 `AppMain`、命名路由包装器及标签缓存，覆盖图片、查询、仪表盘、订阅、批次分别切到导出中心并返回。缓存开启/关闭与随机动画开启/关闭共20个场景，要求页面实际可见、导出列表完成请求、Vue组件警告为零。可设置 `REPORT_TEST_SUITE=navigation` 单独运行；默认 `all` 也执行。只替换身份和接口，保留正式布局的 `Transition mode="out-in"` 与 `KeepAlive`，防止只测独立页面遗漏跨菜单空白问题。
+
 默认all最后的`lifecycle-scenario.mjs`沿同一模板实际编辑并点击“保存并发布”，核对真实PUT `{ revision, dsl }`与POST `{ revision }`各一次、草稿修订递增及旧发布快照不变；随后目录、单张run和多选批次全部使用新不可变versionId，并各自成功领取带PDF签名的合成Blob。JSON的`lifecycle`记录版本、修订、run/batch与关闭后Blob回收证据。此文件为Mock生成的PDF，只验证UI协议和预览生命周期。
 
 并行调整设计器时可临时设置 `REPORT_TEST_SUITE=business` 仅跑业务入口。JSON会明确记录此范围及实际执行数；默认 `all` 才覆盖全部回归。业务范围还验证清空或超过50项勾选后恢复原批次，以及已缓存PDF在逐项刷新为BLOCKED后立即关闭、回收URL和隐藏原单据标签。PDF弹窗覆盖刷新按钮时使用真实按钮事件模拟异步刷新，不直接修改组件状态。
