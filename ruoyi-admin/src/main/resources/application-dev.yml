@@ -40,6 +40,8 @@ snail-job:
 spring:
   config:
     import:
+    # dev 开箱即用演示凭证（社区演示值，详见文件头说明）
+    - classpath:application-secret-dev.yml
     - optional:file:${NEXUS_CONFIG_DIR:./config}/application-secret.yml
   datasource:
     type: com.zaxxer.hikari.HikariDataSource

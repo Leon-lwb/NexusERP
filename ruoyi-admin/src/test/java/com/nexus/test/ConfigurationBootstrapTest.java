@@ -52,6 +52,18 @@ class ConfigurationBootstrapTest {
         }
     }
 
+    /** 随仓库分发的dev演示密钥文件提供开箱即用凭证，环境变量优先级仍高于演示值。 */
+    @Test
+    void devDemoSecretProvidesBootstrapCredentials() throws Exception {
+        var environment = load("dev", Map.of(), false);
+        assertEquals("root", environment.getProperty("spring.datasource.dynamic.datasource.master.password"));
+        assertEquals("root", environment.getProperty("spring.datasource.dynamic.datasource.erp.password"));
+        assertEquals("root", environment.getProperty("spring.datasource.dynamic.datasource.mes.password"));
+        assertEquals("root", environment.getProperty("spring.datasource.dynamic.datasource.iot.password"));
+        assertEquals("ruoyi123", environment.getProperty("spring.data.redis.password"));
+        assertEquals("nexus", environment.getProperty("spring.rabbitmq.password"));
+    }
+
     /** local复用连接契约，但不会额外激活dev或开发白名单。 */
     @Test
     void localLoadsAllDataSourcesWithoutActivatingDev() throws Exception {
@@ -133,7 +145,7 @@ class ConfigurationBootstrapTest {
     private ConfigurableEnvironment load(String profiles, Map<String, ?> overrides, boolean production) throws Exception {
         Path classpath = Files.createDirectories(temporary.resolve("classpath"));
         Path source = Path.of("src/main/resources");
-        for (String name : List.of("application.yml", "application-dev.yml", "application-local.yml", "application-decision-demo.yml")) {
+        for (String name : List.of("application.yml", "application-dev.yml", "application-local.yml", "application-decision-demo.yml", "application-secret-dev.yml")) {
             if (Files.exists(source.resolve(name))) {
                 String text = Files.readString(source.resolve(name)).replace("@profiles.active@", "dev")
                     .replace("@logging.level@", "info").replace("@monitor.username@", "fixture-user")

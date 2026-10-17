@@ -3,18 +3,18 @@ package com.nexus.common.cv.config;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.client.VisionClientImpl;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 /**
  * 视觉服务自动配置
- * <p>注册 {@link VisionClient} Bean;当 nexus.vision.enabled=false 时不注册(业务方注入可空处理)</p>
+ * <p>始终注册 {@link VisionClient} Bean;nexus.vision.enabled=false 时由
+ * {@link VisionClientImpl} 在调用时抛出 {@code VisionException},业务方捕获降级,
+ * 避免 ERP 侧硬构造器注入在禁用场景下启动失败</p>
  *
  * @author nexus
  * @since 1.0.0
  */
 @AutoConfiguration
-@ConditionalOnProperty(prefix = "nexus.vision", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class CvAutoConfiguration {
 
     /**

@@ -585,14 +585,14 @@ cd nexus-erp
 
 真实 `application-prod.yml` / `application-secret.yml` 和两个示例均不进入 admin JAR；示例不会自动加载。仓库根 `config/application*.yml` 已忽略Git，可保存个人环境覆盖。已有私有文件应对照示例迁移，不直接覆盖。
 
-先准备系统、ERP、MES、IoT四个数据库以及Redis、RabbitMQ，再在**仓库根目录**配置本机凭证。以下是PowerShell示例，中文占位值需替换：
+先准备系统、ERP、MES、IoT四个数据库以及Redis、RabbitMQ，再按需覆盖本机凭证。dev/local 已内置开箱即用演示凭证（见 [application-secret-dev.yml](ruoyi-admin/src/main/resources/application-secret-dev.yml)：数据库 `root/root`、Redis `ruoyi123`、RabbitMQ `nexus/nexus`，均连 localhost），本机中间件与演示值一致时无需任何配置直接启动；口令不同时按下例覆盖（也可在仓库根 `config/application-secret.yml` 用同名键 `DB_PASSWORD`/`REDIS_PASSWORD`/`MQ_PASSWORD` 写私有覆盖，git 已忽略），以下是PowerShell示例，中文占位值需替换：
 
 ```powershell
 $env:DB_PASSWORD = '填写本机数据库密码'
 # 四库可分别使用DB_MASTER_PASSWORD、DB_ERP_PASSWORD、DB_MES_PASSWORD、DB_IOT_PASSWORD
-$env:REDIS_PASSWORD = '填写Redis密码；无认证时可留空'
+$env:REDIS_PASSWORD = '填写Redis密码；默认演示值为 ruoyi123'
 $env:MQ_USERNAME = 'nexus'
-$env:MQ_PASSWORD = '填写RabbitMQ密码'
+$env:MQ_PASSWORD = '填写RabbitMQ密码；默认演示值为 nexus'
 $env:MQ_VHOST = '/erp'
 ```
 
