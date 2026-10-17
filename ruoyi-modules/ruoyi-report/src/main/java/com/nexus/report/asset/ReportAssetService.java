@@ -33,6 +33,28 @@ public final class ReportAssetService {
             int height,
             String format) {}
 
+    /**
+     * 面向编辑器的固定版本元数据，仅投影已授权的名称、标识与图片像素尺寸。
+     *
+     * @param versionId 请求绑定的不可变版本标识
+     * @param resourceId 当前授权的资产资源标识
+     * @param name 当前授权草稿的标题
+     * @param width 固定版本的图片像素宽度
+     * @param height 固定版本的图片像素高度
+     */
+    public record ReportAssetMetadata(
+            String versionId, String resourceId, String name, int width, int height) {}
+
+    /**
+     * 单次授权解析的固定版本、当前草稿与私有资产，仅用于服务内部投影。
+     *
+     * @param version 已校验完整性的不可变版本
+     * @param draft 当前身份具有VIEW权限的资源草稿
+     * @param asset 固定版本中的私有资产契约
+     */
+    private record AuthorizedAsset(
+            ReportResourceStore.Version version, ReportResourceStore.Draft draft, Asset asset) {}
+
     /** 保存当前resources状态或配置。 */
     private final ReportResourceStore resources;
 
@@ -153,7 +175,36 @@ public final class ReportAssetService {
      * @return 当前受控处理的固定结果
      */
     public Asset resolve(ReportActor actor, String versionId) {
+        return resolveCurrent(current(actor), versionId).asset();
+    }
+
+    /**
+     * 重新验证当前预览权限并返回安全元数据，名称与尺寸分别取授权草稿和固定版本。
+     *
+     * @param actor 请求携带的身份快照
+     * @param versionId 请求绑定的不可变版本标识
+     * @return 不含内部存储字段的元数据
+     */
+    public ReportAssetMetadata metadata(ReportActor actor, String versionId) {
         var current = current(actor);
+        ReportDefinitionService.require(current, "report:runtime:preview");
+        var resolved = resolveCurrent(current, versionId);
+        return new ReportAssetMetadata(
+                resolved.version().id(),
+                resolved.version().resourceId(),
+                resolved.draft().title(),
+                resolved.asset().width(),
+                resolved.asset().height());
+    }
+
+    /**
+     * 在已刷新的身份下复用租户、VIEW、下线、版本完整性与存储挂载检查。
+     *
+     * @param current 重新解析的当前身份
+     * @param versionId 请求绑定的不可变版本标识
+     * @return 同一次授权解析的固定版本和当前草稿
+     */
+    private AuthorizedAsset resolveCurrent(ReportActor current, String versionId) {
         var version =
                 resources
                         .version("ASSET", current.tenantId(), versionId)
@@ -164,7 +215,7 @@ public final class ReportAssetService {
         var asset = json.read(version.json(), Asset.class);
         if (!asset.store().equals(artifacts.storeId()))
             throw new ReportFault("ARTIFACT_STORE_UNAVAILABLE", "图片存储空间未挂载", 503);
-        return asset;
+        return new AuthorizedAsset(version, draft, asset);
     }
 
     /**

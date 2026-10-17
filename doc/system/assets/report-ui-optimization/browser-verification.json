@@ -1,0 +1,296 @@
+{
+  "synthetic": true,
+  "command": "npm run test:report:browser",
+  "baseline": "e365bb1a",
+  "suite": "all",
+  "startedAt": "2026-10-17T12:04:38.063Z",
+  "completedAt": "2026-10-17T12:05:32.586Z",
+  "node": "v24.21.0",
+  "browser": "Edg/131.0.2903.51",
+  "counts": {
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0
+  },
+  "scenarios": [
+    "真实单张业务按钮：原页抽屉自动预览一次，完整ID与固定版本",
+    "单张打印：JSON错误Blob显示权限指引，不创建iframe或二次run",
+    "关闭单张抽屉停止原PDF任务轮询，并保留筛选勾选",
+    "真实批次确认：展示单号往来单位与完整ID，上移改变提交顺序",
+    "批次确认后原位结果：code合法、版本与参数顺序固定，不导航",
+    "批次关闭重开恢复同一batchId，不重复创建或start",
+    "清空或超过50项勾选仍能继续已创建批次，原顺序与内容保持固定",
+    "PDF缓存打开期间逐项刷新为BLOCKED，关闭预览回收URL并隐藏原单号标签",
+    "合并领取：200 JSON Blob和410错误Blob都显示指引，禁止送入PDF",
+    "start失败关闭重开：只补原批次入队，不重复create",
+    "创建响应未知后恢复：复用同code、完整内容及原提交顺序",
+    "桌面1440×1100：真实画布、纸张设置与完整ID",
+    "列边界多次移动仅一次历史，撤销与重做恢复整次手势",
+    "工具栏焦点下Escape取消拖动，无新历史",
+    "固定行拖动仅提交一次且可以整次撤销",
+    "图库过滤未发布资源，选择绑定完整不可变版本",
+    "媒体移动仅一次历史，位置受纸张边界约束",
+    "真实打印设置添加二维码及Code128，仅绑定批准编码字段",
+    "取消图库不改变媒体，释放弹窗Blob",
+    "桌面深色模式真实主题变量与有效画面",
+    "390×1000窄屏首次加载画布及媒体，无页面横向溢出",
+    "390px图库可选择且弹窗保持在视口内",
+    "目录权限撤销：服务端拒绝并展示真实图库错误",
+    "图片预览权限撤销：不可读取、不可选择、不替换固定绑定",
+    "Mock严格验证code、完整ID、租户、权限及409发布版本",
+    "卸载真实组件后所有私有Blob均已回收",
+    "真实设计器整页：固定数据集契约、更多菜单及校验入口",
+    "设计器键盘：0.5mm、Shift 5mm、连续按键一次撤销及Escape取消",
+    "媒体属性毫米输入、步进立即提交、二维码正方形及输入框方向键保护",
+    "删除媒体使旧选区失效，撤销后可重新选择当前媒体",
+    "真实图片属性读取安全元数据、完整固定版本及替换入口",
+    "元数据撤权保持原图片固定版本，不自动改绑",
+    "390px真实字段侧栏：打开转移焦点，Escape关闭回到触发按钮",
+    "390px真实媒体属性侧栏与深色画面，无页面横向溢出",
+    "应用内专注编辑由Escape退出，画布和选中二维码保持",
+    "同模板闭环：真实编辑保存发布、新版本目录、单张和多选合并成功PDF Blob"
+  ],
+  "lifecycle": {
+    "synthetic": true,
+    "reportId": "9223372036854775805",
+    "previousVersionId": "9223372036854775804",
+    "versionId": "9223372036854775785",
+    "saveCount": 1,
+    "publishCount": 1,
+    "saveRevision": 1,
+    "publishRevision": 2,
+    "finalRevision": 3,
+    "runId": "9223372036854775697",
+    "batchId": "9223372036854775497",
+    "documents": [
+      {
+        "reportVersionId": "9223372036854775785",
+        "parameters": {
+          "orderId": "9223372036854775791"
+        }
+      },
+      {
+        "reportVersionId": "9223372036854775785",
+        "parameters": {
+          "orderId": "9223372036854775792"
+        }
+      }
+    ],
+    "singlePdf": {
+      "type": "application/pdf",
+      "bytes": 592,
+      "signature": "%PDF-1.4"
+    },
+    "batchPdf": {
+      "type": "application/pdf",
+      "bytes": 592,
+      "signature": "%PDF-1.4"
+    },
+    "blobUrlsAfterClose": 0
+  },
+  "screenshots": [
+    {
+      "file": "designer-desktop-synthetic.png",
+      "synthetic": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "ready": true,
+      "elapsedMs": 581,
+      "fonts": "loaded",
+      "remainingAnimations": 0,
+      "remainingBlockers": 0,
+      "styleAssertions": {
+        "darkCards": [],
+        "drawerHeadings": []
+      }
+    },
+    {
+      "file": "designer-mobile-dark-synthetic.png",
+      "synthetic": true,
+      "viewport": {
+        "width": 390,
+        "height": 1000
+      },
+      "ready": true,
+      "elapsedMs": 1091,
+      "fonts": "loaded",
+      "remainingAnimations": 0,
+      "remainingBlockers": 0,
+      "styleAssertions": {
+        "darkCards": [
+          {
+            "element": "div.el-card.is-never-shadow.designer-main",
+            "texts": [
+              {
+                "element": "div.el-card.is-never-shadow.designer-main",
+                "text": "报表配置先选择数据集，再设置编码、标题与报表类型。1 列 · 1 个参数合成采购数据集选择目录打印单据契约 1 当前版本设计画布新版打印纸张与分页查询参数汇总定义文件字段属性添加 QR添加 Code1",
+                "color": "rgb(229, 234, 243)",
+                "backgroundColor": "rgb(29, 30, 31)",
+                "effectiveBackground": [29, 30, 31],
+                "backgroundLuminance": 0.012886862551816767,
+                "contrast": 13.830347357839148
+              },
+              {
+                "element": "h2.",
+                "text": "报表配置",
+                "color": "rgb(229, 234, 243)",
+                "backgroundColor": "rgba(0, 0, 0, 0)",
+                "effectiveBackground": [29, 30, 31],
+                "backgroundLuminance": 0.012886862551816767,
+                "contrast": 13.830347357839148
+              },
+              {
+                "element": "p.report-section-description",
+                "text": "先选择数据集，再设置编码、标题与报表类型。",
+                "color": "rgb(163, 166, 173)",
+                "backgroundColor": "rgba(0, 0, 0, 0)",
+                "effectiveBackground": [29, 30, 31],
+                "backgroundLuminance": 0.012886862551816767,
+                "contrast": 6.849776723415975
+              }
+            ]
+          }
+        ],
+        "drawerHeadings": []
+      }
+    },
+    {
+      "file": "business-single-drawer-synthetic.png",
+      "synthetic": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "ready": true,
+      "elapsedMs": 396,
+      "fonts": "loaded",
+      "remainingAnimations": 0,
+      "remainingBlockers": 0,
+      "styleAssertions": {
+        "darkCards": [],
+        "drawerHeadings": [
+          {
+            "text": "查询条件带 * 的参数为必填，留空的可选项使用报告默认值。打印单据",
+            "display": "flex",
+            "variables": {
+              "--report-surface": "#fff",
+              "--report-muted": "#f5f7fa",
+              "--report-line": "#ebeef5"
+            }
+          },
+          {
+            "text": "运行结果结果按本次运行的数据范围展示打印PDF创建导出",
+            "display": "flex",
+            "variables": {
+              "--report-surface": "#fff",
+              "--report-muted": "#f5f7fa",
+              "--report-line": "#ebeef5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "file": "batch-confirm-reordered-synthetic.png",
+      "synthetic": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "ready": true,
+      "elapsedMs": 406,
+      "fonts": "loaded",
+      "remainingAnimations": 0,
+      "remainingBlockers": 0,
+      "styleAssertions": {
+        "darkCards": [],
+        "drawerHeadings": []
+      }
+    },
+    {
+      "file": "batch-blocked-pdf-revoked-synthetic.png",
+      "synthetic": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "ready": true,
+      "elapsedMs": 231,
+      "fonts": "loaded",
+      "remainingAnimations": 0,
+      "remainingBlockers": 0,
+      "styleAssertions": {
+        "darkCards": [],
+        "drawerHeadings": [
+          {
+            "text": "逐项结果当前批次：9223372036854775500；显示顺序即提交顺序。刷新结果",
+            "display": "flex",
+            "variables": {
+              "--report-surface": "#fff",
+              "--report-muted": "#f5f7fa",
+              "--report-line": "#ebeef5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "file": "designer-saved-published-synthetic.png",
+      "synthetic": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "ready": true,
+      "elapsedMs": 569,
+      "fonts": "loaded",
+      "remainingAnimations": 0,
+      "remainingBlockers": 0,
+      "styleAssertions": {
+        "darkCards": [],
+        "drawerHeadings": []
+      }
+    }
+  ],
+  "failures": [],
+  "mockFailures": [],
+  "cleanup": {
+    "browserPid": 27076,
+    "browserExitStrategy": "cdp",
+    "browserExited": true,
+    "cdp": {
+      "readyState": 3,
+      "pendingCommands": 0
+    },
+    "viteClosed": true,
+    "profileRemoved": true,
+    "temporaryDirectoryRemoved": true,
+    "ports": {
+      "vite": {
+        "port": 53930,
+        "closed": true
+      },
+      "cdp": {
+        "port": 53931,
+        "closed": true
+      }
+    },
+    "errors": []
+  },
+  "cleanupAudit": {
+    "checkedAt": "2026-10-17T12:06:09.7845176Z",
+    "browserPid": 27076,
+    "ports": [53930, 53931],
+    "residualOwnedBrowserPids": [],
+    "residualRuntimeDirectories": [],
+    "remainingPortListeners": [],
+    "screenshotCount": 16
+  },
+  "limitations": [
+    "实际Vue组件和Mock API的UI协议验收，未连接业务后端",
+    "合成PDF用于查看器和固定版本交付验证，真实分页、文本、条码与合并由后端Maven回归独立验证",
+    "未部署、未初始化现有数据库、未连接真实S3或打印机"
+  ]
+}

@@ -93,7 +93,9 @@
           >取消</el-button
         >
       </el-col>
-      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_SALES_ORDER_DOCUMENT" parameter="orderId" :record-ids="ids" /></el-col>
+      <el-col :span="1.5"
+        ><BusinessReportButton dataset-code="ERP_SALES_ORDER_DOCUMENT" parameter="orderId" :record-ids="ids" :documents="reportDocuments"
+      /></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -131,7 +133,12 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="440" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
-          <BusinessReportButton dataset-code="ERP_SALES_ORDER_DOCUMENT" parameter="orderId" :record-id="scope.row.soId" />
+          <BusinessReportButton
+            dataset-code="ERP_SALES_ORDER_DOCUMENT"
+            parameter="orderId"
+            :record-id="scope.row.soId"
+            :document="{ id: String(scope.row.soId), code: scope.row.soNo || String(scope.row.soId), counterparty: scope.row.clientName }"
+          />
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="warning" @click.stop="handleDeliveryDecision(scope.row)" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>
           <el-button
@@ -493,4 +500,11 @@ function handleCancel(row?: any) {
 onActivated(() => {
   getList();
 });
+/** 当前勾选项的展示字段只按完整ID匹配，不改变报表参数。 */
+const reportDocuments = computed(() =>
+  ids.value.map((value) => {
+    const record = orderheaderList.value.find((entry) => String(entry.soId) === String(value));
+    return { id: String(value), code: record?.soNo ? String(record.soNo) : String(value), counterparty: record?.clientName || undefined };
+  })
+);
 </script>

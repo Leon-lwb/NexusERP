@@ -13,6 +13,7 @@ await mkdir('node_modules/.tmp', { recursive: true });
 const apiNames = [
   'publishedReport',
   'createRun',
+  'runStatus',
   'runPage',
   'runLayout',
   'runPivot',
@@ -78,7 +79,8 @@ const mockPlugin = {
       if (a.path === '@/api/report')
         contents = apiNames.map((n) => 'export const ' + n + '=(...args)=>globalThis.__reportUI.api["' + n + '"](...args);').join('\n');
       if (a.path === '@/api/report/assets')
-        contents = 'export const listAssets=async()=>({data:[]});export const assetImage=async()=>new Blob([],{type:"image/png"});';
+        contents =
+          'export const listAssets=async()=>({data:[]});export const assetImage=async()=>new Blob([],{type:"image/png"});export const assetMetadata=async id=>({data:{versionId:id,resourceId:id,name:"合成图片",width:10,height:10}});';
       if (a.path === '@/api/report/batch')
         contents = ['listBatches', 'createBatch', 'startBatch', 'batchItems', 'batchPdf']
           .map((name) => 'export const ' + name + '=(...args)=>globalThis.__reportUI.api["' + name + '"]?.(...args);')
@@ -1024,9 +1026,12 @@ test('business entry transfers the exact document ID and only the approved param
   };
   await x.state.load();
   x.state.open('report1');
-  assert.equal(route.query.orderId, '9223372036854775807');
-  assert.deepEqual(Object.keys(route.query).sort(), ['auto', 'id', 'orderId', 'versionId']);
-  assert.equal(route.query.versionId, 'version1');
+  assert.equal(route, undefined);
+  assert.equal(x.state.previewOpen, true);
+  assert.equal(x.state.previewParameters.orderId, '9223372036854775807');
+  assert.deepEqual(Object.keys(x.state.previewParameters), ['orderId']);
+  assert.equal(x.state.selectedTemplate.id, 'report1');
+  assert.equal(x.state.selectedTemplate.versionId, 'version1');
 });
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('manual retry sends the displayed round and keeps the original job identity', async (t) => {

@@ -84,8 +84,10 @@ export const saveGrants = (type: string, id: string, grants: ResourceGrant[]): A
 /** 提供报表 `listReportAudit` 操作入口。 */
 export const listReportAudit = (): Api<Record<string, unknown>[]> => request({ url: '/report/audit' });
 /** 提供报表 `createRun` 操作入口。 */
-export const createRun = (reportId: string, mode: string, parameters: Record<string, string>): Api<ReportRun> =>
-  request({ url: '/report/runtime/runs', method: 'post', data: { reportId, mode, parameters }, timeout: 120000 });
+export const createRun = (reportId: string, mode: string, parameters: Record<string, string>, expectedVersionId?: string): Api<ReportRun> =>
+  request({ url: '/report/runtime/runs', method: 'post', data: { reportId, mode, parameters, expectedVersionId }, timeout: 120000 });
+/** 重新鉴权后读取既有运行，完整页与抽屉共享固定快照。 */
+export const runStatus = (id: string): Api<ReportRun> => request({ url: '/report/runtime/runs/' + id });
 /** 提供报表 `runPage` 操作入口。 */
 export const runPage = (id: string, page: number, size: number, sort?: string, descending = false): Api<PageData> =>
   request({ url: '/report/runtime/runs/' + id + '/page', params: { page, size, sort, descending } });

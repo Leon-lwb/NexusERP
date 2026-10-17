@@ -2,12 +2,17 @@
   <el-dialog
     :model-value="modelValue"
     title="选择私有打印图片"
-    width="720px"
+    width="min(720px, calc(100vw - 32px))"
     append-to-body
     @update:model-value="(value) => emit('update:modelValue', value)"
   >
     <div class="asset-search">
-      <el-input v-model="search" clearable placeholder="搜索图片名称或编码" /><el-button :loading="loading" @click="load">刷新</el-button>
+      <el-input v-model="search" clearable placeholder="搜索图片名称或编码" aria-label="搜索私有图片" /><el-button
+        :loading="loading"
+        aria-label="刷新私有图片目录"
+        @click="load"
+        >刷新</el-button
+      >
     </div>
     <el-alert v-if="error" :title="error" type="error" :closable="false" class="mb-3" />
     <div v-loading="loading" class="asset-grid">
@@ -40,7 +45,7 @@ import { listAssets, assetImage } from '@/api/report/assets';
 import type { ReportResource } from '@/api/report/query';
 import { RequestGate } from '@/views/report/model';
 /** 图库开关由打印控件管理。 */
-const props = defineProps<{ modelValue: boolean }>();
+const props = defineProps<{ modelValue: boolean; contextKey?: string }>();
 /** 仅提交不可变图片版本及显示名称。 */
 const emit = defineEmits<{ 'update:modelValue': [boolean]; select: [{ versionId: string; title: string }] }>();
 /** 当前用户可见图片目录。 */
@@ -139,6 +144,18 @@ watch(
   },
   { immediate: true }
 );
+watch(
+  () => props.contextKey,
+  () => {
+    listGate.invalidate();
+    release();
+    assets.value = [];
+    search.value = error.value = '';
+    loading.value = false;
+    emit('update:modelValue', false);
+  },
+  { flush: 'sync' }
+);
 onUnmounted(() => {
   listGate.invalidate();
   release();
@@ -149,6 +166,10 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  min-width: 0;
+}
+.asset-search :deep(.el-input) {
+  min-width: 0;
 }
 .asset-grid {
   display: grid;
@@ -177,6 +198,10 @@ onUnmounted(() => {
 }
 .asset-choice small {
   color: var(--el-text-color-secondary);
+}
+.asset-choice strong {
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 .asset-choice:disabled {
   cursor: default;

@@ -1,5 +1,21 @@
 import request from '@/utils/request';
 import type { ReportResource } from './query';
+/** 私有资源的安全元数据，打印尺寸另以毫米设置。 */
+export interface ReportAssetMetadata {
+  /** 请求的不可变版本。 */
+  versionId: string;
+  /** 授权资源标识。 */
+  resourceId: string;
+  /** 当前授权资源标题。 */
+  name: string;
+  /** 固定图片像素宽度。 */
+  width: number;
+  /** 固定图片像素高度。 */
+  height: number;
+}
+/** 读取指定版本属性，不回退到最新版本或公开存储地址。 */
+export const assetMetadata = (versionId: string): Promise<{ data: ReportAssetMetadata }> =>
+  request({ url: '/report/assets/versions/' + versionId + '/metadata' });
 /** 通过当前认证代理读取私有版本，避免公开地址和URL令牌。 */
 export const assetImage = (versionId: string): Promise<Blob> =>
   request({ url: '/report/assets/versions/' + versionId + '/file', responseType: 'blob' });

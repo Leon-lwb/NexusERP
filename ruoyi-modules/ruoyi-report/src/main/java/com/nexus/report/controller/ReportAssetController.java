@@ -83,6 +83,21 @@ public final class ReportAssetController {
     }
 
     /**
+     * 按固定版本返回当前授权名称与图片像素尺寸，响应不缓存且不暴露私有存储字段。
+     *
+     * @param id 请求绑定的不可变图片版本标识
+     * @param response 用于设置私有禁止缓存响应头
+     * @return 当前身份可访问的安全元数据
+     */
+    @SaCheckPermission("report:runtime:preview")
+    @GetMapping("/versions/{id}/metadata")
+    public R<ReportAssetService.ReportAssetMetadata> metadata(
+            @PathVariable String id, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store, private");
+        return R.ok(service.metadata(actors.current(), id));
+    }
+
+    /**
      * 资源状态变更携带revision，旧发布保持不可改写。
      *
      * @param revision 当前契约的revision配置或状态

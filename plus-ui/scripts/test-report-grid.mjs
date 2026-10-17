@@ -143,3 +143,78 @@ test('媒体拖动及缩放不越界且二维码保持正方形', () => {
   assert.equal(source.print.media[0].width, 72);
   assert.throws(() => grid.positionMedia(source, 0, { width: NaN }));
 });
+
+test('媒体方向键统一使用0.5毫米和Shift5毫米，保留边界、二维码与字符串版本', () => {
+  const source = grid.enablePrint(document());
+  source.print.media.push({ kind: 'QR', field: 'code', assetVersionId: null, x: 50, y: 50, width: 72, height: 72, repeat: false });
+  const small = grid.nudgeMedia(source, 0, 'ArrowRight', false);
+  assert.ok(Math.abs(small.print.media[0].x - 50 - grid.mmToPt(0.5)) < 1e-9);
+  const large = grid.nudgeMedia(small, 0, 'ArrowDown', true);
+  assert.ok(Math.abs(large.print.media[0].y - 50 - grid.mmToPt(5)) < 1e-9);
+  assert.equal(large.print.media[0].width, large.print.media[0].height);
+  assert.equal(large.datasetVersionId, '9223372036854775807');
+  const edge = grid.positionMedia(source, 0, { x: 30, y: 30 });
+  assert.equal(grid.nudgeMedia(edge, 0, 'ArrowLeft', true).print.media[0].x, 30);
+  assert.deepEqual(grid.nudgeMedia(source, 0, 'Enter', false), source);
+  assert.equal(source.print.media[0].x, 50);
+});
+
+test('媒体属性绑定只接受批准业务编码，非法字段与图片字段不提交', () => {
+  const source = grid.enablePrint(document());
+  source.print.media.push({ kind: 'QR', field: 'code', assetVersionId: null, x: 50, y: 50, width: 72, height: 72, repeat: false });
+  const fields = [
+    { name: 'orderNo', type: 'STRING', label: '单号' },
+    { name: 'recordId', type: 'ID', label: '记录' },
+    { name: 'amount', type: 'DECIMAL', label: '金额' },
+    { name: 'description', type: 'STRING', label: '说明' }
+  ];
+  const next = grid.bindMediaField(source, 0, 'orderNo', fields);
+  assert.equal(next.print.media[0].field, 'orderNo');
+  for (const name of ['amount', 'description', 'privateCode', '']) assert.throws(() => grid.bindMediaField(source, 0, name, fields));
+  source.print.media[0].kind = 'IMAGE';
+  assert.throws(() => grid.bindMediaField(source, 0, 'recordId', fields));
+});
+
+test('逻辑坐标在合并拆分和撤销草稿之间重新解析，矩形与媒体越界失效', async () => {
+  await build({
+    entryPoints: ['src/components/report/designer/editorSelection.ts'],
+    outfile: 'node_modules/.tmp/report-editor-selection.mjs',
+    bundle: true,
+    format: 'esm',
+    platform: 'node'
+  });
+  const { resolveEditorSelection } = await import(pathToFileURL(resolve('node_modules/.tmp/report-editor-selection.mjs')));
+  const source = document();
+  const position = { type: 'cell', band: 'headerRows', row: 1, column: 1 };
+  const range = { band: 'headerRows', top: 0, left: 0, bottom: 1, right: 1 };
+  const merged = grid.mergeCells(source, range);
+  const resolved = resolveEditorSelection(merged, position);
+  assert.equal(resolved.cell.text, '单号');
+  assert.equal(resolved.row, 0);
+  assert.equal(resolved.cell.rowSpan, 2);
+  assert.equal(resolveEditorSelection(source, position).row, 1);
+  const split = grid.splitCells(merged, range);
+  assert.equal(resolveEditorSelection(split, position).cell.rowSpan, 1);
+  assert.equal(resolveEditorSelection(source, { type: 'range', ...range }).type, 'range');
+  assert.equal(resolveEditorSelection(merged, { type: 'range', ...range, left: 1, right: 2 }), undefined);
+  for (const selection of [
+    { type: 'column', index: 99 },
+    { type: 'cell', band: 'footerRows', row: 3, column: 1 },
+    { type: 'media', index: 0 },
+    { type: 'media', index: -1 },
+    { type: 'range', ...range, bottom: 9 }
+  ])
+    assert.equal(resolveEditorSelection(source, selection), undefined);
+  const withMedia = grid.enablePrint(source);
+  withMedia.print.media.push({
+    kind: 'IMAGE',
+    assetVersionId: '9223372036854775806',
+    field: null,
+    x: 50,
+    y: 50,
+    width: 72,
+    height: 72,
+    repeat: false
+  });
+  assert.equal(resolveEditorSelection(withMedia, { type: 'media', index: 0 }).media.assetVersionId, '9223372036854775806');
+});

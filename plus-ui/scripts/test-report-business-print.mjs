@@ -12,6 +12,7 @@ const apiNames = [
   'businessReportTemplates',
   'publishedReport',
   'createRun',
+  'runStatus',
   'runPage',
   'runLayout',
   'enqueueExport',
@@ -30,7 +31,8 @@ const paths = {
   dialog: 'src/components/report/BusinessBatchDialog.vue',
   pdf: 'src/components/report/ReportPdfPreview.vue',
   batch: 'src/views/report/batch/index.vue',
-  viewer: 'src/views/report/viewer/index.vue'
+  viewer: 'src/views/report/viewer/index.vue',
+  drawer: 'src/components/report/BusinessReportDrawer.vue'
 };
 const plugin = {
   name: 'business-print-boundaries',
@@ -152,6 +154,389 @@ function published(versionId = 'version-A') {
   };
 }
 const exactId = '9223372036854775807';
+
+test('业务列表在原页打开单据抽屉并保留模板和完整参数', async (context) => {
+  const f = mount(
+    'button',
+    {
+      businessReportTemplates: async () => ({ data: [{ id: 'doc', name: '合成单据', kind: 'DOCUMENT', versionId: 'version-A' }] })
+    },
+    { datasetCode: 'ERP_SALES_ORDER_DOCUMENT', parameter: 'orderId', recordId: exactId }
+  );
+  context.after(f.unmount);
+  await f.state.load();
+  f.state.open('doc');
+  assert.equal(f.fixture.routes.length, 0);
+  assert.equal(f.state.previewOpen, true);
+  assert.equal(f.state.selectedTemplate.versionId, 'version-A');
+  assert.equal(f.state.exactRecordId, exactId);
+});
+
+test('隐藏预览抽屉不查询，打开完整页携带当前run而非重复取数', async (context) => {
+  let reads = 0;
+  let creates = 0;
+  const f = mount(
+    'drawer',
+    {
+      publishedReport: async () => {
+        reads++;
+        return { data: published() };
+      },
+      createRun: async () => {
+        creates++;
+        return { data: { id: 'drawer-run', version: 'version-A', mode: 'SNAPSHOT' } };
+      }
+    },
+    { open: false, reportId: 'doc', versionId: 'version-A', parameters: { orderId: exactId } }
+  );
+  context.after(f.unmount);
+  await flush();
+  assert.equal(reads, 0);
+  f.props.open = true;
+  await flush();
+  assert.equal(reads, 1);
+  assert.equal(creates, 1);
+  f.state.fullPage();
+  assert.equal(f.fixture.routes[0].query.runId, 'drawer-run');
+  assert.equal(f.fixture.routes[0].query.orderId, exactId);
+  assert.equal(f.fixture.routes[0].query.auto, undefined);
+});
+
+test('抽屉关闭时旧取数响应失效，重新打开自动预览仅执行一次', async (context) => {
+  const late = deferred();
+  let creates = 0;
+  const f = mount(
+    'drawer',
+    {
+      createRun: async () => {
+        creates++;
+        return creates === 1 ? late.promise : { data: { id: 'new-run', version: 'version-A', mode: 'SNAPSHOT' } };
+      }
+    },
+    { open: true, reportId: 'doc', versionId: 'version-A', parameters: { orderId: exactId } }
+  );
+  context.after(f.unmount);
+  await flush();
+  f.props.open = false;
+  await flush();
+  late.resolve({ data: { id: 'old-run', version: 'version-A', mode: 'SNAPSHOT' } });
+  await flush();
+  assert.equal(f.state.viewer.run.value, undefined);
+  f.props.open = true;
+  await flush();
+  assert.equal(creates, 2);
+  assert.equal(f.state.viewer.run.value.id, 'new-run');
+});
+
+test('已完成入队的确认抽屉关闭重开保留原批次，不自动新建', async (context) => {
+  let creates = 0;
+  const f = mount(
+    'dialog',
+    {
+      businessReportTemplates: async () => ({ data: [{ id: 'doc', kind: 'DOCUMENT', versionId: 'version-A' }] }),
+      createBatch: async () => {
+        creates++;
+        return { data: { id: 'known-batch', owner: exactId } };
+      },
+      startBatch: async () => ({}),
+      batchItems: async () => ({ data: [] })
+    },
+    { open: true, datasetCode: 'ERP_SALES_ORDER_DOCUMENT', parameter: 'orderId', recordIds: [exactId] }
+  );
+  context.after(f.unmount);
+  await flush();
+  f.state.versionId = 'version-A';
+  await f.state.submit();
+  f.props.open = false;
+  await flush();
+  f.props.open = true;
+  await flush();
+  assert.equal(creates, 1);
+  assert.equal(f.state.created.id, 'known-batch');
+  assert.equal(f.state.locked, true);
+});
+
+test('运行请求在取数前传递界面确认的固定发布版本', async (context) => {
+  const calls = [];
+  const f = mount(
+    'viewer',
+    {
+      createRun: async (...args) => {
+        calls.push(args);
+        return { data: { id: 'bound-run', version: 'version-A', mode: 'SNAPSHOT' } };
+      }
+    },
+    {},
+    { id: 'document', orderId: exactId }
+  );
+  context.after(f.unmount);
+  await flush();
+  await f.state.execute();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][3], 'version-A');
+});
+
+test('完整页接收已有run时重新鉴权复用，不重复创建业务快照', async (context) => {
+  let creates = 0;
+  let reads = 0;
+  const f = mount(
+    'viewer',
+    {
+      runStatus: async (id) => {
+        reads++;
+        assert.equal(id, 'existing-run');
+        return { data: { id, reportId: 'document', version: 'version-A', mode: 'SNAPSHOT', state: 'READY', expires: '2099-01-01' } };
+      },
+      createRun: async () => {
+        creates++;
+        throw Error('不得重新取数');
+      }
+    },
+    {},
+    { id: 'document', runId: 'existing-run', orderId: exactId, auto: '1' }
+  );
+  context.after(f.unmount);
+  await flush();
+  assert.equal(reads, 1);
+  assert.equal(creates, 0);
+  assert.equal(f.state.run.id, 'existing-run');
+});
+
+test('预览权限在取数期间撤销时立即清空模板并拒绝迟到结果', async (context) => {
+  const late = deferred();
+  const f = mount('viewer', { createRun: () => late.promise }, {}, { id: 'doc', orderId: exactId });
+  context.after(f.unmount);
+  await flush();
+  const running = f.state.execute();
+  f.fixture.permissions.splice(f.fixture.permissions.indexOf('report:runtime:preview'), 1);
+  await flush();
+  late.resolve({ data: { id: 'late-run', version: 'version-A', mode: 'SNAPSHOT' } });
+  await running;
+  assert.equal(f.state.published, undefined);
+  assert.equal(f.state.run, undefined);
+  assert.equal(f.state.plan, undefined);
+});
+
+test('文件已过期即使所有任务成功也不能领取合并PDF', async (context) => {
+  let reads = 0;
+  const f = mount('batch', {
+    listBatches: async () => ({ data: [{ id: 'batch', owner: exactId }] }),
+    batchItems: async () => ({ data: [{ number: 0, jobId: 'job', state: 'SUCCEEDED', expires: '2000-01-01', reportVersionId: 'v' }] }),
+    batchPdf: async () => {
+      reads++;
+      return new Blob(['%PDF-']);
+    }
+  });
+  context.after(f.unmount);
+  await flush();
+  await f.state.open('batch');
+  assert.equal(f.state.allSucceeded, false);
+  await assert.rejects(() => f.state.loadPdf());
+  assert.equal(reads, 0);
+});
+
+test('创建返回前打印权限撤销时不继续start，保留已知批次以供核对', async (context) => {
+  const late = deferred();
+  let starts = 0;
+  const f = mount(
+    'dialog',
+    {
+      businessReportTemplates: async () => ({ data: [{ id: 'doc', kind: 'DOCUMENT', versionId: 'version-A' }] }),
+      createBatch: () => late.promise,
+      startBatch: async () => {
+        starts++;
+      }
+    },
+    { open: true, datasetCode: 'ERP_SALES_ORDER_DOCUMENT', parameter: 'orderId', recordIds: [exactId] }
+  );
+  context.after(f.unmount);
+  await flush();
+  f.state.versionId = 'version-A';
+  const pending = f.state.submit();
+  f.fixture.permissions.splice(f.fixture.permissions.indexOf('report:runtime:export'), 1);
+  late.resolve({ data: { id: 'known', owner: exactId } });
+  await pending;
+  assert.equal(starts, 0);
+  assert.equal(f.state.created.id, 'known');
+  assert.equal(f.state.locked, true);
+});
+
+test('PDF入队期间撤销导出权限拒绝晚响应，恢复权限后保留原请求键', async (context) => {
+  const late = deferred();
+  const keys = [];
+  const f = mount(
+    'viewer',
+    {
+      enqueueExport: async (runId, format, key) => {
+        keys.push(key);
+        return keys.length === 1 ? late.promise : { data: { id: 'same-job', runId, state: 'SUCCEEDED', format } };
+      }
+    },
+    {},
+    { id: 'doc', orderId: exactId }
+  );
+  context.after(f.unmount);
+  await flush();
+  await f.state.execute();
+  const printing = f.state.printPdf();
+  f.fixture.permissions.splice(f.fixture.permissions.indexOf('report:runtime:export'), 1);
+  late.resolve({ data: { id: 'same-job', runId: 'run', state: 'SUCCEEDED', format: 'PDF' } });
+  await printing;
+  assert.equal(f.state.printJob, undefined);
+  assert.equal(f.state.printing, false);
+  assert.equal(f.state.pdfOpen, false);
+  f.fixture.permissions.push('report:runtime:export');
+  await f.state.printPdf();
+  assert.equal(keys.length, 2);
+  assert.equal(keys[0], keys[1]);
+  assert.equal(f.state.printJob.id, 'same-job');
+});
+
+test('逐项刷新确认撤权后关闭已打开的合并文件入口', async (context) => {
+  let blocked = false;
+  const f = mount('batch', {
+    listBatches: async () => ({ data: [{ id: 'batch', owner: exactId }] }),
+    batchItems: async () => ({
+      data: [
+        {
+          number: 0,
+          jobId: blocked ? null : 'job',
+          state: blocked ? 'BLOCKED' : 'SUCCEEDED',
+          error: blocked ? 'SCOPE_DENIED' : null,
+          expires: '2099-01-01'
+        }
+      ]
+    })
+  });
+  context.after(f.unmount);
+  await flush();
+  await f.state.open('batch');
+  f.state.pdfOpen = true;
+  blocked = true;
+  await f.state.refreshItems('batch');
+  assert.equal(f.state.pdfOpen, false);
+  assert.equal(f.state.canDeliverPdf, false);
+});
+
+test('同身份撤销批次预览权限立即清空详情并拒绝迟到状态', async (context) => {
+  const late = deferred();
+  let delayed = false;
+  const f = mount('batch', {
+    listBatches: async () => ({ data: [{ id: 'batch', owner: exactId }] }),
+    batchItems: async () => (delayed ? late.promise : { data: [{ number: 0, jobId: 'job', state: 'SUCCEEDED' }] })
+  });
+  context.after(f.unmount);
+  await flush();
+  await f.state.open('batch');
+  delayed = true;
+  const pending = f.state.refreshItems('batch');
+  f.fixture.permissions.splice(f.fixture.permissions.indexOf('report:runtime:preview'), 1);
+  assert.equal(f.state.items.length, 0);
+  assert.equal(f.state.selected, '');
+  late.resolve({ data: [{ number: 0, jobId: 'late-job', state: 'SUCCEEDED' }] });
+  await pending;
+  assert.equal(f.state.items.length, 0);
+});
+
+test('模板契约首次加载期间替换参数只为新单据创建运行', async (context) => {
+  const late = deferred();
+  let reads = 0;
+  const calls = [];
+  const f = mount(
+    'viewer',
+    {
+      publishedReport: async () => (++reads === 1 ? late.promise : { data: published() }),
+      createRun: async (...args) => {
+        calls.push(args);
+        return { data: { id: 'current', mode: 'SNAPSHOT', version: 'version-A' } };
+      }
+    },
+    {},
+    { id: 'doc', orderId: 'old', auto: '1' }
+  );
+  context.after(f.unmount);
+  await flush();
+  f.fixture.route.query = { id: 'doc', orderId: exactId, auto: '1' };
+  await flush();
+  late.resolve({ data: published() });
+  await flush();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][2].orderId, exactId);
+  assert.equal(f.state.parameters.orderId, exactId);
+});
+
+test('导出明确返回业务范围失效时清除原业务数据与排版', async (context) => {
+  const f = mount(
+    'viewer',
+    {
+      enqueueExport: async () => {
+        throw { response: { status: 403, data: { errorCode: 'SCOPE_CHANGED' } } };
+      }
+    },
+    {},
+    { id: 'doc', orderId: exactId }
+  );
+  context.after(f.unmount);
+  await flush();
+  await f.state.execute();
+  await f.state.printPdf();
+  assert.equal(f.state.run, undefined);
+  assert.equal(f.state.data, undefined);
+  assert.equal(f.state.plan, undefined);
+  assert.equal(f.state.published, undefined);
+  assert.match(f.state.loadError, /权限/);
+});
+
+test('已有冻结批次时清空或超量勾选仍可重开原提交', async (context) => {
+  const f = mount(
+    'button',
+    {
+      createBatch: async () => ({ data: { id: 'known', owner: exactId } }),
+      startBatch: async () => ({})
+    },
+    { datasetCode: 'ERP_SALES_ORDER_DOCUMENT', parameter: 'orderId', recordIds: [exactId] }
+  );
+  context.after(f.unmount);
+  await f.state.submission.submit('原批次', [{ reportVersionId: 'v', parameters: { orderId: exactId } }]);
+  f.props.recordIds = [];
+  await flush();
+  assert.equal(f.state.canOpenBatch, true);
+  f.props.recordIds = Array.from({ length: 51 }, (_, index) => String(index + 1));
+  await flush();
+  assert.equal(f.state.canOpenBatch, true);
+  assert.equal(f.state.submission.created.value.id, 'known');
+});
+
+test('单据确认撤权后结果和返回确认都不再展示原单号及客户', async (context) => {
+  const f = mount(
+    'dialog',
+    {
+      businessReportTemplates: async () => ({ data: [{ id: 'doc', kind: 'DOCUMENT', versionId: 'version-A' }] }),
+      createBatch: async () => ({ data: { id: 'known', owner: exactId } }),
+      startBatch: async () => ({}),
+      batchItems: async () => ({ data: [] })
+    },
+    {
+      open: true,
+      datasetCode: 'ERP_SALES_ORDER_DOCUMENT',
+      parameter: 'orderId',
+      recordIds: [exactId],
+      documents: [{ id: exactId, code: 'SO-SECRET', counterparty: '合成客户' }]
+    }
+  );
+  context.after(f.unmount);
+  await flush();
+  f.state.versionId = 'version-A';
+  await f.state.submit();
+  f.state.result.items.value = [{ number: 0, state: 'BLOCKED', error: 'SCOPE_DENIED', jobId: null }];
+  await flush();
+  assert.equal(f.state.displayRecords[0].code, '不可访问单据');
+  assert.equal(f.state.displayRecords[0].counterparty, undefined);
+  assert.equal(f.state.displayRecords[0].id, '');
+  f.state.viewingResult = false;
+  await flush();
+  assert.equal(f.state.displayRecords[0].code, '不可访问单据');
+});
 
 test('补充入队缺少preview或export时不发出写请求', async (context) => {
   let starts = 0;
@@ -389,7 +774,7 @@ test('新路由的单据自动预览不受旧模板晚响应影响', async (cont
   await flush();
   old.resolve({ data: published('old-version') });
   await flush();
-  assert.deepEqual(runs, [['new', 'SNAPSHOT', { orderId: exactId }]]);
+  assert.deepEqual(runs, [['new', 'SNAPSHOT', { orderId: exactId }, 'version-A']]);
   assert.equal(f.state.run.id, 'new-run');
 });
 
@@ -719,9 +1104,10 @@ test('业务入口只列出有固定版本的DOCUMENT并原样传递单据参数
     ['doc']
   );
   f.state.open('doc');
-  assert.equal(f.fixture.routes[0].query.orderId, exactId);
-  assert.equal(f.fixture.routes[0].query.auto, '1');
-  assert.equal(f.fixture.routes[0].query.versionId, 'v2');
+  assert.equal(f.fixture.routes.length, 0);
+  assert.equal(f.state.previewParameters.orderId, exactId);
+  assert.equal(f.state.previewOpen, true);
+  assert.equal(f.state.selectedTemplate.versionId, 'v2');
 });
 test('业务入口不接受已丢失精度的数字ID', async (context) => {
   const f = mount(
@@ -751,7 +1137,7 @@ test('单据入口只自动创建一次SNAPSHOT，无关query变化保留当前r
   await flush();
   await flush();
   assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0], ['doc', 'SNAPSHOT', { orderId: exactId }]);
+  assert.deepEqual(calls[0], ['doc', 'SNAPSHOT', { orderId: exactId }, 'version-A']);
   f.fixture.route.query.tab = 'unrelated';
   await flush();
   assert.equal(calls.length, 1);

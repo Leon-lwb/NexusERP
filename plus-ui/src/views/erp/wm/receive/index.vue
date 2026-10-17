@@ -131,7 +131,9 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:receive:export']">导出</el-button>
       </el-col>
-      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_PURCHASE_RECEIVE_DOCUMENT" parameter="receiveId" :record-ids="ids" /></el-col>
+      <el-col :span="1.5"
+        ><BusinessReportButton dataset-code="ERP_PURCHASE_RECEIVE_DOCUMENT" parameter="receiveId" :record-ids="ids" :documents="reportDocuments"
+      /></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -169,7 +171,16 @@
       </el-table-column> -->
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
-          <BusinessReportButton dataset-code="ERP_PURCHASE_RECEIVE_DOCUMENT" parameter="receiveId" :record-id="scope.row.receiveId" />
+          <BusinessReportButton
+            dataset-code="ERP_PURCHASE_RECEIVE_DOCUMENT"
+            parameter="receiveId"
+            :record-id="scope.row.receiveId"
+            :document="{
+              id: String(scope.row.receiveId),
+              code: scope.row.receiveCode || String(scope.row.receiveId),
+              counterparty: scope.row.vendorName
+            }"
+          />
           <el-button link @click="openCertified(scope.row)" v-hasPermi="['wm:receive:query']">认证工作台</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['wm:receive:query']">查看</el-button>
           <el-dropdown
@@ -954,4 +965,15 @@ function handleArrivalNoticePagination(pagination: any) {
 onActivated(() => {
   getList();
 });
+/** 当前勾选项的展示字段只按完整ID匹配，不改变报表参数。 */
+const reportDocuments = computed(() =>
+  ids.value.map((value) => {
+    const record = receiveList.value.find((entry) => String(entry.receiveId) === String(value));
+    return {
+      id: String(value),
+      code: record?.receiveCode ? String(record.receiveCode) : String(value),
+      counterparty: record?.vendorName || undefined
+    };
+  })
+);
 </script>

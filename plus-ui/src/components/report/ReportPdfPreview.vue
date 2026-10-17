@@ -27,6 +27,7 @@ import { ref, shallowRef, watch, onUnmounted, onDeactivated } from 'vue';
 import { saveAs } from 'file-saver';
 import { checkPermi } from '@/utils/permission';
 import { RequestGate } from '@/views/report/model';
+import { readReportFailure } from '@/api/report/errors';
 
 /** 受控Blob预览不使用外部文件地址，切换和关闭均立即回收。 */
 const props = defineProps<{
@@ -74,13 +75,15 @@ async function loadPdf() {
     const header = await result.slice(0, 1024).text();
     if (!gate.current(ticket)) return;
     if (result.type.toLowerCase().includes('json') || !header.startsWith('%PDF-')) {
-      failed.value = 'PDF文件不可用，权限可能已变化或文件已过期，请刷新结果后重试';
+      const failure = await readReportFailure({ response: { data: result } });
+      if (gate.current(ticket)) failed.value = failure.code ? failure.message : 'PDF文件不可用，权限可能已变化或文件已过期，请刷新结果后重试';
       return;
     }
     blob.value = result.type === 'application/pdf' ? result : new Blob([result], { type: 'application/pdf' });
     url.value = URL.createObjectURL(blob.value);
-  } catch {
-    if (gate.current(ticket)) failed.value = 'PDF读取失败，请核对当前权限和有效期后重试';
+  } catch (error) {
+    const failure = await readReportFailure(error);
+    if (gate.current(ticket)) failed.value = failure.code ? failure.message : 'PDF读取失败，请核对当前权限和有效期后重试';
   } finally {
     if (gate.current(ticket)) loading.value = false;
   }

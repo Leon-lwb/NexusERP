@@ -68,7 +68,9 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:salesIssue:export']"> 导出 </el-button>
       </el-col>
-      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_DELIVERY_DOCUMENT" parameter="issueId" :record-ids="ids" /></el-col>
+      <el-col :span="1.5"
+        ><BusinessReportButton dataset-code="ERP_DELIVERY_DOCUMENT" parameter="issueId" :record-ids="ids" :documents="reportDocuments"
+      /></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
@@ -101,7 +103,12 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
           <!-- 使用当前单据的精确标识进入已授权报表，服务端再次校验业务范围。 -->
-          <BusinessReportButton dataset-code="ERP_DELIVERY_DOCUMENT" parameter="issueId" :record-id="scope.row.issueId" />
+          <BusinessReportButton
+            dataset-code="ERP_DELIVERY_DOCUMENT"
+            parameter="issueId"
+            :record-id="scope.row.issueId"
+            :document="{ id: String(scope.row.issueId), code: scope.row.issueCode || String(scope.row.issueId), counterparty: scope.row.clientName }"
+          />
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button
             v-if="scope.row.status === 'DRAFT'"
@@ -387,4 +394,11 @@ function formatAmount(amount: any) {
 onActivated(() => {
   getList();
 });
+/** 当前勾选项的展示字段只按完整ID匹配，不改变报表参数。 */
+const reportDocuments = computed(() =>
+  ids.value.map((value) => {
+    const record = salesIssueList.value.find((entry) => String(entry.issueId) === String(value));
+    return { id: String(value), code: record?.issueCode ? String(record.issueCode) : String(value), counterparty: record?.clientName || undefined };
+  })
+);
 </script>

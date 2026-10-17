@@ -372,8 +372,31 @@ public class ReportRuntimeService {
      */
     public Run create(
             ReportActor actor, String report, String requestedMode, Map<String, Object> input) {
+        return create(actor, report, requestedMode, input, null);
+    }
+
+    /**
+     * 当前身份和访问权限验证后核对预期发布版本，再绑定已解析的不可变版本执行。
+     *
+     * @param actor 当前服务端身份
+     * @param report 报表标识
+     * @param requestedMode 运行一致性模式
+     * @param input 待校验输入
+     * @param expectedVersionId 调用方确认的发布版本，空值保留旧调用语义
+     * @return 绑定固定发布版本的运行
+     */
+    public Run create(
+            ReportActor actor,
+            String report,
+            String requestedMode,
+            Map<String, Object> input,
+            String expectedVersionId) {
         ReportActor current = definitions.resolve(actor.tenantId(), actor.userId());
         Version version = definitions.published(current, report, "VIEW", PREVIEW);
+        if (expectedVersionId != null && expectedVersionId.isBlank())
+            throw ReportFault.invalid("预期发布版本不能为空");
+        if (expectedVersionId != null && !expectedVersionId.equals(version.id()))
+            throw new ReportFault("REPORT_VERSION_CHANGED", "模板发布版本已变化，请重新选择模板", 409);
         return createBound(current, version, requestedMode, input);
     }
 

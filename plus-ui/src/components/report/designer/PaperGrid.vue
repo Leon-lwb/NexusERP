@@ -1,37 +1,52 @@
 <template>
-  <section class="paper-editor" @pointermove="moveDrag" @pointerup="finishDrag" @pointercancel="cancelDrag" @keydown.esc="cancelDrag">
+  <section
+    class="paper-editor"
+    tabindex="0"
+    aria-label="报表纸张画布"
+    @pointermove="moveDrag"
+    @pointerup="finishDrag"
+    @pointercancel="cancelDrag"
+    @keydown="editorKeydown"
+    @keyup="editorKeyup"
+    @focusout="finishKeyboard"
+  >
     <div class="grid-toolbar" @keydown.stop>
       <el-button size="small" @click="fit">适应宽度</el-button>
-      <el-select v-model="zoom" size="small" style="width: 105px"
+      <el-select :model-value="zoom" size="small" style="width: 105px" aria-label="画布缩放" @change="setZoom"
         ><el-option v-if="![0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].includes(zoom)" :value="zoom" :label="Math.round(zoom * 100) + '%'" />
         <el-option v-for="scale in [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]" :key="scale" :label="Math.round(scale * 100) + '%'" :value="scale"
       /></el-select>
       <el-button size="small" :disabled="disabled" @click="emit('add-band', 'headerRows')">添加页眉行</el-button
       ><el-button size="small" :disabled="disabled" @click="emit('add-band', 'footerRows')">添加页脚行</el-button>
-      <el-button size="small" :disabled="disabled || !rectangle" @click="mergeSelection">合并选区</el-button
-      ><el-button size="small" :disabled="disabled || !rectangle" @click="splitSelection">拆分选区</el-button>
-      <el-button size="small" :disabled="disabled || !rectangle" @click="styleSelection({ bold: true })">加粗选区</el-button
-      ><el-button size="small" :disabled="disabled || !rectangle" @click="styleSelection({ bold: false })">常规</el-button>
-      <el-button
-        v-for="align in ['LEFT', 'CENTER', 'RIGHT'] as const"
-        :key="align"
-        size="small"
-        :disabled="disabled || !rectangle"
-        @click="styleSelection({ align })"
-        >{{ align === 'LEFT' ? '左对齐' : align === 'CENTER' ? '居中' : '右对齐' }}</el-button
-      >
-      <el-color-picker
-        size="small"
-        :model-value="selectionColor"
-        :disabled="disabled || !rectangle"
-        @change="(value) => value && styleSelection({ color: value })"
-      />
-      <el-color-picker
-        size="small"
-        :model-value="selectionBackground"
-        :disabled="disabled || !rectangle"
-        @change="(value) => value && styleSelection({ background: value })"
-      />
+      <template v-if="rectangle">
+        <el-button size="small" :disabled="disabled" @click="mergeSelection">合并选区</el-button
+        ><el-button size="small" :disabled="disabled" @click="splitSelection">拆分选区</el-button>
+        <el-button size="small" :disabled="disabled" @click="styleSelection({ bold: true })">加粗选区</el-button
+        ><el-button size="small" :disabled="disabled" @click="styleSelection({ bold: false })">常规</el-button>
+        <el-button
+          v-for="align in ['LEFT', 'CENTER', 'RIGHT'] as const"
+          :key="align"
+          size="small"
+          :disabled="disabled || !rectangle"
+          @click="styleSelection({ align })"
+          >{{ align === 'LEFT' ? '左对齐' : align === 'CENTER' ? '居中' : '右对齐' }}</el-button
+        >
+        <el-color-picker
+          size="small"
+          :model-value="selectionColor"
+          aria-label="选区文字颜色"
+          :disabled="disabled || !rectangle"
+          @change="(value) => value && styleSelection({ color: value })"
+        />
+        <el-color-picker
+          size="small"
+          :model-value="selectionBackground"
+          aria-label="选区背景颜色"
+          :disabled="disabled || !rectangle"
+          @change="(value) => value && styleSelection({ background: value })"
+        />
+      </template>
+      <span v-if="selectedMedia >= 0" class="grid-help">方向键移动 0.5 mm，Shift + 方向键移动 5 mm；Escape 取消本次移动。</span>
     </div>
     <p class="grid-help">Shift + 点击选择同一区域矩形；拖动列边界、固定行底边或媒体调节柄。合并保留左上格内容，可撤销。</p>
     <div ref="viewport" class="grid-viewport">
@@ -74,7 +89,7 @@
                     @dragstart="(event) => event.dataTransfer?.setData('report-column', String(index))"
                     @dragover.prevent
                     @drop="(event) => dropColumn(event, index)"
-                    @click="emit('select', { type: 'column', index })"
+                    @click="selectObject({ type: 'column', index })"
                   >
                     {{ column.label }}
                     <span
@@ -127,6 +142,9 @@
             v-for="(media, index) in design.print?.media || []"
             :key="index"
             class="paper-media"
+            tabindex="0"
+            role="button"
+            :aria-label="'选择' + (media.kind === 'IMAGE' ? '图片' : media.kind === 'QR' ? '二维码' : '条形码') + ' ' + (index + 1)"
             :class="{ 'active-media': selectedMedia === index }"
             :style="{
               left: media.x * ratio + 'px',
@@ -136,6 +154,9 @@
             }"
             :title="'横坐标 ' + ptToMm(media.x).toFixed(1) + ' mm；纵坐标 ' + ptToMm(media.y).toFixed(1) + ' mm'"
             @pointerdown="(event) => startMediaDrag(event, index, false)"
+            @focus="selectObject({ type: 'media', index })"
+            @keydown.enter.prevent="selectObject({ type: 'media', index })"
+            @keydown.space.prevent="selectObject({ type: 'media', index })"
           >
             <img
               v-if="media.kind === 'IMAGE' && images[media.assetVersionId!]"
@@ -143,7 +164,13 @@
               alt="私有打印图片"
               draggable="false"
             />
-            <span v-else>{{ media.kind === 'IMAGE' ? '私有图片' : media.kind + ' · ' + media.field }}</span>
+            <span v-else>{{
+              media.kind === 'IMAGE'
+                ? imageFailures.has(media.assetVersionId!)
+                  ? '固定图片不可访问或已下线'
+                  : '私有图片'
+                : media.kind + ' · ' + media.field
+            }}</span>
             <span
               class="media-resizer"
               role="separator"
@@ -154,18 +181,16 @@
         </div>
       </div>
     </div>
-    <div class="row-tools">
-      <template v-for="band in bands" :key="band.key"
-        ><el-button
-          v-for="(_, index) in design[band.key]"
-          :key="band.key + index"
-          link
-          type="danger"
-          size="small"
-          :disabled="disabled"
-          @click="deleteRow(band.key, index)"
-          >删除{{ band.label }}第 {{ index + 1 }} 行</el-button
-        ></template
+    <div v-if="rectangle" class="row-tools">
+      <el-button
+        v-for="index in rectangle.bottom - rectangle.top + 1"
+        :key="index"
+        link
+        type="danger"
+        size="small"
+        :disabled="disabled"
+        @click="deleteRow(rectangle.band, rectangle.top + index - 1)"
+        >删除{{ rectangle.band === 'headerRows' ? '页眉' : '页脚' }}第 {{ rectangle.top + index }} 行</el-button
       >
     </div>
   </section>
@@ -187,13 +212,13 @@ import {
   splitCells,
   styleCells,
   positionMedia,
+  nudgeMedia,
   type FixedBand,
   type GridSelection
 } from '@/views/report/designer/gridCommands';
-/** 属性面板使用的单个固定格或明细列位置。 */
-type EditorSelection = { type: 'column'; index: number } | { type: 'cell'; band: FixedBand; row: number; cell: number };
+import { cellAt, isEditorInput, resolveEditorSelection, selectionRange, type EditorSelection } from './editorSelection';
 /** 纸张画布只编辑布局，不计算业务数值。 */
-const props = defineProps<{ modelValue: ReportDsl; disabled?: boolean; selection?: EditorSelection }>();
+const props = defineProps<{ modelValue: ReportDsl; disabled?: boolean; selection?: EditorSelection; contextKey?: string }>();
 /** 一次手势只提交一次草稿，辅助状态留在组件内。 */
 const emit = defineEmits<{
   'update:modelValue': [ReportDsl];
@@ -207,6 +232,8 @@ const ratio = 4 / 3;
 /** 缩放与视口引用。 */
 const zoom = ref(0.75),
   viewport = ref<HTMLElement>();
+/** 手动缩放在布局切换后保留，适应宽度模式才跟随视口变化。 */
+const autoFit = ref(true);
 /** 本地拖动预览不会触发父级历史记录。 */
 const candidate = ref<ReportDsl>();
 /** 编辑态纸张取本地候选，否则取父级已提交草稿。 */
@@ -219,11 +246,16 @@ const bands: { key: FixedBand; label: string }[] = [
   { key: 'footerRows', label: '页脚' }
 ];
 /** 矩形选区与锚点仅用于编辑。 */
-const rectangle = ref<GridSelection>(),
+const currentSelection = ref<EditorSelection | undefined>(props.selection),
   anchor = ref<{ band: FixedBand; row: number; column: number }>();
+/** 高亮和上下文工具每次从当前草稿重解析。 */
+const rectangle = computed(() => selectionRange(design.value, currentSelection.value));
 /** 当前媒体和私有缩略图。 */
-const selectedMedia = ref(-1),
-  images = ref<Record<string, string>>({});
+const selectedMedia = computed(() =>
+  currentSelection.value?.type === 'media' && resolveEditorSelection(design.value, currentSelection.value) ? currentSelection.value.index : -1
+);
+const images = ref<Record<string, string>>({}),
+  imageFailures = ref(new Set<string>());
 /** 缩略图请求代数。 */
 let imageGeneration = 0;
 /** 布局手势持有源快照和指针捕获。 */
@@ -240,8 +272,12 @@ let drag:
       target: HTMLElement;
     }
   | undefined;
+/** 连续按键共享起点与本地候选，全部方向键松开时只提交一次。 */
+let keyboard: { baseline: string; index: number; keys: Set<string> } | undefined;
 /** 视口尺寸变化观察器。 */
 let observer: ResizeObserver | undefined;
+/** 自动适应只响应可用宽度，下一帧合并通知以免在观察回调内改变布局。 */
+let fitFrame: number | undefined, observedWidth: number | undefined;
 /** 明细列按真实pt宽度绘制。 */
 const columnsStyle = computed(() => ({
   display: 'grid',
@@ -265,8 +301,36 @@ function bindingLabel(field: string) {
 }
 /** 适应视口时保留可滚动纸张边界。 */
 function fit() {
+  autoFit.value = true;
   const width = viewport.value?.clientWidth;
+  observedWidth = width;
   if (width) zoom.value = Math.max(0.15, Math.min(2, (width - 64) / (paper.value.width * ratio)));
+}
+/** 高度变化不反复排版，多个宽度变化合并为一次帧更新。 */
+function queueFit() {
+  const width = viewport.value?.clientWidth;
+  if (!width) {
+    observedWidth = undefined;
+    return;
+  }
+  if (!autoFit.value || width === observedWidth) return;
+  observedWidth = width;
+  if (fitFrame !== undefined) return;
+  fitFrame = requestAnimationFrame(() => {
+    fitFrame = undefined;
+    if (autoFit.value) fit();
+  });
+}
+/** 关闭或手动缩放时取消尚未执行的布局候选。 */
+function cancelFit() {
+  if (fitFrame !== undefined) cancelAnimationFrame(fitFrame);
+  fitFrame = undefined;
+}
+/** 手动选择缩放比例不写入报表定义。 */
+function setZoom(value: number) {
+  cancelFit();
+  autoFit.value = false;
+  zoom.value = value;
 }
 /** 将固定样式映射到画布，不改变存储值。 */
 function textStyle(style: ReportStyle): CSSProperties {
@@ -301,14 +365,14 @@ function inSelection(band: FixedBand, row: number, cell: BandCell) {
 /** 通过坐标读取当前锚点，合并、拆分及撤销后不保留旧单元格对象。 */
 function currentAnchor() {
   const position = anchor.value;
-  if (!position) return;
-  const rows = design.value[position.band];
-  for (let row = 0; row <= position.row && row < rows.length; row++) {
-    const cell = rows[row].cells.find(
-      (cell) => cell.column <= position.column && cell.column + cell.colSpan > position.column && row + cell.rowSpan > position.row
-    );
-    if (cell) return { row, cell };
-  }
+  return position ? cellAt(design.value, position.band, position.row, position.column) : undefined;
+}
+/** 画布与属性面板共用一个受控选区，切换对象前结束连续按键。 */
+function selectObject(value: EditorSelection | undefined) {
+  if (JSON.stringify(value) !== JSON.stringify(currentSelection.value)) finishKeyboard();
+  currentSelection.value = value;
+  if (value?.type !== 'cell' && value?.type !== 'range') anchor.value = undefined;
+  emit('select', value);
 }
 /** Shift选择同一区域的完整矩形，跨区域点击重新建立锚点。 */
 function selectCell(band: FixedBand, row: number, index: number, event: MouseEvent) {
@@ -319,18 +383,18 @@ function selectCell(band: FixedBand, row: number, index: number, event: MouseEve
     anchor.value = { band, row, column: cell.column };
     start = { row, cell };
   }
-  rectangle.value = {
+  const range: GridSelection = {
     band,
     top: Math.min(start.row, row),
     bottom: Math.max(start.row + start.cell.rowSpan - 1, row + cell.rowSpan - 1),
     left: Math.min(start.cell.column, cell.column),
     right: Math.max(start.cell.column + start.cell.colSpan - 1, cell.column + cell.colSpan - 1)
   };
-  emit('select', { type: 'cell', band, row, cell: index });
+  selectObject(event.shiftKey ? { type: 'range', ...range } : { type: 'cell', band, row, column: cell.column });
 }
 /** 统一提交菜单动作并保留非法操作前的草稿。 */
 function apply(action: () => ReportDsl) {
-  if (props.disabled || drag) return;
+  if (props.disabled || drag || keyboard) return;
   try {
     emit('update:modelValue', action());
   } catch (error) {
@@ -343,11 +407,11 @@ function mergeSelection() {
     apply(() => {
       const range = rectangle.value!,
         next = mergeCells(props.modelValue, range);
-      emit('select', {
+      selectObject({
         type: 'cell',
         band: range.band,
         row: range.top,
-        cell: next[range.band][range.top].cells.findIndex((cell) => cell.column === range.left)
+        column: range.left
       });
       return next;
     });
@@ -371,9 +435,8 @@ function deleteRow(band: FixedBand, index: number) {
       throw Error('请先拆分涉及该行的跨行合并');
     const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
     next[band].splice(index, 1);
-    rectangle.value = undefined;
     anchor.value = undefined;
-    emit('select', undefined);
+    selectObject(undefined);
     return next;
   });
 }
@@ -390,6 +453,7 @@ function beginDrag(event: PointerEvent, kind: 'column' | 'row' | 'media' | 'medi
   if (props.disabled || event.button !== 0) return;
   event.preventDefault();
   event.stopPropagation();
+  finishKeyboard();
   cancelDrag();
   drag = {
     kind,
@@ -418,7 +482,9 @@ function startRowDrag(event: PointerEvent, band: FixedBand, row: number) {
 }
 /** 私有图片或条码移动和缩放入口。 */
 function startMediaDrag(event: PointerEvent, index: number, resizing: boolean) {
-  selectedMedia.value = index;
+  if (props.disabled || event.button !== 0 || !props.modelValue.print?.media[index]) return;
+  selectObject({ type: 'media', index });
+  (event.currentTarget as HTMLElement)?.closest?.<HTMLElement>('.paper-media')?.focus({ preventScroll: true });
   beginDrag(event, resizing ? 'media-size' : 'media', index);
 }
 /** 指针移动只修改本地候选，保持一次拖动一条历史。 */
@@ -468,8 +534,66 @@ function cancelDrag() {
 }
 /** 捕获阶段取消活动手势，工具栏或外部控件焦点不会截断Escape。 */
 function cancelWithEscape(event: KeyboardEvent) {
-  if (event.key !== 'Escape' || !drag) return;
+  if (event.key !== 'Escape' || event.defaultPrevented || (!drag && !keyboard)) return;
   event.preventDefault();
+  event.stopPropagation();
+  cancelGesture();
+}
+/** 画布方向键只修改本地候选，不截获输入控件或组合输入。 */
+function editorKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') return cancelWithEscape(event);
+  if (
+    event.defaultPrevented ||
+    props.disabled ||
+    drag ||
+    isEditorInput(event) ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
+  )
+    return;
+  const index = selectedMedia.value;
+  if (index < 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (!keyboard) {
+    keyboard = { baseline: JSON.stringify(props.modelValue), index, keys: new Set() };
+    candidate.value = JSON.parse(keyboard.baseline);
+    emit('gesture', true);
+  }
+  keyboard.keys.add(event.key);
+  candidate.value = nudgeMedia(candidate.value!, keyboard.index, event.key, event.shiftKey);
+}
+/** 多个方向键都松开后才结束本次连续移动。 */
+function editorKeyup(event: KeyboardEvent) {
+  if (!keyboard?.keys.delete(event.key)) return;
+  if (!keyboard.keys.size) finishKeyboard();
+}
+/** 松键或失焦仅提交仍属于当前草稿的一次候选。 */
+function finishKeyboard() {
+  if (!keyboard) return;
+  const baseline = keyboard.baseline,
+    result = candidate.value;
+  const valid = !props.disabled && baseline === JSON.stringify(props.modelValue);
+  keyboard = undefined;
+  candidate.value = undefined;
+  emit('gesture', false);
+  if (valid && result && JSON.stringify(result) !== baseline) emit('update:modelValue', result);
+}
+/** Escape、切换模板及身份变化统一丢弃未提交手势。 */
+function cancelGesture(): boolean {
+  const active = !!drag || !!keyboard;
+  if (keyboard) {
+    keyboard = undefined;
+    emit('gesture', false);
+  }
+  cancelDrag();
+  return active;
+}
+/** 窗口失焦提交连续移动，同时取消无法继续追踪的指针手势。 */
+function windowBlur() {
+  finishKeyboard();
   cancelDrag();
 }
 /** 回收当前组件创建的所有私有图片地址。 */
@@ -477,6 +601,7 @@ function releaseImages() {
   imageGeneration++;
   Object.values(images.value).forEach((url) => URL.revokeObjectURL(url));
   images.value = {};
+  imageFailures.value = new Set();
 }
 /** 只读取当前画布依赖的固定图片版本。 */
 async function loadImages() {
@@ -492,55 +617,82 @@ async function loadImages() {
       try {
         const blob = await assetImage(version);
         if (generation === imageGeneration && blob.type.startsWith('image/')) images.value[version] = URL.createObjectURL(blob);
-      } catch {}
+      } catch {
+        if (generation === imageGeneration) imageFailures.value.add(version);
+      }
     })
   );
 }
 watch(
   () => props.modelValue,
-  () => cancelDrag(),
-  { deep: true }
+  () => {
+    cancelGesture();
+    if (currentSelection.value && !resolveEditorSelection(props.modelValue, currentSelection.value)) selectObject(undefined);
+  },
+  { deep: true, flush: 'sync' }
 );
 watch(
   () => props.disabled,
   (value) => {
-    if (value) cancelDrag();
+    if (value) cancelGesture();
   }
 );
 watch(
-  () => JSON.stringify([props.modelValue.code, props.modelValue.datasetVersionId, props.modelValue.columns.map((column) => column.field)]),
+  () => JSON.stringify([props.contextKey, props.modelValue.code, props.modelValue.datasetVersionId]),
   () => {
-    rectangle.value = undefined;
+    cancelGesture();
+    selectObject(undefined);
     anchor.value = undefined;
+  },
+  { flush: 'sync' }
+);
+watch(
+  () => props.selection,
+  (value) => {
+    if (JSON.stringify(currentSelection.value) !== JSON.stringify(value)) cancelGesture();
+    currentSelection.value = value;
+    if (value?.type !== 'cell' && value?.type !== 'range') anchor.value = undefined;
+  },
+  { deep: true, flush: 'sync' }
+);
+watch(
+  () => JSON.stringify([props.contextKey, props.modelValue.code, props.modelValue.print?.media.map((media) => media.assetVersionId)]),
+  loadImages,
+  {
+    immediate: true,
+    flush: 'sync'
   }
 );
-watch(() => JSON.stringify([props.modelValue.code, props.modelValue.print?.media.map((media) => media.assetVersionId)]), loadImages, {
-  immediate: true
-});
 onMounted(() => {
   fit();
   if (typeof ResizeObserver !== 'undefined' && viewport.value) {
-    observer = new ResizeObserver(() => fit());
+    observer = new ResizeObserver(queueFit);
     observer.observe(viewport.value);
   }
   if (typeof window !== 'undefined') {
-    window.addEventListener('blur', cancelDrag);
+    window.addEventListener('blur', windowBlur);
+    window.addEventListener('keyup', editorKeyup);
     window.addEventListener('keydown', cancelWithEscape, true);
   }
 });
 onUnmounted(() => {
-  cancelDrag();
+  cancelFit();
+  cancelGesture();
   observer?.disconnect();
   releaseImages();
   if (typeof window !== 'undefined') {
-    window.removeEventListener('blur', cancelDrag);
+    window.removeEventListener('blur', windowBlur);
+    window.removeEventListener('keyup', editorKeyup);
     window.removeEventListener('keydown', cancelWithEscape, true);
   }
 });
+/** 父级按Escape优先级取消画布手势，不接触草稿内容。 */
+defineExpose({ cancelGesture, finishKeyboard });
 </script>
 <style scoped>
 .paper-editor {
   min-width: 0;
+  max-width: 100%;
 }
 .grid-toolbar {
   display: flex;
@@ -557,11 +709,17 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 .grid-viewport {
+  width: 100%;
+  box-sizing: border-box;
   overflow: auto;
   max-height: 76vh;
   background: var(--el-fill-color-light);
   border: 1px solid var(--el-border-color);
   border-radius: 6px;
+}
+.paper-media:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
 }
 .paper-frame {
   position: relative;

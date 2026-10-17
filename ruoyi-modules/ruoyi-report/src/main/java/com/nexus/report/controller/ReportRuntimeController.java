@@ -49,13 +49,29 @@ public class ReportRuntimeController {
     }
 
     /**
-     * Run请求，负责当前模块对应的契约或处理职责。
+     * 运行请求，可选预期版本用于在查询和创建运行前核对发布版本。
      *
      * @param reportId 当前契约的reportId配置或状态
      * @param mode 当前契约的mode配置或状态
      * @param parameters 固定参数契约
+     * @param expectedVersionId 调用方确认的发布版本，省略时保持旧调用语义
      */
-    public record RunRequest(String reportId, String mode, Map<String, Object> parameters) {}
+    public record RunRequest(
+            String reportId,
+            String mode,
+            Map<String, Object> parameters,
+            String expectedVersionId) {
+        /**
+         * 保留旧三参数构造入口，不指定预期版本。
+         *
+         * @param reportId 报表标识
+         * @param mode 运行一致性模式
+         * @param parameters 固定参数契约
+         */
+        public RunRequest(String reportId, String mode, Map<String, Object> parameters) {
+            this(reportId, mode, parameters, null);
+        }
+    }
 
     /**
      * Retry请求，负责当前模块对应的契约或处理职责。
@@ -195,13 +211,17 @@ public class ReportRuntimeController {
     @SaCheckPermission("report:runtime:preview")
     @PostMapping("/runs")
     public R<RunView> create(@RequestBody RunRequest body) {
-        return R.ok(
-                view(
-                        runtime.create(
-                                actors.current(),
+        var actor = actors.current();
+        var run =
+                body.expectedVersionId() == null
+                        ? runtime.create(actor, body.reportId(), body.mode(), body.parameters())
+                        : runtime.create(
+                                actor,
                                 body.reportId(),
                                 body.mode(),
-                                body.parameters())));
+                                body.parameters(),
+                                body.expectedVersionId());
+        return R.ok(view(run));
     }
 
     /**

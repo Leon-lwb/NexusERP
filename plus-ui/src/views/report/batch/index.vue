@@ -78,78 +78,26 @@
         </el-table-column>
       </el-table>
     </el-card>
-    <el-card v-if="selected && canList" v-loading="detailLoading" shadow="never" class="report-panel">
-      <div class="report-section-heading">
-        <div>
-          <h2>逐项结果</h2>
-          <p class="report-section-description">当前批次：{{ selected }}；显示顺序即提交顺序。</p>
-        </div>
-        <div>
-          <el-button @click="refreshItems(selected)">刷新结果</el-button>
-          <el-button v-if="isOwner && canStart && items.some(needsStart)" :loading="writeBusy" @click="start(selected)">补充入队</el-button>
-          <el-button v-if="canReadPdf && allSucceeded" type="primary" @click="pdfOpen = true">合并PDF预览/下载</el-button>
-        </div>
-      </div>
-      <el-alert v-if="detailFailed" title="逐项结果读取失败，请刷新重试。" type="error" :closable="false" class="mb-4" />
-      <el-table :data="items" empty-text="当前批次暂无结果">
-        <el-table-column label="序号" width="70"
-          ><template #default="scope">{{ scope.row.number + 1 }}</template></el-table-column
-        >
-        <el-table-column prop="reportVersionId" label="固定版本" min-width="180" />
-        <el-table-column label="进度" min-width="180">
-          <template #default="scope">
-            <ReportStatus :status="scope.row.state" />
-            <div v-if="scope.row.phase">
-              {{ phaseLabels[scope.row.phase] || scope.row.phase }} {{ scope.row.processedRows ?? 0
-              }}<span v-if="scope.row.totalRows != null"> / {{ scope.row.totalRows }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="错误/有效期" min-width="230">
-          <template #default="scope">
-            <div v-if="scope.row.error">{{ jobError(scope.row.error) }}（{{ scope.row.error }}）</div>
-            <div v-if="scope.row.expires">{{ scope.row.expires }}</div>
-            <span v-if="['FAILED', 'CANCELLED', 'EXPIRED'].includes(scope.row.state) && scope.row.jobId && !scope.row.canRetry"
-              >原任务不可恢复，请新建批次</span
-            >
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" min-width="180">
-          <template #default="scope">
-            <el-button v-if="isOwner && canExport && scope.row.canRetry" link :disabled="busy" @click="retryItem(scope.row)"
-              >重试原任务（{{ scope.row.retryRound }}）</el-button
-            >
-            <el-button v-if="isOwner && canStart && needsStart(scope.row)" link :disabled="busy" @click="retryItem(scope.row)">补充入队</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+    <BatchResultPanel v-if="selected && canList" :state="resultState" @new-batch="newBatch" />
   </ReportPage>
   <AclDialog v-model:open="aclOpen" resource-type="BATCH" :resource-id="aclId" />
-  <ReportPdfPreview
-    v-model:open="pdfOpen"
-    :source-id="selected"
-    :load="loadPdf"
-    :filename="`nexus-batch-${selected}.pdf`"
-    :can-download="canReadPdf"
-  />
 </template>
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
+import { ref, computed, reactive, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/store/modules/user';
 import { checkPermi } from '@/utils/permission';
-import { listReports, publishedReport, retryExport, listExportJobs } from '@/api/report';
-import { listBatches, startBatch, batchItems, batchPdf, type BatchItem, type BatchDocument } from '@/api/report/batch';
-import type { ReportDefinition, PublishedReport, ExportJob } from '@/types/report';
+import { listReports, publishedReport } from '@/api/report';
+import { listBatches, type BatchDocument } from '@/api/report/batch';
+import type { ReportDefinition, PublishedReport } from '@/types/report';
 import type { ReportResource } from '@/api/report/query';
-import { RequestGate, parameterInput, requiredParameterMessage, jobError } from '@/views/report/model';
+import { RequestGate, parameterInput, requiredParameterMessage } from '@/views/report/model';
 import { useBatchSubmission } from '@/components/report/useBatchSubmission';
 import ReportPage from '@/components/report/ReportPage.vue';
-import ReportStatus from '@/components/report/ReportStatus.vue';
+import BatchResultPanel from '@/components/report/batch/BatchResultPanel.vue';
+import { useBatchResult } from '@/components/report/batch/useBatchResult';
 import ParameterForm from '@/components/report/ParameterForm.vue';
-import ReportPdfPreview from '@/components/report/ReportPdfPreview.vue';
 import AclDialog from '@/components/report/AclDialog.vue';
 
 defineOptions({ name: 'ReportBatch' });
@@ -173,18 +121,12 @@ const route = useRoute();
 const userStore = useUserStore();
 const reports = ref<ReportDefinition[]>([]);
 const batches = ref<ReportResource[]>([]);
-const items = ref<(BatchItem & Partial<Pick<ExportJob, 'phase' | 'processedRows' | 'totalRows'>>)[]>([]);
 const documents = ref<DocumentInput[]>([{ key: '0', reportVersionId: '', parameters: {} }]);
 let nextKey = 1;
 let selectionSerial = 0;
 const title = ref('业务单据批量打印');
-const selected = ref('');
 const loading = ref(false);
 const loadFailed = ref(false);
-const detailLoading = ref(false);
-const detailFailed = ref(false);
-const writeBusy = ref(false);
-const pdfOpen = ref(false);
 const aclId = ref('');
 const aclOpen = computed({
   get: () => !!aclId.value,
@@ -192,34 +134,39 @@ const aclOpen = computed({
     if (!open) aclId.value = '';
   }
 });
-const canList = computed(() => checkPermi(['report:batch:list']));
-const canManage = computed(() => checkPermi(['report:batch:manage']));
-const canExport = computed(() => checkPermi(['report:runtime:export']));
-const canStart = computed(() => canList.value && canManage.value && canExport.value && checkPermi(['report:runtime:preview']));
-const canCreate = computed(() => canStart.value && checkPermi(['report:definition:list']));
-const isOwner = computed(
-  () => !!userStore.userId && String(batches.value.find((batch) => batch.id === selected.value)?.owner ?? '') === String(userStore.userId)
-);
-const canReadPdf = computed(() => canList.value && canExport.value && isOwner.value && checkPermi(['report:runtime:preview']));
-const allSucceeded = computed(() => items.value.length > 0 && items.value.every((item) => item.state === 'SUCCEEDED' && !!item.jobId));
 const submission = useBatchSubmission();
 const { pending, created, busy: creating, locked } = submission;
-const busy = computed(() => creating.value || writeBusy.value);
+const resultActive = ref(true);
+const result = useBatchResult(batches, resultActive, creating);
+const {
+  selected,
+  items,
+  detailLoading,
+  detailFailed,
+  detailError,
+  writeBusy,
+  pdfOpen,
+  canList,
+  canExport,
+  canStart,
+  isOwner,
+  canReadPdf,
+  canDeliverPdf,
+  allSucceeded,
+  expired,
+  busy,
+  pause,
+  refreshItems,
+  needsStart,
+  start,
+  retryItem,
+  loadPdf
+} = result;
+const resultState = reactive(result);
+const canCreate = computed(() => canStart.value && checkPermi(['report:definition:list']));
 const gate = new RequestGate();
-const detailGate = new RequestGate();
-const writeGate = new RequestGate();
 const templateGates = new Map<string, RequestGate>();
 let active = true;
-let timer: ReturnType<typeof setTimeout> | undefined;
-const phaseLabels: Record<string, string> = {
-  QUEUED: '排队中',
-  PREPARING: '准备中',
-  SNAPSHOT: '固定快照',
-  LAYOUT: '固定排版',
-  WRITING: '写入文件',
-  COMPLETED: '完成'
-};
-
 /** 刷新目录不改动已经选择的版本和参数。 */
 async function load() {
   if (!canList.value) return;
@@ -235,7 +182,7 @@ async function load() {
       selected.value = '';
       items.value = [];
       pdfOpen.value = false;
-      detailGate.invalidate();
+      result.stop();
       pause();
     }
   } catch {
@@ -244,7 +191,7 @@ async function load() {
       batches.value = [];
       items.value = [];
       pdfOpen.value = false;
-      detailGate.invalidate();
+      result.stop();
       pause();
     }
   } finally {
@@ -334,107 +281,11 @@ async function create() {
   if (active && selectionSerial === selectionAtStart) await open(result.id);
 }
 
-/** 定时刷新只在当前批次仍有运行项时继续，避免并发轮询。 */
-function pause() {
-  if (timer) clearTimeout(timer);
-  timer = undefined;
-}
-/** 刷新当前授权项，任务进度来自现有导出中心。 */
-async function refreshItems(id: string, quiet = false) {
-  if (!active || !canList.value || selected.value !== id || (quiet && detailLoading.value)) return;
-  pause();
-  const ticket = detailGate.begin();
-  detailLoading.value = true;
-  try {
-    const [result, jobs] = await Promise.all([batchItems(id), canExport.value && isOwner.value ? listExportJobs() : Promise.resolve({ data: [] })]);
-    if (!detailGate.current(ticket) || selected.value !== id) return;
-    items.value = result.data.map((item) => {
-      const job = jobs.data.find((entry) => entry.id === item.jobId);
-      return { ...item, phase: job?.phase, processedRows: job?.processedRows, totalRows: job?.totalRows };
-    });
-    detailFailed.value = false;
-    if (active && items.value.some((item) => ['QUEUED', 'RUNNING', 'CANCEL_REQUESTED'].includes(item.state)))
-      timer = setTimeout(() => {
-        void refreshItems(id, true);
-      }, 2500);
-  } catch {
-    if (detailGate.current(ticket)) {
-      items.value = [];
-      detailFailed.value = true;
-      pdfOpen.value = false;
-    }
-  } finally {
-    if (detailGate.current(ticket)) detailLoading.value = false;
-  }
-}
-
-/** 切换批次立即清除上一批文件和结果，晚响应不能改变选择。 */
+/** 目录页负责选择意图，结果逻辑复用同一批次。 */
 async function open(id: string) {
-  if (!canList.value) return;
+  if (!active || !canList.value) return;
   selectionSerial++;
-  pause();
-  detailGate.invalidate();
-  pdfOpen.value = false;
-  selected.value = id;
-  items.value = [];
-  detailFailed.value = false;
-  await refreshItems(id);
-}
-
-/** 尚未拥有任务的失败项只能补入队，已撤权项不能用此路径恢复。 */
-function needsStart(item: BatchItem): boolean {
-  return !item.jobId && ['PENDING', 'FAILED'].includes(item.state) && !['SCOPE_DENIED', 'SCOPE_CHANGED'].includes(item.error ?? '');
-}
-
-/** 补入队复用既有批次，不创建另一套导出任务集合。 */
-async function start(id: string) {
-  const batch = batches.value.find((entry) => entry.id === id);
-  if (busy.value || !canStart.value || !batch || String(batch.owner) !== String(userStore.userId)) return;
-  const ticket = writeGate.begin();
-  writeBusy.value = true;
-  try {
-    await startBatch(id);
-    if (writeGate.current(ticket) && selected.value === id) await refreshItems(id);
-  } catch {
-  } finally {
-    if (writeGate.current(ticket)) writeBusy.value = false;
-  }
-}
-
-/** 重试必须使用显示的预期轮次，不能以补入队替代原任务恢复。 */
-async function retryItem(item: BatchItem) {
-  if (busy.value || !isOwner.value) return;
-  if (needsStart(item)) {
-    await start(selected.value);
-    return;
-  }
-  if (
-    !item.jobId ||
-    !item.canRetry ||
-    !canExport.value ||
-    !Number.isInteger(item.retryRound) ||
-    (item.expires && Date.parse(item.expires) <= Date.now())
-  ) {
-    ElMessage.warning('原任务不可恢复，请新建批次');
-    return;
-  }
-  const ticket = writeGate.begin();
-  const id = selected.value;
-  const expectedRound = item.retryRound;
-  writeBusy.value = true;
-  try {
-    await retryExport(item.jobId, expectedRound);
-    if (writeGate.current(ticket) && selected.value === id) await refreshItems(id);
-  } catch {
-  } finally {
-    if (writeGate.current(ticket)) writeBusy.value = false;
-  }
-}
-
-/** 合并文件只由owner且全部成功时读取，后端再次检查每项授权与到期。 */
-async function loadPdf(): Promise<Blob> {
-  if (!canReadPdf.value || !allSucceeded.value) throw new Error('批次尚不可领取');
-  return batchPdf(selected.value);
+  await result.open(id);
 }
 
 /** 停止所有本地后续动作，保留已冻结提交供明确重试。 */
@@ -442,8 +293,8 @@ function stop() {
   active = false;
   pause();
   gate.invalidate();
-  detailGate.invalidate();
-  writeGate.invalidate();
+  result.stop();
+  resultActive.value = false;
   for (const rowGate of templateGates.values()) rowGate.invalidate();
   submission.suspend();
   loading.value = false;
@@ -477,6 +328,7 @@ watch(
     documents.value = [{ key: String(nextKey++), reportVersionId: '', parameters: {} }];
     if (resume) {
       active = true;
+      resultActive.value = true;
       void load();
     }
   },
@@ -489,12 +341,38 @@ onMounted(async () => {
 onActivated(() => {
   if (!active) {
     active = true;
+    resultActive.value = true;
     void load();
-    if (selected.value) void refreshItems(selected.value);
   }
 });
 onDeactivated(stop);
 onUnmounted(stop);
+/** 保留目录页的受控查询及恢复入口。 */
+defineExpose({
+  selected,
+  items,
+  detailLoading,
+  detailFailed,
+  detailError,
+  writeBusy,
+  pdfOpen,
+  canList,
+  canExport,
+  canStart,
+  isOwner,
+  canReadPdf,
+  canDeliverPdf,
+  allSucceeded,
+  expired,
+  busy,
+  pause,
+  refreshItems,
+  needsStart,
+  start,
+  retryItem,
+  loadPdf,
+  open
+});
 </script>
 <style scoped>
 .batch-document {

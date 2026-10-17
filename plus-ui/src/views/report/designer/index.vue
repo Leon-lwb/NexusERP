@@ -1,11 +1,12 @@
 <template>
   <ReportPage
+    ref="editorPage"
     v-loading="loading"
     :title="definition ? '设计 · ' + (dsl?.title || definition.name) : '新建报表'"
     description="选择业务字段，编排版式，校验后保存或发布。"
     icon="i-ep-edit"
     class="report-designer"
-    :class="{ 'with-preview': previewOpen }"
+    :class="{ 'with-preview': previewOpen, 'focus-editor': focusMode }"
     tabindex="0"
     @keydown="editorKeys"
   >
@@ -14,40 +15,43 @@
       ><el-tag v-else-if="definition" type="success" effect="plain">已保存 · 修订 {{ definition.revision }}</el-tag></template
     >
     <template #actions>
-      <el-button v-if="definition" @click="exportPackage">导出模板包</el-button><el-button @click="router.push('/report/center')">返回</el-button
-      ><el-button :disabled="!canUndo || saving || publishing || applying || jsonDirty" title="撤销；最多保留 50 个设计状态" @click="undo"
-        >撤销</el-button
-      ><el-button :disabled="!canRedo || saving || publishing || applying || jsonDirty" title="重做；新的编辑会清除重做记录" @click="redo"
-        >重做</el-button
-      ><el-button :disabled="!dsl || saving || publishing || applying" :loading="checking" @click="validate">校验</el-button
-      ><el-button :disabled="!dsl || saving || publishing || applying" :loading="previewing" @click="preview">数据预览</el-button
-      ><el-button
-        v-if="dsl"
-        :key="definition ? 'edit' : 'add'"
-        v-hasPermi="[definition ? 'report:definition:edit' : 'report:definition:add']"
-        type="primary"
-        :disabled="publishing || applying"
-        :loading="saving"
-        @click="save()"
-        >保存草稿</el-button
-      ><span
-        v-if="dsl"
-        :key="definition ? 'publish-edit' : 'publish-add'"
-        v-hasPermi="[definition ? 'report:definition:edit' : 'report:definition:add']"
-        ><el-button v-hasPermi="['report:definition:publish']" type="success" :disabled="saving || applying" :loading="publishing" @click="publish"
-          >保存并发布</el-button
-        ></span
-      ></template
+      <DesignerToolbar
+        :has-design="!!dsl"
+        :existing="!!definition"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :json-dirty="jsonDirty"
+        :saving="saving"
+        :publishing="publishing"
+        :applying="applying"
+        :checking="checking"
+        :previewing="previewing"
+        :gesture="editingGesture"
+        :focus-mode="focusMode"
+        @back="router.push('/report/center')"
+        @undo="undo"
+        @redo="redo"
+        @preview="preview"
+        @save="save"
+        @publish="publish"
+        @validate="validate"
+        @export-package="exportPackage"
+        @export-dsl="exportDsl"
+        @toggle-focus="toggleFocus"
+      />
+    </template>
+    <el-alert v-if="identityChanged" title="身份已变化，请重新加载设计。" type="warning" :closable="false"
+      ><el-button @click="load">重新加载设计</el-button></el-alert
     >
     <el-card class="designer-main" shadow="never">
-      <div class="report-section-heading">
+      <div v-show="!focusMode" class="report-section-heading">
         <div>
           <h2>报表配置</h2>
           <p class="report-section-description">先选择数据集，再设置编码、标题与报表类型。</p>
         </div>
         <span v-if="dsl" class="report-secondary">{{ dsl.columns.length }} 列 · {{ dsl.parameters.length }} 个参数</span>
       </div>
-      <div class="designer-config">
+      <div v-show="!focusMode" class="designer-config">
         <el-select
           :model-value="selectedDataset?.dataset.id"
           :disabled="!!definition || saving || publishing || applying"
@@ -82,8 +86,13 @@
       <el-empty v-if="!dsl" description="选择业务数据集开始设计；尚无数据集时，请先在数据集目录注册。"
         ><el-button @click="router.push('/report/dataset')">前往数据集目录</el-button></el-empty
       >
-      <DatasetContractBar v-if="dsl" v-model="dsl" :datasets="datasets" :busy="saving || publishing || applying" @contract="boundVersion = $event" />
-      <DesignerBatchTools v-if="dsl" v-model="dsl" :disabled="saving || publishing || applying" />
+      <DatasetContractBar
+        v-if="dsl && !focusMode"
+        v-model="dsl"
+        :datasets="datasets"
+        :busy="saving || publishing || applying"
+        @contract="boundVersion = $event"
+      />
       <div v-if="structuralIssues.length" class="designer-issues">
         <strong>设计问题（点击定位列）</strong
         ><el-button
@@ -100,48 +109,41 @@
       </div>
       <el-tabs v-if="dsl" v-model="tab" v-loading="saving || publishing || applying">
         <el-tab-pane label="设计画布" name="canvas"
-          ><div v-loading="saving" class="designer-grid">
-            <aside class="field-palette">
-              <div class="palette-heading">
-                <h3>可用字段</h3>
-                <span class="report-secondary">{{ visibleFields.length }}</span>
-              </div>
-              <el-input
-                v-model="fieldSearch"
-                clearable
-                size="small"
-                prefix-icon="Search"
-                placeholder="搜索字段或类型"
-                aria-label="搜索可用字段"
-                class="palette-search"
+          ><div class="canvas-tools">
+            <template v-if="isNarrow"
+              ><el-button aria-label="打开字段面板" :aria-expanded="sidebar === 'fields'" @click="openSidebar('fields', $event)">字段</el-button
+              ><el-button aria-label="打开属性面板" :aria-expanded="sidebar === 'properties'" @click="openSidebar('properties', $event)"
+                >属性</el-button
+              ></template
+            >
+            <PrintSettings
+              v-if="dsl.kind === 'DOCUMENT'"
+              v-model="dsl"
+              compact
+              :selection="selection"
+              :fields="selectedDataset?.descriptor.fields || []"
+              :disabled="saving || publishing || applying || editingGesture"
+              :context-key="contextKey"
+              @select="selection = $event"
+            />
+          </div>
+          <div v-loading="saving" class="designer-grid" :class="{ 'narrow-designer': isNarrow }">
+            <aside v-if="!isNarrow" class="field-palette">
+              <FieldPalette
+                v-model:search="fieldSearch"
+                :fields="visibleFields"
+                :disabled="saving || publishing || applying"
+                :document="dsl.kind === 'DOCUMENT'"
+                @add="insertField"
+                @formula="insertFormula"
+                @fit="fitColumns(dsl)"
               />
-              <p class="report-secondary">点击添加，或拖入明细区。</p>
-              <div class="field-list">
-                <button
-                  v-for="field in visibleFields"
-                  :key="field.name"
-                  type="button"
-                  class="field-item"
-                  draggable="true"
-                  :disabled="saving || publishing || applying"
-                  :aria-label="'添加字段：' + field.label"
-                  @dragstart="dragField($event, field.name)"
-                  @click="insertField(field)"
-                >
-                  <span class="field-item__name"
-                    >{{ field.label }}<small>{{ field.name }}</small></span
-                  ><span class="field-item__type">{{ field.type }}</span>
-                </button>
-              </div>
-              <el-empty v-if="!visibleFields.length" :image-size="50" description="没有匹配字段"
-                ><el-button v-if="fieldSearch" link type="primary" @click="fieldSearch = ''">清空搜索</el-button></el-empty
-              >
-              <el-button class="mt-3" @click="insertFormula">添加计算列</el-button
-              ><el-button v-if="dsl.kind === 'DOCUMENT'" class="mt-2" @click="fitColumns(dsl)">适配纸张宽度</el-button>
             </aside>
             <main class="canvas-area" @dragover.prevent @drop.prevent="dropField">
               <PaperGrid
+                ref="paperGrid"
                 v-model="dsl"
+                :context-key="contextKey"
                 :disabled="saving || publishing || applying"
                 :selection="selection"
                 @select="selection = $event"
@@ -150,68 +152,27 @@
                 @gesture="editingGesture = $event"
               />
             </main>
-            <aside class="property-panel">
-              <h3>属性</h3>
-              <el-form label-position="top" size="small">
-                <template v-if="selectedColumn"
-                  ><el-form-item label="列标题"><el-input v-model="selectedColumn.label" /></el-form-item
-                  ><el-form-item label="宽度（mm）"
-                    ><el-input-number
-                      :model-value="ptToMm(selectedColumn.width)"
-                      :min="ptToMm(20)"
-                      :max="ptToMm(600)"
-                      :precision="2"
-                      @change="updateColumnWidth" /></el-form-item
-                  ><el-form-item label="小数位"><el-input-number v-model="selectedColumn.scale" :min="0" :max="12" /></el-form-item
-                  ><el-form-item label="计算表达式"
-                    ><el-input v-model="selectedColumn.expression" placeholder="例如 ROUND(quantity * unitPrice, 2)" type="textarea" :rows="3"
-                  /></el-form-item>
-                  <p class="text-xs report-secondary">支持十进制运算、IF、ROUND、COALESCE、SUM 和 COUNT。</p>
-                  <el-button type="danger" link :disabled="dsl.columns.length === 1" @click="deleteColumn">移除列</el-button></template
-                >
-                <template v-if="selectedCell"
-                  ><el-form-item label="固定行高度（mm）"
-                    ><el-input-number
-                      :model-value="ptToMm(selectedBandRow!.height)"
-                      :min="ptToMm(12)"
-                      :max="ptToMm(160)"
-                      :precision="2"
-                      @change="updateRowHeight"
-                  /></el-form-item>
-                  <p class="report-secondary text-xs">
-                    当前跨 {{ selectedCell.colSpan }} 列、{{ selectedCell.rowSpan }} 行；在画布中选择矩形后合并或拆分。
-                  </p>
-                  <el-form-item label="文本与绑定"
-                    ><el-input
-                      v-model="selectedCell.text"
-                      type="textarea"
-                      :rows="3"
-                      placeholder="如 单号：{{orderNo}}，页数：{{page_number}}/{{page_count}}" /></el-form-item
-                  ><el-form-item label="字段绑定"
-                    ><el-select v-model="selectedCell.field" clearable
-                      ><el-option
-                        v-for="field in selectedDataset?.descriptor.fields"
-                        :key="field.name"
-                        :label="field.label"
-                        :value="field.name" /></el-select></el-form-item
-                ></template>
-                <template v-if="selectedStyle"
-                  ><el-divider /><el-form-item label="字号"><el-input-number v-model="selectedStyle.fontSize" :min="6" :max="32" /></el-form-item
-                  ><el-form-item label="对齐"
-                    ><el-radio-group v-model="selectedStyle.align"
-                      ><el-radio-button value="LEFT">左</el-radio-button><el-radio-button value="CENTER">中</el-radio-button
-                      ><el-radio-button value="RIGHT">右</el-radio-button></el-radio-group
-                    ></el-form-item
-                  ><el-checkbox v-model="selectedStyle.bold">加粗</el-checkbox
-                  ><el-form-item label="文字颜色"><el-color-picker v-model="selectedStyle.color" /></el-form-item
-                  ><el-form-item label="背景颜色"><el-color-picker v-model="selectedStyle.background" /></el-form-item
-                ></template>
-                <el-empty v-if="!selectedStyle" description="选择画布中的列或单元格" :image-size="48" />
-              </el-form>
+            <aside v-if="!isNarrow" class="property-panel">
+              <SelectionInspector
+                v-if="tab === 'canvas'"
+                v-model="dsl"
+                :selection="selection"
+                :fields="selectedDataset?.descriptor.fields || []"
+                :disabled="saving || publishing || applying || editingGesture"
+                :context-key="contextKey"
+                @select="selection = $event"
+              />
             </aside></div
         ></el-tab-pane>
         <el-tab-pane v-if="dsl.kind === 'DOCUMENT'" label="新版打印" name="print"
-          ><PrintSettings v-model="dsl" :fields="selectedDataset?.descriptor.fields || []" :disabled="saving || publishing || applying"
+          ><PrintSettings
+            v-if="tab === 'print'"
+            v-model="dsl"
+            :selection="selection"
+            :fields="selectedDataset?.descriptor.fields || []"
+            :disabled="saving || publishing || applying"
+            :context-key="contextKey"
+            @select="selection = $event"
         /></el-tab-pane>
         <el-tab-pane label="纸张与分页" name="paper"><PaperSettings v-model="dsl" :disabled="saving || publishing || applying" /></el-tab-pane>
         <el-tab-pane label="查询参数" name="parameters"
@@ -294,12 +255,48 @@
           :columns="dsl.columns"
           :rows="previewData.rows" /></template
     ></el-card>
+    <el-drawer
+      :model-value="!!sidebar"
+      :title="sidebar === 'fields' ? '可用字段' : '对象属性'"
+      size="min(360px, 100vw)"
+      append-to-body
+      :close-on-press-escape="false"
+      @update:model-value="
+        (value) => {
+          if (!value) sidebar = undefined;
+        }
+      "
+      @open-auto-focus="sidebarOpened"
+      @close-auto-focus="sidebarClosed"
+    >
+      <div ref="sidebarContent" tabindex="-1" class="designer-sidebar" :aria-label="sidebar === 'fields' ? '字段侧栏内容' : '属性侧栏内容'">
+        <template v-if="dsl && sidebar === 'fields'"
+          ><FieldPalette
+            v-model:search="fieldSearch"
+            :fields="visibleFields"
+            :disabled="saving || publishing || applying"
+            :document="dsl.kind === 'DOCUMENT'"
+            @add="insertField"
+            @formula="insertFormula"
+            @fit="fitColumns(dsl)"
+        /></template>
+        <SelectionInspector
+          v-if="dsl && sidebar === 'properties'"
+          v-model="dsl"
+          :selection="selection"
+          :fields="selectedDataset?.descriptor.fields || []"
+          :disabled="saving || publishing || applying || editingGesture"
+          :context-key="contextKey"
+          @select="selection = $event"
+        />
+      </div>
+    </el-drawer>
   </ReportPage>
 </template>
 <script setup lang="ts">
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
 
-import { ref, reactive, computed, watch, onUnmounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { saveAs } from 'file-saver';
@@ -308,7 +305,6 @@ import type { DatasetView, DatasetField, ReportDsl, ReportDefinition, ReportCata
 import {
   createDsl,
   addField,
-  removeColumn,
   fitColumns,
   normalStyle,
   parameterInput,
@@ -325,11 +321,14 @@ import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import ReportPaper from '@/components/report/ReportPaper.vue';
 import DatasetContractBar from '@/components/report/DatasetContractBar.vue';
-import DesignerBatchTools from '@/components/report/DesignerBatchTools.vue';
 import PrintSettings from '@/components/report/PrintSettings.vue';
 import PaperGrid from '@/components/report/designer/PaperGrid.vue';
 import PaperSettings from '@/components/report/designer/PaperSettings.vue';
-import { mmToPt, ptToMm, resizeColumn, resizeBandRow } from './gridCommands';
+import DesignerToolbar from '@/components/report/designer/DesignerToolbar.vue';
+import SelectionInspector from '@/components/report/designer/SelectionInspector.vue';
+import FieldPalette from '@/components/report/designer/FieldPalette.vue';
+import { isEditorInput, resolveEditorSelection, type EditorSelection } from '@/components/report/designer/editorSelection';
+import { useUserStore } from '@/store/modules/user';
 import { editorIssues, boundDataset } from './editorCommands';
 import { exportTemplatePackage } from '@/api/report';
 import type { DatasetVersionView } from '@/types/report';
@@ -342,6 +341,18 @@ const route = useRoute();
  * 保存当前页面或测试的router状态。
  */
 const router = useRouter();
+/** 当前身份仅参与会话围栏，身份切换后不得保留上一账号草稿。 */
+const userStore = useUserStore();
+/** 布局、焦点和侧栏均属于编辑器状态，不进入DSL与历史。 */
+const focusMode = ref(false),
+  sidebar = ref<'fields' | 'properties'>();
+const isNarrow = ref(false),
+  identityChanged = ref(false);
+const sidebarContent = ref<HTMLElement>(),
+  paperGrid = ref<InstanceType<typeof PaperGrid>>(),
+  editorPage = ref<InstanceType<typeof ReportPage>>();
+let sidebarTrigger: HTMLElement | undefined, focusTrigger: HTMLElement | undefined;
+let viewportQuery: MediaQueryList | undefined;
 /**
  * 保存当前页面或测试的loading状态。
  */
@@ -450,28 +461,14 @@ const loadGate = new RequestGate();
 const previewGate = new RequestGate();
 /** 声明Band结构，保留服务端精确值和固定版本约束。 */
 type Band = 'headerRows' | 'footerRows';
-/** 声明Selection结构，保留服务端精确值和固定版本约束。 */
-type Selection =
-  | {
-      /** 保存当前 `type` 值。 */
-      type: 'column';
-      /** 保存当前下标。 */
-      index: number;
-    }
-  | {
-      /** 保存当前 `type` 值。 */
-      type: 'cell';
-      /** 保存当前 `band` 值。 */
-      band: Band;
-      /** 保存当前精确业务行。 */
-      row: number;
-      /** 保存当前 `cell` 值。 */
-      cell: number;
-    };
 /**
  * 保存当前页面或测试的selection状态。
  */
-const selection = ref<Selection>();
+const selection = ref<EditorSelection>();
+/** 模板、数据契约与身份共同界定候选和私有元数据生命周期。 */
+const contextKey = computed(() =>
+  JSON.stringify([route.query.id, dsl.value?.code, dsl.value?.datasetVersionId, userStore.userId, userStore.tenantId])
+);
 /**
  * 保存当前页面或测试的selectedDataset状态。
  */
@@ -484,22 +481,6 @@ const fieldSearch = ref('');
 /** 在可用字段区展示匹配名称、绑定名或类型的字段。 */
 const visibleFields = computed(() => filterFields(selectedDataset.value?.descriptor.fields || [], fieldSearch.value));
 const structuralIssues = computed(() => (dsl.value ? editorIssues(dsl.value, selectedDataset.value?.descriptor) : []));
-/**
- * 保存当前页面或测试的selectedColumn状态。
- */
-const selectedColumn = computed(() => (selection.value?.type === 'column' ? dsl.value?.columns[selection.value.index] : undefined));
-/**
- * 保存当前页面或测试的selectedBandRow状态。
- */
-const selectedBandRow = computed(() => (selection.value?.type === 'cell' ? dsl.value?.[selection.value.band][selection.value.row] : undefined));
-/**
- * 保存当前页面或测试的selectedCell状态。
- */
-const selectedCell = computed(() => (selection.value?.type === 'cell' ? selectedBandRow.value?.cells[selection.value.cell] : undefined));
-/**
- * 保存当前页面或测试的selectedStyle状态。
- */
-const selectedStyle = computed(() => selectedColumn.value?.style || selectedCell.value?.style);
 /**
  * 保存当前页面或测试的jsonDirty状态。
  */
@@ -519,6 +500,11 @@ async function load() {
   const id = String(route.query.id || '');
   if (id && definition.value?.id === id) return;
   const ticket = loadGate.begin();
+  paperGrid.value?.cancelGesture();
+  sidebar.value = undefined;
+  identityChanged.value = false;
+  editingGesture.value = false;
+  fieldSearch.value = '';
   editorContext++;
   history.reset();
   saving.value = publishing.value = applying.value = checking.value = false;
@@ -562,6 +548,12 @@ async function load() {
 function chooseDataset(id: string) {
   const dataset = datasets.value.find((d) => d.dataset.id === id);
   if (!dataset) return;
+  editorContext++;
+  paperGrid.value?.cancelGesture();
+  sidebar.value = undefined;
+  editingGesture.value = false;
+  tab.value = 'canvas';
+  jsonText.value = jsonBaseline.value = '';
   dsl.value = createDsl(dataset.descriptor, dataset.dataset.publishedVersion, 'REPORT_' + Date.now().toString(36).toUpperCase());
   selection.value = undefined;
   parameters.value = {};
@@ -590,12 +582,14 @@ function dropField(event: DragEvent) {
 /** 处理当前报表的 `insertFormula` 操作。 */
 async function insertFormula() {
   if (!dsl.value) return;
+  const context = editorContext;
   try {
     const result = await ElMessageBox.prompt('计算列绑定名（字母开头）', '添加计算列', {
       inputValue: 'calc_' + (dsl.value.columns.length + 1),
       inputPattern: /^[A-Za-z_][A-Za-z0-9_]{0,63}$/,
       inputErrorMessage: '输入有效的绑定名'
     });
+    if (context !== editorContext || !dsl.value) return;
     dsl.value = addField(dsl.value, {
       name: result.value,
       label: '计算列',
@@ -608,12 +602,6 @@ async function insertFormula() {
     selection.value = { type: 'column', index: dsl.value.columns.length - 1 };
   } catch {}
 }
-/** 处理当前报表的 `deleteColumn` 操作。 */
-function deleteColumn() {
-  if (!dsl.value || selection.value?.type !== 'column') return;
-  dsl.value = removeColumn(dsl.value, selection.value.index);
-  selection.value = undefined;
-}
 /** 处理当前报表的 `addBand` 操作。 */
 function addBand(band: Band) {
   if (!dsl.value) return;
@@ -621,21 +609,7 @@ function addBand(band: Band) {
     height: 32,
     cells: [{ column: 0, colSpan: dsl.value.columns.length, rowSpan: 1, text: '', field: null, style: normalStyle() }]
   });
-  selection.value = { type: 'cell', band, row: dsl.value[band].length - 1, cell: 0 };
-}
-/** 毫米列宽修改保持单据总宽并形成独立历史。 */
-function updateColumnWidth(value: number | undefined) {
-  if (value === undefined || !dsl.value || selection.value?.type !== 'column') return;
-  try {
-    dsl.value = resizeColumn(dsl.value, selection.value.index, mmToPt(value));
-  } catch (error) {
-    ElMessage.warning((error as Error).message);
-  }
-}
-/** 固定行毫米输入复用画布同一高度边界。 */
-function updateRowHeight(value: number | undefined) {
-  if (value === undefined || !dsl.value || selection.value?.type !== 'cell' || !selectedBandRow.value) return;
-  dsl.value = resizeBandRow(dsl.value, selection.value.band, selection.value.row, mmToPt(value) - selectedBandRow.value.height);
+  selection.value = { type: 'cell', band, row: dsl.value[band].length - 1, column: 0 };
 }
 /** 处理当前报表的 `addSummary` 操作。 */
 function addSummary() {
@@ -666,7 +640,7 @@ async function save(): Promise<boolean> {
 async function persistDraft(): Promise<boolean> {
   if (!dsl.value || saving.value || applying.value) return false;
   if (editingGesture.value) {
-    ElMessage.warning('请完成当前拖动后再保存');
+    ElMessage.warning('请完成当前画布移动后再保存');
     return false;
   }
   if (jsonDirty.value) {
@@ -803,7 +777,7 @@ function restoreHistory(action: 'undo' | 'redo') {
   const restored = history[action]();
   if (!restored) return;
   dsl.value = restored;
-  selection.value = undefined;
+  if (!resolveEditorSelection(restored, selection.value)) selection.value = undefined;
   if (tab.value === 'json') jsonText.value = jsonBaseline.value = JSON.stringify(restored, null, 2);
 }
 /** 处理当前报表的 `exportPackage` 操作。 */
@@ -828,13 +802,13 @@ function exportDsl() {
 }
 /** 处理当前报表的 `editorKeys` 操作。 */
 function editorKeys(event: KeyboardEvent) {
+  if (event.defaultPrevented || isEditorInput(event)) return;
   if (!(event.ctrlKey || event.metaKey)) return;
   if (event.key.toLowerCase() === 's') {
     event.preventDefault();
     if (!saving.value && !publishing.value) void save();
     return;
   }
-  if ((event.target as HTMLElement)?.closest('input,textarea,[contenteditable=true]')) return;
   if (event.key.toLowerCase() === 'z') {
     event.preventDefault();
     event.shiftKey ? redo() : undo();
@@ -843,6 +817,84 @@ function editorKeys(event: KeyboardEvent) {
     event.preventDefault();
     redo();
   }
+}
+/** 打开窄屏侧栏并记录真实触发点，抽屉接管后再移动焦点。 */
+function openSidebar(value: 'fields' | 'properties', event?: Event) {
+  paperGrid.value?.finishKeyboard();
+  sidebarTrigger = event?.currentTarget as HTMLElement | undefined;
+  sidebar.value = value;
+}
+/** 抽屉的自动焦点事件使用可访问内容容器作为起点。 */
+function sidebarOpened(event?: Event) {
+  event?.preventDefault();
+  sidebarContent.value?.focus({ preventScroll: true });
+}
+/** 抽屉关闭后恢复触发点；触发点因布局变化消失时回到编辑页。 */
+function sidebarClosed(event?: Event) {
+  event?.preventDefault();
+  if (sidebar.value) return;
+  if (sidebarTrigger?.isConnected) sidebarTrigger.focus({ preventScroll: true });
+  else (editorPage.value?.$el as HTMLElement | undefined)?.focus?.({ preventScroll: true });
+  sidebarTrigger = undefined;
+}
+/** 应用内专注模式保留画布实例、缩放与当前选区。 */
+function toggleFocus() {
+  if (!focusMode.value && typeof document !== 'undefined') focusTrigger = document.activeElement as HTMLElement;
+  focusMode.value = !focusMode.value;
+  void nextTick(() => {
+    if (!focusMode.value && focusTrigger?.isConnected) focusTrigger.focus({ preventScroll: true });
+  });
+}
+/** Escape先取消画布候选；展开的内部弹层通过焦点控件的ARIA状态识别，再处理侧栏和专注模式。 */
+function escapeEditor(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
+  if (paperGrid.value?.cancelGesture()) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+  if (
+    (event.target as HTMLElement | null)?.closest?.(
+      '.el-dialog,.el-select-dropdown,.el-dropdown-menu,.el-color-dropdown,[aria-expanded="true"][aria-controls],[aria-expanded="true"][aria-haspopup],[aria-expanded="true"][role="combobox"],[aria-expanded="true"][role="spinbutton"]'
+    )
+  )
+    return;
+  if (sidebar.value) {
+    sidebar.value = undefined;
+    event.preventDefault();
+    event.stopPropagation();
+  } else if (focusMode.value) {
+    toggleFocus();
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}
+/** 视口小于1024px才使用侧栏抽屉，画布始终在自身容器滚动。 */
+function updateViewport() {
+  isNarrow.value = viewportQuery?.matches || false;
+  if (!isNarrow.value) sidebar.value = undefined;
+}
+/** 身份切换立即清除私有编辑状态，用户显式重载后重新鉴权。 */
+function invalidateIdentity() {
+  paperGrid.value?.cancelGesture();
+  editorContext++;
+  loadGate.invalidate();
+  previewGate.invalidate();
+  definition.value = undefined;
+  dsl.value = undefined;
+  boundVersion.value = undefined;
+  datasets.value = [];
+  catalogs.value = [];
+  parameters.value = {};
+  previewData.value = undefined;
+  previewOpen.value = false;
+  selection.value = undefined;
+  sidebar.value = undefined;
+  fieldSearch.value = '';
+  jsonText.value = jsonBaseline.value = savedJson.value = '';
+  loading.value = saving.value = publishing.value = applying.value = checking.value = previewing.value = editingGesture.value = false;
+  history.reset();
+  identityChanged.value = true;
 }
 /** 处理当前报表的 `leave` 操作。 */
 async function leave() {
@@ -859,6 +911,14 @@ async function leave() {
   }
 }
 watch(() => [route.query.id, route.query.dataset], load, { immediate: true, flush: 'sync' });
+watch(() => [userStore.userId, userStore.tenantId], invalidateIdentity, { flush: 'sync' });
+watch(
+  dsl,
+  (value) => {
+    if (!resolveEditorSelection(value, selection.value)) selection.value = undefined;
+  },
+  { deep: true }
+);
 watch(
   [dsl, parameters],
   () => {
@@ -876,7 +936,16 @@ watch(
   { deep: true, flush: 'post' }
 );
 watch(tab, (value) => {
+  paperGrid.value?.cancelGesture();
+  sidebar.value = undefined;
   if (value === 'json' && dsl.value && !jsonDirty.value) jsonText.value = jsonBaseline.value = JSON.stringify(dsl.value, null, 2);
+});
+onMounted(() => {
+  if (typeof window === 'undefined') return;
+  viewportQuery = window.matchMedia?.('(max-width: 1023px)');
+  updateViewport();
+  viewportQuery?.addEventListener('change', updateViewport);
+  window.addEventListener('keydown', escapeEditor, true);
 });
 onBeforeRouteLeave(leave);
 onBeforeRouteUpdate(async (to) => (String(to.query.id || '') === definition.value?.id ? true : await leave()));
@@ -884,6 +953,8 @@ onUnmounted(() => {
   editorContext++;
   loadGate.invalidate();
   previewGate.invalidate();
+  viewportQuery?.removeEventListener('change', updateViewport);
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', escapeEditor, true);
 });
 </script>
 <style scoped>
@@ -894,7 +965,7 @@ onUnmounted(() => {
   gap: 16px;
 }
 .with-preview .designer-grid {
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns: 150px minmax(0, 1fr);
 }
 .with-preview .property-panel {
   grid-column: 1 / -1;
@@ -932,7 +1003,7 @@ onUnmounted(() => {
 }
 .designer-grid {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr) 245px;
+  grid-template-columns: 180px minmax(0, 1fr) 230px;
   gap: 16px;
   min-height: 550px;
 }
@@ -943,153 +1014,17 @@ onUnmounted(() => {
   border: 1px solid var(--report-line);
   border-radius: 6px;
 }
-.field-palette h3,
-.property-panel h3 {
-  margin: 0 0 14px;
-  font-size: 15px;
-}
-.field-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 9px;
-  margin-bottom: 6px;
-  background: var(--report-surface);
-  border: 1px solid var(--report-line);
-  border-radius: 4px;
-  cursor: grab;
-}
-.field-item small {
-  color: var(--el-text-color-placeholder);
-  font-size: 10px;
-}
 .canvas-area {
-  overflow: auto;
-  padding: 20px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 12px;
   background: var(--el-fill-color);
   border: 1px solid var(--el-border-color);
   border-radius: 6px;
 }
-.canvas-title {
-  padding: 18px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 600;
-  background: var(--report-surface);
-}
-.band-section {
-  margin-top: 12px;
-}
-.band-caption,
-.detail-caption {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-.band-grid {
-  display: grid;
-  background: var(--report-surface);
-  position: relative;
-}
-.band-cell {
-  padding: 8px;
-  border: 1px solid var(--el-border-color);
-  overflow: hidden;
-  cursor: pointer;
-}
-.band-row-tools {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 4px;
-}
-.detail-caption {
-  margin-top: 20px;
-}
-.column-strip {
-  display: flex;
-  overflow: auto;
-  background: var(--report-surface);
-}
-.column-tile {
-  border: 1px solid var(--el-border-color);
-  padding: 10px;
-  cursor: grab;
-  max-width: 300px;
-  overflow: hidden;
-}
-.example-cell {
-  margin-top: 12px;
-  border-top: 1px solid var(--report-line);
-  padding-top: 10px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-.selected {
-  outline: 2px solid var(--el-color-primary);
-  outline-offset: -2px;
-}
 .dsl-json :deep(textarea) {
   font-family: Consolas, monospace;
-}
-@media (max-width: 1200px) {
-  .designer-grid {
-    grid-template-columns: 180px minmax(0, 1fr);
-  }
-  .property-panel {
-    grid-column: 1 / -1;
-  }
-}
-
-.palette-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.palette-search {
-  margin-bottom: 4px;
-}
-.field-list {
-  max-height: 440px;
-  overflow: auto;
-  margin: 12px -4px;
-  padding: 4px;
-}
-.field-item {
-  width: 100%;
-  text-align: left;
-  align-items: center;
-  gap: 6px;
-  font: inherit;
-  color: var(--el-text-color-regular);
-}
-.field-item:hover {
-  border-color: var(--el-color-primary-light-5);
-  color: var(--el-color-primary);
-}
-.field-item:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-.field-item__name {
-  min-width: 0;
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.field-item__name small {
-  display: block;
-  margin-top: 4px;
-  font-family: Consolas, monospace;
-}
-.field-item__type {
-  font-size: 9px;
-  color: var(--el-text-color-secondary);
-  background: var(--report-muted);
-  padding: 3px 4px;
-  border-radius: 4px;
 }
 .designer-issues {
   background: var(--el-color-danger-light-9);
@@ -1103,26 +1038,92 @@ onUnmounted(() => {
   flex: 1 1 180px;
   min-width: 0;
 }
-.property-panel,
-.field-palette,
-.canvas-area {
+.report-designer {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.report-designer :deep(.report-page__header),
+.report-designer :deep(.report-page__identity),
+.report-designer :deep(.report-page__heading),
+.report-designer :deep(.report-page__content) {
+  min-width: 0;
+  max-width: 100%;
+}
+.report-designer :deep(.report-page__title-row) {
+  flex-wrap: wrap;
+}
+.report-designer :deep(h1) {
+  overflow-wrap: anywhere;
+}
+.designer-config > :deep(.el-input),
+.designer-config > :deep(.el-select) {
+  max-width: 100%;
+}
+.designer-main :deep(.el-tabs__content) {
   min-width: 0;
 }
-@media (max-width: 768px) {
-  .designer-grid,
-  .with-preview .designer-grid {
-    grid-template-columns: minmax(0, 1fr);
-    min-height: auto;
-  }
-  .field-list {
-    max-height: 200px;
-  }
-  .canvas-area {
-    padding: 12px;
-    min-height: 320px;
+.field-palette,
+.property-panel {
+  min-width: 0;
+}
+.canvas-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.canvas-tools :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+.designer-sidebar {
+  min-width: 0;
+  outline: none;
+}
+.report-designer.focus-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  overflow: auto;
+  max-width: 100vw;
+  background: var(--el-bg-color-page);
+}
+.focus-editor .designer-grid {
+  min-height: calc(100dvh - 280px);
+}
+.designer-grid.narrow-designer {
+  display: block;
+  min-height: 320px;
+}
+@media (min-width: 1024px) and (max-width: 1200px) {
+  .designer-grid {
+    grid-template-columns: 150px minmax(0, 1fr) 210px;
   }
   .property-panel {
     grid-column: auto;
+  }
+  .with-preview .property-panel {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 1023px) {
+  .report-designer :deep(.report-page__actions) {
+    width: 100%;
+    min-width: 0;
+  }
+  .report-designer.with-preview :deep(.report-page__content) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .designer-config {
+    gap: 8px;
+  }
+  .canvas-area {
+    padding: 8px;
+  }
+  .focus-editor .designer-grid {
+    min-height: 320px;
   }
 }
 </style>

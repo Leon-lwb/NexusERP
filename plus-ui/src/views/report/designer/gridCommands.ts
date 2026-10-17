@@ -1,4 +1,4 @@
-import type { BandCell, ReportDsl, ReportPage, ReportStyle } from '@/types/report';
+import type { BandCell, DatasetField, ReportDsl, ReportPage, ReportStyle } from '@/types/report';
 
 /** 固定区域选择不进入持久化定义。 */
 export type FixedBand = 'headerRows' | 'footerRows';
@@ -191,6 +191,10 @@ function selectedCells(dsl: ReportDsl, selection: GridSelection): { row: number;
   });
   return result;
 }
+/** 检查固定区矩形是否完整，供画布和属性面板使用相同规则。 */
+export function validateGridSelection(dsl: ReportDsl, selection: GridSelection): void {
+  selectedCells(dsl, selection);
+}
 /** 合并同一区域的完整矩形并保留左上格内容。 */
 export function mergeCells(dsl: ReportDsl, selection: GridSelection): ReportDsl {
   selectedCells(dsl, selection);
@@ -239,7 +243,7 @@ export function styleCells(dsl: ReportDsl, selection: GridSelection, style: Part
 }
 /** 媒体移动及缩放始终落在可打印区域内，二维码保持正方形。 */
 export function positionMedia(dsl: ReportDsl, index: number, patch: Partial<{ x: number; y: number; width: number; height: number }>): ReportDsl {
-  if (!dsl.print?.media[index]) throw Error('请选择有效图片或条码');
+  if (!Number.isInteger(index) || index < 0 || !dsl.print?.media[index]) throw Error('请选择有效图片或条码');
   Object.values(patch).forEach(finite);
   const next = clone(dsl),
     page = effectivePaper(next),
@@ -252,5 +256,29 @@ export function positionMedia(dsl: ReportDsl, index: number, patch: Partial<{ x:
   if (media.kind === 'QR') media.width = media.height = Math.min(maxWidth, maxHeight, patch.width === undefined ? media.height : media.width);
   media.x = Math.max(page.marginLeft, Math.min(page.width - page.marginRight - media.width, media.x));
   media.y = Math.max(page.marginTop, Math.min(page.height - page.marginBottom - media.height, media.y));
+  return next;
+}
+/** 使用毫米步长移动媒体，方向键与属性输入共用打印边界。 */
+export function nudgeMedia(dsl: ReportDsl, index: number, key: string, shift: boolean): ReportDsl {
+  const media = dsl.print?.media[index];
+  if (!media || !Number.isInteger(index) || index < 0) throw Error('请选择有效图片或条码');
+  const step = mmToPt(shift ? 5 : 0.5);
+  if (key === 'ArrowLeft') return positionMedia(dsl, index, { x: media.x - step });
+  if (key === 'ArrowRight') return positionMedia(dsl, index, { x: media.x + step });
+  if (key === 'ArrowUp') return positionMedia(dsl, index, { y: media.y - step });
+  if (key === 'ArrowDown') return positionMedia(dsl, index, { y: media.y + step });
+  return clone(dsl);
+}
+/** 仅批准的字符串和标识编码字段可以进入业务条码。 */
+export function barcodeFields(fields: DatasetField[]): DatasetField[] {
+  return fields.filter((field) => ['STRING', 'ID'].includes(field.type) && /(code|no|number|id|sn)$/i.test(field.name));
+}
+/** 修改业务条码绑定时再次校验字段白名单，不接受任意属性值。 */
+export function bindMediaField(dsl: ReportDsl, index: number, field: string, fields: DatasetField[]): ReportDsl {
+  const media = dsl.print?.media[index];
+  if (!Number.isInteger(index) || index < 0 || !media || media.kind === 'IMAGE' || !barcodeFields(fields).some((item) => item.name === field))
+    throw Error('请选择批准的业务编码字段');
+  const next = clone(dsl);
+  next.print!.media[index].field = field;
   return next;
 }

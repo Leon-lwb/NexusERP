@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.report.ReportActor;
 import com.nexus.report.domain.ReportFault;
@@ -45,6 +46,62 @@ class ReportRuntimeControllerTest {
     @BeforeEach
     void setup() {
         when(actors.current()).thenReturn(actor);
+    }
+
+    /** 请求中的完整预期版本应传到新增服务重载，不能在JSON绑定时被忽略。 */
+    @Test
+    void createForwardsExpectedVersionFromJsonToTheService() throws Exception {
+        var result = run();
+        var observedRuntime =
+                mock(
+                        ReportRuntimeService.class,
+                        invocation ->
+                                invocation.getMethod().getName().equals("create")
+                                        ? result
+                                        : RETURNS_DEFAULTS.answer(invocation));
+        var json = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        var body =
+                json.readValue(
+                        """
+                        {"reportId":"3","mode":"LIVE","parameters":{"orderId":"9007199254740993"},
+                         "expectedVersionId":"9007199254740995"}
+                        """,
+                        ReportRuntimeController.RunRequest.class);
+        var endpoint = new ReportRuntimeController(actors, observedRuntime, artifacts);
+        assertEquals("1", endpoint.create(body).getData().id());
+        var invocations = new ArrayList<>(mockingDetails(observedRuntime).getInvocations());
+        assertEquals(1, invocations.size());
+        assertArrayEquals(
+                new Object[] {
+                    actor,
+                    "3",
+                    "LIVE",
+                    Map.of("orderId", "9007199254740993"),
+                    "9007199254740995"
+                },
+                invocations.get(0).getArguments());
+    }
+
+    /** Java旧三参数请求构造和无预期版本的四参数服务调用保持兼容。 */
+    @Test
+    void originalThreeArgumentRequestConstructorRetainsLegacyDispatch() {
+        var body = new ReportRuntimeController.RunRequest("3", "LIVE", Map.of());
+        when(runtime.create(actor, "3", "LIVE", Map.of())).thenReturn(run());
+        assertEquals("1", controller.create(body).getData().id());
+        verify(runtime).create(actor, "3", "LIVE", Map.of());
+        verifyNoMoreInteractions(runtime);
+    }
+
+    /**
+     * 构造不含私有路径的成功运行，供创建请求的接口契约验证使用。
+     *
+     * @return 固定的成功运行
+     */
+    private Run run() {
+        var time = Instant.now();
+        return new Run(
+                "1", "T", 2, "3", "4", "LIVE", "SUCCEEDED", "scope", "{}", null, null, 0,
+                time, time.plusSeconds(60), null);
     }
 
     /** 验证 {@code runtimeAndExportViewsNeverSerializeArtifactPathsOrLeaseMetadata} 场景下的结果与边界条件。 */

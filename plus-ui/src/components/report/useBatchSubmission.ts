@@ -5,6 +5,8 @@ import type { ReportResource } from '@/api/report/query';
 import { createRequestKey } from '@/utils/requestKey';
 import { RequestGate } from '@/views/report/model';
 import { useUserStore } from '@/store/modules/user';
+import { checkPermi } from '@/utils/permission';
+import { readReportFailure } from '@/api/report/errors';
 
 /** 一次业务批次提交的固定内容，网络失败后不读取可变表单。 */
 interface BatchSubmission {
@@ -26,6 +28,13 @@ export function useBatchSubmission() {
   const gate = new RequestGate();
   const locked = computed(() => !!pending.value);
 
+  /** 每个写入阶段开始前重新核对本地授权，服务端仍再次鉴权。 */
+  function allowed() {
+    return ['report:runtime:preview', 'report:runtime:export', 'report:batch:manage', 'report:batch:list'].every((permission) =>
+      checkPermi([permission])
+    );
+  }
+
   /** 关闭页面时取消本地后续动作，保留不确定提交的幂等内容。 */
   function suspend() {
     gate.invalidate();
@@ -43,7 +52,7 @@ export function useBatchSubmission() {
 
   /** 固定首次输入并复用同一编码；迟到回包不能触发新页面入队。 */
   async function submit(title: string, documents: BatchDocument[]): Promise<ReportResource | undefined> {
-    if (busy.value) return;
+    if (busy.value || !allowed()) return;
     if (!pending.value) {
       if (!title.trim() || !documents.length || documents.length > 50) {
         ElMessage.warning('请填写批次标题，并选择1至50份单据');
@@ -70,14 +79,25 @@ export function useBatchSubmission() {
         if (!gate.current(ticket)) return;
         created.value = result.data;
       }
+      if (!allowed()) {
+        ElMessage.warning('打印权限已变化，已知批次保持固定，请核对授权后继续');
+        return;
+      }
       stage.value = 'START';
       await startBatch(created.value.id);
       if (!gate.current(ticket)) return;
       stage.value = 'DONE';
       return created.value;
-    } catch {
+    } catch (error) {
+      const failure = await readReportFailure(error);
       if (gate.current(ticket)) {
-        ElMessage.warning(created.value ? '批次已创建，点击重试入队继续处理原批次' : '创建结果未确认，重试将沿用相同批次编码、版本和内容');
+        ElMessage.warning(
+          failure.code
+            ? failure.message
+            : created.value
+              ? '批次已创建，点击重试入队继续处理原批次'
+              : '创建结果未确认，重试将沿用相同批次编码、版本和内容'
+        );
       }
     } finally {
       if (gate.current(ticket)) busy.value = false;
