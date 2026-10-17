@@ -61,15 +61,28 @@ const mockPlugin = {
   name: 'report-ui-fixtures',
   /** 处理当前报表的 `setup` 操作。 */
   setup(b) {
-    b.onResolve({ filter: /^(@\/api\/report|@\/utils\/permission|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/ }, (a) => ({
-      path: a.path,
-      namespace: 'fixtures'
-    }));
+    b.onResolve(
+      {
+        filter:
+          /^(@\/api\/report(?:\/(?:assets|batch))?|@\/store\/modules\/user|@\/utils\/permission|vue-router|element-plus|file-saver|@element-plus\/icons-vue)$/
+      },
+      (a) => ({
+        path: a.path,
+        namespace: 'fixtures'
+      })
+    );
     b.onLoad({ filter: /.*/, namespace: 'fixtures' }, (a) => {
       let contents = '';
       if (a.path === '@/utils/permission') contents = 'export const checkPermi=()=>true;';
+      if (a.path === '@/store/modules/user') contents = 'export const useUserStore=()=>globalThis.__reportUI.user;';
       if (a.path === '@/api/report')
         contents = apiNames.map((n) => 'export const ' + n + '=(...args)=>globalThis.__reportUI.api["' + n + '"](...args);').join('\n');
+      if (a.path === '@/api/report/assets')
+        contents = 'export const listAssets=async()=>({data:[]});export const assetImage=async()=>new Blob([],{type:"image/png"});';
+      if (a.path === '@/api/report/batch')
+        contents = ['listBatches', 'createBatch', 'startBatch', 'batchItems', 'batchPdf']
+          .map((name) => 'export const ' + name + '=(...args)=>globalThis.__reportUI.api["' + name + '"]?.(...args);')
+          .join('\n');
       if (a.path === 'vue-router')
         contents =
           'export const useRoute=()=>globalThis.__reportUI.route; export const useRouter=()=>globalThis.__reportUI.router; export const onBeforeRouteLeave=f=>{globalThis.__reportUI.guards.leave=f;};export const onBeforeRouteUpdate=f=>{globalThis.__reportUI.guards.update=f;};';
@@ -231,6 +244,7 @@ async function flush() {
 /** 处理当前报表的 `mount` 操作。 */
 function mount(component, id = '9223372036854775806', overrides = {}, props = {}) {
   const fixture = {
+    user: reactive({ userId: '7' }),
     route: reactive({ query: { id } }),
     guards: {},
     messages: [],
@@ -997,15 +1011,22 @@ test('remote lookup discards results from an older search and keeps IDs exact', 
 });
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('business entry transfers the exact document ID and only the approved parameter', async (t) => {
-  const x = mount(business, 'A', {}, { datasetCode: 'ERP_PURCHASE_ORDER_DOCUMENT', parameter: 'orderId', recordId: '9223372036854775807' });
+  const x = mount(
+    business,
+    'A',
+    { businessReportTemplates: async () => ({ data: [{ id: 'report1', name: '采购单', kind: 'DOCUMENT', versionId: 'version1' }] }) },
+    { datasetCode: 'ERP_PURCHASE_ORDER_DOCUMENT', parameter: 'orderId', recordId: '9223372036854775807' }
+  );
   t.after(x.unmount);
   let route;
   x.fixture.router.push = (value) => {
     route = value;
   };
+  await x.state.load();
   x.state.open('report1');
   assert.equal(route.query.orderId, '9223372036854775807');
-  assert.deepEqual(Object.keys(route.query).sort(), ['id', 'orderId']);
+  assert.deepEqual(Object.keys(route.query).sort(), ['auto', 'id', 'orderId', 'versionId']);
+  assert.equal(route.query.versionId, 'version1');
 });
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('manual retry sends the displayed round and keeps the original job identity', async (t) => {

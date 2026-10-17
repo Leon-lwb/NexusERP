@@ -93,6 +93,7 @@
           >取消</el-button
         >
       </el-col>
+      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_SALES_ORDER_DOCUMENT" parameter="orderId" :record-ids="ids" /></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -128,8 +129,9 @@
           <dict-tag :options="so_order_status" :value="scope.row.orderStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" fixed="right" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="440" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
+          <BusinessReportButton dataset-code="ERP_SALES_ORDER_DOCUMENT" parameter="orderId" :record-id="scope.row.soId" />
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="warning" @click.stop="handleDeliveryDecision(scope.row)" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>
           <el-button
@@ -195,6 +197,7 @@
 </template>
 
 <script setup lang="ts" name="Orderheader">
+import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import {
   listOrderheader,
   getOrderheader,

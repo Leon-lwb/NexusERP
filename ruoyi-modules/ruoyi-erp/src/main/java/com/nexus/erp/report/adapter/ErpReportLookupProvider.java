@@ -36,6 +36,26 @@ public class ErpReportLookupProvider extends JdbcReportLookupProvider {
                             "client_name",
                             ValueType.ID),
                     rule(
+                            "ERP_SALES_ORDER_DOCUMENT",
+                            "orderId",
+                            "销售订单",
+                            "so:orderheader:query",
+                            "so_sales_order_header",
+                            "so_id",
+                            "so_no",
+                            "client_name",
+                            ValueType.ID),
+                    rule(
+                            "ERP_PURCHASE_RECEIVE_DOCUMENT",
+                            "receiveId",
+                            "采购收货单",
+                            "wm:receive:query",
+                            "wm_material_receive",
+                            "receive_id",
+                            "receive_code",
+                            "vendor_name",
+                            ValueType.ID),
+                    rule(
                             "ERP_SALES_EXECUTION",
                             "clientId",
                             "客户",
@@ -227,7 +247,7 @@ public class ErpReportLookupProvider extends JdbcReportLookupProvider {
                             ValueType.ID));
 
     /**
-     * 构建共享查询底座，保留原有六项绑定。
+     * 构建共享查询底座，保留既有版本一绑定并追加新单据规则。
      *
      * @param jdbc ERP动态数据源入口
      */

@@ -131,6 +131,7 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:receive:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_PURCHASE_RECEIVE_DOCUMENT" parameter="receiveId" :record-ids="ids" /></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -166,8 +167,9 @@
           <span v-else>-</span>
         </template>
       </el-table-column> -->
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" fixed="right" :show-overflow-tooltip="false">
         <template #default="scope">
+          <BusinessReportButton dataset-code="ERP_PURCHASE_RECEIVE_DOCUMENT" parameter="receiveId" :record-id="scope.row.receiveId" />
           <el-button link @click="openCertified(scope.row)" v-hasPermi="['wm:receive:query']">认证工作台</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['wm:receive:query']">查看</el-button>
           <el-dropdown
@@ -320,6 +322,7 @@
 </template>
 
 <script setup lang="ts" name="Receive">
+import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, confirmShelf, getReceiveProcId } from '@/api/erp/wm/receive';
 import type { ReceiveForm, ReceiveVO } from '@/api/erp/wm/receive/types';
 import { listArrivalnotice } from '@/api/erp/wm/arrivalnotice';

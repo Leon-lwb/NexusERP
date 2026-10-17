@@ -140,83 +140,28 @@
               ><el-button v-if="dsl.kind === 'DOCUMENT'" class="mt-2" @click="fitColumns(dsl)">适配纸张宽度</el-button>
             </aside>
             <main class="canvas-area" @dragover.prevent @drop.prevent="dropField">
-              <div class="canvas-title">{{ dsl.title }}</div>
-              <div v-for="band in bands" :key="band.key" class="band-section">
-                <div class="band-caption">
-                  <span>{{ band.label }}</span
-                  ><el-button link @click="addBand(band.key)">添加固定行</el-button>
-                </div>
-                <div v-if="dsl[band.key].length" class="band-grid" :style="bandGrid(band.key)">
-                  <template v-for="(row, r) in dsl[band.key]" :key="r"
-                    ><div
-                      v-for="(cell, c) in row.cells"
-                      :key="r + '-' + c"
-                      class="band-cell"
-                      role="button"
-                      tabindex="0"
-                      @keydown.enter.prevent="selection = { type: 'cell', band: band.key, row: r, cell: c }"
-                      @keydown.space.prevent="selection = { type: 'cell', band: band.key, row: r, cell: c }"
-                      :class="{ selected: isCellSelected(band.key, r, c) }"
-                      :style="{
-                        gridColumn: cell.column + 1 + ' / span ' + cell.colSpan,
-                        gridRow: r + 1 + ' / span ' + cell.rowSpan,
-                        textAlign: cell.style.align.toLowerCase() as 'left' | 'center' | 'right',
-                        color: cell.style.color,
-                        background: cell.style.background
-                      }"
-                      @click="selection = { type: 'cell', band: band.key, row: r, cell: c }"
-                    >
-                      {{ cell.text || (cell.field ? bindingLabel(cell.field) : '空白') }}
-                    </div></template
-                  >
-                </div>
-                <div v-for="(_, r) in dsl[band.key]" :key="'tools-' + r" class="band-row-tools">
-                  <small>固定行 {{ r + 1 }}</small
-                  ><el-button link @click="mergeRow(band.key, r)">整行合并</el-button
-                  ><el-button link @click="splitRow(band.key, r)">按列拆分</el-button
-                  ><el-button
-                    link
-                    type="danger"
-                    @click="
-                      dsl[band.key].splice(r, 1);
-                      selection = undefined;
-                    "
-                    >删除行</el-button
-                  >
-                </div>
-              </div>
-              <div class="detail-caption">可增长明细区 · {{ dsl.columns.length }} 列</div>
-              <div class="column-strip">
-                <div
-                  v-for="(column, index) in dsl.columns"
-                  :key="column.field"
-                  class="column-tile"
-                  role="button"
-                  tabindex="0"
-                  @keydown.enter.prevent="selection = { type: 'column', index }"
-                  @keydown.space.prevent="selection = { type: 'column', index }"
-                  :class="{ selected: selection?.type === 'column' && selection.index === index }"
-                  :style="{ minWidth: Math.max(80, column.width) + 'px' }"
-                  draggable="true"
-                  @dragstart="dragIndex = index"
-                  @dragover.prevent
-                  @drop.stop.prevent="reorder(index)"
-                  @click="selection = { type: 'column', index }"
-                >
-                  <strong>{{ column.label }}</strong>
-                  <div class="text-xs report-secondary">{{ column.field }}</div>
-                  <div class="example-cell">{{ column.expression ? '= ' + column.expression : '明细值' }}</div>
-                </div>
-              </div>
-              <p class="report-secondary text-xs">拖动列调整顺序；点选列或固定区域单元格，在右侧设置样式和绑定。</p>
+              <PaperGrid
+                v-model="dsl"
+                :disabled="saving || publishing || applying"
+                :selection="selection"
+                @select="selection = $event"
+                @add-band="addBand"
+                @field-drop="dropField"
+                @gesture="editingGesture = $event"
+              />
             </main>
             <aside class="property-panel">
               <h3>属性</h3>
               <el-form label-position="top" size="small">
                 <template v-if="selectedColumn"
                   ><el-form-item label="列标题"><el-input v-model="selectedColumn.label" /></el-form-item
-                  ><el-form-item label="宽度（pt）"
-                    ><el-input-number v-model="selectedColumn.width" :min="20" :max="600" :precision="2" /></el-form-item
+                  ><el-form-item label="宽度（mm）"
+                    ><el-input-number
+                      :model-value="ptToMm(selectedColumn.width)"
+                      :min="ptToMm(20)"
+                      :max="ptToMm(600)"
+                      :precision="2"
+                      @change="updateColumnWidth" /></el-form-item
                   ><el-form-item label="小数位"><el-input-number v-model="selectedColumn.scale" :min="0" :max="12" /></el-form-item
                   ><el-form-item label="计算表达式"
                     ><el-input v-model="selectedColumn.expression" placeholder="例如 ROUND(quantity * unitPrice, 2)" type="textarea" :rows="3"
@@ -225,13 +170,18 @@
                   <el-button type="danger" link :disabled="dsl.columns.length === 1" @click="deleteColumn">移除列</el-button></template
                 >
                 <template v-if="selectedCell"
-                  ><el-form-item label="固定行高度（pt）"><el-input-number v-model="selectedBandRow!.height" :min="12" :max="160" /></el-form-item
-                  ><el-form-item label="起始列（从 0 开始）"
-                    ><el-input-number v-model="selectedCell.column" :min="0" :max="dsl.columns.length - 1" /></el-form-item
-                  ><el-form-item label="合并列数"
-                    ><el-input-number v-model="selectedCell.colSpan" :min="1" :max="dsl.columns.length - selectedCell.column" /></el-form-item
-                  ><el-form-item label="合并行数"><el-input-number v-model="selectedCell.rowSpan" :min="1" :max="remainingBandRows" /></el-form-item
-                  ><el-form-item label="文本与绑定"
+                  ><el-form-item label="固定行高度（mm）"
+                    ><el-input-number
+                      :model-value="ptToMm(selectedBandRow!.height)"
+                      :min="ptToMm(12)"
+                      :max="ptToMm(160)"
+                      :precision="2"
+                      @change="updateRowHeight"
+                  /></el-form-item>
+                  <p class="report-secondary text-xs">
+                    当前跨 {{ selectedCell.colSpan }} 列、{{ selectedCell.rowSpan }} 行；在画布中选择矩形后合并或拆分。
+                  </p>
+                  <el-form-item label="文本与绑定"
                     ><el-input
                       v-model="selectedCell.text"
                       type="textarea"
@@ -263,13 +213,7 @@
         <el-tab-pane v-if="dsl.kind === 'DOCUMENT'" label="新版打印" name="print"
           ><PrintSettings v-model="dsl" :fields="selectedDataset?.descriptor.fields || []" :disabled="saving || publishing || applying"
         /></el-tab-pane>
-        <el-tab-pane label="纸张与分页" name="paper"
-          ><el-form inline label-position="top"
-            ><el-form-item v-for="setting in paperSettings" :key="setting.key" :label="setting.label + '（pt）'"
-              ><el-input-number v-model="dsl.page[setting.key]" :min="0" :max="1700" :precision="2" /></el-form-item
-            ><el-form-item label="续页列头"><el-switch v-model="dsl.repeatHeader" /></el-form-item></el-form
-          ><el-alert title="纸张尺寸、字体测量和换行由服务器统一计算；校验可检查越界与跨区合并。" type="info" :closable="false"
-        /></el-tab-pane>
+        <el-tab-pane label="纸张与分页" name="paper"><PaperSettings v-model="dsl" :disabled="saving || publishing || applying" /></el-tab-pane>
         <el-tab-pane label="查询参数" name="parameters"
           ><el-table :data="dsl.parameters" border
             ><el-table-column prop="name" label="参数绑定" /><el-table-column label="显示名称"
@@ -360,20 +304,11 @@ import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vu
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { saveAs } from 'file-saver';
 import { listDatasets, listCatalogs, reportDetail, createReport, saveReport, validateDraft, previewDraft, publishReport } from '@/api/report';
-import type {
-  DatasetView,
-  DatasetField,
-  ReportDsl,
-  ReportDefinition,
-  ReportCatalog,
-  ReportPage as ReportPageSettings,
-  DraftPreview
-} from '@/types/report';
+import type { DatasetView, DatasetField, ReportDsl, ReportDefinition, ReportCatalog, DraftPreview } from '@/types/report';
 import {
   createDsl,
   addField,
   removeColumn,
-  moveColumn,
   fitColumns,
   normalStyle,
   parameterInput,
@@ -392,6 +327,9 @@ import ReportPaper from '@/components/report/ReportPaper.vue';
 import DatasetContractBar from '@/components/report/DatasetContractBar.vue';
 import DesignerBatchTools from '@/components/report/DesignerBatchTools.vue';
 import PrintSettings from '@/components/report/PrintSettings.vue';
+import PaperGrid from '@/components/report/designer/PaperGrid.vue';
+import PaperSettings from '@/components/report/designer/PaperSettings.vue';
+import { mmToPt, ptToMm, resizeColumn, resizeBandRow } from './gridCommands';
 import { editorIssues, boundDataset } from './editorCommands';
 import { exportTemplatePackage } from '@/api/report';
 import type { DatasetVersionView } from '@/types/report';
@@ -468,6 +406,8 @@ const jsonBaseline = ref('');
  * 保存当前页面或测试的applying状态。
  */
 const applying = ref(false);
+/** 正在进行的画布手势必须完成后才能保存。 */
+const editingGesture = ref(false);
 /**
  * 保存当前页面或测试的editorContext状态。
  */
@@ -508,10 +448,6 @@ const loadGate = new RequestGate();
  * 保存当前页面或测试的previewGate状态。
  */
 const previewGate = new RequestGate();
-/**
- * 保存当前页面或测试的dragIndex状态。
- */
-let dragIndex = -1;
 /** 声明Band结构，保留服务端精确值和固定版本约束。 */
 type Band = 'headerRows' | 'footerRows';
 /** 声明Selection结构，保留服务端精确值和固定版本约束。 */
@@ -537,35 +473,6 @@ type Selection =
  */
 const selection = ref<Selection>();
 /**
- * 保存当前页面或测试的bands状态。
- */
-const bands: {
-  /** 保存当前 `key` 值。 */
-  key: Band;
-  /** 保存展示标题。 */
-  label: string;
-}[] = [
-  { key: 'headerRows', label: '固定页眉' },
-  { key: 'footerRows', label: '末页固定区' }
-];
-/**
- * 保存当前页面或测试的paperSettings状态。
- */
-const paperSettings: {
-  /** 保存当前 `key` 值。 */
-  key: keyof ReportPageSettings;
-  /** 保存展示标题。 */
-  label: string;
-}[] = [
-  { key: 'width', label: '纸张宽度' },
-  { key: 'height', label: '纸张高度' },
-  { key: 'marginTop', label: '上边距' },
-  { key: 'marginRight', label: '右边距' },
-  { key: 'marginBottom', label: '下边距' },
-  { key: 'marginLeft', label: '左边距' },
-  { key: 'rowHeight', label: '明细行高' }
-];
-/**
  * 保存当前页面或测试的selectedDataset状态。
  */
 const selectedDataset = computed(() => boundDataset(datasets.value, dsl.value, boundVersion.value));
@@ -589,12 +496,6 @@ const selectedBandRow = computed(() => (selection.value?.type === 'cell' ? dsl.v
  * 保存当前页面或测试的selectedCell状态。
  */
 const selectedCell = computed(() => (selection.value?.type === 'cell' ? selectedBandRow.value?.cells[selection.value.cell] : undefined));
-/**
- * 保存当前页面或测试的remainingBandRows状态。
- */
-const remainingBandRows = computed(() =>
-  selection.value?.type === 'cell' ? (dsl.value?.[selection.value.band].length || 0) - selection.value.row : 1
-);
 /**
  * 保存当前页面或测试的selectedStyle状态。
  */
@@ -686,14 +587,6 @@ function dropField(event: DragEvent) {
   const field = selectedDataset.value?.descriptor.fields.find((f) => f.name === name);
   if (field) insertField(field);
 }
-/** 处理当前报表的 `reorder` 操作。 */
-function reorder(index: number) {
-  if (dsl.value && dragIndex >= 0) {
-    dsl.value = moveColumn(dsl.value, dragIndex, index);
-    selection.value = { type: 'column', index };
-    dragIndex = -1;
-  }
-}
 /** 处理当前报表的 `insertFormula` 操作。 */
 async function insertFormula() {
   if (!dsl.value) return;
@@ -730,41 +623,19 @@ function addBand(band: Band) {
   });
   selection.value = { type: 'cell', band, row: dsl.value[band].length - 1, cell: 0 };
 }
-/** 处理当前报表的 `mergeRow` 操作。 */
-function mergeRow(band: Band, index: number) {
-  if (!dsl.value) return;
-  const row = dsl.value[band][index];
-  row.cells = [{ column: 0, colSpan: dsl.value.columns.length, rowSpan: 1, text: row.cells[0]?.text || '', field: null, style: normalStyle() }];
-  selection.value = { type: 'cell', band, row: index, cell: 0 };
+/** 毫米列宽修改保持单据总宽并形成独立历史。 */
+function updateColumnWidth(value: number | undefined) {
+  if (value === undefined || !dsl.value || selection.value?.type !== 'column') return;
+  try {
+    dsl.value = resizeColumn(dsl.value, selection.value.index, mmToPt(value));
+  } catch (error) {
+    ElMessage.warning((error as Error).message);
+  }
 }
-/** 处理当前报表的 `splitRow` 操作。 */
-function splitRow(band: Band, index: number) {
-  if (!dsl.value) return;
-  const row = dsl.value[band][index];
-  row.cells = dsl.value.columns.map((_, c) => ({
-    column: c,
-    colSpan: 1,
-    rowSpan: 1,
-    text: c === 0 ? row.cells[0]?.text || '' : '',
-    field: null,
-    style: normalStyle()
-  }));
-  selection.value = { type: 'cell', band, row: index, cell: 0 };
-}
-/** 处理当前报表的 `bindingLabel` 操作。 */
-function bindingLabel(field: string) {
-  return '{{' + field + '}}';
-}
-/** 处理当前报表的 `isCellSelected` 操作。 */
-function isCellSelected(band: Band, row: number, cell: number) {
-  return selection.value?.type === 'cell' && selection.value.band === band && selection.value.row === row && selection.value.cell === cell;
-}
-/** 处理当前报表的 `bandGrid` 操作。 */
-function bandGrid(band: Band) {
-  return {
-    gridTemplateColumns: dsl.value!.columns.map((c) => c.width + 'fr').join(' '),
-    gridTemplateRows: dsl.value![band].map((r) => Math.max(32, r.height) + 'px').join(' ')
-  };
+/** 固定行毫米输入复用画布同一高度边界。 */
+function updateRowHeight(value: number | undefined) {
+  if (value === undefined || !dsl.value || selection.value?.type !== 'cell' || !selectedBandRow.value) return;
+  dsl.value = resizeBandRow(dsl.value, selection.value.band, selection.value.row, mmToPt(value) - selectedBandRow.value.height);
 }
 /** 处理当前报表的 `addSummary` 操作。 */
 function addSummary() {
@@ -794,6 +665,10 @@ async function save(): Promise<boolean> {
 /** 处理当前报表的 `persistDraft` 操作。 */
 async function persistDraft(): Promise<boolean> {
   if (!dsl.value || saving.value || applying.value) return false;
+  if (editingGesture.value) {
+    ElMessage.warning('请完成当前拖动后再保存');
+    return false;
+  }
   if (jsonDirty.value) {
     ElMessage.warning('请先校验并应用定义文件中的更改');
     return false;

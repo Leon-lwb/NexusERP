@@ -33,6 +33,12 @@ export interface BatchItem {
    * 当前契约的error配置或状态
    */
   error: string | null;
+  /** 是否允许在固定快照与有效期内重试原任务。 */
+  canRetry: boolean;
+  /** 当前可见轮次，作为重试的预期轮次传回。 */
+  retryRound: number;
+  /** 原任务固定有效期，未入队项为null。 */
+  expires: string | null;
 }
 /** 可访问批次目录。 */
 export const listBatches = (): Promise<{
@@ -63,3 +69,7 @@ export const batchItems = (
    */
   data: BatchItem[];
 }> => request({ url: '/report/batches/' + id + '/items' });
+
+/** 所有项成功后按固定顺序领取合并PDF，权限和有效期由后端重新检查。 */
+export const batchPdf = (id: string): Promise<Blob> =>
+  request({ url: '/report/batches/' + id + '/pdf', method: 'get', responseType: 'blob', timeout: 120000 });

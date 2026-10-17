@@ -452,6 +452,21 @@ public class ReportConfiguration {
     }
 
     /**
+     * 同步合并只消费原任务文件，沿用私有物化、暂存和硬配额。
+     *
+     * @param batches 固定批次及其鉴权入口
+     * @param artifacts 私有存储契约
+     * @param properties 批次及产物容量限制
+     * @return 不创建第二套队列的PDF合并服务
+     */
+    @Bean
+    public com.nexus.report.batch.ReportBatchPdfService reportBatchPdfService(
+            com.nexus.report.batch.ReportBatchService batches,
+            ReportArtifactStore artifacts, ReportProperties properties) {
+        return new com.nexus.report.batch.ReportBatchPdfService(batches, artifacts, properties);
+    }
+
+    /**
      * 私有图片服务与定义服务无循环依赖。
      *
      * @param resources 当前契约的resources配置或状态

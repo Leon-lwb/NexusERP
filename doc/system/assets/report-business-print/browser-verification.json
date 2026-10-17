@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "desktop": "1440x1100",
+  "mobile": "390x1000",
+  "pointerCommits": 1,
+  "escapeCancelsWithToolbarFocus": true,
+  "mediaDragChangesCoordinates": true,
+  "widthPreserved": true,
+  "privateAssetVersion": "9223372036854775807",
+  "consoleExceptions": []
+}

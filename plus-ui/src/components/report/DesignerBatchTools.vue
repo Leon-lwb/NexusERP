@@ -14,13 +14,13 @@
     <el-slider
       v-if="selected.length"
       v-model="width"
-      :min="30"
-      :max="500"
-      :step="1"
+      :min="ptToMm(20)"
+      :max="ptToMm(600)"
+      :step="0.5"
       :disabled="disabled"
       style="width: 150px"
       @change="resize"
-    /><span v-if="selected.length">列宽 {{ width }} pt</span>
+    /><span v-if="selected.length">列宽 {{ width.toFixed(1) }} mm</span>
   </div>
 </template>
 <script setup lang="ts">
@@ -30,6 +30,7 @@ import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { ReportDsl, ReportStyle } from '@/types/report';
 import { styleColumns, copyColumns, pasteColumns } from '@/views/report/designer/editorCommands';
+import { mmToPt, ptToMm, updatePaper } from '@/views/report/designer/gridCommands';
 /**
  * 保存当前页面或测试的alignments状态。
  */
@@ -67,7 +68,7 @@ const color = ref('#1f2937');
 /**
  * 保存当前页面或测试的width状态。
  */
-const width = ref(100);
+const width = ref(ptToMm(100));
 /**
  * 保存当前页面或测试的clipboard状态。
  */
@@ -87,7 +88,7 @@ watch(
   selected,
   () => {
     const first = selectedIndices.value[0];
-    if (first !== undefined) width.value = props.modelValue.columns[first].width;
+    if (first !== undefined) width.value = ptToMm(props.modelValue.columns[first].width);
   },
   { deep: true }
 );
@@ -127,7 +128,11 @@ function paste() {
 function resize() {
   if (props.disabled) return;
   const value = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
-  selectedIndices.value.forEach((i) => (value.columns[i].width = width.value));
-  emit('update:modelValue', value);
+  selectedIndices.value.forEach((index) => (value.columns[index].width = mmToPt(width.value)));
+  try {
+    emit('update:modelValue', value.kind === 'DOCUMENT' ? updatePaper(value, {}) : value);
+  } catch (error) {
+    ElMessage.warning((error as Error).message);
+  }
 }
 </script>

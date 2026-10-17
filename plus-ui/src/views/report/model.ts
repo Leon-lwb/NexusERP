@@ -56,7 +56,7 @@ export function createDsl(descriptor: DatasetDescriptor, datasetVersionId: strin
 }
 /** 按相对宽度适配纸张可用区域。 */
 export function fitColumns(dsl: ReportDsl): void {
-  const width = dsl.page.width - dsl.page.marginLeft - dsl.page.marginRight;
+  const width = (dsl.print?.orientation === 'LANDSCAPE' ? dsl.page.height : dsl.page.width) - dsl.page.marginLeft - dsl.page.marginRight;
   const total = dsl.columns.reduce((sum, c) => sum + c.width, 0);
   dsl.columns.forEach((c) => {
     c.width = (width * c.width) / total;

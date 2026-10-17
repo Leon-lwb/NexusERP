@@ -5,6 +5,65 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /** 可信服务端报表配置，限制工作线程、容量、保留期、字体和禁用引擎。 */
 @ConfigurationProperties(prefix = "nexus.report")
 public class ReportProperties {
+    /** 批次合并的独立有界配置，不改变单份报表任务限制。 */
+    private final Batch batch = new Batch();
+
+    /**
+     * 获取批次合并限制。
+     *
+     * @return 可由配置绑定的批次限制
+     */
+    public Batch getBatch() {
+        return batch;
+    }
+
+    /** 批次同步合并只允许最多一千页、一分钟。 */
+    public static final class Batch {
+        /** 所有子单据累计的最大页数。 */
+        private int maxPages = 1000;
+
+        /** 合并及领取生命周期允许的最大秒数。 */
+        private int mergeSeconds = 60;
+
+        /**
+         * 获取累计页数上限。
+         *
+         * @return 一至一千页
+         */
+        public int getMaxPages() {
+            return maxPages;
+        }
+
+        /**
+         * 绑定累计页数，不能扩大既定安全边界。
+         *
+         * @param value 累计页数上限
+         */
+        public void setMaxPages(int value) {
+            if (value < 1 || value > 1000) throw new IllegalArgumentException("批次PDF页数范围1–1000");
+            maxPages = value;
+        }
+
+        /**
+         * 获取合并及领取期限。
+         *
+         * @return 一至六十秒
+         */
+        public int getMergeSeconds() {
+            return mergeSeconds;
+        }
+
+        /**
+         * 绑定期限，不能关闭超时或超过六十秒。
+         *
+         * @param value 合并及领取允许的最大秒数
+         */
+        public void setMergeSeconds(int value) {
+            if (value < 1 || value > 60) throw new IllegalArgumentException("批次PDF期限范围1–60秒");
+            mergeSeconds = value;
+        }
+    }
+
     /** 保存当前 {@code disabledEngines} 值。 */
     private java.util.Set<String> disabledEngines = java.util.Set.of();
 

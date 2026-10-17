@@ -70,19 +70,47 @@
             <h2>运行结果</h2>
             <p class="report-section-description">{{ run ? '结果按本次运行的数据范围展示' : '运行后在此查看数据、汇总与打印版式' }}</p>
           </div>
-          <el-dropdown v-if="run" v-hasPermi="['report:runtime:export']" :disabled="exporting" @command="exportReport"
-            ><el-button :loading="exporting" icon="Download"
-              >创建导出<el-icon class="ml-2"><ArrowDown /></el-icon></el-button
-            ><template #dropdown
-              ><el-dropdown-menu
-                ><el-dropdown-item v-for="format in availableFormats" :key="format" :command="format">{{
-                  formatLabels[format]
-                }}</el-dropdown-item></el-dropdown-menu
-              ></template
-            ></el-dropdown
-          >
+          <div class="viewer-export-actions">
+            <el-button
+              v-if="run && published.dsl.kind === 'DOCUMENT'"
+              v-hasPermi="['report:runtime:export']"
+              type="primary"
+              icon="Printer"
+              :loading="printing"
+              @click="printPdf"
+              >打印PDF</el-button
+            >
+            <el-dropdown v-if="run" v-hasPermi="['report:runtime:export']" :disabled="exporting" @command="exportReport"
+              ><el-button :loading="exporting" icon="Download"
+                >创建导出<el-icon class="ml-2"><ArrowDown /></el-icon></el-button
+              ><template #dropdown
+                ><el-dropdown-menu
+                  ><el-dropdown-item v-for="format in availableFormats" :key="format" :command="format">{{
+                    formatLabels[format]
+                  }}</el-dropdown-item></el-dropdown-menu
+                ></template
+              ></el-dropdown
+            >
+          </div>
         </div>
         <el-alert v-if="runFailed" :title="runFailed" type="error" show-icon :closable="false" class="mb-4" />
+        <div v-if="printJob || printError" class="mb-4" aria-live="polite">
+          <span v-if="printJob"
+            >PDF任务：{{ printJob.id }} · {{ printJob.state }} · {{ printJob.phase || '' }} {{ printJob.processedRows ?? 0
+            }}<span v-if="printJob.totalRows != null"> / {{ printJob.totalRows }}</span></span
+          >
+          <el-alert v-if="printError" :title="printError" type="error" :closable="false" />
+          <el-button v-if="printJob?.canRetry" v-hasPermi="['report:runtime:export']" link :disabled="printing" @click="retryPrint"
+            >重试原PDF任务</el-button
+          >
+          <el-button
+            v-if="printJob && printError && ['QUEUED', 'RUNNING', 'CANCEL_REQUESTED'].includes(printJob.state)"
+            v-hasPermi="['report:runtime:export']"
+            link
+            @click="pollPrint"
+            >刷新任务进度</el-button
+          >
+        </div>
         <div v-if="run && data" class="report-result-meta">
           <el-tag :type="run.mode === 'SNAPSHOT' ? 'success' : 'info'" effect="plain">{{ run.mode === 'SNAPSHOT' ? '固定快照' : '实时分页' }}</el-tag
           ><span>数据时间：{{ data.dataTime }}</span
@@ -115,24 +143,41 @@
       </el-card>
     </template>
   </ReportPage>
+  <ReportPdfPreview
+    v-model:open="pdfOpen"
+    :source-id="printJob?.id || ''"
+    :load="loadPrintPdf"
+    :filename="`nexus-report-${printJob?.id || ''}.pdf`"
+    :can-download="ownsPrint"
+  />
 </template>
 <script setup lang="ts">
 /** 原生报表页面组件，沿用权限、精确值和固定契约行为。 */
 
-import { ref, computed, watch, onUnmounted } from 'vue';
+import { ref, computed, watch, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { createRequestKey } from '@/utils/requestKey';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue';
-import { publishedReport, createRun, runPage, runLayout, enqueueExport } from '@/api/report';
-import type { PublishedReport, ReportRun, PageData, RenderPlan, ExportFormat } from '@/types/report';
-import { parameterInput, requiredParameterMessage, exportFormats, requiresSnapshot as snapshotRequired, RequestGate } from '@/views/report/model';
+import { publishedReport, createRun, runPage, runLayout, enqueueExport, listExportJobs, downloadExport, retryExport } from '@/api/report';
+import { useUserStore } from '@/store/modules/user';
+import { checkPermi } from '@/utils/permission';
+import type { PublishedReport, ReportRun, PageData, RenderPlan, ExportFormat, ExportJob } from '@/types/report';
+import {
+  parameterInput,
+  requiredParameterMessage,
+  exportFormats,
+  requiresSnapshot as snapshotRequired,
+  jobError,
+  RequestGate
+} from '@/views/report/model';
 import { summaryGroupText } from '@/views/report/presentation';
 import ReportPage from '@/components/report/ReportPage.vue';
 import ParameterForm from '@/components/report/ParameterForm.vue';
 import TypedTable from '@/components/report/TypedTable.vue';
 import ReportPaper from '@/components/report/ReportPaper.vue';
 import PivotTable from '@/components/report/PivotTable.vue';
+import ReportPdfPreview from '@/components/report/ReportPdfPreview.vue';
 defineOptions({ name: 'ReportViewer' });
 /**
  * 保存当前页面或测试的route状态。
@@ -142,6 +187,20 @@ const route = useRoute();
  * 保存当前页面或测试的router状态。
  */
 const router = useRouter();
+const userStore = useUserStore();
+const printJob = ref<ExportJob>();
+const printing = ref(false);
+const printError = ref('');
+const pdfOpen = ref(false);
+const printOwner = ref('');
+const ownsPrint = computed(() => !!printOwner.value && printOwner.value === String(userStore.userId) && checkPermi(['report:runtime:export']));
+const printGate = new RequestGate();
+let printTimer: ReturnType<typeof setTimeout> | undefined;
+let printPolling = false;
+let active = true;
+let routeNames: string[] = [];
+let loadedRouteSignature = '';
+const autoAttempts = new Set<string>();
 /**
  * 保存当前页面或测试的published状态。
  */
@@ -230,6 +289,7 @@ const requiresSnapshot = computed(() => !!published.value && snapshotRequired(pu
 const availableFormats = computed(() => exportFormats(run.value?.mode || 'LIVE', data.value?.total || 0));
 /** 处理当前报表的 `invalidate` 操作。 */
 function invalidate() {
+  stopPrint();
   runFailed.value = '';
   pageLoading.value = false;
   gate.invalidate();
@@ -249,6 +309,7 @@ async function load() {
   published.value = undefined;
   parameters.value = {};
   const id = String(route.query.id || '');
+  loadedRouteSignature = routeSignature();
   loading.value = false;
   if (!id) return;
   const ticket = gate.begin();
@@ -256,22 +317,48 @@ async function load() {
   try {
     const response = await publishedReport(id);
     if (gate.current(ticket)) {
+      if (typeof route.query.versionId === 'string' && response.data.versionId !== route.query.versionId) {
+        loadFailed.value = true;
+        ElMessage.warning('模板发布版本已变化，请返回业务列表重新选择');
+        return;
+      }
       published.value = response.data;
-      for (const parameter of response.data.dsl.parameters) {
-        const value = route.query[parameter.name];
-        if (typeof value === 'string' && value.length <= 200) parameters.value[parameter.name] = value;
+      routeNames = (response.data.effectiveParameters ?? response.data.dsl.parameters).map((parameter) => parameter.name);
+      for (const name of routeNames) {
+        const value = route.query[name];
+        if (typeof value === 'string' && value.length <= 200) parameters.value[name] = value;
       }
       mode.value = response.data.dsl.kind === 'DOCUMENT' || requiresSnapshot.value ? 'SNAPSHOT' : 'LIVE';
+      loadedRouteSignature = routeSignature();
     }
   } catch {
     if (gate.current(ticket)) loadFailed.value = true;
   } finally {
     if (gate.current(ticket)) loading.value = false;
   }
+  if (
+    gate.current(ticket) &&
+    published.value?.dsl.kind === 'DOCUMENT' &&
+    route.query.auto === '1' &&
+    checkPermi(['report:runtime:preview']) &&
+    !autoAttempts.has(loadedRouteSignature)
+  ) {
+    autoAttempts.add(loadedRouteSignature);
+    await execute();
+  }
+}
+/** 只把报表、版本及声明的业务参数纳入路由身份，无关query不重查。 */
+function routeSignature(): string {
+  return JSON.stringify([
+    route.query.id ?? '',
+    route.query.versionId ?? '',
+    route.query.auto ?? '',
+    ...routeNames.map((name) => [name, route.query[name] ?? ''])
+  ]);
 }
 /** 以当前任务围栏执行取数和导出。 */
 async function execute() {
-  if (!published.value || running.value) return;
+  if (!published.value || running.value || !checkPermi(['report:runtime:preview'])) return;
   const invalid = requiredParameterMessage(published.value.effectiveParameters ?? published.value.dsl.parameters, parameters.value);
   if (invalid) {
     invalidate();
@@ -287,6 +374,10 @@ async function execute() {
   try {
     const result = await createRun(String(route.query.id), mode.value, parameterInput(parameters.value));
     if (!gate.current(ticket)) return;
+    if (result.data.version && result.data.version !== published.value.versionId) {
+      runFailed.value = '模板发布版本已变化，请返回业务列表重新选择后再运行。';
+      return;
+    }
     run.value = result.data;
     const response = await runPage(result.data.id, 1, size.value);
     if (!gate.current(ticket)) return;
@@ -338,7 +429,7 @@ function sortChanged(field: string | undefined, desc: boolean) {
 }
 /** 处理当前报表的 `exportReport` 操作。 */
 async function exportReport(format: ExportFormat) {
-  if (!run.value || exporting.value || !availableFormats.value.includes(format)) return;
+  if (!run.value || exporting.value || !availableFormats.value.includes(format) || !checkPermi(['report:runtime:export'])) return;
   const ticket = exportGate.begin();
   const origin = run.value.id;
   const signature = origin + ':' + format;
@@ -363,7 +454,140 @@ async function exportReport(format: ExportFormat) {
     if (exportGate.current(ticket)) exporting.value = false;
   }
 }
-watch(() => route.query, load, { immediate: true, deep: true, flush: 'sync' });
+/** 停止轮询并清除旧run对应的本地文件入口。 */
+function stopPrint() {
+  printGate.invalidate();
+  if (printTimer) clearTimeout(printTimer);
+  printTimer = undefined;
+  printPolling = false;
+  printing.value = false;
+  pdfOpen.value = false;
+  printJob.value = undefined;
+  printOwner.value = '';
+  printError.value = '';
+}
+
+/** 现有任务结束后只领取该任务文件，活动任务按固定间隔继续观察。 */
+function trackPrint() {
+  if (printTimer) clearTimeout(printTimer);
+  printTimer = undefined;
+  const job = printJob.value;
+  if (!active || !job || !ownsPrint.value) return;
+  if (job.state === 'SUCCEEDED') {
+    printing.value = false;
+    pdfOpen.value = true;
+  } else if (['FAILED', 'CANCELLED', 'EXPIRED'].includes(job.state)) {
+    printing.value = false;
+    printError.value = jobError(job.error) || 'PDF任务不可继续，请重新运行报表';
+  } else {
+    printing.value = true;
+    printTimer = setTimeout(() => {
+      void pollPrint();
+    }, 2500);
+  }
+}
+
+/** 打印复用当前固定快照和PDF导出的幂等键，绝不再次取业务数据。 */
+async function printPdf() {
+  if (!active || !run.value || run.value.mode !== 'SNAPSHOT' || !checkPermi(['report:runtime:export'])) return;
+  if (printJob.value) {
+    if (printJob.value.state === 'SUCCEEDED') pdfOpen.value = ownsPrint.value;
+    else await pollPrint();
+    return;
+  }
+  if (printing.value) return;
+  const origin = run.value.id;
+  const owner = String(userStore.userId);
+  const signature = origin + ':PDF';
+  let requestKey = keys.get(signature);
+  if (!requestKey) {
+    try {
+      requestKey = createRequestKey();
+    } catch {
+      ElMessage.error('当前浏览器缺少安全随机能力，无法创建PDF任务，请更新浏览器后重试');
+      return;
+    }
+    keys.set(signature, requestKey);
+  }
+  const ticket = printGate.begin();
+  printing.value = true;
+  printError.value = '';
+  try {
+    const result = await enqueueExport(origin, 'PDF', requestKey);
+    if (!printGate.current(ticket) || run.value?.id !== origin || String(userStore.userId) !== owner) return;
+    printJob.value = result.data;
+    printOwner.value = owner;
+    trackPrint();
+  } catch {
+    if (printGate.current(ticket)) {
+      printing.value = false;
+      printError.value = 'PDF入队结果未确认，重试将复用同一个请求标识';
+    }
+  }
+}
+
+/** 只跟踪当前run的同一job，切换参数、账号或卸载后不处理晚响应。 */
+async function pollPrint() {
+  if (!active || printPolling || !printJob.value || !run.value || !ownsPrint.value) return;
+  if (['SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(printJob.value.state)) return;
+  const ticket = printGate.begin();
+  const jobId = printJob.value.id;
+  const origin = run.value.id;
+  printPolling = true;
+  if (printTimer) clearTimeout(printTimer);
+  printTimer = undefined;
+  try {
+    const response = await listExportJobs();
+    if (!printGate.current(ticket) || run.value?.id !== origin || !ownsPrint.value) return;
+    const job = response.data.find((entry) => entry.id === jobId && entry.runId === origin);
+    if (!job) {
+      printing.value = false;
+      printError.value = '原PDF任务已不可访问或已过期，请刷新导出中心核对';
+      return;
+    }
+    printJob.value = job;
+    printError.value = '';
+    trackPrint();
+  } catch {
+    if (printGate.current(ticket)) {
+      printing.value = false;
+      printError.value = '任务进度读取失败，请刷新同一任务的进度';
+    }
+  } finally {
+    if (printGate.current(ticket)) printPolling = false;
+  }
+}
+
+/** 可恢复失败只按显示轮次重试原任务，快照和有效期保持固定。 */
+async function retryPrint() {
+  if (!printJob.value?.canRetry || !ownsPrint.value || printing.value) return;
+  const ticket = printGate.begin();
+  const job = printJob.value;
+  printing.value = true;
+  try {
+    await retryExport(job.id, job.retryRound ?? 0);
+    if (!printGate.current(ticket)) return;
+    printJob.value = { ...job, state: 'QUEUED', canRetry: false };
+    printError.value = '';
+    trackPrint();
+  } catch {
+    if (printGate.current(ticket)) printing.value = false;
+  }
+}
+
+/** 文件来自同一job，当前run和owner不匹配时拒绝读取。 */
+async function loadPrintPdf(): Promise<Blob> {
+  if (!ownsPrint.value || printJob.value?.state !== 'SUCCEEDED' || printJob.value.runId !== run.value?.id) throw new Error('PDF任务不可领取');
+  return downloadExport(printJob.value.id);
+}
+
+watch(
+  () => route.query,
+  () => {
+    if (active && routeSignature() !== loadedRouteSignature) void load();
+  },
+  { immediate: true, deep: true, flush: 'sync' }
+);
 watch(
   parameters,
   () => {
@@ -378,7 +602,21 @@ watch(
   },
   { flush: 'sync' }
 );
-onUnmounted(invalidate);
+watch(() => [userStore.userId, userStore.tenantId], invalidate, { flush: 'sync' });
+onDeactivated(() => {
+  active = false;
+  invalidate();
+});
+onActivated(() => {
+  if (!active) {
+    active = true;
+    void load();
+  }
+});
+onUnmounted(() => {
+  active = false;
+  invalidate();
+});
 </script>
 <style scoped>
 .run-toolbar {
@@ -387,6 +625,12 @@ onUnmounted(invalidate);
   gap: 12px;
   flex-wrap: wrap;
   padding-top: 8px;
+}
+.viewer-export-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .viewer-results {
   min-height: 300px;

@@ -68,6 +68,7 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:salesIssue:export']"> 导出 </el-button>
       </el-col>
+      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_DELIVERY_DOCUMENT" parameter="issueId" :record-ids="ids" /></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 

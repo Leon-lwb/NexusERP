@@ -60,6 +60,10 @@ public final class ReportTemplates {
             String line =
                     switch (d.code()) {
                         case "ERP_PURCHASE_ORDER_DOCUMENT" -> "采购单号：{{orderNo}}";
+                        case "ERP_SALES_ORDER_DOCUMENT" ->
+                                "销售单号：{{orderNo}}    交期：{{promiseDate}}    币种：{{currency}}";
+                        case "ERP_PURCHASE_RECEIVE_DOCUMENT" ->
+                                "收货单号：{{receiveNo}}    来源采购单：{{purchaseOrderNo}}";
                         case "ERP_DELIVERY_DOCUMENT" -> "送货单号：{{issueNo}}";
                         case "MES_IQC_TRACE" -> "检验单号：{{iqcNo}}";
                         default -> "记录数：{{row_count}}";
@@ -68,6 +72,9 @@ public final class ReportTemplates {
                     switch (d.code()) {
                         case "ERP_PURCHASE_ORDER_DOCUMENT" ->
                                 "供应商：{{vendorName}}    日期：{{orderDate}}";
+                        case "ERP_SALES_ORDER_DOCUMENT" -> "客户：{{clientName}}    日期：{{orderDate}}";
+                        case "ERP_PURCHASE_RECEIVE_DOCUMENT" ->
+                                "供应商：{{vendorName}}    仓库：{{warehouseName}}    日期：{{receiveDate}}";
                         case "ERP_DELIVERY_DOCUMENT" -> "客户：{{clientName}}    日期：{{issueDate}}";
                         case "MES_IQC_TRACE" -> "供应商：{{vendorName}}    检验人：{{inspectorName}}";
                         default -> "";
@@ -87,6 +94,8 @@ public final class ReportTemplates {
                                         ? "订单金额：{{orderAmount}} {{currency}}"
                                         : "采购确认：";
                         case "MES_IQC_TRACE" -> "检验时间：{{inspectTime}}";
+                        case "ERP_SALES_ORDER_DOCUMENT" -> "客户确认：";
+                        case "ERP_PURCHASE_RECEIVE_DOCUMENT" -> "收货确认：";
                         default -> "签收：";
                     };
             footer.add(

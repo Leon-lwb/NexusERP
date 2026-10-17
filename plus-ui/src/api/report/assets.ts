@@ -1,5 +1,8 @@
 import request from '@/utils/request';
 import type { ReportResource } from './query';
+/** 通过当前认证代理读取私有版本，避免公开地址和URL令牌。 */
+export const assetImage = (versionId: string): Promise<Blob> =>
+  request({ url: '/report/assets/versions/' + versionId + '/file', responseType: 'blob' });
 /** 私有图片目录，资源版本ID始终使用字符串。 */
 export const listAssets = (): Promise<{
   /**

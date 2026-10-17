@@ -1,132 +1,185 @@
 <template>
   <div>
-    <el-alert
-      title="第二版打印使用固定图片版本与服务器条码。保存和发布后形成新版本，历史运行继续使用原计划。"
-      type="info"
-      :closable="false"
-      class="mb-3"
-    /><el-button v-if="!modelValue.print" :disabled="disabled || modelValue.kind !== 'DOCUMENT'" @click="enable">启用第二版打印</el-button>
-    <el-form v-else :disabled="disabled" label-width="100px"
-      ><el-form-item label="纸张方向"
-        ><el-select :model-value="modelValue.print.orientation" @change="patch({ orientation: $event })"
-          ><el-option label="纵向" value="PORTRAIT" /><el-option label="横向" value="LANDSCAPE" /></el-select></el-form-item
-      ><el-form-item label="分组字段"
+    <el-alert title="第二版打印绑定固定图片版本与业务条码；媒体也可在纸张画布上拖动和缩放。" type="info" :closable="false" class="mb-3" />
+    <el-button v-if="!modelValue.print" :disabled="disabled || modelValue.kind !== 'DOCUMENT'" @click="enable">启用第二版打印</el-button>
+    <el-form v-else :disabled="disabled" label-width="100px">
+      <el-form-item label="分组字段"
         ><el-select :model-value="modelValue.print.groupBy" multiple :multiple-limit="3" @change="patch({ groupBy: $event })"
-          ><el-option v-for="field in fields" :key="field.name" :label="field.label" :value="field.name" /></el-select></el-form-item
-      ><el-form-item label="重复页脚"
-        ><el-switch :model-value="modelValue.print.repeatFooter" @change="patch({ repeatFooter: !!$event })" /><span class="ml-2"
-          >使用末页固定区，保留原始明细行数</span
+          ><el-option v-for="field in fields" :key="field.name" :label="field.label" :value="field.name" /></el-select
+      ></el-form-item>
+      <el-form-item label="重复页脚"
+        ><el-switch :model-value="modelValue.print.repeatFooter" @change="patch({ repeatFooter: !!$event })"
+      /></el-form-item>
+      <el-form-item label="固定媒体"
+        ><el-button :disabled="modelValue.print.media.length >= 6" @click="add('QR')">添加 QR</el-button
+        ><el-button :disabled="modelValue.print.media.length >= 6" @click="add('CODE128')">添加 Code128</el-button
+        ><el-button v-hasPermi="['report:asset:list']" :disabled="modelValue.print.media.length >= 6" @click="openPicker(-1)"
+          >添加私有图片</el-button
         ></el-form-item
       >
-      <el-form-item label="固定媒体"
-        ><el-button :disabled="modelValue.print.media.length >= 6" @click="add('QR')">添加QR</el-button
-        ><el-button :disabled="modelValue.print.media.length >= 6" @click="add('CODE128')">添加Code128</el-button
-        ><el-button :disabled="modelValue.print.media.length >= 6" @click="add('IMAGE')">添加私有图片</el-button></el-form-item
-      >
-      <el-card v-for="(media, index) in modelValue.print.media" :key="index" class="mb-3"
-        ><div class="flex justify-between">
-          <strong>{{ media.kind }}</strong
+      <el-card v-for="(media, index) in modelValue.print.media" :key="index" class="mb-3">
+        <div class="media-heading">
+          <strong>{{ media.kind === 'IMAGE' ? '私有图片' : media.kind === 'QR' ? '二维码' : '条形码' }}</strong
           ><el-button link type="danger" @click="remove(index)">删除</el-button>
         </div>
         <div class="media-fields">
-          <el-input
-            v-if="media.kind === 'IMAGE'"
-            :model-value="media.assetVersionId || ''"
-            placeholder="从私有资产目录复制版本ID"
-            @update:model-value="set(index, 'assetVersionId', $event)"
-          /><el-select v-else :model-value="media.field" placeholder="批准业务编码" @change="set(index, 'field', $event)"
-            ><el-option
-              v-for="field in fields.filter((f) => ['STRING', 'ID'].includes(f.type) && /(code|no|number|id|sn)$/i.test(f.name))"
-              :key="field.name"
-              :value="field.name"
-              :label="field.label" /></el-select
-          ><label v-for="key in coordinates" :key="key"
-            >{{ key }}（pt）<el-input-number
-              :model-value="media[key]"
+          <template v-if="media.kind === 'IMAGE'"
+            ><span>{{ assetNames[media.assetVersionId!] || '已绑定固定图片版本' }}</span
+            ><el-button v-hasPermi="['report:asset:list']" @click="openPicker(index)">更换图片</el-button></template
+          >
+          <el-select v-else :model-value="media.field" placeholder="批准业务编码" @change="setField(index, $event)"
+            ><el-option v-for="field in barcodeFields" :key="field.name" :value="field.name" :label="field.label"
+          /></el-select>
+          <label v-for="coordinate in coordinates" :key="coordinate.key"
+            >{{ coordinate.label }}（mm）<el-input-number
+              :model-value="ptToMm(media[coordinate.key])"
               :min="0"
-              :max="2000"
-              @update:model-value="set(index, key, $event || 0)" /></label
-          ><el-checkbox :model-value="media.repeat" @change="set(index, 'repeat', !!$event)">每页重复</el-checkbox>
-        </div></el-card
-      >
+              :max="600"
+              :precision="2"
+              @change="(value) => setDimension(index, coordinate.key, value)"
+          /></label>
+          <el-checkbox :model-value="media.repeat" @change="(value) => setRepeat(index, !!value)">每页重复</el-checkbox>
+        </div>
+      </el-card>
     </el-form>
+    <AssetPicker v-model="pickerOpen" @select="selectAsset" />
   </div>
 </template>
 <script setup lang="ts">
-/** 第二版打印控件只修改草稿，私有资产由服务端固定和鉴权。 */
+import { computed, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
 import type { ReportDsl, PrintDefinition, DatasetField } from '@/types/report';
-/**
- * 保存当前页面或测试的props、emit状态。
- */
-const props = defineProps<{
-    /**
-     * 当前契约的modelValue配置或状态
-     */
-    modelValue: ReportDsl; /**
-     * 当前契约的fields配置或状态
-     */
-    fields: DatasetField[]; /**
-     * 当前契约的disabled配置或状态
-     */
-    disabled?: boolean;
-  }>(),
-  emit = defineEmits<{
-    /**
-     * 当前契约的'update:modelValue'配置或状态
-     */
-    'update:modelValue': [ReportDsl];
-  }>();
-/**
- * 保存当前页面或测试的coordinates状态。
- */
-const coordinates = ['x', 'y', 'width', 'height'] as const;
-/** 创建独立草稿副本，避免直接修改父组件状态。 */
-function change(action: (dsl: ReportDsl) => void) {
-  const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
-  action(next);
-  emit('update:modelValue', next);
+import { enablePrint, effectivePaper, mmToPt, ptToMm, positionMedia } from '@/views/report/designer/gridCommands';
+import AssetPicker from '@/components/report/designer/AssetPicker.vue';
+/** 媒体设置仅提交草稿副本，权限由服务端再次检查。 */
+const props = defineProps<{ modelValue: ReportDsl; fields: DatasetField[]; disabled?: boolean }>();
+/** 原子编辑事件。 */
+const emit = defineEmits<{ 'update:modelValue': [ReportDsl] }>();
+/** 图片选择会话与当前媒体位置。 */
+const pickerOpen = ref(false),
+  pickerIndex = ref(-1),
+  assetNames = ref<Record<string, string>>({});
+/** 允许进入条码的固定业务编码字段。 */
+const barcodeFields = computed(() =>
+  props.fields.filter((field) => ['STRING', 'ID'].includes(field.type) && /(code|no|number|id|sn)$/i.test(field.name))
+);
+/** 布局维度使用毫米展示。 */
+const coordinates = [
+  { key: 'x', label: '横坐标' },
+  { key: 'y', label: '纵坐标' },
+  { key: 'width', label: '宽度' },
+  { key: 'height', label: '高度' }
+] as const;
+/** 提交一次受控操作并报告不可容纳的媒体。 */
+function apply(action: () => ReportDsl) {
+  if (props.disabled) return;
+  try {
+    emit('update:modelValue', action());
+  } catch (error) {
+    ElMessage.warning((error as Error).message);
+  }
 }
-/** 明确升级草稿格式，保留旧发布版本。 */
+/** 显式升级草稿格式且保持原纸张方向。 */
 function enable() {
-  change((dsl) => {
-    dsl.schemaVersion = 2;
-    dsl.print = { orientation: 'PORTRAIT', groupBy: [], repeatFooter: false, media: [] };
+  apply(() => enablePrint(props.modelValue));
+}
+/** 只修改分组和页脚，不在此重复修改纸张方向。 */
+function patch(value: Partial<PrintDefinition>) {
+  apply(() => {
+    const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
+    Object.assign(next.print!, value);
+    return next;
   });
 }
-/** 修改方向、分组或重复固定区。 */
-function patch(value: Partial<PrintDefinition>) {
-  change((dsl) => Object.assign(dsl.print!, value));
+/** 新媒体以当前可打印区域为边界。 */
+function withMedia(kind: 'IMAGE' | 'QR' | 'CODE128', assetVersionId: string | null = null): ReportDsl {
+  const next = enablePrint(props.modelValue),
+    page = effectivePaper(next);
+  if (next.print!.media.length >= 6) throw Error('最多配置6个媒体');
+  next.print!.media.push({
+    kind,
+    assetVersionId,
+    field: kind === 'IMAGE' ? null : barcodeFields.value[0]?.name || '',
+    x: page.marginLeft,
+    y: page.marginTop + 40,
+    width: kind === 'CODE128' ? 180 : 72,
+    height: kind === 'CODE128' ? 48 : 72,
+    repeat: false
+  });
+  return positionMedia(next, next.print!.media.length - 1, {});
 }
-/** 添加一个受支持媒体，字段与版本随后明确选择。 */
-function add(kind: 'IMAGE' | 'QR' | 'CODE128') {
-  change((dsl) =>
-    dsl.print!.media.push({
-      kind,
-      assetVersionId: kind === 'IMAGE' ? '' : null,
-      field: kind === 'IMAGE' ? null : props.fields.find((f) => /(code|no|number|id|sn)$/i.test(f.name))?.name || '',
-      x: dsl.page.marginLeft,
-      y: dsl.page.marginTop + 40,
-      width: kind === 'CODE128' ? 180 : 72,
-      height: kind === 'CODE128' ? 48 : 72,
-      repeat: false
-    })
-  );
+/** 添加服务器支持的条码种类。 */
+function add(kind: 'QR' | 'CODE128') {
+  apply(() => withMedia(kind));
 }
-/** 修改媒体的一个受控属性。 */
-function set(index: number, key: string, value: unknown) {
-  change((dsl) => Object.assign(dsl.print!.media[index], { [key]: value }));
+/** 打开图库前固定当前编辑会话。 */
+function openPicker(index: number) {
+  if (!props.disabled) {
+    pickerIndex.value = index;
+    pickerOpen.value = true;
+  }
 }
-/** 删除当前草稿媒体，不改写任何发布资源。 */
+/** 将选择结果绑定为不可变版本。 */
+function selectAsset(asset: { versionId: string; title: string }) {
+  if (!pickerOpen.value || props.disabled) return;
+  assetNames.value[asset.versionId] = asset.title;
+  apply(() => {
+    if (pickerIndex.value < 0) return withMedia('IMAGE', asset.versionId);
+    const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
+    const media = next.print?.media[pickerIndex.value];
+    if (!media || media.kind !== 'IMAGE') throw Error('当前图片已移除，请重新选择');
+    media.assetVersionId = asset.versionId;
+    return next;
+  });
+}
+/** 绑定批准业务字段。 */
+function setField(index: number, value: string) {
+  apply(() => {
+    const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
+    next.print!.media[index].field = value;
+    return next;
+  });
+}
+/** 调整毫米尺寸时复用画布同一边界与二维码约束。 */
+function setDimension(index: number, key: 'x' | 'y' | 'width' | 'height', value: number | undefined) {
+  if (value !== undefined) apply(() => positionMedia(props.modelValue, index, { [key]: mmToPt(value) }));
+}
+/** 修改每页重复设置。 */
+function setRepeat(index: number, value: boolean) {
+  apply(() => {
+    const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
+    next.print!.media[index].repeat = value;
+    return next;
+  });
+}
+/** 删除媒体并关闭旧选择会话。 */
 function remove(index: number) {
-  change((dsl) => dsl.print!.media.splice(index, 1));
+  pickerOpen.value = false;
+  apply(() => {
+    const next = JSON.parse(JSON.stringify(props.modelValue)) as ReportDsl;
+    next.print!.media.splice(index, 1);
+    return next;
+  });
 }
+watch(
+  () => [props.modelValue.code, props.modelValue.datasetVersionId, props.disabled],
+  () => {
+    pickerOpen.value = false;
+  }
+);
 </script>
 <style scoped>
+.media-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .media-fields {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 12px;
+  align-items: center;
 }
 .media-fields label {
   display: flex;

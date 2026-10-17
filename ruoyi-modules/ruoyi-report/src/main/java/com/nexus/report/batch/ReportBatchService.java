@@ -8,8 +8,10 @@ import com.nexus.report.mapper.JdbcReportStore;
 import com.nexus.report.runtime.ReportRuntimeService;
 import com.nexus.report.service.ReportDefinitionService;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.Instant;
 import java.util.*;
 
 /** 批量单据固定文档集合，每个单据独立鉴权、任务、失败和重试。 */
@@ -43,9 +45,13 @@ public final class ReportBatchService {
      * @param jobId 当前契约的jobId配置或状态
      * @param state 任务或资源状态
      * @param error 当前契约的error配置或状态
+     * @param canRetry 当前主体能否通过原运行服务重试任务
+     * @param retryRound 原运行任务的重试轮次
+     * @param expires 原运行任务的到期时间，未鉴权时不返回
      */
     public record Item(
-            int number, String reportVersionId, String jobId, String state, String error) {}
+            int number, String reportVersionId, String jobId, String state, String error,
+            boolean canRetry, int retryRound, Instant expires) {}
 
     /** 保存当前resources状态或配置。 */
     private final ReportResourceStore resources;
@@ -102,10 +108,18 @@ public final class ReportBatchService {
     public ReportResourceStore.Draft create(
             ReportActor actor, String code, String title, List<Document> documents) {
         var current = current(actor, "report:batch:manage");
+        String normalizedTitle = title == null ? null : title.strip();
+        if (code == null || !code.matches("[A-Z][A-Z0-9_]{0,63}")
+                || normalizedTitle == null || normalizedTitle.isBlank() || normalizedTitle.length() > 100)
+            throw ReportFault.invalid("资源编码或标题无效");
+        byCode(current, code).ifPresent(existing -> {
+            if (existing.owner() != current.userId()) throw codeConflict();
+        });
         if (documents == null || documents.isEmpty() || documents.size() > 50)
             throw ReportFault.invalid("批次单据范围1–50");
         var fixed = new ArrayList<Document>();
         for (var document : documents) {
+            if (document == null) throw ReportFault.invalid("批次单据不能为空");
             var version = version(current, document.reportVersionId());
             var binding = definitions.bindVersion(current, version);
             fixed.add(
@@ -114,10 +128,14 @@ public final class ReportBatchService {
                             ReportRuntimeService.parametersForStorage(
                                     definitions.parameters(binding, document.parameters()))));
         }
-        return resources.atomic(
+        String content = json.json(fixed);
+        try {
+            return resources.atomic(
                 () -> {
                     var refreshed = current(current, "report:batch:manage");
-                    var draft = resources.create("BATCH", refreshed, code, title, json.json(fixed));
+                    var existing = byCode(refreshed, code);
+                    if (existing.isPresent()) return sameCreation(refreshed, existing.get(), normalizedTitle, content);
+                    var draft = resources.create("BATCH", refreshed, code, normalizedTitle, content);
                     resources.publish("BATCH", refreshed, draft.id(), draft.revision(), "{}");
                     for (int i = 0; i < fixed.size(); i++) {
                         var document = fixed.get(i);
@@ -134,6 +152,52 @@ public final class ReportBatchService {
                     }
                     return resources.read("BATCH", refreshed.tenantId(), draft.id()).orElseThrow();
                 });
+        } catch (DuplicateKeyException raced) {
+            return resources.atomic(() -> {
+                var refreshed = current(current, "report:batch:manage");
+                var existing = byCode(refreshed, code).orElseThrow(() -> raced);
+                return sameCreation(refreshed, existing, normalizedTitle, content);
+            });
+        }
+    }
+
+    /**
+     * 仅以当前租户的唯一编码读取批次，不能跨租户复用创建记录。
+     *
+     * @param actor 已刷新身份
+     * @param code 已校验的批次编码
+     * @return 当前租户的既有批次
+     */
+    private Optional<ReportResourceStore.Draft> byCode(ReportActor actor, String code) {
+        return jdbc.queryForList("SELECT batch_id FROM rpt_batch WHERE tenant_id=? AND code=?",
+                        String.class, actor.tenantId(), code).stream().findFirst()
+                .flatMap(id -> resources.read("BATCH", actor.tenantId(), id));
+    }
+
+    /**
+     * 仅允许原创建者以相同标题和规范化单据重放创建请求。
+     *
+     * @param actor 已刷新身份
+     * @param existing 已提交的批次
+     * @param title 规范化标题
+     * @param content 规范化单据内容
+     * @return 原批次及其当前状态
+     */
+    private ReportResourceStore.Draft sameCreation(ReportActor actor, ReportResourceStore.Draft existing,
+            String title, String content) {
+        if (existing.owner() != actor.userId() || !Objects.equals(existing.title(), title)
+                || !Objects.equals(json.read(existing.json(), List.class), json.read(content, List.class)))
+            throw codeConflict();
+        return existing;
+    }
+
+    /**
+     * 返回不会泄露其他创建者或请求内容的编码冲突。
+     *
+     * @return 可供调用方识别的冲突异常
+     */
+    private static ReportFault codeConflict() {
+        return new ReportFault("BATCH_CODE_CONFLICT", "批次编码已被其他创建者或不同内容使用", 409);
     }
 
     /**
@@ -225,9 +289,19 @@ public final class ReportBatchService {
             String jobId = row.get("job_id") == null ? null : row.get("job_id").toString();
             String state = row.get("state").toString(),
                     error = Objects.toString(row.get("error_code"), null);
+            boolean canRetry = false;
+            int retryRound = 0;
+            Instant expires = null;
             try {
                 version(current, row.get("report_version_id").toString());
-                if (jobId != null) state = runtime.job(current, jobId).state();
+                if (jobId != null) {
+                    var job = runtime.job(current, jobId);
+                    state = job.expires().isAfter(Instant.now()) ? job.state() : "EXPIRED";
+                    error = job.error();
+                    canRetry = JdbcReportStore.manualRetryable(job);
+                    retryRound = job.retryRound();
+                    expires = job.expires();
+                }
             } catch (ReportFault denied) {
                 jobId = null;
                 state = "BLOCKED";
@@ -239,9 +313,95 @@ public final class ReportBatchService {
                             row.get("report_version_id").toString(),
                             jobId,
                             state,
-                            error));
+                            error, canRetry, retryRound, expires));
         }
         return List.copyOf(result);
+    }
+
+    /**
+     * 已经逐项重鉴权的固定来源，不向HTTP响应暴露私有引用。
+     *
+     * @param number 原批次项序号
+     * @param reportVersionId 固定报表发布版本
+     * @param job 同一创建者拥有的成功PDF任务
+     */
+    record PdfItem(int number, String reportVersionId, ReportRecords.ExportJob job) {}
+
+    /**
+     * 合并及流式领取持续复核的批次快照。
+     *
+     * @param batch 已上线并通过VIEW检查的批次
+     * @param items 按原序排列且全部可领取的任务
+     */
+    record PdfBatch(ReportResourceStore.Draft batch, List<PdfItem> items) {}
+
+    /**
+     * 只读取固定版本和已存在任务，不创建任务或重新执行业务查询。
+     *
+     * @param actor 当前请求主体
+     * @param id 批次标识
+     * @return 完整可领取的批次和来源快照
+     */
+    PdfBatch pdfBatch(ReportActor actor, String id) {
+        var current = current(actor, "report:batch:list");
+        ReportDefinitionService.require(current, "report:runtime:preview");
+        ReportDefinitionService.require(current, "report:runtime:export");
+        var batch = resources.access("BATCH", current, id, "VIEW");
+        if (batch.owner() != current.userId()) throw ReportFault.denied();
+        if (!"PUBLISHED".equals(batch.status()))
+            throw new ReportFault("BATCH_OFFLINE", "批次已停用", 409);
+        var documents = json.read(batch.json(), Document[].class);
+        var rows = jdbc.queryForList("SELECT * FROM rpt_batch_item WHERE tenant_id=? AND batch_id=? ORDER BY item_no",
+                current.tenantId(), Long.parseLong(id));
+        if (documents.length == 0 || documents.length > 50 || rows.size() != documents.length)
+            throw new ReportFault("BATCH_ITEM_NOT_READY", "批次固定单据集合不完整，请创建新批次", 409);
+        var result = new ArrayList<PdfItem>();
+        for (int index = 0; index < rows.size(); index++) {
+            var row = rows.get(index);
+            int number = ((Number) row.get("item_no")).intValue();
+            try {
+                String versionId = row.get("report_version_id").toString();
+                if (number != index || !versionId.equals(documents[index].reportVersionId())
+                        || !json.read(row.get("parameters_json").toString(), Map.class).equals(documents[index].parameters()))
+                    throw new ReportFault("BATCH_ITEM_CHANGED", "固定单据集合已变化，请创建新批次", 409);
+                version(current, versionId);
+                if (row.get("job_id") == null)
+                    throw new ReportFault("BATCH_ITEM_NOT_READY", "单据尚未生成导出任务", 409);
+                var job = runtime.job(current, row.get("job_id").toString());
+                if (!job.expires().isAfter(Instant.now()) || "EXPIRED".equals(job.state()))
+                    throw new ReportFault("BATCH_ITEM_EXPIRED", "单据已过期，请创建新批次", 410);
+                if (job.cancelled() || "CANCELLED".equals(job.state()))
+                    throw new ReportFault("BATCH_ITEM_CANCELLED", "单据已取消，请创建新批次", 409);
+                if ("FAILED".equals(job.state()))
+                    throw new ReportFault("BATCH_ITEM_FAILED", "单据导出失败：" + Objects.toString(job.error(), "REPORT_EXECUTION_FAILED"), 409);
+                if (!"SUCCEEDED".equals(job.state()) || job.file() == null)
+                    throw new ReportFault("BATCH_ITEM_NOT_READY", "单据导出尚未完成", 409);
+                if (!"PDF".equals(job.format()))
+                    throw new ReportFault("BATCH_ITEM_FORMAT", "单据产物不是PDF", 409);
+                var preview = runtime.access(current, job.runId(), "report:runtime:preview", "VIEW");
+                if (!preview.run().version().equals(versionId)
+                        || !job.requestKey().equals("batch_" + id + "_" + number)
+                        || !ReportRuntimeService.parametersForStorage(preview.payload().input()).equals(documents[index].parameters()))
+                    throw new ReportFault("BATCH_ITEM_CHANGED", "来源任务不属于固定单据", 409);
+                result.add(new PdfItem(number, versionId, job));
+            } catch (ReportFault failure) {
+                throw itemFault(number, failure);
+            } catch (DatasetAccessException failure) {
+                throw itemFault(number, new ReportFault(ReportRuntimeService.code(failure), "单据数据权限已变化", 403));
+            }
+        }
+        return new PdfBatch(batch, List.copyOf(result));
+    }
+
+    /**
+     * 用原始项序号定位错误，不包含参数、私有路径或其他主体信息。
+     *
+     * @param number 批次项序号
+     * @param failure 原受控异常
+     * @return 保留状态码和错误码的定位异常
+     */
+    static ReportFault itemFault(int number, ReportFault failure) {
+        return new ReportFault(failure.code(), "第" + (number + 1) + "项（item_no=" + number + "）：" + failure.getMessage(), failure.status());
     }
 
     /**

@@ -31,8 +31,7 @@
 
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
-      <!-- 使用当前单据的精确标识进入已授权报表，服务端再次校验业务范围。 -->
-      <BusinessReportButton dataset-code="ERP_PURCHASE_ORDER_DOCUMENT" parameter="orderId" :record-id="ids.length === 1 ? ids[0] : undefined" />
+      <el-col :span="1.5"><BusinessReportButton dataset-code="ERP_PURCHASE_ORDER_DOCUMENT" parameter="orderId" :record-ids="ids" /></el-col>
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:order:add']"> 新增 </el-button>
       </el-col>
@@ -143,6 +142,11 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" prop="remark" min-width="120" show-overflow-tooltip />
+      <el-table-column label="报表" align="center" width="130" fixed="right" :show-overflow-tooltip="false">
+        <template #default="scope"
+          ><BusinessReportButton dataset-code="ERP_PURCHASE_ORDER_DOCUMENT" parameter="orderId" :record-id="scope.row.orderId"
+        /></template>
+      </el-table-column>
     </el-table>
 
     <CertifiedOrderWorkflowDialog ref="certifiedOrderRef" @changed="getList" />

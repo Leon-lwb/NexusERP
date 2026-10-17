@@ -286,8 +286,20 @@ public class ReportDefinitionService {
      *
      * @param id 固定标识，按字符串传输以保留完整精度
      * @param name 契约名称
+     * @param kind 已发布报表的类型
+     * @param versionId 绑定的不可变发布版本标识
      */
-    public record BusinessTemplate(String id, String name) {}
+    public record BusinessTemplate(String id, String name, ReportDsl.Kind kind, String versionId) {
+        /**
+         * 保留原有调用方仅提供标识和名称的构造入口。
+         *
+         * @param id 报表标识
+         * @param name 报表名称
+         */
+        public BusinessTemplate(String id, String name) {
+            this(id, name, null, null);
+        }
+    }
 
     /**
      * 列出业务场景可运行的已发布模板。
@@ -309,7 +321,7 @@ public class ReportDefinitionService {
                 var dsl = versionDsl(version);
                 if (!dsl.datasetCode().equals(code)) continue;
                 bindVersion(current, version);
-                result.add(new BusinessTemplate(definition.id(), definition.name()));
+                result.add(new BusinessTemplate(definition.id(), definition.name(), dsl.kind(), version.id()));
             } catch (ReportFault denied) {
                 if (!Set.of("SCOPE_DENIED", "VERSION_UNSUPPORTED", "ENGINE_DISABLED")
                         .contains(denied.code())) throw denied;

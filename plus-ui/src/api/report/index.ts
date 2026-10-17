@@ -171,21 +171,24 @@ export const reportLookup = (
   /** 保存当前 `total` 值。 */
   total: number;
 }> => request({ url: '/report/lookups/' + version + '/' + parameter, params: { keyword, page, size: 20 } });
-/** 提供报表 `businessReportTemplates` 操作入口。 */
-export const businessReportTemplates = (
-  datasetCode: string
-): Api<
-  {
-    /** 保存资源标识。 */
-    id: string;
-    /** 保存当前 `name` 值。 */
-    name: string;
-  }[]
-> => request({ url: '/report/runtime/templates', params: { datasetCode } });
+/** 业务入口的已发布模板，版本标识始终保留完整字符串。 */
+export interface BusinessReportTemplate {
+  /** 报表定义标识。 */
+  id: string;
+  /** 已授权的模板名称。 */
+  name: string;
+  /** 模板类型，业务打印入口仅接受DOCUMENT。 */
+  kind: string;
+  /** 不可变的已发布版本标识。 */
+  versionId: string;
+}
+/** 查询当前业务数据集下可访问的已发布模板。 */
+export const businessReportTemplates = (datasetCode: string): Api<BusinessReportTemplate[]> =>
+  request({ url: '/report/runtime/templates', params: { datasetCode } });
 
 /** 提供报表 `retryExport` 操作入口。 */
-export const retryExport = (id: string, retryRound: number): Api<void> =>
-  request({ url: '/report/runtime/exports/' + id + '/retry', method: 'post', data: { retryRound } });
+export const retryExport = (id: string, expectedRound: number): Api<void> =>
+  request({ url: '/report/runtime/exports/' + id + '/retry', method: 'post', data: { retryRound: expectedRound } });
 
 /** 获取固定快照交叉结果，保留精确数值和钻取坐标。 */
 export const runPivot = (id: string): Api<import('@/types/report').PivotResult> => request({ url: '/report/runtime/runs/' + id + '/pivot' });

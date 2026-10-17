@@ -1,12 +1,13 @@
 <template>
   <div v-if="plan.pages.length" class="report-paper-view">
     <div class="paper-toolbar">
-      <span>共 {{ plan.pages.length }} 页 · {{ plan.rowCount }} 条明细</span
+      <span>共 {{ plan.pages.length }} 页 · {{ plan.rowCount }} 条明细</span><el-button size="small" @click="fit">适应宽度</el-button
       ><el-select v-model="zoom" style="width: 105px"
-        ><el-option v-for="z in [0.5, 0.75, 1, 1.25]" :key="z" :label="Math.round(z * 100) + '%'" :value="z" /></el-select
+        ><el-option v-if="![0.5, 0.75, 1, 1.25].includes(zoom)" :value="zoom" :label="Math.round(zoom * 100) + '%'" />
+        <el-option v-for="z in [0.5, 0.75, 1, 1.25]" :key="z" :label="Math.round(z * 100) + '%'" :value="z" /></el-select
       ><el-pagination v-model:current-page="pageNo" :page-size="1" :total="plan.pages.length" layout="prev, pager, next" />
     </div>
-    <div class="paper-scroll">
+    <div ref="viewport" class="paper-scroll">
       <div class="paper-space" :style="{ width: paper.width * ratio * zoom + 'px', height: paper.height * ratio * zoom + 'px' }">
         <div class="paper" :style="{ width: paper.width * ratio + 'px', height: paper.height * ratio + 'px', transform: 'scale(' + zoom + ')' }">
           <div v-for="(cell, index) in paper.cells" :key="index" class="paper-cell" :style="cellStyle(cell)">
@@ -55,6 +56,14 @@ const zoom = ref(0.75);
  * 保存当前页面或测试的pageNo状态。
  */
 const pageNo = ref(1);
+/** 预览视口仅影响屏幕缩放，不重排服务端分页。 */
+const viewport = ref<HTMLElement>();
+/** 根据当前页尺寸适配可见区域。 */
+function fit() {
+  const width = viewport.value?.clientWidth;
+  const page = props.plan.pages[pageNo.value - 1];
+  if (width && page) zoom.value = Math.max(0.15, Math.min(2, (width - 36) / (page.width * ratio)));
+}
 /**
  * 保存当前页面或测试的paper状态。
  */
