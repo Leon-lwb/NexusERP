@@ -200,10 +200,23 @@ public class ReportRuntimeService {
     public record SourceConstraint(String type, String resourceId, String versionId) {}
 
     /** 来源约束在每次预览、执行和下载重新校验，默认拒绝未安装约束处理器。 */
-    private java.util.function.BiConsumer<ReportActor, SourceConstraint> constraintGuard =
-            (actor, source) -> {
+    private SourceGuard constraintGuard =
+            (actor, source, runId) -> {
                 throw new ReportFault("SOURCE_CONSTRAINT_UNAVAILABLE", "运行来源约束服务未安装", 409);
             };
+
+    /** 来源检查同时接收当前运行标识，兼容历史载荷且不把标识写入模板。 */
+    @FunctionalInterface
+    public interface SourceGuard {
+        /**
+         * 复核当前来源与运行所属执行的有效状态。
+         *
+         * @param actor 当前执行者
+         * @param source 固定来源约束
+         * @param runId 当前运行，入队前来源预检时为空
+         */
+        void check(ReportActor actor, SourceConstraint source, String runId);
+    }
 
     /**
      * 装配受控订阅来源校验器，不接收前端执行代码。
@@ -211,6 +224,16 @@ public class ReportRuntimeService {
      * @param guard 当前契约的guard配置或状态
      */
     public void constraints(java.util.function.BiConsumer<ReportActor, SourceConstraint> guard) {
+        Objects.requireNonNull(guard);
+        constraintGuard = (actor, source, runId) -> guard.accept(actor, source);
+    }
+
+    /**
+     * 安装带运行身份的来源检查，历史固定载荷仍使用原有三字段结构。
+     *
+     * @param guard 来源与运行检查入口
+     */
+    public void runConstraints(SourceGuard guard) {
         constraintGuard = Objects.requireNonNull(guard);
     }
 
@@ -539,7 +562,7 @@ public class ReportRuntimeService {
         if (!Objects.equals(run.scopeHash(), definitions.fingerprint(current, binding)))
             throw scopeChanged();
         Payload payload = payload(run);
-        if (payload.constraint() != null) constraintGuard.accept(current, payload.constraint());
+        if (payload.constraint() != null) constraintGuard.check(current, payload.constraint(), run.id());
         if (!artifacts.storeId().equals(payload.store()))
             throw new ReportFault("STORAGE_NODE_MISMATCH", "当前存储节点没有该快照，请在原节点访问或启用共享存储", 409);
         return new Access(current, run, version, binding, payload, null, permission, action);
@@ -1053,7 +1076,7 @@ public class ReportRuntimeService {
                         : com.nexus.common.report.DatasetQueryValidator.parameters(
                                 binding.compiled().descriptor(), input);
         String scope = definitions.fingerprint(current, binding);
-        if (source != null) constraintGuard.accept(current, source);
+        if (source != null) constraintGuard.check(current, source, null);
         var payload = new Payload(parameters, artifacts.storeId(), null, List.of(), null, source);
         String hash =
                 ReportDefinitionService.hash(

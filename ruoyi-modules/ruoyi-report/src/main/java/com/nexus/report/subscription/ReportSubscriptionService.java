@@ -8,6 +8,7 @@ import com.nexus.report.domain.ReportRecords.*;
 import com.nexus.report.engine.ReportCompiler;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.mapper.JdbcReportStore;
+import com.nexus.report.mapper.TimestampColumnMapRowMapper;
 import com.nexus.report.runtime.ReportRuntimeService;
 import com.nexus.report.service.ReportDefinitionService;
 
@@ -405,9 +406,10 @@ public final class ReportSubscriptionService {
                 resources.atomic(
                         () -> {
                             var row =
-                                    jdbc.queryForMap(
+                                    jdbc.queryForObject(
                                             "SELECT * FROM rpt_subscription_schedule WHERE"
                                                 + " tenant_id=? AND subscription_id=? FOR UPDATE",
+                                            TimestampColumnMapRowMapper.INSTANCE,
                                             tenant,
                                             Long.parseLong(id));
                             if (((Number) row.get("enabled")).intValue() != 1) return null;
@@ -556,9 +558,10 @@ public final class ReportSubscriptionService {
             resources.atomic(
                     () -> {
                         var row =
-                                jdbc.queryForMap(
+                                jdbc.queryForObject(
                                         "SELECT * FROM rpt_subscription_run WHERE tenant_id=? AND"
                                                 + " execution_id=? FOR UPDATE",
+                                        TimestampColumnMapRowMapper.INSTANCE,
                                         tenant,
                                         Long.parseLong(execution));
                         if (row.get("job_id") != null
@@ -894,32 +897,32 @@ public final class ReportSubscriptionService {
      */
     public void retry(ReportActor actor, String executionId) {
         var current = current(actor, "report:subscription:manage");
-        var row =
-                jdbc.queryForMap(
-                        "SELECT * FROM rpt_subscription_run WHERE tenant_id=? AND execution_id=?",
-                        current.tenantId(),
-                        Long.parseLong(executionId));
-        resources.access("SUBSCRIPTION", current, row.get("subscription_id").toString(), "PUBLISH");
-        if (row.get("job_id") == null) {
+        boolean needsPreparation = resources.atomic(() -> {
+            var row = jdbc.queryForMap(
+                    "SELECT * FROM rpt_subscription_run WHERE tenant_id=? AND execution_id=? FOR UPDATE",
+                    current.tenantId(), Long.parseLong(executionId));
+            resources.access("SUBSCRIPTION", current, row.get("subscription_id").toString(), "PUBLISH");
+            if ("CANCELLED".equals(row.get("state")))
+                throw new ReportFault("RETRY_NOT_ALLOWED", "已取消的订阅执行不能重试", 409);
+            if (row.get("job_id") == null) {
+                jdbc.update(
+                        "UPDATE rpt_subscription_run SET"
+                                + " state='PENDING',next_retry_at=NULL,error_code=NULL WHERE tenant_id=?"
+                                + " AND execution_id=?",
+                        current.tenantId(), Long.parseLong(executionId));
+                return true;
+            }
+            var recipient = definitions.resolve(
+                    current.tenantId(), ((Number) row.get("recipient_id")).longValue());
+            var job = runtime.job(recipient, row.get("job_id").toString());
+            runtime.retry(recipient, job.id(), job.retryRound());
             jdbc.update(
-                    "UPDATE rpt_subscription_run SET"
-                        + " state='PENDING',next_retry_at=NULL,error_code=NULL WHERE tenant_id=?"
-                        + " AND execution_id=?",
-                    current.tenantId(),
-                    Long.parseLong(executionId));
-            prepare(current.tenantId(), executionId);
-            return;
-        }
-        var recipient =
-                definitions.resolve(
-                        current.tenantId(), ((Number) row.get("recipient_id")).longValue());
-        var job = runtime.job(recipient, row.get("job_id").toString());
-        runtime.retry(recipient, job.id(), job.retryRound());
-        jdbc.update(
-                "UPDATE rpt_subscription_run SET state='QUEUED',error_code=NULL,attempts=attempts+1"
-                        + " WHERE tenant_id=? AND execution_id=?",
-                current.tenantId(),
-                Long.parseLong(executionId));
+                    "UPDATE rpt_subscription_run SET state='QUEUED',error_code=NULL,attempts=attempts+1"
+                            + " WHERE tenant_id=? AND execution_id=?",
+                    current.tenantId(), Long.parseLong(executionId));
+            return false;
+        });
+        if (needsPreparation) prepare(current.tenantId(), executionId);
     }
 
     /**
@@ -963,6 +966,9 @@ public final class ReportSubscriptionService {
                                         false,
                                         List.of());
                         store.cancel(recipient, job.id());
+                        var cancelled = store.job(current.tenantId(), job.id()).orElseThrow(ReportFault::denied);
+                        if (!Set.of("CANCELLED", "CANCEL_REQUESTED").contains(cancelled.state()))
+                            throw new ReportFault("CANCEL_NOT_ALLOWED", "执行已结束，不能取消，请刷新记录", 409);
                     }
                     jdbc.update(
                             "UPDATE rpt_subscription_run SET state='CANCELLED' WHERE tenant_id=?"

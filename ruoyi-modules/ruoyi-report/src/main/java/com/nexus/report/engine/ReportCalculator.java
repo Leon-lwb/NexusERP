@@ -82,6 +82,7 @@ public final class ReportCalculator {
             for (TypedValue value : typed.values())
                 if (value.value() != null) {
                     characters += value.value().length();
+                    if (value.displayValue() != null) characters += value.displayValue().length();
                     if (characters > 10_000_000) throw ReportFault.capacity();
                 }
             rows.add(typed);
@@ -170,10 +171,13 @@ public final class ReportCalculator {
      * @return 当前处理返回的固定结果
      */
     private static TypedValue typed(ValueType type, Object raw, String name) {
-        if (raw != null && raw.toString().length() > 10_000) throw ReportFault.capacity();
+        Object scalar = raw instanceof TypedValue typed ? typed.value() : raw;
+        if (scalar != null && scalar.toString().length() > 10_000
+                || raw instanceof TypedValue typed && typed.displayText().length() > 10_000)
+            throw ReportFault.capacity();
         try {
-            if (raw != null && (type == ValueType.DECIMAL || type == ValueType.INTEGER))
-                SafeExpression.checked(new BigDecimal(raw.toString()));
+            if (scalar != null && (type == ValueType.DECIMAL || type == ValueType.INTEGER))
+                SafeExpression.checked(new BigDecimal(scalar.toString()));
             return TypedValue.of(type, raw);
         } catch (IllegalArgumentException | java.time.DateTimeException e) {
             throw new ReportFault("INVALID_DATA_TYPE", "数据集字段或参数类型不匹配: " + name);
@@ -257,7 +261,7 @@ public final class ReportCalculator {
                 ? new BigDecimal(value.value())
                         .setScale(scale, RoundingMode.HALF_UP)
                         .toPlainString()
-                : value.value();
+                : value.displayText();
     }
 
     /** SummaryAccumulator，负责当前模块对应的契约或处理职责。 */

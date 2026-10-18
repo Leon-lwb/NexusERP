@@ -111,7 +111,7 @@
         </el-table>
         <template v-if="result"
           ><el-divider />
-          <p>样例 {{ result.rows.length }} 行 / 总计 {{ result.total }} 行 · 数据时间 {{ result.dataTime }}</p>
+          <p>样例 {{ result.rows.length }} 行 / 总计 {{ result.total }} 行 · 数据时间 {{ formatReportDateTime(result.dataTime) }}</p>
           <TypedTable :columns="previewColumns" :rows="result.rows"
         /></template>
       </el-card>
@@ -169,6 +169,7 @@ import {
 } from '@/api/report/query';
 import { queryModel, queryParameters, type QueryColumn, type QueryFilter } from './model';
 import { RequestGate, normalStyle } from '@/views/report/model';
+import { formatReportDateTime } from '@/views/report/time';
 import TypedTable from '@/components/report/TypedTable.vue';
 defineOptions({ name: 'ReportQuery' });
 /**

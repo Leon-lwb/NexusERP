@@ -50,6 +50,6 @@ public final class ReportDeliveryController {
     @SaCheckPermission("report:runtime:export")
     @PostMapping("/{id}/claim")
     public R<String> claim(@PathVariable String id) {
-        return R.ok(deliveries.claim(actors.current(), id));
+        return R.ok("操作成功", deliveries.claim(actors.current(), id));
     }
 }

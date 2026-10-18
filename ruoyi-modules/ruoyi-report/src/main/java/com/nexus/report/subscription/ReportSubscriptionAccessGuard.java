@@ -100,4 +100,30 @@ public final class ReportSubscriptionAccessGuard {
         if (enabled.size() != 1 || enabled.get(0) != 1)
             throw new ReportFault("SUBSCRIPTION_OFFLINE", "订阅调度已停用", 409);
     }
+
+    /**
+     * 按真实运行关联父执行，历史子作业也不能绕过父执行取消状态。
+     *
+     * @param actor 当前接收人
+     * @param source 原固定来源约束
+     * @param runId 当前运行，尚未创建作业的来源预检时为空
+     */
+    public void checkRun(ReportActor actor, SourceConstraint source, String runId) {
+        check(actor, source);
+        if (runId == null) return;
+        var executions = jdbc.queryForList(
+                "SELECT s.state,s.subscription_id,s.definition_version_id,s.recipient_id"
+                        + " FROM rpt_subscription_run s JOIN rpt_export_job j"
+                        + " ON j.tenant_id=s.tenant_id AND j.job_id=s.job_id"
+                        + " WHERE j.tenant_id=? AND j.run_id=?",
+                actor.tenantId(), Long.parseLong(runId));
+        for (var execution : executions) {
+            if (!source.resourceId().equals(execution.get("subscription_id").toString())
+                    || !source.versionId().equals(execution.get("definition_version_id").toString())
+                    || ((Number) execution.get("recipient_id")).longValue() != actor.userId())
+                throw ReportFault.denied();
+            if ("CANCELLED".equals(execution.get("state")))
+                throw new ReportFault("EXECUTION_CANCELLED", "订阅执行已取消", 403);
+        }
+    }
 }

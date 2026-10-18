@@ -70,4 +70,13 @@ public interface ReportDatasetProvider {
     default Set<String> requiredPermissions() {
         return Set.of();
     }
+
+    /**
+     * 声明代码审核的字符串字段与字典类型绑定，不改变已发布的数据集描述。
+     *
+     * @return 字段名到字典类型的固定映射
+     */
+    default Map<String, String> displayDictionaries() {
+        return Map.of();
+    }
 }

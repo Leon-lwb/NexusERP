@@ -552,6 +552,52 @@ test('changing dataset sample parameters discards pending data', async (t) => {
   assert.equal(x.state.sampling, false);
 });
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
+test('数据集停用和恢复提交后端规范状态、完整ID及预期状态', async (t) => {
+  const calls = [];
+  const confirmations = [];
+  const row = datasetFixture('9223372036854775807');
+  const x = mount(dataset, '', { datasetState: async (...args) => calls.push(args) });
+  t.after(x.unmount);
+  x.fixture.confirm = async (message) => confirmations.push(message);
+  await flush();
+  await x.state.toggle(row);
+  assert.deepEqual(calls, [['9223372036854775807', 'OFFLINE', 'ACTIVE']]);
+  assert.match(confirmations[0], /引用此数据集的报表将暂停运行/);
+  row.dataset.status = 'OFFLINE';
+  await x.state.toggle(row);
+  assert.deepEqual(calls[1], ['9223372036854775807', 'ACTIVE', 'OFFLINE']);
+  assert.match(confirmations[1], /启用此数据集/);
+});
+/** 取消确认和保存冲突不能擅自改变数据集状态或刷新掉已有列表。 */
+test('数据集状态取消和冲突保留原状态', async (t) => {
+  let writes = 0;
+  let reads = 0;
+  const row = datasetFixture('9223372036854775807');
+  const x = mount(dataset, '', {
+    listDatasets: async () => {
+      reads++;
+      return { data: [row] };
+    },
+    datasetState: async () => {
+      writes++;
+      throw Error('CONFLICT');
+    }
+  });
+  t.after(x.unmount);
+  await flush();
+  const loaded = reads;
+  x.fixture.confirm = async () => {
+    throw Error('cancel');
+  };
+  await x.state.toggle(row);
+  assert.equal(writes, 0);
+  x.fixture.confirm = async () => true;
+  await x.state.toggle(row);
+  assert.equal(writes, 1);
+  assert.equal(reads, loaded);
+  assert.equal(row.dataset.status, 'ACTIVE');
+});
+/** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('switching datasets releases the previous sample spinner', async (t) => {
   const pending = defer();
   const x = mount(dataset, '', { sampleDataset: () => pending.promise });

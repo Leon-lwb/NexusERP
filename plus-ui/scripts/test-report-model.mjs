@@ -36,6 +36,16 @@ const descriptor = {
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('typed display preserves snowflake IDs', () =>
   assert.equal(m.formatTyped({ type: 'ID', value: '9223372036854775807' }, 2), '9223372036854775807'));
+/** 字典名称只影响字符串展示，原始编码和精确数字保持原样。 */
+test('dictionary display names preserve original codes and numeric semantics', () => {
+  const value = { type: 'STRING', value: 'ENTERPRISE', displayValue: '企业' };
+  assert.equal(m.formatTyped(value), '企业');
+  assert.equal(value.value, 'ENTERPRISE');
+  assert.equal(m.formatTyped({ type: 'STRING', value: 'UNKNOWN', displayValue: '' }), 'UNKNOWN');
+  assert.equal(m.formatTyped({ type: 'STRING', value: null, displayValue: '企业' }), '');
+  assert.equal(m.formatTyped({ type: 'ID', value: '9223372036854775807', displayValue: '错误名称' }), '9223372036854775807');
+  assert.equal(m.formatTyped({ type: 'DECIMAL', value: '9007199254740993.005', displayValue: '错误金额' }), '9007199254740993.01');
+});
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('decimal rounding matches server HALF_UP without Number', () => {
   assert.equal(m.formatTyped({ type: 'DECIMAL', value: '9007199254740993.005' }, 2), '9007199254740993.01');
@@ -46,6 +56,26 @@ test('decimal rounding matches server HALF_UP without Number', () => {
 test('nullable and boolean cells have explicit text', () => {
   assert.equal(m.formatTyped({ type: 'STRING', value: null }, 0), '');
   assert.equal(m.formatTyped({ type: 'BOOLEAN', value: 'false' }, 0), '否');
+});
+/** 日期不偏移，带时区的时间统一展示为北京时间且不修改原始快照。 */
+test('temporal cells use readable business dates and seconds without changing their source', () => {
+  const datetime = { type: 'DATETIME', value: '2026-10-17T16:30:45.123456789Z' };
+  assert.equal(m.formatTyped(datetime), '2026-10-18 00:30:45');
+  assert.equal(datetime.value, '2026-10-17T16:30:45.123456789Z');
+  assert.equal(m.formatTyped({ type: 'DATETIME', value: '2026-10-18T00:00+08:00' }), '2026-10-18 00:00:00');
+  assert.equal(m.formatTyped({ type: 'DATETIME', value: '2026-10-18 09:05:06.123' }), '2026-10-18 09:05:06');
+  assert.equal(m.formatTyped({ type: 'DATE', value: '2024-02-29' }), '2024-02-29');
+  assert.equal(m.formatTyped({ type: 'DATETIME', value: null }), '');
+  assert.equal(m.formatTyped({ type: 'DATETIME', value: 'invalid-time' }), 'invalid-time');
+  assert.equal(m.formatTyped({ type: 'STRING', value: '2026-10-17T16:30:45Z' }), '2026-10-17T16:30:45Z');
+});
+/** 交叉表和仪表盘维度统一日期展示，但数字维度不执行舍入。 */
+test('dimension display formats only names and temporal text', () => {
+  assert.equal(m.formatDimension({ type: 'DATETIME', value: '2026-10-17T16:30:45Z' }), '2026-10-18 00:30:45');
+  assert.equal(m.formatDimension({ type: 'DATE', value: '2024-02-29' }), '2024-02-29');
+  assert.equal(m.formatDimension({ type: 'DECIMAL', value: '9007199254740993.123400' }), '9007199254740993.123400');
+  assert.equal(m.formatDimension({ type: 'DATETIME', value: null }), '（空）');
+  assert.equal(m.formatDimension({ type: 'DATETIME', value: null }, '—'), '—');
 });
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('new native documents fit the printable width', () => {

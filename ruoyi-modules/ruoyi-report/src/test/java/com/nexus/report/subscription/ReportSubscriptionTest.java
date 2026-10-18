@@ -102,10 +102,10 @@ class ReportSubscriptionTest {
                             f.compiler,
                             props,
                             (tenant, user, id, title) -> notices.add(id));
-            f.runtime.constraints(
+            f.runtime.runConstraints(
                     new ReportSubscriptionAccessGuard(
                                     resources, f.jdbc, auth, f.compiler, f.definitions)
-                            ::check);
+                            ::checkRun);
             var version =
                     f.store.definition("A", f.definition.id()).orElseThrow().publishedVersion();
             var model =
@@ -204,10 +204,10 @@ class ReportSubscriptionTest {
                             return true;
                         }
                     };
-            f.runtime.constraints(
+            f.runtime.runConstraints(
                     new ReportSubscriptionAccessGuard(
                                     resources, f.jdbc, auth, f.compiler, f.definitions)
-                            ::check);
+                            ::checkRun);
             var peer = RuntimeReviewFixture.actor(9, Set.of("*:*:*"), ReportScope.all(9));
             f.actors.put(9L, peer);
             f.store.replaceAcl(
@@ -305,10 +305,10 @@ class ReportSubscriptionTest {
                             return true;
                         }
                     };
-            f.runtime.constraints(
+            f.runtime.runConstraints(
                     new ReportSubscriptionAccessGuard(
                                     resources, f.jdbc, auth, f.compiler, f.definitions)
-                            ::check);
+                            ::checkRun);
             var peer = RuntimeReviewFixture.actor(9, Set.of("*:*:*"), ReportScope.all(9));
             f.actors.put(9L, peer);
             f.store.replaceAcl(
@@ -413,10 +413,10 @@ class ReportSubscriptionTest {
                             return true;
                         }
                     };
-            f.runtime.constraints(
+            f.runtime.runConstraints(
                     new ReportSubscriptionAccessGuard(
                                     resources, f.jdbc, auth, f.compiler, f.definitions)
-                            ::check);
+                            ::checkRun);
             var service =
                     new ReportSubscriptionService(
                             resources,
@@ -581,6 +581,201 @@ class ReportSubscriptionTest {
                             "SELECT state FROM rpt_delivery WHERE delivery_id=?",
                             String.class,
                             real.get("delivery_id")));
+        }
+    }
+
+    /** 无作业的已取消执行不能通过手动重试重新入队。 */
+    @Test
+    void manualRetryCannotReviveCancelledExecutionWithoutJob() {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("cancelRetryPending"))) {
+            var resources = extensions(fixture);
+            var service = subscriptions(fixture, resources, new ReportSubscriptionProperties());
+            fixture.store.admissionLimits(1, 100, 1000);
+            fixture.runtime.enqueueFixed(fixture.owner,
+                    subscription(fixture, List.of("7")).reportVersionId(), "XLSX_DATA", Map.of(), "cancel_retry_blocker");
+            var draft = service.create(fixture.owner, "CANCEL_RETRY_PENDING", "取消终态", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "cancel_retry_pending");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            assertNull(execution.job());
+            service.cancel(fixture.owner, execution.id());
+            var failure = assertThrows(ReportFault.class, () -> service.retry(fixture.owner, execution.id()));
+            assertEquals("RETRY_NOT_ALLOWED", failure.code());
+            assertEquals("CANCELLED", service.executions(fixture.owner, draft.id()).get(0).state());
+            assertEquals(1, fixture.runtime.jobs(fixture.owner).size());
+        }
+    }
+
+    /** 已绑定作业的取消执行也不能换用原作业重新启动。 */
+    @Test
+    void manualRetryCannotReviveCancelledExecutionWithJob() {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("cancelRetryQueued"))) {
+            var resources = extensions(fixture);
+            var service = subscriptions(fixture, resources, new ReportSubscriptionProperties());
+            var draft = service.create(fixture.owner, "CANCEL_RETRY_QUEUED", "取消终态", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "cancel_retry_queued");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            assertNotNull(execution.job());
+            service.cancel(fixture.owner, execution.id());
+            assertThrows(ReportFault.class, () -> service.retry(fixture.owner, execution.id()));
+            assertEquals("CANCELLED", service.executions(fixture.owner, draft.id()).get(0).state());
+            assertEquals("CANCELLED", fixture.store.job("A", execution.job()).orElseThrow().state());
+        }
+    }
+
+    /** 队列释放后仍可补入原执行，不新增时刻、接收人或重复作业。 */
+    @Test
+    void manualRetryOfWaitingExecutionKeepsItsIdentityAndCreatesOnlyOneJob() {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("retryWaiting"))) {
+            var resources = extensions(fixture);
+            var service = subscriptions(fixture, resources, new ReportSubscriptionProperties());
+            fixture.store.admissionLimits(1, 100, 1000);
+            var blocker = fixture.runtime.enqueueFixed(fixture.owner,
+                    subscription(fixture, List.of("7")).reportVersionId(), "XLSX_DATA", Map.of(), "retry_waiting_blocker");
+            var draft = service.create(fixture.owner, "RETRY_WAITING", "补充入队", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "retry_waiting");
+            var original = service.executions(fixture.owner, draft.id()).get(0);
+            assertEquals("RETRY_WAIT", original.state());
+            fixture.store.cancel(fixture.owner, blocker.id());
+            service.retry(fixture.owner, original.id());
+            var rows = service.executions(fixture.owner, draft.id());
+            assertEquals(1, rows.size());
+            assertEquals(original.id(), rows.get(0).id());
+            assertEquals(original.scheduledAt(), rows.get(0).scheduledAt());
+            assertEquals(original.recipient(), rows.get(0).recipient());
+            assertNotNull(rows.get(0).job());
+            assertEquals("QUEUED", rows.get(0).state());
+            assertEquals(2, fixture.runtime.jobs(fixture.owner).size());
+        }
+    }
+
+    /** 取消失败子作业后，普通导出入口也不能绕过订阅取消终态。 */
+    @Test
+    void cancelledFailedChildCannotBeRetriedFromGeneralExports() {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("cancelFailedChild"))) {
+            var resources = extensions(fixture);
+            var service = subscriptions(fixture, resources, new ReportSubscriptionProperties());
+            var draft = service.create(fixture.owner, "CANCEL_FAILED_CHILD", "失败子作业取消", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "cancel_failed_child");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            fixture.jdbc.update("UPDATE rpt_export_job SET state='FAILED',error_code='ARTIFACT_STORE_UNAVAILABLE',attempts=3 WHERE job_id=?",
+                    Long.parseLong(execution.job()));
+            assertTrue(com.nexus.report.mapper.JdbcReportStore.manualRetryable(fixture.runtime.job(fixture.owner, execution.job())));
+            service.cancel(fixture.owner, execution.id());
+            assertEquals("CANCELLED", service.executions(fixture.owner, draft.id()).get(0).state());
+            assertThrows(ReportFault.class, () -> fixture.runtime.retry(fixture.owner, execution.job()));
+            assertTrue(fixture.store.job("A", execution.job()).orElseThrow().cancelled());
+        }
+    }
+
+    /** 子作业已完成时拒绝过时取消，不写入与文件状态矛盾的取消终态。 */
+    @Test
+    void completedChildRejectsStaleCancellationWithoutChangingExecution() throws Exception {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("cancelCompletedChild"))) {
+            var resources = extensions(fixture);
+            var service = subscriptions(fixture, resources, new ReportSubscriptionProperties());
+            var draft = service.create(fixture.owner, "CANCEL_COMPLETED_CHILD", "已完成子作业", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "cancel_completed_child");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            complete(fixture, fixture.runtime.job(fixture.owner, execution.job()));
+            var failure = assertThrows(ReportFault.class, () -> service.cancel(fixture.owner, execution.id()));
+            assertEquals("CANCEL_NOT_ALLOWED", failure.code());
+            assertEquals(execution.state(), service.executions(fixture.owner, draft.id()).get(0).state());
+            assertEquals("SUCCEEDED", fixture.runtime.job(fixture.owner, execution.job()).state());
+        }
+    }
+
+    /** 历史父执行已取消但子文件曾完成时，所有领取入口仍服从父执行终态。 */
+    @Test
+    void historicalCancelledExecutionBlocksReadyChildAndHidesDelivery() throws Exception {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("legacyCancelledReady"))) {
+            var resources = extensions(fixture);
+            var properties = new ReportSubscriptionProperties();
+            var service = subscriptions(fixture, resources, properties);
+            var draft = service.create(fixture.owner, "LEGACY_CANCELLED_READY", "历史取消记录", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "legacy_cancelled_ready");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            complete(fixture, fixture.runtime.job(fixture.owner, execution.job()));
+            var deliveries = new ReportDeliveryService(resources, fixture.jdbc, fixture.store, fixture.definitions,
+                    fixture.runtime, fixture.compiler, properties, null);
+            deliveries.reconcile();
+            var delivery = deliveries.list(fixture.owner).get(0);
+            assertEquals("READY", delivery.state());
+            fixture.jdbc.update("UPDATE rpt_subscription_run SET state='CANCELLED' WHERE execution_id=?",
+                    Long.parseLong(execution.id()));
+            var failure = assertThrows(ReportFault.class, () -> fixture.runtime.job(fixture.owner, execution.job()));
+            assertEquals("EXECUTION_CANCELLED", failure.code());
+            var hidden = deliveries.list(fixture.owner).get(0);
+            assertEquals("CANCELLED", hidden.state());
+            assertNull(hidden.jobId());
+            assertThrows(ReportFault.class, () -> deliveries.claim(fixture.owner, delivery.id()));
+        }
+    }
+
+    /** 历史父执行已取消但失败子作业缺少取消标记时，通用重试也不能绕过。 */
+    @Test
+    void historicalCancelledExecutionBlocksUnfencedFailedChildRetry() {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("legacyCancelledFailed"))) {
+            var resources = extensions(fixture);
+            var service = subscriptions(fixture, resources, new ReportSubscriptionProperties());
+            var draft = service.create(fixture.owner, "LEGACY_CANCELLED_FAILED", "历史失败记录", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "legacy_cancelled_failed");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            fixture.jdbc.update("UPDATE rpt_export_job SET state='FAILED',error_code='ARTIFACT_STORE_UNAVAILABLE',attempts=3 WHERE job_id=?",
+                    Long.parseLong(execution.job()));
+            fixture.jdbc.update("UPDATE rpt_subscription_run SET state='CANCELLED' WHERE execution_id=?",
+                    Long.parseLong(execution.id()));
+            var failure = assertThrows(ReportFault.class, () -> fixture.runtime.retry(fixture.owner, execution.job()));
+            assertEquals("EXECUTION_CANCELLED", failure.code());
+            assertEquals("FAILED", fixture.store.job("A", execution.job()).orElseThrow().state());
+        }
+    }
+
+    /** 对账与取消先锁同一执行记录，旧作业投影不能覆盖已提交的取消。 */
+    @Test
+    void reconciliationAndCancellationShareExecutionLockAndPreserveCancelledState() throws Exception {
+        try (var fixture = new RuntimeReviewFixture(directory.resolve("reconcileCancel"))) {
+            var resources = extensions(fixture);
+            var properties = new ReportSubscriptionProperties();
+            var service = subscriptions(fixture, resources, properties);
+            var draft = service.create(fixture.owner, "RECONCILE_CANCEL", "对账取消并发", subscription(fixture, List.of("7")));
+            service.publish(fixture.owner, draft.id(), draft.revision());
+            service.manual(fixture.owner, draft.id(), "reconcile_cancel");
+            var execution = service.executions(fixture.owner, draft.id()).get(0);
+            var deliveries = new ReportDeliveryService(resources, fixture.jdbc, fixture.store, fixture.definitions,
+                    fixture.runtime, fixture.compiler, properties, null);
+            var entered = new java.util.concurrent.CountDownLatch(1);
+            var resume = new java.util.concurrent.CountDownLatch(1);
+            fixture.onDefinitionRead = () -> {
+                entered.countDown();
+                try { assertTrue(resume.await(5, java.util.concurrent.TimeUnit.SECONDS)); }
+                catch (InterruptedException failure) { throw new IllegalStateException(failure); }
+            };
+            var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+            try {
+                var reconcile = executor.submit(deliveries::reconcile);
+                assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+                fixture.onDefinitionRead = () -> {};
+                var cancel = executor.submit(() -> service.cancel(fixture.owner, execution.id()));
+                assertThrows(java.util.concurrent.TimeoutException.class,
+                        () -> cancel.get(150, java.util.concurrent.TimeUnit.MILLISECONDS));
+                resume.countDown();
+                reconcile.get(5, java.util.concurrent.TimeUnit.SECONDS);
+                cancel.get(5, java.util.concurrent.TimeUnit.SECONDS);
+                deliveries.reconcile();
+                assertEquals("CANCELLED", service.executions(fixture.owner, draft.id()).get(0).state());
+                assertEquals("CANCELLED", deliveries.list(fixture.owner).get(0).state());
+            } finally {
+                resume.countDown();
+                fixture.onDefinitionRead = () -> {};
+                executor.shutdownNow();
+            }
         }
     }
 
@@ -848,10 +1043,10 @@ class ReportSubscriptionTest {
                         return f.actors.containsKey(user);
                     }
                 };
-        f.runtime.constraints(
+        f.runtime.runConstraints(
                 new ReportSubscriptionAccessGuard(
                                 resources, f.jdbc, auth, f.compiler, f.definitions)
-                        ::check);
+                        ::checkRun);
         return resources;
     }
 

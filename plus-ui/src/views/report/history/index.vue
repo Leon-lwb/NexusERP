@@ -15,7 +15,7 @@
       /><el-table v-loading="loading" :data="versions" empty-text="此报表还没有发布版本" border
         ><el-table-column label="版本" width="100"
           ><template #default="scope">v{{ scope.row.number }}</template></el-table-column
-        ><el-table-column prop="createdAt" label="发布时间" min-width="210" /><el-table-column
+        ><el-table-column prop="createdAt" label="发布时间" :formatter="formatReportTimeCell" min-width="210" /><el-table-column
           prop="engine"
           label="引擎版本"
           width="150"
@@ -52,6 +52,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { listReports, listVersions, rollbackReport } from '@/api/report';
 import type { ReportVersion, ReportDefinition } from '@/types/report';
 import { RequestGate } from '@/views/report/model';
+import { formatReportTimeCell } from '@/views/report/time';
 defineOptions({ name: 'ReportHistory' });
 /**
  * 保存当前页面或测试的route状态。

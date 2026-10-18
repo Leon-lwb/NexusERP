@@ -96,6 +96,24 @@ class ReportPivotTest {
                 () -> engine.drill(pivot("SUM", 0), descriptor(), rows, "forged", 0, 20));
     }
 
+    /** 部署前发出的原值坐标不因新增字典名称元数据而失效。 */
+    @Test
+    void historicalDrillCoordinatesRemainValidWithAndWithoutDictionaryNames() {
+        String historical = com.nexus.report.service.ReportDefinitionService.hash(
+                "[TypedValue[type=STRING, value=001]]|[TypedValue[type=STRING, value=2026]]|false|false|[0]");
+        var original = row("001", "2026", "1");
+        var labelled = new LinkedHashMap<>(original);
+        labelled.put("category", new TypedValue(ValueType.STRING, "001", "类别名称"));
+        labelled.put("period", new TypedValue(ValueType.STRING, "2026", "年度名称"));
+        var engine = new AggregationExecutor();
+        for (var current : List.of(original, labelled)) {
+            var rows = List.of(current);
+            var result = engine.aggregate(pivot("SUM", 0), descriptor(), rows);
+            assertEquals(historical, result.rows().get(0).cells().get(0).coordinate());
+            assertEquals(1, engine.drill(pivot("SUM", 0), descriptor(), rows, historical, 0, 20).total());
+        }
+    }
+
     /** 执行topNOtherBucketIsNotTruncatedAndUsesWeightedAverage对应的受控处理。 */
     @Test
     void topNOtherBucketIsNotTruncatedAndUsesWeightedAverage() {

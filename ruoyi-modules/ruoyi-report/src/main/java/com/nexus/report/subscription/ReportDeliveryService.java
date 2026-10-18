@@ -5,6 +5,7 @@ import com.nexus.report.domain.*;
 import com.nexus.report.engine.ReportCompiler;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.mapper.JdbcReportStore;
+import com.nexus.report.mapper.TimestampColumnMapRowMapper;
 import com.nexus.report.runtime.ReportRuntimeService;
 import com.nexus.report.service.ReportDefinitionService;
 
@@ -98,7 +99,7 @@ public final class ReportDeliveryService {
     public void reconcile() {
         var deliveries =
                 jdbc.queryForList(
-                        "SELECT tenant_id,delivery_id FROM rpt_delivery WHERE delivery_id>? AND"
+                        "SELECT tenant_id,delivery_id,execution_id FROM rpt_delivery WHERE delivery_id>? AND"
                                 + " (state IN ('PREPARING','FAILED','BLOCKED') OR state IN"
                                 + " ('READY','CLAIMED') AND (notification_state='PENDING' OR"
                                 + " expires_at<=CURRENT_TIMESTAMP)) ORDER BY delivery_id LIMIT 200",
@@ -112,12 +113,21 @@ public final class ReportDeliveryService {
             try {
                 resources.atomic(
                         () -> {
+                            var executionStates = jdbc.queryForList(
+                                    "SELECT state FROM rpt_subscription_run WHERE tenant_id=? AND execution_id=? FOR UPDATE",
+                                    String.class, tenant, ((Number) row.get("execution_id")).longValue());
+                            if (executionStates.size() != 1) throw ReportFault.denied();
                             var delivery =
-                                    jdbc.queryForMap(
+                                    jdbc.queryForObject(
                                             "SELECT * FROM rpt_delivery WHERE tenant_id=? AND"
                                                     + " delivery_id=? FOR UPDATE",
+                                            TimestampColumnMapRowMapper.INSTANCE,
                                             tenant,
                                             Long.parseLong(id));
+                            if ("CANCELLED".equals(executionStates.get(0))) {
+                                update(tenant, id, "CANCELLED", "CANCELLED");
+                                return null;
+                            }
                             if (!((Timestamp) delivery.get("expires_at"))
                                     .toInstant()
                                     .isAfter(Instant.now())) {
@@ -143,7 +153,7 @@ public final class ReportDeliveryService {
                             update(tenant, id, state, job.error());
                             jdbc.update(
                                     "UPDATE rpt_subscription_run SET state=?,error_code=? WHERE"
-                                            + " tenant_id=? AND execution_id=?",
+                                            + " tenant_id=? AND execution_id=? AND state<>'CANCELLED'",
                                     state.equals("CLAIMED") ? "SUCCEEDED" : state,
                                     job.error(),
                                     tenant,
@@ -211,9 +221,10 @@ public final class ReportDeliveryService {
         var current = current(actor);
         var result = new ArrayList<Delivery>();
         for (var row :
-                jdbc.queryForList(
+                jdbc.query(
                         "SELECT * FROM rpt_delivery WHERE tenant_id=? AND recipient_id=? ORDER BY"
                                 + " delivery_id DESC LIMIT 200",
+                        TimestampColumnMapRowMapper.INSTANCE,
                         current.tenantId(),
                         current.userId())) {
             String job = row.get("job_id").toString(),
@@ -232,7 +243,7 @@ public final class ReportDeliveryService {
                 error = actual.error();
             } catch (ReportFault denied) {
                 job = null;
-                state = "BLOCKED";
+                state = "EXECUTION_CANCELLED".equals(denied.code()) ? "CANCELLED" : "BLOCKED";
                 error = denied.code();
             }
             result.add(
@@ -261,9 +272,10 @@ public final class ReportDeliveryService {
                 () -> {
                     var row =
                             jdbc
-                                    .queryForList(
+                                    .query(
                                             "SELECT * FROM rpt_delivery WHERE tenant_id=? AND"
                                                 + " delivery_id=? AND recipient_id=? FOR UPDATE",
+                                            TimestampColumnMapRowMapper.INSTANCE,
                                             current.tenantId(),
                                             Long.parseLong(id),
                                             current.userId())

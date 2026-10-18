@@ -6,6 +6,8 @@ export interface TypedValue {
   type: ValueType;
   /** 保存当前 `value` 值。 */
   value: string | null;
+  /** 随服务端快照固定的字典显示名称，不替换原始编码。 */
+  displayValue?: string | null;
 }
 /** 声明精确类型Row结构，保留服务端精确值和固定版本约束。 */
 export type TypedRow = Record<string, TypedValue>;
@@ -182,7 +184,7 @@ export interface ReportDataset {
   /** 保存当前 `publishedVersion` 值。 */
   publishedVersion: string;
   /** 保存当前 `status` 值。 */
-  status: 'ACTIVE' | 'DISABLED';
+  status: 'ACTIVE' | 'OFFLINE' | 'ARCHIVED';
   /** 保存租约或资源持有者。 */
   owner: string;
 }

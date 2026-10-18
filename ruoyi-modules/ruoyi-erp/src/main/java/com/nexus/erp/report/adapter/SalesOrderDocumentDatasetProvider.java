@@ -12,6 +12,12 @@ import java.util.*;
 @Service
 @DS("erp")
 public class SalesOrderDocumentDatasetProvider extends JdbcDatasetProvider {
+    /** @return 与业务单据一致的币种字典，原币种仍用于金额分组 */
+    @Override
+    public Map<String, String> displayDictionaries() {
+        return Map.of("currency", "so_currency_type");
+    }
+
     /**
      * 装配销售订单真实表结构，删除标志和业务范围由公共底座及固定联表约束生效。
      *

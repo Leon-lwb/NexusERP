@@ -12,6 +12,12 @@ import java.util.*;
 @Service
 @DS("erp")
 public class PurchaseExecutionDatasetProvider extends JdbcDatasetProvider {
+    /** @return 与业务单据一致的币种字典，原币种仍用于金额分组 */
+    @Override
+    public Map<String, String> displayDictionaries() {
+        return Map.of("currency", "so_currency_type");
+    }
+
     /**
      * 初始化采购执行数据集提供者并保存所需依赖或不可变值。
      *

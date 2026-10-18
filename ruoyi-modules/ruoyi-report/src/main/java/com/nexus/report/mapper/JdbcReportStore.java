@@ -2517,10 +2517,10 @@ public class JdbcReportStore {
     public void cancel(ReportActor actor, String job) {
         jdbc.update(
                 "UPDATE rpt_export_job SET cancel_requested=1,execution_phase=CASE WHEN"
-                    + " state='QUEUED' THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED' END,state=CASE WHEN"
-                    + " state='QUEUED' THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED'"
+                    + " state IN ('QUEUED','FAILED') THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED' END,state=CASE WHEN"
+                    + " state IN ('QUEUED','FAILED') THEN 'CANCELLED' ELSE 'CANCEL_REQUESTED'"
                     + " END,update_time=CURRENT_TIMESTAMP WHERE tenant_id=? AND actor_id=? AND"
-                    + " job_id=? AND state IN ('QUEUED','RUNNING','CANCEL_REQUESTED')",
+                    + " job_id=? AND state IN ('QUEUED','RUNNING','CANCEL_REQUESTED','FAILED')",
                 actor.tenantId(),
                 actor.userId(),
                 number(job));

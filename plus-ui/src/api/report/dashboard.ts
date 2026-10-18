@@ -250,7 +250,14 @@ export const renderDashboard = (
      */
     widgets: DashboardView[];
   };
-}> => request({ url: '/report/dashboards/' + id + '/render', method: 'post', data: { parameters, selections }, timeout: 120000 });
+}> =>
+  request({
+    url: '/report/dashboards/' + id + '/render',
+    method: 'post',
+    headers: { repeatSubmit: false },
+    data: { parameters, selections },
+    timeout: 120000
+  });
 /** 新建独立仪表盘草稿。 */
 export const createDashboard = (
   code: string,

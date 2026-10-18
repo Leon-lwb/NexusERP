@@ -122,7 +122,7 @@
             <el-table-column label="状态" width="115"
               ><template #default="scope"><ReportStatus :status="scope.row.status" /></template
             ></el-table-column>
-            <el-table-column label="更新时间" prop="updatedAt" min-width="180" />
+            <el-table-column label="更新时间" prop="updatedAt" :formatter="formatReportTimeCell" min-width="180" />
             <el-table-column label="操作" width="185" fixed="right"
               ><template #default="scope"><ReportActions :row="scope.row" :copying="copying" @action="act" /></template
             ></el-table-column>
@@ -136,7 +136,7 @@
               <p class="report-code">{{ row.code }}</p>
               <div class="report-resource-card__meta">
                 <span>{{ kindLabels[row.kind] }}</span
-                ><span>{{ row.updatedAt || '更新时间待同步' }}</span>
+                ><span>{{ row.updatedAt ? formatReportDateTime(row.updatedAt) : '更新时间待同步' }}</span>
               </div>
               <div class="report-resource-card__actions"><ReportActions :row="row" :copying="copying" @action="act" /></div>
             </article>
@@ -167,6 +167,7 @@
           min-width="150" /><el-table-column prop="outcome" label="结果" /><el-table-column
           prop="create_time"
           label="时间"
+          :formatter="formatReportTimeCell"
           min-width="180" /></el-table
     ></el-drawer>
   </ReportPage>
@@ -184,6 +185,7 @@ import ReportStatus from '@/components/report/ReportStatus.vue';
 import ReportActions from '@/components/report/ReportActions.vue';
 import { filterReports, reportCounts } from '@/views/report/presentation';
 import { RequestGate } from '@/views/report/model';
+import { formatReportDateTime, formatReportTimeCell } from '@/views/report/time';
 import AclDialog from '@/components/report/AclDialog.vue';
 import TemplatePackageDialog from '@/components/report/TemplatePackageDialog.vue';
 import { copyReport, listDatasets } from '@/api/report';

@@ -8,11 +8,14 @@ import type {
   ReportSummary,
   ExportFormat
 } from '@/types/report';
+import { formatReportDateTime } from './time';
 /** 返回原生报表默认文字样式。 */
 export const normalStyle = (): ReportStyle => ({ fontSize: 10, bold: false, align: 'LEFT', color: '#1f2937', background: '#ffffff' });
 /** 格式化精确值，十进制舍入使用整数文本而不转换为浮点数。 */
 export function formatTyped(value: TypedValue | null | undefined, scale = 2): string {
   if (!value || value.value === null) return '';
+  if (value.type === 'STRING' && value.displayValue?.trim()) return value.displayValue;
+  if (value.type === 'DATETIME') return formatReportDateTime(value.value);
   if (value.type === 'BOOLEAN') return value.value === 'true' ? '是' : '否';
   if (value.type !== 'DECIMAL') return value.value;
   if (!/^[-+]?\d+(?:\.\d+)?$/.test(value.value) || scale < 0 || scale > 12) return value.value;
@@ -23,6 +26,11 @@ export function formatTyped(value: TypedValue | null | undefined, scale = 2): st
   if (digits[scale] >= '5') integer += 1n;
   const result = integer.toString().padStart(scale + 1, '0');
   return (negative && integer !== 0n ? '-' : '') + (scale ? result.slice(0, -scale) + '.' + result.slice(-scale) : result);
+}
+/** 维度仅转换名称和时间显示，保留数字原始精度及各场景的空值标记。 */
+export function formatDimension(value: TypedValue, empty = '（空）'): string {
+  if (value.value === null) return empty;
+  return ['STRING', 'DATE', 'DATETIME'].includes(value.type) ? formatTyped(value) : value.value;
 }
 /** 按已授权契约创建原生草稿并复制声明参数。 */
 export function createDsl(descriptor: DatasetDescriptor, datasetVersionId: string, code: string): ReportDsl {

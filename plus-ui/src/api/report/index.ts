@@ -41,11 +41,11 @@ export const listProviders = (): Api<DatasetDescriptor[]> => request({ url: '/re
 export const registerDataset = (code: string, version: number): Api<ReportDataset> =>
   request({ url: '/report/datasets', method: 'post', data: { code, version } });
 /** 提供报表 `datasetState` 操作入口。 */
-export const datasetState = (id: string, state: string, expectedStatus: string): Api<void> =>
+export const datasetState = (id: string, state: ReportDataset['status'], expectedStatus: ReportDataset['status']): Api<void> =>
   request({ url: '/report/datasets/' + id + '/state', method: 'put', data: { state, expectedStatus } });
-/** 提供报表 `sampleDataset` 操作入口。 */
+/** 只读获取数据集样例，允许快速重复读取。 */
 export const sampleDataset = (id: string, parameters: Record<string, string>): Api<DraftPreview> =>
-  request({ url: '/report/datasets/' + id + '/sample', method: 'post', data: parameters });
+  request({ url: '/report/datasets/' + id + '/sample', method: 'post', headers: { repeatSubmit: false }, data: parameters });
 /** 提供报表 `bootstrapReports` 操作入口。 */
 export const bootstrapReports = (): Api<ReportDefinition[]> => request({ url: '/report/bootstrap', method: 'post' });
 /** 提供报表 `createReport` 操作入口。 */
@@ -54,17 +54,17 @@ export const createReport = (dsl: ReportDsl, catalogId: string | null): Api<Repo
 /** 提供报表 `saveReport` 操作入口。 */
 export const saveReport = (id: string, revision: number, dsl: ReportDsl): Api<ReportDefinition> =>
   request({ url: '/report/definitions/' + id, method: 'put', data: { revision, dsl } });
-/** 提供报表 `validateDraft` 操作入口。 */
+/** 只读校验草稿，允许快速重复校验。 */
 export const validateDraft = (
   reportId: string | null,
   dsl: ReportDsl
 ): Api<{
   /** 保存当前 `valid` 值。 */
   valid: boolean;
-}> => request({ url: '/report/definitions/validate', method: 'post', data: { reportId, dsl } });
-/** 提供报表 `previewDraft` 操作入口。 */
+}> => request({ url: '/report/definitions/validate', method: 'post', headers: { repeatSubmit: false }, data: { reportId, dsl } });
+/** 只读预览草稿，允许快速刷新，迟到响应由页面请求门控处理。 */
 export const previewDraft = (reportId: string | null, dsl: ReportDsl, parameters: Record<string, string>): Api<DraftPreview> =>
-  request({ url: '/report/definitions/preview', method: 'post', data: { reportId, dsl, parameters } });
+  request({ url: '/report/definitions/preview', method: 'post', headers: { repeatSubmit: false }, data: { reportId, dsl, parameters } });
 /** 提供报表 `publishReport` 操作入口。 */
 export const publishReport = (id: string, revision: number): Api<ReportVersion> =>
   request({ url: '/report/definitions/' + id + '/publish', method: 'post', data: { revision } });

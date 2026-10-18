@@ -82,3 +82,24 @@ test('汇总分区优先列标题并保留完整ID和小数文本', () => {
   );
   assert.equal(summaryGroupText({}), '');
 });
+
+/** 字典名称只替换汇总维度的文字，数字维度与空值保持原有口径。 */
+test('汇总分区使用快照字典名称且保留未知编码', () => {
+  assert.equal(summaryGroupText({ currency: { type: 'STRING', value: 'CNY', displayValue: '人民币' } }), '币种=人民币');
+  assert.equal(summaryGroupText({ currency: { type: 'STRING', value: 'UNKNOWN' } }), '币种=UNKNOWN');
+  assert.equal(summaryGroupText({ currency: { type: 'STRING', value: null, displayValue: '人民币' } }), '币种=—');
+});
+/** 时间维度使用业务格式，避免汇总说明再次暴露ISO原文。 */
+test('汇总分区展示日期和北京时间且不改变精确数字维度', () => {
+  assert.equal(
+    summaryGroupText(
+      {
+        orderDate: { type: 'DATE', value: '2026-10-18' },
+        processedAt: { type: 'DATETIME', value: '2026-10-17T16:30:45.123Z' },
+        amount: { type: 'DECIMAL', value: '9007199254740993.123400' }
+      },
+      [{ field: 'processedAt', label: '处理时间' }]
+    ),
+    'orderDate=2026-10-18，处理时间=2026-10-18 00:30:45，amount=9007199254740993.123400'
+  );
+});

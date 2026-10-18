@@ -57,4 +57,28 @@ class ReportSnapshotIndexTest {
                             "SELECT COUNT(*) FROM rpt_snapshot_index", Integer.class));
         }
     }
+
+    /** 历史两字段快照不要求显示名称，字典名称在索引分页后仍固定保留。 */
+    @Test
+    void indexedRowsKeepDictionaryNamesAndAcceptHistoricalValues() throws Exception {
+        try (var fixture = new RuntimeReviewFixture(directory)) {
+            ReportExtensionSchema.apply(fixture.jdbc);
+            Path path = fixture.artifacts.temporary("A", "rows");
+            try (var output = fixture.artifacts.output("A", path)) {
+                output.write((fixture.json.writeValueAsString(Map.of(
+                        "currency", new TypedValue(ValueType.STRING, "CNY", "人民币"),
+                        "historical", new TypedValue(ValueType.STRING, "OLD"),
+                        "id", new TypedValue(ValueType.ID, "000123"))) + "\n")
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            String reference = fixture.artifacts.commit("A", path, "rows");
+            var indexes = new ReportSnapshotIndexService(fixture.jdbc, fixture.artifacts, fixture.json);
+            var row = indexes.page("A", reference, 0, 1).get(0);
+            assertEquals("CNY", row.get("currency").value());
+            assertEquals("人民币", row.get("currency").displayText());
+            assertEquals("OLD", row.get("historical").displayText());
+            assertNull(row.get("historical").displayValue());
+            assertEquals("123", row.get("id").value(), "仍执行历史精确值规范化");
+        }
+    }
 }

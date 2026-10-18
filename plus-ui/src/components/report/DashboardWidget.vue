@@ -19,14 +19,14 @@
         <table>
           <tbody>
             <tr v-for="(row, index) in pivot.rows || []" :key="index">
-              <th>{{ row.keys.map((value) => value.value ?? '（空）').join(' / ') }}</th>
+              <th>{{ row.keys.map(displayKey).join(' / ') }}</th>
               <td v-for="(cell, c) in row.cells" :key="c">{{ cell.values.map((value) => value.value ?? '—').join(' / ') }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="widget-meta">
-        {{ view.datasetCode }} · {{ view.dataTime }} ·
+        {{ view.datasetCode }} · {{ formatReportDateTime(view.dataTime) }} ·
         {{ view.consistency === 'SNAPSHOT' ? '固定快照' : view.consistency === 'LIVE' ? '实时分页' : view.consistency
         }}<span v-if="view.type === 'TABLE'"> · 预览{{ table.visibleRows }}行 / 共{{ view.total }}行</span>
       </div>
@@ -41,7 +41,13 @@ import * as echarts from 'echarts';
 import type { DashboardView } from '@/api/report/dashboard';
 import type { TypedValue, PageData, PivotResult } from '@/types/report';
 import { chartOption, type ChartData } from '@/views/report/dashboard/model';
+import { formatDimension } from '@/views/report/model';
+import { formatReportDateTime } from '@/views/report/time';
 import TypedTable from './TypedTable.vue';
+/** 分类显示字典名称，数字维度保留完整原值。 */
+function displayKey(value: TypedValue) {
+  return formatDimension(value);
+}
 /**
  * 保存当前页面或测试的props、emit、chartElement状态。
  */

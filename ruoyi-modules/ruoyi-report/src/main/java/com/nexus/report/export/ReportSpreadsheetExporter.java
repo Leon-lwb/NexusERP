@@ -374,6 +374,6 @@ public final class ReportSpreadsheetExporter {
             }
         }
         /** 字符串写入不生成公式，即使内容以等号、加号、减号或邮箱符号开头。 */
-        cell.setCellValue(value.value());
+        cell.setCellValue(value.displayText());
     }
 }

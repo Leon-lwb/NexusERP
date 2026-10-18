@@ -21,7 +21,9 @@
           ></el-table-column
         ><el-table-column label="文件大小" width="115"
           ><template #default="scope">{{ scope.row.bytes == null ? '—' : (scope.row.bytes / 1024).toFixed(1) + ' KB' }}</template></el-table-column
-        ><el-table-column prop="expires" label="到期时间" min-width="210" /><el-table-column label="结果说明" min-width="220"
+        ><el-table-column prop="expires" label="到期时间" :formatter="formatReportTimeCell" min-width="210" /><el-table-column
+          label="结果说明"
+          min-width="220"
           ><template #default="scope">{{ jobError(scope.row.error) }}</template></el-table-column
         ><el-table-column label="执行进度" min-width="190"
           ><template #default="scope"
@@ -74,6 +76,7 @@ import { saveAs } from 'file-saver';
 import { retryExport, listExportJobs, cancelExport, downloadExport } from '@/api/report';
 import type { ExportJob } from '@/types/report';
 import { jobError, RequestGate } from '@/views/report/model';
+import { formatReportTimeCell } from '@/views/report/time';
 defineOptions({ name: 'ReportExports' });
 /**
  * 保存当前页面或测试的jobs状态。

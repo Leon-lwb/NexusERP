@@ -5,6 +5,7 @@ import { tansParams, blobValidate } from '@/utils/ruoyi';
 import cache from '@/plugins/cache';
 import { HttpStatus } from '@/enums/RespEnum';
 import { errorCode } from '@/utils/errorCode';
+import { readReportResponseError } from './report-response-error';
 import { LoadingInstance } from 'element-plus/es/components/loading/src/loading';
 import FileSaver from 'file-saver';
 import { encryptBase64, encryptWithAes, generateAesKey, decryptWithAes, decryptBase64 } from '@/utils/crypto';
@@ -138,9 +139,11 @@ service.interceptors.request.use(
     }
 
     if (!isRepeatSubmit && (config.method === 'post' || config.method === 'put')) {
+      const requestData = typeof config.data === 'object' ? JSON.stringify(config.data) : config.data;
+      const reportParams = config.url?.startsWith('/report/') ? config.params : undefined;
       const requestObj = {
         url: config.url,
-        data: typeof config.data === 'object' ? JSON.stringify(config.data) : config.data,
+        data: reportParams ? JSON.stringify({ data: requestData, params: reportParams }) : requestData,
         time: new Date().getTime()
       };
       const sessionObj = cache.session.getJSON('sessionObj');
@@ -242,6 +245,15 @@ service.interceptors.response.use(
     if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
       return res.data;
     }
+    const reportError = readReportResponseError(res);
+    if (reportError && !isAuthExpiredError(msg)) {
+      if (res.config.headers?.ignoreErrorMsg !== 'true') {
+        ElMessage({ message: reportError.message, type: 'error' });
+      }
+      return Promise.reject(
+        Object.assign(new Error(reportError.message), { code: reportError.code, errorCode: reportError.errorCode, response: res })
+      );
+    }
     if (code === 401) {
       toReLogin();
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。');
@@ -270,6 +282,13 @@ service.interceptors.response.use(
   (error: any) => {
     if (hasCertifiedErrorBoundary(error?.config)) {
       return Promise.reject(new Error('认证接口网络或HTTP结果未确认，请保留原意图，只读核对。'));
+    }
+    const reportError = readReportResponseError(error?.response);
+    if (reportError) {
+      if (error.config?.headers?.ignoreErrorMsg !== 'true') {
+        ElMessage({ message: reportError.message, type: 'error', duration: 5 * 1000 });
+      }
+      return Promise.reject(error);
     }
     let { message } = error;
     if (message == 'Network Error') {

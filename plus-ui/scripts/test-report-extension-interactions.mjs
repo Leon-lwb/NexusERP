@@ -351,6 +351,50 @@ test('subscription source switching preserves string IDs and rejects stale contr
   f.unmount();
 });
 /** 网络失败重试使用原始整体手动键，不制造另一组接收人任务。 */
+test('订阅执行终态和未知记录不再提交重试或取消', async (t) => {
+  const writes = [];
+  const rows = [];
+  const f = mount(components.subscription, {
+    retrySubscriptionExecution: async (id) => writes.push(['retry', id]),
+    cancelSubscriptionExecution: async (id) => writes.push(['cancel', id]),
+    subscriptionExecutions: async () => ({ data: rows }),
+    subscriptionSchedule: async () => ({ data: null })
+  });
+  t.after(f.unmount);
+  await flush();
+  for (const state of ['CANCELLED', 'READY', 'SUCCEEDED', 'EXPIRED']) {
+    rows.splice(0, rows.length, { id: '9223372036854775807', state });
+    f.state.executions = [...rows];
+    await f.state.retry('9223372036854775807');
+    await f.state.cancel('9223372036854775807');
+  }
+  await f.state.retry('unknown');
+  await f.state.cancel('unknown');
+  assert.deepEqual(writes, []);
+});
+/** 可恢复执行使用原记录和完整ID，操作完成刷新当前执行目录。 */
+test('订阅等待恢复仅提交原执行ID并保留目录', async (t) => {
+  const writes = [];
+  const rows = [{ id: '9223372036854775807', state: 'RETRY_WAIT' }];
+  const f = mount(components.subscription, {
+    retrySubscriptionExecution: async (id) => writes.push(['retry', id]),
+    cancelSubscriptionExecution: async (id) => writes.push(['cancel', id]),
+    subscriptionExecutions: async () => ({ data: rows }),
+    subscriptionSchedule: async () => ({ data: null })
+  });
+  t.after(f.unmount);
+  await flush();
+  f.state.executions = [...rows];
+  f.state.selected = '9223372036854775806';
+  await f.state.retry('9223372036854775807');
+  await f.state.cancel('9223372036854775807');
+  assert.deepEqual(writes, [
+    ['retry', '9223372036854775807'],
+    ['cancel', '9223372036854775807']
+  ]);
+  assert.equal(f.state.selected, '9223372036854775806');
+});
+/** 网络失败重试使用原始整体手动键，不制造另一组接收人任务。 */
 test('subscription manual retry retains occurrence request key until success', async (t) => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
   const native = globalThis.crypto;

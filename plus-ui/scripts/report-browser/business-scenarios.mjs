@@ -71,6 +71,8 @@ export async function runBusinessScenarios(cdp, host, scenario, click, rendered)
     assert.equal(business.runs.at(-1).parameters.orderId, selected[0]);
     assert.equal(business.runs.at(-1).version, fixture.reportVersionId);
     assert.equal(business.runs.at(-1).mode, 'SNAPSHOT');
+    assert.ok(await evaluate('document.querySelector(".report-result-meta").textContent.includes("2026-10-17 08:00:00")'));
+    assert.ok(!(await evaluate('document.querySelector(".report-result-meta").textContent.includes("2026-10-17T00:00:00Z")')));
     assert.deepEqual(await evaluate('window.__reportNavigation'), navigation);
     const visual = await rendered('business-single-drawer');
     assert.equal(visual.drawers.length, 1, '单张截图应保留实际打开的业务抽屉');

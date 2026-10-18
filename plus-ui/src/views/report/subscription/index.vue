@@ -105,7 +105,13 @@
         ></el-table
       ><el-alert
         v-if="schedule"
-        :title="'下一执行时刻 ' + schedule.nextAt + '；' + (schedule.enabled ? '可调度' : '已停用') + (schedule.error ? '；' + schedule.error : '')"
+        :title="
+          '下一执行时刻 ' +
+          formatReportDateTime(schedule.nextAt) +
+          '；' +
+          (schedule.enabled ? '可调度' : '已停用') +
+          (schedule.error ? '；' + schedule.error : '')
+        "
         :type="schedule.enabled ? 'info' : 'warning'"
         :closable="false"
         class="mt-3"
@@ -115,15 +121,28 @@
         <span class="report-secondary">{{ selected }}</span>
       </div>
       <el-table v-if="selected" :data="executions" empty-text="当前订阅还没有执行记录"
-        ><el-table-column prop="recipient" label="接收人" /><el-table-column prop="scheduledAt" label="固定时刻" /><el-table-column
-          prop="eventType"
-          label="触发类型"
-        /><el-table-column label="状态" width="120"
+        ><el-table-column prop="recipient" label="接收人" /><el-table-column
+          prop="scheduledAt"
+          label="固定时刻"
+          :formatter="formatReportTimeCell"
+          min-width="180"
+        /><el-table-column prop="eventType" label="触发类型" /><el-table-column label="状态" width="120"
           ><template #default="scope"><ReportStatus :status="scope.row.state" /></template></el-table-column
         ><el-table-column prop="error" label="结果码" /><el-table-column label="操作"
           ><template #default="scope"
-            ><el-button v-hasPermi="['report:subscription:manage']" link :disabled="busy" @click="retry(scope.row.id)">重试</el-button
-            ><el-button v-hasPermi="['report:subscription:manage']" link :disabled="busy" @click="cancel(scope.row.id)">取消</el-button></template
+            ><el-button
+              v-hasPermi="['report:subscription:manage']"
+              link
+              :disabled="busy || !canRetryExecution(scope.row)"
+              @click="retry(scope.row.id)"
+              >重试</el-button
+            ><el-button
+              v-hasPermi="['report:subscription:manage']"
+              link
+              :disabled="busy || !canCancelExecution(scope.row)"
+              @click="cancel(scope.row.id)"
+              >取消</el-button
+            ></template
           ></el-table-column
         ></el-table
       ></el-card
@@ -175,6 +194,7 @@ import {
 import type { ReportDefinition, ReportParameter } from '@/types/report';
 import type { ReportResource } from '@/api/report/query';
 import { RequestGate } from '@/views/report/model';
+import { formatReportDateTime, formatReportTimeCell } from '@/views/report/time';
 /**
  * 保存当前页面或测试的reports、subscriptions、resource、model、sourceParameters、capabilities、executions、schedule、selected、loading、busy、code、title、recipientText、baseline状态。
  */
@@ -427,9 +447,18 @@ async function state(row: ReportResource) {
     busy.value = false;
   }
 }
+/** 仅失败、阻塞或等待恢复的执行提供重试，具体资格仍由服务端复核。 */
+function canRetryExecution(row: SubscriptionExecution) {
+  return ['FAILED', 'BLOCKED', 'RETRY_WAIT'].includes(row.state);
+}
+/** 仅尚未结束的执行可以取消，已交付、已取消或过期记录保持终态。 */
+function canCancelExecution(row: SubscriptionExecution) {
+  return ['PENDING', 'QUEUED', 'PREPARING', 'RETRY_WAIT', 'BLOCKED'].includes(row.state);
+}
 /** 重试使用已有执行身份和固定日期。 */
 async function retry(id: string) {
-  if (busy.value) return;
+  const row = executions.value.find((execution) => execution.id === id);
+  if (busy.value || !row || !canRetryExecution(row)) return;
   busy.value = true;
   try {
     await retrySubscriptionExecution(id);
@@ -440,7 +469,8 @@ async function retry(id: string) {
 }
 /** 取消特定接收人的执行。 */
 async function cancel(id: string) {
-  if (busy.value) return;
+  const row = executions.value.find((execution) => execution.id === id);
+  if (busy.value || !row || !canCancelExecution(row)) return;
   busy.value = true;
   try {
     await cancelSubscriptionExecution(id);

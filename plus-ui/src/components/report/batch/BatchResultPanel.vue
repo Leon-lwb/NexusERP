@@ -44,7 +44,7 @@
         <el-table-column label="错误/有效期" min-width="230">
           <template #default="scope">
             <div v-if="scope.row.error">{{ jobError(scope.row.error) }}（{{ scope.row.error }}）</div>
-            <div v-if="scope.row.expires">{{ scope.row.expires }}</div>
+            <div v-if="scope.row.expires">{{ formatReportDateTime(scope.row.expires) }}</div>
             <span v-if="['FAILED', 'CANCELLED', 'EXPIRED'].includes(scope.row.state) && scope.row.jobId && !scope.row.canRetry"
               >原任务不可恢复，请新建批次</span
             >
@@ -75,6 +75,7 @@ import type { useBatchResult } from './useBatchResult';
 import type { BusinessDocumentRef } from '../businessDocument';
 import { batchDocumentAt } from '../businessDocument';
 import { jobError } from '@/views/report/model';
+import { formatReportDateTime } from '@/views/report/time';
 import ReportStatus from '../ReportStatus.vue';
 import ReportPdfPreview from '../ReportPdfPreview.vue';
 /** 逐项结果由批次页和业务抽屉共用，展示信息不参与授权。 */

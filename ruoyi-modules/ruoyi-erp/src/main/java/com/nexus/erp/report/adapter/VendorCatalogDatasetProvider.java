@@ -12,6 +12,12 @@ import java.util.*;
 @Service
 @DS("erp")
 public class VendorCatalogDatasetProvider extends JdbcDatasetProvider {
+    /** @return 与供应商页面一致的分类、行业和区域字典 */
+    @Override
+    public Map<String, String> displayDictionaries() {
+        return Map.of("category", "bd_vendor_category", "industry", "bd_vendor_industry", "region", "bd_region");
+    }
+
     /**
      * 装配业务数据源上的只读数据集。
      *

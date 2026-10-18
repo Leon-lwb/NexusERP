@@ -53,7 +53,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { runPivot, runDrill } from '@/api/report';
 import type { PivotResult, TypedValue, TypedRow } from '@/types/report';
-import { RequestGate, normalStyle } from '@/views/report/model';
+import { RequestGate, normalStyle, formatDimension } from '@/views/report/model';
 import TypedTable from './TypedTable.vue';
 /**
  * 保存当前页面或测试的props状态。
@@ -89,7 +89,7 @@ const columns = computed(() =>
 );
 /** 精确值直接显示，空值有独立标记。 */
 function display(value: TypedValue) {
-  return value.value === null ? '（空）' : value.value;
+  return formatDimension(value);
 }
 /** 运行变化后使旧交叉结果和钻取回包失效。 */
 async function load() {

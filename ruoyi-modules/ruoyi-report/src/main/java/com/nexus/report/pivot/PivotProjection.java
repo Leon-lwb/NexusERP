@@ -43,7 +43,7 @@ public final class PivotProjection {
                 var measure = definition.measures().get(m);
                 String label =
                         result.columns().get(c).stream()
-                                .map(v -> v.value() == null ? "（空）" : v.value())
+                                .map(value -> value.value() == null ? "（空）" : value.displayText())
                                 .collect(java.util.stream.Collectors.joining(" / "));
                 columns.add(
                         new ReportDsl.Column(
@@ -101,7 +101,7 @@ public final class PivotProjection {
                         "axis_0",
                         TypedValue.of(
                                 ValueType.STRING,
-                                "总计 / " + (first.value() == null ? "（空）" : first.value())));
+                                "总计 / " + (first.value() == null ? "（空）" : first.displayText())));
             }
             for (int c = 0; c < total.cells().size(); c++)
                 for (int m = 0; m < definition.measures().size(); m++)

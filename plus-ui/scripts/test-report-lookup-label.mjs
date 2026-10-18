@@ -68,7 +68,8 @@ test('异步回显更新真实ElSelect已选标签并保留完整ID', async (t) 
     complete = resolve;
   });
   const api = { reportLookup: async () => ({ data: { options: [], total: 0 } }), reportLookupSelected: () => pending };
-  const model = evaluate(readFileSync('src/views/report/model.ts', 'utf8'));
+  const time = evaluate(readFileSync('src/views/report/time.ts', 'utf8'));
+  const model = evaluate(readFileSync('src/views/report/model.ts', 'utf8'), (name) => (name === './time' ? time : require(name)));
   const filename = resolve('src/components/report/ParameterLookup.vue');
   const { descriptor } = parse(readFileSync(filename, 'utf8'), { filename });
   const Lookup = evaluate(compileScript(descriptor, { id: 'lookup-label-regression', inlineTemplate: true }).content, (name) =>

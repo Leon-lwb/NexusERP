@@ -101,7 +101,7 @@
         </div>
         <div v-if="run && data" class="report-result-meta">
           <el-tag :type="run.mode === 'SNAPSHOT' ? 'success' : 'info'" effect="plain">{{ run.mode === 'SNAPSHOT' ? '固定快照' : '实时分页' }}</el-tag
-          ><span>数据时间：{{ data.dataTime }}</span
+          ><span>数据时间：{{ formatReportDateTime(data.dataTime) }}</span
           ><span>共 {{ data.total }} 条</span><span>运行版本：{{ run.version }}</span>
         </div>
         <div class="viewer-result-content">
@@ -146,6 +146,7 @@ import { ArrowDown } from '@element-plus/icons-vue';
 import type { useReportRun } from './useReportRun';
 import type { useReportPrint } from './useReportPrint';
 import { jobError } from '@/views/report/model';
+import { formatReportDateTime } from '@/views/report/time';
 import { summaryGroupText } from '@/views/report/presentation';
 import ParameterForm from '../ParameterForm.vue';
 import TypedTable from '../TypedTable.vue';

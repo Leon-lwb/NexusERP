@@ -181,7 +181,7 @@ public final class WidgetCalculations {
                                     .doubleValue();
             points.add(
                     new Point(
-                            entry.getKey().value() == null ? "（空）" : entry.getKey().value(),
+                            entry.getKey().value() == null ? "（空）" : entry.getKey().displayText(),
                             entry.getKey(),
                             value,
                             projection));

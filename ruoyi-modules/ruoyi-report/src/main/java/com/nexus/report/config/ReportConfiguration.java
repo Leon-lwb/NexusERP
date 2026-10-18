@@ -1,9 +1,12 @@
 package com.nexus.report.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.core.service.DictService;
 import com.nexus.common.report.*;
 import com.nexus.common.report.catalog.ReportEntityCatalogProvider;
 import com.nexus.report.dataset.ReportDatasetResolver;
+import com.nexus.report.dataset.ReportDictionaryDatasetProvider;
+import com.nexus.report.dataset.ReportDictionaryLabels;
 import com.nexus.report.engine.ReportCompiler;
 import com.nexus.report.export.*;
 import com.nexus.report.extension.ReportResourceStore;
@@ -56,11 +59,25 @@ public class ReportConfiguration {
      * 装配提供者注册表，复用统一权限和存储契约。
      *
      * @param providers 当前操作的 {@code providers} 输入
+     * @param labels 当前租户系统字典名称
      * @return 当前处理返回的固定结果
      */
     @Bean
-    public ReportProviderRegistry reportProviderRegistry(List<ReportDatasetProvider> providers) {
-        return new ReportProviderRegistry(providers);
+    public ReportProviderRegistry reportProviderRegistry(List<ReportDatasetProvider> providers, ReportDictionaryLabels labels) {
+        return new ReportProviderRegistry(providers.stream().map(provider ->
+                provider.displayDictionaries().isEmpty() ? provider
+                        : new ReportDictionaryDatasetProvider(provider, labels)).toList());
+    }
+
+    /**
+     * 为授权投影装配系统字典读取入口。
+     *
+     * @param dictionaries 系统字典服务
+     * @return 使用master数据源的名称读取服务
+     */
+    @Bean
+    public ReportDictionaryLabels reportDictionaryLabels(DictService dictionaries) {
+        return new ReportDictionaryLabels(dictionaries);
     }
 
     /**
@@ -310,10 +327,10 @@ public class ReportConfiguration {
                 new ReportRuntimeService(
                         store, definitions, compiler, snapshots, artifacts, properties, json);
         runtime.metrics(metrics);
-        runtime.constraints(
+        runtime.runConstraints(
                 new com.nexus.report.subscription.ReportSubscriptionAccessGuard(
                                 resources, jdbc, authorization, compiler, definitions)
-                        ::check);
+                        ::checkRun);
         if (storage.isManifestEnabled())
             runtime.fontResources(new ReportFontResourceStore(jdbc, artifacts));
         return runtime;

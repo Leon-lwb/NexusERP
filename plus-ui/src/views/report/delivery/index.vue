@@ -16,7 +16,10 @@
           ><template #default="scope"><ReportStatus :status="scope.row.state" /></template></el-table-column
         ><el-table-column label="通知状态" width="120"
           ><template #default="scope"><ReportStatus :status="scope.row.notification" /></template></el-table-column
-        ><el-table-column prop="expires" label="到期时刻" /><el-table-column prop="error" label="结果码" /><el-table-column label="领取"
+        ><el-table-column prop="expires" label="到期时刻" :formatter="formatReportTimeCell" min-width="180" /><el-table-column
+          prop="error"
+          label="结果码"
+        /><el-table-column label="领取"
           ><template #default="scope"
             ><el-button
               type="primary"
@@ -42,6 +45,7 @@ import { saveAs } from 'file-saver';
 import { listReportDeliveries, claimReportDelivery, type ReportDelivery } from '@/api/report/subscription';
 import { downloadExport } from '@/api/report';
 import { RequestGate } from '@/views/report/model';
+import { formatReportTimeCell } from '@/views/report/time';
 /**
  * 保存当前页面或测试的deliveries、loading、busy状态。
  */

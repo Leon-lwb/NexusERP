@@ -12,6 +12,12 @@ import java.util.*;
 @Service
 @DS("mes")
 public class QualityTraceDatasetProvider extends JdbcDatasetProvider {
+    /** @return 与检验页面一致的检验结果字典 */
+    @Override
+    public Map<String, String> displayDictionaries() {
+        return Map.of("inspectResult", "mes_qc_result");
+    }
+
     /**
      * 初始化质量追溯数据集提供者并保存所需依赖或不可变值。
      *

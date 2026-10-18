@@ -92,6 +92,11 @@ public final class DocumentLayoutEngine {
             double staticHeader =
                     dsl.headerRows().stream().mapToDouble(ReportDsl.BandRow::height).sum();
             double columnHeight = 24;
+            for (int column = 0; column < columns; column++) {
+                var headerLines =
+                        metrics.wrap(dsl.columns().get(column).label(), widths[column] - 8, 10);
+                columnHeight = Math.max(columnHeight, headerLines.size() * 12 + 8);
+            }
             double top = paper.marginTop() + titleHeight + staticHeader;
             double bottom = paper.height() - paper.marginBottom() - 20;
             if (top + columnHeight + paper.rowHeight() > bottom)
@@ -168,7 +173,7 @@ public final class DocumentLayoutEngine {
                                                         + "="
                                                         + (entry.getValue().value() == null
                                                                 ? "（空）"
-                                                                : entry.getValue().value()))
+                                                                : entry.getValue().displayText()))
                                 .reduce((a, b) -> a + ", " + b)
                                 .orElse("");
                 String text =
@@ -248,8 +253,6 @@ public final class DocumentLayoutEngine {
                     for (int c = 0; c < columns; c++) {
                         var style = new ReportDsl.Style(10, true, "CENTER", "#111827", "#f3f4f6");
                         var lines = metrics.wrap(dsl.columns().get(c).label(), widths[c] - 8, 10);
-                        if (lines.size() * 12 + 8 > columnHeight)
-                            throw ReportFault.invalid("表头文字超出行高，请调整列宽或标题");
                         builder.cells.add(
                                 new RenderPlan.Cell(
                                         "COLUMN_HEADER",
@@ -360,7 +363,7 @@ public final class DocumentLayoutEngine {
                                         bind(cell.text() == null ? "" : cell.text(), bindings));
                 var lines =
                         metrics.wrap(
-                                raw == null || raw.value() == null ? "" : raw.value(),
+                                raw == null ? "" : raw.displayText(),
                                 width - 8,
                                 cell.style().fontSize());
                 if (lines.size() * cell.style().fontSize() * 1.2 + 8 > height)
@@ -400,7 +403,7 @@ public final class DocumentLayoutEngine {
             matcher.appendReplacement(
                     out,
                     Matcher.quoteReplacement(
-                            value == null || value.value() == null ? "" : value.value()));
+                            value == null ? "" : value.displayText()));
         }
         matcher.appendTail(out);
         return out.toString();

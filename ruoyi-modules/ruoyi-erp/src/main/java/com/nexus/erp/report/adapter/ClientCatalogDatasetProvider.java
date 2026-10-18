@@ -12,6 +12,12 @@ import java.util.*;
 @Service
 @DS("erp")
 public class ClientCatalogDatasetProvider extends JdbcDatasetProvider {
+    /** @return 与客户页面一致的客户类型字典 */
+    @Override
+    public Map<String, String> displayDictionaries() {
+        return Map.of("clientType", "bd_client_type");
+    }
+
     /**
      * 装配业务数据源上的只读数据集。
      *

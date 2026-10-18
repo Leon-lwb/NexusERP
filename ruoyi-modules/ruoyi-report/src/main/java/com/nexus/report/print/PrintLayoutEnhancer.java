@@ -245,7 +245,7 @@ public final class PrintLayoutEnhancer {
                                 + "："
                                 + (bucket.getKey().get(i).value() == null
                                         ? "（空）"
-                                        : bucket.getKey().get(i).value()));
+                                        : bucket.getKey().get(i).displayText()));
             header.put(
                     report.dsl().columns().get(0).field(),
                     TypedValue.of(ValueType.STRING, String.join(" / ", parts)));
@@ -278,7 +278,7 @@ public final class PrintLayoutEnhancer {
                                                                                                             == null
                                                                                                     ? "（空）"
                                                                                                     : entry.getValue()
-                                                                                                            .value()))
+                                                                                                            .displayText()))
                                                                     .collect(
                                                                             java.util.stream
                                                                                     .Collectors
@@ -393,7 +393,7 @@ public final class PrintLayoutEnhancer {
                     .get(0)
                     .forEach(
                             (key, value) ->
-                                    values.put(key, value.value() == null ? "" : value.value()));
+                                    values.put(key, value.displayText()));
         parameters.forEach((key, value) -> values.put("p_" + key, Objects.toString(value, "")));
         values.put("row_count", Integer.toString(data.rows().size()));
         values.put("page_no", Integer.toString(page));

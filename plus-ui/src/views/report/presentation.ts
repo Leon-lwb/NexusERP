@@ -1,4 +1,5 @@
 import type { ReportDefinition, ReportColumn, TypedValue } from '@/types/report';
+import { formatDimension } from './model';
 
 /** 报表展示筛选；目录和资源 ID 始终保留完整字符串。 */
 export interface ReportFilters {
@@ -97,7 +98,9 @@ export function summaryGroupText(group: Record<string, TypedValue>, columns: Pic
   return Object.entries(group)
     .map(
       ([name, value]) =>
-        (columns.find((column) => column.field === name)?.label || (Object.hasOwn(labels, name) ? labels[name] : name)) + '=' + (value.value ?? '—')
+        (columns.find((column) => column.field === name)?.label || (Object.hasOwn(labels, name) ? labels[name] : name)) +
+        '=' +
+        formatDimension(value, '—')
     )
     .join('，');
 }

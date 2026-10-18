@@ -252,8 +252,8 @@ async function sample() {
 /** 处理当前报表的 `toggle` 操作。 */
 async function toggle(dataset: DatasetView) {
   try {
-    const state = dataset.dataset.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
-    await ElMessageBox.confirm(state === 'DISABLED' ? '停用后引用此数据集的报表将暂停运行。' : '启用此数据集？', '数据集状态');
+    const state = dataset.dataset.status === 'ACTIVE' ? 'OFFLINE' : 'ACTIVE';
+    await ElMessageBox.confirm(state === 'OFFLINE' ? '停用后引用此数据集的报表将暂停运行。' : '启用此数据集？', '数据集状态');
     await datasetState(dataset.dataset.id, state, dataset.dataset.status);
     await load();
   } catch {}

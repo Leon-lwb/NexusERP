@@ -3,6 +3,7 @@ package com.nexus.report.dashboard;
 import com.nexus.common.report.ReportActor;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.extension.ReportResourceStore;
+import com.nexus.report.mapper.TimestampColumnMapRowMapper;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -60,9 +61,10 @@ public final class DashboardRefreshQuota {
                 scope,
                 Timestamp.from(now));
         var row =
-                jdbc.queryForMap(
+                jdbc.queryForObject(
                         "SELECT window_start,counter FROM rpt_refresh_quota WHERE scope_key=? FOR"
                                 + " UPDATE",
+                        TimestampColumnMapRowMapper.INSTANCE,
                         scope);
         Instant start = ((Timestamp) row.get("window_start")).toInstant();
         int value =

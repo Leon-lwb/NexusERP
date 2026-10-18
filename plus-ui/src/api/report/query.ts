@@ -230,7 +230,7 @@ export const publishQuery = (
     };
   };
 }> => request({ url: '/report/queries/' + resource.id + '/publish', method: 'post', data: { revision: resource.revision } });
-/** 获取精确类型预览，不在浏览器计算聚合值。 */
+/** 只读获取精确类型预览，允许快速刷新，不在浏览器计算聚合值。 */
 export const previewQuery = (
   model: QueryDefinition,
   parameters: Record<string, string>
@@ -253,7 +253,7 @@ export const previewQuery = (
      */
     fields: DatasetField[];
   };
-}> => request({ url: '/report/queries/preview', method: 'post', data: { model, parameters } });
+}> => request({ url: '/report/queries/preview', method: 'post', headers: { repeatSubmit: false }, data: { model, parameters } });
 /** 显式下线或归档查询及其运行依赖。 */
 export const queryState = (
   resource: ReportResource,

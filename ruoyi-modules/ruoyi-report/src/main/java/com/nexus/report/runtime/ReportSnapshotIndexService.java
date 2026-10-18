@@ -315,9 +315,10 @@ public final class ReportSnapshotIndexService {
             var result = new LinkedHashMap<String, TypedValue>();
             for (var entry : raw.entrySet()) {
                 if (entry.getKey() == null || entry.getValue() == null) throw invalid();
+                var normalized = TypedValue.of(entry.getValue().type(), entry.getValue().value());
                 result.put(
                         entry.getKey(),
-                        TypedValue.of(entry.getValue().type(), entry.getValue().value()));
+                        new TypedValue(normalized.type(), normalized.value(), entry.getValue().displayValue()));
             }
             return Collections.unmodifiableMap(result);
         } catch (Exception failure) {

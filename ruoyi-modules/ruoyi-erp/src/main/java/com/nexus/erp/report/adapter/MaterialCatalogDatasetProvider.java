@@ -12,6 +12,12 @@ import java.util.*;
 @Service
 @DS("erp")
 public class MaterialCatalogDatasetProvider extends JdbcDatasetProvider {
+    /** @return 物料类型与来源的已批准字典，兼容现有SQL名称 */
+    @Override
+    public Map<String, String> displayDictionaries() {
+        return Map.of("materialType", "bd_material_type", "sourceType", "prd_material_source_type");
+    }
+
     /**
      * 装配业务数据源上的只读数据集。
      *
