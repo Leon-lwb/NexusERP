@@ -20,8 +20,7 @@ import java.util.Date;
 @AutoMapper(target = WmBarcode.class)
 public class WmBarcodeVo implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     /**
      * 条码实例ID
@@ -34,7 +33,9 @@ public class WmBarcodeVo implements Serializable {
     @ExcelProperty(value = "条码")
     private String barcodeCode;
 
-    /** 登记时冻结的主对象类型；历史空值保留证据缺口。 */
+    /**
+     * 登记时冻结的主对象类型；历史空值保留证据缺口。
+     */
     private String primaryObjectType;
 
     /**

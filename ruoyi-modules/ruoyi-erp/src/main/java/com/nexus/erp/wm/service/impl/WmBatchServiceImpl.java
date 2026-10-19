@@ -39,16 +39,24 @@ import java.util.stream.Collectors;
 @Service
 public class WmBatchServiceImpl implements IWmBatchService {
 
-    /** 基础数据访问映射器（Mapper） */
+    /**
+     * 基础数据访问映射器（Mapper）
+     */
     private final WmBatchMapper baseMapper;
 
-    /** 按日自增序号提供器（批次号并发安全） */
+    /**
+     * 按日自增序号提供器（批次号并发安全）
+     */
     private final DailyCodeSequenceProvider dailyCodeSequenceProvider;
 
-    /** 收货单行映射器（IQC 回写按收货行批次号定位批次） */
+    /**
+     * 收货单行映射器（IQC 回写按收货行批次号定位批次）
+     */
     private final WmMaterialReceiveLineMapper materialReceiveLineMapper;
 
-    /** 批次身份/来源事实边界，与库存执行器共用ERP事务和批次行锁。 */
+    /**
+     * 批次身份/来源事实边界，与库存执行器共用ERP事务和批次行锁。
+     */
     private final WmBatchWriteGuard writeGuard;
 
     /**
@@ -153,8 +161,12 @@ public class WmBatchServiceImpl implements IWmBatchService {
 
     private WmBatch insertRegistration(WmBatchBo bo, boolean generateCode) {
         WmBatch entity = writeGuard.registration(bo);
-        if (generateCode || StringUtils.isBlank(entity.getBatchCode())) entity.setBatchCode(generateBatchCode());
-        if (baseMapper.insert(entity) != 1) throw new ServiceException("批次登记失败");
+        if (generateCode || StringUtils.isBlank(entity.getBatchCode())) {
+            entity.setBatchCode(generateBatchCode());
+        }
+        if (baseMapper.insert(entity) != 1) {
+            throw new ServiceException("批次登记失败");
+        }
         bo.setBatchId(entity.getBatchId());
         bo.setBatchCode(entity.getBatchCode());
         return entity;
@@ -173,7 +185,13 @@ public class WmBatchServiceImpl implements IWmBatchService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WmBatchVo createBatchByMaterial(Long materialId, String sourceDocType, Long sourceDocId, String sourceDocNo, Long warehouseId, String vendorBatchCode) {
+    public WmBatchVo createBatchByMaterial(
+            Long materialId,
+            String sourceDocType,
+            Long sourceDocId,
+            String sourceDocNo,
+            Long warehouseId,
+            String vendorBatchCode) {
         // 构建批次业务对象
         WmBatchBo bo = new WmBatchBo();
         bo.setMaterialId(materialId);
@@ -213,7 +231,9 @@ public class WmBatchServiceImpl implements IWmBatchService {
         WmBatchBo metadata = new WmBatchBo();
         metadata.setBatchId(batchId);
         metadata.setStatus(status);
-        if (status == null) throw new ServiceException("批次状态不能为空");
+        if (status == null) {
+            throw new ServiceException("批次状态不能为空");
+        }
         writeGuard.updateMetadata(metadata);
     }
 
@@ -243,14 +263,19 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return "B" + currentDateStr + String.format("%04d", seq);
     }
 
-    /** 查询当日最大批次序号（likeRight 前缀 + 截取 4 位序号），无历史批次返回 0 */
+    /**
+     * 查询当日最大批次序号（likeRight 前缀 + 截取 4 位序号），无历史批次返回 0
+     */
     private long loadMaxBatchSeq(String likeRightPrefix) {
-        WmBatch last = baseMapper.selectOne(
-            Wrappers.<WmBatch>lambdaQuery()
-                .likeRight(WmBatch::getBatchCode, likeRightPrefix)
-                .orderByDesc(WmBatch::getBatchCode)
-                .last("LIMIT 1"));
-        if (last == null || last.getBatchCode() == null || last.getBatchCode().length() <= likeRightPrefix.length()) {
+        WmBatch last =
+                baseMapper.selectOne(
+                        Wrappers.<WmBatch>lambdaQuery()
+                                .likeRight(WmBatch::getBatchCode, likeRightPrefix)
+                                .orderByDesc(WmBatch::getBatchCode)
+                                .last("LIMIT 1"));
+        if (last == null
+                || last.getBatchCode() == null
+                || last.getBatchCode().length() <= likeRightPrefix.length()) {
             return 0L;
         }
         try {
@@ -264,14 +289,29 @@ public class WmBatchServiceImpl implements IWmBatchService {
         LambdaQueryWrapper<WmBatch> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getBatchCode()), WmBatch::getBatchCode, bo.getBatchCode());
         lqw.eq(bo.getMaterialId() != null, WmBatch::getMaterialId, bo.getMaterialId());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialCode()), WmBatch::getMaterialCode, bo.getMaterialCode());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialName()), WmBatch::getMaterialName, bo.getMaterialName());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getMaterialCode()),
+                WmBatch::getMaterialCode,
+                bo.getMaterialCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getMaterialName()),
+                WmBatch::getMaterialName,
+                bo.getMaterialName());
         lqw.eq(bo.getVendorId() != null, WmBatch::getVendorId, bo.getVendorId());
-        lqw.like(StringUtils.isNotBlank(bo.getVendorName()), WmBatch::getVendorName, bo.getVendorName());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getVendorName()),
+                WmBatch::getVendorName,
+                bo.getVendorName());
         lqw.eq(bo.getWarehouseId() != null, WmBatch::getWarehouseId, bo.getWarehouseId());
-        lqw.like(StringUtils.isNotBlank(bo.getWarehouseName()), WmBatch::getWarehouseName, bo.getWarehouseName());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getWarehouseName()),
+                WmBatch::getWarehouseName,
+                bo.getWarehouseName());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), WmBatch::getStatus, bo.getStatus());
-        lqw.eq(StringUtils.isNotBlank(bo.getSourceDocType()), WmBatch::getSourceDocType, bo.getSourceDocType());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getSourceDocType()),
+                WmBatch::getSourceDocType,
+                bo.getSourceDocType());
         lqw.orderByDesc(WmBatch::getCreateTime);
         return lqw;
     }
@@ -293,26 +333,36 @@ public class WmBatchServiceImpl implements IWmBatchService {
         if (receiveId == null || materialId == null || StringUtils.isBlank(qcStatus)) {
             return 0;
         }
-        List<String> batchCodes = materialReceiveLineMapper.selectList(
-                Wrappers.<WmMaterialReceiveLine>lambdaQuery()
-                    .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
-                    .eq(WmMaterialReceiveLine::getMaterialId, materialId)
-                    .isNotNull(WmMaterialReceiveLine::getBatchCode))
-            .stream()
-            .map(WmMaterialReceiveLine::getBatchCode)
-            .filter(StringUtils::isNotBlank)
-            .distinct()
-            .collect(Collectors.toList());
+        List<String> batchCodes =
+                materialReceiveLineMapper
+                        .selectList(
+                                Wrappers.<WmMaterialReceiveLine>lambdaQuery()
+                                        .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
+                                        .eq(WmMaterialReceiveLine::getMaterialId, materialId)
+                                        .isNotNull(WmMaterialReceiveLine::getBatchCode))
+                        .stream()
+                        .map(WmMaterialReceiveLine::getBatchCode)
+                        .filter(StringUtils::isNotBlank)
+                        .distinct()
+                        .collect(Collectors.toList());
         if (batchCodes.isEmpty()) {
             log.info("IQC回写批次跳过: 收货行无批次号, receiveId={}, materialId={}", receiveId, materialId);
             return 0;
         }
-        int rows = baseMapper.update(null, Wrappers.<WmBatch>lambdaUpdate()
-            .set(WmBatch::getQcStatus, qcStatus)
-            .eq(WmBatch::getMaterialId, materialId)
-            .in(WmBatch::getBatchCode, batchCodes));
-        log.info("IQC回写批次状态: receiveId={}, materialId={}, qcStatus={}, batchCodes={}, 影响行数={}",
-            receiveId, materialId, qcStatus, batchCodes, rows);
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<WmBatch>lambdaUpdate()
+                                .set(WmBatch::getQcStatus, qcStatus)
+                                .eq(WmBatch::getMaterialId, materialId)
+                                .in(WmBatch::getBatchCode, batchCodes));
+        log.info(
+                "IQC回写批次状态: receiveId={}, materialId={}, qcStatus={}, batchCodes={}, 影响行数={}",
+                receiveId,
+                materialId,
+                qcStatus,
+                batchCodes,
+                rows);
         return rows;
     }
 }

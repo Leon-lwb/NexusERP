@@ -32,17 +32,29 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：杂项出库 */
+    /**
+     * 事务类型：杂项出库
+     */
     private static final String TX_TYPE_MISC_OUT = "MISC_OUT";
-    /** 来源单据类型：杂项出库单 */
+
+    /**
+     * 来源单据类型：杂项出库单
+     */
     private static final String SOURCE_DOC_TYPE_MISC_ISSUE = "WM_MISC_ISSUE";
-    /** 事务标志：出库（负数） */
+
+    /**
+     * 事务标志：出库（负数）
+     */
     private static final int TX_FLAG_OUT = -1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 库存计价服务(F3-a:出库按移动平均结转成本) */
+
+    /**
+     * 库存计价服务(F3-a:出库按移动平均结转成本)
+     */
     private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
 
     /**
@@ -51,9 +63,10 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
      * @param stockTxMapper 库存事务Mapper
      * @param stockMapper   库存Mapper
      */
-    public MiscIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
-                             WmMaterialStockMapper stockMapper,
-                             com.nexus.erp.wm.service.IInventoryValuationService valuationService) {
+    public MiscIssueStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialStockMapper stockMapper,
+            com.nexus.erp.wm.service.IInventoryValuationService valuationService) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.valuationService = valuationService;
@@ -79,8 +92,20 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
     public void execute(Object... args) {
         WmMiscIssueLine line = (WmMiscIssueLine) args[0];
         Date now = (Date) args[1];
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
-            "WM_MISC_ISSUE",line.getIssueId(),line.getLineId(),"MISC_ISSUE",line.getMaterialId(),line.getQuantity(),null,line.getLocationId(),line.getBatchId())))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                                "WM_MISC_ISSUE",
+                                line.getIssueId(),
+                                line.getLineId(),
+                                "MISC_ISSUE",
+                                line.getMaterialId(),
+                                line.getQuantity(),
+                                null,
+                                line.getLocationId(),
+                                line.getBatchId()))) {
+            return;
+        }
 
         if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("杂项出库数量必须大于0");
@@ -90,24 +115,37 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
         BigDecimal remaining = line.getQuantity();
 
         for (WmMaterialStock stock : stockList) {
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
             // ERP-WM-02: 扣减上限按可用量(在库-已预留)而非账面量, 否则可扣穿其他单据的预留
             BigDecimal available = availableOf(stock);
-            if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
+            if (available.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
 
             BigDecimal deductQty = available.min(remaining);
             BigDecimal beforeQuantity = stock.getStockQuantity();
             BigDecimal afterQuantity = beforeQuantity.subtract(deductQty);
             // ERP-WM-02/WM-09: 原子扣减按可用量守卫(且 frozen_flag=0)
-            int affected = stockMapper.deductStockAvailable(stock.getStockId(), deductQty, stock.getVersion());
+            int affected =
+                    stockMapper.deductStockAvailable(
+                            stock.getStockId(), deductQty, stock.getVersion());
             if (affected == 0) {
                 throw new ServiceException("可用库存不足或已被并发占用，请重试: 物料【" + line.getMaterialName() + "】");
             }
 
             // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
             BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
-            WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_MISC_OUT, TX_FLAG_OUT, deductQty,
-                beforeQuantity, afterQuantity, now);
+            WmMaterialStockTx tx =
+                    buildBaseTxFromStock(
+                            stock,
+                            TX_TYPE_MISC_OUT,
+                            TX_FLAG_OUT,
+                            deductQty,
+                            beforeQuantity,
+                            afterQuantity,
+                            now);
             tx.setUnitCost(outUnitCost);
             tx.setSourceDocType(SOURCE_DOC_TYPE_MISC_ISSUE);
             tx.setSourceDocId(line.getIssueId());
@@ -131,7 +169,10 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
         lqw.apply("(stock_quantity - reserved_quantity) > 0");
         // ERP-WM-06: 效期拦截 —— 已过期批次不得参与杂项出库
         lqw.apply(NOT_EXPIRED_SQL);
-        lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
+        lqw.orderByAsc(
+                WmMaterialStock::getExpireDate,
+                WmMaterialStock::getRecptDate,
+                WmMaterialStock::getStockId);
 
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);
         if (stockList == null || stockList.isEmpty()) {

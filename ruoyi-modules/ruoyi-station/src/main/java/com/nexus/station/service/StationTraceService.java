@@ -44,13 +44,18 @@ import java.util.Map;
 @Service
 public class StationTraceService {
 
-    /** 时间线记录类型 */
+    /**
+     * 时间线记录类型
+     */
     public static final String TYPE_FLASH = "FLASH";
+
     public static final String TYPE_TEST = "TEST";
     public static final String TYPE_PASS_REPORT = "PASS_REPORT";
     public static final String TYPE_SN_BIND = "SN_BIND";
 
-    /** 单源查询上限(防异常数据撑爆响应) */
+    /**
+     * 单源查询上限(防异常数据撑爆响应)
+     */
     private static final int SOURCE_LIMIT = 200;
 
     private final ProSnMapper proSnMapper;
@@ -66,32 +71,37 @@ public class StationTraceService {
      * @param snCode SN编码
      * @return {sn, steps, records: [{type, time, result?, summary, items?}]} 记录按时间倒序
      */
-    @org.springframework.transaction.annotation.Transactional(readOnly=true,propagation=org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @org.springframework.transaction.annotation.Transactional(
+            readOnly = true,
+            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public Map<String, Object> trace(String snCode) {
         String sn = snCode == null ? null : snCode.trim();
         if (StringUtils.isBlank(sn)) {
             throw new ServiceException("snCode 不能为空");
         }
-        ProSn proSn = proSnMapper.selectOne(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getSnCode, sn).last("LIMIT 1"));
+        ProSn proSn =
+                proSnMapper.selectOne(
+                        Wrappers.<ProSn>lambdaQuery().eq(ProSn::getSnCode, sn).last("LIMIT 1"));
         if (proSn == null) {
             throw new ServiceException("SN 不存在: " + sn);
         }
 
         Map<String, Object> data = new LinkedHashMap<>(4);
-        var truncated=truncatedSources(sn);
-        data.put("truncated",!truncated.isEmpty());data.put("truncatedSources",truncated);data.put("sourceLimit",SOURCE_LIMIT);
-        data.put("traceScope",proSn.getIdentityId()==null?"LEGACY_SN_CODE":"IDENTITY");
+        var truncated = truncatedSources(sn);
+        data.put("truncated", !truncated.isEmpty());
+        data.put("truncatedSources", truncated);
+        data.put("sourceLimit", SOURCE_LIMIT);
+        data.put("traceScope", proSn.getIdentityId() == null ? "LEGACY_SN_CODE" : "IDENTITY");
         data.put("sn", snSummary(proSn));
         data.put("steps", steps(proSn.getCardId()));
-        data.put("records", records(sn, proSn,truncated.contains(TYPE_TEST)));
+        data.put("records", records(sn, proSn, truncated.contains(TYPE_TEST)));
         return data;
     }
 
     private Map<String, Object> snSummary(ProSn sn) {
         Map<String, Object> m = new LinkedHashMap<>(10);
         m.put("snCode", sn.getSnCode());
-        m.put("identityId",sn.getIdentityId()==null?null:sn.getIdentityId().toString());
+        m.put("identityId", sn.getIdentityId() == null ? null : sn.getIdentityId().toString());
         m.put("woNo", sn.getWoNo());
         m.put("cardNo", sn.getCardNo());
         m.put("materialCode", sn.getMaterialCode());
@@ -101,14 +111,18 @@ public class StationTraceService {
         return m;
     }
 
-    /** 工序链: 卡上全部工序按序号升序(进度一览) */
+    /**
+     * 工序链: 卡上全部工序按序号升序(进度一览)
+     */
     private List<Map<String, Object>> steps(Long cardId) {
         if (cardId == null) {
             return List.of();
         }
-        List<ProFlowCardStep> steps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getCardId, cardId)
-            .orderByAsc(ProFlowCardStep::getSequenceNum));
+        List<ProFlowCardStep> steps =
+                stepMapper.selectList(
+                        Wrappers.<ProFlowCardStep>lambdaQuery()
+                                .eq(ProFlowCardStep::getCardId, cardId)
+                                .orderByAsc(ProFlowCardStep::getSequenceNum));
         List<Map<String, Object>> rows = new ArrayList<>(steps.size());
         for (ProFlowCardStep s : steps) {
             Map<String, Object> m = new LinkedHashMap<>(8);
@@ -124,29 +138,41 @@ public class StationTraceService {
         return rows;
     }
 
-    /** 四源记录合并时间线, 按时间倒序(最新在前) */
-    private List<Map<String, Object>> records(String sn, ProSn proSn,boolean testTruncated) {
+    /**
+     * 四源记录合并时间线, 按时间倒序(最新在前)
+     */
+    private List<Map<String, Object>> records(String sn, ProSn proSn, boolean testTruncated) {
         List<Map<String, Object>> records = new ArrayList<>();
         records.addAll(flashRecords(sn));
-        records.addAll(testRecords(sn,testTruncated));
+        records.addAll(testRecords(sn, testTruncated));
         records.addAll(passReports(sn));
         records.addAll(bindLogs(sn));
-        records.sort(Comparator.comparing(r -> (Date) r.get("time"), Comparator.nullsLast(Comparator.reverseOrder())));
+        records.sort(
+                Comparator.comparing(
+                        r -> (Date) r.get("time"),
+                        Comparator.nullsLast(Comparator.reverseOrder())));
         return records;
     }
 
     private List<Map<String, Object>> flashRecords(String sn) {
-        List<FlashRecord> rows = flashRecordMapper.selectList(Wrappers.<FlashRecord>lambdaQuery()
-            .eq(FlashRecord::getSnCode, sn)
-            .orderByDesc(FlashRecord::getFlashTime)
-            .last("LIMIT " + SOURCE_LIMIT));
+        List<FlashRecord> rows =
+                flashRecordMapper.selectList(
+                        Wrappers.<FlashRecord>lambdaQuery()
+                                .eq(FlashRecord::getSnCode, sn)
+                                .orderByDesc(FlashRecord::getFlashTime)
+                                .last("LIMIT " + SOURCE_LIMIT));
         List<Map<String, Object>> records = new ArrayList<>(rows.size());
         for (FlashRecord r : rows) {
             Map<String, Object> m = base(TYPE_FLASH, nvlDate(r.getFlashTime(), r.getCreateTime()));
             m.put("time", r.getFlashTime());
             m.put("result", r.getResult());
-            m.put("summary", String.format("刷写[%s] 版本%s %s",
-                nvl(r.getFlashTypeCode()), nvl(r.getContentVersion()), nvl(r.getResult())));
+            m.put(
+                    "summary",
+                    String.format(
+                            "刷写[%s] 版本%s %s",
+                            nvl(r.getFlashTypeCode()),
+                            nvl(r.getContentVersion()),
+                            nvl(r.getResult())));
             Map<String, Object> detail = new LinkedHashMap<>(8);
             detail.put("flashTypeCode", r.getFlashTypeCode());
             detail.put("contentVersion", r.getContentVersion());
@@ -160,36 +186,54 @@ public class StationTraceService {
         return records;
     }
 
-    /** 综测按 test_no 分组: 一次测试多 item 行归一, 组内任一 FAIL 则整组 FAIL */
-    private List<Map<String, Object>> testRecords(String sn,boolean truncated) {
-        List<TestRecord> rows = testRecordMapper.selectList(Wrappers.<TestRecord>lambdaQuery()
-            .eq(TestRecord::getSnCode, sn)
-            .orderByDesc(TestRecord::getTestTime)
-            .last("LIMIT " + SOURCE_LIMIT));
+    /**
+     * 综测按 test_no 分组: 一次测试多 item 行归一, 组内任一 FAIL 则整组 FAIL
+     */
+    private List<Map<String, Object>> testRecords(String sn, boolean truncated) {
+        List<TestRecord> rows =
+                testRecordMapper.selectList(
+                        Wrappers.<TestRecord>lambdaQuery()
+                                .eq(TestRecord::getSnCode, sn)
+                                .orderByDesc(TestRecord::getTestTime)
+                                .last("LIMIT " + SOURCE_LIMIT));
         Map<String, List<TestRecord>> groups = new LinkedHashMap<>();
         for (TestRecord r : rows) {
-            groups.computeIfAbsent(r.getTestNo() == null ? "" : r.getTestNo(), k -> new ArrayList<>()).add(r);
+            groups.computeIfAbsent(
+                            r.getTestNo() == null ? "" : r.getTestNo(), k -> new ArrayList<>())
+                    .add(r);
         }
         List<Map<String, Object>> records = new ArrayList<>(groups.size());
         for (List<TestRecord> group : groups.values()) {
             TestRecord head = group.get(0);
             boolean anyFail = group.stream().anyMatch(r -> "FAIL".equals(r.getResult()));
-            boolean allPass=group.stream().allMatch(r->"PASS".equals(r.getResult()));
-            String result=anyFail?"FAIL":allPass && !truncated?"PASS":"UNKNOWN";
+            boolean allPass = group.stream().allMatch(r -> "PASS".equals(r.getResult()));
+            String result = anyFail ? "FAIL" : allPass && !truncated ? "PASS" : "UNKNOWN";
             Map<String, Object> m = base(TYPE_TEST, head.getTestTime());
-            m.put("result",result);m.put("truncated",truncated);
-            m.put("summary", String.format("综测[%s] 版本%s %s %d项",
-                head.getTestNo(), nvl(head.getContentVersion()), result, group.size()));
+            m.put("result", result);
+            m.put("truncated", truncated);
+            m.put(
+                    "summary",
+                    String.format(
+                            "综测[%s] 版本%s %s %d项",
+                            head.getTestNo(), nvl(head.getContentVersion()), result, group.size()));
             List<Map<String, Object>> items = new ArrayList<>(group.size());
             for (TestRecord r : group) {
                 Map<String, Object> item = new LinkedHashMap<>(8);
                 item.put("itemCode", r.getItemCode());
                 item.put("itemName", r.getItemName());
-                item.put("value", r.getNumericValue() != null ? String.valueOf(r.getNumericValue()) : r.getTextValue());
+                item.put(
+                        "value",
+                        r.getNumericValue() != null
+                                ? String.valueOf(r.getNumericValue())
+                                : r.getTextValue());
                 item.put("upperLimit", r.getUpperLimit());
                 item.put("lowerLimit", r.getLowerLimit());
-                String itemResult="PASS".equals(r.getResult())?"PASS":"FAIL".equals(r.getResult())?"FAIL":"UNKNOWN";
-                item.put("result",itemResult);item.put("pass","PASS".equals(itemResult));
+                String itemResult =
+                        "PASS".equals(r.getResult())
+                                ? "PASS"
+                                : "FAIL".equals(r.getResult()) ? "FAIL" : "UNKNOWN";
+                item.put("result", itemResult);
+                item.put("pass", "PASS".equals(itemResult));
                 items.add(item);
             }
             Map<String, Object> detail = new LinkedHashMap<>(4);
@@ -203,17 +247,25 @@ public class StationTraceService {
     }
 
     private List<Map<String, Object>> passReports(String sn) {
-        List<MesStationReport> rows = reportMapper.selectList(Wrappers.<MesStationReport>lambdaQuery()
-            .eq(MesStationReport::getSnCode, sn)
-            .orderByDesc(MesStationReport::getCreateTime)
-            .last("LIMIT " + SOURCE_LIMIT));
+        List<MesStationReport> rows =
+                reportMapper.selectList(
+                        Wrappers.<MesStationReport>lambdaQuery()
+                                .eq(MesStationReport::getSnCode, sn)
+                                .orderByDesc(MesStationReport::getCreateTime)
+                                .last("LIMIT " + SOURCE_LIMIT));
         List<Map<String, Object>> records = new ArrayList<>(rows.size());
         for (MesStationReport r : rows) {
             Map<String, Object> m = base(TYPE_PASS_REPORT, r.getCreateTime());
             m.put("result", r.getResult());
-            m.put("summary", String.format("过站报工[%s] %s%s",
-                nvl(r.getStationCode()), nvl(r.getResult()),
-                StringUtils.isNotBlank(r.getDefectCodes()) ? " 不良:" + r.getDefectCodes() : ""));
+            m.put(
+                    "summary",
+                    String.format(
+                            "过站报工[%s] %s%s",
+                            nvl(r.getStationCode()),
+                            nvl(r.getResult()),
+                            StringUtils.isNotBlank(r.getDefectCodes())
+                                    ? " 不良:" + r.getDefectCodes()
+                                    : ""));
             Map<String, Object> detail = new LinkedHashMap<>(6);
             detail.put("stationCode", r.getStationCode());
             detail.put("operatorName", r.getOperatorName());
@@ -228,20 +280,28 @@ public class StationTraceService {
 
     private List<Map<String, Object>> bindLogs(String sn) {
         // SN 可能是父件(被绑定到成品)也可能是组件(绑定到主板), 两侧都查
-        List<MesSnBindLog> rows = bindLogMapper.selectList(Wrappers.<MesSnBindLog>lambdaQuery()
-            .and(w -> w.eq(MesSnBindLog::getParentSnCode, sn).or().eq(MesSnBindLog::getComponentSnCode, sn))
-            .orderByDesc(MesSnBindLog::getCreateTime)
-            .last("LIMIT " + SOURCE_LIMIT));
+        List<MesSnBindLog> rows =
+                bindLogMapper.selectList(
+                        Wrappers.<MesSnBindLog>lambdaQuery()
+                                .and(
+                                        w ->
+                                                w.eq(MesSnBindLog::getParentSnCode, sn)
+                                                        .or()
+                                                        .eq(MesSnBindLog::getComponentSnCode, sn))
+                                .orderByDesc(MesSnBindLog::getCreateTime)
+                                .last("LIMIT " + SOURCE_LIMIT));
         List<Map<String, Object>> records = new ArrayList<>(rows.size());
         for (MesSnBindLog r : rows) {
             Map<String, Object> m = base(TYPE_SN_BIND, r.getCreateTime());
-            String relation = sn.equals(r.getParentSnCode())
-                ? "组件 " + nvl(r.getComponentSnCode()) + " 绑定到本SN"
-                : "本SN 绑定到 " + nvl(r.getParentSnCode());
+            String relation =
+                    sn.equals(r.getParentSnCode())
+                            ? "组件 " + nvl(r.getComponentSnCode()) + " 绑定到本SN"
+                            : "本SN 绑定到 " + nvl(r.getParentSnCode());
             if ("UNBIND".equals(r.getAction())) {
-                relation = sn.equals(r.getParentSnCode())
-                    ? "组件 " + nvl(r.getComponentSnCode()) + " 从本SN 解绑"
-                    : "本SN 从 " + nvl(r.getParentSnCode()) + " 解绑";
+                relation =
+                        sn.equals(r.getParentSnCode())
+                                ? "组件 " + nvl(r.getComponentSnCode()) + " 从本SN 解绑"
+                                : "本SN 从 " + nvl(r.getParentSnCode()) + " 解绑";
             } else if ("REBIND".equals(r.getAction())) {
                 relation += " (换板 → " + nvl(r.getNewComponentSnCode()) + ")";
             }
@@ -260,14 +320,41 @@ public class StationTraceService {
     }
 
     private List<String> truncatedSources(String sn) {
-        List<String> result=new ArrayList<>();
-        if(overLimit(flashRecordMapper.selectCount(Wrappers.<FlashRecord>lambdaQuery().eq(FlashRecord::getSnCode,sn))))result.add(TYPE_FLASH);
-        if(overLimit(testRecordMapper.selectCount(Wrappers.<TestRecord>lambdaQuery().eq(TestRecord::getSnCode,sn))))result.add(TYPE_TEST);
-        if(overLimit(reportMapper.selectCount(Wrappers.<MesStationReport>lambdaQuery().eq(MesStationReport::getSnCode,sn))))result.add(TYPE_PASS_REPORT);
-        if(overLimit(bindLogMapper.selectCount(Wrappers.<MesSnBindLog>lambdaQuery().and(w->w.eq(MesSnBindLog::getParentSnCode,sn).or().eq(MesSnBindLog::getComponentSnCode,sn)))))result.add(TYPE_SN_BIND);
+        List<String> result = new ArrayList<>();
+        if (overLimit(
+                flashRecordMapper.selectCount(
+                        Wrappers.<FlashRecord>lambdaQuery().eq(FlashRecord::getSnCode, sn)))) {
+            result.add(TYPE_FLASH);
+        }
+        if (overLimit(
+                testRecordMapper.selectCount(
+                        Wrappers.<TestRecord>lambdaQuery().eq(TestRecord::getSnCode, sn)))) {
+            result.add(TYPE_TEST);
+        }
+        if (overLimit(
+                reportMapper.selectCount(
+                        Wrappers.<MesStationReport>lambdaQuery()
+                                .eq(MesStationReport::getSnCode, sn)))) {
+            result.add(TYPE_PASS_REPORT);
+        }
+        if (overLimit(
+                bindLogMapper.selectCount(
+                        Wrappers.<MesSnBindLog>lambdaQuery()
+                                .and(
+                                        w ->
+                                                w.eq(MesSnBindLog::getParentSnCode, sn)
+                                                        .or()
+                                                        .eq(
+                                                                MesSnBindLog::getComponentSnCode,
+                                                                sn))))) {
+            result.add(TYPE_SN_BIND);
+        }
         return List.copyOf(result);
     }
-    private boolean overLimit(Long count){return count!=null && count>SOURCE_LIMIT;}
+
+    private boolean overLimit(Long count) {
+        return count != null && count > SOURCE_LIMIT;
+    }
 
     private Map<String, Object> base(String type, Date time) {
         Map<String, Object> m = new LinkedHashMap<>(6);

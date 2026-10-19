@@ -111,10 +111,14 @@ public class WmSn extends TenantEntity {
     @ExcelProperty("状态")
     private String status;
 
-    /** ERP统一注册命令；正式号码一经预留永久占用。 */
+    /**
+     * ERP统一注册命令；正式号码一经预留永久占用。
+     */
     private String registrationCommand;
 
-    /** 正式实物身份版本，由受控业务动作维护。 */
+    /**
+     * 正式实物身份版本，由受控业务动作维护。
+     */
     private Long identityVersion;
 
     /**
@@ -179,6 +183,5 @@ public class WmSn extends TenantEntity {
     /**
      * 删除标志
      */
-    @TableLogic
-    private String delFlag;
+    @TableLogic private String delFlag;
 }

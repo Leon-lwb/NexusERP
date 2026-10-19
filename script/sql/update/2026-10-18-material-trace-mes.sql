@@ -31,109 +31,205 @@ BEGIN
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_wo_consumption' AND COLUMN_NAME='source_allocation_id') = 0 THEN
     ALTER TABLE `lt_wo_consumption` ADD COLUMN `source_allocation_id` bigint(20) DEFAULT NULL COMMENT '实际消耗引用的原额度分配ID，旧记录未知保持NULL';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_wo_consumption' AND (COLUMN_NAME='source_allocation_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_wo_consumption' AND (
+         COLUMN_NAME='source_allocation_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段lt_wo_consumption.source_allocation_id类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND COLUMN_NAME='identity_id') = 0 THEN
     ALTER TABLE `pro_sn` ADD COLUMN `identity_id` bigint(20) DEFAULT NULL COMMENT 'ERP正式身份wm_sn.sn_id，本地sn_id语义不变';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (COLUMN_NAME='identity_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (
+         COLUMN_NAME='identity_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段pro_sn.identity_id类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND COLUMN_NAME='product_lot_id') = 0 THEN
     ALTER TABLE `pro_sn` ADD COLUMN `product_lot_id` bigint(20) DEFAULT NULL COMMENT 'MES成品批次lt_lot.lot_id';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (COLUMN_NAME='product_lot_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (
+         COLUMN_NAME='product_lot_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段pro_sn.product_lot_id类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND COLUMN_NAME='identity_version') = 0 THEN
     ALTER TABLE `pro_sn` ADD COLUMN `identity_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '身份映射版本';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (COLUMN_NAME='identity_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1')) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (
+         COLUMN_NAME='identity_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段pro_sn.identity_version类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND COLUMN_NAME='handoff_status') = 0 THEN
     ALTER TABLE `pro_sn` ADD COLUMN `handoff_status` varchar(24) NOT NULL DEFAULT 'NONE' COMMENT '交付状态，历史默认NONE';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (COLUMN_NAME='handoff_status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='NONE')) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_sn' AND (
+         COLUMN_NAME='handoff_status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='NONE')) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段pro_sn.handoff_status类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_template' AND COLUMN_NAME='template_revision') = 0 THEN
     ALTER TABLE `mes_label_template` ADD COLUMN `template_revision` bigint(20) NOT NULL DEFAULT 1 COMMENT '模板修订号，保存时递增，打印时冻结';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_template' AND (COLUMN_NAME='template_revision' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1')) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_template' AND (
+         COLUMN_NAME='template_revision'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_template.template_revision类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='template_revision') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `template_revision` bigint(20) DEFAULT NULL COMMENT '打印时模板修订号，历史未知留空';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='template_revision' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='template_revision'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.template_revision类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='original_print_log_id') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `original_print_log_id` bigint(20) DEFAULT NULL COMMENT '补打引用的原任务ID，历史不补造';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='original_print_log_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='original_print_log_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.original_print_log_id类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='template_snapshot') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `template_snapshot` longtext COLLATE utf8mb4_unicode_ci COMMENT '冻结模板布局及修订JSON，历史留空';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='template_snapshot' AND DATA_TYPE='longtext' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='template_snapshot'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.template_snapshot类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='field_snapshot') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `field_snapshot` longtext COLLATE utf8mb4_unicode_ci COMMENT '冻结SN物料工单等字段JSON，历史留空';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='field_snapshot' AND DATA_TYPE='longtext' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='field_snapshot'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.field_snapshot类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='rendered_payload') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `rendered_payload` longtext COLLATE utf8mb4_unicode_ci COMMENT '冻结完整打印指令，补打不读取新模板';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='rendered_payload' AND DATA_TYPE='longtext' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='rendered_payload'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.rendered_payload类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='content_hash') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `content_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT '原模板快照UTF8字节SHA256，历史不补造';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='content_hash' AND DATA_TYPE='char' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='content_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.content_hash类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='payload_hash') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `payload_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT '实际编码发送字节SHA256，历史不补造';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='payload_hash' AND DATA_TYPE='char' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='payload_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.payload_hash类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='payload_charset') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `payload_charset` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '实际发送字符集名称';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='payload_charset' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=32 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='payload_charset'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=32
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.payload_charset类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='snapshot_mode') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `snapshot_mode` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '冻结或历史兼容模式，旧记录保持空值';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='snapshot_mode' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=32 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='snapshot_mode'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=32
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.snapshot_mode类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND COLUMN_NAME='reprint_reason') = 0 THEN
     ALTER TABLE `mes_label_print_log` ADD COLUMN `reprint_reason` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '人工补打原因，历史缺失不补造';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (COLUMN_NAME='reprint_reason' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=500 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_log' AND (
+         COLUMN_NAME='reprint_reason'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=500
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段mes_label_print_log.reprint_reason类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot' AND COLUMN_NAME='erp_batch_id') = 0 THEN
     ALTER TABLE `lt_lot` ADD COLUMN `erp_batch_id` bigint(20) DEFAULT NULL COMMENT '有明确凭据的ERP批次身份，不按同码猜测';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot' AND (COLUMN_NAME='erp_batch_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot' AND (
+         COLUMN_NAME='erp_batch_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段lt_lot.erp_batch_id类型偏离契约';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot' AND COLUMN_NAME='allocation_version') = 0 THEN
     ALTER TABLE `lt_lot` ADD COLUMN `allocation_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '批次分配版本';
   END IF;
-  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot' AND (COLUMN_NAME='allocation_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1')) <> 1 THEN
+  IF (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot' AND (
+         COLUMN_NAME='allocation_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')) <> 1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '字段lt_lot.allocation_version类型偏离契约';
   END IF;
   -- 标签只扩展结构及新行默认值，不补造旧快照、不重写历史SUCCESS。
@@ -213,7 +309,92 @@ CREATE TABLE IF NOT EXISTS `pro_completion_manifest` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_completion_manifest字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest' AND ((COLUMN_NAME='manifest_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='revision' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='mes_wo_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='erp_wo_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='line_count' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='good_qty' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='scrap_qty' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT='0.0000') OR (COLUMN_NAME='content_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_line_count' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_hash' AND DATA_TYPE='char' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='FROZEN') OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 14 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest' AND ((
+         COLUMN_NAME='manifest_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='revision'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='mes_wo_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='erp_wo_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='line_count'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='good_qty'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='scrap_qty'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT='0.0000')
+         OR (
+         COLUMN_NAME='content_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_line_count'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='FROZEN')
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 14 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_completion_manifest字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest' AND INDEX_NAME='PRIMARY'),'') <> 'manifest_id'
@@ -246,7 +427,82 @@ CREATE TABLE IF NOT EXISTS `pro_completion_manifest_line` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_completion_manifest_line字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest_line' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest_line' AND ((COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='manifest_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='revision' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='line_no' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='identity_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='local_sn_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='sn_code' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='batch_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='local_lot_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='quantity' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='result' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=16 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL))) <> 13 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest_line' AND ((
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='manifest_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='revision'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='line_no'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='identity_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='local_sn_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='sn_code'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='batch_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='local_lot_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='quantity'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='result'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=16
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL))) <> 13 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_completion_manifest_line字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_manifest_line' AND INDEX_NAME='PRIMARY'),'') <> 'tenant_id,manifest_id,revision,line_no'
@@ -286,7 +542,105 @@ CREATE TABLE IF NOT EXISTS `lt_sn_consumption` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表lt_sn_consumption字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_consumption' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_consumption' AND ((COLUMN_NAME='entry_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='command_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='line_no' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='identity_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='local_sn_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='component_material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='component_lot_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='quantity' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='wo_consumption_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='process_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='operation_ref' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='entry_type' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=16 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='original_entry_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='policy_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='created_by' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 17 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_consumption' AND ((
+         COLUMN_NAME='entry_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='command_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='line_no'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='identity_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='local_sn_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='component_material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='component_lot_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='quantity'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='wo_consumption_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='process_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='operation_ref'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='entry_type'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=16
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='original_entry_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='policy_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='created_by'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 17 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表lt_sn_consumption字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_consumption' AND INDEX_NAME='PRIMARY'),'') <> 'entry_id'
@@ -321,7 +675,44 @@ CREATE TABLE IF NOT EXISTS `lt_sn_material_guard` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表lt_sn_material_guard字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_material_guard' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_material_guard' AND ((COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='identity_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='component_material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='selected_lot_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='allow_mixed_lot' AND DATA_TYPE='tinyint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='policy_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1'))) <> 7 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_material_guard' AND ((
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='identity_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='component_material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='selected_lot_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='allow_mixed_lot'
+         AND DATA_TYPE='tinyint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='policy_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1'))) <> 7 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表lt_sn_material_guard字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_sn_material_guard' AND INDEX_NAME='PRIMARY'),'') <> 'tenant_id,identity_id,component_material_id'
@@ -363,7 +754,97 @@ CREATE TABLE IF NOT EXISTS `lt_lot_allocation` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表lt_lot_allocation字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot_allocation' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot_allocation' AND ((COLUMN_NAME='allocation_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='command_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='line_no' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lot_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='erp_batch_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='quantity' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_type' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=32 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_line_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='0') OR (COLUMN_NAME='allocation_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='evidence_json' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='evidence_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 15 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot_allocation' AND ((
+         COLUMN_NAME='allocation_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='command_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='line_no'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lot_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='erp_batch_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='quantity'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_type'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=32
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_line_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='0')
+         OR (
+         COLUMN_NAME='allocation_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='evidence_json'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='evidence_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 15 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表lt_lot_allocation字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='lt_lot_allocation' AND INDEX_NAME='PRIMARY'),'') <> 'allocation_id'
@@ -408,7 +889,136 @@ CREATE TABLE IF NOT EXISTS `mes_trace_outbox` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_outbox字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_outbox' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_outbox' AND ((COLUMN_NAME='event_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_module' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=16 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='aggregate_type' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='aggregate_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='aggregate_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='event_type' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='schema_version' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='payload' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='content_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='NEW') OR (COLUMN_NAME='attempts' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='0') OR (COLUMN_NAME='next_attempt_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lease_owner' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lease_until' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='last_error' AND DATA_TYPE='text' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='result_payload' AND DATA_TYPE='longtext' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='updated_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='applied_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL))) <> 20 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_outbox' AND ((
+         COLUMN_NAME='event_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_module'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=16
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='aggregate_type'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='aggregate_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='aggregate_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='event_type'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='schema_version'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='payload'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='content_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='NEW')
+         OR (
+         COLUMN_NAME='attempts'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='0')
+         OR (
+         COLUMN_NAME='next_attempt_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lease_owner'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lease_until'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='last_error'
+         AND DATA_TYPE='text'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='result_payload'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='updated_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='applied_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL))) <> 20 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_outbox字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_outbox' AND INDEX_NAME='PRIMARY'),'') <> 'event_id'
@@ -456,7 +1066,136 @@ CREATE TABLE IF NOT EXISTS `mes_trace_inbox` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_inbox字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_inbox' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_inbox' AND ((COLUMN_NAME='event_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_module' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=16 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='aggregate_type' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='aggregate_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='aggregate_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='event_type' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='schema_version' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='payload' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='content_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='NEW') OR (COLUMN_NAME='attempts' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='0') OR (COLUMN_NAME='next_attempt_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lease_owner' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lease_until' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='last_error' AND DATA_TYPE='text' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='result_payload' AND DATA_TYPE='longtext' AND IS_NULLABLE='YES' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='updated_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='applied_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL))) <> 20 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_inbox' AND ((
+         COLUMN_NAME='event_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_module'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=16
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='aggregate_type'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='aggregate_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='aggregate_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='event_type'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='schema_version'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='payload'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='content_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='NEW')
+         OR (
+         COLUMN_NAME='attempts'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='0')
+         OR (
+         COLUMN_NAME='next_attempt_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lease_owner'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lease_until'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='last_error'
+         AND DATA_TYPE='text'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='result_payload'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='updated_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='applied_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL))) <> 20 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_inbox字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_inbox' AND INDEX_NAME='PRIMARY'),'') <> 'event_id'
@@ -493,7 +1232,93 @@ CREATE TABLE IF NOT EXISTS `mes_trace_repair_run` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_repair_run字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_run' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_run' AND ((COLUMN_NAME='run_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='target_database' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='target_environment' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='backup_reference' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=255 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='plan_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='before_snapshot_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='after_snapshot_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='journal_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='PLANNED') OR (COLUMN_NAME='version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='updated_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 12 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_run' AND ((
+         COLUMN_NAME='run_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='target_database'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='target_environment'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='backup_reference'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=255
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='plan_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='before_snapshot_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='after_snapshot_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='journal_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='PLANNED')
+         OR (
+         COLUMN_NAME='version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='updated_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 12 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_repair_run字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_run' AND INDEX_NAME='PRIMARY'),'') <> 'run_id'
@@ -525,7 +1350,113 @@ CREATE TABLE IF NOT EXISTS `mes_trace_repair_item` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_repair_item字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_item' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_item' AND ((COLUMN_NAME='run_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='item_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='target_table' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='target_key' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='before_json' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='after_json' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='evidence_json' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='before_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='after_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='evidence_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='PLANNED') OR (COLUMN_NAME='version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='updated_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 15 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_item' AND ((
+         COLUMN_NAME='run_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='item_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='target_table'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='target_key'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='before_json'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='after_json'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='evidence_json'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='before_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='after_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='evidence_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='PLANNED')
+         OR (
+         COLUMN_NAME='version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='updated_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 15 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_trace_repair_item字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_trace_repair_item' AND INDEX_NAME='PRIMARY'),'') <> 'run_id,item_id'
@@ -569,7 +1500,140 @@ CREATE TABLE IF NOT EXISTS `mes_label_print_task` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_label_print_task字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_task' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_task' AND ((COLUMN_NAME='task_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='task_key' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='request_fingerprint' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='sn_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='template_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='template_revision' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='print_source' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=16 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='original_print_log_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='reprint_reason' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=500 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='frozen_record' AND DATA_TYPE='longtext' AND IS_NULLABLE='NO' AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='record_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='status' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=24 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT='PENDING') OR (COLUMN_NAME='attempt_count' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='0') OR (COLUMN_NAME='lease_token' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lease_until' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='sending_started_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='completed_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='last_error' AND DATA_TYPE='varchar' AND IS_NULLABLE='YES' AND CHARACTER_MAXIMUM_LENGTH=500 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp') OR (COLUMN_NAME='updated_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 21 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_task' AND ((
+         COLUMN_NAME='task_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='task_key'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='request_fingerprint'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='sn_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='template_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='template_revision'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='print_source'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=16
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='original_print_log_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='reprint_reason'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=500
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='frozen_record'
+         AND DATA_TYPE='longtext'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='record_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='status'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=24
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT='PENDING')
+         OR (
+         COLUMN_NAME='attempt_count'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='0')
+         OR (
+         COLUMN_NAME='lease_token'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lease_until'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='sending_started_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='completed_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='last_error'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='YES'
+         AND CHARACTER_MAXIMUM_LENGTH=500
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp')
+         OR (
+         COLUMN_NAME='updated_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 21 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表mes_label_print_task字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mes_label_print_task' AND INDEX_NAME='PRIMARY'),'') <> 'task_id'
@@ -612,7 +1676,92 @@ CREATE TABLE IF NOT EXISTS `pro_completion_material_allocation` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_completion_material_allocation字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_material_allocation' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_material_allocation' AND ((COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='manifest_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='revision' AND DATA_TYPE='int' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='allocation_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='reservation_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='reservation_line_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='posting_group_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='identity_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_stock_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='erp_batch_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='YES' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='quantity' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='evidence_hash' AND DATA_TYPE='char' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_event_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=64 AND CHARACTER_SET_NAME='ascii' AND COLLATION_NAME='ascii_bin' AND COLUMN_DEFAULT IS NULL))) <> 15 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_material_allocation' AND ((
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='manifest_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='revision'
+         AND DATA_TYPE='int'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='allocation_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='reservation_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='reservation_line_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='posting_group_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='identity_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_stock_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='erp_batch_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='YES'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='quantity'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='evidence_hash'
+         AND DATA_TYPE='char'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_event_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=64
+         AND CHARACTER_SET_NAME='ascii'
+         AND COLLATION_NAME='ascii_bin'
+         AND COLUMN_DEFAULT IS NULL))) <> 15 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_completion_material_allocation字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_completion_material_allocation' AND INDEX_NAME='PRIMARY'),'') <> 'tenant_id,manifest_id,revision,allocation_id'
@@ -648,7 +1797,92 @@ CREATE TABLE IF NOT EXISTS `pro_product_lot_output` (
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_product_lot_output字段不完整，禁止盲目续跑';
   END IF;
   IF (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_product_lot_output' AND ENGINE='InnoDB') <> 1
-     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_product_lot_output' AND ((COLUMN_NAME='output_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='tenant_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=20 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_unicode_ci' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='command_id' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=128 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='line_no' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='mes_wo_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='card_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='step_record_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='lot_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_allocation_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='material_id' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='quantity' AND DATA_TYPE='decimal' AND IS_NULLABLE='NO' AND NUMERIC_PRECISION=18 AND NUMERIC_SCALE=4 AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='result' AND DATA_TYPE='varchar' AND IS_NULLABLE='NO' AND CHARACTER_MAXIMUM_LENGTH=16 AND CHARACTER_SET_NAME='utf8mb4' AND COLLATION_NAME='utf8mb4_bin' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='source_version' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT='1') OR (COLUMN_NAME='created_by' AND DATA_TYPE='bigint' AND IS_NULLABLE='NO' AND COLUMN_DEFAULT IS NULL) OR (COLUMN_NAME='created_at' AND DATA_TYPE='datetime' AND IS_NULLABLE='NO' AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 15 THEN
+     OR (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_product_lot_output' AND ((
+         COLUMN_NAME='output_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='tenant_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=20
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_unicode_ci'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='command_id'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=128
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='line_no'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='mes_wo_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='card_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='step_record_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='lot_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_allocation_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='material_id'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='quantity'
+         AND DATA_TYPE='decimal'
+         AND IS_NULLABLE='NO'
+         AND NUMERIC_PRECISION=18
+         AND NUMERIC_SCALE=4
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='result'
+         AND DATA_TYPE='varchar'
+         AND IS_NULLABLE='NO'
+         AND CHARACTER_MAXIMUM_LENGTH=16
+         AND CHARACTER_SET_NAME='utf8mb4'
+         AND COLLATION_NAME='utf8mb4_bin'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='source_version'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT='1')
+         OR (
+         COLUMN_NAME='created_by'
+         AND DATA_TYPE='bigint'
+         AND IS_NULLABLE='NO'
+         AND COLUMN_DEFAULT IS NULL)
+         OR (
+         COLUMN_NAME='created_at'
+         AND DATA_TYPE='datetime'
+         AND IS_NULLABLE='NO'
+         AND LOWER(COLUMN_DEFAULT)='current_timestamp'))) <> 15 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '表pro_product_lot_output字段定义偏离契约';
   END IF;
   IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pro_product_lot_output' AND INDEX_NAME='PRIMARY'),'') <> 'output_id'

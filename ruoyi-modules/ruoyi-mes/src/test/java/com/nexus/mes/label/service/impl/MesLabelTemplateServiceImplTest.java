@@ -56,20 +56,18 @@ import static org.mockito.Mockito.when;
 class MesLabelTemplateServiceImplTest {
 
     private static final String VALID_CONTENT =
-        "{\"items\":[{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8,\"size\":5}]}";
+            "{\"items\":[{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8,\"size\":5}]}";
 
-    @Mock
-    private MesLabelTemplateMapper baseMapper;
-    @Mock
-    private LabelPrintService printService;
-    @Mock
-    private ProSnMapper proSnMapper;
+    @Mock private MesLabelTemplateMapper baseMapper;
+    @Mock private LabelPrintService printService;
+    @Mock private ProSnMapper proSnMapper;
 
-    @Mock
-    private SerialIdentityPort identities;
+    @Mock private SerialIdentityPort identities;
     private MockedStatic<TenantHelper> tenant;
 
-    /** 真实渲染服务，正式身份由测试ERP端口提供，模板及字段校验仍执行真实逻辑。 */
+    /**
+     * 真实渲染服务，正式身份由测试ERP端口提供，模板及字段校验仍执行真实逻辑。
+     */
     private LabelRenderService renderService;
 
     private MesLabelTemplateServiceImpl service;
@@ -78,7 +76,8 @@ class MesLabelTemplateServiceImplTest {
     static void initTableInfo() {
         // MapstructUtils 的静态初始化依赖 Spring 上下文, 纯单测须先预热
         SpringStaticBootstrap.ensureActive();
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        MapperBuilderAssistant assistant =
+                new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, MesLabelTemplate.class);
         TableInfoHelper.initTableInfo(assistant, ProSn.class);
     }
@@ -94,7 +93,9 @@ class MesLabelTemplateServiceImplTest {
         tenant = mockStatic(TenantHelper.class);
         tenant.when(TenantHelper::getTenantId).thenReturn("000001");
         renderService = new LabelRenderService(identities);
-        service = new MesLabelTemplateServiceImpl(baseMapper, renderService, printService, proSnMapper);
+        service =
+                new MesLabelTemplateServiceImpl(
+                        baseMapper, renderService, printService, proSnMapper);
     }
 
     @AfterEach
@@ -117,7 +118,8 @@ class MesLabelTemplateServiceImplTest {
 
     @Test
     void insertByBo_rejectsMalformedJsonContent() {
-        ServiceException ex = assertThrows(ServiceException.class, () -> service.insertByBo(bo("{not-json")));
+        ServiceException ex =
+                assertThrows(ServiceException.class, () -> service.insertByBo(bo("{not-json")));
 
         assertTrue(ex.getMessage().contains("合法的 JSON"), ex.getMessage());
         verify(baseMapper, never()).insert(any(MesLabelTemplate.class));
@@ -125,8 +127,12 @@ class MesLabelTemplateServiceImplTest {
 
     @Test
     void insertByBo_rejectsItemWithoutFieldBinding() {
-        ServiceException ex = assertThrows(ServiceException.class,
-            () -> service.insertByBo(bo("{\"items\":[{\"type\":\"text\",\"x\":0,\"y\":0}]}")));
+        ServiceException ex =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                service.insertByBo(
+                                        bo("{\"items\":[{\"type\":\"text\",\"x\":0,\"y\":0}]}")));
 
         assertTrue(ex.getMessage().contains("field"), ex.getMessage());
         verify(baseMapper, never()).insert(any(MesLabelTemplate.class));
@@ -134,8 +140,13 @@ class MesLabelTemplateServiceImplTest {
 
     @Test
     void insertByBo_rejectsUnknownItemType() {
-        ServiceException ex = assertThrows(ServiceException.class,
-            () -> service.insertByBo(bo("{\"items\":[{\"type\":\"image\",\"field\":\"snCode\",\"x\":0,\"y\":0}]}")));
+        ServiceException ex =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                service.insertByBo(
+                                        bo(
+                                                "{\"items\":[{\"type\":\"image\",\"field\":\"snCode\",\"x\":0,\"y\":0}]}")));
 
         assertTrue(ex.getMessage().contains("未知打印项类型"), ex.getMessage());
         verify(baseMapper, never()).insert(any(MesLabelTemplate.class));
@@ -143,7 +154,9 @@ class MesLabelTemplateServiceImplTest {
 
     @Test
     void insertByBo_rejectsEmptyItems() {
-        ServiceException ex = assertThrows(ServiceException.class, () -> service.insertByBo(bo("{\"items\":[]}")));
+        ServiceException ex =
+                assertThrows(
+                        ServiceException.class, () -> service.insertByBo(bo("{\"items\":[]}")));
 
         assertTrue(ex.getMessage().contains("未配置任何打印项"), ex.getMessage());
         verify(baseMapper, never()).insert(any(MesLabelTemplate.class));
@@ -180,15 +193,17 @@ class MesLabelTemplateServiceImplTest {
 
     @Test
     void insertByBo_rejectsSnTextWithOnlyMaterialBarcode() {
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"snCode\"},"
-            + "{\"type\":\"barcode\",\"field\":\"materialCode\"}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"snCode\"},"
+                        + "{\"type\":\"barcode\",\"field\":\"materialCode\"}]}";
         assertThrows(ServiceException.class, () -> service.insertByBo(bo(content)));
         verify(baseMapper, never()).insert(any(MesLabelTemplate.class));
     }
 
     @Test
     void updateByBo_rejectsInvalidSnBindingWhenEnablingTemplate() {
-        MesLabelTemplateBo input = bo("{\"items\":[{\"type\":\"qrcode\",\"field\":\"materialCode\"}]}");
+        MesLabelTemplateBo input =
+                bo("{\"items\":[{\"type\":\"qrcode\",\"field\":\"materialCode\"}]}");
         input.setTemplateId(5L);
         input.setEnabled("Y");
         assertThrows(ServiceException.class, () -> service.updateByBo(input));
@@ -254,22 +269,39 @@ class MesLabelTemplateServiceImplTest {
         sn.setIdentityId(1001L);
         sn.setMaterialId(100L);
         sn.setSnCode("SN-FC-0001");
-        when(identities.find("000001", 1001L)).thenReturn(new SerialIdentity(1001L, "SN-FC-0001", 100L, null, null));
+        when(identities.find("000001", 1001L))
+                .thenReturn(new SerialIdentity(1001L, "SN-FC-0001", 100L, null, null));
         when(proSnMapper.selectById(1L)).thenReturn(sn);
         MesLabelTemplate template = template(VALID_CONTENT);
         when(baseMapper.selectById(5L)).thenReturn(template);
-        MesLabelPrintLog printLog = MesLabelPrintLog.of(1L, "SN-FC-0001", 5L, "TPL-1", "192.168.1.50", 9100,
-            MesLabelPrintLog.SOURCE_REPRINT);
-        when(printService.newLog(any(), any(), any(MesLabelTemplate.class), anyString())).thenReturn(printLog);
+        MesLabelPrintLog printLog =
+                MesLabelPrintLog.of(
+                        1L,
+                        "SN-FC-0001",
+                        5L,
+                        "TPL-1",
+                        "192.168.1.50",
+                        9100,
+                        MesLabelPrintLog.SOURCE_REPRINT);
+        when(printService.newLog(any(), any(), any(MesLabelTemplate.class), anyString()))
+                .thenReturn(printLog);
         stubSentTask();
 
-        MesLabelPrintLog original=MesLabelPrintLog.of(1L,"SN-FC-0001",5L,"TPL-1","",9100,"AUTO");
-        original.setLogId(90L);original.setResult("SUCCESS");
+        MesLabelPrintLog original =
+                MesLabelPrintLog.of(1L, "SN-FC-0001", 5L, "TPL-1", "", 9100, "AUTO");
+        original.setLogId(90L);
+        original.setResult("SUCCESS");
         when(printService.findLog(90L)).thenReturn(original);
-        assertTrue(service.reprint(1L, 5L,90L,"标签污损"));
+        assertTrue(service.reprint(1L, 5L, 90L, "标签污损"));
 
-        verify(printService).newLog(eq(1L), eq("SN-FC-0001"), eq(template), eq(MesLabelPrintLog.SOURCE_REPRINT));
-        verify(printService).submitAndSend(eq(printLog), anyString(), eq(Charset.forName("GBK")),any());
+        verify(printService)
+                .newLog(
+                        eq(1L),
+                        eq("SN-FC-0001"),
+                        eq(template),
+                        eq(MesLabelPrintLog.SOURCE_REPRINT));
+        verify(printService)
+                .submitAndSend(eq(printLog), anyString(), eq(Charset.forName("GBK")), any());
     }
 
     @Test
@@ -283,9 +315,17 @@ class MesLabelTemplateServiceImplTest {
     void testPrint_persistsTestSourceLog() {
         MesLabelTemplate template = template(VALID_CONTENT);
         when(baseMapper.selectById(5L)).thenReturn(template);
-        MesLabelPrintLog printLog = MesLabelPrintLog.of(null, null, 5L, "TPL-1", "192.168.1.50", 9100,
-            MesLabelPrintLog.SOURCE_TEST);
-        when(printService.newLog(any(), any(), any(MesLabelTemplate.class), anyString())).thenReturn(printLog);
+        MesLabelPrintLog printLog =
+                MesLabelPrintLog.of(
+                        null,
+                        null,
+                        5L,
+                        "TPL-1",
+                        "192.168.1.50",
+                        9100,
+                        MesLabelPrintLog.SOURCE_TEST);
+        when(printService.newLog(any(), any(), any(MesLabelTemplate.class), anyString()))
+                .thenReturn(printLog);
         stubSentTask();
 
         assertTrue(service.testPrint(5L));
@@ -293,11 +333,17 @@ class MesLabelTemplateServiceImplTest {
         verify(printService).newLog(null, null, template, MesLabelPrintLog.SOURCE_TEST);
     }
 
-    /** 仅模拟提交门面回执，持久化与网络顺序由真实事务测试单独验证。 */
+    /**
+     * 仅模拟提交门面回执，持久化与网络顺序由真实事务测试单独验证。
+     */
     private void stubSentTask() {
-        var task=new MesLabelPrintTask();task.setTaskId(101L);task.setStatus("SENT");
-        when(printService.submitAndSend(any(),anyString(),any(),any())).thenReturn(task);
-        var receipt=new LabelPrintTaskVo();receipt.setTaskId(101L);receipt.setStatus("SENT");
+        var task = new MesLabelPrintTask();
+        task.setTaskId(101L);
+        task.setStatus("SENT");
+        when(printService.submitAndSend(any(), anyString(), any(), any())).thenReturn(task);
+        var receipt = new LabelPrintTaskVo();
+        receipt.setTaskId(101L);
+        receipt.setStatus("SENT");
         when(printService.view(task)).thenReturn(receipt);
     }
 

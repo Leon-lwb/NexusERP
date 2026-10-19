@@ -29,60 +29,96 @@ public class BdSerialNumberRule extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 
-    /** 规则ID */
+    /**
+     * 规则ID
+     */
     @TableId(value = "rule_id")
     private Long ruleId;
 
-    /** 冻结编号规则的并发版本，已预留号码仍按原快照重放。 */
-    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /**
+     * 冻结编号规则的并发版本，已预留号码仍按原快照重放。
+     */
+    @com.fasterxml.jackson.annotation.JsonFormat(
+            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
     private Long ruleVersion;
 
-    /** 规则编码 */
+    /**
+     * 规则编码
+     */
     private String ruleCode;
 
-    /** 规则名称 */
+    /**
+     * 规则名称
+     */
     private String ruleName;
 
-    /** 规则类型: PRODUCT_SN(产品序列号) / BARCODE(条码) / BATCH_NO(批次号) */
+    /**
+     * 规则类型: PRODUCT_SN(产品序列号) / BARCODE(条码) / BATCH_NO(批次号)
+     */
     private String ruleType;
 
-    /** 前缀(固定字符，如 SN/M/BN) */
+    /**
+     * 前缀(固定字符，如 SN/M/BN)
+     */
     private String prefix;
 
-    /** 日期格式(如yyyyMMdd，空=无日期段) */
+    /**
+     * 日期格式(如yyyyMMdd，空=无日期段)
+     */
     private String dateFormat;
 
-    /** 流水号长度(补零位数) */
+    /**
+     * 流水号长度(补零位数)
+     */
     private Integer seqLength;
 
-    /** 流水号重置周期(DAY/MONTH/YEAR/NONE) */
+    /**
+     * 流水号重置周期(DAY/MONTH/YEAR/NONE)
+     */
     private String seqCycle;
 
-    /** 当前流水号 */
+    /**
+     * 当前流水号
+     */
     private Integer currentSeq;
 
-    /** 校验位规则: NONE / MOD10 / MOD11 */
+    /**
+     * 校验位规则: NONE / MOD10 / MOD11
+     */
     private String checkDigitRule;
 
-    /** 状态(ACTIVE/INACTIVE) */
+    /**
+     * 状态(ACTIVE/INACTIVE)
+     */
     private String status;
 
-    /** 预留字段1 */
+    /**
+     * 预留字段1
+     */
     private String attr1;
 
-    /** 预留字段2 */
+    /**
+     * 预留字段2
+     */
     private String attr2;
 
-    /** 预留字段3 */
+    /**
+     * 预留字段3
+     */
     private Long attr3;
 
-    /** 预留字段4 */
+    /**
+     * 预留字段4
+     */
     private Long attr4;
 
-    /** 删除标志 */
-    @TableLogic
-    private String delFlag;
+    /**
+     * 删除标志
+     */
+    @TableLogic private String delFlag;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 }

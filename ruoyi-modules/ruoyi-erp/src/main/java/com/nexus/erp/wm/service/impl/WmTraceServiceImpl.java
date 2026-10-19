@@ -38,15 +38,26 @@ import java.util.Set;
 @Slf4j
 public class WmTraceServiceImpl implements IWmTraceService {
 
-    /** 物料库存流水数据访问映射器（Mapper） */
+    /**
+     * 物料库存流水数据访问映射器（Mapper）
+     */
     private final WmMaterialStockTxMapper wmMaterialStockTxMapper;
-    /** 序列号数据访问映射器（Mapper） */
+
+    /**
+     * 序列号数据访问映射器（Mapper）
+     */
     private final WmSnMapper wmSnMapper;
-    /** 批次数据访问映射器（Mapper） */
+
+    /**
+     * 批次数据访问映射器（Mapper）
+     */
     private final WmBatchMapper wmBatchMapper;
 
-    /** 最大递归深度，防止无限循环 */
+    /**
+     * 最大递归深度，防止无限循环
+     */
     private static final int MAX_DEPTH = 10;
+
     private static final int MAX_ROWS = 200;
 
     /**
@@ -68,8 +79,16 @@ public class WmTraceServiceImpl implements IWmTraceService {
         List<WmTraceNodeVo> flatNodes = new ArrayList<>();
         Set<String> visited = new HashSet<>();
         Set<String> notices = new LinkedHashSet<>();
-        WmTraceNodeVo root = buildForwardTree(materialId, resolvedBatch, sn == null ? null : sn.getSnId(),
-            snCode, 0, visited, flatNodes, notices);
+        WmTraceNodeVo root =
+                buildForwardTree(
+                        materialId,
+                        resolvedBatch,
+                        sn == null ? null : sn.getSnId(),
+                        snCode,
+                        0,
+                        visited,
+                        flatNodes,
+                        notices);
         if (sn != null && root != null) {
             if (StringUtils.isNotBlank(sn.getMaterialCode())) {
                 root.setMaterialCode(sn.getMaterialCode());
@@ -84,11 +103,15 @@ public class WmTraceServiceImpl implements IWmTraceService {
         if (!notices.isEmpty()) {
             result.setTraceKey(result.getTraceKey() + "/" + String.join("/", notices));
         }
-        result.setIdentityId(sn==null?null:sn.getSnId());
-        result.setTraceScope(sn!=null?"IDENTITY":StringUtils.isNotBlank(resolvedBatch)?"BATCH":"MATERIAL");
-        var truncated=notices.stream().filter(n->n.startsWith("TRUNCATED:")).toList();
-        result.setTruncated(!truncated.isEmpty());result.setTruncationReason(truncated.isEmpty()?null:String.join(",",truncated));
-        result.setEvidenceGaps(notices.stream().filter(n->!n.startsWith("TRUNCATED:")).toList());
+        result.setIdentityId(sn == null ? null : sn.getSnId());
+        result.setTraceScope(
+                sn != null
+                        ? "IDENTITY"
+                        : StringUtils.isNotBlank(resolvedBatch) ? "BATCH" : "MATERIAL");
+        var truncated = notices.stream().filter(n -> n.startsWith("TRUNCATED:")).toList();
+        result.setTruncated(!truncated.isEmpty());
+        result.setTruncationReason(truncated.isEmpty() ? null : String.join(",", truncated));
+        result.setEvidenceGaps(notices.stream().filter(n -> !n.startsWith("TRUNCATED:")).toList());
         result.setNodes(flatNodes);
         result.setTree(root);
         return result;
@@ -113,8 +136,16 @@ public class WmTraceServiceImpl implements IWmTraceService {
         List<WmTraceNodeVo> flatNodes = new ArrayList<>();
         Set<String> visited = new HashSet<>();
         Set<String> notices = new LinkedHashSet<>();
-        WmTraceNodeVo root = buildBackwardTree(materialId, resolvedBatch, sn == null ? null : sn.getSnId(),
-            snCode, 0, visited, flatNodes, notices);
+        WmTraceNodeVo root =
+                buildBackwardTree(
+                        materialId,
+                        resolvedBatch,
+                        sn == null ? null : sn.getSnId(),
+                        snCode,
+                        0,
+                        visited,
+                        flatNodes,
+                        notices);
         if (sn != null && root != null) {
             if (StringUtils.isNotBlank(sn.getMaterialCode())) {
                 root.setMaterialCode(sn.getMaterialCode());
@@ -129,11 +160,15 @@ public class WmTraceServiceImpl implements IWmTraceService {
         if (!notices.isEmpty()) {
             result.setTraceKey(result.getTraceKey() + "/" + String.join("/", notices));
         }
-        result.setIdentityId(sn==null?null:sn.getSnId());
-        result.setTraceScope(sn!=null?"IDENTITY":StringUtils.isNotBlank(resolvedBatch)?"BATCH":"MATERIAL");
-        var truncated=notices.stream().filter(n->n.startsWith("TRUNCATED:")).toList();
-        result.setTruncated(!truncated.isEmpty());result.setTruncationReason(truncated.isEmpty()?null:String.join(",",truncated));
-        result.setEvidenceGaps(notices.stream().filter(n->!n.startsWith("TRUNCATED:")).toList());
+        result.setIdentityId(sn == null ? null : sn.getSnId());
+        result.setTraceScope(
+                sn != null
+                        ? "IDENTITY"
+                        : StringUtils.isNotBlank(resolvedBatch) ? "BATCH" : "MATERIAL");
+        var truncated = notices.stream().filter(n -> n.startsWith("TRUNCATED:")).toList();
+        result.setTruncated(!truncated.isEmpty());
+        result.setTruncationReason(truncated.isEmpty() ? null : String.join(",", truncated));
+        result.setEvidenceGaps(notices.stream().filter(n -> !n.startsWith("TRUNCATED:")).toList());
         result.setNodes(flatNodes);
         result.setTree(root);
         return result;
@@ -147,8 +182,15 @@ public class WmTraceServiceImpl implements IWmTraceService {
      * 逻辑：找到该物料的出库事务（txFlag=-1），然后找到该出库事务对应的单据（sourceDocType/sourceDocId），
      * 再从该单据的入库事务（txFlag=1）中找到产出的成品/半成品，递归追踪。
      */
-    private WmTraceNodeVo buildForwardTree(Long materialId, String batchCode, Long snId, String snCode,
-                                            int depth, Set<String> visited, List<WmTraceNodeVo> flatNodes, Set<String> notices) {
+    private WmTraceNodeVo buildForwardTree(
+            Long materialId,
+            String batchCode,
+            Long snId,
+            String snCode,
+            int depth,
+            Set<String> visited,
+            List<WmTraceNodeVo> flatNodes,
+            Set<String> notices) {
         if (depth >= MAX_DEPTH) {
             notices.add("TRUNCATED:DEPTH_" + MAX_DEPTH);
             log.warn("正向追溯超过最大深度 {}，停止递归", MAX_DEPTH);
@@ -176,7 +218,12 @@ public class WmTraceServiceImpl implements IWmTraceService {
         List<WmTraceNodeVo> children = new ArrayList<>();
 
         for (WmMaterialStockTx outTx : outTxList) {
-            String childNodeId = outTx.getMaterialId() + "_" + outTx.getSourceDocType() + "_" + outTx.getSourceDocId();
+            String childNodeId =
+                    outTx.getMaterialId()
+                            + "_"
+                            + outTx.getSourceDocType()
+                            + "_"
+                            + outTx.getSourceDocId();
             if (visited.contains(childNodeId)) {
                 continue;
             }
@@ -194,7 +241,12 @@ public class WmTraceServiceImpl implements IWmTraceService {
 
             for (WmMaterialStockTx inTx : inTxList) {
                 WmTraceNodeVo child = new WmTraceNodeVo();
-                child.setNodeId(inTx.getMaterialId() + "_" + inTx.getSourceDocType() + "_" + inTx.getSourceDocId());
+                child.setNodeId(
+                        inTx.getMaterialId()
+                                + "_"
+                                + inTx.getSourceDocType()
+                                + "_"
+                                + inTx.getSourceDocId());
                 child.setParentNodeId(rootId);
                 child.setMaterialId(inTx.getMaterialId());
                 child.setMaterialCode(inTx.getMaterialCode());
@@ -211,14 +263,29 @@ public class WmTraceServiceImpl implements IWmTraceService {
                 flatNodes.add(child);
 
                 if ((snId != null || StringUtils.isNotBlank(snCode))
-                    && inTx.getSnId() == null && StringUtils.isBlank(inTx.getSnCode())) {
-                    notices.add("RELATED_SCOPE:" + (StringUtils.isNotBlank(inTx.getBatchCode()) ? "BATCH" : "MATERIAL"));
+                        && inTx.getSnId() == null
+                        && StringUtils.isBlank(inTx.getSnCode())) {
+                    notices.add(
+                            "RELATED_SCOPE:"
+                                    + (StringUtils.isNotBlank(inTx.getBatchCode())
+                                            ? "BATCH"
+                                            : "MATERIAL"));
                 }
 
                 // 递归追踪该成品的后续流转
-                WmTraceNodeVo grandChild = buildForwardTree(inTx.getMaterialId(), inTx.getBatchCode(), inTx.getSnId(), inTx.getSnCode(),
-                    depth + 1, visited, flatNodes, notices);
-                if (grandChild != null && grandChild.getChildren() != null && !grandChild.getChildren().isEmpty()) {
+                WmTraceNodeVo grandChild =
+                        buildForwardTree(
+                                inTx.getMaterialId(),
+                                inTx.getBatchCode(),
+                                inTx.getSnId(),
+                                inTx.getSnCode(),
+                                depth + 1,
+                                visited,
+                                flatNodes,
+                                notices);
+                if (grandChild != null
+                        && grandChild.getChildren() != null
+                        && !grandChild.getChildren().isEmpty()) {
                     child.setChildren(grandChild.getChildren());
                 }
 
@@ -238,8 +305,15 @@ public class WmTraceServiceImpl implements IWmTraceService {
      * 逻辑：找到该物料的入库事务（txFlag=1），然后找到该入库事务对应的单据（sourceDocType/sourceDocId），
      * 再从该单据的出库事务（txFlag=-1）中找到消耗的原材料，递归追踪。
      */
-    private WmTraceNodeVo buildBackwardTree(Long materialId, String batchCode, Long snId, String snCode,
-                                             int depth, Set<String> visited, List<WmTraceNodeVo> flatNodes, Set<String> notices) {
+    private WmTraceNodeVo buildBackwardTree(
+            Long materialId,
+            String batchCode,
+            Long snId,
+            String snCode,
+            int depth,
+            Set<String> visited,
+            List<WmTraceNodeVo> flatNodes,
+            Set<String> notices) {
         if (depth >= MAX_DEPTH) {
             notices.add("TRUNCATED:DEPTH_" + MAX_DEPTH);
             log.warn("反向追溯超过最大深度 {}，停止递归", MAX_DEPTH);
@@ -267,7 +341,12 @@ public class WmTraceServiceImpl implements IWmTraceService {
         List<WmTraceNodeVo> children = new ArrayList<>();
 
         for (WmMaterialStockTx inTx : inTxList) {
-            String childNodeId = inTx.getMaterialId() + "_" + inTx.getSourceDocType() + "_" + inTx.getSourceDocId();
+            String childNodeId =
+                    inTx.getMaterialId()
+                            + "_"
+                            + inTx.getSourceDocType()
+                            + "_"
+                            + inTx.getSourceDocId();
             if (visited.contains(childNodeId)) {
                 continue;
             }
@@ -285,7 +364,12 @@ public class WmTraceServiceImpl implements IWmTraceService {
 
             for (WmMaterialStockTx outTx : outTxList) {
                 WmTraceNodeVo child = new WmTraceNodeVo();
-                child.setNodeId(outTx.getMaterialId() + "_" + outTx.getSourceDocType() + "_" + outTx.getSourceDocId());
+                child.setNodeId(
+                        outTx.getMaterialId()
+                                + "_"
+                                + outTx.getSourceDocType()
+                                + "_"
+                                + outTx.getSourceDocId());
                 child.setParentNodeId(rootId);
                 child.setMaterialId(outTx.getMaterialId());
                 child.setMaterialCode(outTx.getMaterialCode());
@@ -302,14 +386,29 @@ public class WmTraceServiceImpl implements IWmTraceService {
                 flatNodes.add(child);
 
                 if ((snId != null || StringUtils.isNotBlank(snCode))
-                    && outTx.getSnId() == null && StringUtils.isBlank(outTx.getSnCode())) {
-                    notices.add("RELATED_SCOPE:" + (StringUtils.isNotBlank(outTx.getBatchCode()) ? "BATCH" : "MATERIAL"));
+                        && outTx.getSnId() == null
+                        && StringUtils.isBlank(outTx.getSnCode())) {
+                    notices.add(
+                            "RELATED_SCOPE:"
+                                    + (StringUtils.isNotBlank(outTx.getBatchCode())
+                                            ? "BATCH"
+                                            : "MATERIAL"));
                 }
 
                 // 递归追踪该原材料的来源
-                WmTraceNodeVo grandChild = buildBackwardTree(outTx.getMaterialId(), outTx.getBatchCode(), outTx.getSnId(), outTx.getSnCode(),
-                    depth + 1, visited, flatNodes, notices);
-                if (grandChild != null && grandChild.getChildren() != null && !grandChild.getChildren().isEmpty()) {
+                WmTraceNodeVo grandChild =
+                        buildBackwardTree(
+                                outTx.getMaterialId(),
+                                outTx.getBatchCode(),
+                                outTx.getSnId(),
+                                outTx.getSnCode(),
+                                depth + 1,
+                                visited,
+                                flatNodes,
+                                notices);
+                if (grandChild != null
+                        && grandChild.getChildren() != null
+                        && !grandChild.getChildren().isEmpty()) {
                     child.setChildren(grandChild.getChildren());
                 }
 
@@ -326,9 +425,12 @@ public class WmTraceServiceImpl implements IWmTraceService {
     /**
      * 构建根节点
      */
-    private WmTraceNodeVo buildRootNode(Long materialId, String batchCode, Long snId, String snCode) {
+    private WmTraceNodeVo buildRootNode(
+            Long materialId, String batchCode, Long snId, String snCode) {
         WmTraceNodeVo root = new WmTraceNodeVo();
-        root.setNodeId(buildTraceKey(materialId, batchCode, snCode) + (snId == null ? "_ROOT" : "/ID:" + snId));
+        root.setNodeId(
+                buildTraceKey(materialId, batchCode, snCode)
+                        + (snId == null ? "_ROOT" : "/ID:" + snId));
         root.setParentNodeId(null);
         root.setMaterialId(materialId);
         root.setBatchCode(batchCode);
@@ -351,8 +453,12 @@ public class WmTraceServiceImpl implements IWmTraceService {
         if (StringUtils.isBlank(root.getMaterialCode())) {
             LambdaQueryWrapper<WmMaterialStockTx> txLqw = Wrappers.lambdaQuery();
             txLqw.eq(WmMaterialStockTx::getMaterialId, materialId);
-            txLqw.eq(snId == null && StringUtils.isBlank(snCode) && StringUtils.isNotBlank(batchCode),
-                WmMaterialStockTx::getBatchCode, batchCode);
+            txLqw.eq(
+                    snId == null
+                            && StringUtils.isBlank(snCode)
+                            && StringUtils.isNotBlank(batchCode),
+                    WmMaterialStockTx::getBatchCode,
+                    batchCode);
             applySnIdentity(txLqw, snId, snCode);
             txLqw.last("LIMIT 1");
             WmMaterialStockTx tx = wmMaterialStockTxMapper.selectOne(txLqw);
@@ -365,7 +471,9 @@ public class WmTraceServiceImpl implements IWmTraceService {
         return root;
     }
 
-    /** SN 不存在或请求范围冲突时明确失败，不能退化为批次/物料级查询。 */
+    /**
+     * SN 不存在或请求范围冲突时明确失败，不能退化为批次/物料级查询。
+     */
     private WmSn resolveRequestedSn(Long materialId, String batchCode, String snCode) {
         if (StringUtils.isBlank(snCode)) {
             return null;
@@ -375,29 +483,39 @@ public class WmTraceServiceImpl implements IWmTraceService {
             throw new ServiceException("序列号不存在");
         }
         if (!Objects.equals(materialId, sn.getMaterialId())
-            || (StringUtils.isNotBlank(batchCode) && !Objects.equals(batchCode, sn.getBatchCode()))) {
+                || (StringUtils.isNotBlank(batchCode)
+                        && !Objects.equals(batchCode, sn.getBatchCode()))) {
             throw new ServiceException("序列号与指定物料或批次不匹配");
         }
         return sn;
     }
 
-    /** 稳定 SN ID 优先；只对未记录 ID 的历史流水使用精确编码，不匹配其他非空 ID。 */
-    private void applySnIdentity(LambdaQueryWrapper<WmMaterialStockTx> query, Long snId, String snCode) {
+    /**
+     * 稳定 SN ID 优先；只对未记录 ID 的历史流水使用精确编码，不匹配其他非空 ID。
+     */
+    private void applySnIdentity(
+            LambdaQueryWrapper<WmMaterialStockTx> query, Long snId, String snCode) {
         if (snId != null) {
-            query.and(identity -> {
-                identity.eq(WmMaterialStockTx::getSnId, snId);
-                if (StringUtils.isNotBlank(snCode)) {
-                    identity.or(legacy -> legacy.isNull(WmMaterialStockTx::getSnId)
-                        .eq(WmMaterialStockTx::getSnCode, snCode));
-                }
-            });
+            query.and(
+                    identity -> {
+                        identity.eq(WmMaterialStockTx::getSnId, snId);
+                        if (StringUtils.isNotBlank(snCode)) {
+                            identity.or(
+                                    legacy ->
+                                            legacy.isNull(WmMaterialStockTx::getSnId)
+                                                    .eq(WmMaterialStockTx::getSnCode, snCode));
+                        }
+                    });
         } else if (StringUtils.isNotBlank(snCode)) {
             query.eq(WmMaterialStockTx::getSnCode, snCode);
         }
     }
 
-    /** 多读一条区分恰好 200 条与真实截断，提示写入现有 traceKey 字段。 */
-    private List<WmMaterialStockTx> selectLimited(LambdaQueryWrapper<WmMaterialStockTx> query, Set<String> notices) {
+    /**
+     * 多读一条区分恰好 200 条与真实截断，提示写入现有 traceKey 字段。
+     */
+    private List<WmMaterialStockTx> selectLimited(
+            LambdaQueryWrapper<WmMaterialStockTx> query, Set<String> notices) {
         query.orderByAsc(WmMaterialStockTx::getTxDate).orderByAsc(WmMaterialStockTx::getTxId);
         query.last("LIMIT " + (MAX_ROWS + 1));
         List<WmMaterialStockTx> transactions = wmMaterialStockTxMapper.selectList(query);
@@ -413,8 +531,11 @@ public class WmTraceServiceImpl implements IWmTraceService {
      */
     private String buildTraceKey(Long materialId, String batchCode, String snCode) {
         StringBuilder sb = new StringBuilder();
-        sb.append("SCOPE:").append(StringUtils.isNotBlank(snCode) ? "EXACT_SN"
-            : StringUtils.isNotBlank(batchCode) ? "BATCH" : "MATERIAL");
+        sb.append("SCOPE:")
+                .append(
+                        StringUtils.isNotBlank(snCode)
+                                ? "EXACT_SN"
+                                : StringUtils.isNotBlank(batchCode) ? "BATCH" : "MATERIAL");
         sb.append("/").append(materialId);
         if (StringUtils.isNotBlank(batchCode)) {
             sb.append("/B:").append(batchCode);

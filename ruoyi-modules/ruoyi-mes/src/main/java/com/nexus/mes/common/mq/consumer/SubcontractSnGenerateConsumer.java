@@ -25,7 +25,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Component
 @DS("mes")
-public class SubcontractSnGenerateConsumer extends BaseMessageConsumer<SubcontractSnGenerateMessage> {
+public class SubcontractSnGenerateConsumer
+        extends BaseMessageConsumer<SubcontractSnGenerateMessage> {
 
     private final IProSnService proSnService;
 
@@ -36,23 +37,41 @@ public class SubcontractSnGenerateConsumer extends BaseMessageConsumer<Subcontra
 
     @Override
     protected void doProcess(SubcontractSnGenerateMessage message) {
-        log.info("收到委外SN生成消息: subcontractId={}, subcontractNo={}, quantity={}",
-            message.getSubcontractId(), message.getSubcontractNo(), message.getQuantity());
+        log.info(
+                "收到委外SN生成消息: subcontractId={}, subcontractNo={}, quantity={}",
+                message.getSubcontractId(),
+                message.getSubcontractNo(),
+                message.getQuantity());
         final int quantity;
-        try { quantity=message.getQuantity()==null?0:message.getQuantity().intValueExact(); }
-        catch(ArithmeticException error) {throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为32位正整数，不能截断或溢出");}
-        if(quantity<=0) throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为正整数，不能将无效消息当作已完成");
-        String commandId="MES:SUBCONTRACT:"+message.getSubcontractId();
-        if(message.getMessageId()!=null && !message.getMessageId().isBlank()) commandId+=":"+message.getMessageId();
-        proSnService.generateSnForSubcontract(commandId,message.getSubcontractId(),message.getSubcontractNo(),
-            message.getMaterialId(),message.getMaterialCode(),message.getMaterialName(),quantity);
+        try {
+            quantity = message.getQuantity() == null ? 0 : message.getQuantity().intValueExact();
+        } catch (ArithmeticException error) {
+            throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为32位正整数，不能截断或溢出");
+        }
+        if (quantity <= 0) {
+            throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为正整数，不能将无效消息当作已完成");
+        }
+        String commandId = "MES:SUBCONTRACT:" + message.getSubcontractId();
+        if (message.getMessageId() != null && !message.getMessageId().isBlank()) {
+            commandId += ":" + message.getMessageId();
+        }
+        proSnService.generateSnForSubcontract(
+                commandId,
+                message.getSubcontractId(),
+                message.getSubcontractNo(),
+                message.getMaterialId(),
+                message.getMaterialCode(),
+                message.getMaterialName(),
+                quantity);
     }
 
     /**
      * RabbitMQ 监听入口
      */
     @RabbitListener(queues = QueueConstants.MES_SUBCONTRACT_SN_QUEUE)
-    public void onMessage(SubcontractSnGenerateMessage message, Channel channel, Message amqpMessage) throws Exception {
+    public void onMessage(
+            SubcontractSnGenerateMessage message, Channel channel, Message amqpMessage)
+            throws Exception {
         processMessage(message, channel, amqpMessage);
     }
 }

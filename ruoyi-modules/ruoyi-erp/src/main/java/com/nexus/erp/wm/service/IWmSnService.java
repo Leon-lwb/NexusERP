@@ -102,9 +102,18 @@ public interface IWmSnService {
      * @param sourceDocNo   来源单据编号
      */
     @Deprecated
-    void batchGenerate(Long materialId, Integer quantity, Long batchId, Long ruleId, Long sourceDocId, String sourceDocType, String sourceDocNo);
+    void batchGenerate(
+            Long materialId,
+            Integer quantity,
+            Long batchId,
+            Long ruleId,
+            Long sourceDocId,
+            String sourceDocType,
+            String sourceDocNo);
 
-    /** 按显式commandId调用ERP注册服务预留完整号段，不直接产生库存。 */
+    /**
+     * 按显式commandId调用ERP注册服务预留完整号段，不直接产生库存。
+     */
     void batchGenerate(WmSnBo bo);
 
     /**

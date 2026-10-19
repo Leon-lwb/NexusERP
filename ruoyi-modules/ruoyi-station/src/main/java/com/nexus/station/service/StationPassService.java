@@ -67,13 +67,24 @@ import java.util.Map;
 @Service
 public class StationPassService {
 
-    /** 校验码: 前道工序 */
+    /**
+     * 校验码: 前道工序
+     */
     public static final String CHECK_PREV_STEP = "PREV_STEP";
-    /** 校验码: 工位/工序匹配 */
+
+    /**
+     * 校验码: 工位/工序匹配
+     */
     public static final String CHECK_STATION_MATCH = "STATION_MATCH";
-    /** 校验码: 重复过站 */
+
+    /**
+     * 校验码: 重复过站
+     */
     public static final String CHECK_DUPLICATE = "DUPLICATE";
-    /** 校验码: 质量扣押 */
+
+    /**
+     * 校验码: 质量扣押
+     */
     public static final String CHECK_QUALITY_HOLD = "QUALITY_HOLD";
 
     private final StationReportMapper reportMapper;
@@ -87,8 +98,12 @@ public class StationPassService {
     private final IProSnService proSnService;
     private final NcrOrderMapper ncrOrderMapper;
     private final StationPassGuardMapper passGuardMapper;
-    /** 工单父锁先于SN/卡锁，避免不同SN持锁后互等跨卡投影。 */
+
+    /**
+     * 工单父锁先于SN/卡锁，避免不同SN持锁后互等跨卡投影。
+     */
     private final ProWorkOrderStepProgressService progressService;
+
     private final com.nexus.mes.trace.MesSerialReferenceService serialReferences;
     private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
 
@@ -108,65 +123,124 @@ public class StationPassService {
             throw new ServiceException("snCode 与 stationCode 不能为空");
         }
 
-        var reference=serialReferences.resolve(sn);
-        ProSn proSn=reference==null?null:reference.sn();
+        var reference = serialReferences.resolve(sn);
+        ProSn proSn = reference == null ? null : reference.sn();
         if (proSn == null) {
             return StationPassChecks.evaluate(sn, null, null, null, List.of(), 0, null, 0);
         }
-        String localCode=reference.localSnCode();
+        String localCode = reference.localSnCode();
         ProFlowCardStep step = resolveCurrentStep(proSn.getCardId(), proSn.getCurrentStepSeq());
-        List<ProFlowCardStep> previous = step == null ? List.of() : stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getCardId, proSn.getCardId())
-            .lt(ProFlowCardStep::getSequenceNum, step.getSequenceNum())
-            .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED"));
-        Long duplicates = reportMapper.selectCount(Wrappers.<MesStationReport>lambdaQuery()
-            .eq(MesStationReport::getSnCode, localCode).eq(MesStationReport::getResult, "PASS")
-            .and(w -> {
-                w.eq(MesStationReport::getStationCode, station);
-                if (step != null && step.getStepRecordId() != null) {
-                    w.or().eq(MesStationReport::getStepRecordId, step.getStepRecordId());
-                }
-            }));
+        List<ProFlowCardStep> previous =
+                step == null
+                        ? List.of()
+                        : stepMapper.selectList(
+                                Wrappers.<ProFlowCardStep>lambdaQuery()
+                                        .eq(ProFlowCardStep::getCardId, proSn.getCardId())
+                                        .lt(ProFlowCardStep::getSequenceNum, step.getSequenceNum())
+                                        .notIn(
+                                                ProFlowCardStep::getStepStatus,
+                                                "COMPLETED",
+                                                "SKIPPED"));
+        Long duplicates =
+                reportMapper.selectCount(
+                        Wrappers.<MesStationReport>lambdaQuery()
+                                .eq(MesStationReport::getSnCode, localCode)
+                                .eq(MesStationReport::getResult, "PASS")
+                                .and(
+                                        w -> {
+                                            w.eq(MesStationReport::getStationCode, station);
+                                            if (step != null && step.getStepRecordId() != null) {
+                                                w.or().eq(
+                                                                MesStationReport::getStepRecordId,
+                                                                step.getStepRecordId());
+                                            }
+                                        }));
         boolean sameCode = localCode.equals(reference.canonicalSnCode());
-        TestRecord latest = testRecordMapper.selectOne(Wrappers.<TestRecord>lambdaQuery()
-            .eq(TestRecord::getTenantId, reference.tenantId())
-            .and(w -> {
-                w.eq(TestRecord::getSnId, reference.localSnId());
-                if (sameCode) {
-                    w.or(legacy -> legacy.isNull(TestRecord::getSnId).eq(TestRecord::getSnCode, localCode));
-                }
-            })
-            .orderByDesc(TestRecord::getTestTime).orderByDesc(TestRecord::getTestRecordId).last("LIMIT 1"));
+        TestRecord latest =
+                testRecordMapper.selectOne(
+                        Wrappers.<TestRecord>lambdaQuery()
+                                .eq(TestRecord::getTenantId, reference.tenantId())
+                                .and(
+                                        w -> {
+                                            w.eq(TestRecord::getSnId, reference.localSnId());
+                                            if (sameCode) {
+                                                w.or(
+                                                        legacy ->
+                                                                legacy.isNull(TestRecord::getSnId)
+                                                                        .eq(
+                                                                                TestRecord
+                                                                                        ::getSnCode,
+                                                                                localCode));
+                                            }
+                                        })
+                                .orderByDesc(TestRecord::getTestTime)
+                                .orderByDesc(TestRecord::getTestRecordId)
+                                .last("LIMIT 1"));
         boolean unverifiedLegacyTests = false;
         if (!sameCode) {
-            Long count = testRecordMapper.selectCount(Wrappers.<TestRecord>lambdaQuery()
-                .eq(TestRecord::getTenantId, reference.tenantId()).isNull(TestRecord::getSnId)
-                .in(TestRecord::getSnCode, List.of(localCode, reference.canonicalSnCode())));
+            Long count =
+                    testRecordMapper.selectCount(
+                            Wrappers.<TestRecord>lambdaQuery()
+                                    .eq(TestRecord::getTenantId, reference.tenantId())
+                                    .isNull(TestRecord::getSnId)
+                                    .in(
+                                            TestRecord::getSnCode,
+                                            List.of(localCode, reference.canonicalSnCode())));
             require(count != null && count >= 0, "历史测试证据范围未核验");
             unverifiedLegacyTests = count > 0;
         }
-        Long open = proSn.getCardId() == null ? 0L : ncrOrderMapper.selectCount(Wrappers.<NcrOrder>lambdaQuery()
-            .eq(NcrOrder::getCardId, proSn.getCardId()).in(NcrOrder::getStatus,
-                INcrOrderService.STATUS_OPEN, INcrOrderService.STATUS_REVIEW,
-                INcrOrderService.STATUS_DISPOSITION, INcrOrderService.STATUS_IN_REWORK));
-        var checked=StationPassChecks.evaluate(sn, proSn, step, resolveProcessCode(station), previous,
-            duplicates == null ? 0 : duplicates, latest, open == null ? 0 : open);
+        Long open =
+                proSn.getCardId() == null
+                        ? 0L
+                        : ncrOrderMapper.selectCount(
+                                Wrappers.<NcrOrder>lambdaQuery()
+                                        .eq(NcrOrder::getCardId, proSn.getCardId())
+                                        .in(
+                                                NcrOrder::getStatus,
+                                                INcrOrderService.STATUS_OPEN,
+                                                INcrOrderService.STATUS_REVIEW,
+                                                INcrOrderService.STATUS_DISPOSITION,
+                                                INcrOrderService.STATUS_IN_REWORK));
+        var checked =
+                StationPassChecks.evaluate(
+                        sn,
+                        proSn,
+                        step,
+                        resolveProcessCode(station),
+                        previous,
+                        duplicates == null ? 0 : duplicates,
+                        latest,
+                        open == null ? 0 : open);
         applyLegacyTestGap(checked, unverifiedLegacyTests, latest);
-        @SuppressWarnings("unchecked") var info=(Map<String,Object>)checked.get("snInfo");
-        info.put("identityId",reference.identityId());info.put("localSnId",reference.localSnId());info.put("canonicalSnCode",reference.canonicalSnCode());info.put("localSnCode",reference.localSnCode());return checked;
+        @SuppressWarnings("unchecked")
+        var info = (Map<String, Object>) checked.get("snInfo");
+        info.put("identityId", reference.identityId());
+        info.put("localSnId", reference.localSnId());
+        info.put("canonicalSnCode", reference.canonicalSnCode());
+        info.put("localSnCode", reference.localSnCode());
+        return checked;
     }
 
-    /** Keep ambiguous historical evidence visible without using it to release a quality hold. */
-    private static void applyLegacyTestGap(Map<String,Object> validation, boolean unverified, TestRecord latest) {
-        if (!unverified) return;
+    /**
+     * 保留歧义历史证据的可见性，质量占用的释放仍需充分且明确的来源。
+     */
+    private static void applyLegacyTestGap(
+            Map<String, Object> validation, boolean unverified, TestRecord latest) {
+        if (!unverified) {
+            return;
+        }
         String gap = "正式码与历史本地码不一致，未绑定 localSnId 的历史综测不能核验本件质量";
         validation.put("evidenceGaps", List.of(gap));
-        if (latest != null && Set.of("PASS", "FAIL").contains(Objects.toString(latest.getResult(), ""))) return;
+        if (latest != null
+                && Set.of("PASS", "FAIL").contains(Objects.toString(latest.getResult(), ""))) {
+            return;
+        }
         @SuppressWarnings("unchecked")
-        var checks = (List<Map<String,Object>>) validation.get("checks");
+        var checks = (List<Map<String, Object>>) validation.get("checks");
         for (var check : checks) {
             if (CHECK_QUALITY_HOLD.equals(check.get("code"))) {
-                check.put("ok", false); check.put("message", gap);
+                check.put("ok", false);
+                check.put("message", gap);
             }
         }
         validation.put("pass", false);
@@ -185,13 +259,18 @@ public class StationPassService {
      * @param operator 事务外解析好的操作员(可空，按空操作员记录)
      * @return 已提交的MES效果及其原完工清单当前投递状态
      */
-    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ)
+    @Transactional(
+            rollbackFor = Exception.class,
+            propagation = Propagation.REQUIRES_NEW,
+            isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> reportSingle(StationPassReportDto dto, OperatorInfo operator) {
         require(dto != null, "单件过站请求不能为空");
         String rawSn = trim(dto.getSnCode());
         String station = normalizeStationCode(trim(dto.getStationCode()));
         String result = trim(dto.getResult());
-        require(StringUtils.isNotBlank(rawSn) && rawSn.length() <= 64 && !rawSn.contains("|"), "SN 编码为空、过长或含幂等分隔符");
+        require(
+                StringUtils.isNotBlank(rawSn) && rawSn.length() <= 64 && !rawSn.contains("|"),
+                "SN 编码为空、过长或含幂等分隔符");
         require(StringUtils.isNotBlank(station) && station.length() <= 64, "工位编码为空或过长");
         require("PASS".equals(result) || "FAIL".equals(result), "result 仅允许 PASS/FAIL");
         require(dto.getClientTs() != null && dto.getClientTs() > 0, "clientTs 必须为正数");
@@ -202,76 +281,155 @@ public class StationPassService {
         OperatorInfo op = operator == null ? new OperatorInfo(null, null, null) : operator;
         String tenant = TenantHelper.getTenantId();
         require(TenantHelper.isEnable() && StringUtils.isNotBlank(tenant), "单件过站必须有启用的可信租户上下文");
-        require("mes".equals(DynamicDataSourceContextHolder.peek())
-            && TransactionSynchronizationManager.isActualTransactionActive()
-            && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
-            && Objects.equals(Connection.TRANSACTION_REPEATABLE_READ, TransactionSynchronizationManager.getCurrentTransactionIsolationLevel()),
-            "单件过站必须通过实际 MES RR 写事务代理调用");
+        require(
+                "mes".equals(DynamicDataSourceContextHolder.peek())
+                        && TransactionSynchronizationManager.isActualTransactionActive()
+                        && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+                        && Objects.equals(
+                                Connection.TRANSACTION_REPEATABLE_READ,
+                                TransactionSynchronizationManager
+                                        .getCurrentTransactionIsolationLevel()),
+                "单件过站必须通过实际 MES RR 写事务代理调用");
 
-        String fingerprint = StationSinglePassFingerprint.of(tenant, rawSn, station, dto.getClientTs(), result,
-            dto.getOperatorId(), blankToNull(dto.getOperatorCode()), defects);
-        var reference=serialReferences.resolve(rawSn);require(reference!=null,"SN has no unique local mapping to the canonical ERP identity");
-        String sn=reference.localSnCode();
-        preparedPolicies.prepareStationSingle(reference.sn().getCardId(),clientKey);
+        String fingerprint =
+                StationSinglePassFingerprint.of(
+                        tenant,
+                        rawSn,
+                        station,
+                        dto.getClientTs(),
+                        result,
+                        dto.getOperatorId(),
+                        blankToNull(dto.getOperatorCode()),
+                        defects);
+        var reference = serialReferences.resolve(rawSn);
+        require(reference != null, "SN has no unique local mapping to the canonical ERP identity");
+        String sn = reference.localSnCode();
+        preparedPolicies.prepareStationSingle(reference.sn().getCardId(), clientKey);
         Long lockedWoId = progressService.lockForSn(sn);
         List<ProSn> sns = passGuardMapper.lockSn(tenant, sn);
         require(sns != null && sns.size() == 1, "SN 不存在或编码归属不唯一");
         ProSn proSn = sns.get(0);
-        require(Objects.equals(proSn.getSnId(),reference.localSnId()) && Objects.equals(proSn.getIdentityId(),reference.identityId()),"Locked SN differs from the resolved canonical identity");
-        require(tenant.equals(proSn.getTenantId()) && sn.equals(proSn.getSnCode()) && "0".equals(proSn.getDelFlag()), "SN 租户或来源归属不匹配");
+        require(
+                Objects.equals(proSn.getSnId(), reference.localSnId())
+                        && Objects.equals(proSn.getIdentityId(), reference.identityId()),
+                "Locked SN differs from the resolved canonical identity");
+        require(
+                tenant.equals(proSn.getTenantId())
+                        && sn.equals(proSn.getSnCode())
+                        && "0".equals(proSn.getDelFlag()),
+                "SN 租户或来源归属不匹配");
         require(Objects.equals(lockedWoId, proSn.getMesWoId()), "SN锁定父工单与真实来源不一致");
         List<StationPassGuardMapper.StoredReport> history = passGuardMapper.lockReports(tenant, sn);
         require(history != null, "报工历史来源缺失");
         for (StationPassGuardMapper.StoredReport prior : history) {
-            require(tenant.equals(prior.getTenantId()) && sn.equals(prior.getSnCode()) && Objects.equals(proSn.getMesWoId(),prior.getMesWoId()) && Objects.equals(proSn.getCardId(),prior.getCardId()), "报工历史租户或 SN 归属不匹配");
+            require(
+                    tenant.equals(prior.getTenantId())
+                            && sn.equals(prior.getSnCode())
+                            && Objects.equals(proSn.getMesWoId(), prior.getMesWoId())
+                            && Objects.equals(proSn.getCardId(), prior.getCardId()),
+                    "报工历史租户或 SN 归属不匹配");
             if (clientKey.equals(prior.getClientKey())) {
-                require("0".equals(prior.getDelFlag()) && "SINGLE".equals(prior.getReportType())
-                    && station.equals(prior.getStationCode()) && Objects.equals(dto.getClientTs(), prior.getClientTs())
-                    && fingerprint.equals(prior.getRequestFingerprint())
-                    && result.equals(prior.getResult())
-                    && Objects.equals(defects, canonicalDefects(prior.getDefectCodes() == null ? null : List.of(prior.getDefectCodes().split(",", -1))))
-                    && sameQuantity(prior.getGoodQty(), "PASS".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO)
-                    && sameQuantity(prior.getDefectQty(), "FAIL".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO),
-                    "幂等键已存在但原始请求指纹缺失、内容或承载状态冲突，禁止重放");
+                require(
+                        "0".equals(prior.getDelFlag())
+                                && "SINGLE".equals(prior.getReportType())
+                                && station.equals(prior.getStationCode())
+                                && Objects.equals(dto.getClientTs(), prior.getClientTs())
+                                && fingerprint.equals(prior.getRequestFingerprint())
+                                && result.equals(prior.getResult())
+                                && Objects.equals(
+                                        defects,
+                                        canonicalDefects(
+                                                prior.getDefectCodes() == null
+                                                        ? null
+                                                        : List.of(
+                                                                prior.getDefectCodes()
+                                                                        .split(",", -1))))
+                                && sameQuantity(
+                                        prior.getGoodQty(),
+                                        "PASS".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO)
+                                && sameQuantity(
+                                        prior.getDefectQty(),
+                                        "FAIL".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO),
+                        "幂等键已存在但原始请求指纹缺失、内容或承载状态冲突，禁止重放");
                 return serialReferences.submissionStatus(reference);
             }
         }
         require(proSn.getCardId() != null, "SN 未绑定流转卡");
         ProFlowCard card = passGuardMapper.lockCard(tenant, proSn.getCardId());
-        require(card != null && tenant.equals(card.getTenantId()) && Objects.equals(proSn.getCardId(), card.getCardId())
-            && "0".equals(card.getDelFlag()) && proSn.getMesWoId() != null && proSn.getMesWoId() > 0
-            && Objects.equals(proSn.getMesWoId(), card.getMesWoId())
-            && Set.of("RELEASED", "IN_PROGRESS").contains(Objects.toString(card.getCardStatus(), "")), "流转卡归属或可报工状态未核验");
-        preparedPolicies.assertPreparedCard(card.getCardId(),proSn.getMesWoId());
+        require(
+                card != null
+                        && tenant.equals(card.getTenantId())
+                        && Objects.equals(proSn.getCardId(), card.getCardId())
+                        && "0".equals(card.getDelFlag())
+                        && proSn.getMesWoId() != null
+                        && proSn.getMesWoId() > 0
+                        && Objects.equals(proSn.getMesWoId(), card.getMesWoId())
+                        && Set.of("RELEASED", "IN_PROGRESS")
+                                .contains(Objects.toString(card.getCardStatus(), "")),
+                "流转卡归属或可报工状态未核验");
+        preparedPolicies.assertPreparedCard(card.getCardId(), proSn.getMesWoId());
         List<ProFlowCardStep> steps = passGuardMapper.lockSteps(tenant, card.getCardId());
         require(steps != null && !steps.isEmpty(), "流转卡工序来源缺失");
         Set<Integer> sequences = new java.util.HashSet<>();
         for (ProFlowCardStep s : steps) {
-            require(tenant.equals(s.getTenantId()) && card.getCardId().equals(s.getCardId()) && "0".equals(s.getDelFlag())
-                && Objects.equals(card.getMesWoId(), s.getMesWoId())
-                && s.getSequenceNum() != null && s.getStepRecordId() != null && sequences.add(s.getSequenceNum())
-                && Set.of("PENDING", "IN_PROGRESS", "COMPLETED", "SKIPPED").contains(Objects.toString(s.getStepStatus(), "")), "工序来源、顺序或状态未核验");
+            require(
+                    tenant.equals(s.getTenantId())
+                            && card.getCardId().equals(s.getCardId())
+                            && "0".equals(s.getDelFlag())
+                            && Objects.equals(card.getMesWoId(), s.getMesWoId())
+                            && s.getSequenceNum() != null
+                            && s.getStepRecordId() != null
+                            && sequences.add(s.getSequenceNum())
+                            && Set.of("PENDING", "IN_PROGRESS", "COMPLETED", "SKIPPED")
+                                    .contains(Objects.toString(s.getStepStatus(), "")),
+                    "工序来源、顺序或状态未核验");
         }
-        ProFlowCardStep step = steps.stream().filter(s -> !Set.of("COMPLETED", "SKIPPED").contains(s.getStepStatus()))
-            .min(java.util.Comparator.comparing(ProFlowCardStep::getSequenceNum)).orElse(null);
+        ProFlowCardStep step =
+                steps.stream()
+                        .filter(s -> !Set.of("COMPLETED", "SKIPPED").contains(s.getStepStatus()))
+                        .min(java.util.Comparator.comparing(ProFlowCardStep::getSequenceNum))
+                        .orElse(null);
         require(step != null, "流转卡没有可报工工序");
-        require(step.getPlannedQty() != null && step.getPlannedQty().signum() > 0
-            && step.getGoodQty() != null && step.getGoodQty().signum() >= 0
-            && step.getDefectQty() != null && step.getDefectQty().signum() >= 0
-            && step.getScrapQty() != null && step.getScrapQty().signum() >= 0, "当前工序计划量或累计量未核验");
+        require(
+                step.getPlannedQty() != null
+                        && step.getPlannedQty().signum() > 0
+                        && step.getGoodQty() != null
+                        && step.getGoodQty().signum() >= 0
+                        && step.getDefectQty() != null
+                        && step.getDefectQty().signum() >= 0
+                        && step.getScrapQty() != null
+                        && step.getScrapQty().signum() >= 0,
+                "当前工序计划量或累计量未核验");
         List<MesStationDevice> devices = passGuardMapper.lockDevices(tenant, station);
         require(devices != null && !devices.isEmpty(), "工位未登记，不能仅凭工位码授权报工");
         String process = devices.get(0).getProcessCode();
         require(StringUtils.isNotBlank(process), "登记工位缺少工序绑定");
         for (MesStationDevice d : devices) {
-            require(tenant.equals(d.getTenantId()) && station.equals(d.getStationCode()) && "0".equals(d.getDelFlag())
-                && process.equals(d.getProcessCode()), "登记工位归属或工序绑定冲突");
+            require(
+                    tenant.equals(d.getTenantId())
+                            && station.equals(d.getStationCode())
+                            && "0".equals(d.getDelFlag())
+                            && process.equals(d.getProcessCode()),
+                    "登记工位归属或工序绑定冲突");
         }
-        List<TestRecord> localTests=passGuardMapper.lockTests(tenant,sn);require(localTests!=null,"Local test evidence is unavailable");
-        var tests=new java.util.ArrayList<>(localTests);
-        if(!sn.equals(reference.canonicalSnCode())) {var canonicalTests=passGuardMapper.lockTests(tenant,reference.canonicalSnCode());require(canonicalTests!=null,"Canonical test evidence is unavailable");tests.addAll(canonicalTests);}
-        var identityTests=testRecordMapper.selectList(Wrappers.<TestRecord>lambdaQuery().eq(TestRecord::getTenantId,tenant).eq(TestRecord::getSnId,reference.localSnId()).orderByDesc(TestRecord::getTestTime).orderByDesc(TestRecord::getTestRecordId).last("FOR UPDATE"));
-        require(identityTests!=null,"Identity test evidence is unavailable");tests.addAll(identityTests);
+        List<TestRecord> localTests = passGuardMapper.lockTests(tenant, sn);
+        require(localTests != null, "Local test evidence is unavailable");
+        var tests = new java.util.ArrayList<>(localTests);
+        if (!sn.equals(reference.canonicalSnCode())) {
+            var canonicalTests = passGuardMapper.lockTests(tenant, reference.canonicalSnCode());
+            require(canonicalTests != null, "Canonical test evidence is unavailable");
+            tests.addAll(canonicalTests);
+        }
+        var identityTests =
+                testRecordMapper.selectList(
+                        Wrappers.<TestRecord>lambdaQuery()
+                                .eq(TestRecord::getTenantId, tenant)
+                                .eq(TestRecord::getSnId, reference.localSnId())
+                                .orderByDesc(TestRecord::getTestTime)
+                                .orderByDesc(TestRecord::getTestRecordId)
+                                .last("FOR UPDATE"));
+        require(identityTests != null, "Identity test evidence is unavailable");
+        tests.addAll(identityTests);
         List<NcrOrder> ncrs = passGuardMapper.lockNcrs(tenant, card.getCardId());
         require(ncrs != null, "质量来源缺失");
         boolean sameCode = sn.equals(reference.canonicalSnCode());
@@ -279,60 +437,136 @@ public class StationPassService {
         var qualityTests = new java.util.ArrayList<TestRecord>();
         for (TestRecord test : tests) {
             boolean boundToThisSn = reference.localSnId().equals(test.getSnId());
-            boolean historicalCode = sn.equals(test.getSnCode()) || reference.canonicalSnCode().equals(test.getSnCode());
-            require(tenant.equals(test.getTenantId()) && (boundToThisSn || historicalCode)
-                && (boundToThisSn || test.getSnId() == null || !sameCode)
-                && Set.of("0", "1", "2").contains(Objects.toString(test.getDelFlag(), "")), "测试来源归属未核验");
-            // A repaired identity does not make either spelling a proven alias for old code-only tests.
+            boolean historicalCode =
+                    sn.equals(test.getSnCode())
+                            || reference.canonicalSnCode().equals(test.getSnCode());
+            require(
+                    tenant.equals(test.getTenantId())
+                            && (boundToThisSn || historicalCode)
+                            && (boundToThisSn || test.getSnId() == null || !sameCode)
+                            && Set.of("0", "1", "2")
+                                    .contains(Objects.toString(test.getDelFlag(), "")),
+                    "测试来源归属未核验");
+            // 修复身份映射后，旧测试原码的不同拼写仍需各自的别名证据。
             if (boundToThisSn || (sameCode && test.getSnId() == null)) {
-                require(test.getResult() != null && Set.of("", "PASS", "FAIL").contains(test.getResult()), "测试结果状态未核验");
+                require(
+                        test.getResult() != null
+                                && Set.of("", "PASS", "FAIL").contains(test.getResult()),
+                        "测试结果状态未核验");
                 qualityTests.add(test);
             } else if (test.getSnId() == null && "0".equals(test.getDelFlag())) {
                 unverifiedLegacyTests = true;
             }
         }
-        qualityTests.sort(java.util.Comparator.comparing(TestRecord::getTestTime,
-            java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
-            .thenComparing(TestRecord::getTestRecordId,java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
+        qualityTests.sort(
+                java.util.Comparator.comparing(
+                                TestRecord::getTestTime,
+                                java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+                        .thenComparing(
+                                TestRecord::getTestRecordId,
+                                java.util.Comparator.nullsLast(
+                                        java.util.Comparator.reverseOrder())));
         for (NcrOrder ncr : ncrs) {
-            require(tenant.equals(ncr.getTenantId()) && card.getCardId().equals(ncr.getCardId())
-                && Set.of("0", "1", "2").contains(Objects.toString(ncr.getDelFlag(), ""))
-                && Set.of(INcrOrderService.STATUS_OPEN, INcrOrderService.STATUS_REVIEW, INcrOrderService.STATUS_DISPOSITION,
-                    INcrOrderService.STATUS_IN_REWORK, INcrOrderService.STATUS_CLOSED).contains(Objects.toString(ncr.getStatus(), "")),
-                "NCR 来源归属或状态未核验");
+            require(
+                    tenant.equals(ncr.getTenantId())
+                            && card.getCardId().equals(ncr.getCardId())
+                            && Set.of("0", "1", "2")
+                                    .contains(Objects.toString(ncr.getDelFlag(), ""))
+                            && Set.of(
+                                            INcrOrderService.STATUS_OPEN,
+                                            INcrOrderService.STATUS_REVIEW,
+                                            INcrOrderService.STATUS_DISPOSITION,
+                                            INcrOrderService.STATUS_IN_REWORK,
+                                            INcrOrderService.STATUS_CLOSED)
+                                    .contains(Objects.toString(ncr.getStatus(), "")),
+                    "NCR 来源归属或状态未核验");
         }
-        TestRecord latest = qualityTests.stream().filter(t -> "0".equals(t.getDelFlag())).findFirst().orElse(null);
-        long openNcr = ncrs.stream().filter(n -> "0".equals(n.getDelFlag()) && Set.of(
-            INcrOrderService.STATUS_OPEN, INcrOrderService.STATUS_REVIEW,
-            INcrOrderService.STATUS_DISPOSITION, INcrOrderService.STATUS_IN_REWORK).contains(Objects.toString(n.getStatus(), ""))).count();
-        long duplicates = history.stream().filter(r -> "PASS".equals(r.getResult())
-            && (station.equals(r.getStationCode()) || Objects.equals(step.getStepRecordId(), r.getStepRecordId()))).count();
-        List<ProFlowCardStep> previous = steps.stream().filter(s -> s.getSequenceNum() < step.getSequenceNum()
-            && !Set.of("COMPLETED", "SKIPPED").contains(s.getStepStatus())).toList();
-        Map<String,Object> validation = StationPassChecks.evaluate(sn, proSn, step, process, previous, duplicates, latest, openNcr);
+        TestRecord latest =
+                qualityTests.stream()
+                        .filter(t -> "0".equals(t.getDelFlag()))
+                        .findFirst()
+                        .orElse(null);
+        long openNcr =
+                ncrs.stream()
+                        .filter(
+                                n ->
+                                        "0".equals(n.getDelFlag())
+                                                && Set.of(
+                                                                INcrOrderService.STATUS_OPEN,
+                                                                        INcrOrderService
+                                                                                .STATUS_REVIEW,
+                                                                INcrOrderService.STATUS_DISPOSITION,
+                                                                        INcrOrderService
+                                                                                .STATUS_IN_REWORK)
+                                                        .contains(
+                                                                Objects.toString(
+                                                                        n.getStatus(), "")))
+                        .count();
+        long duplicates =
+                history.stream()
+                        .filter(
+                                r ->
+                                        "PASS".equals(r.getResult())
+                                                && (station.equals(r.getStationCode())
+                                                        || Objects.equals(
+                                                                step.getStepRecordId(),
+                                                                r.getStepRecordId())))
+                        .count();
+        List<ProFlowCardStep> previous =
+                steps.stream()
+                        .filter(
+                                s ->
+                                        s.getSequenceNum() < step.getSequenceNum()
+                                                && !Set.of("COMPLETED", "SKIPPED")
+                                                        .contains(s.getStepStatus()))
+                        .toList();
+        Map<String, Object> validation =
+                StationPassChecks.evaluate(
+                        sn, proSn, step, process, previous, duplicates, latest, openNcr);
         applyLegacyTestGap(validation, unverifiedLegacyTests, latest);
         @SuppressWarnings("unchecked")
-        List<Map<String,Object>> checks = (List<Map<String,Object>>) validation.get("checks");
-        for (Map<String,Object> c : checks) {
-            require(Boolean.TRUE.equals(c.get("ok")), "[" + c.get("code") + "] " + c.get("message"));
+        List<Map<String, Object>> checks = (List<Map<String, Object>>) validation.get("checks");
+        for (Map<String, Object> c : checks) {
+            require(
+                    Boolean.TRUE.equals(c.get("ok")),
+                    "[" + c.get("code") + "] " + c.get("message"));
         }
 
         MesStationReport report = new MesStationReport();
-        report.setTenantId(tenant); report.setReportType("SINGLE"); report.setSnCode(sn); report.setStationCode(station);
-        report.setCardId(card.getCardId()); report.setStepRecordId(step.getStepRecordId()); report.setMesWoId(proSn.getMesWoId()); report.setWoNo(proSn.getWoNo());
-        report.setOperatorId(op.userId()); report.setOperatorCode(blankToNull(op.code())); report.setOperatorName(op.name());
-        report.setResult(result); report.setDefectCodes(defects);
+        report.setTenantId(tenant);
+        report.setReportType("SINGLE");
+        report.setSnCode(sn);
+        report.setStationCode(station);
+        report.setCardId(card.getCardId());
+        report.setStepRecordId(step.getStepRecordId());
+        report.setMesWoId(proSn.getMesWoId());
+        report.setWoNo(proSn.getWoNo());
+        report.setOperatorId(op.userId());
+        report.setOperatorCode(blankToNull(op.code()));
+        report.setOperatorName(op.name());
+        report.setResult(result);
+        report.setDefectCodes(defects);
         report.setGoodQty("PASS".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO);
         report.setDefectQty("FAIL".equals(result) ? BigDecimal.ONE : BigDecimal.ZERO);
-        report.setClientTs(dto.getClientTs()); report.setClientKey(clientKey); report.setRequestFingerprint(fingerprint);
+        report.setClientTs(dto.getClientTs());
+        report.setClientKey(clientKey);
+        report.setRequestFingerprint(fingerprint);
         // 任意唯一键冲突都让整个事务回滚；不可把未知冲突吞成成功。
         require(reportMapper.insert(report) == 1, "报工记录未写入，事务回滚");
         autoStartStep(step, op);
         boolean isPass = "PASS".equals(result);
-        int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
-            .setSql(isPass ? "good_qty = good_qty + 1" : "defect_qty = defect_qty + 1")
-            .eq(ProFlowCardStep::getTenantId, tenant).eq(ProFlowCardStep::getCardId, card.getCardId())
-            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()).eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
+        int rows =
+                stepMapper.update(
+                        null,
+                        Wrappers.<ProFlowCardStep>lambdaUpdate()
+                                .setSql(
+                                        isPass
+                                                ? "good_qty = good_qty + 1"
+                                                : "defect_qty = defect_qty + 1")
+                                .eq(ProFlowCardStep::getTenantId, tenant)
+                                .eq(ProFlowCardStep::getCardId, card.getCardId())
+                                .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId())
+                                .eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
         require(rows == 1, "工序状态已变更或数量未写入，事务回滚");
         if (isPass) {
             advanceSn(proSn, step, card, steps);
@@ -341,57 +575,79 @@ public class StationPassService {
         return serialReferences.submissionStatus(reference);
     }
 
-    /** 不良代码按集合规范化；不允许分隔符或超长值改变持久化含义。 */
+    /**
+     * 不良代码按集合规范化；不允许分隔符或超长值改变持久化含义。
+     */
     private String canonicalDefects(List<String> codes) {
-        if (codes == null || codes.isEmpty()) return null;
+        if (codes == null || codes.isEmpty()) {
+            return null;
+        }
         for (String code : codes) {
             require(StringUtils.isNotBlank(code) && !code.contains(","), "不良代码为空或含存储分隔符");
         }
-        String joined = String.join(",", codes.stream().map(String::trim).distinct().sorted().toList());
-        require(joined.length() <= 512, "不良代码超出存储长度"); return joined;
+        String joined =
+                String.join(",", codes.stream().map(String::trim).distinct().sorted().toList());
+        require(joined.length() <= 512, "不良代码超出存储长度");
+        return joined;
     }
 
-    /** 重放数量比较不依赖 DECIMAL 的显示小数位。 */
+    /**
+     * 重放数量比较不依赖 DECIMAL 的显示小数位。
+     */
     private boolean sameQuantity(BigDecimal stored, BigDecimal expected) {
         return stored != null && stored.compareTo(expected) == 0;
     }
 
-    /** 可空文本规范化，保持旧已提交空值的兼容语义。 */
+    /**
+     * 可空文本规范化，保持旧已提交空值的兼容语义。
+     */
     private String blankToNull(String value) {
         return StringUtils.isBlank(value) ? null : value.trim();
     }
 
-    /** 任何未核验条件都先拒绝，不继续业务写入。 */
+    /**
+     * 任何未核验条件都先拒绝，不继续业务写入。
+     */
     private void require(boolean condition, String message) {
-        if (!condition) throw new ServiceException(message);
+        if (!condition) {
+            throw new ServiceException(message);
+        }
     }
 
     /**
      * SN 前移使用已锁定的实际工序序号；末道完工，非末道写下一工序序号。
      */
-    private void advanceSn(ProSn proSn, ProFlowCardStep step, ProFlowCard card, List<ProFlowCardStep> cardSteps) {
-        Integer maxSeq = cardSteps.stream().map(ProFlowCardStep::getSequenceNum)
-            .filter(java.util.Objects::nonNull)
-            .max(Integer::compareTo)
-            .orElse(null);
+    private void advanceSn(
+            ProSn proSn, ProFlowCardStep step, ProFlowCard card, List<ProFlowCardStep> cardSteps) {
+        Integer maxSeq =
+                cardSteps.stream()
+                        .map(ProFlowCardStep::getSequenceNum)
+                        .filter(java.util.Objects::nonNull)
+                        .max(Integer::compareTo)
+                        .orElse(null);
         boolean isLastStep = maxSeq != null && maxSeq.equals(step.getSequenceNum());
 
-        // The final identity must be terminal before card/WO aggregation freezes its manifest.
+        // 单件最终状态必须先入账，再由流转卡与工单汇总冻结最终清单。
         if (isLastStep) {
             proSnService.completeSn(proSn.getSnId());
             log.info("SN 末道工序过站完成, SN 完工: snId={}, snCode={}", proSn.getSnId(), proSn.getSnCode());
         } else {
             // 写实际下一道工序的 seq(工序序号不连续时 30→40 而非 30+1), 与 resolveCurrentStep 兜底口径一致
-            Integer nextSeq = cardSteps.stream().map(ProFlowCardStep::getSequenceNum)
-                .filter(s -> s != null && s > step.getSequenceNum())
-                .min(Integer::compareTo)
-                .orElse(null);
+            Integer nextSeq =
+                    cardSteps.stream()
+                            .map(ProFlowCardStep::getSequenceNum)
+                            .filter(s -> s != null && s > step.getSequenceNum())
+                            .min(Integer::compareTo)
+                            .orElse(null);
             if (nextSeq != null) {
-                int rows = proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
-                    .set(ProSn::getCurrentStepSeq, nextSeq)
-                    .eq(ProSn::getTenantId, proSn.getTenantId())
-                    .eq(ProSn::getSnStatus, "IN_PRODUCTION")
-                    .eq(ProSn::getSnId, proSn.getSnId()));
+                int rows =
+                        proSnMapper.update(
+                                null,
+                                Wrappers.<ProSn>lambdaUpdate()
+                                        .set(ProSn::getCurrentStepSeq, nextSeq)
+                                        .eq(ProSn::getTenantId, proSn.getTenantId())
+                                        .eq(ProSn::getSnStatus, "IN_PRODUCTION")
+                                        .eq(ProSn::getSnId, proSn.getSnId()));
                 require(rows == 1, "SN 推进失败，事务回滚");
             }
         }
@@ -403,10 +659,13 @@ public class StationPassService {
      * (重查累计值, 避免内存旧值), 全工序完成后复用 completeCard 做卡完工聚合。
      */
     private void completeStepIfQtyReached(ProFlowCardStep step, ProFlowCard card) {
-        ProFlowCardStep fresh = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getTenantId, TenantHelper.getTenantId())
-            .eq(ProFlowCardStep::getCardId, card.getCardId())
-            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()).last("FOR UPDATE"));
+        ProFlowCardStep fresh =
+                stepMapper.selectOne(
+                        Wrappers.<ProFlowCardStep>lambdaQuery()
+                                .eq(ProFlowCardStep::getTenantId, TenantHelper.getTenantId())
+                                .eq(ProFlowCardStep::getCardId, card.getCardId())
+                                .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId())
+                                .last("FOR UPDATE"));
         if (fresh == null || !"IN_PROGRESS".equals(fresh.getStepStatus())) {
             return;
         }
@@ -415,21 +674,31 @@ public class StationPassService {
         BigDecimal scrap = nvl(fresh.getScrapQty());
         BigDecimal planned = nvl(fresh.getPlannedQty());
         if (planned.compareTo(BigDecimal.ZERO) <= 0
-            || good.add(defect).add(scrap).compareTo(planned) < 0) {
+                || good.add(defect).add(scrap).compareTo(planned) < 0) {
             return;
         }
-        int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
-            .set(ProFlowCardStep::getStepStatus, "COMPLETED")
-            .set(ProFlowCardStep::getActualEndTime, new Date())
-            .eq(ProFlowCardStep::getStepRecordId, fresh.getStepRecordId())
-            .eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
+        int rows =
+                stepMapper.update(
+                        null,
+                        Wrappers.<ProFlowCardStep>lambdaUpdate()
+                                .set(ProFlowCardStep::getStepStatus, "COMPLETED")
+                                .set(ProFlowCardStep::getActualEndTime, new Date())
+                                .eq(ProFlowCardStep::getStepRecordId, fresh.getStepRecordId())
+                                .eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
         if (rows > 0) {
-            log.info("设备通道报工触发工序完工: stepRecordId={}, good={}, defect={}, scrap={}",
-                fresh.getStepRecordId(), good, defect, scrap);
+            log.info(
+                    "设备通道报工触发工序完工: stepRecordId={}, good={}, defect={}, scrap={}",
+                    fresh.getStepRecordId(),
+                    good,
+                    defect,
+                    scrap);
             // 卡上所有工序完成 → 复用既有 completeCard 聚合(卡完工 → 工单数量聚合/完工判定)
-            Long pending = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
-                .eq(ProFlowCardStep::getCardId, card.getCardId())
-                .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED").last("FOR UPDATE"));
+            Long pending =
+                    stepMapper.selectCount(
+                            Wrappers.<ProFlowCardStep>lambdaQuery()
+                                    .eq(ProFlowCardStep::getCardId, card.getCardId())
+                                    .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED")
+                                    .last("FOR UPDATE"));
             if (pending == 0) {
                 flowCardService.completeCard(card.getCardId());
             }
@@ -443,12 +712,16 @@ public class StationPassService {
     private void autoStartStep(ProFlowCardStep step, OperatorInfo operator) {
         if ("PENDING".equals(step.getStepStatus())) {
             flowCardService.startStep(step.getCardId(), step.getStepRecordId(), operator.userId());
-        } else if ("IN_PROGRESS".equals(step.getStepStatus()) && step.getOperatorId() == null && operator.userId() != null) {
-            stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
-                .set(ProFlowCardStep::getOperatorId, operator.userId())
-                .set(ProFlowCardStep::getOperatorName, operator.name())
-                .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId())
-                .isNull(ProFlowCardStep::getOperatorId));
+        } else if ("IN_PROGRESS".equals(step.getStepStatus())
+                && step.getOperatorId() == null
+                && operator.userId() != null) {
+            stepMapper.update(
+                    null,
+                    Wrappers.<ProFlowCardStep>lambdaUpdate()
+                            .set(ProFlowCardStep::getOperatorId, operator.userId())
+                            .set(ProFlowCardStep::getOperatorName, operator.name())
+                            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId())
+                            .isNull(ProFlowCardStep::getOperatorId));
         }
     }
 
@@ -504,22 +777,29 @@ public class StationPassService {
         if (processCode == null) {
             throw new ServiceException("无法解析工位工序编码(工位未心跳注册且工位码格式不符): " + station);
         }
-        List<ProFlowCardStep> inProgressSteps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getProcessCode, processCode)
-            .eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
+        List<ProFlowCardStep> inProgressSteps =
+                stepMapper.selectList(
+                        Wrappers.<ProFlowCardStep>lambdaQuery()
+                                .eq(ProFlowCardStep::getProcessCode, processCode)
+                                .eq(ProFlowCardStep::getStepStatus, "IN_PROGRESS"));
         if (inProgressSteps.size() != 1) {
-            throw new ServiceException(String.format(
-                "工位工序(%s)当前在制工序数=%d(应为1), 无法定位报工目标; 请先开工流转卡工序",
-                processCode, inProgressSteps.size()));
+            throw new ServiceException(
+                    String.format(
+                            "工位工序(%s)当前在制工序数=%d(应为1), 无法定位报工目标; 请先开工流转卡工序",
+                            processCode, inProgressSteps.size()));
         }
         ProFlowCardStep step = inProgressSteps.get(0);
         preparedPolicies.prepareCard(step.getCardId());
         ProFlowCard card = progressService.lockForCard(step.getCardId());
-        step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()).last("FOR UPDATE"));
-        if (step == null || !"IN_PROGRESS".equals(step.getStepStatus())
-            || !Objects.equals(step.getCardId(), card.getCardId())
-            || !Objects.equals(step.getMesWoId(), card.getMesWoId())) {
+        step =
+                stepMapper.selectOne(
+                        Wrappers.<ProFlowCardStep>lambdaQuery()
+                                .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId())
+                                .last("FOR UPDATE"));
+        if (step == null
+                || !"IN_PROGRESS".equals(step.getStepStatus())
+                || !Objects.equals(step.getCardId(), card.getCardId())
+                || !Objects.equals(step.getMesWoId(), card.getMesWoId())) {
             throw new ServiceException("锁定后的批量工序状态已变更");
         }
         if (card == null) {
@@ -550,16 +830,22 @@ public class StationPassService {
         }
 
         // 4. 数量增量累加
-        stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
-            .setSql("good_qty = good_qty + {0}", goodQty)
-            .setSql("defect_qty = defect_qty + {0}", defectTotal)
-            .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()));
+        stepMapper.update(
+                null,
+                Wrappers.<ProFlowCardStep>lambdaUpdate()
+                        .setSql("good_qty = good_qty + {0}", goodQty)
+                        .setSql("defect_qty = defect_qty + {0}", defectTotal)
+                        .eq(ProFlowCardStep::getStepRecordId, step.getStepRecordId()));
 
         // 5. 数量达标则收口(与单件路径同一收口逻辑)
         completeStepIfQtyReached(step, card);
         progressService.rebuildForCard(card.getCardId());
-        log.info("批量报工完成: station={}, goodQty={}, defectQty={}, stepRecordId={}",
-            station, goodQty, defectTotal, step.getStepRecordId());
+        log.info(
+                "批量报工完成: station={}, goodQty={}, defectQty={}, stepRecordId={}",
+                station,
+                goodQty,
+                defectTotal,
+                step.getStepRecordId());
         return new HashMap<>();
     }
 
@@ -593,15 +879,19 @@ public class StationPassService {
         }
         String station = stationCode.trim();
         // ① 心跳注册绑定(同库直查 mes_station_device)
-        MesStationDevice device = deviceMapper.selectOne(Wrappers.<MesStationDevice>lambdaQuery()
-            .eq(MesStationDevice::getStationCode, station)
-            .last("LIMIT 1"));
+        MesStationDevice device =
+                deviceMapper.selectOne(
+                        Wrappers.<MesStationDevice>lambdaQuery()
+                                .eq(MesStationDevice::getStationCode, station)
+                                .last("LIMIT 1"));
         if (device != null && StringUtils.isNotBlank(device.getProcessCode())) {
             return device.getProcessCode();
         }
         // ② 工位码格式解析
         String[] parts = station.split("\\|");
-        if (parts.length >= 5 && "STN".equalsIgnoreCase(parts[0]) && StringUtils.isNotBlank(parts[3])) {
+        if (parts.length >= 5
+                && "STN".equalsIgnoreCase(parts[0])
+                && StringUtils.isNotBlank(parts[3])) {
             return parts[3].trim();
         }
         return null;
@@ -616,21 +906,24 @@ public class StationPassService {
         if (cardId == null) {
             return null;
         }
-        ProFlowCardStep step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getCardId, cardId)
-            .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED")
-            .orderByAsc(ProFlowCardStep::getSequenceNum)
-            .last("LIMIT 1"));
+        ProFlowCardStep step =
+                stepMapper.selectOne(
+                        Wrappers.<ProFlowCardStep>lambdaQuery()
+                                .eq(ProFlowCardStep::getCardId, cardId)
+                                .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED")
+                                .orderByAsc(ProFlowCardStep::getSequenceNum)
+                                .last("LIMIT 1"));
         if (step != null) {
             return step;
         }
         if (currentStepSeq == null) {
             return null;
         }
-        return stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
-            .eq(ProFlowCardStep::getCardId, cardId)
-            .eq(ProFlowCardStep::getSequenceNum, currentStepSeq)
-            .last("LIMIT 1"));
+        return stepMapper.selectOne(
+                Wrappers.<ProFlowCardStep>lambdaQuery()
+                        .eq(ProFlowCardStep::getCardId, cardId)
+                        .eq(ProFlowCardStep::getSequenceNum, currentStepSeq)
+                        .last("LIMIT 1"));
     }
 
     /**
@@ -645,14 +938,17 @@ public class StationPassService {
         }
         String code = trim(operatorCode);
         if (StringUtils.isNotBlank(code)) {
-            Map<String, Object> worker = TenantHelper.dynamic("000000", () -> {
-                DynamicDataSourceContextHolder.push("erp");
-                try {
-                    return schWorkerMapper.selectByEmployeeId(code);
-                } finally {
-                    DynamicDataSourceContextHolder.poll();
-                }
-            });
+            Map<String, Object> worker =
+                    TenantHelper.dynamic(
+                            "000000",
+                            () -> {
+                                DynamicDataSourceContextHolder.push("erp");
+                                try {
+                                    return schWorkerMapper.selectByEmployeeId(code);
+                                } finally {
+                                    DynamicDataSourceContextHolder.poll();
+                                }
+                            });
             if (worker != null) {
                 Object userId = worker.get("user_id");
                 Long uid = userId == null ? null : Long.valueOf(String.valueOf(userId));
@@ -668,7 +964,9 @@ public class StationPassService {
         if (defectCodes == null || defectCodes.isEmpty()) {
             return null;
         }
-        return String.join(",", defectCodes.stream().filter(StringUtils::isNotBlank).map(String::trim).toList());
+        return String.join(
+                ",",
+                defectCodes.stream().filter(StringUtils::isNotBlank).map(String::trim).toList());
     }
 
     private BigDecimal nvl(BigDecimal v) {
@@ -679,7 +977,12 @@ public class StationPassService {
         return s == null ? null : s.trim();
     }
 
-    /** 操作员信息(userId/code/name, 均可空)。 */
-    public record OperatorInfo(Long userId, String code, String name) {
-    }
+    /**
+     * 操作员信息(userId/code/name, 均可空)。
+     *
+     * @param userId 当前认证用户标识。
+     * @param code 原业务编码或经来源限定的别名。
+     * @param name 所属主数据的展示名称。
+     */
+    public record OperatorInfo(Long userId, String code, String name) {}
 }

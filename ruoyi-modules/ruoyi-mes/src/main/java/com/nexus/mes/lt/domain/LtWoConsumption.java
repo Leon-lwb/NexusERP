@@ -21,45 +21,71 @@ import java.util.Date;
 @TableName("lt_wo_consumption")
 public class LtWoConsumption extends TenantEntity {
 
-    /** 消耗记录ID(主键) */
+    /**
+     * 消耗记录ID(主键)
+     */
     @TableId(value = "consumption_id")
     private Long consumptionId;
+
     private Long sourceAllocationId;
 
-    /** 工单ID */
+    /**
+     * 工单ID
+     */
     private Long woId;
 
-    /** 工单编号(冗余) */
+    /**
+     * 工单编号(冗余)
+     */
     private String woNo;
 
-    /** 批次ID */
+    /**
+     * 批次ID
+     */
     private Long lotId;
 
-    /** 批次编码(冗余) */
+    /**
+     * 批次编码(冗余)
+     */
     private String lotCode;
 
-    /** 物料ID */
+    /**
+     * 物料ID
+     */
     private Long materialId;
 
-    /** 物料编码(冗余) */
+    /**
+     * 物料编码(冗余)
+     */
     private String materialCode;
 
-    /** 消耗数量 */
+    /**
+     * 消耗数量
+     */
     private BigDecimal consumedQty;
 
-    /** 消耗时间 */
+    /**
+     * 消耗时间
+     */
     private Date consumedTime;
 
-    /** 操作员ID */
+    /**
+     * 操作员ID
+     */
     private Long operatorId;
 
-    /** 操作员姓名(冗余) */
+    /**
+     * 操作员姓名(冗余)
+     */
     private String operatorName;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 
-    /** 删除标志 */
-    @TableLogic
-    private String delFlag;
+    /**
+     * 删除标志
+     */
+    @TableLogic private String delFlag;
 }

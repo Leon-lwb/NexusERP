@@ -35,7 +35,11 @@ class DailyCodeSequenceProviderRangeTest {
         RedisState redis = new RedisState();
         DailyCodeSequenceProvider provider = new DailyCodeSequenceProvider(redis.client);
         AtomicInteger loads = new AtomicInteger();
-        LongSupplier loader = () -> { loads.incrementAndGet(); return 40L; };
+        LongSupplier loader =
+                () -> {
+                    loads.incrementAndGet();
+                    return 40L;
+                };
         try (MockedStatic<TenantHelper> tenant = tenant("000001")) {
             assertEquals(41L, provider.reserve(KEY, 3, loader));
             assertEquals(44L, provider.reserve(KEY, 2, loader));
@@ -70,12 +74,22 @@ class DailyCodeSequenceProviderRangeTest {
         try {
             var tasks = new ArrayList<java.util.concurrent.Callable<List<Long>>>();
             for (int i = 0; i < 40; i++) {
-                tasks.add(() -> {
-                    try (MockedStatic<TenantHelper> tenant = tenant("000001")) {
-                        long first = provider.reserve(KEY, 7, () -> { loads.incrementAndGet(); return 100L; });
-                        return java.util.stream.LongStream.range(first, first + 7).boxed().toList();
-                    }
-                });
+                tasks.add(
+                        () -> {
+                            try (MockedStatic<TenantHelper> tenant = tenant("000001")) {
+                                long first =
+                                        provider.reserve(
+                                                KEY,
+                                                7,
+                                                () -> {
+                                                    loads.incrementAndGet();
+                                                    return 100L;
+                                                });
+                                return java.util.stream.LongStream.range(first, first + 7)
+                                        .boxed()
+                                        .toList();
+                            }
+                        });
             }
             var all = new ArrayList<Long>();
             for (var future : executor.invokeAll(tasks, 15, TimeUnit.SECONDS)) {
@@ -95,7 +109,9 @@ class DailyCodeSequenceProviderRangeTest {
         RedisState redis = new RedisState();
         DailyCodeSequenceProvider provider = new DailyCodeSequenceProvider(redis.client);
         try (MockedStatic<TenantHelper> tenant = tenant("000001")) {
-            assertThrows(ServiceException.class, () -> provider.reserve(KEY, 3, () -> Long.MAX_VALUE - 2));
+            assertThrows(
+                    ServiceException.class,
+                    () -> provider.reserve(KEY, 3, () -> Long.MAX_VALUE - 2));
             assertTrue(redis.values.isEmpty());
             redis.values.put(KEY + ":tenant:000001", new AtomicLong(Long.MAX_VALUE - 2));
             assertThrows(ServiceException.class, () -> provider.reserve(KEY, 3, () -> 0L));
@@ -140,7 +156,9 @@ class DailyCodeSequenceProviderRangeTest {
         RedissonClient client = mock(RedissonClient.class);
         try (MockedStatic<TenantHelper> tenant = mockStatic(TenantHelper.class)) {
             tenant.when(TenantHelper::isEnable).thenReturn(true);
-            assertThrows(ServiceException.class, () -> new DailyCodeSequenceProvider(client).next(KEY, () -> 0L));
+            assertThrows(
+                    ServiceException.class,
+                    () -> new DailyCodeSequenceProvider(client).next(KEY, () -> 0L));
         }
         verifyNoInteractions(client);
     }
@@ -152,7 +170,9 @@ class DailyCodeSequenceProviderRangeTest {
         return tenant;
     }
 
-    /** Stateful Redis doubles: exercise real provider locking/allocation, without Redis or DB. */
+    /**
+     * 使用有状态缓存替身验证实际锁定与号段分配，不连接外部缓存或数据库。
+     */
     static class RedisState {
         final RedissonClient client = mock(RedissonClient.class);
         final Map<String, AtomicLong> values = new ConcurrentHashMap<>();
@@ -160,32 +180,82 @@ class DailyCodeSequenceProviderRangeTest {
 
         @SuppressWarnings("unchecked")
         RedisState() {
-            lenient().when(client.getLock(anyString())).thenAnswer(call -> locks.computeIfAbsent(call.getArgument(0), key -> {
-                RLock lock = mock(RLock.class);
-                ReentrantLock state = new ReentrantLock();
-                try {
-                    when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenAnswer(invocation ->
-                        state.tryLock(invocation.getArgument(0), invocation.getArgument(2)));
-                } catch (InterruptedException e) {
-                    throw new AssertionError(e);
-                }
-                doAnswer(invocation -> { state.unlock(); return null; }).when(lock).unlock();
-                return lock;
-            }));
-            lenient().when(client.getBucket(anyString())).thenAnswer(call -> {
-                String key = call.getArgument(0);
-                RBucket<Object> bucket = mock(RBucket.class);
-                when(bucket.get()).thenAnswer(invocation -> values.containsKey(key) ? values.get(key).get() : null);
-                lenient().doAnswer(invocation -> { values.put(key, new AtomicLong(invocation.getArgument(0, Long.class))); return null; })
-                    .when(bucket).set(anyLong(), any(Duration.class));
-                return bucket;
-            });
-            lenient().when(client.getAtomicLong(anyString())).thenAnswer(call -> {
-                String key = call.getArgument(0);
-                RAtomicLong atomic = mock(RAtomicLong.class);
-                lenient().when(atomic.addAndGet(anyLong())).thenAnswer(invocation -> values.get(key).addAndGet(invocation.getArgument(0)));
-                return atomic;
-            });
+            lenient()
+                    .when(client.getLock(anyString()))
+                    .thenAnswer(
+                            call ->
+                                    locks.computeIfAbsent(
+                                            call.getArgument(0),
+                                            key -> {
+                                                RLock lock = mock(RLock.class);
+                                                ReentrantLock state = new ReentrantLock();
+                                                try {
+                                                    when(lock.tryLock(
+                                                                    anyLong(),
+                                                                    anyLong(),
+                                                                    any(TimeUnit.class)))
+                                                            .thenAnswer(
+                                                                    invocation ->
+                                                                            state.tryLock(
+                                                                                    invocation
+                                                                                            .getArgument(
+                                                                                                    0),
+                                                                                    invocation
+                                                                                            .getArgument(
+                                                                                                    2)));
+                                                } catch (InterruptedException e) {
+                                                    throw new AssertionError(e);
+                                                }
+                                                doAnswer(
+                                                                invocation -> {
+                                                                    state.unlock();
+                                                                    return null;
+                                                                })
+                                                        .when(lock)
+                                                        .unlock();
+                                                return lock;
+                                            }));
+            lenient()
+                    .when(client.getBucket(anyString()))
+                    .thenAnswer(
+                            call -> {
+                                String key = call.getArgument(0);
+                                RBucket<Object> bucket = mock(RBucket.class);
+                                when(bucket.get())
+                                        .thenAnswer(
+                                                invocation ->
+                                                        values.containsKey(key)
+                                                                ? values.get(key).get()
+                                                                : null);
+                                lenient()
+                                        .doAnswer(
+                                                invocation -> {
+                                                    values.put(
+                                                            key,
+                                                            new AtomicLong(
+                                                                    invocation.getArgument(
+                                                                            0, Long.class)));
+                                                    return null;
+                                                })
+                                        .when(bucket)
+                                        .set(anyLong(), any(Duration.class));
+                                return bucket;
+                            });
+            lenient()
+                    .when(client.getAtomicLong(anyString()))
+                    .thenAnswer(
+                            call -> {
+                                String key = call.getArgument(0);
+                                RAtomicLong atomic = mock(RAtomicLong.class);
+                                lenient()
+                                        .when(atomic.addAndGet(anyLong()))
+                                        .thenAnswer(
+                                                invocation ->
+                                                        values.get(key)
+                                                                .addAndGet(
+                                                                        invocation.getArgument(0)));
+                                return atomic;
+                            });
         }
     }
 }

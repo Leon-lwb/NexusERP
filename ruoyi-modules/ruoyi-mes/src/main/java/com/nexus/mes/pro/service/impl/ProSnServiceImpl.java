@@ -43,7 +43,9 @@ import java.util.Map;
 @Service("proSnService")
 public class ProSnServiceImpl implements IProSnService {
 
-    /** 后向追溯最大递归深度(防环) */
+    /**
+     * 后向追溯最大递归深度(防环)
+     */
     private static final int MAX_PARENT_DEPTH = 10;
 
     private final ProSnMapper baseMapper;
@@ -93,9 +95,16 @@ public class ProSnServiceImpl implements IProSnService {
      * @return 返回视图对象
      */
     public ProSnVo selectByCode(String snCode) {
-        var reference=serialReferences.resolve(snCode);if(reference==null)return null;
-        var view=baseMapper.selectVoById(reference.localSnId());
-        if(view!=null) {view.setLocalSnCode(reference.localSnCode());view.setCanonicalSnCode(reference.canonicalSnCode());view.setSnCode(reference.canonicalSnCode());}
+        var reference = serialReferences.resolve(snCode);
+        if (reference == null) {
+            return null;
+        }
+        var view = baseMapper.selectVoById(reference.localSnId());
+        if (view != null) {
+            view.setLocalSnCode(reference.localSnCode());
+            view.setCanonicalSnCode(reference.canonicalSnCode());
+            view.setSnCode(reference.canonicalSnCode());
+        }
         return view;
     }
 
@@ -103,37 +112,82 @@ public class ProSnServiceImpl implements IProSnService {
      * 从流转卡批量生成SN
      */
     @Override
-    @Transactional(propagation=Propagation.NEVER)
-    public List<ProSnVo> generateSnForCard(Long cardId,Integer quantity,String initialStatus,Long lotId) {
-        return generateSnForCard("MES:CARD:"+cardId,cardId,quantity,initialStatus,lotId);
+    @Transactional(propagation = Propagation.NEVER)
+    public List<ProSnVo> generateSnForCard(
+            Long cardId, Integer quantity, String initialStatus, Long lotId) {
+        return generateSnForCard("MES:CARD:" + cardId, cardId, quantity, initialStatus, lotId);
     }
+
     @Override
-    @Transactional(propagation=Propagation.NEVER)
-    public List<ProSnVo> generateSnForCard(String commandId,Long cardId,Integer quantity,String initialStatus,Long lotId) {
-        return createdViews(serialOrchestrator.forCard(commandId,cardId,quantity,initialStatus,lotId));
+    @Transactional(propagation = Propagation.NEVER)
+    public List<ProSnVo> generateSnForCard(
+            String commandId, Long cardId, Integer quantity, String initialStatus, Long lotId) {
+        return createdViews(
+                serialOrchestrator.forCard(commandId, cardId, quantity, initialStatus, lotId));
     }
+
     @Override
-    @Transactional(propagation=Propagation.NEVER)
-    public List<ProSnVo> generateSnForSubcontract(Long id,String no,Long materialId,String materialCode,String materialName,int quantity) {
-        return generateSnForSubcontract("MES:SUBCONTRACT:"+id,id,no,materialId,materialCode,materialName,quantity);
+    @Transactional(propagation = Propagation.NEVER)
+    public List<ProSnVo> generateSnForSubcontract(
+            Long id,
+            String no,
+            Long materialId,
+            String materialCode,
+            String materialName,
+            int quantity) {
+        return generateSnForSubcontract(
+                "MES:SUBCONTRACT:" + id, id, no, materialId, materialCode, materialName, quantity);
     }
+
     @Override
-    @Transactional(propagation=Propagation.NEVER)
-    public List<ProSnVo> generateSnForSubcontract(String commandId,Long id,String no,Long materialId,String materialCode,String materialName,int quantity) {
-        return createdViews(serialOrchestrator.forSubcontract(commandId,id,no,materialId,quantity));
+    @Transactional(propagation = Propagation.NEVER)
+    public List<ProSnVo> generateSnForSubcontract(
+            String commandId,
+            Long id,
+            String no,
+            Long materialId,
+            String materialCode,
+            String materialName,
+            int quantity) {
+        return createdViews(
+                serialOrchestrator.forSubcontract(commandId, id, no, materialId, quantity));
     }
+
     @Override
-    @Transactional(propagation=Propagation.NEVER)
-    public ProSnVo createSn(Long wo,Long card,Long material,String code,Long parent,String remark,Long lot) {
-        return createSn("MES:MANUAL:"+TraceHashes.fingerprint(wo,card,material,code,parent),wo,card,material,code,parent,remark,lot);
+    @Transactional(propagation = Propagation.NEVER)
+    public ProSnVo createSn(
+            Long wo, Long card, Long material, String code, Long parent, String remark, Long lot) {
+        return createSn(
+                "MES:MANUAL:" + TraceHashes.fingerprint(wo, card, material, code, parent),
+                wo,
+                card,
+                material,
+                code,
+                parent,
+                remark,
+                lot);
     }
+
     @Override
-    @Transactional(propagation=Propagation.NEVER)
-    public ProSnVo createSn(String commandId,Long wo,Long card,Long material,String code,Long parent,String remark,Long lot) {
-        return createdViews(serialOrchestrator.manual(commandId,wo,card,material,code,parent,remark,lot)).get(0);
+    @Transactional(propagation = Propagation.NEVER)
+    public ProSnVo createSn(
+            String commandId,
+            Long wo,
+            Long card,
+            Long material,
+            String code,
+            Long parent,
+            String remark,
+            Long lot) {
+        return createdViews(
+                        serialOrchestrator.manual(
+                                commandId, wo, card, material, code, parent, remark, lot))
+                .get(0);
     }
+
     private List<ProSnVo> createdViews(List<Long> ids) {
-        return baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery().in(ProSn::getSnId,ids).orderByAsc(ProSn::getSnCode));
+        return baseMapper.selectVoList(
+                Wrappers.<ProSn>lambdaQuery().in(ProSn::getSnId, ids).orderByAsc(ProSn::getSnCode));
     }
 
     /**
@@ -151,7 +205,7 @@ public class ProSnServiceImpl implements IProSnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void scrapSn(Long snId, String remark) {
-        lifecycle.scrap(snId,remark);
+        lifecycle.scrap(snId, remark);
     }
 
     /**
@@ -173,14 +227,20 @@ public class ProSnServiceImpl implements IProSnService {
             throw new RuntimeException("SN不存在: " + snId);
         }
         result.put("sn", sn);
-        result.put("componentConsumptions",componentTrace.entriesForSn(snId));
+        result.put("componentConsumptions", componentTrace.entriesForSn(snId));
 
         // 前向: 流转卡工序链(若SN关联了流转卡)
         List<Map<String, Object>> forwardSteps = new ArrayList<>();
         if (sn.getCardId() != null) {
-            List<ProFlowCardStepVo> steps = stepMapper.selectVoList(Wrappers.<com.nexus.mes.pro.domain.ProFlowCardStep>lambdaQuery()
-                .eq(com.nexus.mes.pro.domain.ProFlowCardStep::getCardId, sn.getCardId())
-                .orderByAsc(com.nexus.mes.pro.domain.ProFlowCardStep::getSequenceNum));
+            List<ProFlowCardStepVo> steps =
+                    stepMapper.selectVoList(
+                            Wrappers.<com.nexus.mes.pro.domain.ProFlowCardStep>lambdaQuery()
+                                    .eq(
+                                            com.nexus.mes.pro.domain.ProFlowCardStep::getCardId,
+                                            sn.getCardId())
+                                    .orderByAsc(
+                                            com.nexus.mes.pro.domain.ProFlowCardStep
+                                                    ::getSequenceNum));
             for (ProFlowCardStepVo step : steps) {
                 Map<String, Object> m = new HashMap<>();
                 m.put("stepRecordId", step.getStepRecordId());
@@ -202,9 +262,11 @@ public class ProSnServiceImpl implements IProSnService {
         result.put("forwardSteps", forwardSteps);
 
         // 前向: 子SN列表(当前SN作为父SN的下级组装件)
-        List<ProSnVo> children = baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getParentSnId, snId)
-            .orderByAsc(ProSn::getSnCode));
+        List<ProSnVo> children =
+                baseMapper.selectVoList(
+                        Wrappers.<ProSn>lambdaQuery()
+                                .eq(ProSn::getParentSnId, snId)
+                                .orderByAsc(ProSn::getSnCode));
         result.put("children", children);
 
         // 后向: 沿 parent_sn_id 向上递归父SN链(限深防环)
@@ -229,14 +291,17 @@ public class ProSnServiceImpl implements IProSnService {
 
     private LambdaQueryWrapper<ProSn> buildQueryWrapper(ProSnBo bo) {
         return Wrappers.<ProSn>lambdaQuery()
-            .eq(StringUtils.isNotBlank(bo.getSnCode()), ProSn::getSnCode, bo.getSnCode())
-            .eq(StringUtils.isNotBlank(bo.getSnStatus()), ProSn::getSnStatus, bo.getSnStatus())
-            .eq(StringUtils.isNotBlank(bo.getSource()), ProSn::getSource, bo.getSource())
-            .eq(StringUtils.isNotBlank(bo.getSubcontractNo()), ProSn::getSubcontractNo, bo.getSubcontractNo())
-            .eq(bo.getMesWoId() != null, ProSn::getMesWoId, bo.getMesWoId())
-            .eq(bo.getCardId() != null, ProSn::getCardId, bo.getCardId())
-            .eq(bo.getMaterialId() != null, ProSn::getMaterialId, bo.getMaterialId())
-            .eq(bo.getParentSnId() != null, ProSn::getParentSnId, bo.getParentSnId())
-            .orderByDesc(ProSn::getCreateTime);
+                .eq(StringUtils.isNotBlank(bo.getSnCode()), ProSn::getSnCode, bo.getSnCode())
+                .eq(StringUtils.isNotBlank(bo.getSnStatus()), ProSn::getSnStatus, bo.getSnStatus())
+                .eq(StringUtils.isNotBlank(bo.getSource()), ProSn::getSource, bo.getSource())
+                .eq(
+                        StringUtils.isNotBlank(bo.getSubcontractNo()),
+                        ProSn::getSubcontractNo,
+                        bo.getSubcontractNo())
+                .eq(bo.getMesWoId() != null, ProSn::getMesWoId, bo.getMesWoId())
+                .eq(bo.getCardId() != null, ProSn::getCardId, bo.getCardId())
+                .eq(bo.getMaterialId() != null, ProSn::getMaterialId, bo.getMaterialId())
+                .eq(bo.getParentSnId() != null, ProSn::getParentSnId, bo.getParentSnId())
+                .orderByDesc(ProSn::getCreateTime);
     }
 }

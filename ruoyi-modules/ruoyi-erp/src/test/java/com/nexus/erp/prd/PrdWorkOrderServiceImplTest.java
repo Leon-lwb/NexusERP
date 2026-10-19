@@ -65,32 +65,20 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 class PrdWorkOrderServiceImplTest {
 
-    @Mock
-    private PrdWorkOrderMapper baseMapper;
-    @Mock
-    private PrdProductionPlanMapper prdProductionPlanMapper;
-    @Mock
-    private PrdMaterialRequirementMapper requirementMapper;
-    @Mock
-    private PrdMaterialRequirementDetailMapper detailMapper;
-    @Mock
-    private WmProductionIssueMapper productionIssueMapper;
-    @Mock
-    private WmProductionIssueLineMapper productionIssueLineMapper;
-    @Mock
-    private AutoCodeUtil autoCodeUtil;
-    @Mock
-    private ReliableMessageProducer messageProducer;
-    @Mock
-    private IBdBomService bomService;
-    @Mock
-    private IWmStockReservationService stockReservationService;
+    @Mock private PrdWorkOrderMapper baseMapper;
+    @Mock private PrdProductionPlanMapper prdProductionPlanMapper;
+    @Mock private PrdMaterialRequirementMapper requirementMapper;
+    @Mock private PrdMaterialRequirementDetailMapper detailMapper;
+    @Mock private WmProductionIssueMapper productionIssueMapper;
+    @Mock private WmProductionIssueLineMapper productionIssueLineMapper;
+    @Mock private AutoCodeUtil autoCodeUtil;
+    @Mock private ReliableMessageProducer messageProducer;
+    @Mock private IBdBomService bomService;
+    @Mock private IWmStockReservationService stockReservationService;
 
-    @Mock
-    private PrdWorkOrderTrackingPolicyService trackingPolicies;
+    @Mock private PrdWorkOrderTrackingPolicyService trackingPolicies;
 
-    @InjectMocks
-    private PrdWorkOrderServiceImpl workOrderService;
+    @InjectMocks private PrdWorkOrderServiceImpl workOrderService;
 
     @BeforeAll
     static void initTableInfo() {
@@ -140,18 +128,21 @@ class PrdWorkOrderServiceImplTest {
         detail.setRequiredQuantity(new BigDecimal("3"));
         detail.setBackflushFlag(0);
         when(detailMapper.selectList(any())).thenReturn(List.of(detail));
-        when(productionIssueMapper.insert(any(WmProductionIssue.class))).thenAnswer(invocation -> {
-            WmProductionIssue issue = invocation.getArgument(0);
-            issue.setIssueId(77L);
-            return 1;
-        });
+        when(productionIssueMapper.insert(any(WmProductionIssue.class)))
+                .thenAnswer(
+                        invocation -> {
+                            WmProductionIssue issue = invocation.getArgument(0);
+                            issue.setIssueId(77L);
+                            return 1;
+                        });
 
         workOrderService.release(11L);
 
         assertEquals("RELEASED", wo.getWoStatus());
         verify(baseMapper).update(isNull(), any());
         verify(baseMapper, never()).updateById(any(PrdWorkOrder.class));
-        ArgumentCaptor<WmProductionIssue> issueCaptor = ArgumentCaptor.forClass(WmProductionIssue.class);
+        ArgumentCaptor<WmProductionIssue> issueCaptor =
+                ArgumentCaptor.forClass(WmProductionIssue.class);
         verify(productionIssueMapper).insert(issueCaptor.capture());
         WmProductionIssue issue = issueCaptor.getValue();
         assertEquals(11L, issue.getWoId());
@@ -163,7 +154,8 @@ class PrdWorkOrderServiceImplTest {
         assertTrue(issue.getRemark().contains("原料领料仓库待人工选择"));
         verify(productionIssueMapper, never()).deleteById(77L);
 
-        ArgumentCaptor<WmProductionIssueLine> lineCaptor = ArgumentCaptor.forClass(WmProductionIssueLine.class);
+        ArgumentCaptor<WmProductionIssueLine> lineCaptor =
+                ArgumentCaptor.forClass(WmProductionIssueLine.class);
         verify(productionIssueLineMapper).insert(lineCaptor.capture());
         WmProductionIssueLine line = lineCaptor.getValue();
         assertEquals(77L, line.getIssueId());
@@ -175,9 +167,13 @@ class PrdWorkOrderServiceImplTest {
         assertEquals(1, TransactionSynchronizationManager.getSynchronizations().size());
         verify(messageProducer, never()).send(any(), any(), any());
         TransactionSynchronizationManager.getSynchronizations().get(0).afterCommit();
-        ArgumentCaptor<WorkOrderReleaseMessage> messageCaptor = ArgumentCaptor.forClass(WorkOrderReleaseMessage.class);
-        verify(messageProducer).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-            eq(RoutingKeyConstants.MES_WORKORDER_RELEASE), messageCaptor.capture());
+        ArgumentCaptor<WorkOrderReleaseMessage> messageCaptor =
+                ArgumentCaptor.forClass(WorkOrderReleaseMessage.class);
+        verify(messageProducer)
+                .send(
+                        eq(ExchangeConstants.TOPIC_EXCHANGE),
+                        eq(RoutingKeyConstants.MES_WORKORDER_RELEASE),
+                        messageCaptor.capture());
         assertEquals(11L, messageCaptor.getValue().getWoId());
         assertEquals(3L, messageCaptor.getValue().getWorkshopId());
         assertEquals(1001L, messageCaptor.getValue().getTenantId());
@@ -237,11 +233,13 @@ class PrdWorkOrderServiceImplTest {
         detail.setRequirementId(45L);
         detail.setBackflushFlag(1);
         when(detailMapper.selectList(any())).thenReturn(List.of(detail));
-        when(productionIssueMapper.insert(any(WmProductionIssue.class))).thenAnswer(invocation -> {
-            WmProductionIssue issue = invocation.getArgument(0);
-            issue.setIssueId(78L);
-            return 1;
-        });
+        when(productionIssueMapper.insert(any(WmProductionIssue.class)))
+                .thenAnswer(
+                        invocation -> {
+                            WmProductionIssue issue = invocation.getArgument(0);
+                            issue.setIssueId(78L);
+                            return 1;
+                        });
 
         workOrderService.release(12L);
 
@@ -267,8 +265,11 @@ class PrdWorkOrderServiceImplTest {
         requirement.setTenantId("1001");
         lenient().when(requirementMapper.selectById(81L)).thenReturn(requirement);
         lenient().when(requirementMapper.selectList(any())).thenReturn(List.of());
-        /** 模拟陈旧读取：带条件的状态转换必须影响 0 行。 */
-        RuntimeException failure = assertThrows(RuntimeException.class, () -> workOrderService.release(51L));
+        /**
+         * 模拟陈旧读取：带条件的状态转换必须影响 0 行。
+         */
+        RuntimeException failure =
+                assertThrows(RuntimeException.class, () -> workOrderService.release(51L));
         assertTrue(failure.getMessage().contains("状态已变更"), failure.getMessage());
         verify(productionIssueMapper, never()).insert(any(WmProductionIssue.class));
         verify(messageProducer, never()).send(any(), any(), any());
@@ -310,22 +311,27 @@ class PrdWorkOrderServiceImplTest {
         otherDetail.setRequirementId(82L);
         otherDetail.setMaterialId(102L);
         otherDetail.setRequiredQuantity(new BigDecimal("7"));
-        lenient().when(detailMapper.selectList(any())).thenReturn(List.of(ownDetail), List.of(otherDetail));
-        when(productionIssueMapper.insert(any(WmProductionIssue.class))).thenAnswer(invocation -> {
-            WmProductionIssue issue = invocation.getArgument(0);
-            issue.setIssueId(111L);
-            return 1;
-        });
+        lenient()
+                .when(detailMapper.selectList(any()))
+                .thenReturn(List.of(ownDetail), List.of(otherDetail));
+        when(productionIssueMapper.insert(any(WmProductionIssue.class)))
+                .thenAnswer(
+                        invocation -> {
+                            WmProductionIssue issue = invocation.getArgument(0);
+                            issue.setIssueId(111L);
+                            return 1;
+                        });
 
         workOrderService.release(51L);
 
-        ArgumentCaptor<WmProductionIssueLine> captor = ArgumentCaptor.forClass(WmProductionIssueLine.class);
+        ArgumentCaptor<WmProductionIssueLine> captor =
+                ArgumentCaptor.forClass(WmProductionIssueLine.class);
         verify(productionIssueLineMapper).insert(captor.capture());
         assertEquals(101L, captor.getValue().getMaterialId());
         assertEquals(91L, captor.getValue().getRequirementDetailId());
         @SuppressWarnings("unchecked")
         ArgumentCaptor<LambdaQueryWrapper<PrdMaterialRequirementDetail>> queryCaptor =
-            ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(detailMapper).selectList(queryCaptor.capture());
         LambdaQueryWrapper<PrdMaterialRequirementDetail> query = queryCaptor.getValue();
         assertTrue(query.getSqlSegment().contains("requirement_id"));
@@ -348,8 +354,9 @@ class PrdWorkOrderServiceImplTest {
 
         assertEquals("APPROVED", wo.getWoStatus());
         verify(prdProductionPlanMapper).update(isNull(), any());
-        assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty(),
-            "审批不是下达，不应排队发送 MES 工单快照");
+        assertTrue(
+                TransactionSynchronizationManager.getSynchronizations().isEmpty(),
+                "审批不是下达，不应排队发送 MES 工单快照");
         verify(messageProducer, never()).send(any(), any(), any());
     }
 
@@ -372,7 +379,8 @@ class PrdWorkOrderServiceImplTest {
         lenient().when(requirementMapper.selectById(81L)).thenReturn(wrongPlan);
         lenient().when(detailMapper.selectList(any())).thenReturn(List.of());
 
-        RuntimeException failure = assertThrows(RuntimeException.class, () -> workOrderService.release(51L));
+        RuntimeException failure =
+                assertThrows(RuntimeException.class, () -> workOrderService.release(51L));
         assertTrue(failure.getMessage().contains("来源物料需求"), failure.getMessage());
         verify(baseMapper, never()).update(isNull(), any());
         verify(productionIssueLineMapper, never()).insert(any(WmProductionIssueLine.class));
@@ -398,7 +406,8 @@ class PrdWorkOrderServiceImplTest {
         lenient().when(requirementMapper.selectById(81L)).thenReturn(wrongTenant);
         lenient().when(detailMapper.selectList(any())).thenReturn(List.of());
 
-        RuntimeException failure = assertThrows(RuntimeException.class, () -> workOrderService.release(51L));
+        RuntimeException failure =
+                assertThrows(RuntimeException.class, () -> workOrderService.release(51L));
         assertTrue(failure.getMessage().contains("来源物料需求"), failure.getMessage());
         verify(baseMapper, never()).update(isNull(), any());
         verify(productionIssueLineMapper, never()).insert(any(WmProductionIssueLine.class));
@@ -462,7 +471,8 @@ class PrdWorkOrderServiceImplTest {
         workOrderService.release(51L);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(baseMapper).update(isNull(), captor.capture());
         LambdaUpdateWrapper<PrdWorkOrder> update = captor.getValue();
         String where = update.getSqlSegment();
@@ -514,44 +524,59 @@ class PrdWorkOrderServiceImplTest {
     }
 
     @Test
-    void concurrentReleaseOfTwoStaleSnapshots_onlyOneCallerRegistersAndSendsMesEvent() throws Exception {
+    void concurrentReleaseOfTwoStaleSnapshots_onlyOneCallerRegistersAndSendsMesEvent()
+            throws Exception {
         CyclicBarrier bothReadCreated = new CyclicBarrier(2);
         AtomicBoolean alreadyClaimed = new AtomicBoolean();
-        when(baseMapper.selectById(51L)).thenAnswer(invocation -> {
-            PrdWorkOrder wo = new PrdWorkOrder();
-            wo.setWoId(51L);
-            wo.setWoNo("WO-51");
-            wo.setWoStatus("CREATED");
-            wo.setTenantId("1001");
-            bothReadCreated.await(5, TimeUnit.SECONDS);
-            return wo;
-        });
-        lenient().when(baseMapper.update(isNull(), any())).thenAnswer(invocation ->
-            alreadyClaimed.compareAndSet(false, true) ? 1 : 0);
+        when(baseMapper.selectById(51L))
+                .thenAnswer(
+                        invocation -> {
+                            PrdWorkOrder wo = new PrdWorkOrder();
+                            wo.setWoId(51L);
+                            wo.setWoNo("WO-51");
+                            wo.setWoStatus("CREATED");
+                            wo.setTenantId("1001");
+                            bothReadCreated.await(5, TimeUnit.SECONDS);
+                            return wo;
+                        });
+        lenient()
+                .when(baseMapper.update(isNull(), any()))
+                .thenAnswer(invocation -> alreadyClaimed.compareAndSet(false, true) ? 1 : 0);
 
         var workers = Executors.newFixedThreadPool(2);
         try {
-            java.util.concurrent.Callable<Boolean> caller = () -> {
-                TransactionSynchronizationManager.initSynchronization();
-                try {
-                    workOrderService.release(51L);
-                    assertEquals(1, TransactionSynchronizationManager.getSynchronizations().size());
-                    TransactionSynchronizationManager.getSynchronizations().get(0).afterCommit();
-                    return true;
-                } catch (RuntimeException failure) {
-                    assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
-                    return false;
-                } finally {
-                    TransactionSynchronizationManager.clearSynchronization();
-                }
-            };
+            java.util.concurrent.Callable<Boolean> caller =
+                    () -> {
+                        TransactionSynchronizationManager.initSynchronization();
+                        try {
+                            workOrderService.release(51L);
+                            assertEquals(
+                                    1,
+                                    TransactionSynchronizationManager.getSynchronizations().size());
+                            TransactionSynchronizationManager.getSynchronizations()
+                                    .get(0)
+                                    .afterCommit();
+                            return true;
+                        } catch (RuntimeException failure) {
+                            assertTrue(
+                                    TransactionSynchronizationManager.getSynchronizations()
+                                            .isEmpty());
+                            return false;
+                        } finally {
+                            TransactionSynchronizationManager.clearSynchronization();
+                        }
+                    };
             var first = workers.submit(caller);
             var second = workers.submit(caller);
-            int successes = (first.get(10, TimeUnit.SECONDS) ? 1 : 0)
-                + (second.get(10, TimeUnit.SECONDS) ? 1 : 0);
+            int successes =
+                    (first.get(10, TimeUnit.SECONDS) ? 1 : 0)
+                            + (second.get(10, TimeUnit.SECONDS) ? 1 : 0);
             assertEquals(1, successes, "两个请求均读到 CREATED 时，只能有一个成功下达");
-            verify(messageProducer, times(1)).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-                eq(RoutingKeyConstants.MES_WORKORDER_RELEASE), any(WorkOrderReleaseMessage.class));
+            verify(messageProducer, times(1))
+                    .send(
+                            eq(ExchangeConstants.TOPIC_EXCHANGE),
+                            eq(RoutingKeyConstants.MES_WORKORDER_RELEASE),
+                            any(WorkOrderReleaseMessage.class));
         } finally {
             workers.shutdownNow();
         }
@@ -571,7 +596,8 @@ class PrdWorkOrderServiceImplTest {
         workOrderService.afterFlowHandle(business);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(baseMapper).update(isNull(), captor.capture());
         LambdaUpdateWrapper<PrdWorkOrder> update = captor.getValue();
         assertTrue(update.getSqlSegment().contains("wo_status"));
@@ -579,5 +605,4 @@ class PrdWorkOrderServiceImplTest {
         verify(baseMapper, never()).updateById(any(PrdWorkOrder.class));
         assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
     }
-
 }

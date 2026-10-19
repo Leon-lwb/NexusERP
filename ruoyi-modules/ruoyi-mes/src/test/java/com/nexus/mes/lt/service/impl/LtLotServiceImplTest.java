@@ -38,25 +38,20 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class LtLotServiceImplTest {
 
-    @Mock
-    private LtLotMapper baseMapper;
-    @Mock
-    private LtWoConsumptionMapper consumptionMapper;
-    @Mock
-    private LtSnBindingMapper bindingMapper;
-    @Mock
-    private AutoCodeUtil autoCodeUtil;
-    @InjectMocks
-    private LtLotServiceImpl service;
+    @Mock private LtLotMapper baseMapper;
+    @Mock private LtWoConsumptionMapper consumptionMapper;
+    @Mock private LtSnBindingMapper bindingMapper;
+    @Mock private AutoCodeUtil autoCodeUtil;
+    @InjectMocks private LtLotServiceImpl service;
 
-    @Captor
-    private ArgumentCaptor<LtLot> insertCaptor;
+    @Captor private ArgumentCaptor<LtLot> insertCaptor;
 
     @BeforeAll
     static void initTableInfo() {
         // 初始化真实 TableInfo/列缓存, 让 MyBatis-Plus lambda 在纯单测中正常解析
         // (旧做法 mockStatic(LambdaUtils) 未 stub extract() 会返回 null meta, 服务新增 lambda 调用即 NPE)
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), LtLot.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), LtLot.class);
     }
 
     @AfterAll
@@ -65,30 +60,41 @@ class LtLotServiceImplTest {
     }
 
     @BeforeEach
-    void setUp() {
-    }
+    void setUp() {}
 
     @AfterEach
-    void tearDown() {
-    }
+    void tearDown() {}
 
     @Test
     void inUseLotWithRemainingQuantityCanBePickedAgain() {
-        LtLot lot=new LtLot();lot.setLotId(1L);lot.setMaterialId(2L);lot.setStatus("IN_USE");
-        lot.setQcStatus("PASS");lot.setQuantity(new BigDecimal("10"));lot.setConsumedQty(new BigDecimal("3"));
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(2L);
+        lot.setStatus("IN_USE");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(new BigDecimal("10"));
+        lot.setConsumedQty(new BigDecimal("3"));
         when(baseMapper.selectById(1L)).thenReturn(lot);
-        assertEquals(Boolean.TRUE,service.checkLotUsable(2L,1L).get("usable"));
+        assertEquals(Boolean.TRUE, service.checkLotUsable(2L, 1L).get("usable"));
     }
+
     @Test
     void metadataEditUsesColumnUpdateWithoutReplayingLoadedConsumptionOrStatus() {
-        LtLot lot=new LtLot();lot.setLotId(1L);lot.setStatus("IN_USE");lot.setQuantity(new BigDecimal("10"));lot.setConsumedQty(new BigDecimal("3"));
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_USE");
+        lot.setQuantity(new BigDecimal("10"));
+        lot.setConsumedQty(new BigDecimal("3"));
         when(baseMapper.selectById(1L)).thenReturn(lot);
-        when(baseMapper.update(isNull(),any())).thenReturn(1);
-        LtLotBo bo=new LtLotBo();bo.setLotId(1L);bo.setRemark("checked");
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+        LtLotBo bo = new LtLotBo();
+        bo.setLotId(1L);
+        bo.setRemark("checked");
         assertTrue(service.updateByBo(bo));
-        verify(baseMapper,never()).updateById(any(LtLot.class));
-        ArgumentCaptor<LambdaUpdateWrapper<LtLot>> update=ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
-        verify(baseMapper).update(isNull(),update.capture());
+        verify(baseMapper, never()).updateById(any(LtLot.class));
+        ArgumentCaptor<LambdaUpdateWrapper<LtLot>> update =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(baseMapper).update(isNull(), update.capture());
         assertFalse(update.getValue().getSqlSet().contains("consumed_qty"));
         assertFalse(update.getValue().getSqlSet().contains("qc_status"));
         assertFalse(update.getValue().getSqlSet().contains("status"));
@@ -96,22 +102,48 @@ class LtLotServiceImplTest {
 
     @Test
     void quantityEditCannotBorrowAnotherCaseFoldedTenantAllocation() {
-        var ds=new org.h2.jdbcx.JdbcDataSource();ds.setURL("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1");
-        var jdbc=new org.springframework.jdbc.core.JdbcTemplate(ds);
-        jdbc.execute("CREATE TABLE lt_lot(lot_id bigint,tenant_id VARCHAR_IGNORECASE(20),quantity decimal(18,4),consumed_qty decimal(18,4),status varchar(24))");
-        jdbc.execute("CREATE TABLE lt_lot_allocation(lot_id bigint,tenant_id VARCHAR_IGNORECASE(20),quantity decimal(18,4))");
+        var ds = new org.h2.jdbcx.JdbcDataSource();
+        ds.setURL("jdbc:h2:mem:" + java.util.UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var jdbc = new org.springframework.jdbc.core.JdbcTemplate(ds);
+        jdbc.execute(
+                "CREATE TABLE lt_lot(lot_id bigint,tenant_id VARCHAR_IGNORECASE(20),quantity"
+                        + " decimal(18,4),consumed_qty decimal(18,4),status varchar(24))");
+        jdbc.execute(
+                "CREATE TABLE lt_lot_allocation(lot_id bigint,tenant_id"
+                        + " VARCHAR_IGNORECASE(20),quantity decimal(18,4))");
         jdbc.update("INSERT INTO lt_lot VALUES(1,'tenant_case',20,0,'IN_STOCK')");
         jdbc.update("INSERT INTO lt_lot_allocation VALUES(1,'TENANT_CASE',20)");
-        LtLot lot=new LtLot();lot.setLotId(1L);lot.setTenantId("tenant_case");lot.setQuantity(new BigDecimal("20"));lot.setConsumedQty(BigDecimal.ZERO);lot.setStatus("IN_STOCK");
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setTenantId("tenant_case");
+        lot.setQuantity(new BigDecimal("20"));
+        lot.setConsumedQty(BigDecimal.ZERO);
+        lot.setStatus("IN_STOCK");
         when(baseMapper.selectById(1L)).thenReturn(lot);
-        when(baseMapper.update(isNull(),any())).thenAnswer(call->{
-            LambdaUpdateWrapper<LtLot> w=call.getArgument(1);String sql=w.getSqlSegment();
-            var params=w.getParamNameValuePairs();
-            for(var entry:params.entrySet())sql=sql.replace("#{ew.paramNameValuePairs."+entry.getKey()+"}",entry.getValue() instanceof Number?entry.getValue().toString():"'"+entry.getValue()+"'");
-            return jdbc.update("UPDATE lt_lot SET quantity=10 WHERE "+sql);
-        });
-        LtLotBo bo=new LtLotBo();bo.setLotId(1L);bo.setQuantity(BigDecimal.TEN);
-        assertTrue(service.updateByBo(bo));assertEquals(0,BigDecimal.TEN.compareTo(jdbc.queryForObject("SELECT quantity FROM lt_lot",BigDecimal.class)));
+        when(baseMapper.update(isNull(), any()))
+                .thenAnswer(
+                        call -> {
+                            LambdaUpdateWrapper<LtLot> w = call.getArgument(1);
+                            String sql = w.getSqlSegment();
+                            var params = w.getParamNameValuePairs();
+                            for (var entry : params.entrySet()) {
+                                sql =
+                                        sql.replace(
+                                                "#{ew.paramNameValuePairs." + entry.getKey() + "}",
+                                                entry.getValue() instanceof Number
+                                                        ? entry.getValue().toString()
+                                                        : "'" + entry.getValue() + "'");
+                            }
+                            return jdbc.update("UPDATE lt_lot SET quantity=10 WHERE " + sql);
+                        });
+        LtLotBo bo = new LtLotBo();
+        bo.setLotId(1L);
+        bo.setQuantity(BigDecimal.TEN);
+        assertTrue(service.updateByBo(bo));
+        assertEquals(
+                0,
+                BigDecimal.TEN.compareTo(
+                        jdbc.queryForObject("SELECT quantity FROM lt_lot", BigDecimal.class)));
     }
 
     // ==================== 状态机 5 态流转 ====================
@@ -152,8 +184,8 @@ class LtLotServiceImplTest {
         bo.setMaterialId(1L);
         bo.setQuantity(BigDecimal.TEN);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.insertByBo(bo));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.insertByBo(bo));
         assertTrue(exception.getMessage().contains("批次编码已存在"));
     }
 
@@ -178,8 +210,8 @@ class LtLotServiceImplTest {
         lot.setStatus("CONSUMED");
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.quarantine(1L, "隔离"));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.quarantine(1L, "隔离"));
         assertTrue(exception.getMessage().contains("仅 IN_STOCK/IN_USE"));
     }
 
@@ -191,8 +223,8 @@ class LtLotServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(lot);
         when(baseMapper.update(any(), any())).thenReturn(0);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.quarantine(1L, "隔离"));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.quarantine(1L, "隔离"));
         assertTrue(exception.getMessage().contains("状态已变更"));
     }
 
@@ -216,8 +248,8 @@ class LtLotServiceImplTest {
         lot.setStatus("IN_STOCK");
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.scrap(1L, "报废"));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.scrap(1L, "报废"));
         assertTrue(exception.getMessage().contains("仅 QUARANTINED"));
     }
 
@@ -229,8 +261,8 @@ class LtLotServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(lot);
         when(baseMapper.update(any(), any())).thenReturn(0);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.scrap(1L, "报废"));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.scrap(1L, "报废"));
         assertTrue(exception.getMessage().contains("状态已变更"));
     }
 
@@ -286,8 +318,8 @@ class LtLotServiceImplTest {
         lot.setStatus("IN_STOCK");
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.release(1L));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.release(1L));
         assertTrue(exception.getMessage().contains("仅 QUARANTINED"));
     }
 
@@ -358,8 +390,9 @@ class LtLotServiceImplTest {
 
     @Test
     void recommendFefoRejectsNullMaterialId() {
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.recommendFefo(null, BigDecimal.TEN));
+        RuntimeException exception =
+                assertThrows(
+                        RuntimeException.class, () -> service.recommendFefo(null, BigDecimal.TEN));
         assertTrue(exception.getMessage().contains("物料ID不能为空"));
     }
 
@@ -367,8 +400,9 @@ class LtLotServiceImplTest {
 
     @Test
     void consumeRejectsNonPositiveQuantity() {
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.valueOf(-1)));
+        RuntimeException exception =
+                assertThrows(
+                        RuntimeException.class, () -> service.consume(1L, BigDecimal.valueOf(-1)));
         assertTrue(exception.getMessage().contains("消耗数量必须大于0"));
     }
 
@@ -379,8 +413,9 @@ class LtLotServiceImplTest {
         lot.setStatus("CONSUMED");
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.valueOf(5)));
+        RuntimeException exception =
+                assertThrows(
+                        RuntimeException.class, () -> service.consume(1L, BigDecimal.valueOf(5)));
         assertTrue(exception.getMessage().contains("状态不可消耗"));
     }
 
@@ -394,8 +429,9 @@ class LtLotServiceImplTest {
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.valueOf(20)));
+        RuntimeException exception =
+                assertThrows(
+                        RuntimeException.class, () -> service.consume(1L, BigDecimal.valueOf(20)));
         assertTrue(exception.getMessage().contains("超过剩余数量"));
     }
 
@@ -443,8 +479,9 @@ class LtLotServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(lot);
         when(baseMapper.update(any(), any())).thenReturn(0);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.valueOf(30)));
+        RuntimeException exception =
+                assertThrows(
+                        RuntimeException.class, () -> service.consume(1L, BigDecimal.valueOf(30)));
         assertTrue(exception.getMessage().contains("状态已变更"));
     }
 
@@ -589,7 +626,7 @@ class LtLotServiceImplTest {
         Boolean result = service.applyIqcResult(1L, "UNQUALIFIED");
 
         assertTrue(result);
-        // quarantine should have been called (2nd update)
+        // 隔离操作应在第二次更新时发生。
         verify(baseMapper, times(2)).update(any(), any());
     }
 
@@ -638,8 +675,8 @@ class LtLotServiceImplTest {
 
     @Test
     void applyIqcResultThrowsOnInvalidResult() {
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.applyIqcResult(1L, "INVALID"));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.applyIqcResult(1L, "INVALID"));
         assertTrue(exception.getMessage().contains("QUALIFIED"));
     }
 
@@ -655,8 +692,8 @@ class LtLotServiceImplTest {
         LtLotBo bo = new LtLotBo();
         bo.setLotId(1L);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.updateByBo(bo));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.updateByBo(bo));
         assertTrue(exception.getMessage().contains("不可编辑"));
     }
 
@@ -673,8 +710,8 @@ class LtLotServiceImplTest {
         bo.setLotId(1L);
         bo.setQuantity(BigDecimal.valueOf(30));
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.updateByBo(bo));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.updateByBo(bo));
         assertTrue(exception.getMessage().contains("不可小于已消耗数量"));
     }
 
@@ -688,8 +725,8 @@ class LtLotServiceImplTest {
         lot.setStatus("IN_USE");
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.deleteByIds(new Long[]{1L}));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.deleteByIds(new Long[] {1L}));
         assertTrue(exception.getMessage().contains("状态非在库/报废"));
     }
 
@@ -702,8 +739,8 @@ class LtLotServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(lot);
         when(consumptionMapper.selectCount(any())).thenReturn(1L);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.deleteByIds(new Long[]{1L}));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.deleteByIds(new Long[] {1L}));
         assertTrue(exception.getMessage().contains("工单批次消耗记录"));
     }
 
@@ -717,8 +754,8 @@ class LtLotServiceImplTest {
         when(consumptionMapper.selectCount(any())).thenReturn(0L);
         when(bindingMapper.selectCount(any())).thenReturn(1L);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.deleteByIds(new Long[]{1L}));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.deleteByIds(new Long[] {1L}));
         assertTrue(exception.getMessage().contains("SN批次绑定记录"));
     }
 
@@ -726,8 +763,8 @@ class LtLotServiceImplTest {
 
     @Test
     void updateQcStatusRejectsInvalidStatus() {
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.updateQcStatus(1L, "INVALID"));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.updateQcStatus(1L, "INVALID"));
         assertTrue(exception.getMessage().contains("PASS/FAIL"));
     }
 
@@ -745,7 +782,7 @@ class LtLotServiceImplTest {
         Boolean result = service.updateQcStatus(1L, "FAIL");
 
         assertTrue(result);
-        // quarantine should have been called (2nd update)
+        // 隔离操作应在第二次更新时发生。
         verify(baseMapper, times(2)).update(any(), any());
     }
 
@@ -793,17 +830,18 @@ class LtLotServiceImplTest {
         // 并发场景: 守卫命中 0 行 → 拒绝(修复前写绝对值、守卫在 Java 内存里, 会双重通过而超发)
         when(baseMapper.update(any(), any())).thenReturn(0);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.valueOf(8)));
+        RuntimeException exception =
+                assertThrows(
+                        RuntimeException.class, () -> service.consume(1L, BigDecimal.valueOf(8)));
         assertTrue(exception.getMessage().contains("状态已变更"));
 
         ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(baseMapper).update(isNull(), captor.capture());
         LambdaUpdateWrapper<LtLot> wrapper = (LambdaUpdateWrapper<LtLot>) captor.getValue();
-        assertTrue(wrapper.getSqlSet().contains("consumed_qty = consumed_qty +"),
-            "必须是原子自增而非写绝对值");
-        assertTrue(wrapper.getSqlSegment().contains("consumed_qty +"),
-            "必须带 consumed_qty + qty <= quantity 守卫");
+        assertTrue(wrapper.getSqlSet().contains("consumed_qty = consumed_qty +"), "必须是原子自增而非写绝对值");
+        assertTrue(
+                wrapper.getSqlSegment().contains("consumed_qty +"),
+                "必须带 consumed_qty + qty <= quantity 守卫");
     }
 
     // ==================== MES-LT-03 效期拦截 ====================
@@ -817,11 +855,16 @@ class LtLotServiceImplTest {
         lot.setQcStatus("PASS");
         lot.setQuantity(BigDecimal.TEN);
         lot.setConsumedQty(BigDecimal.ZERO);
-        lot.setExpiryDate(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        lot.setExpiryDate(
+                Date.from(
+                        LocalDate.now()
+                                .minusDays(1)
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()));
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.ONE));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.consume(1L, BigDecimal.ONE));
 
         assertTrue(exception.getMessage().contains("已过期"));
         verify(baseMapper, never()).update(any(), any());
@@ -836,7 +879,12 @@ class LtLotServiceImplTest {
         lot.setQcStatus("PASS");
         lot.setQuantity(BigDecimal.TEN);
         lot.setConsumedQty(BigDecimal.ZERO);
-        lot.setExpiryDate(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        lot.setExpiryDate(
+                Date.from(
+                        LocalDate.now()
+                                .minusDays(1)
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()));
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
         Map<String, Object> result = service.checkLotUsable(1L, 1L);
@@ -853,8 +901,7 @@ class LtLotServiceImplTest {
 
         ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(baseMapper).selectVoList(captor.capture());
-        assertTrue(captor.getValue().getSqlSegment().contains("expiry_date"),
-            "FEFO 查询必须过滤过期批次");
+        assertTrue(captor.getValue().getSqlSegment().contains("expiry_date"), "FEFO 查询必须过滤过期批次");
     }
 
     // ==================== MES-LT-06 QC 门禁 ====================
@@ -870,8 +917,8 @@ class LtLotServiceImplTest {
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.consume(1L, BigDecimal.ONE));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.consume(1L, BigDecimal.ONE));
 
         assertTrue(exception.getMessage().contains("QC未通过"));
         verify(baseMapper, never()).update(any(), any());
@@ -888,8 +935,8 @@ class LtLotServiceImplTest {
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> service.release(1L));
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> service.release(1L));
 
         assertTrue(exception.getMessage().contains("不得放行"));
         verify(baseMapper, never()).update(any(), any());

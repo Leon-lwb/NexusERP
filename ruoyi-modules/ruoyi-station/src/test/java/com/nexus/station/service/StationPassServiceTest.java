@@ -52,57 +52,81 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 @ExtendWith(MockitoExtension.class)
 class StationPassServiceTest {
 
-    @Mock
-    private StationReportMapper reportMapper;
-    @Mock
-    private StationSchWorkerMapper schWorkerMapper;
-    @Mock
-    private StationDeviceMapper deviceMapper;
-    @Mock
-    private ProSnMapper proSnMapper;
-    @Mock
-    private ProFlowCardMapper flowCardMapper;
-    @Mock
-    private ProFlowCardStepMapper stepMapper;
-    @Mock
-    private TestRecordMapper testRecordMapper;
-    @Mock
-    private IProFlowCardService flowCardService;
-    @Mock
-    private IProSnService proSnService;
-    @Mock
-    private NcrOrderMapper ncrOrderMapper;
-    @Mock
-    private StationPassGuardMapper guard;
+    @Mock private StationReportMapper reportMapper;
+    @Mock private StationSchWorkerMapper schWorkerMapper;
+    @Mock private StationDeviceMapper deviceMapper;
+    @Mock private ProSnMapper proSnMapper;
+    @Mock private ProFlowCardMapper flowCardMapper;
+    @Mock private ProFlowCardStepMapper stepMapper;
+    @Mock private TestRecordMapper testRecordMapper;
+    @Mock private IProFlowCardService flowCardService;
+    @Mock private IProSnService proSnService;
+    @Mock private NcrOrderMapper ncrOrderMapper;
+    @Mock private StationPassGuardMapper guard;
     @Mock ProWorkOrderStepProgressService progressService;
     @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
     @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks
-    private StationPassService service;
+    @InjectMocks private StationPassService service;
 
     private MockedStatic<TenantHelper> tenantHelperMock;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
 
     @BeforeEach
     void setUp() {
-        lenient().when(serialReferences.submissionStatus(any())).thenReturn(java.util.Map.of("submissionState","SERVER_COMMITTED","handoffStatus","NONE"));
-        lenient().when(serialReferences.resolve(anyString())).thenAnswer(call->{
-            String code=call.getArgument(0);ProSn row=proSnMapper.selectOne(com.baomidou.mybatisplus.core.toolkit.Wrappers.<ProSn>lambdaQuery().eq(ProSn::getSnCode,code));
-            if(row==null){var rows=guard.lockSn("000000",code);row=rows==null || rows.size()!=1?null:rows.get(0);}
-            if(row==null)return null;if(row.getIdentityId()==null)row.setIdentityId(10000L+row.getSnId());
-            return new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",row.getIdentityId(),row.getSnId(),code,row.getSnCode(),row.getMaterialId(),row);
-        });
+        lenient()
+                .when(serialReferences.submissionStatus(any()))
+                .thenReturn(
+                        java.util.Map.of(
+                                "submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
+        lenient()
+                .when(serialReferences.resolve(anyString()))
+                .thenAnswer(
+                        call -> {
+                            String code = call.getArgument(0);
+                            ProSn row =
+                                    proSnMapper.selectOne(
+                                            com.baomidou.mybatisplus.core.toolkit.Wrappers
+                                                    .<ProSn>lambdaQuery()
+                                                    .eq(ProSn::getSnCode, code));
+                            if (row == null) {
+                                var rows = guard.lockSn("000000", code);
+                                row = rows == null || rows.size() != 1 ? null : rows.get(0);
+                            }
+                            if (row == null) {
+                                return null;
+                            }
+                            if (row.getIdentityId() == null) {
+                                row.setIdentityId(10000L + row.getSnId());
+                            }
+                            return new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                    "000000",
+                                    row.getIdentityId(),
+                                    row.getSnId(),
+                                    code,
+                                    row.getSnCode(),
+                                    row.getMaterialId(),
+                                    row);
+                        });
         lenient().when(progressService.lockForSn(anyString())).thenReturn(20L);
-        lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> flowCardMapper.selectById((Long)i.getArgument(0)));
+        lenient()
+                .when(progressService.lockForCard(anyLong()))
+                .thenAnswer(i -> flowCardMapper.selectById((Long) i.getArgument(0)));
         tenantHelperMock = mockStatic(TenantHelper.class);
         tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("000000");
         tenantHelperMock.when(TenantHelper::isEnable).thenReturn(true);
         DynamicDataSourceContextHolder.push("mes");
         TransactionSynchronizationManager.setActualTransactionActive(true);
-        TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(java.sql.Connection.TRANSACTION_REPEATABLE_READ);
+        TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(
+                java.sql.Connection.TRANSACTION_REPEATABLE_READ);
         // TenantHelper.dynamic 直接执行调用体(不依赖真实租户上下文)
-        tenantHelperMock.when(() -> TenantHelper.dynamic(anyString(), any(java.util.function.Supplier.class)))
-            .thenAnswer(invocation -> invocation.getArgument(1, java.util.function.Supplier.class).get());
+        tenantHelperMock
+                .when(
+                        () ->
+                                TenantHelper.dynamic(
+                                        anyString(), any(java.util.function.Supplier.class)))
+                .thenAnswer(
+                        invocation ->
+                                invocation.getArgument(1, java.util.function.Supplier.class).get());
         // CALLS_REAL_METHODS: extract() 走真实方法(反序列化 lambda 拿属性名), 仅 getColumnMap 打桩
         lambdaUtilsMock = mockStatic(LambdaUtils.class, CALLS_REAL_METHODS);
         Map<String, ColumnCache> snColumns = new HashMap<>();
@@ -141,13 +165,21 @@ class StationPassServiceTest {
         deviceColumns.put("DEVICECODE", new ColumnCache("device_code", "device_code"));
         deviceColumns.put("STATIONCODE", new ColumnCache("station_code", "station_code"));
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(ProSn.class)).thenReturn(snColumns);
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(ProFlowCardStep.class)).thenReturn(stepColumns);
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(MesStationReport.class)).thenReturn(reportColumns);
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(com.nexus.station.domain.MesStationDevice.class))
-            .thenReturn(deviceColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(ProFlowCardStep.class))
+                .thenReturn(stepColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(MesStationReport.class))
+                .thenReturn(reportColumns);
+        lambdaUtilsMock
+                .when(
+                        () ->
+                                LambdaUtils.getColumnMap(
+                                        com.nexus.station.domain.MesStationDevice.class))
+                .thenReturn(deviceColumns);
         Map<String, ColumnCache> testRecordColumns = new HashMap<>();
-        testRecordColumns.put("SNID",new ColumnCache("sn_id","sn_id"));
-        testRecordColumns.put("TENANTID",new ColumnCache("tenant_id","tenant_id"));
+        testRecordColumns.put("SNID", new ColumnCache("sn_id", "sn_id"));
+        testRecordColumns.put("TENANTID", new ColumnCache("tenant_id", "tenant_id"));
         testRecordColumns.put("TESTRECORDID", new ColumnCache("test_record_id", "test_record_id"));
         testRecordColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         testRecordColumns.put("RESULT", new ColumnCache("result", "result"));
@@ -155,21 +187,33 @@ class StationPassServiceTest {
         Map<String, ColumnCache> ncrColumns = new HashMap<>();
         ncrColumns.put("CARDID", new ColumnCache("card_id", "card_id"));
         ncrColumns.put("STATUS", new ColumnCache("status", "status"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(com.nexus.mes.flash.domain.TestRecord.class))
-            .thenReturn(testRecordColumns);
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(com.nexus.mes.ncr.domain.NcrOrder.class))
-            .thenReturn(ncrColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(com.nexus.mes.flash.domain.TestRecord.class))
+                .thenReturn(testRecordColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(com.nexus.mes.ncr.domain.NcrOrder.class))
+                .thenReturn(ncrColumns);
     }
 
     @Test
     void finalSnIsCompletedBeforeStepCanAggregateCardAndWorkOrder() throws Exception {
-        ProSn sn = new ProSn(); sn.setSnId(44L); sn.setSnCode("CANONICAL-44");
-        ProFlowCard card = new ProFlowCard(); card.setCardId(12L);
-        ProFlowCardStep step = new ProFlowCardStep(); step.setSequenceNum(30); step.setStepRecordId(99L);
-        // No quantity closure is needed to observe the ordering boundary.
+        ProSn sn = new ProSn();
+        sn.setSnId(44L);
+        sn.setSnCode("CANONICAL-44");
+        ProFlowCard card = new ProFlowCard();
+        card.setCardId(12L);
+        ProFlowCardStep step = new ProFlowCardStep();
+        step.setSequenceNum(30);
+        step.setStepRecordId(99L);
+        // 此用例只验证执行顺序，无需额外完成数量闭环。
         when(stepMapper.selectOne(any())).thenReturn(null);
-        var advance = StationPassService.class.getDeclaredMethod("advanceSn", ProSn.class,
-            ProFlowCardStep.class, ProFlowCard.class, List.class);
+        var advance =
+                StationPassService.class.getDeclaredMethod(
+                        "advanceSn",
+                        ProSn.class,
+                        ProFlowCardStep.class,
+                        ProFlowCard.class,
+                        List.class);
         advance.setAccessible(true);
         advance.invoke(service, sn, step, card, List.of(step));
         var order = inOrder(proSnService, stepMapper);
@@ -179,29 +223,92 @@ class StationPassServiceTest {
 
     @Test
     void canonicalValidationUsesMappedLocalIdentityWithoutRenamingHistoricalText() {
-        var row=inProductionSn();row.setSnCode("LOCAL-OLD");row.setIdentityId(10001L);row.setWoNo("WO-20");
-        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",10001L,1L,"ERP-FORMAL","LOCAL-OLD",row.getMaterialId(),row)).when(serialReferences).resolve("ERP-FORMAL");
-        var result=service.validate("ERP-FORMAL","STN|JZ|L1|ASM|GENERAL");var info=(Map<?,?>)result.get("snInfo");
-        assertEquals("WO-20",info.get("woNo"));assertEquals(1L,info.get("localSnId"));assertEquals("ERP-FORMAL",info.get("canonicalSnCode"));assertEquals("LOCAL-OLD",info.get("localSnCode"));assertEquals("LOCAL-OLD",row.getSnCode());
-        verify(proSnMapper,never()).selectOne(any());
+        var row = inProductionSn();
+        row.setSnCode("LOCAL-OLD");
+        row.setIdentityId(10001L);
+        row.setWoNo("WO-20");
+        doReturn(
+                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                "000000",
+                                10001L,
+                                1L,
+                                "ERP-FORMAL",
+                                "LOCAL-OLD",
+                                row.getMaterialId(),
+                                row))
+                .when(serialReferences)
+                .resolve("ERP-FORMAL");
+        var result = service.validate("ERP-FORMAL", "STN|JZ|L1|ASM|GENERAL");
+        var info = (Map<?, ?>) result.get("snInfo");
+        assertEquals("WO-20", info.get("woNo"));
+        assertEquals(1L, info.get("localSnId"));
+        assertEquals("ERP-FORMAL", info.get("canonicalSnCode"));
+        assertEquals("LOCAL-OLD", info.get("localSnCode"));
+        assertEquals("LOCAL-OLD", row.getSnCode());
+        verify(proSnMapper, never()).selectOne(any());
     }
 
     @Test
     void canonicalReplayPreservesRawClientFingerprintAndUsesRealLocalReportHistory() {
-        var row=inProductionSn();row.setSnCode("LOCAL-OLD");row.setIdentityId(10001L);
-        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",10001L,1L,"ERP-FORMAL","LOCAL-OLD",row.getMaterialId(),row)).when(serialReferences).resolve("ERP-FORMAL");
-        when(guard.lockSn("000000","LOCAL-OLD")).thenReturn(List.of(row));
-        var dto=new StationPassReportDto();dto.setSnCode("ERP-FORMAL");dto.setStationCode("STN|JZ|L1|ASM|GENERAL");dto.setResult("PASS");dto.setClientTs(1L);
-        var stored=new StationPassGuardMapper.StoredReport();stored.setTenantId("000000");stored.setDelFlag("0");stored.setSnCode("LOCAL-OLD");stored.setMesWoId(20L);stored.setCardId(1L);stored.setReportType("SINGLE");stored.setStationCode(dto.getStationCode());stored.setClientTs(1L);stored.setClientKey("SINGLE|ERP-FORMAL|STN|JZ|L1|ASM|GENERAL|1");stored.setResult("PASS");stored.setGoodQty(java.math.BigDecimal.ONE);stored.setDefectQty(java.math.BigDecimal.ZERO);stored.setRequestFingerprint(StationSinglePassFingerprint.of("000000","ERP-FORMAL",dto.getStationCode(),1L,"PASS",null,null,null));
-        when(guard.lockReports("000000","LOCAL-OLD")).thenReturn(List.of(stored));
-        assertEquals("SERVER_COMMITTED",service.reportSingle(dto,null).get("submissionState"));verify(reportMapper,never()).insert(any(MesStationReport.class));verify(guard,never()).lockSn("000000","ERP-FORMAL");
+        var row = inProductionSn();
+        row.setSnCode("LOCAL-OLD");
+        row.setIdentityId(10001L);
+        doReturn(
+                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                "000000",
+                                10001L,
+                                1L,
+                                "ERP-FORMAL",
+                                "LOCAL-OLD",
+                                row.getMaterialId(),
+                                row))
+                .when(serialReferences)
+                .resolve("ERP-FORMAL");
+        when(guard.lockSn("000000", "LOCAL-OLD")).thenReturn(List.of(row));
+        var dto = new StationPassReportDto();
+        dto.setSnCode("ERP-FORMAL");
+        dto.setStationCode("STN|JZ|L1|ASM|GENERAL");
+        dto.setResult("PASS");
+        dto.setClientTs(1L);
+        var stored = new StationPassGuardMapper.StoredReport();
+        stored.setTenantId("000000");
+        stored.setDelFlag("0");
+        stored.setSnCode("LOCAL-OLD");
+        stored.setMesWoId(20L);
+        stored.setCardId(1L);
+        stored.setReportType("SINGLE");
+        stored.setStationCode(dto.getStationCode());
+        stored.setClientTs(1L);
+        stored.setClientKey("SINGLE|ERP-FORMAL|STN|JZ|L1|ASM|GENERAL|1");
+        stored.setResult("PASS");
+        stored.setGoodQty(java.math.BigDecimal.ONE);
+        stored.setDefectQty(java.math.BigDecimal.ZERO);
+        stored.setRequestFingerprint(
+                StationSinglePassFingerprint.of(
+                        "000000",
+                        "ERP-FORMAL",
+                        dto.getStationCode(),
+                        1L,
+                        "PASS",
+                        null,
+                        null,
+                        null));
+        when(guard.lockReports("000000", "LOCAL-OLD")).thenReturn(List.of(stored));
+        assertEquals("SERVER_COMMITTED", service.reportSingle(dto, null).get("submissionState"));
+        verify(reportMapper, never()).insert(any(MesStationReport.class));
+        verify(guard, never()).lockSn("000000", "ERP-FORMAL");
     }
 
     @AfterEach
     void tearDown() {
-        DynamicDataSourceContextHolder.clear(); TransactionSynchronizationManager.clear();
-        if (tenantHelperMock != null) tenantHelperMock.close();
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
+        DynamicDataSourceContextHolder.clear();
+        TransactionSynchronizationManager.clear();
+        if (tenantHelperMock != null) {
+            tenantHelperMock.close();
+        }
+        if (lambdaUtilsMock != null) {
+            lambdaUtilsMock.close();
+        }
     }
 
     // ==================== F-5 回归: SN 当前工序定位 ====================
@@ -210,9 +317,12 @@ class StationPassServiceTest {
     void f5_currentStepSeqNull_stillLocatesStepByFirstUnfinished() {
         // 新 SN 的 current_step_seq 为 NULL(库中无维护逻辑), 应按「卡上第一条未完成工序」定位
         ProSn sn = new ProSn();
-        sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
+        sn.setSnId(1L);
+        sn.setTenantId("000000");
+        sn.setDelFlag("0");
         sn.setSnCode("SN-1");
-        sn.setCardId(1L); sn.setMesWoId(20L);
+        sn.setCardId(1L);
+        sn.setMesWoId(20L);
         sn.setCurrentStepSeq(null);
         sn.setSnStatus("IN_PRODUCTION");
         when(proSnMapper.selectOne(any())).thenReturn(sn);
@@ -235,9 +345,12 @@ class StationPassServiceTest {
     void f5_staleCurrentStepSeq_resolvesActualFirstUnfinished() {
         // 老数据 current_step_seq=3 与工序序号 10/20/30 不符, 仍应定位实际第一条未完成工序
         ProSn sn = new ProSn();
-        sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
+        sn.setSnId(1L);
+        sn.setTenantId("000000");
+        sn.setDelFlag("0");
         sn.setSnCode("SN-1");
-        sn.setCardId(1L); sn.setMesWoId(20L);
+        sn.setCardId(1L);
+        sn.setMesWoId(20L);
         sn.setCurrentStepSeq(3);
         sn.setSnStatus("IN_PRODUCTION");
         when(proSnMapper.selectOne(any())).thenReturn(sn);
@@ -273,8 +386,11 @@ class StationPassServiceTest {
         assertFalse((Boolean) data.get("pass"));
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> checks = (List<Map<String, Object>>) data.get("checks");
-        Map<String, Object> match = checks.stream()
-            .filter(c -> "STATION_MATCH".equals(c.get("code"))).findFirst().orElseThrow();
+        Map<String, Object> match =
+                checks.stream()
+                        .filter(c -> "STATION_MATCH".equals(c.get("code")))
+                        .findFirst()
+                        .orElseThrow();
         assertEquals(false, match.get("ok"));
     }
 
@@ -295,8 +411,10 @@ class StationPassServiceTest {
         assertFalse((Boolean) data.get("pass"));
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> checks = (List<Map<String, Object>>) data.get("checks");
-        assertTrue(checks.stream().filter(c -> "DUPLICATE".equals(c.get("code")))
-            .allMatch(c -> !((Boolean) c.get("ok"))));
+        assertTrue(
+                checks.stream()
+                        .filter(c -> "DUPLICATE".equals(c.get("code")))
+                        .allMatch(c -> !((Boolean) c.get("ok"))));
     }
 
     // ==================== F-3 回归: QUALITY_HOLD 最新测试记录判定 ====================
@@ -344,15 +462,33 @@ class StationPassServiceTest {
 
     @Test
     void reportSingle_idempotentReplay_returnsWithoutInsert() {
-        var stored=new StationPassGuardMapper.StoredReport();
-        stored.setMesWoId(20L);stored.setCardId(1L);
-        stored.setDelFlag("0"); stored.setTenantId("000000"); stored.setSnCode("SN-1"); stored.setReportType("SINGLE");
-        stored.setStationCode("STN|JZ|L1|ASM|GENERAL"); stored.setClientKey("SINGLE|SN-1|STN|JZ|L1|ASM|GENERAL|1787295823000");
-        stored.setClientTs(1787295823000L); stored.setResult("PASS"); stored.setOperatorId(105L); stored.setOperatorCode("SCZX-1");
-        stored.setRequestFingerprint(StationSinglePassFingerprint.of("000000","SN-1","STN|JZ|L1|ASM|GENERAL",1787295823000L,"PASS",null,null,null));
-        stored.setGoodQty(java.math.BigDecimal.ONE); stored.setDefectQty(java.math.BigDecimal.ZERO);
-        when(guard.lockSn(anyString(),anyString())).thenReturn(List.of(inProductionSn()));
-        when(guard.lockReports(anyString(),anyString())).thenReturn(List.of(stored));
+        var stored = new StationPassGuardMapper.StoredReport();
+        stored.setMesWoId(20L);
+        stored.setCardId(1L);
+        stored.setDelFlag("0");
+        stored.setTenantId("000000");
+        stored.setSnCode("SN-1");
+        stored.setReportType("SINGLE");
+        stored.setStationCode("STN|JZ|L1|ASM|GENERAL");
+        stored.setClientKey("SINGLE|SN-1|STN|JZ|L1|ASM|GENERAL|1787295823000");
+        stored.setClientTs(1787295823000L);
+        stored.setResult("PASS");
+        stored.setOperatorId(105L);
+        stored.setOperatorCode("SCZX-1");
+        stored.setRequestFingerprint(
+                StationSinglePassFingerprint.of(
+                        "000000",
+                        "SN-1",
+                        "STN|JZ|L1|ASM|GENERAL",
+                        1787295823000L,
+                        "PASS",
+                        null,
+                        null,
+                        null));
+        stored.setGoodQty(java.math.BigDecimal.ONE);
+        stored.setDefectQty(java.math.BigDecimal.ZERO);
+        when(guard.lockSn(anyString(), anyString())).thenReturn(List.of(inProductionSn()));
+        when(guard.lockReports(anyString(), anyString())).thenReturn(List.of(stored));
 
         StationPassReportDto dto = new StationPassReportDto();
         dto.setSnCode("SN-1");
@@ -360,10 +496,11 @@ class StationPassServiceTest {
         dto.setResult("PASS");
         dto.setClientTs(1787295823000L);
 
-        Map<String, Object> data = service.reportSingle(dto,
-            new StationPassService.OperatorInfo(105L, "SCZX-1", "张明"));
+        Map<String, Object> data =
+                service.reportSingle(
+                        dto, new StationPassService.OperatorInfo(105L, "SCZX-1", "张明"));
 
-        assertEquals("SERVER_COMMITTED",data.get("submissionState"));
+        assertEquals("SERVER_COMMITTED", data.get("submissionState"));
         verify(reportMapper, never()).insert(any(MesStationReport.class));
         verify(proSnMapper, never()).update(any(), any());
     }
@@ -371,23 +508,30 @@ class StationPassServiceTest {
     @Test
     void reportSingle_passAccumulatesAndAdvancesToActualNextSeq() {
         ProSn sn = inProductionSn();
-        when(guard.lockSn(anyString(),anyString())).thenReturn(List.of(sn));
+        when(guard.lockSn(anyString(), anyString())).thenReturn(List.of(sn));
         // 卡上工序 30(ASM, IN_PROGRESS) 与 40(PKG, PENDING)
         ProFlowCardStep asm = step(3L, 30, "ASM", "IN_PROGRESS");
         ProFlowCardStep pkg = step(4L, 40, "PKG", "PENDING");
-        when(guard.lockSteps(anyString(),anyLong())).thenReturn(List.of(asm,pkg));
+        when(guard.lockSteps(anyString(), anyLong())).thenReturn(List.of(asm, pkg));
         ProFlowCard card = new ProFlowCard();
-        card.setCardId(1L); card.setMesWoId(20L); card.setTenantId("000000"); card.setDelFlag("0"); card.setCardStatus("IN_PROGRESS");
-        when(guard.lockCard(anyString(),anyLong())).thenReturn(card);
-        when(guard.lockReports(anyString(),anyString())).thenReturn(List.of());
-        var device=new com.nexus.station.domain.MesStationDevice(); device.setTenantId("000000"); device.setDelFlag("0");
-        device.setStationCode("STN|JZ|L1|ASM|GENERAL"); device.setProcessCode("ASM");
-        when(guard.lockDevices(anyString(),anyString())).thenReturn(List.of(device));
-        when(guard.lockTests(anyString(),anyString())).thenReturn(List.of());
-        when(guard.lockNcrs(anyString(),anyLong())).thenReturn(List.of());
+        card.setCardId(1L);
+        card.setMesWoId(20L);
+        card.setTenantId("000000");
+        card.setDelFlag("0");
+        card.setCardStatus("IN_PROGRESS");
+        when(guard.lockCard(anyString(), anyLong())).thenReturn(card);
+        when(guard.lockReports(anyString(), anyString())).thenReturn(List.of());
+        var device = new com.nexus.station.domain.MesStationDevice();
+        device.setTenantId("000000");
+        device.setDelFlag("0");
+        device.setStationCode("STN|JZ|L1|ASM|GENERAL");
+        device.setProcessCode("ASM");
+        when(guard.lockDevices(anyString(), anyString())).thenReturn(List.of(device));
+        when(guard.lockTests(anyString(), anyString())).thenReturn(List.of());
+        when(guard.lockNcrs(anyString(), anyLong())).thenReturn(List.of());
         when(reportMapper.insert(any(MesStationReport.class))).thenReturn(1);
-        when(stepMapper.update(any(),any())).thenReturn(1);
-        when(proSnMapper.update(any(),any())).thenReturn(1);
+        when(stepMapper.update(any(), any())).thenReturn(1);
+        when(proSnMapper.update(any(), any())).thenReturn(1);
         // 收口当前读：计划100、良品51，尚未足量，不触发卡完工。
         ProFlowCardStep fresh = step(3L, 30, "ASM", "IN_PROGRESS");
         fresh.setPlannedQty(java.math.BigDecimal.valueOf(100));
@@ -405,7 +549,9 @@ class StationPassServiceTest {
 
         ArgumentCaptor<MesStationReport> captor = ArgumentCaptor.forClass(MesStationReport.class);
         verify(reportMapper).insert(captor.capture());
-        assertEquals("SINGLE|SN-1|STN|JZ|L1|ASM|GENERAL|1787295823000", captor.getValue().getClientKey());
+        assertEquals(
+                "SINGLE|SN-1|STN|JZ|L1|ASM|GENERAL|1787295823000",
+                captor.getValue().getClientKey());
         assertEquals(105L, captor.getValue().getOperatorId());
         // SN 前移到实际下一道工序 seq=40(而非 30+1=31) — F-5 advanceSn 回归
         verify(proSnMapper).update(any(), any());
@@ -418,8 +564,11 @@ class StationPassServiceTest {
         dto.setStationCode("STN|JZ|L1|ASM|GENERAL");
         dto.setResult("PASS");
 
-        assertThrows(ServiceException.class, () ->
-            service.reportSingle(dto, new StationPassService.OperatorInfo(null, null, null)));
+        assertThrows(
+                ServiceException.class,
+                () ->
+                        service.reportSingle(
+                                dto, new StationPassService.OperatorInfo(null, null, null)));
     }
 
     // ==================== resolveProcessCode: 工位码解析 ====================
@@ -433,7 +582,8 @@ class StationPassServiceTest {
 
     @Test
     void resolveProcessCode_heartbeatBindingTakesPriority() {
-        com.nexus.station.domain.MesStationDevice device = new com.nexus.station.domain.MesStationDevice();
+        com.nexus.station.domain.MesStationDevice device =
+                new com.nexus.station.domain.MesStationDevice();
         device.setProcessCode("OP-99");
         when(deviceMapper.selectOne(any())).thenReturn(device);
         assertEquals("OP-99", service.resolveProcessCode("STN|JZ|L1|ASM|GENERAL"));
@@ -474,16 +624,19 @@ class StationPassServiceTest {
 
     @Test
     void normalize_sixSegmentStationCode_stripsDeviceSegment() {
-        assertEquals("STN|注塑车间|产线1|ASM|GENERAL",
-            StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL|IPC-0007"));
+        assertEquals(
+                "STN|注塑车间|产线1|ASM|GENERAL",
+                StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL|IPC-0007"));
     }
 
     @Test
     void normalize_fiveSegmentAndBlankUnchanged() {
-        assertEquals("STN|注塑车间|产线1|ASM|GENERAL",
-            StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL"));
-        assertEquals("STN|注塑车间|产线1|ASM|GENERAL",
-            StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL|"));
+        assertEquals(
+                "STN|注塑车间|产线1|ASM|GENERAL",
+                StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL"));
+        assertEquals(
+                "STN|注塑车间|产线1|ASM|GENERAL",
+                StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL|"));
         assertNull(StationPassService.normalizeStationCode(null));
         // 空白原样返回(入口处由 isBlank 校验拦截)
         assertEquals(" ", StationPassService.normalizeStationCode(" "));
@@ -491,16 +644,20 @@ class StationPassServiceTest {
 
     @Test
     void normalize_nonStnPrefixWithPipesUntouched() {
-        assertEquals("CUSTOM|A|B|C|D|E", StationPassService.normalizeStationCode("CUSTOM|A|B|C|D|E"));
+        assertEquals(
+                "CUSTOM|A|B|C|D|E", StationPassService.normalizeStationCode("CUSTOM|A|B|C|D|E"));
     }
 
     // ==================== 辅助 ====================
 
     private ProSn inProductionSn() {
         ProSn sn = new ProSn();
-        sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
+        sn.setSnId(1L);
+        sn.setTenantId("000000");
+        sn.setDelFlag("0");
         sn.setSnCode("SN-1");
-        sn.setCardId(1L); sn.setMesWoId(20L);
+        sn.setCardId(1L);
+        sn.setMesWoId(20L);
         sn.setCardNo("FC-1");
         sn.setWoNo("WO-1");
         sn.setCurrentStepSeq(30);
@@ -511,12 +668,18 @@ class StationPassServiceTest {
     private ProFlowCardStep step(Long id, Integer seq, String processCode, String status) {
         ProFlowCardStep s = new ProFlowCardStep();
         s.setStepRecordId(id);
-        s.setCardId(1L); s.setMesWoId(20L); s.setTenantId("000000"); s.setDelFlag("0");
+        s.setCardId(1L);
+        s.setMesWoId(20L);
+        s.setTenantId("000000");
+        s.setDelFlag("0");
         s.setSequenceNum(seq);
         s.setProcessCode(processCode);
         s.setProcessName(processCode);
-        s.setStepStatus(status); s.setPlannedQty(java.math.BigDecimal.valueOf(100));
-        s.setGoodQty(java.math.BigDecimal.ZERO); s.setDefectQty(java.math.BigDecimal.ZERO); s.setScrapQty(java.math.BigDecimal.ZERO);
+        s.setStepStatus(status);
+        s.setPlannedQty(java.math.BigDecimal.valueOf(100));
+        s.setGoodQty(java.math.BigDecimal.ZERO);
+        s.setDefectQty(java.math.BigDecimal.ZERO);
+        s.setScrapQty(java.math.BigDecimal.ZERO);
         return s;
     }
 }

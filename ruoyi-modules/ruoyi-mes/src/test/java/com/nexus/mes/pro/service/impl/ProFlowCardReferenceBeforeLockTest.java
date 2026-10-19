@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/** 刷写和跳站以非锁定真实父引用拒绝错配，不能只靠当前读条件避免外父行锁。 */
+/**
+ * 刷写和跳站以非锁定真实父引用拒绝错配，不能只靠当前读条件避免外父行锁。
+ */
 @ExtendWith(MockitoExtension.class)
 class ProFlowCardReferenceBeforeLockTest {
     @Mock private ProFlowCardStepMapper stepMapper;
@@ -34,8 +36,11 @@ class ProFlowCardReferenceBeforeLockTest {
     @InjectMocks private ProFlowCardServiceImpl service;
     private MockedStatic<TenantHelper> tenant;
 
-    @BeforeEach void prepareSources() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "source"), ProFlowCardStep.class);
+    @BeforeEach
+    void prepareSources() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), "source"),
+                ProFlowCardStep.class);
         tenant = mockStatic(TenantHelper.class);
         tenant.when(TenantHelper::getTenantId).thenReturn("000000");
         ReflectionTestUtils.setField(service, "flashGateMode", "FORCE");
@@ -54,42 +59,63 @@ class ProFlowCardReferenceBeforeLockTest {
         lenient().when(progressService.lockForCard(100L)).thenReturn(card);
     }
 
-    @AfterEach void clearTenant() { tenant.close(); }
+    @AfterEach
+    void clearTenant() {
+        tenant.close();
+    }
 
-    @Test void flashGateRejectsReferenceBeforeAnyChildLock() {
-        assertThrows(com.nexus.common.core.exception.ServiceException.class,
-            () -> ReflectionTestUtils.invokeMethod(service, "checkFlashStepGate", 1L, 100L));
+    @Test
+    void flashGateRejectsReferenceBeforeAnyChildLock() {
+        assertThrows(
+                com.nexus.common.core.exception.ServiceException.class,
+                () -> ReflectionTestUtils.invokeMethod(service, "checkFlashStepGate", 1L, 100L));
         verify(stepMapper).selectById(1L);
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verifyNoInteractions(workOrderStepMapper);
     }
 
-    @Test void skipRejectsReferenceBeforeAnyChildLock() {
+    @Test
+    void skipRejectsReferenceBeforeAnyChildLock() {
         var bo = new ProSkipBo();
         bo.setCardId(100L);
         bo.setStepRecordId(1L);
         bo.setReason("验证真实父引用");
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.doSkip(bo));
+        assertThrows(
+                com.nexus.common.core.exception.ServiceException.class, () -> service.doSkip(bo));
         verify(stepMapper).selectById(1L);
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verify(stepMapper, never()).update(any(), any());
     }
-    @Test void startRejectsReferenceBeforeConditionalStateUpdate() {
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.startStep(100L, 1L, 7L));
+
+    @Test
+    void startRejectsReferenceBeforeConditionalStateUpdate() {
+        assertThrows(
+                com.nexus.common.core.exception.ServiceException.class,
+                () -> service.startStep(100L, 1L, 7L));
         verify(stepMapper, never()).update(any(), any());
     }
 
-    @Test void completionRejectsReferenceEvenWithValidQuantity() {
-        assertThrows(com.nexus.common.core.exception.ServiceException.class,
-            () -> service.doCompleteStep(100L, 1L, java.math.BigDecimal.ONE, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO));
+    @Test
+    void completionRejectsReferenceEvenWithValidQuantity() {
+        assertThrows(
+                com.nexus.common.core.exception.ServiceException.class,
+                () ->
+                        service.doCompleteStep(
+                                100L,
+                                1L,
+                                java.math.BigDecimal.ONE,
+                                java.math.BigDecimal.ZERO,
+                                java.math.BigDecimal.ZERO));
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verify(stepMapper, never()).update(any(), any());
     }
 
-    @Test void aggregateCompletionRejectsReferenceBeforeConditionalStateUpdate() {
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.checkAndCompleteStepUnderLock(100L, 1L));
+    @Test
+    void aggregateCompletionRejectsReferenceBeforeConditionalStateUpdate() {
+        assertThrows(
+                com.nexus.common.core.exception.ServiceException.class,
+                () -> service.checkAndCompleteStepUnderLock(100L, 1L));
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verify(stepMapper, never()).update(any(), any());
     }
-
 }

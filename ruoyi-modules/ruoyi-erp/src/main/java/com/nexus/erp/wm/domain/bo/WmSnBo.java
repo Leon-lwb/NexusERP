@@ -21,7 +21,9 @@ import java.util.Date;
 @AutoMapper(target = WmSn.class, reverseConvertGenerate = false)
 public class WmSnBo extends BaseEntity {
 
-    /** 调用方持久化的注册命令号；重试必须使用原值，不允许服务端代造。 */
+    /**
+     * 调用方持久化的注册命令号；重试必须使用原值，不允许服务端代造。
+     */
     private String commandId;
 
     /**

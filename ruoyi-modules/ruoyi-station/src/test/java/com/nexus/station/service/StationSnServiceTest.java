@@ -38,20 +38,37 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class StationSnServiceTest {
 
-    @Mock
-    private ProSnMapper proSnMapper;
-    @Mock
-    private StationSnBindLogMapper bindLogMapper;
+    @Mock private ProSnMapper proSnMapper;
+    @Mock private StationSnBindLogMapper bindLogMapper;
     @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    @InjectMocks
-    private StationSnService service;
+    @InjectMocks private StationSnService service;
 
     private MockedStatic<TenantHelper> tenantHelperMock;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
 
     @BeforeEach
     void setUp() {
-        lenient().when(serialReferences.resolve(anyString())).thenAnswer(call->{String code=call.getArgument(0);ProSn row=proSnMapper.selectOne(com.baomidou.mybatisplus.core.toolkit.Wrappers.<ProSn>lambdaQuery().eq(ProSn::getSnCode,code));return row==null?null:new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",row.getIdentityId(),row.getSnId(),code,row.getSnCode(),row.getMaterialId(),row);});
+        lenient()
+                .when(serialReferences.resolve(anyString()))
+                .thenAnswer(
+                        call -> {
+                            String code = call.getArgument(0);
+                            ProSn row =
+                                    proSnMapper.selectOne(
+                                            com.baomidou.mybatisplus.core.toolkit.Wrappers
+                                                    .<ProSn>lambdaQuery()
+                                                    .eq(ProSn::getSnCode, code));
+                            return row == null
+                                    ? null
+                                    : new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                            "000000",
+                                            row.getIdentityId(),
+                                            row.getSnId(),
+                                            code,
+                                            row.getSnCode(),
+                                            row.getMaterialId(),
+                                            row);
+                        });
         tenantHelperMock = mockStatic(TenantHelper.class);
         lambdaUtilsMock = mockStatic(LambdaUtils.class, CALLS_REAL_METHODS);
         Map<String, ColumnCache> snColumns = new HashMap<>();
@@ -65,17 +82,43 @@ class StationSnServiceTest {
 
     @Test
     void formalCodesBindActualMappedIdsAndPreserveLocalAuditText() {
-        var parent=sn(1L,"LOCAL-P",null);var component=sn(2L,"LOCAL-C",null);parent.setIdentityId(101L);component.setIdentityId(102L);
-        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",101L,1L,"ERP-P","LOCAL-P",null,parent)).when(serialReferences).resolve("ERP-P");
-        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",102L,2L,"ERP-C","LOCAL-C",null,component)).when(serialReferences).resolve("ERP-C");
-        when(proSnMapper.update(any(),any())).thenReturn(1);var dto=new StationSnDtos.BindDto();dto.setParentSnCode("ERP-P");dto.setComponentSnCodes(List.of("ERP-C"));
-        assertEquals(1,service.bind(dto).get("boundQty"));ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> log=ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);verify(bindLogMapper).insert(log.capture());assertEquals(1L,log.getValue().getParentSnId());assertEquals(2L,log.getValue().getComponentSnId());assertEquals("LOCAL-P",log.getValue().getParentSnCode());assertEquals("LOCAL-C",log.getValue().getComponentSnCode());verify(proSnMapper,never()).selectOne(any());
+        var parent = sn(1L, "LOCAL-P", null);
+        var component = sn(2L, "LOCAL-C", null);
+        parent.setIdentityId(101L);
+        component.setIdentityId(102L);
+        doReturn(
+                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                "000000", 101L, 1L, "ERP-P", "LOCAL-P", null, parent))
+                .when(serialReferences)
+                .resolve("ERP-P");
+        doReturn(
+                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                "000000", 102L, 2L, "ERP-C", "LOCAL-C", null, component))
+                .when(serialReferences)
+                .resolve("ERP-C");
+        when(proSnMapper.update(any(), any())).thenReturn(1);
+        var dto = new StationSnDtos.BindDto();
+        dto.setParentSnCode("ERP-P");
+        dto.setComponentSnCodes(List.of("ERP-C"));
+        assertEquals(1, service.bind(dto).get("boundQty"));
+        ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> log =
+                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+        verify(bindLogMapper).insert(log.capture());
+        assertEquals(1L, log.getValue().getParentSnId());
+        assertEquals(2L, log.getValue().getComponentSnId());
+        assertEquals("LOCAL-P", log.getValue().getParentSnCode());
+        assertEquals("LOCAL-C", log.getValue().getComponentSnCode());
+        verify(proSnMapper, never()).selectOne(any());
     }
 
     @AfterEach
     void tearDown() {
-        if (tenantHelperMock != null) tenantHelperMock.close();
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
+        if (tenantHelperMock != null) {
+            tenantHelperMock.close();
+        }
+        if (lambdaUtilsMock != null) {
+            lambdaUtilsMock.close();
+        }
     }
 
     @Test
@@ -95,7 +138,7 @@ class StationSnServiceTest {
         // 组件挂到父SN(条件含 isNull(parent_sn_id) 防并发重复绑)
         verify(proSnMapper).update(any(), any());
         ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
-            ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
         verify(bindLogMapper).insert(logCaptor.capture());
         assertEquals("BIND", logCaptor.getValue().getAction());
         assertEquals("SN-P", logCaptor.getValue().getParentSnCode());
@@ -195,7 +238,7 @@ class StationSnServiceTest {
         // 解绑 + 重绑两次 update, UNBIND + REBIND 两条留痕
         verify(proSnMapper, times(2)).update(any(), any());
         ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
-            ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
         verify(bindLogMapper, times(2)).insert(logCaptor.capture());
         List<com.nexus.station.domain.MesSnBindLog> logs = logCaptor.getAllValues();
         assertEquals("UNBIND", logs.get(0).getAction());
@@ -227,20 +270,23 @@ class StationSnServiceTest {
         assertTrue(ex.getMessage().contains("已被并发绑定"), "应提示并发绑定冲突: " + ex.getMessage());
         // 只写了解绑那一条 UNBIND 日志, 不得出现 REBIND
         ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
-            ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
         verify(bindLogMapper, times(1)).insert(logCaptor.capture());
         assertEquals("UNBIND", logCaptor.getValue().getAction());
     }
 
     @Test
     void unbindConcurrentParentChangeCannotEraseRelationshipOrWriteAudit() {
-        ProSn component=sn(2L,"SN-C",1L);component.setParentSnCode("SN-P");
+        ProSn component = sn(2L, "SN-C", 1L);
+        component.setParentSnCode("SN-P");
         when(proSnMapper.selectOne(any())).thenReturn(component);
-        when(proSnMapper.selectById(1L)).thenReturn(sn(1L,"SN-P",null));
-        when(proSnMapper.update(any(),any())).thenReturn(0);
-        var dto=new StationSnDtos.UnbindDto();dto.setComponentSnCode("SN-C");dto.setReason("wrong component");
-        assertThrows(ServiceException.class,()->service.unbind(dto));
-        verify(bindLogMapper,never()).insert(any(com.nexus.station.domain.MesSnBindLog.class));
+        when(proSnMapper.selectById(1L)).thenReturn(sn(1L, "SN-P", null));
+        when(proSnMapper.update(any(), any())).thenReturn(0);
+        var dto = new StationSnDtos.UnbindDto();
+        dto.setComponentSnCode("SN-C");
+        dto.setReason("wrong component");
+        assertThrows(ServiceException.class, () -> service.unbind(dto));
+        verify(bindLogMapper, never()).insert(any(com.nexus.station.domain.MesSnBindLog.class));
     }
 
     @Test

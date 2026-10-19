@@ -37,14 +37,26 @@ import java.util.List;
 @Service
 public class WmBarcodeServiceImpl implements IWmBarcodeService {
 
-    /** 基础数据访问映射器（Mapper） */
+    /**
+     * 基础数据访问映射器（Mapper）
+     */
     private final WmBarcodeMapper baseMapper;
-    /** 条码配置数据访问映射器（Mapper） */
+
+    /**
+     * 条码配置数据访问映射器（Mapper）
+     */
     private final WmBarcodeConfigMapper barcodeConfigMapper;
-    /** 条码生成器 */
+
+    /**
+     * 条码生成器
+     */
     private final BarcodeGenerator barcodeGenerator;
-    /** 条码序列提供器 */
+
+    /**
+     * 条码序列提供器
+     */
     private final BarcodeSequenceProvider barcodeSequenceProvider;
+
     private final com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
 
     /**
@@ -93,7 +105,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBarcodeBo bo) {
         WmBarcode entity = MapstructUtils.convert(bo, WmBarcode.class);
-        identities.prepare(entity,false);
+        identities.prepare(entity, false);
         return baseMapper.insert(entity);
     }
 
@@ -107,8 +119,12 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmBarcodeBo bo) {
         WmBarcode requested = MapstructUtils.convert(bo, WmBarcode.class);
-        identities.assertImmutable(identities.lock(bo.getBarcodeId()),requested);
-        WmBarcode entity = new WmBarcode();entity.setBarcodeId(bo.getBarcodeId());entity.setStatus(bo.getStatus());entity.setExpireTime(bo.getExpireTime());entity.setRemark(bo.getRemark());
+        identities.assertImmutable(identities.lock(bo.getBarcodeId()), requested);
+        WmBarcode entity = new WmBarcode();
+        entity.setBarcodeId(bo.getBarcodeId());
+        entity.setStatus(bo.getStatus());
+        entity.setExpireTime(bo.getExpireTime());
+        entity.setRemark(bo.getRemark());
         return baseMapper.updateById(entity);
     }
 
@@ -121,9 +137,13 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        int count=0;
-        for(Long id:java.util.Arrays.stream(ids).distinct().sorted().toList()){
-            identities.lock(id);WmBarcode disabled=new WmBarcode();disabled.setBarcodeId(id);disabled.setStatus("INACTIVE");count+=baseMapper.updateById(disabled);
+        int count = 0;
+        for (Long id : java.util.Arrays.stream(ids).distinct().sorted().toList()) {
+            identities.lock(id);
+            WmBarcode disabled = new WmBarcode();
+            disabled.setBarcodeId(id);
+            disabled.setStatus("INACTIVE");
+            count += baseMapper.updateById(disabled);
         }
         return count;
     }
@@ -143,9 +163,28 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String generateAndSave(Long configId, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate) {
+    public String generateAndSave(
+            Long configId,
+            String bizType,
+            Long bizId,
+            Long bizLineId,
+            Long materialId,
+            Long batchId,
+            Long stockId,
+            Long snId,
+            Date bizDate) {
         WmBarcodeConfig config = configId == null ? null : barcodeConfigMapper.selectById(configId);
-        return generateAndSaveInternal(config, null, bizType, bizId, bizLineId, materialId, batchId, stockId, snId, bizDate);
+        return generateAndSaveInternal(
+                config,
+                null,
+                bizType,
+                bizId,
+                bizLineId,
+                materialId,
+                batchId,
+                stockId,
+                snId,
+                bizDate);
     }
 
     /**
@@ -163,10 +202,33 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String generateAndSaveByCode(String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate) {
-        WmBarcodeConfig config = StringUtils.isBlank(configCode) ? null : barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
-            .eq(WmBarcodeConfig::getConfigCode, configCode));
-        return generateAndSaveInternal(config, configCode, bizType, bizId, bizLineId, materialId, batchId, stockId, snId, bizDate);
+    public String generateAndSaveByCode(
+            String configCode,
+            String bizType,
+            Long bizId,
+            Long bizLineId,
+            Long materialId,
+            Long batchId,
+            Long stockId,
+            Long snId,
+            Date bizDate) {
+        WmBarcodeConfig config =
+                StringUtils.isBlank(configCode)
+                        ? null
+                        : barcodeConfigMapper.selectOne(
+                                Wrappers.<WmBarcodeConfig>lambdaQuery()
+                                        .eq(WmBarcodeConfig::getConfigCode, configCode));
+        return generateAndSaveInternal(
+                config,
+                configCode,
+                bizType,
+                bizId,
+                bizLineId,
+                materialId,
+                batchId,
+                stockId,
+                snId,
+                bizDate);
     }
 
     /**
@@ -177,7 +239,17 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      * - 再把数据库配置映射成轻量规则对象
      * - 最后生成条码并保存实例记录
      */
-    private String generateAndSaveInternal(WmBarcodeConfig config, String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate) {
+    private String generateAndSaveInternal(
+            WmBarcodeConfig config,
+            String configCode,
+            String bizType,
+            Long bizId,
+            Long bizLineId,
+            Long materialId,
+            Long batchId,
+            Long stockId,
+            Long snId,
+            Date bizDate) {
         WmBarcodeConfig effectiveConfig = resolveEffectiveConfig(config, configCode);
         if (effectiveConfig == null) {
             throw new RuntimeException("条码配置不存在，且未找到可用默认配置");
@@ -196,7 +268,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         barcode.setStatus("ACTIVE");
         barcode.setGenerateTime(bizDate == null ? new Date() : bizDate);
         barcode.setRemark("系统生成条码");
-        identities.lockBinding(barcode,true);
+        identities.lockBinding(barcode, true);
         BarcodeRule rule = buildRule(effectiveConfig);
         long sequence = barcodeSequenceProvider.nextSequence(effectiveConfig.getConfigCode());
         String barcodeCode = barcodeGenerator.generate(rule, bizDate, sequence);
@@ -222,26 +294,31 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
 
         // 2. 尝试按指定编码查找启用版本
         if (StringUtils.isNotBlank(configCode)) {
-            WmBarcodeConfig configByCode = barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
-                .eq(WmBarcodeConfig::getConfigCode, configCode)
-                .eq(WmBarcodeConfig::getEnableFlag, 1L));
+            WmBarcodeConfig configByCode =
+                    barcodeConfigMapper.selectOne(
+                            Wrappers.<WmBarcodeConfig>lambdaQuery()
+                                    .eq(WmBarcodeConfig::getConfigCode, configCode)
+                                    .eq(WmBarcodeConfig::getEnableFlag, 1L));
             if (configByCode != null) {
                 return configByCode;
             }
         }
 
         // 3. 回退到默认配置
-        WmBarcodeConfig defaultConfig = barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
-            .eq(WmBarcodeConfig::getConfigCode, "WM_RECEIVE_DEFAULT")
-            .eq(WmBarcodeConfig::getEnableFlag, 1L));
+        WmBarcodeConfig defaultConfig =
+                barcodeConfigMapper.selectOne(
+                        Wrappers.<WmBarcodeConfig>lambdaQuery()
+                                .eq(WmBarcodeConfig::getConfigCode, "WM_RECEIVE_DEFAULT")
+                                .eq(WmBarcodeConfig::getEnableFlag, 1L));
         if (defaultConfig != null) {
             return defaultConfig;
         }
 
         // 4. 最后兜底取第一条启用配置
-        return barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
-            .eq(WmBarcodeConfig::getEnableFlag, 1L)
-            .last("limit 1"));
+        return barcodeConfigMapper.selectOne(
+                Wrappers.<WmBarcodeConfig>lambdaQuery()
+                        .eq(WmBarcodeConfig::getEnableFlag, 1L)
+                        .last("limit 1"));
     }
 
     /**
@@ -251,16 +328,26 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         BarcodeRule rule = new BarcodeRule();
         rule.setRuleCode(config.getConfigCode());
         rule.setPrefix(config.getPrefix());
-        rule.setDatePattern(StringUtils.isNotBlank(config.getDatePattern()) ? config.getDatePattern() : "yyyyMMdd");
+        rule.setDatePattern(
+                StringUtils.isNotBlank(config.getDatePattern())
+                        ? config.getDatePattern()
+                        : "yyyyMMdd");
         rule.setSequenceLength(config.getSequenceLength() == null ? 6 : config.getSequenceLength());
-        rule.setWithCheckDigit(config.getWithCheckDigit() != null && config.getWithCheckDigit() == 1L);
+        rule.setWithCheckDigit(
+                config.getWithCheckDigit() != null && config.getWithCheckDigit() == 1L);
         return rule;
     }
 
     private LambdaQueryWrapper<WmBarcode> buildQueryWrapper(WmBarcodeBo bo) {
         LambdaQueryWrapper<WmBarcode> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getBarcodeCode()), WmBarcode::getBarcodeCode, bo.getBarcodeCode());
-        lqw.eq(StringUtils.isNotBlank(bo.getPrimaryObjectType()), WmBarcode::getPrimaryObjectType, bo.getPrimaryObjectType());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getBarcodeCode()),
+                WmBarcode::getBarcodeCode,
+                bo.getBarcodeCode());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getPrimaryObjectType()),
+                WmBarcode::getPrimaryObjectType,
+                bo.getPrimaryObjectType());
         lqw.eq(bo.getConfigId() != null, WmBarcode::getConfigId, bo.getConfigId());
         lqw.eq(StringUtils.isNotBlank(bo.getBizType()), WmBarcode::getBizType, bo.getBizType());
         lqw.eq(bo.getBizId() != null, WmBarcode::getBizId, bo.getBizId());

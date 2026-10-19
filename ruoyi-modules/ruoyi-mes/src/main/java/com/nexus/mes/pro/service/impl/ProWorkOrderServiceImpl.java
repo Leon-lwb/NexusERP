@@ -101,28 +101,41 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     private final com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
     private final EqEquipmentMapper equipmentMapper;
+
     /**
      * IPQC Mapper：completeWo 门禁查关键工序检验结果。
      * 直调 Mapper 而非 IQcIpqcService，避免与 QcIpqcServiceImpl(依赖 IProWorkOrderService) 形成循环依赖；
      * 本类 @DS("mes")，completeWo 经代理走 mes 上下文，直调 mes 库 Mapper 安全。
      */
     private final QcIpqcMapper qcIpqcMapper;
+
     /**
      * NCR 返工工单/不合格单 Mapper(P0-4)：返工工单完工时直调 Mapper 回写 NCR 状态。
      * 直调 Mapper 而非 INcrReworkOrderService，避免与 NcrReworkOrderServiceImpl(依赖 IProWorkOrderService) 形成循环依赖，同 QcIpqcMapper 模式。
      */
     private final NcrReworkOrderMapper ncrReworkOrderMapper;
+
     private final NcrOrderMapper ncrOrderMapper;
+
     /**
      * 流转卡 Mapper(MES-PRO-11): 取消工单前校验工单下无在制流转卡。
      * 直调 Mapper 而非 IProFlowCardService，避免与 ProFlowCardServiceImpl(依赖 IProWorkOrderService)形成循环依赖。
      */
     private final ProFlowCardMapper flowCardMapper;
-    /** 刷写配置: 工序打标关键字(nexus.mes.flash) */
+
+    /**
+     * 刷写配置: 工序打标关键字(nexus.mes.flash)
+     */
     private final FwProperties fwProperties;
-    /** 固件 Mapper: FLASH 工序自动带出物料默认 RELEASED 固件 */
+
+    /**
+     * 固件 Mapper: FLASH 工序自动带出物料默认 RELEASED 固件
+     */
     private final FirmwareMapper firmwareMapper;
-    /** 发布包服务: 客户定制化配置匹配(固件映射/BOM选配/配置项覆写工单) */
+
+    /**
+     * 发布包服务: 客户定制化配置匹配(固件映射/BOM选配/配置项覆写工单)
+     */
     private final IReleasePackageService releasePackageService;
 
     @Override
@@ -163,8 +176,12 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             // 富集工艺路线信息(若routingId/bomId存在)
             enrichWorkOrderVo(vo);
             vo.setCompletionState(null);
-            if (!TransactionSynchronizationManager.isActualTransactionActive() || TransactionSynchronizationManager.isCurrentTransactionReadOnly())
-                vo.setCompletionState(detailFacts.completionState(vo.getMesWoId(),vo.getErpWoId(),vo.getMaterialId()));
+            if (!TransactionSynchronizationManager.isActualTransactionActive()
+                    || TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
+                vo.setCompletionState(
+                        detailFacts.completionState(
+                                vo.getMesWoId(), vo.getErpWoId(), vo.getMaterialId()));
+            }
         }
         return vo;
     }
@@ -173,9 +190,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * 查询工单MBOM快照明细
      */
     private List<ProWorkOrderBomLineVo> selectBomLinesByWoId(Long mesWoId) {
-        return woBomLineMapper.selectVoList(Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
-            .eq(ProWorkOrderBomLine::getMesWoId, mesWoId)
-            .orderByAsc(ProWorkOrderBomLine::getSortOrder));
+        return woBomLineMapper.selectVoList(
+                Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
+                        .eq(ProWorkOrderBomLine::getMesWoId, mesWoId)
+                        .orderByAsc(ProWorkOrderBomLine::getSortOrder));
     }
 
     /**
@@ -183,7 +201,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      */
     private void enrichWorkOrderVo(ProWorkOrderVo vo) {
         if (vo.getRoutingId() != null) {
-            Map<String, Object> routingHeader = mesErpBridgeService.getRoutingHeader(vo.getRoutingId());
+            Map<String, Object> routingHeader =
+                    mesErpBridgeService.getRoutingHeader(vo.getRoutingId());
             if (routingHeader != null) {
                 vo.setRoutingCode((String) routingHeader.get("routing_code"));
                 vo.setRoutingName((String) routingHeader.get("routing_name"));
@@ -212,8 +231,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * @return 返回视图对象
      */
     public ProWorkOrderVo selectByErpWoId(Long erpWoId) {
-        LambdaQueryWrapper<ProWorkOrder> lqw = Wrappers.<ProWorkOrder>lambdaQuery()
-            .eq(ProWorkOrder::getErpWoId, erpWoId);
+        LambdaQueryWrapper<ProWorkOrder> lqw =
+                Wrappers.<ProWorkOrder>lambdaQuery().eq(ProWorkOrder::getErpWoId, erpWoId);
         return baseMapper.selectVoOne(lqw, false);
     }
 
@@ -224,9 +243,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * @return 结果列表
      */
     public List<ProWorkOrderStepVo> selectStepsByWoId(Long mesWoId) {
-        LambdaQueryWrapper<ProWorkOrderStep> lqw = Wrappers.<ProWorkOrderStep>lambdaQuery()
-            .eq(ProWorkOrderStep::getMesWoId, mesWoId)
-            .orderByAsc(ProWorkOrderStep::getSequenceNum);
+        LambdaQueryWrapper<ProWorkOrderStep> lqw =
+                Wrappers.<ProWorkOrderStep>lambdaQuery()
+                        .eq(ProWorkOrderStep::getMesWoId, mesWoId)
+                        .orderByAsc(ProWorkOrderStep::getSequenceNum);
         return stepMapper.selectVoList(lqw);
     }
 
@@ -273,8 +293,12 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     public int deleteByIds(Long[] ids) {
         // 仅新建或已取消状态的工单可删除
         List<ProWorkOrder> orders = baseMapper.selectBatchIds(List.of(ids));
-        boolean hasNonDeletable = orders.stream()
-            .anyMatch(o -> !STATUS_CREATED.equals(o.getWoStatus()) && !STATUS_CANCELLED.equals(o.getWoStatus()));
+        boolean hasNonDeletable =
+                orders.stream()
+                        .anyMatch(
+                                o ->
+                                        !STATUS_CREATED.equals(o.getWoStatus())
+                                                && !STATUS_CANCELLED.equals(o.getWoStatus()));
         if (hasNonDeletable) {
             throw new RuntimeException("仅新建或已取消状态的工单可删除");
         }
@@ -309,12 +333,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (wo.getReleasePackageId() != null) {
             releasePackage = releasePackageService.selectDetailById(wo.getReleasePackageId());
             if (releasePackage == null) {
-                throw new ServiceException("工单关联的发布包不存在: releasePackageId=" + wo.getReleasePackageId());
+                throw new ServiceException(
+                        "工单关联的发布包不存在: releasePackageId=" + wo.getReleasePackageId());
             }
         }
         // 事务内: 幂等快照步骤/BOM -> FLASH门禁 -> CAS状态冻结
         // 经 AOP 代理调用以使 @Transactional 生效(同类直调绕过代理, 事务实际不生效 M2)
-        SpringUtils.getAopProxy(this).doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage);
+        SpringUtils.getAopProxy(this)
+                .doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage);
     }
 
     /**
@@ -324,12 +350,15 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * 门禁先于CAS: 拦截时工单状态未变, 生产负责人修正刷写绑定后可重新下达。</p>
      */
     @Transactional(rollbackFor = Exception.class)
-    public void doReleaseAndSnapshot(Long mesWoId, ProWorkOrder wo,
-                                     List<Map<String, Object>> routingSteps, MesMbomVo mbom,
-                                     ReleasePackageVo releasePackage) {
+    public void doReleaseAndSnapshot(
+            Long mesWoId,
+            ProWorkOrder wo,
+            List<Map<String, Object>> routingSteps,
+            MesMbomVo mbom,
+            ReleasePackageVo releasePackage) {
         // release() 直达路径: 仅 CREATED 可下达
-        doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage,
-            new String[]{STATUS_CREATED});
+        doReleaseAndSnapshot(
+                mesWoId, wo, routingSteps, mbom, releasePackage, new String[] {STATUS_CREATED});
     }
 
     /**
@@ -340,43 +369,71 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * @param fromStatuses 允许下达的前置状态集合(CAS 条件)
      */
     @Transactional(rollbackFor = Exception.class)
-    public void doReleaseAndSnapshot(Long mesWoId, ProWorkOrder wo,
-                                     List<Map<String, Object>> routingSteps, MesMbomVo mbom,
-                                     ReleasePackageVo releasePackage, String[] fromStatuses) {
-        String[] allowed = (fromStatuses == null || fromStatuses.length == 0)
-            ? new String[]{STATUS_CREATED} : fromStatuses;
+    public void doReleaseAndSnapshot(
+            Long mesWoId,
+            ProWorkOrder wo,
+            List<Map<String, Object>> routingSteps,
+            MesMbomVo mbom,
+            ReleasePackageVo releasePackage,
+            String[] fromStatuses) {
+        String[] allowed =
+                (fromStatuses == null || fromStatuses.length == 0)
+                        ? new String[] {STATUS_CREATED}
+                        : fromStatuses;
         // 幂等快照步骤(若尚未生成)
-        Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
-            .eq(ProWorkOrderStep::getMesWoId, mesWoId));
-        if ((stepCount == null || stepCount == 0) && routingSteps != null && !routingSteps.isEmpty()) {
+        Long stepCount =
+                stepMapper.selectCount(
+                        Wrappers.lambdaQuery(ProWorkOrderStep.class)
+                                .eq(ProWorkOrderStep::getMesWoId, mesWoId));
+        if ((stepCount == null || stepCount == 0)
+                && routingSteps != null
+                && !routingSteps.isEmpty()) {
             generateStepsFromRouting(wo, routingSteps, releasePackage);
         }
         // 幂等快照MBOM(若尚未生成)
-        Long bomLineCount = woBomLineMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
-            .eq(ProWorkOrderBomLine::getMesWoId, mesWoId));
-        if ((bomLineCount == null || bomLineCount == 0) && mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
+        Long bomLineCount =
+                woBomLineMapper.selectCount(
+                        Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
+                                .eq(ProWorkOrderBomLine::getMesWoId, mesWoId));
+        if ((bomLineCount == null || bomLineCount == 0)
+                && mbom != null
+                && mbom.getLines() != null
+                && !mbom.getLines().isEmpty()) {
             snapshotBomLines(wo, mbom, releasePackage);
         }
         // 下达门禁: 无工序(手工/返工来源)拒绝下达 + FLASH工序须已绑定刷写内容
         assertFlashStepsBound(mesWoId, wo != null ? wo.getSourceType() : null);
         // CAS更新状态(冻结固件/BOM绑定, 下达后不可再改)
-        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
-            .set(ProWorkOrder::getWoStatus, STATUS_RELEASED)
-            .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .in(ProWorkOrder::getWoStatus, List.of(allowed)));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<ProWorkOrder>lambdaUpdate()
+                                .set(ProWorkOrder::getWoStatus, STATUS_RELEASED)
+                                .eq(ProWorkOrder::getMesWoId, mesWoId)
+                                .in(ProWorkOrder::getWoStatus, List.of(allowed)));
         if (rows == 0) {
             throw new RuntimeException("工单状态已变更或不存在，仅新建/审批中状态工单可下达");
         }
         // 手动来源工单绑定发布包: 回填发布包快照字段(编码/版本/配置项, ERP来源工单创建时已落)
         if (releasePackage != null && wo.getReleasePackageId() != null) {
-            baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
-                .set(ProWorkOrder::getReleasePackageCode, releasePackage.getPackageCode())
-                .set(ProWorkOrder::getReleasePackageVer, releasePackage.getVersion())
-                .set(ProWorkOrder::getReleaseConfig, buildReleaseConfigSnapshot(releasePackage))
-                .eq(ProWorkOrder::getMesWoId, mesWoId));
+            baseMapper.update(
+                    null,
+                    Wrappers.<ProWorkOrder>lambdaUpdate()
+                            .set(
+                                    ProWorkOrder::getReleasePackageCode,
+                                    releasePackage.getPackageCode())
+                            .set(ProWorkOrder::getReleasePackageVer, releasePackage.getVersion())
+                            .set(
+                                    ProWorkOrder::getReleaseConfig,
+                                    buildReleaseConfigSnapshot(releasePackage))
+                            .eq(ProWorkOrder::getMesWoId, mesWoId));
         }
-        log.info("MES工单下达成功: mesWoId={}, releasePackage={}", mesWoId,
-            releasePackage != null ? releasePackage.getPackageCode() + " v" + releasePackage.getVersion() : "无");
+        log.info(
+                "MES工单下达成功: mesWoId={}, releasePackage={}",
+                mesWoId,
+                releasePackage != null
+                        ? releasePackage.getPackageCode() + " v" + releasePackage.getVersion()
+                        : "无");
     }
 
     /**
@@ -387,28 +444,42 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * <p>挂在 release() 直达路径、审批提交前(submit)与审批通过回调(doReleaseAndSnapshot)三个入口。</p>
      */
     private void assertFlashStepsBound(Long mesWoId, String sourceType) {
-        Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
-            .eq(ProWorkOrderStep::getMesWoId, mesWoId));
+        Long stepCount =
+                stepMapper.selectCount(
+                        Wrappers.lambdaQuery(ProWorkOrderStep.class)
+                                .eq(ProWorkOrderStep::getMesWoId, mesWoId));
         if ((stepCount == null || stepCount == 0)
-            && (StringUtils.isBlank(sourceType) || "MANUAL".equals(sourceType) || "REWORK".equals(sourceType))) {
-            throw new ServiceException("工单无工序步骤, 禁止下达(来源: "
-                + (StringUtils.isBlank(sourceType) ? "MANUAL(未标注)" : sourceType)
-                + "): 请先确认工艺路线或补录工序, mesWoId=" + mesWoId);
+                && (StringUtils.isBlank(sourceType)
+                        || "MANUAL".equals(sourceType)
+                        || "REWORK".equals(sourceType))) {
+            throw new ServiceException(
+                    "工单无工序步骤, 禁止下达(来源: "
+                            + (StringUtils.isBlank(sourceType) ? "MANUAL(未标注)" : sourceType)
+                            + "): 请先确认工艺路线或补录工序, mesWoId="
+                            + mesWoId);
         }
-        List<ProWorkOrderStep> flashSteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
-            .eq(ProWorkOrderStep::getMesWoId, mesWoId)
-            .eq(ProWorkOrderStep::getStepType, "FLASH"));
+        List<ProWorkOrderStep> flashSteps =
+                stepMapper.selectList(
+                        Wrappers.<ProWorkOrderStep>lambdaQuery()
+                                .eq(ProWorkOrderStep::getMesWoId, mesWoId)
+                                .eq(ProWorkOrderStep::getStepType, "FLASH"));
         if (flashSteps == null || flashSteps.isEmpty()) {
             return;
         }
         StringBuilder unbound = new StringBuilder();
         for (ProWorkOrderStep step : flashSteps) {
-            boolean bound = step.getContentRefId() != null || StringUtils.isNotBlank(step.getStepFlashConfig());
+            boolean bound =
+                    step.getContentRefId() != null
+                            || StringUtils.isNotBlank(step.getStepFlashConfig());
             if (!bound) {
                 if (unbound.length() > 0) {
                     unbound.append("、");
                 }
-                unbound.append("工序[").append(step.getSequenceNum()).append("-").append(step.getProcessName()).append("]");
+                unbound.append("工序[")
+                        .append(step.getSequenceNum())
+                        .append("-")
+                        .append(step.getProcessName())
+                        .append("]");
             }
         }
         if (unbound.length() > 0) {
@@ -447,24 +518,34 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             throw new ServiceException("固件不存在: firmwareId=" + bo.getFirmwareId());
         }
         if (!IFirmwareService.STATUS_RELEASED.equals(fw.getStatus())) {
-            throw new ServiceException("仅已发布(RELEASED)固件可用于生产, 固件 " + fw.getFirmwareCode() + " 当前: " + fw.getStatus());
+            throw new ServiceException(
+                    "仅已发布(RELEASED)固件可用于生产, 固件 " + fw.getFirmwareCode() + " 当前: " + fw.getStatus());
         }
         if (wo.getMaterialId() != null && !wo.getMaterialId().equals(fw.getMaterialId())) {
             throw new ServiceException("固件 " + fw.getFirmwareCode() + " 适用物料与工单产品不一致, 不可绑定");
         }
-        String flashConfig = rewriteFlashConfigFirmware(step.getStepFlashConfig(), bo.getFirmwareId());
-        int rows = stepMapper.update(null, Wrappers.<ProWorkOrderStep>lambdaUpdate()
-            .set(ProWorkOrderStep::getContentRefType, "FIRMWARE")
-            .set(ProWorkOrderStep::getContentRefId, bo.getFirmwareId())
-            .set(ProWorkOrderStep::getFirmwareSource, "MANUAL")
-            .set(ProWorkOrderStep::getStepFlashConfig, flashConfig)
-            .eq(ProWorkOrderStep::getStepId, bo.getStepId())
-            .eq(ProWorkOrderStep::getMesWoId, mesWoId));
+        String flashConfig =
+                rewriteFlashConfigFirmware(step.getStepFlashConfig(), bo.getFirmwareId());
+        int rows =
+                stepMapper.update(
+                        null,
+                        Wrappers.<ProWorkOrderStep>lambdaUpdate()
+                                .set(ProWorkOrderStep::getContentRefType, "FIRMWARE")
+                                .set(ProWorkOrderStep::getContentRefId, bo.getFirmwareId())
+                                .set(ProWorkOrderStep::getFirmwareSource, "MANUAL")
+                                .set(ProWorkOrderStep::getStepFlashConfig, flashConfig)
+                                .eq(ProWorkOrderStep::getStepId, bo.getStepId())
+                                .eq(ProWorkOrderStep::getMesWoId, mesWoId));
         if (rows == 0) {
             throw new ServiceException("工序固件更新失败, 步骤状态已变更: stepId=" + bo.getStepId());
         }
-        log.info("工单工序固件更改: mesWoId={}, stepId={}, process={}, firmware={}({}), 来源=MANUAL",
-            mesWoId, bo.getStepId(), step.getProcessName(), fw.getFirmwareCode(), fw.getVersion());
+        log.info(
+                "工单工序固件更改: mesWoId={}, stepId={}, process={}, firmware={}({}), 来源=MANUAL",
+                mesWoId,
+                bo.getStepId(),
+                step.getProcessName(),
+                fw.getFirmwareCode(),
+                fw.getVersion());
     }
 
     /**
@@ -516,7 +597,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         // 1. 幂等校验：通过erpWoId查重
         ProWorkOrderVo existing = selectByErpWoId(message.getWoId());
         if (existing != null) {
-            log.info("MES工单已存在,跳过创建: erpWoId={}, mesWoId={}", message.getWoId(), existing.getMesWoId());
+            log.info(
+                    "MES工单已存在,跳过创建: erpWoId={}, mesWoId={}",
+                    message.getWoId(),
+                    existing.getMesWoId());
             return;
         }
 
@@ -544,7 +628,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         Long routingId = message.getRoutingId();
         if (routingId == null && message.getMaterialId() != null) {
             routingId = mesErpBridgeService.getDefaultRoutingId(message.getMaterialId());
-            log.info("通过桥接服务查询默认工艺路线: materialId={}, routingId={}", message.getMaterialId(), routingId);
+            log.info(
+                    "通过桥接服务查询默认工艺路线: materialId={}, routingId={}",
+                    message.getMaterialId(),
+                    routingId);
         }
 
         List<Map<String, Object>> routingSteps = null;
@@ -563,16 +650,32 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         // 无匹配返回 null, 工单按标准工艺路线/标准BOM生成(传统方式, 完全兼容)
         ReleasePackageVo releasePackage = null;
         if (message.getClientId() != null && message.getMaterialId() != null) {
-            releasePackage = releasePackageService.matchPackage(
-                message.getClientId(), message.getMaterialId(), message.getCustomerProductCode());
+            releasePackage =
+                    releasePackageService.matchPackage(
+                            message.getClientId(),
+                            message.getMaterialId(),
+                            message.getCustomerProductCode());
             if (releasePackage != null) {
-                log.info("匹配到客户定制化发布包: woNo={}, clientId={}, packageCode={}, version={}",
-                    message.getWoNo(), message.getClientId(), releasePackage.getPackageCode(), releasePackage.getVersion());
+                log.info(
+                        "匹配到客户定制化发布包: woNo={}, clientId={}, packageCode={}, version={}",
+                        message.getWoNo(),
+                        message.getClientId(),
+                        releasePackage.getPackageCode(),
+                        releasePackage.getVersion());
             }
         }
 
         // 3. 【事务内】创建MES工单及工序及BOM快照（仅写mes库; 经 AOP 代理调用以使事务生效）
-        SpringUtils.getAopProxy(this).doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps, mbom, releasePackage);
+        SpringUtils.getAopProxy(this)
+                .doCreateWorkOrderAndSteps(
+                        message,
+                        unitId,
+                        unitName,
+                        workshopName,
+                        routingId,
+                        routingSteps,
+                        mbom,
+                        releasePackage);
     }
 
     /**
@@ -581,12 +684,15 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * @param releasePackage 匹配到的客户定制化发布包(可空, 空则按标准工艺路线/标准BOM生成)
      */
     @Transactional(rollbackFor = Exception.class)
-    public void doCreateWorkOrderAndSteps(WorkOrderReleaseMessage message,
-                                          Long unitId, String unitName,
-                                          String workshopName, Long routingId,
-                                          List<Map<String, Object>> routingSteps,
-                                          MesMbomVo mbom,
-                                          ReleasePackageVo releasePackage) {
+    public void doCreateWorkOrderAndSteps(
+            WorkOrderReleaseMessage message,
+            Long unitId,
+            String unitName,
+            String workshopName,
+            Long routingId,
+            List<Map<String, Object>> routingSteps,
+            MesMbomVo mbom,
+            ReleasePackageVo releasePackage) {
         // 创建MES工单主记录
         ProWorkOrder workOrder = new ProWorkOrder();
         workOrder.setErpWoId(message.getWoId());
@@ -613,9 +719,13 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             workOrder.setReleaseConfig(buildReleaseConfigSnapshot(releasePackage));
         }
         baseMapper.insert(workOrder);
-        log.info("MES工单创建成功: mesWoId={}, woNo={}, releasePackage={}",
-            workOrder.getMesWoId(), workOrder.getWoNo(),
-            releasePackage != null ? releasePackage.getPackageCode() + " v" + releasePackage.getVersion() : "无");
+        log.info(
+                "MES工单创建成功: mesWoId={}, woNo={}, releasePackage={}",
+                workOrder.getMesWoId(),
+                workOrder.getWoNo(),
+                releasePackage != null
+                        ? releasePackage.getPackageCode() + " v" + releasePackage.getVersion()
+                        : "无");
 
         // 按工艺路线步骤生成工序(发布包固件映射覆写固件绑定/注入多类型刷写配置)
         if (routingSteps != null && !routingSteps.isEmpty()) {
@@ -624,7 +734,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             log.warn("未找到工艺路线或无步骤,跳过工序生成: woNo={}, routingId={}", message.getWoNo(), routingId);
         }
 
-        // MBOM快照: 将MBOM明细快照到 pro_work_order_bom_line(隔离后续MBOM/ERP变更); 发布包BOM选配覆写(REPLACE/ADD/REMOVE)
+        // MBOM快照: 将MBOM明细快照到 pro_work_order_bom_line(隔离后续MBOM/ERP变更);
+        // 发布包BOM选配覆写(REPLACE/ADD/REMOVE)
         if (mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
             snapshotBomLines(workOrder, mbom, releasePackage);
         }
@@ -642,8 +753,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * 发布包 FLASH 组配置项按工序注入 stepFlashConfig(非固件类型: config_file/mac/sn/external_*)。
      * </p>
      */
-    private void generateStepsFromRouting(ProWorkOrder workOrder, List<Map<String, Object>> routingSteps,
-                                          ReleasePackageVo releasePackage) {
+    private void generateStepsFromRouting(
+            ProWorkOrder workOrder,
+            List<Map<String, Object>> routingSteps,
+            ReleasePackageVo releasePackage) {
         List<ProWorkOrderStep> steps = new ArrayList<>();
         for (Map<String, Object> rs : routingSteps) {
             ProWorkOrderStep step = new ProWorkOrderStep();
@@ -663,8 +776,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             if ("FLASH".equals(step.getStepType())) {
                 // ① 发布包固件映射(客户定制, 优先级最高)
                 if (releasePackage != null) {
-                    firmwareId = matchFirmwareFromPackage(
-                        releasePackage.getFirmwareMappings(), routingStepId, step.getProcessId());
+                    firmwareId =
+                            matchFirmwareFromPackage(
+                                    releasePackage.getFirmwareMappings(),
+                                    routingStepId,
+                                    step.getProcessId());
                     if (firmwareId != null) {
                         assertFirmwareUsable(firmwareId, workOrder, releasePackage);
                         firmwareSource = "PACKAGE";
@@ -679,15 +795,25 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
                 }
                 // ③ 物料默认固件(全局兜底)
                 if (firmwareId == null && workOrder.getMaterialId() != null) {
-                    Firmware defaultFw = firmwareMapper.selectOne(Wrappers.<Firmware>lambdaQuery()
-                        .eq(Firmware::getMaterialId, workOrder.getMaterialId())
-                        .eq(Firmware::getIsDefault, IFirmwareService.IS_DEFAULT_YES)
-                        .eq(Firmware::getStatus, IFirmwareService.STATUS_RELEASED)
-                        .last("LIMIT 1"));
+                    Firmware defaultFw =
+                            firmwareMapper.selectOne(
+                                    Wrappers.<Firmware>lambdaQuery()
+                                            .eq(Firmware::getMaterialId, workOrder.getMaterialId())
+                                            .eq(
+                                                    Firmware::getIsDefault,
+                                                    IFirmwareService.IS_DEFAULT_YES)
+                                            .eq(
+                                                    Firmware::getStatus,
+                                                    IFirmwareService.STATUS_RELEASED)
+                                            .last("LIMIT 1"));
                     if (defaultFw != null) {
                         firmwareId = defaultFw.getFirmwareId();
                         firmwareSource = "MATERIAL_DEFAULT";
-                        log.info("FLASH工序自动带出物料默认固件: woNo={}, processCode={}, firmwareId={}", workOrder.getWoNo(), step.getProcessCode(), firmwareId);
+                        log.info(
+                                "FLASH工序自动带出物料默认固件: woNo={}, processCode={}, firmwareId={}",
+                                workOrder.getWoNo(),
+                                step.getProcessCode(),
+                                firmwareId);
                     }
                 }
             } else {
@@ -705,7 +831,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
             // 发布包 FLASH 组配置项注入多类型刷写绑定(JSON数组, 固件绑定同时写入避免门禁漏检)
             if (releasePackage != null && "FLASH".equals(step.getStepType())) {
-                String flashConfig = buildStepFlashConfig(releasePackage.getConfigItems(), step.getProcessId(), firmwareId);
+                String flashConfig =
+                        buildStepFlashConfig(
+                                releasePackage.getConfigItems(), step.getProcessId(), firmwareId);
                 if (flashConfig != null) {
                     step.setStepFlashConfig(flashConfig);
                 }
@@ -721,8 +849,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         for (ProWorkOrderStep step : steps) {
             stepMapper.insert(step);
         }
-        log.info("工序步骤生成完成: mesWoId={}, stepCount={}, releasePackage={}",
-            workOrder.getMesWoId(), steps.size(), releasePackage != null ? releasePackage.getPackageCode() : "无");
+        log.info(
+                "工序步骤生成完成: mesWoId={}, stepCount={}, releasePackage={}",
+                workOrder.getMesWoId(),
+                steps.size(),
+                releasePackage != null ? releasePackage.getPackageCode() : "无");
     }
 
     /**
@@ -730,8 +861,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * <p>processId 兜底不要求映射行的 routingStepId 为空: 工艺路线升版后 stepId 变化,
      * 按工序匹配仍能命中(客户定制意图挂在工序维度)。</p>
      */
-    private Long matchFirmwareFromPackage(List<ReleasePkgFirmwareVo> mappings,
-                                           Long routingStepId, Long processId) {
+    private Long matchFirmwareFromPackage(
+            List<ReleasePkgFirmwareVo> mappings, Long routingStepId, Long processId) {
         if (mappings == null || mappings.isEmpty()) {
             return null;
         }
@@ -756,22 +887,34 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * 校验发布包映射的固件在工单生成时点仍可用(RELEASED + 物料匹配)。
      * <p>fail-loudly: 定制固件失效时拒绝静默回退到默认固件——定制工单刷错固件的代价远大于停线排查。</p>
      */
-    private void assertFirmwareUsable(Long firmwareId, ProWorkOrder workOrder, ReleasePackageVo releasePackage) {
+    private void assertFirmwareUsable(
+            Long firmwareId, ProWorkOrder workOrder, ReleasePackageVo releasePackage) {
         Firmware fw = firmwareMapper.selectById(firmwareId);
         if (fw == null) {
-            throw new ServiceException(String.format(
-                "发布包[%s v%s]映射的固件不存在(firmwareId=%s), 请更新发布包后再生成工单",
-                releasePackage.getPackageCode(), releasePackage.getVersion(), firmwareId));
+            throw new ServiceException(
+                    String.format(
+                            "发布包[%s v%s]映射的固件不存在(firmwareId=%s), 请更新发布包后再生成工单",
+                            releasePackage.getPackageCode(),
+                            releasePackage.getVersion(),
+                            firmwareId));
         }
         if (!IFirmwareService.STATUS_RELEASED.equals(fw.getStatus())) {
-            throw new ServiceException(String.format(
-                "发布包[%s v%s]映射的固件 %s 当前状态为 %s(非已发布), 请更新发布包后再生成工单",
-                releasePackage.getPackageCode(), releasePackage.getVersion(), fw.getFirmwareCode(), fw.getStatus()));
+            throw new ServiceException(
+                    String.format(
+                            "发布包[%s v%s]映射的固件 %s 当前状态为 %s(非已发布), 请更新发布包后再生成工单",
+                            releasePackage.getPackageCode(),
+                            releasePackage.getVersion(),
+                            fw.getFirmwareCode(),
+                            fw.getStatus()));
         }
-        if (workOrder.getMaterialId() != null && !workOrder.getMaterialId().equals(fw.getMaterialId())) {
-            throw new ServiceException(String.format(
-                "发布包[%s v%s]映射的固件 %s 适用物料与工单产品不一致, 请更新发布包后再生成工单",
-                releasePackage.getPackageCode(), releasePackage.getVersion(), fw.getFirmwareCode()));
+        if (workOrder.getMaterialId() != null
+                && !workOrder.getMaterialId().equals(fw.getMaterialId())) {
+            throw new ServiceException(
+                    String.format(
+                            "发布包[%s v%s]映射的固件 %s 适用物料与工单产品不一致, 请更新发布包后再生成工单",
+                            releasePackage.getPackageCode(),
+                            releasePackage.getVersion(),
+                            fw.getFirmwareCode()));
         }
     }
 
@@ -788,7 +931,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      *
      * @return 注入JSON; 无配置项命中返回 null
      */
-    private String buildStepFlashConfig(List<ReleasePkgConfigVo> configs, Long processId, Long firmwareId) {
+    private String buildStepFlashConfig(
+            List<ReleasePkgConfigVo> configs, Long processId, Long firmwareId) {
         if (configs == null || configs.isEmpty()) {
             return null;
         }
@@ -813,7 +957,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             try {
                 contentRefId = Long.parseLong(c.getConfigValue());
             } catch (NumberFormatException e) {
-                log.warn("发布包FLASH配置项值非内容源ID(数字), 跳过注入: key={}, value={}", c.getConfigKey(), c.getConfigValue());
+                log.warn(
+                        "发布包FLASH配置项值非内容源ID(数字), 跳过注入: key={}, value={}",
+                        c.getConfigKey(),
+                        c.getConfigValue());
                 continue;
             }
             Map<String, Object> entry = new HashMap<>();
@@ -859,11 +1006,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         }
         String upper = processCode.toUpperCase();
         if (fwProperties.getFlashKeywords() != null
-            && fwProperties.getFlashKeywords().stream().anyMatch(upper::contains)) {
+                && fwProperties.getFlashKeywords().stream().anyMatch(upper::contains)) {
             return "FLASH";
         }
         if (fwProperties.getTestKeywords() != null
-            && fwProperties.getTestKeywords().stream().anyMatch(upper::contains)) {
+                && fwProperties.getTestKeywords().stream().anyMatch(upper::contains)) {
             return "TEST";
         }
         return "GENERAL";
@@ -873,7 +1020,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * 快照MBOM明细到工单BOM快照表(事务内调用, MBOM行已含富集信息)
      * <p>发布包BOM选配(REPLACE/ADD/REMOVE)在快照副本上覆写, 不修改MBOM主数据。</p>
      */
-    private void snapshotBomLines(ProWorkOrder workOrder, MesMbomVo mbom, ReleasePackageVo releasePackage) {
+    private void snapshotBomLines(
+            ProWorkOrder workOrder, MesMbomVo mbom, ReleasePackageVo releasePackage) {
         // 深拷贝行副本: 选配覆写(REPLACE 原位改写行对象)不得泄漏修改 MBOM 查询结果
         List<MesMbomLineVo> lines = new ArrayList<>();
         for (MesMbomLineVo line : mbom.getLines()) {
@@ -900,9 +1048,18 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             snapshot.setQuantityPerParent(line.getQuantityPerParent());
             snapshot.setLossRate(line.getLossRate() != null ? line.getLossRate() : BigDecimal.ZERO);
             // 计算含损耗总用量
-            BigDecimal qty = line.getQuantityPerParent() != null ? line.getQuantityPerParent() : BigDecimal.ZERO;
+            BigDecimal qty =
+                    line.getQuantityPerParent() != null
+                            ? line.getQuantityPerParent()
+                            : BigDecimal.ZERO;
             BigDecimal loss = line.getLossRate() != null ? line.getLossRate() : BigDecimal.ZERO;
-            snapshot.setTotalQuantity(qty.multiply(BigDecimal.ONE.add(loss.divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP))));
+            snapshot.setTotalQuantity(
+                    qty.multiply(
+                            BigDecimal.ONE.add(
+                                    loss.divide(
+                                            new BigDecimal("100"),
+                                            6,
+                                            java.math.RoundingMode.HALF_UP))));
             snapshot.setRoutingStepId(line.getRoutingStepId());
             snapshot.setSequenceNum(line.getRoutingStepSequence());
             snapshot.setProcessId(line.getProcessId());
@@ -920,8 +1077,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         for (ProWorkOrderBomLine snapshot : snapshots) {
             woBomLineMapper.insert(snapshot);
         }
-        log.info("MBOM快照生成完成: mesWoId={}, bomLineCount={}, releasePackage={}",
-            workOrder.getMesWoId(), snapshots.size(), releasePackage != null ? releasePackage.getPackageCode() : "无");
+        log.info(
+                "MBOM快照生成完成: mesWoId={}, bomLineCount={}, releasePackage={}",
+                workOrder.getMesWoId(),
+                snapshots.size(),
+                releasePackage != null ? releasePackage.getPackageCode() : "无");
     }
 
     /**
@@ -951,13 +1111,21 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
                         if (item.getQuantityPerParent() != null) {
                             line.setQuantityPerParent(item.getQuantityPerParent());
                         }
-                        line.setRemark(appendRemark(line.getRemark(),
-                            "发布包选配(替换: " + item.getChildMaterialCode() + " -> " + item.getTargetMaterialCode() + ")"));
+                        line.setRemark(
+                                appendRemark(
+                                        line.getRemark(),
+                                        "发布包选配(替换: "
+                                                + item.getChildMaterialCode()
+                                                + " -> "
+                                                + item.getTargetMaterialCode()
+                                                + ")"));
                         replaced = true;
                     }
                     if (!replaced) {
-                        log.warn("发布包BOM选配[REPLACE]未命中快照行: 原物料={}, bomDetailId={}",
-                            item.getChildMaterialCode(), item.getBomDetailId());
+                        log.warn(
+                                "发布包BOM选配[REPLACE]未命中快照行: 原物料={}, bomDetailId={}",
+                                item.getChildMaterialCode(),
+                                item.getBomDetailId());
                     }
                     break;
                 case "ADD":
@@ -974,8 +1142,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
                 case "REMOVE":
                     boolean removed = lines.removeIf(line -> matchBomLine(line, item));
                     if (!removed) {
-                        log.warn("发布包BOM选配[REMOVE]未命中快照行: 原物料={}, bomDetailId={}",
-                            item.getChildMaterialCode(), item.getBomDetailId());
+                        log.warn(
+                                "发布包BOM选配[REMOVE]未命中快照行: 原物料={}, bomDetailId={}",
+                                item.getChildMaterialCode(),
+                                item.getBomDetailId());
                     }
                     break;
                 default:
@@ -991,7 +1161,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (item.getBomDetailId() != null) {
             return item.getBomDetailId().equals(line.getBomDetailId());
         }
-        return item.getChildMaterialId() != null && item.getChildMaterialId().equals(line.getChildMaterialId());
+        return item.getChildMaterialId() != null
+                && item.getChildMaterialId().equals(line.getChildMaterialId());
     }
 
     /**
@@ -1037,8 +1208,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         variables.put("mesWoId", entity.getMesWoId());
         variables.put("woNo", entity.getWoNo());
         // 调用流程服务（processService 自身 @DS("master") + REQUIRES_NEW，会自行切换数据源）
-        R<Void> result = processService.startProcessByDataId(
-            mesWoIdStr, selectFlowId, "proWorkOrderService", variables);
+        R<Void> result =
+                processService.startProcessByDataId(
+                        mesWoIdStr, selectFlowId, "proWorkOrderService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -1054,10 +1226,12 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     @Override
     @DS("master")
     public String getProcInsId(String mesWoIdStr) {
-        return procInsIdHelper.resolve(mesWoIdStr, () -> {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(mesWoIdStr);
-            return business != null ? business.getProcessInstanceId() : null;
-        });
+        return procInsIdHelper.resolve(
+                mesWoIdStr,
+                () -> {
+                    WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(mesWoIdStr);
+                    return business != null ? business.getProcessInstanceId() : null;
+                });
     }
 
     /**
@@ -1089,16 +1263,23 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (ActStatus.doing.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVING);
             changed = true;
-        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)
-            || ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus)
-            || ActStatus.recall.equals(actStatus) || ActStatus.err.equals(actStatus)) {
+        } else if (ActStatus.reject.equals(actStatus)
+                || ActStatus.retrun.equals(actStatus)
+                || ActStatus.revoke.equals(actStatus)
+                || ActStatus.stop.equals(actStatus)
+                || ActStatus.recall.equals(actStatus)
+                || ActStatus.err.equals(actStatus)) {
             entity.setWoStatus(STATUS_CREATED);
             changed = true;
         }
         // delegate/assign/start 不改变状态，跳过更新
         if (changed) {
             baseMapper.updateById(entity);
-            log.info("MES工单审批回调: mesWoId={}, actStatus={}, newWoStatus={}", mesWoId, actStatus, entity.getWoStatus());
+            log.info(
+                    "MES工单审批回调: mesWoId={}, actStatus={}, newWoStatus={}",
+                    mesWoId,
+                    actStatus,
+                    entity.getWoStatus());
         }
     }
 
@@ -1107,20 +1288,30 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * <p>MBOM/发布包读取走 mes 库, 与调用方 mes 事务同源, 保持在本事务内即可。</p>
      */
     private void releaseOnApprovalPass(Long mesWoId, ProWorkOrder entity) {
-        List<Map<String, Object>> routingSteps = entity.getRoutingId() != null
-            ? SpringUtils.getAopProxy(this).loadRoutingStepsForApproval(entity.getRoutingId())
-            : null;
-        MesMbomVo mbom = entity.getBomId() != null ? mesMbomService.selectByBomId(entity.getBomId()) : null;
+        List<Map<String, Object>> routingSteps =
+                entity.getRoutingId() != null
+                        ? SpringUtils.getAopProxy(this)
+                                .loadRoutingStepsForApproval(entity.getRoutingId())
+                        : null;
+        MesMbomVo mbom =
+                entity.getBomId() != null ? mesMbomService.selectByBomId(entity.getBomId()) : null;
         ReleasePackageVo releasePackage = null;
         if (entity.getReleasePackageId() != null) {
             releasePackage = releasePackageService.selectDetailById(entity.getReleasePackageId());
             if (releasePackage == null) {
-                throw new ServiceException("工单关联的发布包不存在: releasePackageId=" + entity.getReleasePackageId());
+                throw new ServiceException(
+                        "工单关联的发布包不存在: releasePackageId=" + entity.getReleasePackageId());
             }
         }
         // 经 AOP 代理调用使 @Transactional 生效(同类直调绕过代理); 前置状态 CREATED/APPROVING
-        SpringUtils.getAopProxy(this).doReleaseAndSnapshot(mesWoId, entity, routingSteps, mbom, releasePackage,
-            new String[]{STATUS_CREATED, STATUS_APPROVING});
+        SpringUtils.getAopProxy(this)
+                .doReleaseAndSnapshot(
+                        mesWoId,
+                        entity,
+                        routingSteps,
+                        mbom,
+                        releasePackage,
+                        new String[] {STATUS_CREATED, STATUS_APPROVING});
     }
 
     /**
@@ -1149,7 +1340,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * @return 返回结果
      */
     @DS("mes")
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW, readOnly = true)
+    @Transactional(
+            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW,
+            readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
@@ -1174,7 +1367,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * @param values values
      * @return 结果列表
      */
-    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+    public List<String> flowCandidateUsernamesOfTask(
+            String taskNameId, Map<String, Object> values) {
         return null;
     }
 
@@ -1196,8 +1390,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             return;
         }
         if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus())
-            && !STATUS_RELEASED.equals(wo.getWoStatus())
-            && !STATUS_PARTIAL_COMPLETED.equals(wo.getWoStatus())) {
+                && !STATUS_RELEASED.equals(wo.getWoStatus())
+                && !STATUS_PARTIAL_COMPLETED.equals(wo.getWoStatus())) {
             log.warn("工单状态不满足完工条件，跳过: mesWoId={}, woStatus={}", mesWoId, wo.getWoStatus());
             return;
         }
@@ -1206,9 +1400,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
         // IPQC 门禁(QC-03)：关键工序(isKeyProcess=1)必须有 QUALIFIED 的 IPQC 才允许工单完工。
         // 报工侧 autoCreateForKeyProcess 失败仅告警(不阻断报工), 此门禁是"关键工序未经检验即完工"的唯一兜底。
-        List<ProWorkOrderStep> keySteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
-            .eq(ProWorkOrderStep::getMesWoId, mesWoId)
-            .eq(ProWorkOrderStep::getIsKeyProcess, 1));
+        List<ProWorkOrderStep> keySteps =
+                stepMapper.selectList(
+                        Wrappers.<ProWorkOrderStep>lambdaQuery()
+                                .eq(ProWorkOrderStep::getMesWoId, mesWoId)
+                                .eq(ProWorkOrderStep::getIsKeyProcess, 1));
         if (keySteps != null && !keySteps.isEmpty()) {
             List<QcIpqc> ipqcList = loadIpqcForCompleteGate(mesWoId);
             Map<Long, QcIpqc> ipqcByProcess = new HashMap<>();
@@ -1216,8 +1412,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
                 for (QcIpqc ipqc : ipqcList) {
                     // 同工序多条 IPQC(重检)时以"存在合格单"为准, 避免先读到不合格单而误拦
                     QcIpqc exists = ipqcByProcess.get(ipqc.getProcessId());
-                    if (exists == null || (!"QUALIFIED".equals(exists.getInspectResult())
-                        && "QUALIFIED".equals(ipqc.getInspectResult()))) {
+                    if (exists == null
+                            || (!"QUALIFIED".equals(exists.getInspectResult())
+                                    && "QUALIFIED".equals(ipqc.getInspectResult()))) {
                         ipqcByProcess.put(ipqc.getProcessId(), ipqc);
                     }
                 }
@@ -1237,7 +1434,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
                 }
                 target.append(ks.getProcessName());
                 if (ipqc != null && StringUtils.isNotBlank(ipqc.getIpqcNo())) {
-                    target.append("(IPQC单号:").append(ipqc.getIpqcNo()).append(bad ? ", 检验不合格)" : ", 尚未检验完成)");
+                    target.append("(IPQC单号:")
+                            .append(ipqc.getIpqcNo())
+                            .append(bad ? ", 检验不合格)" : ", 尚未检验完成)");
                 } else {
                     target.append("(尚无IPQC单, 需先完成该关键工序的IPQC过程检验)");
                 }
@@ -1250,63 +1449,89 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             }
         }
 
-        // Rework remains an internal NCR transaction; every other completion chooses one delivery path.
-        boolean traceDelivery = !"REWORK".equals(wo.getSourceType()) && completionManifests.usesOutbox(wo);
-        // CAS更新 RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
+        // 返工沿用内部不合格处置事务，其余完工场景各自选择唯一交付路径。
+        boolean traceDelivery =
+                !"REWORK".equals(wo.getSourceType()) && completionManifests.usesOutbox(wo);
+        // CAS更新 RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED;
+        // 若工单从未开工(actualStartDate为空)则补写开工时间
         Date now = new Date();
-        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
-            .set(ProWorkOrder::getWoStatus, STATUS_COMPLETED)
-            .set(ProWorkOrder::getActualEndDate, now)
-            .set(wo.getActualStartDate() == null, ProWorkOrder::getActualStartDate, now)
-            .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .in(ProWorkOrder::getWoStatus, STATUS_RELEASED, STATUS_IN_PROGRESS, STATUS_PARTIAL_COMPLETED));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<ProWorkOrder>lambdaUpdate()
+                                .set(ProWorkOrder::getWoStatus, STATUS_COMPLETED)
+                                .set(ProWorkOrder::getActualEndDate, now)
+                                .set(
+                                        wo.getActualStartDate() == null,
+                                        ProWorkOrder::getActualStartDate,
+                                        now)
+                                .eq(ProWorkOrder::getMesWoId, mesWoId)
+                                .in(
+                                        ProWorkOrder::getWoStatus,
+                                        STATUS_RELEASED,
+                                        STATUS_IN_PROGRESS,
+                                        STATUS_PARTIAL_COMPLETED));
         if (rows == 0) {
             log.warn("工单状态并发变更，跳过完工: mesWoId={}", mesWoId);
             return;
         }
 
-        log.info("MES工单完工: mesWoId={}, woNo={}, completedQty={}, scrapQty={}",
-            mesWoId, wo.getWoNo(), wo.getCompletedQty(), wo.getScrapQty());
+        log.info(
+                "MES工单完工: mesWoId={}, woNo={}, completedQty={}, scrapQty={}",
+                mesWoId,
+                wo.getWoNo(),
+                wo.getCompletedQty(),
+                wo.getScrapQty());
 
         // 事务提交后异步发送MQ消息通知ERP(completed_qty/scrap_qty 已由 completeCard 在本事务内聚合)
-        final BigDecimal completedQty = wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
-        final BigDecimal scrappedQty = wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
+        final BigDecimal completedQty =
+                wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
+        final BigDecimal scrappedQty =
+                wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
         final String woNo = wo.getWoNo();
         final Long erpWoId = wo.getErpWoId();
 
-        // P0-4: 返工工单(source_type=REWORK)完工 -> 直调 Mapper 回写 NCR 状态(同事务原子; 直调 Mapper 避免 Service 循环依赖, 同 QcIpqcMapper 模式)
+        // P0-4: 返工工单(source_type=REWORK)完工 -> 直调 Mapper 回写 NCR 状态(同事务原子; 直调 Mapper 避免 Service 循环依赖,
+        // 同 QcIpqcMapper 模式)
         if ("REWORK".equals(wo.getSourceType())) {
-            NcrReworkOrder ro = ncrReworkOrderMapper.selectOne(
-                Wrappers.<NcrReworkOrder>lambdaQuery().eq(NcrReworkOrder::getReworkWoId, mesWoId));
+            NcrReworkOrder ro =
+                    ncrReworkOrderMapper.selectOne(
+                            Wrappers.<NcrReworkOrder>lambdaQuery()
+                                    .eq(NcrReworkOrder::getReworkWoId, mesWoId));
             if (ro != null) {
-                ncrReworkOrderMapper.update(null,
-                    Wrappers.<NcrReworkOrder>lambdaUpdate()
-                        .set(NcrReworkOrder::getStatus, "COMPLETED")
-                        .eq(NcrReworkOrder::getReworkId, ro.getReworkId())
-                        .ne(NcrReworkOrder::getStatus, "COMPLETED"));
-                ncrOrderMapper.update(null,
-                    Wrappers.<NcrOrder>lambdaUpdate()
-                        .set(NcrOrder::getStatus, "CLOSED")
-                        .set(NcrOrder::getClosedTime, new Date())
-                        .eq(NcrOrder::getNcrId, ro.getNcrId())
-                        .eq(NcrOrder::getStatus, "IN_REWORK"));
+                ncrReworkOrderMapper.update(
+                        null,
+                        Wrappers.<NcrReworkOrder>lambdaUpdate()
+                                .set(NcrReworkOrder::getStatus, "COMPLETED")
+                                .eq(NcrReworkOrder::getReworkId, ro.getReworkId())
+                                .ne(NcrReworkOrder::getStatus, "COMPLETED"));
+                ncrOrderMapper.update(
+                        null,
+                        Wrappers.<NcrOrder>lambdaUpdate()
+                                .set(NcrOrder::getStatus, "CLOSED")
+                                .set(NcrOrder::getClosedTime, new Date())
+                                .eq(NcrOrder::getNcrId, ro.getNcrId())
+                                .eq(NcrOrder::getStatus, "IN_REWORK"));
                 log.info("返工工单完工回写NCR: mesWoId={}, ncrId={}", mesWoId, ro.getNcrId());
             }
-            return;  // 返工工单是 MES 内部事务, 不通知 ERP, 不注册 MQ afterCommit
+            return; // 返工工单是 MES 内部事务, 不通知 ERP, 不注册 MQ afterCommit
         }
 
         wo.setWoStatus(STATUS_COMPLETED);
         if (traceDelivery) {
-            // The source transition, immutable lines and outbox commit in this MES transaction.
+            // 来源状态变更、冻结明细及待发事件在同一制造事务内提交。
             completionManifests.freeze(wo);
         } else {
-            // Compatibility is limited to wholly untracked quantity business, checked before the CAS.
+            // 数量兼容路径只允许完全不追踪的物料，并在状态抢占前完成校验。
             final String tenantId = wo.getTenantId();
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override public void afterCommit() {
-                    mesMqSendService.sendWorkOrderCompleted(mesWoId,erpWoId,woNo,completedQty,scrappedQty,tenantId);
-                }
-            });
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            mesMqSendService.sendWorkOrderCompleted(
+                                    mesWoId, erpWoId, woNo, completedQty, scrappedQty, tenantId);
+                        }
+                    });
         }
     }
 
@@ -1329,21 +1554,36 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             throw new ServiceException("工单不存在: mesWoId=" + mesWoId);
         }
         // 在制流转卡: 已下达(RELEASED)/生产中(IN_PROGRESS); 仅 CREATED 的卡尚未下发车间, 不阻塞取消
-        Long activeCards = flowCardMapper.selectCount(Wrappers.<ProFlowCard>lambdaQuery()
-            .eq(ProFlowCard::getMesWoId, mesWoId)
-            .in(ProFlowCard::getCardStatus,
-                IProFlowCardService.STATUS_RELEASED, IProFlowCardService.STATUS_IN_PROGRESS));
+        Long activeCards =
+                flowCardMapper.selectCount(
+                        Wrappers.<ProFlowCard>lambdaQuery()
+                                .eq(ProFlowCard::getMesWoId, mesWoId)
+                                .in(
+                                        ProFlowCard::getCardStatus,
+                                        IProFlowCardService.STATUS_RELEASED,
+                                        IProFlowCardService.STATUS_IN_PROGRESS));
         if (activeCards != null && activeCards > 0) {
-            throw new ServiceException("工单下存在在制流转卡(" + activeCards + "张), 不可取消, 请先完工或关闭流转卡: mesWoId=" + mesWoId);
+            throw new ServiceException(
+                    "工单下存在在制流转卡(" + activeCards + "张), 不可取消, 请先完工或关闭流转卡: mesWoId=" + mesWoId);
         }
-        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
-            .set(ProWorkOrder::getWoStatus, STATUS_CANCELLED)
-            .set(StringUtils.isNotBlank(reason), ProWorkOrder::getRemark, reason)
-            .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .in(ProWorkOrder::getWoStatus, STATUS_CREATED, STATUS_RELEASED, STATUS_APPROVING));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<ProWorkOrder>lambdaUpdate()
+                                .set(ProWorkOrder::getWoStatus, STATUS_CANCELLED)
+                                .set(
+                                        StringUtils.isNotBlank(reason),
+                                        ProWorkOrder::getRemark,
+                                        reason)
+                                .eq(ProWorkOrder::getMesWoId, mesWoId)
+                                .in(
+                                        ProWorkOrder::getWoStatus,
+                                        STATUS_CREATED,
+                                        STATUS_RELEASED,
+                                        STATUS_APPROVING));
         if (rows == 0) {
-            throw new ServiceException("工单状态已变更, 仅新建/已下达/审批中状态可取消: mesWoId=" + mesWoId
-                + ", 当前状态=" + wo.getWoStatus());
+            throw new ServiceException(
+                    "工单状态已变更, 仅新建/已下达/审批中状态可取消: mesWoId=" + mesWoId + ", 当前状态=" + wo.getWoStatus());
         }
         log.info("MES工单取消: mesWoId={}, woNo={}, reason={}", mesWoId, wo.getWoNo(), reason);
     }
@@ -1361,13 +1601,19 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (wo == null) {
             throw new ServiceException("工单不存在: mesWoId=" + mesWoId);
         }
-        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
-            .set(ProWorkOrder::getWoStatus, STATUS_CLOSED)
-            .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .in(ProWorkOrder::getWoStatus, STATUS_COMPLETED, STATUS_PARTIAL_COMPLETED));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<ProWorkOrder>lambdaUpdate()
+                                .set(ProWorkOrder::getWoStatus, STATUS_CLOSED)
+                                .eq(ProWorkOrder::getMesWoId, mesWoId)
+                                .in(
+                                        ProWorkOrder::getWoStatus,
+                                        STATUS_COMPLETED,
+                                        STATUS_PARTIAL_COMPLETED));
         if (rows == 0) {
-            throw new ServiceException("工单状态已变更, 仅已完工/部分完工状态可关闭: mesWoId=" + mesWoId
-                + ", 当前状态=" + wo.getWoStatus());
+            throw new ServiceException(
+                    "工单状态已变更, 仅已完工/部分完工状态可关闭: mesWoId=" + mesWoId + ", 当前状态=" + wo.getWoStatus());
         }
         log.info("MES工单关闭: mesWoId={}, woNo={}", mesWoId, wo.getWoNo());
     }
@@ -1387,28 +1633,53 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
                 return ipqcService.selectByMesWoId(mesWoId);
             }
         } catch (Exception e) {
-            log.warn("IPQC门禁经 IQcIpqcService 取数不可用, 回退 Mapper 直查: mesWoId={}, cause={}", mesWoId, e.getMessage());
+            log.warn(
+                    "IPQC门禁经 IQcIpqcService 取数不可用, 回退 Mapper 直查: mesWoId={}, cause={}",
+                    mesWoId,
+                    e.getMessage());
         }
-        return qcIpqcMapper.selectList(Wrappers.<QcIpqc>lambdaQuery()
-            .eq(QcIpqc::getMesWoId, mesWoId));
+        return qcIpqcMapper.selectList(
+                Wrappers.<QcIpqc>lambdaQuery().eq(QcIpqc::getMesWoId, mesWoId));
     }
 
     private LambdaQueryWrapper<ProWorkOrder> buildQueryWrapper(ProWorkOrderBo bo) {
-        LambdaQueryWrapper<ProWorkOrder> lqw = Wrappers.<ProWorkOrder>lambdaQuery()
-            .eq(StringUtils.isNotBlank(bo.getWoNo()), ProWorkOrder::getWoNo, bo.getWoNo())
-            .eq(bo.getErpWoId() != null, ProWorkOrder::getErpWoId, bo.getErpWoId())
-            .eq(bo.getMaterialId() != null, ProWorkOrder::getMaterialId, bo.getMaterialId())
-            .like(StringUtils.isNotBlank(bo.getMaterialName()), ProWorkOrder::getMaterialName, bo.getMaterialName())
-            .eq(bo.getWorkshopId() != null, ProWorkOrder::getWorkshopId, bo.getWorkshopId())
-            .eq(StringUtils.isNotBlank(bo.getWoStatus()), ProWorkOrder::getWoStatus, bo.getWoStatus())
-            .orderByDesc(ProWorkOrder::getCreateTime);
+        LambdaQueryWrapper<ProWorkOrder> lqw =
+                Wrappers.<ProWorkOrder>lambdaQuery()
+                        .eq(
+                                StringUtils.isNotBlank(bo.getWoNo()),
+                                ProWorkOrder::getWoNo,
+                                bo.getWoNo())
+                        .eq(bo.getErpWoId() != null, ProWorkOrder::getErpWoId, bo.getErpWoId())
+                        .eq(
+                                bo.getMaterialId() != null,
+                                ProWorkOrder::getMaterialId,
+                                bo.getMaterialId())
+                        .like(
+                                StringUtils.isNotBlank(bo.getMaterialName()),
+                                ProWorkOrder::getMaterialName,
+                                bo.getMaterialName())
+                        .eq(
+                                bo.getWorkshopId() != null,
+                                ProWorkOrder::getWorkshopId,
+                                bo.getWorkshopId())
+                        .eq(
+                                StringUtils.isNotBlank(bo.getWoStatus()),
+                                ProWorkOrder::getWoStatus,
+                                bo.getWoStatus())
+                        .orderByDesc(ProWorkOrder::getCreateTime);
         return lqw;
     }
 
     private Long toLong(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Long) return (Long) obj;
-        if (obj instanceof Number) return ((Number) obj).longValue();
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Long) {
+            return (Long) obj;
+        }
+        if (obj instanceof Number) {
+            return ((Number) obj).longValue();
+        }
         try {
             return Long.parseLong(obj.toString());
         } catch (NumberFormatException e) {
@@ -1417,11 +1688,19 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     private Integer toInt(Object obj) {
-        if (obj == null) return null;
+        if (obj == null) {
+            return null;
+        }
         // ERP的TINYINT(1)会被Connector/J读取为Boolean，保留0/1含义，不能解析失败后丢失关键工序门禁。
-        if (obj instanceof Boolean flag) return flag ? 1 : 0;
-        if (obj instanceof Integer) return (Integer) obj;
-        if (obj instanceof Number) return ((Number) obj).intValue();
+        if (obj instanceof Boolean flag) {
+            return flag ? 1 : 0;
+        }
+        if (obj instanceof Integer) {
+            return (Integer) obj;
+        }
+        if (obj instanceof Number) {
+            return ((Number) obj).intValue();
+        }
         try {
             return Integer.parseInt(obj.toString());
         } catch (NumberFormatException e) {

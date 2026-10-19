@@ -17,28 +17,41 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
 
-/** Registered batch identity and source facts are immutable; only metadata has a CRUD write path. */
+/**
+ * 批次身份与原始来源保持不可变；维护接口仅开放非业务事实的元数据。
+ */
 @Component
 @RequiredArgsConstructor
 @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
 public class WmBatchWriteGuard {
-    private static final Set<String> METADATA_STATUSES = Set.of("ACTIVE", "EXPIRED", "LOCKED", "INACTIVE", "CLOSED");
+    private static final Set<String> METADATA_STATUSES =
+            Set.of("ACTIVE", "EXPIRED", "LOCKED", "INACTIVE", "CLOSED");
     private final WmBatchMapper batches;
     private final ErpTraceContext context;
 
-    /** Registration declares a batch, never a receipt/issue/QC result or an inventory effect. */
+    /**
+     * 批次登记只建立批次主档，入出库、质量结论及库存效果由对应业务单据产生。
+     */
     public WmBatch registration(WmBatchBo bo) {
         String tenant = writeTenant();
-        if (bo == null || bo.getMaterialId() == null) throw new ServiceException("物料ID不能为空");
-        if (bo.getBatchId() != null) throw new ServiceException("新增批次不能指定已登记身份ID");
-        if (bo.getDelFlag() != null && !"0".equals(bo.getDelFlag())) throw new ServiceException("新批次必须保留有效登记身份");
+        if (bo == null || bo.getMaterialId() == null) {
+            throw new ServiceException("物料ID不能为空");
+        }
+        if (bo.getBatchId() != null) {
+            throw new ServiceException("新增批次不能指定已登记身份ID");
+        }
+        if (bo.getDelFlag() != null && !"0".equals(bo.getDelFlag())) {
+            throw new ServiceException("新批次必须保留有效登记身份");
+        }
         if (nonzero(bo.getReceivedQty()) || nonzero(bo.getIssuedQty())) {
             throw new ServiceException("新批次已收、已发数量必须为0，累计事实请通过来源单据过账");
         }
-        if (bo.getQuantity() != null && bo.getQuantity().signum() < 0) throw new ServiceException("批次登记数量不得为负");
+        if (bo.getQuantity() != null && bo.getQuantity().signum() < 0) {
+            throw new ServiceException("批次登记数量不得为负");
+        }
         String status = StringUtils.isBlank(bo.getStatus()) ? "ACTIVE" : bo.getStatus();
         requireStatus(status);
-        // Explicit registration projection excludes client audit fields, QC, deletion and cumulative facts.
+        // 显式映射允许登记的字段，排除客户端审计字段、质量状态、删除标记和累计事实。
         WmBatch entity = new WmBatch();
         entity.setTenantId(tenant);
         entity.setBatchCode(bo.getBatchCode());
@@ -72,13 +85,23 @@ public class WmBatchWriteGuard {
         return entity;
     }
 
-    /** Lock before comparing echoed facts; a metadata update never writes a stale source/counter snapshot. */
+    /**
+     * 先锁定批次，再比较回传的来源事实；元数据维护不覆盖来源及累计数量。
+     */
     public int updateMetadata(WmBatchBo bo) {
-        if (bo == null || bo.getBatchId() == null) throw new ServiceException("批次ID不能为空");
+        if (bo == null || bo.getBatchId() == null) {
+            throw new ServiceException("批次ID不能为空");
+        }
         String tenant = writeTenant();
-        WmBatch current = batches.selectOne(Wrappers.<WmBatch>lambdaQuery()
-            .eq(WmBatch::getTenantId, tenant).eq(WmBatch::getBatchId, bo.getBatchId()).last("FOR UPDATE"));
-        if (current == null) throw new ServiceException("当前租户批次不存在");
+        WmBatch current =
+                batches.selectOne(
+                        Wrappers.<WmBatch>lambdaQuery()
+                                .eq(WmBatch::getTenantId, tenant)
+                                .eq(WmBatch::getBatchId, bo.getBatchId())
+                                .last("FOR UPDATE"));
+        if (current == null) {
+            throw new ServiceException("当前租户批次不存在");
+        }
         unchanged("批次编码", bo.getBatchCode(), current.getBatchCode());
         unchanged("物料ID", bo.getMaterialId(), current.getMaterialId());
         unchanged("物料编码", bo.getMaterialCode(), current.getMaterialCode());
@@ -104,25 +127,45 @@ public class WmBatchWriteGuard {
         unchanged("扩展字段3", bo.getAttr3(), current.getAttr3());
         unchanged("扩展字段4", bo.getAttr4(), current.getAttr4());
         unchanged("删除标志", bo.getDelFlag(), current.getDelFlag());
-        if (bo.getStatus() != null) requireStatus(bo.getStatus());
-        if (bo.getExpiryDate() == null && bo.getStatus() == null && bo.getRemark() == null) return 1;
-        int rows = batches.update(null, Wrappers.<WmBatch>lambdaUpdate()
-            .eq(WmBatch::getTenantId, tenant).eq(WmBatch::getBatchId, current.getBatchId())
-            .set(bo.getExpiryDate() != null, WmBatch::getExpiryDate, bo.getExpiryDate())
-            .set(bo.getStatus() != null, WmBatch::getStatus, bo.getStatus())
-            .set(bo.getRemark() != null, WmBatch::getRemark, bo.getRemark())
-            .set(WmBatch::getUpdateTime, new Date()));
-        if (rows != 1) throw new ServiceException("批次元数据更新失败");
+        if (bo.getStatus() != null) {
+            requireStatus(bo.getStatus());
+        }
+        if (bo.getExpiryDate() == null && bo.getStatus() == null && bo.getRemark() == null) {
+            return 1;
+        }
+        int rows =
+                batches.update(
+                        null,
+                        Wrappers.<WmBatch>lambdaUpdate()
+                                .eq(WmBatch::getTenantId, tenant)
+                                .eq(WmBatch::getBatchId, current.getBatchId())
+                                .set(
+                                        bo.getExpiryDate() != null,
+                                        WmBatch::getExpiryDate,
+                                        bo.getExpiryDate())
+                                .set(bo.getStatus() != null, WmBatch::getStatus, bo.getStatus())
+                                .set(bo.getRemark() != null, WmBatch::getRemark, bo.getRemark())
+                                .set(WmBatch::getUpdateTime, new Date()));
+        if (rows != 1) {
+            throw new ServiceException("批次元数据更新失败");
+        }
         return rows;
     }
 
-    /** The condition is evaluated under the UPDATE row lock; no previously read entity is written back. */
+    /**
+     * 有效条件由更新语句持有行锁后判断，避免写回预先读取的过期实体。
+     */
     public int expireDue() {
         String tenant = writeTenant();
-        return batches.update(null, Wrappers.<WmBatch>lambdaUpdate()
-            .eq(WmBatch::getTenantId, tenant).eq(WmBatch::getStatus, "ACTIVE")
-            .isNotNull(WmBatch::getExpiryDate).lt(WmBatch::getExpiryDate, new Date())
-            .set(WmBatch::getStatus, "EXPIRED").set(WmBatch::getUpdateTime, new Date()));
+        return batches.update(
+                null,
+                Wrappers.<WmBatch>lambdaUpdate()
+                        .eq(WmBatch::getTenantId, tenant)
+                        .eq(WmBatch::getStatus, "ACTIVE")
+                        .isNotNull(WmBatch::getExpiryDate)
+                        .lt(WmBatch::getExpiryDate, new Date())
+                        .set(WmBatch::getStatus, "EXPIRED")
+                        .set(WmBatch::getUpdateTime, new Date()));
     }
 
     public void rejectQuantityEdit() {
@@ -140,14 +183,22 @@ public class WmBatchWriteGuard {
     }
 
     private static void requireStatus(String status) {
-        if (!METADATA_STATUSES.contains(status)) throw new ServiceException("批次元数据状态仅允许ACTIVE、EXPIRED、LOCKED、INACTIVE、CLOSED");
+        if (!METADATA_STATUSES.contains(status)) {
+            throw new ServiceException("批次元数据状态仅允许ACTIVE、EXPIRED、LOCKED、INACTIVE、CLOSED");
+        }
     }
 
-    private static boolean nonzero(BigDecimal value) { return value != null && value.signum() != 0; }
+    private static boolean nonzero(BigDecimal value) {
+        return value != null && value.signum() != 0;
+    }
 
     private static void unchanged(String name, Object requested, Object current) {
-        boolean equal = requested instanceof BigDecimal number && current instanceof BigDecimal original
-            ? number.compareTo(original) == 0 : Objects.equals(requested, current);
-        if (requested != null && !equal) throw new ServiceException("批次" + name + "是已登记事实，不可直接修改，请通过来源单据处理");
+        boolean equal =
+                requested instanceof BigDecimal number && current instanceof BigDecimal original
+                        ? number.compareTo(original) == 0
+                        : Objects.equals(requested, current);
+        if (requested != null && !equal) {
+            throw new ServiceException("批次" + name + "是已登记事实，不可直接修改，请通过来源单据处理");
+        }
     }
 }

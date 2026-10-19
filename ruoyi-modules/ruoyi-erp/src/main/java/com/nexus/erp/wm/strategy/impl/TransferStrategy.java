@@ -32,19 +32,34 @@ public class TransferStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：调拨出库 */
+    /**
+     * 事务类型：调拨出库
+     */
     private static final String TX_TYPE_TRANSFER_OUT = "TRANSFER_OUT";
-    /** 事务类型：调拨入库 */
+
+    /**
+     * 事务类型：调拨入库
+     */
     private static final String TX_TYPE_TRANSFER_IN = "TRANSFER_IN";
-    /** 来源单据类型：库存调拨单 */
+
+    /**
+     * 来源单据类型：库存调拨单
+     */
     private static final String SOURCE_DOC_TYPE_TRANSFER = "WM_TRANSFER";
-    /** 事务标志：出库（负数） */
+
+    /**
+     * 事务标志：出库（负数）
+     */
     private static final int TX_FLAG_OUT = -1;
-    /** 事务标志：入库（正数） */
+
+    /**
+     * 事务标志：入库（正数）
+     */
     private static final int TX_FLAG_IN = 1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
 
     /**
@@ -53,8 +68,8 @@ public class TransferStrategy extends BaseStockOperationStrategy {
      * @param stockTxMapper 库存事务Mapper
      * @param stockMapper   库存Mapper
      */
-    public TransferStrategy(WmMaterialStockTxMapper stockTxMapper,
-                            WmMaterialStockMapper stockMapper) {
+    public TransferStrategy(
+            WmMaterialStockTxMapper stockTxMapper, WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
@@ -83,21 +98,45 @@ public class TransferStrategy extends BaseStockOperationStrategy {
         }
 
         Date now = new Date();
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
-            "WM_TRANSFER",line.getTransferId(),line.getLineId(),"TRANSFER",line.getMaterialId(),line.getQuantity(),line.getFromWarehouseId(),line.getFromLocationId(),line.getBatchId())
-            .transfer(line.getToWarehouseId(),line.getToAreaId(),line.getToLocationId())))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                                        "WM_TRANSFER",
+                                        line.getTransferId(),
+                                        line.getLineId(),
+                                        "TRANSFER",
+                                        line.getMaterialId(),
+                                        line.getQuantity(),
+                                        line.getFromWarehouseId(),
+                                        line.getFromLocationId(),
+                                        line.getBatchId())
+                                .transfer(
+                                        line.getToWarehouseId(),
+                                        line.getToAreaId(),
+                                        line.getToLocationId()))) {
+            return;
+        }
 
         // 1. 来源库存扣减（按来源仓库过滤，防止跨仓调拨从错误仓库扣减；排除已预留量）
         LambdaQueryWrapper<WmMaterialStock> fromLqw = Wrappers.lambdaQuery();
         fromLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
-        fromLqw.eq(line.getFromWarehouseId() != null, WmMaterialStock::getWarehouseId, line.getFromWarehouseId());
+        fromLqw.eq(
+                line.getFromWarehouseId() != null,
+                WmMaterialStock::getWarehouseId,
+                line.getFromWarehouseId());
         fromLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
-        fromLqw.eq(line.getFromLocationId() != null, WmMaterialStock::getLocationId, line.getFromLocationId());
+        fromLqw.eq(
+                line.getFromLocationId() != null,
+                WmMaterialStock::getLocationId,
+                line.getFromLocationId());
         fromLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         fromLqw.apply("(stock_quantity - reserved_quantity) > 0");
         // ERP-WM-06: 效期拦截 —— 已过期批次不得参与调拨
         fromLqw.apply(NOT_EXPIRED_SQL);
-        fromLqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
+        fromLqw.orderByAsc(
+                WmMaterialStock::getExpireDate,
+                WmMaterialStock::getRecptDate,
+                WmMaterialStock::getStockId);
 
         List<WmMaterialStock> fromStocks = stockMapper.selectList(fromLqw);
         if (fromStocks == null || fromStocks.isEmpty()) {
@@ -106,19 +145,26 @@ public class TransferStrategy extends BaseStockOperationStrategy {
 
         BigDecimal remaining = line.getQuantity();
         for (WmMaterialStock fromStock : fromStocks) {
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
             // ERP-WM-02: 扣减上限按可用量(在库-已预留)而非账面量, 否则调拨可扣穿销售预留
             BigDecimal available = availableOf(fromStock);
-            if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
+            if (available.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
 
             BigDecimal deductQty = available.min(remaining);
             BigDecimal beforeQty = fromStock.getStockQuantity();
             BigDecimal afterQty = beforeQty.subtract(deductQty);
-            int affected = stockMapper.deductStockAvailable(fromStock.getStockId(), deductQty, fromStock.getVersion());
+            int affected =
+                    stockMapper.deductStockAvailable(
+                            fromStock.getStockId(), deductQty, fromStock.getVersion());
             if (affected == 0) {
                 throw new ServiceException("可用库存不足或已被并发占用，请重试: 物料【" + line.getMaterialName() + "】");
             }
-            stockTxMapper.insert(buildTransferOutTx(line, fromStock, deductQty, beforeQty, afterQty, now));
+            stockTxMapper.insert(
+                    buildTransferOutTx(line, fromStock, deductQty, beforeQty, afterQty, now));
             remaining = remaining.subtract(deductQty);
         }
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
@@ -168,7 +214,9 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             stockMapper.insert(toStock);
         } else {
             toStock = toStocks.get(0);
-            int affected = stockMapper.addStock(toStock.getStockId(), line.getQuantity(), toStock.getVersion());
+            int affected =
+                    stockMapper.addStock(
+                            toStock.getStockId(), line.getQuantity(), toStock.getVersion());
             if (affected == 0) {
                 throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
             }
@@ -177,11 +225,22 @@ public class TransferStrategy extends BaseStockOperationStrategy {
         stockTxMapper.insert(buildTransferInTx(line, toStock, line.getQuantity(), now));
     }
 
-    private WmMaterialStockTx buildTransferOutTx(WmTransferLine line, WmMaterialStock stock,
-                                                 BigDecimal txQuantity, BigDecimal beforeQuantity,
-                                                 BigDecimal afterQuantity, Date now) {
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_TRANSFER_OUT, TX_FLAG_OUT, txQuantity,
-            beforeQuantity, afterQuantity, now);
+    private WmMaterialStockTx buildTransferOutTx(
+            WmTransferLine line,
+            WmMaterialStock stock,
+            BigDecimal txQuantity,
+            BigDecimal beforeQuantity,
+            BigDecimal afterQuantity,
+            Date now) {
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        stock,
+                        TX_TYPE_TRANSFER_OUT,
+                        TX_FLAG_OUT,
+                        txQuantity,
+                        beforeQuantity,
+                        afterQuantity,
+                        now);
         tx.setSourceDocType(SOURCE_DOC_TYPE_TRANSFER);
         tx.setSourceDocId(line.getTransferId());
         tx.setSourceDocLineId(line.getLineId());
@@ -189,12 +248,19 @@ public class TransferStrategy extends BaseStockOperationStrategy {
         return tx;
     }
 
-    private WmMaterialStockTx buildTransferInTx(WmTransferLine line, WmMaterialStock stock,
-                                                 BigDecimal txQuantity, Date now) {
+    private WmMaterialStockTx buildTransferInTx(
+            WmTransferLine line, WmMaterialStock stock, BigDecimal txQuantity, Date now) {
         BigDecimal beforeQty = stock.getStockQuantity().subtract(txQuantity);
         BigDecimal afterQty = stock.getStockQuantity();
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_TRANSFER_IN, TX_FLAG_IN, txQuantity,
-            beforeQty, afterQty, now);
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        stock,
+                        TX_TYPE_TRANSFER_IN,
+                        TX_FLAG_IN,
+                        txQuantity,
+                        beforeQty,
+                        afterQty,
+                        now);
         tx.setSourceDocType(SOURCE_DOC_TYPE_TRANSFER);
         tx.setSourceDocId(line.getTransferId());
         tx.setSourceDocLineId(line.getLineId());

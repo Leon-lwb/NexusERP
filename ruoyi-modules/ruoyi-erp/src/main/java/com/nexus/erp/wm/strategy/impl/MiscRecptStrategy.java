@@ -32,19 +32,34 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：杂项入库 */
+    /**
+     * 事务类型：杂项入库
+     */
     private static final String TX_TYPE_MISC_IN = "MISC_IN";
-    /** 来源单据类型：杂项入库单 */
+
+    /**
+     * 来源单据类型：杂项入库单
+     */
     private static final String SOURCE_DOC_TYPE_MISC_RECPT = "WM_MISC_RECPT";
-    /** 事务标志：入库（正数） */
+
+    /**
+     * 事务标志：入库（正数）
+     */
     private static final int TX_FLAG_IN = 1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 库存计价服务(F3-a:入库按标准成本计价) */
+
+    /**
+     * 库存计价服务(F3-a:入库按标准成本计价)
+     */
     private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
-    /** 物料基础数据 Mapper(取标准成本) */
+
+    /**
+     * 物料基础数据 Mapper(取标准成本)
+     */
     private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
 
     /**
@@ -55,10 +70,11 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
      * @param valuationService 库存计价服务
      * @param materialMapper 物料Mapper
      */
-    public MiscRecptStrategy(WmMaterialStockTxMapper stockTxMapper,
-                             WmMaterialStockMapper stockMapper,
-                             com.nexus.erp.wm.service.IInventoryValuationService valuationService,
-                             com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper) {
+    public MiscRecptStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialStockMapper stockMapper,
+            com.nexus.erp.wm.service.IInventoryValuationService valuationService,
+            com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.valuationService = valuationService;
@@ -86,8 +102,21 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         WmMiscRecptLine line = (WmMiscRecptLine) args[0];
         WmMiscRecpt recpt = (WmMiscRecpt) args[1];
         Date now = (Date) args[2];
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
-            "WM_MISC_RECPT",recpt.getRecptId(),line.getLineId(),"MISC_RECPT",line.getMaterialId(),line.getQuantity(),recpt.getWarehouseId(),line.getLocationId(),line.getBatchId(),line.getUnitPrice())))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                "WM_MISC_RECPT",
+                                recpt.getRecptId(),
+                                line.getLineId(),
+                                "MISC_RECPT",
+                                line.getMaterialId(),
+                                line.getQuantity(),
+                                recpt.getWarehouseId(),
+                                line.getLocationId(),
+                                line.getBatchId(),
+                                line.getUnitPrice()))) {
+            return;
+        }
 
         if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("杂项入库数量必须大于0");
@@ -97,12 +126,17 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
         lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
-        lqw.eq(recpt.getWarehouseId() != null, WmMaterialStock::getWarehouseId, recpt.getWarehouseId());
+        lqw.eq(
+                recpt.getWarehouseId() != null,
+                WmMaterialStock::getWarehouseId,
+                recpt.getWarehouseId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         WmMaterialStock stock = stockMapper.selectOne(lqw);
 
-        BigDecimal beforeQuantity = stock == null || stock.getStockQuantity() == null
-            ? BigDecimal.ZERO : stock.getStockQuantity();
+        BigDecimal beforeQuantity =
+                stock == null || stock.getStockQuantity() == null
+                        ? BigDecimal.ZERO
+                        : stock.getStockQuantity();
         BigDecimal afterQuantity = beforeQuantity.add(line.getQuantity());
 
         if (stock == null) {
@@ -131,7 +165,9 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
             stockMapper.insert(stock);
         } else {
             stock.setRecptDate(now);
-            int affected = stockMapper.addStock(stock.getStockId(), line.getQuantity(), stock.getVersion());
+            int affected =
+                    stockMapper.addStock(
+                            stock.getStockId(), line.getQuantity(), stock.getVersion());
             if (affected == 0) {
                 throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
             }
@@ -142,8 +178,15 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         valuationService.updateStockCost(stock.getStockId(), line.getQuantity(), inUnitCost);
         stock = stockMapper.selectById(stock.getStockId());
 
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_MISC_IN, TX_FLAG_IN, line.getQuantity(),
-            beforeQuantity, afterQuantity, now);
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        stock,
+                        TX_TYPE_MISC_IN,
+                        TX_FLAG_IN,
+                        line.getQuantity(),
+                        beforeQuantity,
+                        afterQuantity,
+                        now);
         tx.setUnitCost(stock.getUnitCost());
         tx.setSourceDocType(SOURCE_DOC_TYPE_MISC_RECPT);
         tx.setSourceDocId(line.getRecptId());
@@ -152,7 +195,9 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         stockTxMapper.insert(tx);
     }
 
-    /** 杂项入库计价:优先标准成本,其次参考价,无价格按 0 */
+    /**
+     * 杂项入库计价:优先标准成本,其次参考价,无价格按 0
+     */
     private BigDecimal resolveMiscUnitCost(Long materialId) {
         com.nexus.erp.bd.domain.BdMaterial material = materialMapper.selectById(materialId);
         if (material == null) {
@@ -161,6 +206,8 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         if (material.getStandardCost() != null) {
             return material.getStandardCost();
         }
-        return material.getReferencePrice() != null ? material.getReferencePrice() : BigDecimal.ZERO;
+        return material.getReferencePrice() != null
+                ? material.getReferencePrice()
+                : BigDecimal.ZERO;
     }
 }

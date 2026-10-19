@@ -25,8 +25,7 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 public class WmSnVo extends BaseEntity implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     /**
      * 序列号ID
@@ -34,8 +33,10 @@ public class WmSnVo extends BaseEntity implements Serializable {
     @ExcelProperty(value = "序列号ID")
     private Long snId;
 
-    /** 原身份乐观版本，供弃用等受控命令按实际详情提交CAS。 */
-    @JsonFormat(shape=JsonFormat.Shape.STRING)
+    /**
+     * 原身份乐观版本，供弃用等受控命令按实际详情提交CAS。
+     */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long identityVersion;
 
     /**
@@ -159,12 +160,16 @@ public class WmSnVo extends BaseEntity implements Serializable {
     @ExcelProperty(value = "备注")
     private String remark;
 
-    /** 统一身份别名始终等于ERP的snId，禁止产生第二份可漂移的身份值。 */
+    /**
+     * 统一身份别名始终等于ERP的snId，禁止产生第二份可漂移的身份值。
+     */
     public Long getIdentityId() {
         return snId;
     }
 
-    /** 规范号码别名始终等于已登记的snCode，历史长号码保持原文。 */
+    /**
+     * 规范号码别名始终等于已登记的snCode，历史长号码保持原文。
+     */
     public String getCanonicalSnCode() {
         return snCode;
     }

@@ -61,44 +61,27 @@ import static org.mockito.Mockito.*;
 class ProFlowCardServiceImplTest {
 
     @Mock private com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
-    @Mock
-    private ProFlowCardMapper baseMapper;
-    @Mock
-    private ProFlowCardStepMapper stepMapper;
-    @Mock
-    private ProWorkOrderMapper workOrderMapper;
-    @Mock
-    private ProWorkOrderStepMapper workOrderStepMapper;
-    @Mock
-    private LockTemplate lockTemplate;
-    @Mock
-    private IProWorkOrderService proWorkOrderService;
-    @Mock
-    private IQcIpqcService iqcIpqcService;
-    @Mock
-    private IProEntryCheckService proEntryCheckService;
-    @Mock
-    private ISopProcessBindingService sopBindingService;
-    @Mock
-    private INcrOrderService ncrOrderService;
-    @Mock
-    private ProSnMapper proSnMapper;
-    @Mock
-    private FlashRecordMapper flashRecordMapper;
-    @Mock
-    private MesFlashTypeMapper mesFlashTypeMapper;
-    @Mock
-    private ObjectMapper objectMapper;
+    @Mock private ProFlowCardMapper baseMapper;
+    @Mock private ProFlowCardStepMapper stepMapper;
+    @Mock private ProWorkOrderMapper workOrderMapper;
+    @Mock private ProWorkOrderStepMapper workOrderStepMapper;
+    @Mock private LockTemplate lockTemplate;
+    @Mock private IProWorkOrderService proWorkOrderService;
+    @Mock private IQcIpqcService iqcIpqcService;
+    @Mock private IProEntryCheckService proEntryCheckService;
+    @Mock private ISopProcessBindingService sopBindingService;
+    @Mock private INcrOrderService ncrOrderService;
+    @Mock private ProSnMapper proSnMapper;
+    @Mock private FlashRecordMapper flashRecordMapper;
+    @Mock private MesFlashTypeMapper mesFlashTypeMapper;
+    @Mock private ObjectMapper objectMapper;
 
-    @Mock
-    private ProWorkOrderStepProgressService progressService;
+    @Mock private ProWorkOrderStepProgressService progressService;
 
-    @Mock
-    private com.nexus.mes.trace.MesProductLotOutputWriter productLotOutputs;
+    @Mock private com.nexus.mes.trace.MesProductLotOutputWriter productLotOutputs;
 
     @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks
-    private ProFlowCardServiceImpl service;
+    @InjectMocks private ProFlowCardServiceImpl service;
 
     private MockedStatic<SpringUtils> aopProxyMock;
     private MockedStatic<com.nexus.common.tenant.helper.TenantHelper> tenantMock;
@@ -106,7 +89,8 @@ class ProFlowCardServiceImplTest {
     @BeforeAll
     static void initTableInfo() {
         // lambdaUpdate 立即解析实体列缓存, 纯单测须手动初始化表元数据
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        MapperBuilderAssistant assistant =
+                new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, ProFlowCard.class);
         TableInfoHelper.initTableInfo(assistant, ProFlowCardStep.class);
         TableInfoHelper.initTableInfo(assistant, ProWorkOrder.class);
@@ -118,18 +102,38 @@ class ProFlowCardServiceImplTest {
     void setUp() {
         // 纯单测无容器: SpringUtils.getAopProxy 返回当前实例(等价于经代理调用)
         tenantMock = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class);
-        tenantMock.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000000");
+        tenantMock
+                .when(com.nexus.common.tenant.helper.TenantHelper::getTenantId)
+                .thenReturn("000000");
         aopProxyMock = mockStatic(SpringUtils.class, withSettings().lenient());
         aopProxyMock.when(() -> SpringUtils.getAopProxy(any())).thenReturn(service);
-        lenient().when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(mock(LockInfo.class));
-        lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> baseMapper.selectById((Long)i.getArgument(0)));
-        lenient().when(workOrderMapper.selectOne(any())).thenAnswer(i -> workOrderMapper.selectById(100L));
-        lenient().when(stepMapper.selectOne(any())).thenAnswer(i -> {
-            var query=(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProFlowCardStep>)i.getArgument(0);
-            query.getSqlSegment();
-            Long id=query.getParamNameValuePairs().values().stream().filter(Long.class::isInstance).map(Long.class::cast).findFirst().orElse(null);
-            return id == null ? null : stepMapper.selectById(id);
-        });
+        lenient()
+                .when(lockTemplate.lock(anyString(), anyLong(), anyLong()))
+                .thenReturn(mock(LockInfo.class));
+        lenient()
+                .when(progressService.lockForCard(anyLong()))
+                .thenAnswer(i -> baseMapper.selectById((Long) i.getArgument(0)));
+        lenient()
+                .when(workOrderMapper.selectOne(any()))
+                .thenAnswer(i -> workOrderMapper.selectById(100L));
+        lenient()
+                .when(stepMapper.selectOne(any()))
+                .thenAnswer(
+                        i -> {
+                            var query =
+                                    (com.baomidou.mybatisplus.core.conditions.query
+                                                            .LambdaQueryWrapper<
+                                                    ProFlowCardStep>)
+                                            i.getArgument(0);
+                            query.getSqlSegment();
+                            Long id =
+                                    query.getParamNameValuePairs().values().stream()
+                                            .filter(Long.class::isInstance)
+                                            .map(Long.class::cast)
+                                            .findFirst()
+                                            .orElse(null);
+                            return id == null ? null : stepMapper.selectById(id);
+                        });
         // @Value 字段纯单测不注入, 手动置为 FORCE 以便覆盖刷写门禁分支
         ReflectionTestUtils.setField(service, "flashGateMode", "FORCE");
     }
@@ -144,17 +148,40 @@ class ProFlowCardServiceImplTest {
 
     @Test
     void exitClassifiesPhysicalProductLotsBeforeStepCanAggregateAndFreeze() {
-        var bo=new com.nexus.mes.pro.domain.bo.ProExitBo();bo.setCardId(11L);bo.setStepRecordId(31L);bo.setGoodQty(BigDecimal.TEN);bo.setDefectQty(BigDecimal.ZERO);bo.setScrapQty(BigDecimal.ZERO);
-        bo.setProductOutputCommandId("exit-output");bo.setProductOutputs(List.of(new com.nexus.mes.trace.MesProductLotOutputWriter.OutputLine(7L,9L,BigDecimal.TEN,"GOOD")));
-        var checks=new com.nexus.mes.pro.domain.vo.ProCheckResultVo();checks.setPassed(true);
-        when(proEntryCheckService.runExitChecks(31L,bo)).thenReturn(checks);
-        lenient().when(productLotOutputs.record(eq("exit-output"),eq(11L),eq(31L),eq(bo.getProductOutputs()),eq(1L))).thenThrow(new ServiceException("output registration refused"));
-        try(var auth=mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
+        var bo = new com.nexus.mes.pro.domain.bo.ProExitBo();
+        bo.setCardId(11L);
+        bo.setStepRecordId(31L);
+        bo.setGoodQty(BigDecimal.TEN);
+        bo.setDefectQty(BigDecimal.ZERO);
+        bo.setScrapQty(BigDecimal.ZERO);
+        bo.setProductOutputCommandId("exit-output");
+        bo.setProductOutputs(
+                List.of(
+                        new com.nexus.mes.trace.MesProductLotOutputWriter.OutputLine(
+                                7L, 9L, BigDecimal.TEN, "GOOD")));
+        var checks = new com.nexus.mes.pro.domain.vo.ProCheckResultVo();
+        checks.setPassed(true);
+        when(proEntryCheckService.runExitChecks(31L, bo)).thenReturn(checks);
+        lenient()
+                .when(
+                        productLotOutputs.record(
+                                eq("exit-output"),
+                                eq(11L),
+                                eq(31L),
+                                eq(bo.getProductOutputs()),
+                                eq(1L)))
+                .thenThrow(new ServiceException("output registration refused"));
+        try (var auth = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
             auth.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(1L);
-            var error=assertThrows(ServiceException.class,()->service.doExit(bo));assertEquals("output registration refused",error.getMessage());
+            var error = assertThrows(ServiceException.class, () -> service.doExit(bo));
+            assertEquals("output registration refused", error.getMessage());
         }
-        var ordered=inOrder(proEntryCheckService,productLotOutputs);ordered.verify(proEntryCheckService).runExitChecks(31L,bo);ordered.verify(productLotOutputs).record("exit-output",11L,31L,bo.getProductOutputs(),1L);
-        verify(stepMapper,never()).update(isNull(),any());verify(proWorkOrderService,never()).completeWo(anyLong());
+        var ordered = inOrder(proEntryCheckService, productLotOutputs);
+        ordered.verify(proEntryCheckService).runExitChecks(31L, bo);
+        ordered.verify(productLotOutputs)
+                .record("exit-output", 11L, 31L, bo.getProductOutputs(), 1L);
+        verify(stepMapper, never()).update(isNull(), any());
+        verify(proWorkOrderService, never()).completeWo(anyLong());
     }
 
     // ==================== MES-PRO-01 手工完工门禁 ====================
@@ -162,11 +189,14 @@ class ProFlowCardServiceImplTest {
     @Test
     void manualCompleteRejectsWhenStepsPending() {
         when(baseMapper.selectById(1L)).thenReturn(card(1L, "RELEASED", BigDecimal.ZERO));
-        when(stepMapper.selectList(any())).thenReturn(List.of(
-            step(1, "OP10", "COMPLETED", "10"),
-            step(2, "OP20", "PENDING", null)));
+        when(stepMapper.selectList(any()))
+                .thenReturn(
+                        List.of(
+                                step(1, "OP10", "COMPLETED", "10"),
+                                step(2, "OP20", "PENDING", null)));
 
-        ServiceException ex = assertThrows(ServiceException.class, () -> service.manualCompleteCard(1L));
+        ServiceException ex =
+                assertThrows(ServiceException.class, () -> service.manualCompleteCard(1L));
 
         assertTrue(ex.getMessage().contains("未完成工序"), "应提示未完成工序");
         assertTrue(ex.getMessage().contains("OP20"), "应列出具体未完成工序");
@@ -177,9 +207,11 @@ class ProFlowCardServiceImplTest {
     @Test
     void aggregationPathSkipsCompletionWhenStepsPending() {
         when(baseMapper.selectById(1L)).thenReturn(card(1L, "IN_PROGRESS", BigDecimal.ZERO));
-        when(stepMapper.selectList(any())).thenReturn(List.of(
-            step(1, "OP10", "COMPLETED", "10"),
-            step(2, "OP20", "IN_PROGRESS", null)));
+        when(stepMapper.selectList(any()))
+                .thenReturn(
+                        List.of(
+                                step(1, "OP10", "COMPLETED", "10"),
+                                step(2, "OP20", "IN_PROGRESS", null)));
 
         service.completeCard(1L);
 
@@ -192,9 +224,11 @@ class ProFlowCardServiceImplTest {
     void completeCardSelfHealsAggregationWhenAllStepsCompletedButCardNotCompleted() {
         // 工序全部 COMPLETED 而卡仍 IN_PROGRESS(并发竞态残留) → 再次聚合必须入账并触发工单完工
         when(baseMapper.selectById(1L)).thenReturn(card(1L, "IN_PROGRESS", BigDecimal.ZERO));
-        when(stepMapper.selectList(any())).thenReturn(List.of(
-            step(1, "OP10", "COMPLETED", "10"),
-            step(2, "OP20", "COMPLETED", "10")));
+        when(stepMapper.selectList(any()))
+                .thenReturn(
+                        List.of(
+                                step(1, "OP10", "COMPLETED", "10"),
+                                step(2, "OP20", "COMPLETED", "10")));
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(workOrderMapper.selectById(100L)).thenReturn(workOrder(new BigDecimal("10")));
 
@@ -245,9 +279,11 @@ class ProFlowCardServiceImplTest {
     void completeCardSelfHealsWhenCardCompletedButNeverBooked() {
         // 自愈: 卡已 COMPLETED 但 aggregated_flag=0(历史上被手工提前完工, 数量从未入账) → 重入补入账
         when(baseMapper.selectById(1L)).thenReturn(card(1L, "COMPLETED", BigDecimal.ZERO));
-        when(stepMapper.selectList(any())).thenReturn(List.of(
-            step(1, "OP10", "COMPLETED", "10"),
-            step(2, "OP20", "COMPLETED", "10")));
+        when(stepMapper.selectList(any()))
+                .thenReturn(
+                        List.of(
+                                step(1, "OP10", "COMPLETED", "10"),
+                                step(2, "OP20", "COMPLETED", "10")));
         // 调用序: ①卡状态CAS=0(已完工) ②卡数量重算=1 ③入账CAS=1(本次抢到入账权)
         when(baseMapper.update(any(), any())).thenReturn(0, 1, 1);
         when(workOrderMapper.selectById(100L)).thenReturn(workOrder(new BigDecimal("10")));
@@ -263,9 +299,11 @@ class ProFlowCardServiceImplTest {
     @Test
     void completedQtyIgnoresSkippedLastStep() {
         when(baseMapper.selectById(1L)).thenReturn(card(1L, "IN_PROGRESS", BigDecimal.ZERO));
-        when(stepMapper.selectList(any())).thenReturn(List.of(
-            step(1, "OP10", "COMPLETED", "10"),
-            step(2, "OP20", "SKIPPED", null)));
+        when(stepMapper.selectList(any()))
+                .thenReturn(
+                        List.of(
+                                step(1, "OP10", "COMPLETED", "10"),
+                                step(2, "OP20", "SKIPPED", null)));
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(workOrderMapper.selectById(100L)).thenReturn(workOrder(new BigDecimal("10")));
 
@@ -286,7 +324,8 @@ class ProFlowCardServiceImplTest {
     void checkFlashStepGate_skipsGateDisabledType() {
         when(stepMapper.selectById(1L)).thenReturn(flashStep(1L, 1L, "OP10"));
         when(workOrderStepMapper.selectById(1L)).thenReturn(woStepWithFlashContent(1L, 9L));
-        when(mesFlashTypeMapper.selectList(any())).thenReturn(List.of(flashType("firmware_file", "0")));
+        when(mesFlashTypeMapper.selectList(any()))
+                .thenReturn(List.of(flashType("firmware_file", "0")));
         when(stepMapper.update(any(), any())).thenReturn(0);
 
         assertDoesNotThrow(() -> service.checkAndCompleteStepUnderLock(1L, 1L));
@@ -295,16 +334,22 @@ class ProFlowCardServiceImplTest {
         verify(flashRecordMapper, never()).selectOne(any());
     }
 
-    /** 反向对照: gate_enabled='1' 时同场景必须拦截(证明上面的放行来自过滤而非门禁失效)。 */
+    /**
+     * 反向对照: gate_enabled='1' 时同场景必须拦截(证明上面的放行来自过滤而非门禁失效)。
+     */
     @Test
     void checkFlashStepGate_blocksWhenGateEnabledTypeHasNoPassRecord() {
         when(stepMapper.selectById(1L)).thenReturn(flashStep(1L, 1L, "OP10"));
         when(workOrderStepMapper.selectById(1L)).thenReturn(woStepWithFlashContent(1L, 9L));
-        when(mesFlashTypeMapper.selectList(any())).thenReturn(List.of(flashType("firmware_file", "1")));
+        when(mesFlashTypeMapper.selectList(any()))
+                .thenReturn(List.of(flashType("firmware_file", "1")));
         when(proSnMapper.selectList(any())).thenReturn(List.of(sn(7L, "SN-1", 1L)));
         when(flashRecordMapper.selectOne(any())).thenReturn(null);
 
-        ServiceException ex = assertThrows(ServiceException.class, () -> service.checkAndCompleteStepUnderLock(1L, 1L));
+        ServiceException ex =
+                assertThrows(
+                        ServiceException.class,
+                        () -> service.checkAndCompleteStepUnderLock(1L, 1L));
 
         assertTrue(ex.getMessage().contains("刷写门禁未通过"), "应拦截未刷写工序: " + ex.getMessage());
         assertTrue(ex.getMessage().contains("SN-1"), "应列出未通过 SN: " + ex.getMessage());
@@ -323,7 +368,9 @@ class ProFlowCardServiceImplTest {
         return s;
     }
 
-    /** 单类型刷写绑定(content_ref_id 路径, 免 JSON 解析): flashTypeCode 固定 firmware_file */
+    /**
+     * 单类型刷写绑定(content_ref_id 路径, 免 JSON 解析): flashTypeCode 固定 firmware_file
+     */
     private ProWorkOrderStep woStepWithFlashContent(Long stepId, Long contentRefId) {
         ProWorkOrderStep ws = new ProWorkOrderStep();
         ws.setStepId(stepId);
@@ -346,7 +393,9 @@ class ProFlowCardServiceImplTest {
         return s;
     }
 
-    /** 取"卡数量重算"那一次 update(区别于状态 CAS 与入账 CAS) */
+    /**
+     * 取"卡数量重算"那一次 update(区别于状态 CAS 与入账 CAS)
+     */
     @SuppressWarnings("unchecked")
     private LambdaUpdateWrapper<ProFlowCard> capturedCardQtyUpdate() {
         ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);

@@ -105,16 +105,22 @@ public class BdMaterialBo extends BaseEntity {
      */
     private Long isSerialManage;
 
-    /** 同一产品SN的同种组件是否允许来自多个批次，0否1是。 */
+    /**
+     * 同一产品SN的同种组件是否允许来自多个批次，0否1是。
+     */
     private Integer allowMixedLot;
 
-    /** 服务端管理的追踪策略版本，编辑策略时作为预期版本。 */
-    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /**
+     * 服务端管理的追踪策略版本，编辑策略时作为预期版本。
+     */
+    @com.fasterxml.jackson.annotation.JsonFormat(
+            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
     private Long trackingVersion;
 
-    /** AUDIT或STRICT，严格切换必须通过库存及在制就绪检查。 */
+    /**
+     * AUDIT或STRICT，严格切换必须通过库存及在制就绪检查。
+     */
     private String trackingStage;
-
 
     /**
      * 安全库存
@@ -210,5 +216,4 @@ public class BdMaterialBo extends BaseEntity {
      * 批量删除ID集合
      */
     private Long[] ids;
-
 }

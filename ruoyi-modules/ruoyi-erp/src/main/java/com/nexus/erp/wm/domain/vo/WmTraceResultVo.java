@@ -15,23 +15,35 @@ import java.util.List;
 @Data
 public class WmTraceResultVo implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
-    /** 追溯方向：FORWARD / BACKWARD */
+    /**
+     * 追溯方向：FORWARD / BACKWARD
+     */
     private String direction;
 
-    /** 追溯关键字（物料编码 + 批次/序列号） */
+    /**
+     * 追溯关键字（物料编码 + 批次/序列号）
+     */
     private String traceKey;
 
-    /** 扁平节点列表 */
+    /**
+     * 扁平节点列表
+     */
     private List<WmTraceNodeVo> nodes;
 
-    /** 树形结构根节点 */
+    /**
+     * 树形结构根节点
+     */
     private WmTraceNodeVo tree;
-    /** Stable physical subject when the query has been constrained to one formal SN. */
-    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+
+    /**
+     * 查询已收敛到一个正式单件时使用的稳定实物主体。
+     */
+    @com.fasterxml.jackson.annotation.JsonFormat(
+            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
     private Long identityId;
+
     private String traceScope;
     private Boolean truncated;
     private String truncationReason;

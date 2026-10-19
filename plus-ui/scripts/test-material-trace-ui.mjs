@@ -168,7 +168,7 @@ test('SnSelector 通过事件提交原子行更新而不修改 prop', async () =
 
 /** Vue 编译器验证任务内改动的实际页面，禁止相邻模板结构被误删。 */
 test('所有变更 Vue 页面保持模板可编译', async () => {
-  // Keep the coverage stable after staging, committing and merging in a clean checkout.
+  // 固定校验文件范围，使暂存、提交和合并后的干净工作区保持相同测试覆盖。
   const files = [
     'plus-ui/src/components/MaterialSelectDialog/index.vue',
     'plus-ui/src/components/cv/LabelCapture.vue',

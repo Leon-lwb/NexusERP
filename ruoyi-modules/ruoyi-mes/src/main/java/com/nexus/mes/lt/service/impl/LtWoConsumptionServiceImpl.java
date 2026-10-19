@@ -55,7 +55,8 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
      * @return 工单批次消耗分页列表
      */
     @Override
-    public TableDataInfo<LtWoConsumptionVo> selectPageList(LtWoConsumptionBo bo, PageQuery pageQuery) {
+    public TableDataInfo<LtWoConsumptionVo> selectPageList(
+            LtWoConsumptionBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<LtWoConsumption> lqw = buildQueryWrapper(bo);
         Page<LtWoConsumptionVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
@@ -76,14 +77,38 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
      * 新增工单批次消耗(联动扣减批次数量)
      */
     @Override
-    @Transactional(propagation=Propagation.NEVER)
+    @Transactional(propagation = Propagation.NEVER)
     public Boolean insertByBo(LtWoConsumptionBo bo) {
-        if(bo==null) throw new ServiceException("消耗请求不能为空");
+        if (bo == null) {
+            throw new ServiceException("消耗请求不能为空");
+        }
         traceContext.requireNoTransaction();
-        var pick=new MesMaterialTraceWriter.Pick(bo.getCommandId(),bo.getWoId(),bo.getMaterialId(),null,bo.getProcessId(),bo.getOperationRef(),
-            List.of(new MesMaterialTraceWriter.PickLine(bo.getLotId(),bo.getConsumedQty(),bo.getSourceAllocationId())),LoginHelper.getUserId());
-        var result=traceWriter.pick(pick,preparedPolicies.enabled()?preparedPolicies.componentForWorkOrder("MATERIAL_PICK",bo.getCommandId(),bo.getWoId(),bo.getMaterialId()):policies.policy(traceContext.tenant(),bo.getMaterialId()));
-        bo.setConsumptionId(result.get(0));return true;
+        var pick =
+                new MesMaterialTraceWriter.Pick(
+                        bo.getCommandId(),
+                        bo.getWoId(),
+                        bo.getMaterialId(),
+                        null,
+                        bo.getProcessId(),
+                        bo.getOperationRef(),
+                        List.of(
+                                new MesMaterialTraceWriter.PickLine(
+                                        bo.getLotId(),
+                                        bo.getConsumedQty(),
+                                        bo.getSourceAllocationId())),
+                        LoginHelper.getUserId());
+        var result =
+                traceWriter.pick(
+                        pick,
+                        preparedPolicies.enabled()
+                                ? preparedPolicies.componentForWorkOrder(
+                                        "MATERIAL_PICK",
+                                        bo.getCommandId(),
+                                        bo.getWoId(),
+                                        bo.getMaterialId())
+                                : policies.policy(traceContext.tenant(), bo.getMaterialId()));
+        bo.setConsumptionId(result.get(0));
+        return true;
     }
 
     /**
@@ -109,9 +134,10 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
      */
     @Override
     public List<LtWoConsumptionVo> selectByWoId(Long woId) {
-        return baseMapper.selectVoList(Wrappers.<LtWoConsumption>lambdaQuery()
-            .eq(LtWoConsumption::getWoId, woId)
-            .orderByDesc(LtWoConsumption::getConsumedTime));
+        return baseMapper.selectVoList(
+                Wrappers.<LtWoConsumption>lambdaQuery()
+                        .eq(LtWoConsumption::getWoId, woId)
+                        .orderByDesc(LtWoConsumption::getConsumedTime));
     }
 
     /**
@@ -122,9 +148,10 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
      */
     @Override
     public List<LtWoConsumptionVo> selectByLotId(Long lotId) {
-        return baseMapper.selectVoList(Wrappers.<LtWoConsumption>lambdaQuery()
-            .eq(LtWoConsumption::getLotId, lotId)
-            .orderByDesc(LtWoConsumption::getConsumedTime));
+        return baseMapper.selectVoList(
+                Wrappers.<LtWoConsumption>lambdaQuery()
+                        .eq(LtWoConsumption::getLotId, lotId)
+                        .orderByDesc(LtWoConsumption::getConsumedTime));
     }
 
     /**
@@ -141,13 +168,41 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
      * <p>事务性: 任一条失败回滚全部。SN 绑定前先查重避免重复(uk 兜底)。</p>
      */
     @Override
-    @Transactional(propagation=Propagation.NEVER)
+    @Transactional(propagation = Propagation.NEVER)
     public Boolean confirmPick(LtWoPickBo bo) {
-        if(bo==null || bo.getPicks()==null || bo.getPicks().isEmpty()) throw new ServiceException("领料明细不能为空");
+        if (bo == null || bo.getPicks() == null || bo.getPicks().isEmpty()) {
+            throw new ServiceException("领料明细不能为空");
+        }
         traceContext.requireNoTransaction();
-        var lines=bo.getPicks().stream().map(p->new MesMaterialTraceWriter.PickLine(p.getLotId(),p.getConsumedQty(),p.getSourceAllocationId())).toList();
-        var request=new MesMaterialTraceWriter.Pick(bo.getCommandId(),bo.getWoId(),bo.getMaterialId(),bo.getSnId(),bo.getProcessId(),bo.getOperationRef(),lines,LoginHelper.getUserId());
-        traceWriter.pick(request,preparedPolicies.enabled()?preparedPolicies.componentForWorkOrder("MATERIAL_PICK",bo.getCommandId(),bo.getWoId(),bo.getMaterialId()):policies.policy(traceContext.tenant(),bo.getMaterialId()));return true;
+        var lines =
+                bo.getPicks().stream()
+                        .map(
+                                p ->
+                                        new MesMaterialTraceWriter.PickLine(
+                                                p.getLotId(),
+                                                p.getConsumedQty(),
+                                                p.getSourceAllocationId()))
+                        .toList();
+        var request =
+                new MesMaterialTraceWriter.Pick(
+                        bo.getCommandId(),
+                        bo.getWoId(),
+                        bo.getMaterialId(),
+                        bo.getSnId(),
+                        bo.getProcessId(),
+                        bo.getOperationRef(),
+                        lines,
+                        LoginHelper.getUserId());
+        traceWriter.pick(
+                request,
+                preparedPolicies.enabled()
+                        ? preparedPolicies.componentForWorkOrder(
+                                "MATERIAL_PICK",
+                                bo.getCommandId(),
+                                bo.getWoId(),
+                                bo.getMaterialId())
+                        : policies.policy(traceContext.tenant(), bo.getMaterialId()));
+        return true;
     }
 
     // ==================== 私有辅助方法 ====================
@@ -157,10 +212,10 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
      */
     private LambdaQueryWrapper<LtWoConsumption> buildQueryWrapper(LtWoConsumptionBo bo) {
         return Wrappers.<LtWoConsumption>lambdaQuery()
-            .eq(bo.getWoId() != null, LtWoConsumption::getWoId, bo.getWoId())
-            .eq(bo.getLotId() != null, LtWoConsumption::getLotId, bo.getLotId())
-            .eq(bo.getMaterialId() != null, LtWoConsumption::getMaterialId, bo.getMaterialId())
-            .eq(bo.getOperatorId() != null, LtWoConsumption::getOperatorId, bo.getOperatorId())
-            .orderByDesc(LtWoConsumption::getConsumedTime);
+                .eq(bo.getWoId() != null, LtWoConsumption::getWoId, bo.getWoId())
+                .eq(bo.getLotId() != null, LtWoConsumption::getLotId, bo.getLotId())
+                .eq(bo.getMaterialId() != null, LtWoConsumption::getMaterialId, bo.getMaterialId())
+                .eq(bo.getOperatorId() != null, LtWoConsumption::getOperatorId, bo.getOperatorId())
+                .orderByDesc(LtWoConsumption::getConsumedTime);
     }
 }

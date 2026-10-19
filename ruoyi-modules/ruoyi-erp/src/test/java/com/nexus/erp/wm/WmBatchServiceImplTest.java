@@ -46,32 +46,32 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class WmBatchServiceImplTest {
 
-    @Mock
-    private WmBatchMapper baseMapper;
-    @Mock
-    private DailyCodeSequenceProvider dailyCodeSequenceProvider;
+    @Mock private WmBatchMapper baseMapper;
+    @Mock private DailyCodeSequenceProvider dailyCodeSequenceProvider;
 
-    @Mock
-    private WmMaterialReceiveLineMapper materialReceiveLineMapper;
-    @Mock
-    private ErpTraceContext traceContext;
+    @Mock private WmMaterialReceiveLineMapper materialReceiveLineMapper;
+    @Mock private ErpTraceContext traceContext;
 
     private WmBatchServiceImpl wmBatchService;
 
-    /** 静态 mock：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器子类 */
+    /**
+     * 静态 mock：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器子类
+     */
     private static MockedStatic<SpringUtil> springUtilMock;
+
     private static Converter converter;
 
     @BeforeAll
     static void initMapstruct() {
         springUtilMock = mockStatic(SpringUtil.class);
         // Converter 为实体类：只覆写单对象转换（BeanUtil 属性拷贝），其余重载不触发
-        converter = new Converter() {
-            @Override
-            public <S, T> T convert(S source, Class<T> targetType) {
-                return BeanUtil.copyProperties(source, targetType);
-            }
-        };
+        converter =
+                new Converter() {
+                    @Override
+                    public <S, T> T convert(S source, Class<T> targetType) {
+                        return BeanUtil.copyProperties(source, targetType);
+                    }
+                };
         lenient().when(SpringUtil.getBean(Converter.class)).thenReturn(converter);
     }
 
@@ -97,11 +97,17 @@ class WmBatchServiceImplTest {
     void setUp() {
         lenient().when(dailyCodeSequenceProvider.next(anyString(), any())).thenReturn(6L);
         lenient().when(traceContext.tenant()).thenReturn("000001");
-        wmBatchService = new WmBatchServiceImpl(baseMapper, dailyCodeSequenceProvider, materialReceiveLineMapper,
-            new WmBatchWriteGuard(baseMapper, traceContext));
+        wmBatchService =
+                new WmBatchServiceImpl(
+                        baseMapper,
+                        dailyCodeSequenceProvider,
+                        materialReceiveLineMapper,
+                        new WmBatchWriteGuard(baseMapper, traceContext));
     }
 
-    /** createBatch：自动生成批次编码（provider 提供序号），格式 B{yyyyMMdd}{4位} 且默认值补齐 */
+    /**
+     * createBatch：自动生成批次编码（provider 提供序号），格式 B{yyyyMMdd}{4位} 且默认值补齐
+     */
     @Test
     void testCreateBatch_AutoCodeAndDefaults() {
         WmBatchBo bo = new WmBatchBo();
@@ -130,7 +136,9 @@ class WmBatchServiceImplTest {
         assertEquals(0, inserted.getIssuedQty().compareTo(BigDecimal.ZERO));
     }
 
-    /** insertByBo：批次编码为空时自动生成，并补齐默认状态与数量（问题⑦回归） */
+    /**
+     * insertByBo：批次编码为空时自动生成，并补齐默认状态与数量（问题⑦回归）
+     */
     @Test
     void testInsertByBo_AutoCodeAndDefaults() {
         WmBatchBo bo = new WmBatchBo();
@@ -148,38 +156,52 @@ class WmBatchServiceImplTest {
         assertEquals(0, inserted.getQuantity().compareTo(BigDecimal.ZERO));
     }
 
-    /** insertByBo：物料ID为空应报错 */
+    /**
+     * insertByBo：物料ID为空应报错
+     */
     @Test
     void testInsertByBo_RequiresMaterial() {
         WmBatchBo bo = new WmBatchBo();
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmBatchService.insertByBo(bo)
-        );
+        ServiceException exception =
+                assertThrows(ServiceException.class, () -> wmBatchService.insertByBo(bo));
         assertTrue(exception.getMessage().contains("物料ID不能为空"));
     }
 
-    /** 旧URL对应服务不再允许无来源累计，正数/负数均不能绕过单据。 */
+    /**
+     * 旧URL对应服务不再允许无来源累计，正数/负数均不能绕过单据。
+     */
     @Test
     void testUpdateQuantity_RequiresSourceDocument() {
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmBatchService.updateQuantity(1L, new BigDecimal("20"), true));
+        ServiceException exception =
+                assertThrows(
+                        ServiceException.class,
+                        () -> wmBatchService.updateQuantity(1L, new BigDecimal("20"), true));
         assertTrue(exception.getMessage().contains("来源单据"));
         verifyNoInteractions(baseMapper);
     }
 
     @Test
     void testUpdateQuantity_MissingBatchCannotBecomeAnUnguardedAdjustment() {
-        assertThrows(ServiceException.class, () -> wmBatchService.updateQuantity(999L, BigDecimal.ONE, false));
+        assertThrows(
+                ServiceException.class,
+                () -> wmBatchService.updateQuantity(999L, BigDecimal.ONE, false));
         verifyNoInteractions(baseMapper);
     }
 
-    /** 过期任务只写状态，不把候选实体中的累计/QC快照写回。 */
+    /**
+     * 过期任务只写状态，不把候选实体中的累计/QC快照写回。
+     */
     @Test
     void testCheckExpiry() {
-        when(baseMapper.update(isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(1);
+        when(baseMapper.update(
+                        isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+                .thenReturn(1);
         wmBatchService.checkExpiry();
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>> captor =
-            ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>>
+                captor =
+                        ArgumentCaptor.forClass(
+                                com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper
+                                        .class);
         verify(baseMapper).update(isNull(), captor.capture());
         String fields = captor.getValue().getSqlSet();
         assertTrue(fields.contains("status="));
@@ -189,14 +211,22 @@ class WmBatchServiceImplTest {
         verify(baseMapper, never()).updateById(any(WmBatch.class));
     }
 
-    /** 状态元数据采用锁定批次+局部更新，不能写回整实体。 */
+    /**
+     * 状态元数据采用锁定批次+局部更新，不能写回整实体。
+     */
     @Test
     void testChangeStatus() {
-        when(baseMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(batch("B202606010001"));
-        when(baseMapper.update(isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(1);
+        when(baseMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+                .thenReturn(batch("B202606010001"));
+        when(baseMapper.update(
+                        isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+                .thenReturn(1);
         wmBatchService.changeStatus(1L, "CLOSED");
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>> captor =
-            ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>>
+                captor =
+                        ArgumentCaptor.forClass(
+                                com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper
+                                        .class);
         verify(baseMapper).update(isNull(), captor.capture());
         assertTrue(captor.getValue().getSqlSet().contains("status="));
         assertFalse(captor.getValue().getSqlSet().contains("quantity"));

@@ -18,13 +18,22 @@ public class PdaActionResultVo implements PdaActionResult {
     private Boolean ok = Boolean.TRUE;
     private String message;
     private String nextAction;
-    /** 库位不符时的推荐库位编码 */
+
+    /**
+     * 库位不符时的推荐库位编码
+     */
     private String recommendedLocation;
-    /** 幂等命中(重复提交)标记 */
+
+    /**
+     * 幂等命中(重复提交)标记
+     */
     private Boolean replayed;
 
-    /** 原单件过账提交与跨模块确认状态；普通数量模式不赋值。 */
+    /**
+     * 原单件过账提交与跨模块确认状态；普通数量模式不赋值。
+     */
     private String submissionState;
+
     private String commandId;
     private java.util.List<String> postingGroupIds;
     private java.util.List<String> submissionWarnings;

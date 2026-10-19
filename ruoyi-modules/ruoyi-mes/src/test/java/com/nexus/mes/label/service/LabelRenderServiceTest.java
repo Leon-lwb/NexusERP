@@ -25,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("dev")
 class LabelRenderServiceTest {
 
-    private final LabelRenderService renderService = new LabelRenderService(mock(SerialIdentityPort.class));
+    private final LabelRenderService renderService =
+            new LabelRenderService(mock(SerialIdentityPort.class));
 
     private MesLabelTemplate template(String lang, String content) {
         MesLabelTemplate t = new MesLabelTemplate();
@@ -55,12 +56,13 @@ class LabelRenderServiceTest {
 
     @Test
     void tspl_rendersHeaderAndAllItemTypes() {
-        String content = """
-            {"items":[
-              {"type":"qrcode","field":"snCode","x":8,"y":8,"size":5},
-              {"type":"barcode","field":"snCode","x":8,"y":60,"height":48},
-              {"type":"text","field":"materialName","x":8,"y":120,"size":24}
-            ]}""";
+        String content =
+                """
+                {"items":[
+                  {"type":"qrcode","field":"snCode","x":8,"y":8,"size":5},
+                  {"type":"barcode","field":"snCode","x":8,"y":60,"height":48},
+                  {"type":"text","field":"materialName","x":8,"y":120,"size":24}
+                ]}""";
         String payload = renderService.render(template("TSPL", content), fields());
 
         assertTrue(payload.startsWith("SIZE 60 mm,40 mm"), "应以 SIZE 头开始: " + payload);
@@ -75,7 +77,8 @@ class LabelRenderServiceTest {
 
     @Test
     void tspl_textSizeScalesFontMagnification() {
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0,\"size\":48},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0,\"size\":48},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("TSPL", content), fields());
         // 48/24 = 2 倍放大
         assertTrue(payload.contains("\"TSS24.BF2\",0,2,2"), payload);
@@ -85,7 +88,8 @@ class LabelRenderServiceTest {
     void tspl_escapesQuotesInValues() {
         Map<String, String> f = fields();
         f.put("materialName", "含\"引号\"物料");
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("TSPL", content), f);
         assertTrue(payload.contains("\\\"引号\\\""), "双引号应转义: " + payload);
     }
@@ -94,17 +98,18 @@ class LabelRenderServiceTest {
 
     @Test
     void zpl_rendersHeaderAndAllItemTypes() {
-        String content = """
-            {"items":[
-              {"type":"qrcode","field":"snCode","x":8,"y":8,"size":5},
-              {"type":"barcode","field":"snCode","x":8,"y":60,"height":48},
-              {"type":"text","field":"materialName","x":8,"y":120,"size":24}
-            ]}""";
+        String content =
+                """
+                {"items":[
+                  {"type":"qrcode","field":"snCode","x":8,"y":8,"size":5},
+                  {"type":"barcode","field":"snCode","x":8,"y":60,"height":48},
+                  {"type":"text","field":"materialName","x":8,"y":120,"size":24}
+                ]}""";
         String payload = renderService.render(template("ZPL", content), fields());
 
         assertTrue(payload.startsWith("^XA"));
         assertTrue(payload.contains("^CI28"));
-        // 60mm * 8 dots/mm = 480
+        // 标签宽度为六十毫米，分辨率为每毫米八点，对应四百八十个打印点。
         assertTrue(payload.contains("^PW480"));
         assertTrue(payload.contains("^LL320"));
         // 坐标 8mm * 8 = 64 dots
@@ -122,7 +127,8 @@ class LabelRenderServiceTest {
         // 物料名被注入 ZPL 指令: 修复前会提前 ^XZ 截断标签并打印 SCRAP
         f.put("materialName", "X^FS^FO0,0^A0N,60,60^FDSCRAP^FS^XZ");
         // 打印项自身坐标取 5,5(→^FO40,40), 便于区分注入的 ^FO0,0
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":5,\"y\":5},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":5,\"y\":5},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("ZPL", content), f);
 
         assertEquals(2, countOccurrences(payload, "^FS"), "文字和 SN 二维码各有一个结束符，不允许注入增加: " + payload);
@@ -135,11 +141,12 @@ class LabelRenderServiceTest {
     void zpl_stripsTildeResetInjectionInBarcodeAndQrcode() {
         Map<String, String> f = fields();
         f.put("snCode", "SN~JR~HS^XA");
-        String content = """
-            {"items":[
-              {"type":"barcode","field":"snCode","x":0,"y":0},
-              {"type":"qrcode","field":"snCode","x":0,"y":0}
-            ]}""";
+        String content =
+                """
+                {"items":[
+                  {"type":"barcode","field":"snCode","x":0,"y":0},
+                  {"type":"qrcode","field":"snCode","x":0,"y":0}
+                ]}""";
         String payload = renderService.render(template("ZPL", content), f);
 
         assertFalse(payload.contains("~"), "不得残留 ~ 指令前缀(如 ~JR 复位): " + payload);
@@ -151,7 +158,8 @@ class LabelRenderServiceTest {
     void zpl_stripsNewlinesInValues() {
         Map<String, String> f = fields();
         f.put("materialName", "第一行\r\n^FS^XA第二行");
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("ZPL", content), f);
 
         assertEquals(1, countOccurrences(payload, "^XA"), "换行不得拆出新的指令行: " + payload);
@@ -162,7 +170,8 @@ class LabelRenderServiceTest {
     void tspl_stripsNewlinesInValues() {
         Map<String, String> f = fields();
         f.put("materialName", "行一\r\nPRINT 9,9");
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("TSPL", content), f);
 
         // 换行被剥离后整串仍在同一字面量内(修复前会被拆成两条指令)
@@ -183,7 +192,8 @@ class LabelRenderServiceTest {
 
     @Test
     void missingFieldRendersEmptyString() {
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"cardNo\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
+        String content =
+                "{\"items\":[{\"type\":\"text\",\"field\":\"cardNo\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         Map<String, String> empty = new HashMap<>();
         empty.put("snCode", "SN-FC-0001");
         String payload = renderService.render(template("TSPL", content), empty);
@@ -193,28 +203,33 @@ class LabelRenderServiceTest {
     @Test
     void unknownItemTypeThrows() {
         String content = "{\"items\":[{\"type\":\"image\",\"field\":\"snCode\",\"x\":0,\"y\":0}]}";
-        ServiceException ex = assertThrows(ServiceException.class,
-            () -> renderService.render(template("TSPL", content), fields()));
+        ServiceException ex =
+                assertThrows(
+                        ServiceException.class,
+                        () -> renderService.render(template("TSPL", content), fields()));
         assertTrue(ex.getMessage().contains("未知打印项类型"));
     }
 
     @Test
     void itemWithoutFieldThrows() {
         String content = "{\"items\":[{\"type\":\"text\",\"x\":0,\"y\":0}]}";
-        assertThrows(ServiceException.class,
-            () -> renderService.render(template("TSPL", content), fields()));
+        assertThrows(
+                ServiceException.class,
+                () -> renderService.render(template("TSPL", content), fields()));
     }
 
     @Test
     void malformedJsonThrows() {
-        assertThrows(ServiceException.class,
-            () -> renderService.render(template("TSPL", "{not-json"), fields()));
+        assertThrows(
+                ServiceException.class,
+                () -> renderService.render(template("TSPL", "{not-json"), fields()));
     }
 
     @Test
     void emptyItemsThrows() {
-        assertThrows(ServiceException.class,
-            () -> renderService.render(template("TSPL", "{\"items\":[]}"), fields()));
+        assertThrows(
+                ServiceException.class,
+                () -> renderService.render(template("TSPL", "{\"items\":[]}"), fields()));
     }
 
     @Test

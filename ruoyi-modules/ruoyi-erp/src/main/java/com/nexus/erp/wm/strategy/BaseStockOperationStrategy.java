@@ -19,9 +19,12 @@ public abstract class BaseStockOperationStrategy implements StockOperationStrate
      * FEFO 反而把「最过期」批次排在最前，过期物料被优先领用/发给客户。
      * 该片段同时用于拣货策略与各出库策略的选行条件。MySQL 方言（CURDATE()）。</p>
      */
-    protected static final String NOT_EXPIRED_SQL = "(expire_date IS NULL OR expire_date >= CURDATE())";
+    protected static final String NOT_EXPIRED_SQL =
+            "(expire_date IS NULL OR expire_date >= CURDATE())";
 
-    /** 库存流水数据访问映射器（Mapper） */
+    /**
+     * 库存流水数据访问映射器（Mapper）
+     */
     protected final WmMaterialStockTxMapper stockTxMapper;
 
     protected BaseStockOperationStrategy(WmMaterialStockTxMapper stockTxMapper) {
@@ -37,8 +40,10 @@ public abstract class BaseStockOperationStrategy implements StockOperationStrate
      * @return 可用量（不小于 0 时不裁剪，由调用方按需判断）
      */
     protected BigDecimal availableOf(WmMaterialStock stock) {
-        BigDecimal qty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-        BigDecimal reserved = stock.getReservedQuantity() == null ? BigDecimal.ZERO : stock.getReservedQuantity();
+        BigDecimal qty =
+                stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+        BigDecimal reserved =
+                stock.getReservedQuantity() == null ? BigDecimal.ZERO : stock.getReservedQuantity();
         return qty.subtract(reserved);
     }
 
@@ -46,18 +51,25 @@ public abstract class BaseStockOperationStrategy implements StockOperationStrate
      * 检查指定来源单据是否已过账
      */
     protected boolean hasPosted(String sourceDocType, Long sourceDocId) {
-        Long count = stockTxMapper.selectCount(Wrappers.lambdaQuery(WmMaterialStockTx.class)
-            .eq(WmMaterialStockTx::getSourceDocType, sourceDocType)
-            .eq(WmMaterialStockTx::getSourceDocId, sourceDocId));
+        Long count =
+                stockTxMapper.selectCount(
+                        Wrappers.lambdaQuery(WmMaterialStockTx.class)
+                                .eq(WmMaterialStockTx::getSourceDocType, sourceDocType)
+                                .eq(WmMaterialStockTx::getSourceDocId, sourceDocId));
         return count != null && count > 0;
     }
 
     /**
      * 构建库存流水基础信息
      */
-    protected WmMaterialStockTx buildBaseTxFromStock(WmMaterialStock stock, String txType, Integer txFlag,
-                                                      BigDecimal txQuantity, BigDecimal beforeQuantity,
-                                                      BigDecimal afterQuantity, Date now) {
+    protected WmMaterialStockTx buildBaseTxFromStock(
+            WmMaterialStock stock,
+            String txType,
+            Integer txFlag,
+            BigDecimal txQuantity,
+            BigDecimal beforeQuantity,
+            BigDecimal afterQuantity,
+            Date now) {
         WmMaterialStockTx tx = new WmMaterialStockTx();
         tx.setTxType(txType);
         tx.setMaterialId(stock.getMaterialId());

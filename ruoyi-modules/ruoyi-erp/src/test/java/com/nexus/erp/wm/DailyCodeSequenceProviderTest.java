@@ -53,7 +53,9 @@ class DailyCodeSequenceProviderTest {
     private final RedissonClient client = mock(RedissonClient.class);
     private final DailyCodeSequenceProvider provider = new DailyCodeSequenceProvider(client);
 
-    /** 缓存未命中：锁内取历史最大序号、设置原有过期时间，再原子自增。 */
+    /**
+     * 缓存未命中：锁内取历史最大序号、设置原有过期时间，再原子自增。
+     */
     @Test
     void next_initializesFromDbWhenCacheMiss() throws Exception {
         RLock lock = acquiredLock();
@@ -75,7 +77,9 @@ class DailyCodeSequenceProviderTest {
         verifyNoMoreInteractions(bucket, loader, atomic);
     }
 
-    /** 缓存命中 Long：不覆盖缓存、不刷新过期时间，也不查询历史最大序号。 */
+    /**
+     * 缓存命中 Long：不覆盖缓存、不刷新过期时间，也不查询历史最大序号。
+     */
     @Test
     void next_skipsInitWhenCacheHit() throws Exception {
         RLock lock = acquiredLock();
@@ -93,7 +97,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock).unlock();
     }
 
-    /** 首次生成成功后，真实 JSON 解码得到 Integer，第二次仍须接续同一天的序号。 */
+    /**
+     * 首次生成成功后，真实 JSON 解码得到 Integer，第二次仍须接续同一天的序号。
+     */
     @Test
     void next_continuesAfterFirstIncrementIsDecodedAsInteger() throws Exception {
         RLock lock = acquiredLock();
@@ -101,19 +107,24 @@ class DailyCodeSequenceProviderTest {
         AtomicReference<Object> cached = new AtomicReference<>();
         AtomicLong counter = new AtomicLong();
         when(bucket.get()).thenAnswer(invocation -> cached.get());
-        doAnswer(invocation -> {
-            counter.set(invocation.getArgument(0, Long.class));
-            return null;
-        }).when(bucket).set(0L, TTL);
+        doAnswer(
+                        invocation -> {
+                            counter.set(invocation.getArgument(0, Long.class));
+                            return null;
+                        })
+                .when(bucket)
+                .set(0L, TTL);
         LongSupplier loader = mock(LongSupplier.class);
         when(loader.getAsLong()).thenReturn(0L);
         RAtomicLong atomic = mock(RAtomicLong.class);
         when(client.getAtomicLong(KEY)).thenReturn(atomic);
-        when(atomic.addAndGet(1L)).thenAnswer(invocation -> {
-            long next = counter.addAndGet(1L);
-            cached.set(decodeCachedInteger(next));
-            return next;
-        });
+        when(atomic.addAndGet(1L))
+                .thenAnswer(
+                        invocation -> {
+                            long next = counter.addAndGet(1L);
+                            cached.set(decodeCachedInteger(next));
+                            return next;
+                        });
 
         assertEquals(1L, provider.next(INPUT_KEY, loader));
         assertInstanceOf(Integer.class, cached.get());
@@ -126,7 +137,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock, times(2)).unlock();
     }
 
-    /** 整数类型及 int 边界都应直接接续 Redis 原子增量，不重建或覆盖缓存。 */
+    /**
+     * 整数类型及 int 边界都应直接接续 Redis 原子增量，不重建或覆盖缓存。
+     */
     @ParameterizedTest
     @MethodSource("validCachedIntegers")
     void next_acceptsExactCachedIntegers(Number cached) throws Exception {
@@ -146,7 +159,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock).unlock();
     }
 
-    /** 分数、负值、溢出和非整数类型必须失败，不能回退初始化或改写 Redis。 */
+    /**
+     * 分数、负值、溢出和非整数类型必须失败，不能回退初始化或改写 Redis。
+     */
     @ParameterizedTest
     @MethodSource("invalidCachedValues")
     void next_rejectsInvalidCacheBeforeIncrement(Object cached) throws Exception {
@@ -164,7 +179,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock).unlock();
     }
 
-    /** 历史最大值也必须可递增，异常初始化值不能写入缓存。 */
+    /**
+     * 历史最大值也必须可递增，异常初始化值不能写入缓存。
+     */
     @ParameterizedTest
     @ValueSource(longs = {-1L, Long.MIN_VALUE, Long.MAX_VALUE})
     void next_rejectsInvalidHistoricalMaximumBeforeCacheWrite(long maximum) throws Exception {
@@ -183,7 +200,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock).unlock();
     }
 
-    /** 自增返回非正值或未前进时，不将不确定结果当作可靠的新序号。 */
+    /**
+     * 自增返回非正值或未前进时，不将不确定结果当作可靠的新序号。
+     */
     @ParameterizedTest
     @ValueSource(longs = {Long.MIN_VALUE, -1L, 0L, 4L, 5L})
     void next_rejectsNonIncreasingAtomicResult(long result) throws Exception {
@@ -202,7 +221,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock).unlock();
     }
 
-    /** Redis 自增异常应原样失败并释放锁，不伪造序号或重置缓存。 */
+    /**
+     * Redis 自增异常应原样失败并释放锁，不伪造序号或重置缓存。
+     */
     @Test
     void next_releasesLockWhenAtomicIncrementFails() throws Exception {
         RLock lock = acquiredLock();
@@ -214,7 +235,9 @@ class DailyCodeSequenceProviderTest {
         ServiceException failure = new ServiceException("原子自增失败");
         when(atomic.addAndGet(1L)).thenThrow(failure);
 
-        assertSame(failure, assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader)));
+        assertSame(
+                failure,
+                assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader)));
 
         verifyNoInteractions(loader);
         verify(bucket).get();
@@ -222,7 +245,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock).unlock();
     }
 
-    /** 未获得锁时保持原有繁忙提示，不读写缓存，也不解锁他人持有的锁。 */
+    /**
+     * 未获得锁时保持原有繁忙提示，不读写缓存，也不解锁他人持有的锁。
+     */
     @Test
     void next_doesNotTouchSequenceWhenLockIsBusy() throws Exception {
         RLock lock = mock(RLock.class);
@@ -238,7 +263,9 @@ class DailyCodeSequenceProviderTest {
         verify(lock, never()).unlock();
     }
 
-    /** 等锁被中断时保持线程中断标记，且不得读写序号缓存。 */
+    /**
+     * 等锁被中断时保持线程中断标记，且不得读写序号缓存。
+     */
     @Test
     void next_preservesInterruptWithoutTouchingSequence() throws Exception {
         RLock lock = mock(RLock.class);
@@ -258,24 +285,51 @@ class DailyCodeSequenceProviderTest {
     }
 
     private static Stream<Number> validCachedIntegers() {
-        return Stream.of(0, 1, Integer.MAX_VALUE, (long) Integer.MAX_VALUE + 1,
-            5L, Long.MAX_VALUE - 1, (byte) 1, (short) 1, BigInteger.ONE);
+        return Stream.of(
+                0,
+                1,
+                Integer.MAX_VALUE,
+                (long) Integer.MAX_VALUE + 1,
+                5L,
+                Long.MAX_VALUE - 1,
+                (byte) 1,
+                (short) 1,
+                BigInteger.ONE);
     }
 
     private static Stream<Object> invalidCachedValues() {
-        return Stream.of(-1, -1L, Long.MIN_VALUE, (byte) -1, (short) -1,
-            BigInteger.valueOf(-1), Long.MAX_VALUE,
-            BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE),
-            BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE),
-            new BigDecimal("1.5"), new BigDecimal("1.0"),
-            1.5D, 1.5F, Double.NaN, Double.POSITIVE_INFINITY, Float.NaN,
-            "1", "1.5", "9223372036854775808", "", true, new Object());
+        return Stream.of(
+                -1,
+                -1L,
+                Long.MIN_VALUE,
+                (byte) -1,
+                (short) -1,
+                BigInteger.valueOf(-1),
+                Long.MAX_VALUE,
+                BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE),
+                BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE),
+                new BigDecimal("1.5"),
+                new BigDecimal("1.0"),
+                1.5D,
+                1.5F,
+                Double.NaN,
+                Double.POSITIVE_INFINITY,
+                Float.NaN,
+                "1",
+                "1.5",
+                "9223372036854775808",
+                "",
+                true,
+                new Object());
     }
 
-    /** 使用与仓库相同的 Object 型 JSON codec，在内存中复现 Redis 小整数解码类型。 */
+    /**
+     * 使用与仓库相同的 Object 型 JSON codec，在内存中复现 Redis 小整数解码类型。
+     */
     private static Object decodeCachedInteger(long value) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+        mapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
         TypedJsonJacksonCodec codec = new TypedJsonJacksonCodec(Object.class, mapper);
         ByteBuf buffer = Unpooled.copiedBuffer(Long.toString(value), StandardCharsets.UTF_8);
         try {

@@ -35,17 +35,29 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：返工领料 */
+    /**
+     * 事务类型：返工领料
+     */
     private static final String TX_TYPE_REWORK_ISSUE = "REWORK_ISSUE";
-    /** 来源单据类型：返工订单 */
+
+    /**
+     * 来源单据类型：返工订单
+     */
     private static final String SOURCE_DOC_TYPE_REWORK = "PRD_REWORK_ORDER";
-    /** 事务标志：出库（负数） */
+
+    /**
+     * 事务标志：出库（负数）
+     */
     private static final int TX_FLAG_OUT = -1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 消息提供器 */
+
+    /**
+     * 消息提供器
+     */
     private final ReliableMessageProducer messageProducer;
 
     /**
@@ -55,9 +67,10 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
      * @param stockMapper        库存Mapper
      * @param messageProducer    消息生产者
      */
-    public ReworkIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
-                               WmMaterialStockMapper stockMapper,
-                               ReliableMessageProducer messageProducer) {
+    public ReworkIssueStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialStockMapper stockMapper,
+            ReliableMessageProducer messageProducer) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.messageProducer = messageProducer;
@@ -74,10 +87,11 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
     }
 
     /**
-     * 执行返工领料出库操作
-     * <p>参数契约与 {@code IWmStockOperationService#postReworkIssue} 一致(9参):
-     * args[0]=reworkId, args[1]=reworkNo, args[2]=materialId, args[3]=materialCode,
-     * args[4]=materialName, args[5]=quantity, args[6]=warehouseId(可空), args[7]=locationId(可空), args[8]=now。</p>
+     * 执行返工领料出库。
+     *
+     * 参数与 {@link IWmStockOperationService#postReworkIssue} 保持九项顺序一致：
+     * 返工单标识、返工单号、物料标识、物料编码、物料名称、数量、仓库标识、库位标识及业务时间。
+     * 仓库与库位允许为空，由后续仓储规则解析。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -91,17 +105,34 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         Long warehouseId = (Long) args[6];
         Date now = args[8] instanceof Date ? (Date) args[8] : new Date();
 
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out("PRD_REWORK_ORDER",reworkId,null,"REWORK_ISSUE",materialId,quantity,warehouseId,null,null)))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                                "PRD_REWORK_ORDER",
+                                reworkId,
+                                null,
+                                "REWORK_ISSUE",
+                                materialId,
+                                quantity,
+                                warehouseId,
+                                null,
+                                null))) {
+            return;
+        }
         if (hasPosted(SOURCE_DOC_TYPE_REWORK, reworkId)) {
             return;
         }
 
-        List<WmMaterialStock> stockList = stockMapper.selectList(
-            Wrappers.lambdaQuery(WmMaterialStock.class)
-                .eq(WmMaterialStock::getMaterialId, materialId)
-                .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
-                .eq(WmMaterialStock::getFrozenFlag, 0L)
-                .orderByAsc(WmMaterialStock::getRecptDate));
+        List<WmMaterialStock> stockList =
+                stockMapper.selectList(
+                        Wrappers.lambdaQuery(WmMaterialStock.class)
+                                .eq(WmMaterialStock::getMaterialId, materialId)
+                                .eq(
+                                        warehouseId != null,
+                                        WmMaterialStock::getWarehouseId,
+                                        warehouseId)
+                                .eq(WmMaterialStock::getFrozenFlag, 0L)
+                                .orderByAsc(WmMaterialStock::getRecptDate));
 
         if (stockList == null || stockList.isEmpty()) {
             throw new ServiceException("物料【" + materialCode + "/" + materialName + "】库存不足");
@@ -109,21 +140,35 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
 
         BigDecimal remaining = quantity;
         for (WmMaterialStock stock : stockList) {
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-            BigDecimal stockQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-            if (stockQty.compareTo(BigDecimal.ZERO) <= 0) continue;
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+            BigDecimal stockQty =
+                    stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+            if (stockQty.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
 
             BigDecimal deductQty = remaining.min(stockQty);
             BigDecimal beforeQty = stockQty;
             BigDecimal afterQty = stockQty.subtract(deductQty);
 
-            int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+            int affected =
+                    stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
             if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + materialCode + "/" + materialName + "】");
+                throw new ServiceException(
+                        "库存并发冲突，请重试: 物料【" + materialCode + "/" + materialName + "】");
             }
 
-            WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_REWORK_ISSUE, TX_FLAG_OUT,
-                deductQty, beforeQty, afterQty, now);
+            WmMaterialStockTx tx =
+                    buildBaseTxFromStock(
+                            stock,
+                            TX_TYPE_REWORK_ISSUE,
+                            TX_FLAG_OUT,
+                            deductQty,
+                            beforeQty,
+                            afterQty,
+                            now);
             tx.setSourceDocType(SOURCE_DOC_TYPE_REWORK);
             tx.setSourceDocId(reworkId);
             tx.setSourceDocCode(reworkNo);
@@ -134,7 +179,8 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            throw new ServiceException("物料【" + materialCode + "/" + materialName + "】库存不足，缺少" + remaining);
+            throw new ServiceException(
+                    "物料【" + materialCode + "/" + materialName + "】库存不足，缺少" + remaining);
         }
 
         ReworkStockMessage msg = new ReworkStockMessage();
@@ -154,7 +200,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         } catch (NumberFormatException e) {
             throw new ServiceException("返工领料出库 MQ 消息租户ID非法, 拒绝投递: tenantId=" + tenantIdStr);
         }
-        messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
-            RoutingKeyConstants.REWORK_STOCK, msg);
+        messageProducer.send(
+                ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.REWORK_STOCK, msg);
     }
 }

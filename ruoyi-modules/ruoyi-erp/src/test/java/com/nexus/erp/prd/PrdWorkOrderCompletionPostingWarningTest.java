@@ -83,7 +83,8 @@ class PrdWorkOrderCompletionPostingWarningTest {
 
     @BeforeAll
     static void initTableInfo() {
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        MapperBuilderAssistant assistant =
+                new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, PrdWorkOrder.class);
         TableInfoHelper.initTableInfo(assistant, WmProductionIssue.class);
     }
@@ -128,14 +129,22 @@ class PrdWorkOrderCompletionPostingWarningTest {
         verifyNoMoreInteractions(issueMapper);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> update = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> update =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(workOrderMapper).update(isNull(), update.capture());
-        assertTrue(update.getValue().getParamNameValuePairs().containsValue("COMPLETED"), "告警不应阻断生产完工事实回写");
-        assertTrue(update.getValue().getSqlSet().contains("completed_qty = completed_qty + 10.0000"));
+        assertTrue(
+                update.getValue().getParamNameValuePairs().containsValue("COMPLETED"),
+                "告警不应阻断生产完工事实回写");
+        assertTrue(
+                update.getValue().getSqlSet().contains("completed_qty = completed_qty + 10.0000"));
 
-        ArgumentCaptor<ProductionCompleteMessage> event = ArgumentCaptor.forClass(ProductionCompleteMessage.class);
-        verify(messageProducer).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-            eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH), event.capture());
+        ArgumentCaptor<ProductionCompleteMessage> event =
+                ArgumentCaptor.forClass(ProductionCompleteMessage.class);
+        verify(messageProducer)
+                .send(
+                        eq(ExchangeConstants.TOPIC_EXCHANGE),
+                        eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH),
+                        event.capture());
         assertEquals(COMPLETION_QTY, event.getValue().getCompletionQty(), "告警不得改写 MES 完工数量");
         assertEquals(WO_ID, event.getValue().getWoId());
     }
@@ -175,10 +184,12 @@ class PrdWorkOrderCompletionPostingWarningTest {
 
         assertTrue(warnings().isEmpty());
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaQueryWrapper<WmProductionIssue>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        ArgumentCaptor<LambdaQueryWrapper<WmProductionIssue>> query =
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(issueMapper).selectList(query.capture());
         String sql = query.getValue().getSqlSegment();
-        assertTrue(sql.contains("wo_id") && sql.contains("tenant_id") && sql.contains("status"), sql);
+        assertTrue(
+                sql.contains("wo_id") && sql.contains("tenant_id") && sql.contains("status"), sql);
         var parameters = query.getValue().getParamNameValuePairs();
         assertTrue(parameters.containsValue(WO_ID));
         assertTrue(parameters.containsValue("000000"));
@@ -203,9 +214,11 @@ class PrdWorkOrderCompletionPostingWarningTest {
         prepareWorkOrder(0);
         when(workOrderMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(0);
 
-        assertThrows(RuntimeException.class, () -> {
-            service.complete(WO_ID, COMPLETION_QTY, BigDecimal.ZERO);
-        });
+        assertThrows(
+                RuntimeException.class,
+                () -> {
+                    service.complete(WO_ID, COMPLETION_QTY, BigDecimal.ZERO);
+                });
 
         assertTrue(warnings().isEmpty());
         verifyNoInteractions(issueMapper, issueLineMapper, stockOperationService);
@@ -215,18 +228,25 @@ class PrdWorkOrderCompletionPostingWarningTest {
     @Test
     void issueReadFailureOnlyWarnsAndStillWritesCompletionAndSendsMessage() {
         prepareWorkOrder(0);
-        DataAccessResourceFailureException failure = new DataAccessResourceFailureException("敏感数据库连接详情不得输出");
+        DataAccessResourceFailureException failure =
+                new DataAccessResourceFailureException("敏感数据库连接详情不得输出");
         when(issueMapper.selectList(any())).thenThrow(failure);
 
-        assertDoesNotThrow(() -> {
-            complete();
-        });
+        assertDoesNotThrow(
+                () -> {
+                    complete();
+                });
 
         String warning = assertCheckUnavailable("READ_CHECK_FAILED");
         assertTrue(warning.contains("errorType=DataAccessResourceFailureException"), warning);
         assertTrue(!warning.contains(failure.getMessage()), "无法核验告警不得带入原始异常正文");
-        assertNull(logs.list.stream().filter(event -> event.getLevel() == Level.WARN)
-            .findFirst().orElseThrow().getThrowableProxy(), "固定告警不应附带可能泄露连接或 SQL 的原始异常");
+        assertNull(
+                logs.list.stream()
+                        .filter(event -> event.getLevel() == Level.WARN)
+                        .findFirst()
+                        .orElseThrow()
+                        .getThrowableProxy(),
+                "固定告警不应附带可能泄露连接或 SQL 的原始异常");
         verifyCompletionWriteAndMessage();
         verifyNoInteractions(issueLineMapper, stockOperationService);
         verify(issueMapper).selectList(any());
@@ -239,13 +259,15 @@ class PrdWorkOrderCompletionPostingWarningTest {
         order.setTenantId(null);
         when(issueMapper.selectList(any())).thenReturn(List.of());
 
-        assertDoesNotThrow(() -> {
-            complete("000123");
-        });
+        assertDoesNotThrow(
+                () -> {
+                    complete("000123");
+                });
 
         assertTrue(warnings().isEmpty());
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaQueryWrapper<WmProductionIssue>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        ArgumentCaptor<LambdaQueryWrapper<WmProductionIssue>> query =
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(issueMapper).selectList(query.capture());
         String sql = query.getValue().getSqlSegment();
         assertTrue(sql.contains("tenant_id"), "工单租户为空也必须保留显式租户条件: " + sql);
@@ -262,9 +284,10 @@ class PrdWorkOrderCompletionPostingWarningTest {
     void missingTenantContextSkipsReadInsteadOfIssuingAnUnscopedQuery() {
         prepareWorkOrder(0);
 
-        assertDoesNotThrow(() -> {
-            complete(null);
-        });
+        assertDoesNotThrow(
+                () -> {
+                    complete(null);
+                });
 
         assertCheckUnavailable("TENANT_CONTEXT_MISSING");
         verifyCompletionWriteAndMessage();
@@ -275,9 +298,10 @@ class PrdWorkOrderCompletionPostingWarningTest {
     void mismatchedOrderAndCurrentTenantsSkipTheAuxiliaryReadWithoutLosingCompletionMessage() {
         prepareWorkOrder(0);
 
-        assertDoesNotThrow(() -> {
-            complete("000123");
-        });
+        assertDoesNotThrow(
+                () -> {
+                    complete("000123");
+                });
 
         assertCheckUnavailable("TENANT_MISMATCH");
         assertEquals(Long.valueOf(123L), verifyCompletionWriteAndMessage().getTenantId());
@@ -287,12 +311,17 @@ class PrdWorkOrderCompletionPostingWarningTest {
     @Test
     void primaryCompletionWriteFailureIsNotSwallowedByTheAuxiliaryWarning() {
         prepareWorkOrder(0);
-        DataAccessResourceFailureException failure = new DataAccessResourceFailureException("完工主写失败");
+        DataAccessResourceFailureException failure =
+                new DataAccessResourceFailureException("完工主写失败");
         when(workOrderMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenThrow(failure);
 
-        assertSame(failure, assertThrows(DataAccessResourceFailureException.class, () -> {
-            service.complete(WO_ID, COMPLETION_QTY, BigDecimal.ZERO);
-        }));
+        assertSame(
+                failure,
+                assertThrows(
+                        DataAccessResourceFailureException.class,
+                        () -> {
+                            service.complete(WO_ID, COMPLETION_QTY, BigDecimal.ZERO);
+                        }));
 
         assertTrue(warnings().isEmpty());
         verifyNoInteractions(issueMapper, issueLineMapper, stockOperationService, messageProducer);
@@ -303,16 +332,27 @@ class PrdWorkOrderCompletionPostingWarningTest {
         prepareWorkOrder(0);
         when(issueMapper.selectList(any())).thenReturn(List.of());
         IllegalStateException failure = new IllegalStateException("完工消息发送失败");
-        doThrow(failure).when(messageProducer).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-            eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH), any(ProductionCompleteMessage.class));
+        doThrow(failure)
+                .when(messageProducer)
+                .send(
+                        eq(ExchangeConstants.TOPIC_EXCHANGE),
+                        eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH),
+                        any(ProductionCompleteMessage.class));
 
-        assertSame(failure, assertThrows(IllegalStateException.class, () -> {
-            complete();
-        }));
+        assertSame(
+                failure,
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> {
+                            complete();
+                        }));
 
         assertTrue(warnings().isEmpty());
-        verify(messageProducer).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-            eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH), any(ProductionCompleteMessage.class));
+        verify(messageProducer)
+                .send(
+                        eq(ExchangeConstants.TOPIC_EXCHANGE),
+                        eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH),
+                        any(ProductionCompleteMessage.class));
         verifyNoInteractions(issueLineMapper, stockOperationService);
     }
 
@@ -345,7 +385,9 @@ class PrdWorkOrderCompletionPostingWarningTest {
         complete("000000");
     }
 
-    /** 仅供主写成功且需要读取租户的路径使用，前置失败测试直接调用被测服务。 */
+    /**
+     * 仅供主写成功且需要读取租户的路径使用，前置失败测试直接调用被测服务。
+     */
     private void complete(String currentTenantId) {
         when(workOrderMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(1);
         try (MockedStatic<TenantHelper> tenant = mockStatic(TenantHelper.class)) {
@@ -356,13 +398,19 @@ class PrdWorkOrderCompletionPostingWarningTest {
 
     private ProductionCompleteMessage verifyCompletionWriteAndMessage() {
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> update = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        ArgumentCaptor<LambdaUpdateWrapper<PrdWorkOrder>> update =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(workOrderMapper).update(isNull(), update.capture());
         assertTrue(update.getValue().getParamNameValuePairs().containsValue("COMPLETED"));
-        assertTrue(update.getValue().getSqlSet().contains("completed_qty = completed_qty + 10.0000"));
-        ArgumentCaptor<ProductionCompleteMessage> event = ArgumentCaptor.forClass(ProductionCompleteMessage.class);
-        verify(messageProducer).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-            eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH), event.capture());
+        assertTrue(
+                update.getValue().getSqlSet().contains("completed_qty = completed_qty + 10.0000"));
+        ArgumentCaptor<ProductionCompleteMessage> event =
+                ArgumentCaptor.forClass(ProductionCompleteMessage.class);
+        verify(messageProducer)
+                .send(
+                        eq(ExchangeConstants.TOPIC_EXCHANGE),
+                        eq(RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH),
+                        event.capture());
         assertEquals(WO_ID, event.getValue().getWoId());
         assertEquals(COMPLETION_QTY, event.getValue().getCompletionQty());
         return event.getValue();
@@ -379,9 +427,9 @@ class PrdWorkOrderCompletionPostingWarningTest {
 
     private List<String> warnings() {
         return logs.list.stream()
-            .filter(event -> event.getLevel() == Level.WARN)
-            .map(ILoggingEvent::getFormattedMessage)
-            .toList();
+                .filter(event -> event.getLevel() == Level.WARN)
+                .map(ILoggingEvent::getFormattedMessage)
+                .toList();
     }
 
     private String onlyWarning() {

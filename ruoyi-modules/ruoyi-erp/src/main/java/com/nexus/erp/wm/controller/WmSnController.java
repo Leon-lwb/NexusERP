@@ -30,7 +30,9 @@ import java.util.List;
 @RequestMapping("/erp/wm/sn")
 public class WmSnController extends BaseController {
 
-    /** 序列号业务服务，提供序列号相关能力 */
+    /**
+     * 序列号业务服务，提供序列号相关能力
+     */
     private final IWmSnService wmSnService;
 
     /**
@@ -110,7 +112,8 @@ public class WmSnController extends BaseController {
     @Log(title = "序列号管理-绑定库存", businessType = BusinessType.UPDATE)
     @PutMapping("/bindStock")
     public R<Void> bindStock(@RequestBody WmSnBo bo) {
-        wmSnService.bindStock(bo.getSnId(), bo.getStockId(), bo.getWarehouseId(), bo.getLocationId());
+        wmSnService.bindStock(
+                bo.getSnId(), bo.getStockId(), bo.getWarehouseId(), bo.getLocationId());
         return R.ok();
     }
 

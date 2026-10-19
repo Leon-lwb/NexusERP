@@ -277,10 +277,15 @@ public class WmMaterialStock extends TenantEntity {
     /**
      * 乐观锁版本号
      */
-    @Version
-    private Integer version;
-    /** 追踪事实版本；历史库存保留1，单件事实为2。 */
+    @Version private Integer version;
+
+    /**
+     * 追踪事实版本；历史库存保留1，单件事实为2。
+     */
     private Long trackingVersion;
-    /** 原移动平均库存池，不以SN重新定价。 */
+
+    /**
+     * 原移动平均库存池，不以SN重新定价。
+     */
     private Long valuationGroupId;
 }

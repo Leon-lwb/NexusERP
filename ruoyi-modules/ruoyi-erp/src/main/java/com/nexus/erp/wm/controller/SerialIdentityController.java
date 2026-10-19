@@ -11,30 +11,71 @@ import com.nexus.erp.wm.trace.ErpTraceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-/** 正式实物登记与外部别名管理；生成身份不产生库存。 */
-@RestController @RequestMapping("/erp/wm/sn") @RequiredArgsConstructor
+/**
+ * 正式实物登记与外部别名管理；生成身份不产生库存。
+ */
+@RestController
+@RequestMapping("/erp/wm/sn")
+@RequiredArgsConstructor
 public class SerialIdentityController {
     private final ErpSerialIdentityService identities;
     private final ErpTraceContext context;
-    @SaCheckPermission("wm:sn:add") @PostMapping("/reserve")
+
+    @SaCheckPermission("wm:sn:add")
+    @PostMapping("/reserve")
     public R<SerialReservation> reserve(@RequestBody SerialReservationCommand command) {
-        return R.ok(identities.reserveManual(context.tenant(),command));
+        return R.ok(identities.reserveManual(context.tenant(), command));
     }
-    /** 有审计地单向退休未使用手工身份；不删除、不回收号码或代替库存业务。 */
-    @SaCheckPermission({"wm:sn:add","wm:sn:remove"})
-    @Log(title="未使用手工SN退休",businessType=BusinessType.UPDATE)
+
+    /**
+     * 有审计地单向退休未使用手工身份；不删除、不回收号码或代替库存业务。
+     */
+    @SaCheckPermission({"wm:sn:add", "wm:sn:remove"})
+    @Log(title = "未使用手工SN退休", businessType = BusinessType.UPDATE)
     @PostMapping("/{identityId}/retire")
-    public R<ErpSerialIdentityService.ManualRetirement> retire(@PathVariable Long identityId,@RequestBody RetireManualCommand command) {
-        if(command==null)throw new ServiceException("退休请求不能为空");
-        return R.ok(identities.retireUnusedManual(context.tenant(),identityId,command.commandId(),command.expectedVersion(),command.reason()));
+    public R<ErpSerialIdentityService.ManualRetirement> retire(
+            @PathVariable Long identityId, @RequestBody RetireManualCommand command) {
+        if (command == null) {
+            throw new ServiceException("退休请求不能为空");
+        }
+        return R.ok(
+                identities.retireUnusedManual(
+                        context.tenant(),
+                        identityId,
+                        command.commandId(),
+                        command.expectedVersion(),
+                        command.reason()));
     }
-    /** 调用方持久化的退休命令与原身份版本；原因进入不可变审计指纹。 */
-    public record RetireManualCommand(String commandId,Long expectedVersion,String reason) { }
-    @SaCheckPermission("wm:sn:edit") @PostMapping("/{identityId}/aliases")
-    public R<Void> alias(@PathVariable Long identityId,@RequestBody AliasCommand command) {
-        identities.addAlias(context.tenant(),identityId,command.commandId(),command.sourceType(),command.sourceId(),command.code());
+
+    /**
+     * 调用方持久化的退休命令与原身份版本；原因进入不可变审计指纹。
+     *
+     * @param commandId 首次业务命令号；重试保持原值并核验请求指纹。
+     * @param expectedVersion 调用方预期的原记录版本，用于并发条件校验。
+     * @param reason 与原任务或原事实关联的明确操作原因。
+     */
+    public record RetireManualCommand(String commandId, Long expectedVersion, String reason) {}
+
+    @SaCheckPermission("wm:sn:edit")
+    @PostMapping("/{identityId}/aliases")
+    public R<Void> alias(@PathVariable Long identityId, @RequestBody AliasCommand command) {
+        identities.addAlias(
+                context.tenant(),
+                identityId,
+                command.commandId(),
+                command.sourceType(),
+                command.sourceId(),
+                command.code());
         return R.ok();
     }
-    /** 别名保留原文与来源主体，不能直接改写正式SN。 */
-    public record AliasCommand(String commandId,String sourceType,Long sourceId,String code) { }
+
+    /**
+     * 别名保留原文与来源主体，不能直接改写正式SN。
+     *
+     * @param commandId 首次业务命令号；重试保持原值并核验请求指纹。
+     * @param sourceType 由服务端限定的原业务来源类型。
+     * @param sourceId 由来源类型限定的原业务记录标识。
+     * @param code 原业务编码或经来源限定的别名。
+     */
+    public record AliasCommand(String commandId, String sourceType, Long sourceId, String code) {}
 }

@@ -95,8 +95,9 @@ public class LtLotServiceImpl implements ILtLotService {
      */
     @Override
     public LtLotVo selectByCode(String lotCode) {
-        LtLotVo vo = baseMapper.selectVoOne(Wrappers.<LtLot>lambdaQuery()
-            .eq(LtLot::getLotCode, lotCode));
+        LtLotVo vo =
+                baseMapper.selectVoOne(
+                        Wrappers.<LtLot>lambdaQuery().eq(LtLot::getLotCode, lotCode));
         if (vo != null) {
             fillRemainingQty(vo);
         }
@@ -121,8 +122,9 @@ public class LtLotServiceImpl implements ILtLotService {
             bo.setLotCode(generateLotCode());
         }
         // 校验编码唯一
-        Long existCount = baseMapper.selectCount(Wrappers.<LtLot>lambdaQuery()
-            .eq(LtLot::getLotCode, bo.getLotCode()));
+        Long existCount =
+                baseMapper.selectCount(
+                        Wrappers.<LtLot>lambdaQuery().eq(LtLot::getLotCode, bo.getLotCode()));
         if (existCount != null && existCount > 0) {
             throw new RuntimeException("批次编码已存在: " + bo.getLotCode());
         }
@@ -166,25 +168,49 @@ public class LtLotServiceImpl implements ILtLotService {
             throw new RuntimeException("当前状态不可编辑: " + lot.getStatus());
         }
         // 数量守卫: 不可小于已消耗数量(否则剩余为负,破坏 consume 不变量)
-        if (bo.getQuantity() != null && lot.getConsumedQty() != null
-            && bo.getQuantity().compareTo(lot.getConsumedQty()) < 0) {
+        if (bo.getQuantity() != null
+                && lot.getConsumedQty() != null
+                && bo.getQuantity().compareTo(lot.getConsumedQty()) < 0) {
             throw new RuntimeException("批次数量不可小于已消耗数量: " + lot.getConsumedQty());
         }
-        if (bo.getQuantity()!=null && bo.getQuantity().signum()<=0) throw new ServiceException("批次数量必须大于0");
-        var update=Wrappers.<LtLot>lambdaUpdate()
-            .set(bo.getSupplierId()!=null,LtLot::getSupplierId,bo.getSupplierId())
-            .set(bo.getSupplierName()!=null,LtLot::getSupplierName,bo.getSupplierName())
-            .set(bo.getSupplierLot()!=null,LtLot::getSupplierLot,bo.getSupplierLot())
-            .set(bo.getQuantity()!=null,LtLot::getQuantity,bo.getQuantity())
-            .set(bo.getProducedDate()!=null,LtLot::getProducedDate,bo.getProducedDate())
-            .set(bo.getExpiryDate()!=null,LtLot::getExpiryDate,bo.getExpiryDate())
-            .set(bo.getRemark()!=null,LtLot::getRemark,bo.getRemark())
-            .eq(LtLot::getLotId,bo.getLotId()).in(LtLot::getStatus,STATUS_IN_STOCK,STATUS_IN_USE);
-        if(bo.getQuantity()!=null) update.apply("consumed_qty <= {0}",bo.getQuantity())
-            .apply("{0} >= (SELECT COALESCE(SUM(a.quantity),0) FROM lt_lot_allocation a WHERE CAST(a.tenant_id AS BINARY(80))=CAST(lt_lot.tenant_id AS BINARY(80)) AND a.lot_id=lt_lot.lot_id)",bo.getQuantity());
-        if(update.getSqlSet()==null || update.getSqlSet().isBlank()) return true;
-        int rows=baseMapper.update(null,update);
-        if(rows!=1) throw new ServiceException("批次状态、实耗或来源分配已变化，编辑未生效");
+        if (bo.getQuantity() != null && bo.getQuantity().signum() <= 0) {
+            throw new ServiceException("批次数量必须大于0");
+        }
+        var update =
+                Wrappers.<LtLot>lambdaUpdate()
+                        .set(bo.getSupplierId() != null, LtLot::getSupplierId, bo.getSupplierId())
+                        .set(
+                                bo.getSupplierName() != null,
+                                LtLot::getSupplierName,
+                                bo.getSupplierName())
+                        .set(
+                                bo.getSupplierLot() != null,
+                                LtLot::getSupplierLot,
+                                bo.getSupplierLot())
+                        .set(bo.getQuantity() != null, LtLot::getQuantity, bo.getQuantity())
+                        .set(
+                                bo.getProducedDate() != null,
+                                LtLot::getProducedDate,
+                                bo.getProducedDate())
+                        .set(bo.getExpiryDate() != null, LtLot::getExpiryDate, bo.getExpiryDate())
+                        .set(bo.getRemark() != null, LtLot::getRemark, bo.getRemark())
+                        .eq(LtLot::getLotId, bo.getLotId())
+                        .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE);
+        if (bo.getQuantity() != null) {
+            update.apply("consumed_qty <= {0}", bo.getQuantity())
+                    .apply(
+                            "{0} >= (SELECT COALESCE(SUM(a.quantity),0) FROM lt_lot_allocation a"
+                                + " WHERE CAST(a.tenant_id AS BINARY(80))=CAST(lt_lot.tenant_id AS"
+                                + " BINARY(80)) AND a.lot_id=lt_lot.lot_id)",
+                            bo.getQuantity());
+        }
+        if (update.getSqlSet() == null || update.getSqlSet().isBlank()) {
+            return true;
+        }
+        int rows = baseMapper.update(null, update);
+        if (rows != 1) {
+            throw new ServiceException("批次状态、实耗或来源分配已变化，编辑未生效");
+        }
         log.info("修改批次成功: lotId={}", bo.getLotId());
         return rows > 0;
     }
@@ -208,21 +234,24 @@ public class LtLotServiceImpl implements ILtLotService {
             if (lot == null) {
                 continue;
             }
-            if (!STATUS_IN_STOCK.equals(lot.getStatus()) && !STATUS_SCRAPPED.equals(lot.getStatus())) {
+            if (!STATUS_IN_STOCK.equals(lot.getStatus())
+                    && !STATUS_SCRAPPED.equals(lot.getStatus())) {
                 throw new RuntimeException("批次" + lot.getLotCode() + "状态非在库/报废,不可删除");
             }
         }
         List<Long> idList = java.util.Arrays.asList(ids);
         // 孤儿守卫: 存在消耗/绑定记录则禁止删除(无 FK/级联,删除会断裂追溯链)
-        Long consumptionCount = consumptionMapper.selectCount(
-            Wrappers.<com.nexus.mes.lt.domain.LtWoConsumption>lambdaQuery()
-                .in(com.nexus.mes.lt.domain.LtWoConsumption::getLotId, idList));
+        Long consumptionCount =
+                consumptionMapper.selectCount(
+                        Wrappers.<com.nexus.mes.lt.domain.LtWoConsumption>lambdaQuery()
+                                .in(com.nexus.mes.lt.domain.LtWoConsumption::getLotId, idList));
         if (consumptionCount != null && consumptionCount > 0) {
             throw new RuntimeException("存在工单批次消耗记录,不可删除(追溯完整性)");
         }
-        Long bindingCount = bindingMapper.selectCount(
-            Wrappers.<com.nexus.mes.lt.domain.LtSnBinding>lambdaQuery()
-                .in(com.nexus.mes.lt.domain.LtSnBinding::getLotId, idList));
+        Long bindingCount =
+                bindingMapper.selectCount(
+                        Wrappers.<com.nexus.mes.lt.domain.LtSnBinding>lambdaQuery()
+                                .in(com.nexus.mes.lt.domain.LtSnBinding::getLotId, idList));
         if (bindingCount != null && bindingCount > 0) {
             throw new RuntimeException("存在SN批次绑定记录,不可删除(追溯完整性)");
         }
@@ -247,11 +276,14 @@ public class LtLotServiceImpl implements ILtLotService {
         if (!STATUS_IN_STOCK.equals(lot.getStatus()) && !STATUS_IN_USE.equals(lot.getStatus())) {
             throw new RuntimeException("仅 IN_STOCK/IN_USE 状态可隔离,当前: " + lot.getStatus());
         }
-        int rows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .set(LtLot::getStatus, STATUS_QUARANTINED)
-            .set(StringUtils.isNotBlank(remark), LtLot::getRemark, remark)
-            .eq(LtLot::getLotId, lotId)
-            .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<LtLot>lambdaUpdate()
+                                .set(LtLot::getStatus, STATUS_QUARANTINED)
+                                .set(StringUtils.isNotBlank(remark), LtLot::getRemark, remark)
+                                .eq(LtLot::getLotId, lotId)
+                                .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE));
         if (rows == 0) {
             throw new RuntimeException("批次状态已变更,隔离失败");
         }
@@ -277,11 +309,14 @@ public class LtLotServiceImpl implements ILtLotService {
         if (!STATUS_QUARANTINED.equals(lot.getStatus())) {
             throw new RuntimeException("仅 QUARANTINED 状态可报废,当前: " + lot.getStatus());
         }
-        int rows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .set(LtLot::getStatus, STATUS_SCRAPPED)
-            .set(StringUtils.isNotBlank(remark), LtLot::getRemark, remark)
-            .eq(LtLot::getLotId, lotId)
-            .eq(LtLot::getStatus, STATUS_QUARANTINED));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<LtLot>lambdaUpdate()
+                                .set(LtLot::getStatus, STATUS_SCRAPPED)
+                                .set(StringUtils.isNotBlank(remark), LtLot::getRemark, remark)
+                                .eq(LtLot::getLotId, lotId)
+                                .eq(LtLot::getStatus, STATUS_QUARANTINED));
         if (rows == 0) {
             throw new RuntimeException("批次状态已变更,报废失败");
         }
@@ -309,23 +344,27 @@ public class LtLotServiceImpl implements ILtLotService {
         }
         // MES-LT-06: QC 不合格(FAIL)批次不得经"放行"绕过 QC 门禁(需走特采/让步接收审批流程)
         if (QC_STATUS_FAIL.equals(lot.getQcStatus())) {
-            throw new ServiceException("批次QC不合格(FAIL), 不得放行; 如需特采请走让步接收审批流程: lotCode="
-                + lot.getLotCode());
+            throw new ServiceException(
+                    "批次QC不合格(FAIL), 不得放行; 如需特采请走让步接收审批流程: lotCode=" + lot.getLotCode());
         }
         // 放行: 按剩余/已消耗恢复状态(保留 IN_USE 语义: 部分消耗=使用中)
         BigDecimal remaining = lot.getQuantity().subtract(lot.getConsumedQty());
         String newStatus;
         if (remaining.compareTo(BigDecimal.ZERO) == 0) {
             newStatus = STATUS_CONSUMED;
-        } else if (lot.getConsumedQty() != null && lot.getConsumedQty().compareTo(BigDecimal.ZERO) > 0) {
+        } else if (lot.getConsumedQty() != null
+                && lot.getConsumedQty().compareTo(BigDecimal.ZERO) > 0) {
             newStatus = STATUS_IN_USE;
         } else {
             newStatus = STATUS_IN_STOCK;
         }
-        int rows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .set(LtLot::getStatus, newStatus)
-            .eq(LtLot::getLotId, lotId)
-            .eq(LtLot::getStatus, STATUS_QUARANTINED));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<LtLot>lambdaUpdate()
+                                .set(LtLot::getStatus, newStatus)
+                                .eq(LtLot::getLotId, lotId)
+                                .eq(LtLot::getStatus, STATUS_QUARANTINED));
         if (rows == 0) {
             throw new RuntimeException("批次状态已变更,放行失败");
         }
@@ -355,10 +394,13 @@ public class LtLotServiceImpl implements ILtLotService {
         if (!QC_STATUS_PENDING.equals(lot.getQcStatus())) {
             throw new RuntimeException("QC状态已确认,不可重复检验: " + lot.getQcStatus());
         }
-        int rows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .set(LtLot::getQcStatus, qcStatus)
-            .eq(LtLot::getLotId, lotId)
-            .eq(LtLot::getQcStatus, QC_STATUS_PENDING));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<LtLot>lambdaUpdate()
+                                .set(LtLot::getQcStatus, qcStatus)
+                                .eq(LtLot::getLotId, lotId)
+                                .eq(LtLot::getQcStatus, QC_STATUS_PENDING));
         if (rows == 0) {
             throw new RuntimeException("QC状态已变更,更新失败");
         }
@@ -391,27 +433,38 @@ public class LtLotServiceImpl implements ILtLotService {
             throw new RuntimeException("IQC检验结果必须为 QUALIFIED/UNQUALIFIED: " + inspectResult);
         }
         // MES-QC-10②: 同一 iqcId 可能关联多个批次(ERP 侧一批来料拆多 lot), 必须全部回写, 不得只处理第一条
-        List<LtLot> lots = baseMapper.selectList(Wrappers.<LtLot>lambdaQuery().eq(LtLot::getIqcId, iqcId));
+        List<LtLot> lots =
+                baseMapper.selectList(Wrappers.<LtLot>lambdaQuery().eq(LtLot::getIqcId, iqcId));
         if (lots == null || lots.isEmpty()) {
             // IQC 未关联批次, 跳过(全量自动待收货->lot 联动)
             return false;
         }
         for (LtLot lot : lots) {
             // 回写 qc_status + 关联 iqc_id(幂等)
-            baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-                .set(LtLot::getQcStatus, qcStatus)
-                .set(LtLot::getIqcId, iqcId)
-                .eq(LtLot::getLotId, lot.getLotId()));
+            baseMapper.update(
+                    null,
+                    Wrappers.<LtLot>lambdaUpdate()
+                            .set(LtLot::getQcStatus, qcStatus)
+                            .set(LtLot::getIqcId, iqcId)
+                            .eq(LtLot::getLotId, lot.getLotId()));
             // FAIL 自动隔离(仅 IN_STOCK/IN_USE 可隔离; 终态则仅置 FAIL, 必须留 error 级告警供人工处理)
             if (QC_STATUS_FAIL.equals(qcStatus)) {
-                if (STATUS_IN_STOCK.equals(lot.getStatus()) || STATUS_IN_USE.equals(lot.getStatus())) {
+                if (STATUS_IN_STOCK.equals(lot.getStatus())
+                        || STATUS_IN_USE.equals(lot.getStatus())) {
                     quarantine(lot.getLotId(), "IQC(" + iqcId + ")不合格自动隔离");
                 } else {
-                    log.error("IQC不合格但批次已终态, 仅置FAIL未隔离, 需人工处理: iqcId={}, lotId={}, status={}",
-                        iqcId, lot.getLotId(), lot.getStatus());
+                    log.error(
+                            "IQC不合格但批次已终态, 仅置FAIL未隔离, 需人工处理: iqcId={}, lotId={}, status={}",
+                            iqcId,
+                            lot.getLotId(),
+                            lot.getStatus());
                 }
             }
-            log.info("IQC回写批次QC状态: iqcId={}, lotId={}, qcStatus={}", iqcId, lot.getLotId(), qcStatus);
+            log.info(
+                    "IQC回写批次QC状态: iqcId={}, lotId={}, qcStatus={}",
+                    iqcId,
+                    lot.getLotId(),
+                    qcStatus);
         }
         return true;
     }
@@ -478,20 +531,27 @@ public class LtLotServiceImpl implements ILtLotService {
         if (materialId == null) {
             throw new RuntimeException("物料ID不能为空");
         }
-        List<LtLotVo> all = baseMapper.selectVoList(Wrappers.<LtLot>lambdaQuery()
-            .eq(LtLot::getMaterialId, materialId)
-            .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
-            .eq(LtLot::getQcStatus, QC_STATUS_PASS)
-            // MES-LT-03: 过期批次不得进入 FEFO 推荐(否则"先到期先出"会优先推荐已过期批次)
-            .and(w -> w.isNull(LtLot::getExpiryDate).or().ge(LtLot::getExpiryDate, startOfToday()))
-            .orderByAsc(LtLot::getExpiryDate)
-            .orderByAsc(LtLot::getProducedDate)
-            .orderByAsc(LtLot::getLotId));
+        List<LtLotVo> all =
+                baseMapper.selectVoList(
+                        Wrappers.<LtLot>lambdaQuery()
+                                .eq(LtLot::getMaterialId, materialId)
+                                .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
+                                .eq(LtLot::getQcStatus, QC_STATUS_PASS)
+                                // MES-LT-03: 过期批次不得进入 FEFO 推荐(否则"先到期先出"会优先推荐已过期批次)
+                                .and(
+                                        w ->
+                                                w.isNull(LtLot::getExpiryDate)
+                                                        .or()
+                                                        .ge(LtLot::getExpiryDate, startOfToday()))
+                                .orderByAsc(LtLot::getExpiryDate)
+                                .orderByAsc(LtLot::getProducedDate)
+                                .orderByAsc(LtLot::getLotId));
         all.forEach(this::fillRemainingQty);
         // 过滤剩余数量 > 0
         List<LtLotVo> available = new ArrayList<>();
         for (LtLotVo vo : all) {
-            if (vo.getRemainingQty() != null && vo.getRemainingQty().compareTo(BigDecimal.ZERO) > 0) {
+            if (vo.getRemainingQty() != null
+                    && vo.getRemainingQty().compareTo(BigDecimal.ZERO) > 0) {
                 available.add(vo);
             }
         }
@@ -508,7 +568,11 @@ public class LtLotServiceImpl implements ILtLotService {
                 break;
             }
         }
-        log.info("FEFO推荐: materialId={}, requiredQty={}, 推荐批次数={}", materialId, requiredQty, recommended.size());
+        log.info(
+                "FEFO推荐: materialId={}, requiredQty={}, 推荐批次数={}",
+                materialId,
+                requiredQty,
+                recommended.size());
         return recommended;
     }
 
@@ -537,13 +601,19 @@ public class LtLotServiceImpl implements ILtLotService {
         }
         // MES-LT-06: QC 门禁 — 不合格(FAIL)/未判定(PENDING)批次不得领用
         if (!QC_STATUS_PASS.equals(lot.getQcStatus())) {
-            throw new ServiceException("批次QC未通过, 不可领用: lotCode=" + lot.getLotCode()
-                + ", qcStatus=" + lot.getQcStatus());
+            throw new ServiceException(
+                    "批次QC未通过, 不可领用: lotCode="
+                            + lot.getLotCode()
+                            + ", qcStatus="
+                            + lot.getQcStatus());
         }
         // MES-LT-03: 效期门禁 — 过期批次不得领用
         if (isExpired(lot.getExpiryDate())) {
-            throw new ServiceException("批次已过期, 不可领用: lotCode=" + lot.getLotCode()
-                + ", expiryDate=" + lot.getExpiryDate());
+            throw new ServiceException(
+                    "批次已过期, 不可领用: lotCode="
+                            + lot.getLotCode()
+                            + ", expiryDate="
+                            + lot.getExpiryDate());
         }
         BigDecimal consumed = lot.getConsumedQty() == null ? BigDecimal.ZERO : lot.getConsumedQty();
         BigDecimal remaining = lot.getQuantity().subtract(consumed);
@@ -551,27 +621,45 @@ public class LtLotServiceImpl implements ILtLotService {
             throw new RuntimeException("消耗数量超过剩余数量,剩余: " + remaining);
         }
         // 原子扣减 + 守卫: 并发下由数据库行锁与条件共同保证不超发(影响 0 行 = 剩余不足或状态已变更)
-        int rows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .setSql("consumed_qty = consumed_qty + {0}", consumedQty)
-            .eq(LtLot::getLotId, lotId)
-            .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
-            .eq(LtLot::getQcStatus, QC_STATUS_PASS)
-            .and(w -> w.isNull(LtLot::getExpiryDate).or().ge(LtLot::getExpiryDate,startOfToday()))
-            .apply("consumed_qty + {0} <= quantity", consumedQty));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<LtLot>lambdaUpdate()
+                                .setSql("consumed_qty = consumed_qty + {0}", consumedQty)
+                                .eq(LtLot::getLotId, lotId)
+                                .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
+                                .eq(LtLot::getQcStatus, QC_STATUS_PASS)
+                                .and(
+                                        w ->
+                                                w.isNull(LtLot::getExpiryDate)
+                                                        .or()
+                                                        .ge(LtLot::getExpiryDate, startOfToday()))
+                                .apply("consumed_qty + {0} <= quantity", consumedQty));
         if (rows == 0) {
             throw new RuntimeException("批次剩余数量不足或状态已变更,消耗失败");
         }
         // 状态流转: 依据扣减后的实际值判定(独立语句, 避免 MySQL 单条 UPDATE 内 SET 求值顺序歧义)
-        int statusRows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .setSql("status = CASE WHEN consumed_qty >= quantity THEN '" + STATUS_CONSUMED
-                + "' ELSE '" + STATUS_IN_USE + "' END")
-            .eq(LtLot::getLotId, lotId)
-            .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE));
+        int statusRows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<LtLot>lambdaUpdate()
+                                .setSql(
+                                        "status = CASE WHEN consumed_qty >= quantity THEN '"
+                                                + STATUS_CONSUMED
+                                                + "' ELSE '"
+                                                + STATUS_IN_USE
+                                                + "' END")
+                                .eq(LtLot::getLotId, lotId)
+                                .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE));
         if (statusRows == 0) {
             log.warn("批次消耗状态流转未命中(状态已变更, 数量已原子扣减): lotId={}", lotId);
         }
-        log.info("批次消耗: lotId={}, consumed={}, 扣减后剩余={}, statusRows={}",
-            lotId, consumedQty, remaining.subtract(consumedQty), statusRows);
+        log.info(
+                "批次消耗: lotId={}, consumed={}, 扣减后剩余={}, statusRows={}",
+                lotId,
+                consumedQty,
+                remaining.subtract(consumedQty),
+                statusRows);
         return true;
     }
 
@@ -607,30 +695,29 @@ public class LtLotServiceImpl implements ILtLotService {
         result.put("lot", lot);
 
         // 工单消耗列表
-        List<LtWoConsumptionVo> consumptions = consumptionMapper.selectVoList(
-            Wrappers.<com.nexus.mes.lt.domain.LtWoConsumption>lambdaQuery()
-                .eq(com.nexus.mes.lt.domain.LtWoConsumption::getLotId, lotId)
-                .orderByDesc(com.nexus.mes.lt.domain.LtWoConsumption::getConsumedTime));
+        List<LtWoConsumptionVo> consumptions =
+                consumptionMapper.selectVoList(
+                        Wrappers.<com.nexus.mes.lt.domain.LtWoConsumption>lambdaQuery()
+                                .eq(com.nexus.mes.lt.domain.LtWoConsumption::getLotId, lotId)
+                                .orderByDesc(
+                                        com.nexus.mes.lt.domain.LtWoConsumption::getConsumedTime));
         result.put("consumptions", consumptions);
 
         // SN绑定列表
-        List<LtSnBindingVo> bindings = bindingMapper.selectVoList(
-            Wrappers.<com.nexus.mes.lt.domain.LtSnBinding>lambdaQuery()
-                .eq(com.nexus.mes.lt.domain.LtSnBinding::getLotId, lotId)
-                .orderByDesc(com.nexus.mes.lt.domain.LtSnBinding::getBoundTime));
+        List<LtSnBindingVo> bindings =
+                bindingMapper.selectVoList(
+                        Wrappers.<com.nexus.mes.lt.domain.LtSnBinding>lambdaQuery()
+                                .eq(com.nexus.mes.lt.domain.LtSnBinding::getLotId, lotId)
+                                .orderByDesc(com.nexus.mes.lt.domain.LtSnBinding::getBoundTime));
         result.put("bindings", bindings);
 
         // 关联工单ID去重列表
-        List<Long> woIds = consumptions.stream()
-            .map(LtWoConsumptionVo::getWoId)
-            .distinct()
-            .toList();
+        List<Long> woIds =
+                consumptions.stream().map(LtWoConsumptionVo::getWoId).distinct().toList();
         result.put("woIds", woIds);
 
         // 关联SN ID列表
-        List<Long> snIds = bindings.stream()
-            .map(LtSnBindingVo::getSnId)
-            .toList();
+        List<Long> snIds = bindings.stream().map(LtSnBindingVo::getSnId).toList();
         result.put("snIds", snIds);
 
         return result;
@@ -664,13 +751,16 @@ public class LtLotServiceImpl implements ILtLotService {
      */
     private LambdaQueryWrapper<LtLot> buildQueryWrapper(LtLotBo bo) {
         return Wrappers.<LtLot>lambdaQuery()
-            .eq(StringUtils.isNotBlank(bo.getLotCode()), LtLot::getLotCode, bo.getLotCode())
-            .eq(StringUtils.isNotBlank(bo.getStatus()), LtLot::getStatus, bo.getStatus())
-            .eq(StringUtils.isNotBlank(bo.getQcStatus()), LtLot::getQcStatus, bo.getQcStatus())
-            .eq(bo.getIqcId() != null, LtLot::getIqcId, bo.getIqcId())
-            .eq(bo.getMaterialId() != null, LtLot::getMaterialId, bo.getMaterialId())
-            .eq(bo.getSupplierId() != null, LtLot::getSupplierId, bo.getSupplierId())
-            .like(StringUtils.isNotBlank(bo.getSupplierLot()), LtLot::getSupplierLot, bo.getSupplierLot())
-            .orderByDesc(LtLot::getCreateTime);
+                .eq(StringUtils.isNotBlank(bo.getLotCode()), LtLot::getLotCode, bo.getLotCode())
+                .eq(StringUtils.isNotBlank(bo.getStatus()), LtLot::getStatus, bo.getStatus())
+                .eq(StringUtils.isNotBlank(bo.getQcStatus()), LtLot::getQcStatus, bo.getQcStatus())
+                .eq(bo.getIqcId() != null, LtLot::getIqcId, bo.getIqcId())
+                .eq(bo.getMaterialId() != null, LtLot::getMaterialId, bo.getMaterialId())
+                .eq(bo.getSupplierId() != null, LtLot::getSupplierId, bo.getSupplierId())
+                .like(
+                        StringUtils.isNotBlank(bo.getSupplierLot()),
+                        LtLot::getSupplierLot,
+                        bo.getSupplierLot())
+                .orderByDesc(LtLot::getCreateTime);
     }
 }

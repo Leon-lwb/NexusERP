@@ -50,41 +50,86 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
     private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
-    /** 待入库状态（已上架） */
+    /**
+     * 待入库状态（已上架）
+     */
     private static final String ORDER_STATUS_SHELVED = "SHELVED";
-    /** 已完成状态 */
+
+    /**
+     * 已完成状态
+     */
     private static final String ORDER_STATUS_FINISHED = "FINISHED";
-    /** 虚拟区域ID */
+
+    /**
+     * 虚拟区域ID
+     */
     private static final Long VIRTUAL_AREA_ID = 0L;
-    /** 虚拟库位ID */
+
+    /**
+     * 虚拟库位ID
+     */
     private static final Long VIRTUAL_LOCATION_ID = 0L;
-    /** 来源单据类型：物料入库单（用于防重校验） */
+
+    /**
+     * 来源单据类型：物料入库单（用于防重校验）
+     */
     private static final String SOURCE_DOC_TYPE_RECEIVE = "WM_MATERIAL_RECEIVE";
 
-    /** 基础数据访问映射器（Mapper） */
+    /**
+     * 基础数据访问映射器（Mapper）
+     */
     private final WmMaterialReceiveMapper baseMapper;
-    /** 领用行数据访问映射器（Mapper） */
+
+    /**
+     * 领用行数据访问映射器（Mapper）
+     */
     private final WmMaterialReceiveLineMapper receiveLineMapper;
-    /** 领用明细数据访问映射器（Mapper） */
+
+    /**
+     * 领用明细数据访问映射器（Mapper）
+     */
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
-    /** 物料库存数据访问映射器（Mapper） */
+
+    /**
+     * 物料库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper materialStockMapper;
-    /** 物料库存流水数据访问映射器（Mapper） */
+
+    /**
+     * 物料库存流水数据访问映射器（Mapper）
+     */
     private final WmMaterialStockTxMapper materialStockTxMapper;
-    /** 到货通知数据访问映射器（Mapper） */
+
+    /**
+     * 到货通知数据访问映射器（Mapper）
+     */
     private final WmArrivalNoticeMapper arrivalNoticeMapper;
-    /** 到货通知行数据访问映射器（ERP-WM-12: 按行回写已收数量） */
+
+    /**
+     * 到货通知行数据访问映射器（ERP-WM-12: 按行回写已收数量）
+     */
     private final com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
-    /** 物料领用执行器业务服务，提供物料领用执行器相关能力 */
+
+    /**
+     * 物料领用执行器业务服务，提供物料领用执行器相关能力
+     */
     private final IBdMaterialService bdMaterialService;
-    /** 条码业务服务，提供条码相关能力 */
+
+    /**
+     * 条码业务服务，提供条码相关能力
+     */
     private final IWmBarcodeService wmBarcodeService;
-    /** 仓储模块MQ消息发送服务，独立于@DS("erp")，确保消息记录写入ry-vue库 */
+
+    /**
+     * 仓储模块MQ消息发送服务，独立于@DS("erp")，确保消息记录写入ry-vue库
+     */
     private final WmMqSendService wmMqSendService;
-    /** 库存计价服务(F3-a:采购入库按参考价/标准成本计价) */
+
+    /**
+     * 库存计价服务(F3-a:采购入库按参考价/标准成本计价)
+     */
     private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
 
     /**
@@ -109,10 +154,13 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         }
 
         // 并发防重：条件更新抢占（SHELVED → EXECUTING），影响行数为 0 说明已被并发执行，杜绝双击/MQ 同时到达的重复过账
-        int claimed = baseMapper.update(null, Wrappers.<WmMaterialReceive>lambdaUpdate()
-            .set(WmMaterialReceive::getStatus, "EXECUTING")
-            .eq(WmMaterialReceive::getReceiveId, receiveId)
-            .eq(WmMaterialReceive::getStatus, ORDER_STATUS_SHELVED));
+        int claimed =
+                baseMapper.update(
+                        null,
+                        Wrappers.<WmMaterialReceive>lambdaUpdate()
+                                .set(WmMaterialReceive::getStatus, "EXECUTING")
+                                .eq(WmMaterialReceive::getReceiveId, receiveId)
+                                .eq(WmMaterialReceive::getStatus, ORDER_STATUS_SHELVED));
         if (claimed == 0) {
             throw new ServiceException("入库单已执行过入库过账，请勿重复操作");
         }
@@ -130,9 +178,23 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         // 按明细/行构建库存对象，去重校验
         Map<String, WmMaterialStock> stockMap = new LinkedHashMap<>();
         for (WmMaterialReceiveLineVo line : lines) {
-            if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
-                "WM_MATERIAL_RECEIVE",receiveId,line.getLineId(),"RECEIVE_IN",line.getMaterialId(),line.getQuantityReceived(),
-                line.getWarehouseId()!=null?line.getWarehouseId():receiveVo.getWarehouseId(),line.getLocationId(),line.getBatchId(),resolveReceiveUnitCost(line.getMaterialId()))))continue;
+            if (serialInventory != null
+                    && serialInventory.post(
+                            com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                    "WM_MATERIAL_RECEIVE",
+                                    receiveId,
+                                    line.getLineId(),
+                                    "RECEIVE_IN",
+                                    line.getMaterialId(),
+                                    line.getQuantityReceived(),
+                                    line.getWarehouseId() != null
+                                            ? line.getWarehouseId()
+                                            : receiveVo.getWarehouseId(),
+                                    line.getLocationId(),
+                                    line.getBatchId(),
+                                    resolveReceiveUnitCost(line.getMaterialId())))) {
+                continue;
+            }
             List<WmMaterialReceiveDetailVo> details = line.getWmMaterialReceiveLineDetailList();
             if (details != null && !details.isEmpty()) {
                 for (WmMaterialReceiveDetailVo detail : details) {
@@ -157,11 +219,15 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         baseMapper.updateById(receive);
 
         // 更新入库行和明细的时间戳
-        List<WmMaterialReceiveLine> dbLines = receiveLineMapper.selectList(
-            new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+        List<WmMaterialReceiveLine> dbLines =
+                receiveLineMapper.selectList(
+                        new LambdaQueryWrapper<WmMaterialReceiveLine>()
+                                .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
         for (WmMaterialReceiveLine dbLine : dbLines) {
-            List<WmMaterialReceiveDetail> dbDetails = receiveDetailMapper.selectList(
-                new LambdaQueryWrapper<WmMaterialReceiveDetail>().eq(WmMaterialReceiveDetail::getLineId, dbLine.getLineId()));
+            List<WmMaterialReceiveDetail> dbDetails =
+                    receiveDetailMapper.selectList(
+                            new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                                    .eq(WmMaterialReceiveDetail::getLineId, dbLine.getLineId()));
             if (dbDetails != null && !dbDetails.isEmpty()) {
                 for (WmMaterialReceiveDetail dbDetail : dbDetails) {
                     dbDetail.setUpdateTime(new Date());
@@ -175,26 +241,36 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         // ERP-WM-12: 按物料回写"已收数量"到到货通知行，并把"任何一次入库都整单 FINISHED"改为
         // "全部行收满才 FINISHED，否则 PARTIAL_RECEIVED"，补齐 到货通知→收货→上架 的数量闭环。
         if (receive.getNoticeId() != null) {
-            List<com.nexus.erp.wm.domain.WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
-                new LambdaQueryWrapper<com.nexus.erp.wm.domain.WmArrivalNoticeLine>()
-                    .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getNoticeId, receive.getNoticeId()));
+            List<com.nexus.erp.wm.domain.WmArrivalNoticeLine> noticeLines =
+                    arrivalNoticeLineMapper.selectList(
+                            new LambdaQueryWrapper<com.nexus.erp.wm.domain.WmArrivalNoticeLine>()
+                                    .eq(
+                                            com.nexus.erp.wm.domain.WmArrivalNoticeLine
+                                                    ::getNoticeId,
+                                            receive.getNoticeId()));
             // 本次入库数量按物料汇总（同一收货单可能有多行同物料）
             Map<Long, BigDecimal> recvByMaterial = new LinkedHashMap<>();
             for (WmMaterialReceiveLineVo line : lines) {
                 if (line.getMaterialId() == null) {
                     continue;
                 }
-                recvByMaterial.merge(line.getMaterialId(), nvl(line.getQuantityReceived()), BigDecimal::add);
+                recvByMaterial.merge(
+                        line.getMaterialId(), nvl(line.getQuantityReceived()), BigDecimal::add);
             }
             boolean allReceived = true;
             for (com.nexus.erp.wm.domain.WmArrivalNoticeLine nl : noticeLines) {
                 BigDecimal delta = recvByMaterial.get(nl.getMaterialId());
                 if (delta != null && delta.compareTo(BigDecimal.ZERO) > 0) {
                     // 条件更新原子累加，避免并发入库丢失更新
-                    arrivalNoticeLineMapper.update(null,
-                        Wrappers.<com.nexus.erp.wm.domain.WmArrivalNoticeLine>lambdaUpdate()
-                            .setSql("received_qty = IFNULL(received_qty, 0) + " + delta.toPlainString())
-                            .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getLineId, nl.getLineId()));
+                    arrivalNoticeLineMapper.update(
+                            null,
+                            Wrappers.<com.nexus.erp.wm.domain.WmArrivalNoticeLine>lambdaUpdate()
+                                    .setSql(
+                                            "received_qty = IFNULL(received_qty, 0) + "
+                                                    + delta.toPlainString())
+                                    .eq(
+                                            com.nexus.erp.wm.domain.WmArrivalNoticeLine::getLineId,
+                                            nl.getLineId()));
                     nl.setReceivedQty(nvl(nl.getReceivedQty()).add(delta));
                 }
                 if (nvl(nl.getReceivedQty()).compareTo(nvl(nl.getQuantityArrival())) < 0) {
@@ -212,16 +288,15 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         // 为入库的库存生成条码
         for (WmMaterialStock stock : stockMap.values()) {
             wmBarcodeService.generateAndSaveByCode(
-                "WM_RECEIVE_DEFAULT",
-                "RECEIVE_IN",
-                receiveId,
-                null,
-                stock.getMaterialId(),
-                stock.getBatchId(),
-                stock.getStockId(),
-                stock.getSnId(),
-                new Date()
-            );
+                    "WM_RECEIVE_DEFAULT",
+                    "RECEIVE_IN",
+                    receiveId,
+                    null,
+                    stock.getMaterialId(),
+                    stock.getBatchId(),
+                    stock.getStockId(),
+                    stock.getSnId(),
+                    new Date());
         }
 
         // 入库完成后，异步回写采购订单已收货数量
@@ -233,12 +308,13 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         if (receive.getPurId() != null) {
             // 在请求线程中提前获取租户ID，afterCommit/异步线程中无法获取
             final String tenantId = TenantHelper.getTenantId();
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    wmMqSendService.sendPurchaseReceiveWriteback(receiveId, tenantId);
-                }
-            });
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            wmMqSendService.sendPurchaseReceiveWriteback(receiveId, tenantId);
+                        }
+                    });
         }
 
         return true;
@@ -255,10 +331,11 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @return true=已过账（不允许重复），false=未过账
      */
     private boolean hasPosted(Long receiveId) {
-        Long count = materialStockTxMapper.selectCount(
-            new LambdaQueryWrapper<WmMaterialStockTx>()
-                .eq(WmMaterialStockTx::getSourceDocType, SOURCE_DOC_TYPE_RECEIVE)
-                .eq(WmMaterialStockTx::getSourceDocId, receiveId));
+        Long count =
+                materialStockTxMapper.selectCount(
+                        new LambdaQueryWrapper<WmMaterialStockTx>()
+                                .eq(WmMaterialStockTx::getSourceDocType, SOURCE_DOC_TYPE_RECEIVE)
+                                .eq(WmMaterialStockTx::getSourceDocId, receiveId));
         return count != null && count > 0;
     }
 
@@ -271,17 +348,22 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     private WmMaterialReceiveVo buildReceiveVo(Long receiveId) {
         WmMaterialReceiveVo vo = baseMapper.selectVoById(receiveId);
         if (vo != null) {
-            List<WmMaterialReceiveLine> lineList = receiveLineMapper.selectList(
-                new LambdaQueryWrapper<WmMaterialReceiveLine>()
-                    .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
-            List<WmMaterialReceiveLineVo> lineVoList = MapstructUtils.convert(lineList, WmMaterialReceiveLineVo.class);
+            List<WmMaterialReceiveLine> lineList =
+                    receiveLineMapper.selectList(
+                            new LambdaQueryWrapper<WmMaterialReceiveLine>()
+                                    .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+            List<WmMaterialReceiveLineVo> lineVoList =
+                    MapstructUtils.convert(lineList, WmMaterialReceiveLineVo.class);
 
             for (WmMaterialReceiveLineVo lineVo : lineVoList) {
-                List<WmMaterialReceiveDetail> detailList = receiveDetailMapper.selectList(
-                    new LambdaQueryWrapper<WmMaterialReceiveDetail>()
-                        .eq(WmMaterialReceiveDetail::getLineId, lineVo.getLineId()));
+                List<WmMaterialReceiveDetail> detailList =
+                        receiveDetailMapper.selectList(
+                                new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                                        .eq(
+                                                WmMaterialReceiveDetail::getLineId,
+                                                lineVo.getLineId()));
                 lineVo.setWmMaterialReceiveLineDetailList(
-                    MapstructUtils.convert(detailList, WmMaterialReceiveDetailVo.class));
+                        MapstructUtils.convert(detailList, WmMaterialReceiveDetailVo.class));
             }
 
             vo.setWmMaterialReceiveLineList(lineVoList);
@@ -296,7 +378,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param detail  入库明细VO
      * @return 库存对象
      */
-    private WmMaterialStock buildStockFromDetail(WmMaterialReceiveVo receive, WmMaterialReceiveDetailVo detail) {
+    private WmMaterialStock buildStockFromDetail(
+            WmMaterialReceiveVo receive, WmMaterialReceiveDetailVo detail) {
         if (detail.getMaterialId() == null) {
             throw new ServiceException("物料ID不能为空");
         }
@@ -342,12 +425,14 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param line    入库行VO
      * @return 库存对象
      */
-    private WmMaterialStock buildStockFromLine(WmMaterialReceiveVo receive, WmMaterialReceiveLineVo line) {
+    private WmMaterialStock buildStockFromLine(
+            WmMaterialReceiveVo receive, WmMaterialReceiveLineVo line) {
         if (line.getMaterialId() == null) {
             throw new ServiceException("物料ID不能为空");
         }
         if (line.getWarehouseId() == null) {
-            throw new ServiceException("仓库ID不能为空，物料ID: " + line.getMaterialId() + ", 物料编码: " + line.getMaterialCode());
+            throw new ServiceException(
+                    "仓库ID不能为空，物料ID: " + line.getMaterialId() + ", 物料编码: " + line.getMaterialCode());
         }
         if (line.getQuantityReceived() == null) {
             throw new ServiceException("入库数量不能为空");
@@ -385,7 +470,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param receive    入库单VO
      * @param materialId 物料ID
      */
-    private void fillStockCommonFields(WmMaterialStock stock, WmMaterialReceiveVo receive, Long materialId) {
+    private void fillStockCommonFields(
+            WmMaterialStock stock, WmMaterialReceiveVo receive, Long materialId) {
         BdMaterialVo material = bdMaterialService.selectById(materialId);
         if (material != null && material.getCategoryId() != null) {
             stock.setCategoryId(material.getCategoryId());
@@ -403,7 +489,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param stock      库存对象
      * @param sourceType 来源类型
      */
-    private void putUniqueStock(Map<String, WmMaterialStock> stockMap, WmMaterialStock stock, String sourceType) {
+    private void putUniqueStock(
+            Map<String, WmMaterialStock> stockMap, WmMaterialStock stock, String sourceType) {
         String key = buildStockKey(stock);
         if (stockMap.containsKey(key)) {
             throw new ServiceException(sourceType + "存在重复库存维度，无法执行入库：" + key);
@@ -418,17 +505,17 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @return 唯一键字符串
      */
     private String buildStockKey(WmMaterialStock stock) {
-        return String.join("|",
-            String.valueOf(stock.getMaterialId()),
-            stock.getBatchId() != null ? stock.getBatchId().toString() : "",
-            stock.getSnId() != null ? stock.getSnId().toString() : "",
-            stock.getWarehouseId() != null ? stock.getWarehouseId().toString() : "",
-            stock.getAreaId() != null ? stock.getAreaId().toString() : "",
-            stock.getLocationId() != null ? stock.getLocationId().toString() : "",
-            stock.getVendorId() != null ? stock.getVendorId().toString() : "",
-            stock.getWoId() != null ? stock.getWoId().toString() : "",
-            stock.getProductionDate() != null ? stock.getProductionDate().toString() : ""
-        );
+        return String.join(
+                "|",
+                String.valueOf(stock.getMaterialId()),
+                stock.getBatchId() != null ? stock.getBatchId().toString() : "",
+                stock.getSnId() != null ? stock.getSnId().toString() : "",
+                stock.getWarehouseId() != null ? stock.getWarehouseId().toString() : "",
+                stock.getAreaId() != null ? stock.getAreaId().toString() : "",
+                stock.getLocationId() != null ? stock.getLocationId().toString() : "",
+                stock.getVendorId() != null ? stock.getVendorId().toString() : "",
+                stock.getWoId() != null ? stock.getWoId().toString() : "",
+                stock.getProductionDate() != null ? stock.getProductionDate().toString() : "");
     }
 
     /**
@@ -438,7 +525,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param stock              库存对象
      * @param transactionQuantity 事务数量
      */
-    private void processStockTransferTransaction(WmMaterialReceiveVo receive, WmMaterialStock stock, BigDecimal transactionQuantity) {
+    private void processStockTransferTransaction(
+            WmMaterialReceiveVo receive, WmMaterialStock stock, BigDecimal transactionQuantity) {
         if (transactionQuantity == null || transactionQuantity.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("入库数量必须大于0");
         }
@@ -451,23 +539,36 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         WmMaterialStock targetCondition = copyStockCondition(stock);
         WmMaterialStock targetStock = selectOneStock(targetCondition);
 
-        Long actualStockId = processStockTransfer(receive, stock, virtualStock, targetStock, transactionQuantity);
+        Long actualStockId =
+                processStockTransfer(
+                        receive, stock, virtualStock, targetStock, transactionQuantity);
         // F3-a:采购入库按参考价/标准成本计价并回写成本
         BigDecimal inUnitCost = resolveReceiveUnitCost(stock.getMaterialId());
         valuationService.updateStockCost(actualStockId, transactionQuantity, inUnitCost);
         WmMaterialStock actualStock = materialStockMapper.selectById(actualStockId);
         // 回填 TARGET_IN 流水成本(按实际库存成本)
-        materialStockTxMapper.update(null, Wrappers.<WmMaterialStockTx>lambdaUpdate()
-            .set(WmMaterialStockTx::getUnitCost, actualStock != null ? actualStock.getUnitCost() : inUnitCost)
-            .set(WmMaterialStockTx::getTxAmount, actualStock != null ? actualStock.getUnitCost().multiply(transactionQuantity) : inUnitCost.multiply(transactionQuantity))
-            .eq(WmMaterialStockTx::getSourceDocId, receive.getReceiveId())
-            .eq(WmMaterialStockTx::getTxType, "TARGET_IN"));
+        materialStockTxMapper.update(
+                null,
+                Wrappers.<WmMaterialStockTx>lambdaUpdate()
+                        .set(
+                                WmMaterialStockTx::getUnitCost,
+                                actualStock != null ? actualStock.getUnitCost() : inUnitCost)
+                        .set(
+                                WmMaterialStockTx::getTxAmount,
+                                actualStock != null
+                                        ? actualStock.getUnitCost().multiply(transactionQuantity)
+                                        : inUnitCost.multiply(transactionQuantity))
+                        .eq(WmMaterialStockTx::getSourceDocId, receive.getReceiveId())
+                        .eq(WmMaterialStockTx::getTxType, "TARGET_IN"));
         stock.setStockId(actualStockId); // 回写实际的库存ID
     }
 
-    /** 入库计价:物料参考价,其次标准成本,无价格按 0 */
+    /**
+     * 入库计价:物料参考价,其次标准成本,无价格按 0
+     */
     private BigDecimal resolveReceiveUnitCost(Long materialId) {
-        BdMaterialVo material = materialId != null ? bdMaterialService.selectById(materialId) : null;
+        BdMaterialVo material =
+                materialId != null ? bdMaterialService.selectById(materialId) : null;
         if (material == null) {
             return BigDecimal.ZERO;
         }
@@ -486,8 +587,12 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param targetStock        目标库位库存
      * @param transactionQuantity 事务数量
      */
-    private Long processStockTransfer(WmMaterialReceiveVo receive, WmMaterialStock stock, WmMaterialStock virtualStock,
-                                      WmMaterialStock targetStock, BigDecimal transactionQuantity) {
+    private Long processStockTransfer(
+            WmMaterialReceiveVo receive,
+            WmMaterialStock stock,
+            WmMaterialStock virtualStock,
+            WmMaterialStock targetStock,
+            BigDecimal transactionQuantity) {
         Date now = new Date();
 
         if (virtualStock == null) {
@@ -499,25 +604,45 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             throw new ServiceException("虚拟库位库存不足！");
         }
         // 原子扣减(乐观锁 version + 数量守卫), 替换读-改-写, 防并发转储超扣
-        int virtualRows = materialStockMapper.deductStock(virtualStock.getStockId(), transactionQuantity,
-            virtualStock.getVersion() == null ? 0 : virtualStock.getVersion());
+        int virtualRows =
+                materialStockMapper.deductStock(
+                        virtualStock.getStockId(),
+                        transactionQuantity,
+                        virtualStock.getVersion() == null ? 0 : virtualStock.getVersion());
         if (virtualRows == 0) {
             throw new ServiceException("虚拟库位库存并发变更冲突，请重试");
         }
-        recordStockTransaction(receive, stock, -1, transactionQuantity, virtualBeforeQuantity,
-            virtualAfterQuantity, virtualStock.getStockId(), "VIRTUAL_OUT");
+        recordStockTransaction(
+                receive,
+                stock,
+                -1,
+                transactionQuantity,
+                virtualBeforeQuantity,
+                virtualAfterQuantity,
+                virtualStock.getStockId(),
+                "VIRTUAL_OUT");
 
         if (targetStock != null) {
             BigDecimal targetBeforeQuantity = nvl(targetStock.getStockQuantity());
             BigDecimal targetAfterQuantity = targetBeforeQuantity.add(transactionQuantity);
             // 原子累加(乐观锁 version 守卫), 替换读-改-写
-            int targetRows = materialStockMapper.addStock(targetStock.getStockId(), transactionQuantity,
-                targetStock.getVersion() == null ? 0 : targetStock.getVersion());
+            int targetRows =
+                    materialStockMapper.addStock(
+                            targetStock.getStockId(),
+                            transactionQuantity,
+                            targetStock.getVersion() == null ? 0 : targetStock.getVersion());
             if (targetRows == 0) {
                 throw new ServiceException("目标库位库存并发变更冲突，请重试");
             }
-            recordStockTransaction(receive, stock, 1, transactionQuantity, targetBeforeQuantity,
-                targetAfterQuantity, targetStock.getStockId(), "TARGET_IN");
+            recordStockTransaction(
+                    receive,
+                    stock,
+                    1,
+                    transactionQuantity,
+                    targetBeforeQuantity,
+                    targetAfterQuantity,
+                    targetStock.getStockId(),
+                    "TARGET_IN");
             return targetStock.getStockId();
         } else {
             WmMaterialStock newStock = copyStock(stock);
@@ -530,8 +655,15 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             newStock.setCreateTime(now);
             newStock.setUpdateTime(now);
             materialStockMapper.insert(newStock);
-            recordStockTransaction(receive, stock, 1, transactionQuantity, BigDecimal.ZERO,
-                transactionQuantity, newStock.getStockId(), "TARGET_IN");
+            recordStockTransaction(
+                    receive,
+                    stock,
+                    1,
+                    transactionQuantity,
+                    BigDecimal.ZERO,
+                    transactionQuantity,
+                    newStock.getStockId(),
+                    "TARGET_IN");
             return newStock.getStockId();
         }
     }
@@ -544,7 +676,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param now                当前时间
      * @return 虚拟库位库存
      */
-    private WmMaterialStock createVirtualFallbackStock(WmMaterialStock stock, BigDecimal transactionQuantity, Date now) {
+    private WmMaterialStock createVirtualFallbackStock(
+            WmMaterialStock stock, BigDecimal transactionQuantity, Date now) {
         WmMaterialStock virtualStock = copyStock(stock);
         virtualStock.setStockId(null);
         virtualStock.setAreaId(VIRTUAL_AREA_ID);
@@ -636,18 +769,39 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      */
     private WmMaterialStock selectOneStock(WmMaterialStock condition) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
-        lqw.eq(condition.getCategoryId() != null, WmMaterialStock::getCategoryId, condition.getCategoryId());
+        lqw.eq(
+                condition.getCategoryId() != null,
+                WmMaterialStock::getCategoryId,
+                condition.getCategoryId());
         lqw.eq(WmMaterialStock::getMaterialId, condition.getMaterialId());
-        lqw.eq(StringUtils.isNotBlank(condition.getMaterialCode()), WmMaterialStock::getMaterialCode, condition.getMaterialCode());
-        lqw.eq(StringUtils.isNotBlank(condition.getMaterialSpec()), WmMaterialStock::getMaterialSpec, condition.getMaterialSpec());
-        lqw.eq(StringUtils.isNotBlank(condition.getBaseUomId()), WmMaterialStock::getBaseUomId, condition.getBaseUomId());
+        lqw.eq(
+                StringUtils.isNotBlank(condition.getMaterialCode()),
+                WmMaterialStock::getMaterialCode,
+                condition.getMaterialCode());
+        lqw.eq(
+                StringUtils.isNotBlank(condition.getMaterialSpec()),
+                WmMaterialStock::getMaterialSpec,
+                condition.getMaterialSpec());
+        lqw.eq(
+                StringUtils.isNotBlank(condition.getBaseUomId()),
+                WmMaterialStock::getBaseUomId,
+                condition.getBaseUomId());
         lqw.eq(condition.getBatchId() != null, WmMaterialStock::getBatchId, condition.getBatchId());
         lqw.eq(condition.getSnId() != null, WmMaterialStock::getSnId, condition.getSnId());
-        lqw.eq(StringUtils.isNotBlank(condition.getBatchCode()), WmMaterialStock::getBatchCode, condition.getBatchCode());
+        lqw.eq(
+                StringUtils.isNotBlank(condition.getBatchCode()),
+                WmMaterialStock::getBatchCode,
+                condition.getBatchCode());
         lqw.eq(WmMaterialStock::getWarehouseId, condition.getWarehouseId());
         lqw.eq(condition.getAreaId() != null, WmMaterialStock::getAreaId, condition.getAreaId());
-        lqw.eq(condition.getLocationId() != null, WmMaterialStock::getLocationId, condition.getLocationId());
-        lqw.eq(condition.getVendorId() != null, WmMaterialStock::getVendorId, condition.getVendorId());
+        lqw.eq(
+                condition.getLocationId() != null,
+                WmMaterialStock::getLocationId,
+                condition.getLocationId());
+        lqw.eq(
+                condition.getVendorId() != null,
+                WmMaterialStock::getVendorId,
+                condition.getVendorId());
         lqw.last("limit 1");
         return materialStockMapper.selectOne(lqw);
     }
@@ -664,8 +818,15 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param stockId            库存记录ID
      * @param txType             事务类型
      */
-    private void recordStockTransaction(WmMaterialReceiveVo receive, WmMaterialStock stock, int transactionFlag, BigDecimal transactionQuantity,
-                                        BigDecimal beforeQuantity, BigDecimal afterQuantity, Long stockId, String txType) {
+    private void recordStockTransaction(
+            WmMaterialReceiveVo receive,
+            WmMaterialStock stock,
+            int transactionFlag,
+            BigDecimal transactionQuantity,
+            BigDecimal beforeQuantity,
+            BigDecimal afterQuantity,
+            Long stockId,
+            String txType) {
         WmMaterialStockTx stockTx = new WmMaterialStockTx();
         stockTx.setTxId(null);
         stockTx.setTxType(txType);

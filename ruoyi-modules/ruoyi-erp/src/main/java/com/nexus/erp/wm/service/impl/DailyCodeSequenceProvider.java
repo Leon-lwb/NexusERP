@@ -125,8 +125,10 @@ public class DailyCodeSequenceProvider {
             } catch (ArithmeticException e) {
                 throw new ServiceException("序号起点超出可递增范围，请核实后重试");
             }
-        } else if (value instanceof Byte || value instanceof Short
-            || value instanceof Integer || value instanceof Long) {
+        } else if (value instanceof Byte
+                || value instanceof Short
+                || value instanceof Integer
+                || value instanceof Long) {
             // 这些整数包装类型转为 long 不会丢失精度；其他 Number 不使用 longValue 截断。
             sequence = ((Number) value).longValue();
         } else {

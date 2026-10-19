@@ -37,12 +37,17 @@ import java.util.stream.Collectors;
 @Slf4j
 @DS("erp")
 @Service
-public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMapper, WmMaterialStock> implements IWmMaterialStockService {
+public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMapper, WmMaterialStock>
+        implements IWmMaterialStockService {
 
-    /** 物料库存数据访问映射器（Mapper） */
+    /**
+     * 物料库存数据访问映射器（Mapper）
+     */
     private final BdMaterialMapper bdMaterialMapper;
 
-    /** 收货单行 Mapper（IQC 冻结时按收货单定位批次号） */
+    /**
+     * 收货单行 Mapper（IQC 冻结时按收货单定位批次号）
+     */
     private final WmMaterialReceiveLineMapper materialReceiveLineMapper;
 
     /**
@@ -51,8 +56,9 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
      * @param bdMaterialMapper         参数 bdMaterialMapper
      * @param materialReceiveLineMapper 收货单行 Mapper
      */
-    public WmMaterialStockServiceImpl(BdMaterialMapper bdMaterialMapper,
-                                      WmMaterialReceiveLineMapper materialReceiveLineMapper) {
+    public WmMaterialStockServiceImpl(
+            BdMaterialMapper bdMaterialMapper,
+            WmMaterialReceiveLineMapper materialReceiveLineMapper) {
         this.bdMaterialMapper = bdMaterialMapper;
         this.materialReceiveLineMapper = materialReceiveLineMapper;
     }
@@ -65,7 +71,8 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
      * @return 库存清单分页列表
      */
     @Override
-    public TableDataInfo<WmMaterialStockVo> selectPageList(WmMaterialStockBo bo, PageQuery pageQuery) {
+    public TableDataInfo<WmMaterialStockVo> selectPageList(
+            WmMaterialStockBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmMaterialStock> lqw = buildQueryWrapper(bo);
         Page<WmMaterialStockVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
@@ -143,9 +150,8 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
             return new ArrayList<>();
         }
         return baseMapper.selectVoList(
-            Wrappers.lambdaQuery(WmMaterialStock.class)
-                .in(WmMaterialStock::getCategoryId, categoryIds)
-        );
+                Wrappers.lambdaQuery(WmMaterialStock.class)
+                        .in(WmMaterialStock::getCategoryId, categoryIds));
     }
 
     /**
@@ -158,30 +164,81 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getCategoryId() != null, WmMaterialStock::getCategoryId, bo.getCategoryId());
         lqw.eq(bo.getMaterialId() != null, WmMaterialStock::getMaterialId, bo.getMaterialId());
-        lqw.eq(StringUtils.isNotBlank(bo.getMaterialCode()), WmMaterialStock::getMaterialCode, bo.getMaterialCode());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialName()), WmMaterialStock::getMaterialName, bo.getMaterialName());
-        lqw.eq(StringUtils.isNotBlank(bo.getMaterialSpec()), WmMaterialStock::getMaterialSpec, bo.getMaterialSpec());
-        lqw.eq(StringUtils.isNotBlank(bo.getBaseUomId()), WmMaterialStock::getBaseUomId, bo.getBaseUomId());
-        lqw.like(StringUtils.isNotBlank(bo.getBaseUomName()), WmMaterialStock::getBaseUomName, bo.getBaseUomName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getMaterialCode()),
+                WmMaterialStock::getMaterialCode,
+                bo.getMaterialCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getMaterialName()),
+                WmMaterialStock::getMaterialName,
+                bo.getMaterialName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getMaterialSpec()),
+                WmMaterialStock::getMaterialSpec,
+                bo.getMaterialSpec());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getBaseUomId()),
+                WmMaterialStock::getBaseUomId,
+                bo.getBaseUomId());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getBaseUomName()),
+                WmMaterialStock::getBaseUomName,
+                bo.getBaseUomName());
         lqw.eq(bo.getBatchId() != null, WmMaterialStock::getBatchId, bo.getBatchId());
-        lqw.eq(StringUtils.isNotBlank(bo.getBatchCode()), WmMaterialStock::getBatchCode, bo.getBatchCode());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getBatchCode()),
+                WmMaterialStock::getBatchCode,
+                bo.getBatchCode());
         lqw.eq(bo.getWarehouseId() != null, WmMaterialStock::getWarehouseId, bo.getWarehouseId());
-        lqw.eq(StringUtils.isNotBlank(bo.getWarehouseCode()), WmMaterialStock::getWarehouseCode, bo.getWarehouseCode());
-        lqw.like(StringUtils.isNotBlank(bo.getWarehouseName()), WmMaterialStock::getWarehouseName, bo.getWarehouseName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getWarehouseCode()),
+                WmMaterialStock::getWarehouseCode,
+                bo.getWarehouseCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getWarehouseName()),
+                WmMaterialStock::getWarehouseName,
+                bo.getWarehouseName());
         lqw.eq(bo.getAreaId() != null, WmMaterialStock::getAreaId, bo.getAreaId());
-        lqw.eq(StringUtils.isNotBlank(bo.getAreaCode()), WmMaterialStock::getAreaCode, bo.getAreaCode());
-        lqw.like(StringUtils.isNotBlank(bo.getAreaName()), WmMaterialStock::getAreaName, bo.getAreaName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getAreaCode()),
+                WmMaterialStock::getAreaCode,
+                bo.getAreaCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getAreaName()),
+                WmMaterialStock::getAreaName,
+                bo.getAreaName());
         lqw.eq(bo.getLocationId() != null, WmMaterialStock::getLocationId, bo.getLocationId());
-        lqw.eq(StringUtils.isNotBlank(bo.getLocationCode()), WmMaterialStock::getLocationCode, bo.getLocationCode());
-        lqw.like(StringUtils.isNotBlank(bo.getLocationName()), WmMaterialStock::getLocationName, bo.getLocationName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getLocationCode()),
+                WmMaterialStock::getLocationCode,
+                bo.getLocationCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getLocationName()),
+                WmMaterialStock::getLocationName,
+                bo.getLocationName());
         lqw.eq(bo.getVendorId() != null, WmMaterialStock::getVendorId, bo.getVendorId());
-        lqw.eq(StringUtils.isNotBlank(bo.getVendorCode()), WmMaterialStock::getVendorCode, bo.getVendorCode());
-        lqw.like(StringUtils.isNotBlank(bo.getVendorName()), WmMaterialStock::getVendorName, bo.getVendorName());
-        lqw.eq(StringUtils.isNotBlank(bo.getVendorNick()), WmMaterialStock::getVendorNick, bo.getVendorNick());
-        lqw.eq(bo.getStockQuantity() != null, WmMaterialStock::getStockQuantity, bo.getStockQuantity());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getVendorCode()),
+                WmMaterialStock::getVendorCode,
+                bo.getVendorCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getVendorName()),
+                WmMaterialStock::getVendorName,
+                bo.getVendorName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getVendorNick()),
+                WmMaterialStock::getVendorNick,
+                bo.getVendorNick());
+        lqw.eq(
+                bo.getStockQuantity() != null,
+                WmMaterialStock::getStockQuantity,
+                bo.getStockQuantity());
         lqw.eq(bo.getWoId() != null, WmMaterialStock::getWoId, bo.getWoId());
         lqw.eq(StringUtils.isNotBlank(bo.getWoNo()), WmMaterialStock::getWoNo, bo.getWoNo());
-        lqw.eq(bo.getProductionDate() != null, WmMaterialStock::getProductionDate, bo.getProductionDate());
+        lqw.eq(
+                bo.getProductionDate() != null,
+                WmMaterialStock::getProductionDate,
+                bo.getProductionDate());
         lqw.eq(bo.getRecptDate() != null, WmMaterialStock::getRecptDate, bo.getRecptDate());
         lqw.eq(bo.getExpireDate() != null, WmMaterialStock::getExpireDate, bo.getExpireDate());
         lqw.eq(bo.getFrozenFlag() != null, WmMaterialStock::getFrozenFlag, bo.getFrozenFlag());
@@ -198,41 +255,52 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
         if (receiveId == null || materialId == null) {
             return 0;
         }
-        List<WmMaterialReceiveLine> lines = materialReceiveLineMapper.selectList(
-            Wrappers.<WmMaterialReceiveLine>lambdaQuery()
-                .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
-                .eq(WmMaterialReceiveLine::getMaterialId, materialId));
-        List<String> batchCodes = lines.stream()
-            .map(WmMaterialReceiveLine::getBatchCode)
-            .filter(StringUtils::isNotBlank)
-            .distinct()
-            .collect(Collectors.toList());
-        List<Long> batchIds = lines.stream()
-            .map(WmMaterialReceiveLine::getBatchId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
+        List<WmMaterialReceiveLine> lines =
+                materialReceiveLineMapper.selectList(
+                        Wrappers.<WmMaterialReceiveLine>lambdaQuery()
+                                .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
+                                .eq(WmMaterialReceiveLine::getMaterialId, materialId));
+        List<String> batchCodes =
+                lines.stream()
+                        .map(WmMaterialReceiveLine::getBatchCode)
+                        .filter(StringUtils::isNotBlank)
+                        .distinct()
+                        .collect(Collectors.toList());
+        List<Long> batchIds =
+                lines.stream()
+                        .map(WmMaterialReceiveLine::getBatchId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
         if (batchCodes.isEmpty() && batchIds.isEmpty()) {
             // 无批次号也无批次ID: 无法定位库存行 —— 显式记录, 由 confirmShelf 的单据级 iqc_status 门禁兜底,
             // 不再"定位不到批次就当作没发生"(审计 MES-X-01 旁路)
-            log.warn("IQC不合格冻结跳过: 收货行无批次号/批次ID, 无法定位库存行: receiveId={}, materialId={}",
-                receiveId, materialId);
+            log.warn(
+                    "IQC不合格冻结跳过: 收货行无批次号/批次ID, 无法定位库存行: receiveId={}, materialId={}",
+                    receiveId,
+                    materialId);
             return 0;
         }
-        LambdaUpdateWrapper<WmMaterialStock> wrapper = Wrappers.<WmMaterialStock>lambdaUpdate()
-            .set(WmMaterialStock::getFrozenFlag, 1L)
-            // ERP-WM-09: 冻结必须递增 version，否则乐观锁失效——在途出库仍能用旧 version 扣减被冻结库存
-            .setSql("version = version + 1")
-            .eq(WmMaterialStock::getMaterialId, materialId)
-            .eq(WmMaterialStock::getFrozenFlag, 0L);
+        LambdaUpdateWrapper<WmMaterialStock> wrapper =
+                Wrappers.<WmMaterialStock>lambdaUpdate()
+                        .set(WmMaterialStock::getFrozenFlag, 1L)
+                        // ERP-WM-09: 冻结必须递增 version，否则乐观锁失效——在途出库仍能用旧 version 扣减被冻结库存
+                        .setSql("version = version + 1")
+                        .eq(WmMaterialStock::getMaterialId, materialId)
+                        .eq(WmMaterialStock::getFrozenFlag, 0L);
         if (!batchCodes.isEmpty()) {
             wrapper.in(WmMaterialStock::getBatchCode, batchCodes);
         } else {
             wrapper.in(WmMaterialStock::getBatchId, batchIds);
         }
         int rows = baseMapper.update(null, wrapper);
-        log.info("IQC不合格冻结库存: receiveId={}, materialId={}, batchCodes={}, batchIds={}, 影响行数={}",
-            receiveId, materialId, batchCodes, batchIds, rows);
+        log.info(
+                "IQC不合格冻结库存: receiveId={}, materialId={}, batchCodes={}, batchIds={}, 影响行数={}",
+                receiveId,
+                materialId,
+                batchCodes,
+                batchIds,
+                rows);
         return rows;
     }
 
@@ -245,15 +313,22 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
         if (materialId == null || StringUtils.isBlank(batchCode)) {
             return 0;
         }
-        int rows = baseMapper.update(null, Wrappers.<WmMaterialStock>lambdaUpdate()
-            .set(WmMaterialStock::getFrozenFlag, 0L)
-            // ERP-WM-09: 解冻同样递增 version，使在途的旧版本扣减立即失效
-            .setSql("version = version + 1")
-            .eq(WmMaterialStock::getMaterialId, materialId)
-            .eq(WmMaterialStock::getBatchCode, batchCode)
-            .eq(WmMaterialStock::getFrozenFlag, 1L));
-        log.info("库存解冻(批次): materialId={}, batchCode={}, 影响行数={}, reason={}",
-            materialId, batchCode, rows, reason);
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<WmMaterialStock>lambdaUpdate()
+                                .set(WmMaterialStock::getFrozenFlag, 0L)
+                                // ERP-WM-09: 解冻同样递增 version，使在途的旧版本扣减立即失效
+                                .setSql("version = version + 1")
+                                .eq(WmMaterialStock::getMaterialId, materialId)
+                                .eq(WmMaterialStock::getBatchCode, batchCode)
+                                .eq(WmMaterialStock::getFrozenFlag, 1L));
+        log.info(
+                "库存解冻(批次): materialId={}, batchCode={}, 影响行数={}, reason={}",
+                materialId,
+                batchCode,
+                rows,
+                reason);
         return rows;
     }
 
@@ -266,39 +341,53 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
         if (receiveId == null || materialId == null) {
             return 0;
         }
-        List<WmMaterialReceiveLine> lines = materialReceiveLineMapper.selectList(
-            Wrappers.<WmMaterialReceiveLine>lambdaQuery()
-                .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
-                .eq(WmMaterialReceiveLine::getMaterialId, materialId));
-        List<String> batchCodes = lines.stream()
-            .map(WmMaterialReceiveLine::getBatchCode)
-            .filter(StringUtils::isNotBlank)
-            .distinct()
-            .collect(Collectors.toList());
-        List<Long> batchIds = lines.stream()
-            .map(WmMaterialReceiveLine::getBatchId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
+        List<WmMaterialReceiveLine> lines =
+                materialReceiveLineMapper.selectList(
+                        Wrappers.<WmMaterialReceiveLine>lambdaQuery()
+                                .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
+                                .eq(WmMaterialReceiveLine::getMaterialId, materialId));
+        List<String> batchCodes =
+                lines.stream()
+                        .map(WmMaterialReceiveLine::getBatchCode)
+                        .filter(StringUtils::isNotBlank)
+                        .distinct()
+                        .collect(Collectors.toList());
+        List<Long> batchIds =
+                lines.stream()
+                        .map(WmMaterialReceiveLine::getBatchId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
         if (batchCodes.isEmpty() && batchIds.isEmpty()) {
-            log.warn("库存解冻跳过: 收货行无批次号/批次ID, 无法定位库存行: receiveId={}, materialId={}, reason={}",
-                receiveId, materialId, reason);
+            log.warn(
+                    "库存解冻跳过: 收货行无批次号/批次ID, 无法定位库存行: receiveId={}, materialId={}, reason={}",
+                    receiveId,
+                    materialId,
+                    reason);
             return 0;
         }
-        LambdaUpdateWrapper<WmMaterialStock> wrapper = Wrappers.<WmMaterialStock>lambdaUpdate()
-            .set(WmMaterialStock::getFrozenFlag, 0L)
-            // ERP-WM-09: 解冻同样递增 version，使在途的旧版本扣减立即失效
-            .setSql("version = version + 1")
-            .eq(WmMaterialStock::getMaterialId, materialId)
-            .eq(WmMaterialStock::getFrozenFlag, 1L);
+        LambdaUpdateWrapper<WmMaterialStock> wrapper =
+                Wrappers.<WmMaterialStock>lambdaUpdate()
+                        .set(WmMaterialStock::getFrozenFlag, 0L)
+                        // ERP-WM-09: 解冻同样递增 version，使在途的旧版本扣减立即失效
+                        .setSql("version = version + 1")
+                        .eq(WmMaterialStock::getMaterialId, materialId)
+                        .eq(WmMaterialStock::getFrozenFlag, 1L);
         if (!batchCodes.isEmpty()) {
             wrapper.in(WmMaterialStock::getBatchCode, batchCodes);
         } else {
             wrapper.in(WmMaterialStock::getBatchId, batchIds);
         }
         int rows = baseMapper.update(null, wrapper);
-        log.info("库存解冻(收货单): receiveId={}, materialId={}, batchCodes={}, batchIds={}, 影响行数={}, reason={}",
-            receiveId, materialId, batchCodes, batchIds, rows, reason);
+        log.info(
+                "库存解冻(收货单): receiveId={}, materialId={}, batchCodes={}, batchIds={}, 影响行数={},"
+                        + " reason={}",
+                receiveId,
+                materialId,
+                batchCodes,
+                batchIds,
+                rows,
+                reason);
         return rows;
     }
 }

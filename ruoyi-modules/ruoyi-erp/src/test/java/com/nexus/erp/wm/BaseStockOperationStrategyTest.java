@@ -51,11 +51,23 @@ class BaseStockOperationStrategyTest {
     }
 
     private static class Probe extends BaseStockOperationStrategy {
-        Probe(WmMaterialStockTxMapper mapper) { super(mapper); }
-        @Override public StockOperationTypeEnum getSupportedType() { return null; }
-        @Override public void execute(Object... args) { throw new UnsupportedOperationException(); }
+        Probe(WmMaterialStockTxMapper mapper) {
+            super(mapper);
+        }
+
+        @Override
+        public StockOperationTypeEnum getSupportedType() {
+            return null;
+        }
+
+        @Override
+        public void execute(Object... args) {
+            throw new UnsupportedOperationException();
+        }
+
         WmMaterialStockTx build(WmMaterialStock stock, Date now) {
-            return buildBaseTxFromStock(stock, "ISSUE", -1, BigDecimal.ONE, BigDecimal.TEN, new BigDecimal("9"), now);
+            return buildBaseTxFromStock(
+                    stock, "ISSUE", -1, BigDecimal.ONE, BigDecimal.TEN, new BigDecimal("9"), now);
         }
     }
 }

@@ -33,20 +33,14 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class WmBarcodeServiceImplTest {
 
-    @Mock
-    private WmBarcodeMapper baseMapper;
-    @Mock
-    private WmBarcodeConfigMapper barcodeConfigMapper;
-    @Mock
-    private BarcodeGenerator barcodeGenerator;
-    @Mock
-    private BarcodeSequenceProvider barcodeSequenceProvider;
+    @Mock private WmBarcodeMapper baseMapper;
+    @Mock private WmBarcodeConfigMapper barcodeConfigMapper;
+    @Mock private BarcodeGenerator barcodeGenerator;
+    @Mock private BarcodeSequenceProvider barcodeSequenceProvider;
 
-    @Mock
-    private com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
+    @Mock private com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
 
-    @InjectMocks
-    private WmBarcodeServiceImpl wmBarcodeService;
+    @InjectMocks private WmBarcodeServiceImpl wmBarcodeService;
 
     /**
      * 预热 MyBatis-Plus Lambda 缓存。
@@ -79,12 +73,11 @@ class WmBarcodeServiceImplTest {
         when(barcodeConfigMapper.selectOne(any())).thenReturn(config());
         when(barcodeSequenceProvider.nextSequence("WM_RECEIVE_DEFAULT")).thenReturn(1L);
         when(barcodeGenerator.generate(any(BarcodeRule.class), any(Date.class), anyLong()))
-            .thenReturn("RC20260816000001");
+                .thenReturn("RC20260816000001");
         when(baseMapper.insert(any(WmBarcode.class))).thenReturn(1);
 
         wmBarcodeService.generateAndSaveByCode(
-            "WM_RECEIVE_DEFAULT", "RECEIVE_IN", 1L, null,
-            100L, 9L, 5L, 77L, new Date());
+                "WM_RECEIVE_DEFAULT", "RECEIVE_IN", 1L, null, 100L, 9L, 5L, 77L, new Date());
 
         ArgumentCaptor<WmBarcode> captor = ArgumentCaptor.forClass(WmBarcode.class);
         verify(baseMapper).insert(captor.capture());
@@ -93,10 +86,10 @@ class WmBarcodeServiceImplTest {
         assertEquals(9L, saved.getBatchId());
         assertEquals(5L, saved.getStockId());
         assertEquals(100L, saved.getMaterialId());
-        var locks=inOrder(identities,barcodeSequenceProvider,barcodeGenerator,baseMapper);
-        locks.verify(identities).lockBinding(any(WmBarcode.class),eq(true));
+        var locks = inOrder(identities, barcodeSequenceProvider, barcodeGenerator, baseMapper);
+        locks.verify(identities).lockBinding(any(WmBarcode.class), eq(true));
         locks.verify(barcodeSequenceProvider).nextSequence("WM_RECEIVE_DEFAULT");
-        locks.verify(barcodeGenerator).generate(any(BarcodeRule.class),any(Date.class),anyLong());
+        locks.verify(barcodeGenerator).generate(any(BarcodeRule.class), any(Date.class), anyLong());
         locks.verify(identities).finishRegistration(any(WmBarcode.class));
         locks.verify(baseMapper).insert(any(WmBarcode.class));
     }

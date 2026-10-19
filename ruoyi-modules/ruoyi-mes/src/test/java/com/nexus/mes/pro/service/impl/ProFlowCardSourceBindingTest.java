@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/** 同租户错配工序不得越过入口父卡，刷写门禁和跳站的锁定读使用同一来源约束。 */
+/**
+ * 同租户错配工序不得越过入口父卡，刷写门禁和跳站的锁定读使用同一来源约束。
+ */
 @ExtendWith(MockitoExtension.class)
 class ProFlowCardSourceBindingTest {
     @Mock private ProFlowCardStepMapper stepMapper;
@@ -34,8 +36,11 @@ class ProFlowCardSourceBindingTest {
     @InjectMocks private ProFlowCardServiceImpl service;
     private MockedStatic<TenantHelper> tenant;
 
-    @BeforeEach void prepareSources() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "source"), ProFlowCardStep.class);
+    @BeforeEach
+    void prepareSources() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), "source"),
+                ProFlowCardStep.class);
         tenant = mockStatic(TenantHelper.class);
         tenant.when(TenantHelper::getTenantId).thenReturn("000000");
         ReflectionTestUtils.setField(service, "flashGateMode", "FORCE");
@@ -44,23 +49,31 @@ class ProFlowCardSourceBindingTest {
         reference.setCardId(100L);
         reference.setTenantId("000000");
         when(stepMapper.selectById(1L)).thenReturn(reference);
-        when(stepMapper.selectOne(any(Wrapper.class))).thenAnswer(call -> {
-            Wrapper<?> query = call.getArgument(0);
-            // 模拟真正按父卡执行的查询：卡100不能匹配卡200的步骤，而非让 mock 忽略 SQL 来源。
-            if (query.getSqlSegment().contains("card_id")) return null;
-            var foreign = new ProFlowCardStep();
-            foreign.setStepRecordId(1L);
-            foreign.setCardId(200L);
-            foreign.setMesWoId(2200L);
-            foreign.setWoStepId(2001L);
-            foreign.setSequenceNum(20);
-            return foreign;
-        });
+        when(stepMapper.selectOne(any(Wrapper.class)))
+                .thenAnswer(
+                        call -> {
+                            Wrapper<?> query = call.getArgument(0);
+                            // 模拟真正按父卡执行的查询：卡100不能匹配卡200的步骤，而非让 mock 忽略 SQL 来源。
+                            if (query.getSqlSegment().contains("card_id")) {
+                                return null;
+                            }
+                            var foreign = new ProFlowCardStep();
+                            foreign.setStepRecordId(1L);
+                            foreign.setCardId(200L);
+                            foreign.setMesWoId(2200L);
+                            foreign.setWoStepId(2001L);
+                            foreign.setSequenceNum(20);
+                            return foreign;
+                        });
     }
 
-    @AfterEach void clearTenant() { tenant.close(); }
+    @AfterEach
+    void clearTenant() {
+        tenant.close();
+    }
 
-    @Test void flashGateCannotInspectAnotherCardsStepUnderRequestedParentLock() {
+    @Test
+    void flashGateCannotInspectAnotherCardsStepUnderRequestedParentLock() {
         ReflectionTestUtils.invokeMethod(service, "checkFlashStepGate", 1L, 100L);
         verifyNoInteractions(workOrderStepMapper);
         var query = org.mockito.ArgumentCaptor.forClass(Wrapper.class);
@@ -69,7 +82,8 @@ class ProFlowCardSourceBindingTest {
         assertTrue(query.getValue().getSqlSegment().contains("tenant_id"));
     }
 
-    @Test void skipRejectsMismatchedStepBeforeTryingStateMutation() {
+    @Test
+    void skipRejectsMismatchedStepBeforeTryingStateMutation() {
         var bo = new ProSkipBo();
         bo.setCardId(100L);
         bo.setStepRecordId(1L);

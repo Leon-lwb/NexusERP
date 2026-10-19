@@ -34,25 +34,49 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 来源单据类型：物料入库单 */
+    /**
+     * 来源单据类型：物料入库单
+     */
     private static final String SOURCE_DOC_TYPE_RECEIVE = "WM_MATERIAL_RECEIVE";
-    /** 事务类型：采购入库 */
+
+    /**
+     * 事务类型：采购入库
+     */
     private static final String TX_TYPE_RECEIVE_IN = "RECEIVE_IN";
-    /** 事务标志：入库（正数） */
+
+    /**
+     * 事务标志：入库（正数）
+     */
     private static final int TX_FLAG_IN = 1;
 
-    /** 领用数据访问映射器（Mapper） */
+    /**
+     * 领用数据访问映射器（Mapper）
+     */
     private final WmMaterialReceiveMapper receiveMapper;
-    /** 领用明细数据访问映射器（Mapper） */
+
+    /**
+     * 领用明细数据访问映射器（Mapper）
+     */
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
-    /** 库存数据访问映射器（Mapper） */
+
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 库存计价服务(F3-a:入库按采购参考价/标准成本计价) */
+
+    /**
+     * 库存计价服务(F3-a:入库按采购参考价/标准成本计价)
+     */
     private final IInventoryValuationService valuationService;
-    /** 物料基础数据 Mapper(取参考价/标准成本) */
+
+    /**
+     * 物料基础数据 Mapper(取参考价/标准成本)
+     */
     private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
-    /** 策略被直接调用时也必须遵守旧执行的事务、租户与来源门禁。 */
+
+    /**
+     * 策略被直接调用时也必须遵守旧执行的事务、租户与来源门禁。
+     */
     private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
@@ -66,13 +90,14 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
      * @param materialMapper       物料Mapper
      * @param certifiedReceiptGuard 认证收货来源保护
      */
-    public ReceiveInStrategy(WmMaterialStockTxMapper stockTxMapper,
-                             WmMaterialReceiveMapper receiveMapper,
-                             WmMaterialReceiveDetailMapper receiveDetailMapper,
-                             WmMaterialStockMapper stockMapper,
-                             IInventoryValuationService valuationService,
-                             com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper,
-                             WmCertifiedReceiptMutationGuard certifiedReceiptGuard) {
+    public ReceiveInStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialReceiveMapper receiveMapper,
+            WmMaterialReceiveDetailMapper receiveDetailMapper,
+            WmMaterialStockMapper stockMapper,
+            IInventoryValuationService valuationService,
+            com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper,
+            WmCertifiedReceiptMutationGuard certifiedReceiptGuard) {
         super(stockTxMapper);
         this.receiveMapper = receiveMapper;
         this.receiveDetailMapper = receiveDetailMapper;
@@ -82,9 +107,12 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
         this.certifiedReceiptGuard = certifiedReceiptGuard;
     }
 
-    /** 入库计价:优先参考价,其次标准成本,无价格按 0 */
+    /**
+     * 入库计价:优先参考价,其次标准成本,无价格按 0
+     */
     private BigDecimal resolveReceiveUnitCost(WmMaterialReceiveDetail detail) {
-        com.nexus.erp.bd.domain.BdMaterial material = materialMapper.selectById(detail.getMaterialId());
+        com.nexus.erp.bd.domain.BdMaterial material =
+                materialMapper.selectById(detail.getMaterialId());
         if (material == null) {
             return BigDecimal.ZERO;
         }
@@ -122,23 +150,32 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
             return;
         }
 
-        List<WmMaterialReceiveDetail> detailList = receiveDetailMapper.selectList(
-            Wrappers.lambdaQuery(WmMaterialReceiveDetail.class)
-                .eq(WmMaterialReceiveDetail::getReceiveId, receiveId));
+        List<WmMaterialReceiveDetail> detailList =
+                receiveDetailMapper.selectList(
+                        Wrappers.lambdaQuery(WmMaterialReceiveDetail.class)
+                                .eq(WmMaterialReceiveDetail::getReceiveId, receiveId));
         if (detailList == null || detailList.isEmpty()) {
             throw new RuntimeException("入库单明细为空，无法入库过账");
         }
 
-        java.util.Set<Long> serialLines=serialInventory==null?java.util.Set.of():serialInventory.postReceiveDocument(receiveId);
+        java.util.Set<Long> serialLines =
+                serialInventory == null
+                        ? java.util.Set.of()
+                        : serialInventory.postReceiveDocument(receiveId);
         Date now = new Date();
         for (WmMaterialReceiveDetail detail : detailList) {
-            if(serialLines.contains(detail.getLineId()))continue;
-            if (detail.getQuantity() == null || detail.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+            if (serialLines.contains(detail.getLineId())) {
+                continue;
+            }
+            if (detail.getQuantity() == null
+                    || detail.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new RuntimeException("物料【" + detail.getMaterialName() + "】入库明细数量必须大于0");
             }
             WmMaterialStock stock = findStockForReceive(detail, receive);
-            BigDecimal beforeQuantity = stock == null || stock.getStockQuantity() == null
-                ? BigDecimal.ZERO : stock.getStockQuantity();
+            BigDecimal beforeQuantity =
+                    stock == null || stock.getStockQuantity() == null
+                            ? BigDecimal.ZERO
+                            : stock.getStockQuantity();
             BigDecimal afterQuantity = beforeQuantity.add(detail.getQuantity());
 
             if (stock == null) {
@@ -154,25 +191,38 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                     if (existing == null) {
                         throw e;
                     }
-                    log.warn("收货并发插入库存行冲突, 已改为复用既有行: materialId={}, batchId={}, locationId={}, stockId={}",
-                        detail.getMaterialId(), detail.getBatchId(), detail.getLocationId(), existing.getStockId());
+                    log.warn(
+                            "收货并发插入库存行冲突, 已改为复用既有行: materialId={}, batchId={}, locationId={},"
+                                    + " stockId={}",
+                            detail.getMaterialId(),
+                            detail.getBatchId(),
+                            detail.getLocationId(),
+                            existing.getStockId());
                     stock = existing;
-                    beforeQuantity = existing.getStockQuantity() == null
-                        ? BigDecimal.ZERO : existing.getStockQuantity();
+                    beforeQuantity =
+                            existing.getStockQuantity() == null
+                                    ? BigDecimal.ZERO
+                                    : existing.getStockQuantity();
                     afterQuantity = beforeQuantity.add(detail.getQuantity());
-                    int affected = stockMapper.addStock(stock.getStockId(), detail.getQuantity(), stock.getVersion());
+                    int affected =
+                            stockMapper.addStock(
+                                    stock.getStockId(), detail.getQuantity(), stock.getVersion());
                     if (affected == 0) {
                         throw new com.nexus.common.core.exception.ServiceException("库存并发冲突，请重试");
                     }
                 }
             } else {
-                int affected = stockMapper.addStock(stock.getStockId(), detail.getQuantity(), stock.getVersion());
+                int affected =
+                        stockMapper.addStock(
+                                stock.getStockId(), detail.getQuantity(), stock.getVersion());
                 if (affected == 0) {
                     throw new com.nexus.common.core.exception.ServiceException("库存并发冲突，请重试");
                 }
-                stockMapper.update(null, Wrappers.<WmMaterialStock>lambdaUpdate()
-                    .set(WmMaterialStock::getRecptDate, now)
-                    .eq(WmMaterialStock::getStockId, stock.getStockId()));
+                stockMapper.update(
+                        null,
+                        Wrappers.<WmMaterialStock>lambdaUpdate()
+                                .set(WmMaterialStock::getRecptDate, now)
+                                .eq(WmMaterialStock::getStockId, stock.getStockId()));
                 stock = stockMapper.selectById(stock.getStockId());
             }
 
@@ -181,18 +231,28 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
             valuationService.updateStockCost(stock.getStockId(), detail.getQuantity(), inUnitCost);
             stock = stockMapper.selectById(stock.getStockId());
 
-            stockTxMapper.insert(buildReceiveStockTx(receive, detail, stock, beforeQuantity, afterQuantity, now));
+            stockTxMapper.insert(
+                    buildReceiveStockTx(
+                            receive, detail, stock, beforeQuantity, afterQuantity, now));
         }
     }
 
-    private WmMaterialStock findStockForReceive(WmMaterialReceiveDetail detail, WmMaterialReceive receive) {
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+    private WmMaterialStock findStockForReceive(
+            WmMaterialReceiveDetail detail, WmMaterialReceive receive) {
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WmMaterialStock> lqw =
+                Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, detail.getMaterialId());
         lqw.eq(detail.getBaseUomId() != null, WmMaterialStock::getBaseUomId, detail.getBaseUomId());
         lqw.eq(detail.getBatchId() != null, WmMaterialStock::getBatchId, detail.getBatchId());
-        lqw.eq(detail.getWarehouseId() != null, WmMaterialStock::getWarehouseId, detail.getWarehouseId());
+        lqw.eq(
+                detail.getWarehouseId() != null,
+                WmMaterialStock::getWarehouseId,
+                detail.getWarehouseId());
         lqw.eq(detail.getAreaId() != null, WmMaterialStock::getAreaId, detail.getAreaId());
-        lqw.eq(detail.getLocationId() != null, WmMaterialStock::getLocationId, detail.getLocationId());
+        lqw.eq(
+                detail.getLocationId() != null,
+                WmMaterialStock::getLocationId,
+                detail.getLocationId());
         lqw.eq(receive.getVendorId() != null, WmMaterialStock::getVendorId, receive.getVendorId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);
@@ -205,8 +265,11 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
         return stockList.get(0);
     }
 
-    private WmMaterialStock buildStockFromReceiveDetail(WmMaterialReceiveDetail detail, WmMaterialReceive receive,
-                                                        BigDecimal stockQuantity, Date recptDate) {
+    private WmMaterialStock buildStockFromReceiveDetail(
+            WmMaterialReceiveDetail detail,
+            WmMaterialReceive receive,
+            BigDecimal stockQuantity,
+            Date recptDate) {
         WmMaterialStock stock = new WmMaterialStock();
         stock.setMaterialId(detail.getMaterialId());
         stock.setMaterialCode(detail.getMaterialCode());
@@ -236,11 +299,22 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
         return stock;
     }
 
-    private WmMaterialStockTx buildReceiveStockTx(WmMaterialReceive receive, WmMaterialReceiveDetail detail,
-                                                  WmMaterialStock stock, BigDecimal beforeQuantity,
-                                                  BigDecimal afterQuantity, Date now) {
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_RECEIVE_IN, TX_FLAG_IN, detail.getQuantity(),
-            beforeQuantity, afterQuantity, now);
+    private WmMaterialStockTx buildReceiveStockTx(
+            WmMaterialReceive receive,
+            WmMaterialReceiveDetail detail,
+            WmMaterialStock stock,
+            BigDecimal beforeQuantity,
+            BigDecimal afterQuantity,
+            Date now) {
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        stock,
+                        TX_TYPE_RECEIVE_IN,
+                        TX_FLAG_IN,
+                        detail.getQuantity(),
+                        beforeQuantity,
+                        afterQuantity,
+                        now);
         tx.setUnitCost(stock.getUnitCost());
         tx.setSourceDocType(SOURCE_DOC_TYPE_RECEIVE);
         tx.setSourceDocId(receive.getReceiveId());

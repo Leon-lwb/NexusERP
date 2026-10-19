@@ -22,8 +22,7 @@ import java.util.Date;
 @AutoMapper(target = WmMaterialStock.class)
 public class WmMaterialStockVo implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     /**
      * 库存ID
@@ -206,6 +205,7 @@ public class WmMaterialStockVo implements Serializable {
      * 冻结标志
      */
     private Long frozenFlag;
+
     private Long trackingVersion;
     private Long valuationGroupId;
 }

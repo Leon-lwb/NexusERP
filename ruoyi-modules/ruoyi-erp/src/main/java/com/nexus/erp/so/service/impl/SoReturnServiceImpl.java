@@ -55,11 +55,14 @@ public class SoReturnServiceImpl implements ISoReturnService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
     private final SoReturnMapper baseMapper;
     private final SoReturnLineMapper lineMapper;
-    /** 退货闭环：执行入库时回写订单行已退货数量 */
+
+    /**
+     * 退货闭环：执行入库时回写订单行已退货数量
+     */
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
+
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
     private final AutoCodeUtil autoCodeUtil;
@@ -96,7 +99,8 @@ public class SoReturnServiceImpl implements ISoReturnService {
             lineLqw.eq(SoReturnLine::getReturnId, vo.getReturnId());
             lineLqw.orderByAsc(SoReturnLine::getSortOrder);
             // 转 VO 返回，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端
-            vo.setSoReturnLineList(MapstructUtils.convert(lineMapper.selectList(lineLqw), SoReturnLineVo.class));
+            vo.setSoReturnLineList(
+                    MapstructUtils.convert(lineMapper.selectList(lineLqw), SoReturnLineVo.class));
         }
         return vo;
     }
@@ -173,8 +177,11 @@ public class SoReturnServiceImpl implements ISoReturnService {
                 continue;
             }
             if (!STATUS_DRAFT.equals(existing.getStatus())) {
-                throw new ServiceException("只有草稿状态的退货单才能删除，单号 "
-                    + existing.getReturnNo() + " 当前状态：" + existing.getStatus());
+                throw new ServiceException(
+                        "只有草稿状态的退货单才能删除，单号 "
+                                + existing.getReturnNo()
+                                + " 当前状态："
+                                + existing.getStatus());
             }
         }
         for (Long id : ids) {
@@ -216,20 +223,23 @@ public class SoReturnServiceImpl implements ISoReturnService {
             throw new ServiceException("只有已确认状态的退货单才能执行入库，当前状态：" + soReturn.getStatus());
         }
 
-        List<SoReturnLine> lines = lineMapper.selectList(
-            Wrappers.lambdaQuery(SoReturnLine.class)
-                .eq(SoReturnLine::getReturnId, returnId));
+        List<SoReturnLine> lines =
+                lineMapper.selectList(
+                        Wrappers.lambdaQuery(SoReturnLine.class)
+                                .eq(SoReturnLine::getReturnId, returnId));
 
         if (lines == null || lines.isEmpty()) {
             throw new RuntimeException("退货单无明细行");
         }
 
         // 条件更新抢占状态 → RECEIVED, 防并发双执行重复入库
-        int updated = baseMapper.update(null,
-            Wrappers.<SoReturn>lambdaUpdate()
-                .set(SoReturn::getStatus, STATUS_RECEIVED)
-                .eq(SoReturn::getReturnId, returnId)
-                .eq(SoReturn::getStatus, soReturn.getStatus()));
+        int updated =
+                baseMapper.update(
+                        null,
+                        Wrappers.<SoReturn>lambdaUpdate()
+                                .set(SoReturn::getStatus, STATUS_RECEIVED)
+                                .eq(SoReturn::getReturnId, returnId)
+                                .eq(SoReturn::getStatus, soReturn.getStatus()));
         if (updated == 0) {
             throw new RuntimeException("退货单状态已被并发操作变更，请刷新后重试");
         }
@@ -264,22 +274,38 @@ public class SoReturnServiceImpl implements ISoReturnService {
         if (soLineId == null || qty == null || qty.signum() <= 0) {
             return;
         }
-        int rows = soSalesOrderLineMapper.update(null,
-            Wrappers.<SoSalesOrderLine>lambdaUpdate()
-                .setSql("returned_qty = COALESCE(returned_qty, 0) + " + qty.toPlainString())
-                .eq(SoSalesOrderLine::getLineId, soLineId)
-                .apply("COALESCE(returned_qty, 0) + {0} <= COALESCE(delivered_qty, 0)", qty));
+        int rows =
+                soSalesOrderLineMapper.update(
+                        null,
+                        Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                                .setSql(
+                                        "returned_qty = COALESCE(returned_qty, 0) + "
+                                                + qty.toPlainString())
+                                .eq(SoSalesOrderLine::getLineId, soLineId)
+                                .apply(
+                                        "COALESCE(returned_qty, 0) + {0} <= COALESCE(delivered_qty,"
+                                                + " 0)",
+                                        qty));
         if (rows == 0) {
             SoSalesOrderLine soLine = soSalesOrderLineMapper.selectById(soLineId);
             if (soLine == null) {
                 throw new ServiceException("退货明细关联的销售订单行不存在（lineId=" + soLineId + "）");
             }
-            BigDecimal delivered = soLine.getDeliveredQty() == null ? BigDecimal.ZERO : soLine.getDeliveredQty();
-            BigDecimal returned = soLine.getReturnedQty() == null ? BigDecimal.ZERO : soLine.getReturnedQty();
-            throw new ServiceException("退货数量超过可退数量：订单行【" + soLine.getLineNo()
-                + "】已发货 " + delivered.toPlainString() + "、已退 " + returned.toPlainString()
-                + "，本次退 " + qty.toPlainString()
-                + "，可退 " + delivered.subtract(returned).toPlainString());
+            BigDecimal delivered =
+                    soLine.getDeliveredQty() == null ? BigDecimal.ZERO : soLine.getDeliveredQty();
+            BigDecimal returned =
+                    soLine.getReturnedQty() == null ? BigDecimal.ZERO : soLine.getReturnedQty();
+            throw new ServiceException(
+                    "退货数量超过可退数量：订单行【"
+                            + soLine.getLineNo()
+                            + "】已发货 "
+                            + delivered.toPlainString()
+                            + "、已退 "
+                            + returned.toPlainString()
+                            + "，本次退 "
+                            + qty.toPlainString()
+                            + "，可退 "
+                            + delivered.subtract(returned).toPlainString());
         }
     }
 
@@ -312,7 +338,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         variables.put("requireTaskOnStart", true);
         variables.put("returnId", entity.getReturnId());
         variables.put("returnNo", entity.getReturnNo());
-        R<Void> result = processService.startProcessByDataId(returnIdStr, selectFlowId, "soReturnService", variables);
+        R<Void> result =
+                processService.startProcessByDataId(
+                        returnIdStr, selectFlowId, "soReturnService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -324,10 +352,12 @@ public class SoReturnServiceImpl implements ISoReturnService {
      */
     @Override
     public String getProcInsId(String returnIdStr) {
-        return procInsIdHelper.resolve(returnIdStr, () -> {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(returnIdStr);
-            return business != null ? business.getProcessInstanceId() : null;
-        });
+        return procInsIdHelper.resolve(
+                returnIdStr,
+                () -> {
+                    WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(returnIdStr);
+                    return business != null ? business.getProcessInstanceId() : null;
+                });
     }
 
     /**
@@ -354,20 +384,27 @@ public class SoReturnServiceImpl implements ISoReturnService {
             newStatus = STATUS_CONFIRMED;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             newStatus = STATUS_DRAFT;
-        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+        } else if (ActStatus.revoke.equals(actStatus)
+                || ActStatus.stop.equals(actStatus)
+                || ActStatus.recall.equals(actStatus)) {
             newStatus = STATUS_DRAFT;
         } else {
             return;
         }
-        int updated = baseMapper.update(null,
-            Wrappers.<SoReturn>lambdaUpdate()
-                .set(SoReturn::getStatus, newStatus)
-                .eq(SoReturn::getReturnId, returnId)
-                // 退货无 REJECTED 状态（驳回即置 DRAFT），故在途集合只有 DRAFT/APPROVING
-                .in(SoReturn::getStatus, STATUS_DRAFT, STATUS_APPROVING));
+        int updated =
+                baseMapper.update(
+                        null,
+                        Wrappers.<SoReturn>lambdaUpdate()
+                                .set(SoReturn::getStatus, newStatus)
+                                .eq(SoReturn::getReturnId, returnId)
+                                // 退货无 REJECTED 状态（驳回即置 DRAFT），故在途集合只有 DRAFT/APPROVING
+                                .in(SoReturn::getStatus, STATUS_DRAFT, STATUS_APPROVING));
         if (updated == 0) {
-            log.warn("退货单[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更",
-                returnId, entity.getStatus(), newStatus);
+            log.warn(
+                    "退货单[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更",
+                    returnId,
+                    entity.getStatus(),
+                    newStatus);
         }
     }
 
@@ -392,7 +429,8 @@ public class SoReturnServiceImpl implements ISoReturnService {
      * 获取流程任务候选用户
      */
     @Override
-    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+    public List<String> flowCandidateUsernamesOfTask(
+            String taskNameId, Map<String, Object> values) {
         return null;
     }
 
@@ -405,20 +443,38 @@ public class SoReturnServiceImpl implements ISoReturnService {
      * @param now      操作时间
      */
     private void postReturnStock(SoReturn soReturn, SoReturnLine line, Date now) {
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
-            "SO_RETURN",soReturn.getReturnId(),line.getLineId(),"RETURN_IN",line.getMaterialId(),line.getReturnQuantity(),
-            soReturn.getWarehouseId(),null,null,null)))return;
-        if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                "SO_RETURN",
+                                soReturn.getReturnId(),
+                                line.getLineId(),
+                                "RETURN_IN",
+                                line.getMaterialId(),
+                                line.getReturnQuantity(),
+                                soReturn.getWarehouseId(),
+                                null,
+                                null,
+                                null))) {
+            return;
+        }
+        if (line.getReturnQuantity() == null
+                || line.getReturnQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("退货数量必须大于0");
         }
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
-        lqw.eq(soReturn.getWarehouseId() != null, WmMaterialStock::getWarehouseId, soReturn.getWarehouseId());
+        lqw.eq(
+                soReturn.getWarehouseId() != null,
+                WmMaterialStock::getWarehouseId,
+                soReturn.getWarehouseId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         WmMaterialStock stock = stockMapper.selectOne(lqw);
 
-        java.math.BigDecimal beforeQuantity = stock == null || stock.getStockQuantity() == null
-            ? java.math.BigDecimal.ZERO : stock.getStockQuantity();
+        java.math.BigDecimal beforeQuantity =
+                stock == null || stock.getStockQuantity() == null
+                        ? java.math.BigDecimal.ZERO
+                        : stock.getStockQuantity();
         java.math.BigDecimal afterQuantity = beforeQuantity.add(line.getReturnQuantity());
 
         if (stock == null) {
@@ -440,7 +496,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
             stockMapper.insert(stock);
         } else {
             // 原子累加(乐观锁 version 守卫), 替换读-改-写
-            int rows = stockMapper.addStock(stock.getStockId(), line.getReturnQuantity(), stock.getVersion());
+            int rows =
+                    stockMapper.addStock(
+                            stock.getStockId(), line.getReturnQuantity(), stock.getVersion());
             if (rows == 0) {
                 throw new RuntimeException("库存并发变更冲突，请重试: stockId=" + stock.getStockId());
             }
@@ -516,15 +574,20 @@ public class SoReturnServiceImpl implements ISoReturnService {
         lqw.eq(StringUtils.isNotBlank(bo.getReturnNo()), SoReturn::getReturnNo, bo.getReturnNo());
         lqw.eq(StringUtils.isNotBlank(bo.getSoNo()), SoReturn::getSoNo, bo.getSoNo());
         lqw.eq(bo.getClientId() != null, SoReturn::getClientId, bo.getClientId());
-        lqw.like(StringUtils.isNotBlank(bo.getClientName()), SoReturn::getClientName, bo.getClientName());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getClientName()),
+                SoReturn::getClientName,
+                bo.getClientName());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SoReturn::getStatus, bo.getStatus());
         // 关键字模糊搜索：退货单号 / 来源销售订单号 / 客户名称 任一匹配（移动端单输入框搜索）
-        lqw.and(StringUtils.isNotBlank(bo.getKeyword()),
-            w -> w.like(SoReturn::getReturnNo, bo.getKeyword())
-                .or()
-                .like(SoReturn::getSoNo, bo.getKeyword())
-                .or()
-                .like(SoReturn::getClientName, bo.getKeyword()));
+        lqw.and(
+                StringUtils.isNotBlank(bo.getKeyword()),
+                w ->
+                        w.like(SoReturn::getReturnNo, bo.getKeyword())
+                                .or()
+                                .like(SoReturn::getSoNo, bo.getKeyword())
+                                .or()
+                                .like(SoReturn::getClientName, bo.getKeyword()));
         lqw.orderByDesc(SoReturn::getCreateTime);
         return lqw;
     }

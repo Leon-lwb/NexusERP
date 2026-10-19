@@ -45,20 +45,13 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 @ExtendWith(MockitoExtension.class)
 class StationTraceServiceTest {
 
-    @Mock
-    private ProSnMapper proSnMapper;
-    @Mock
-    private ProFlowCardStepMapper stepMapper;
-    @Mock
-    private FlashRecordMapper flashRecordMapper;
-    @Mock
-    private TestRecordMapper testRecordMapper;
-    @Mock
-    private StationReportMapper reportMapper;
-    @Mock
-    private StationSnBindLogMapper bindLogMapper;
-    @InjectMocks
-    private StationTraceService service;
+    @Mock private ProSnMapper proSnMapper;
+    @Mock private ProFlowCardStepMapper stepMapper;
+    @Mock private FlashRecordMapper flashRecordMapper;
+    @Mock private TestRecordMapper testRecordMapper;
+    @Mock private StationReportMapper reportMapper;
+    @Mock private StationSnBindLogMapper bindLogMapper;
+    @InjectMocks private StationTraceService service;
 
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
 
@@ -71,29 +64,42 @@ class StationTraceServiceTest {
         Map<String, ColumnCache> stepColumns = new HashMap<>();
         stepColumns.put("CARDID", new ColumnCache("card_id", "card_id"));
         stepColumns.put("SEQUENCENUM", new ColumnCache("sequence_num", "sequence_num"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(ProFlowCardStep.class)).thenReturn(stepColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(ProFlowCardStep.class))
+                .thenReturn(stepColumns);
         Map<String, ColumnCache> flashColumns = new HashMap<>();
         flashColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         flashColumns.put("FLASHTIME", new ColumnCache("flash_time", "flash_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(FlashRecord.class)).thenReturn(flashColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(FlashRecord.class))
+                .thenReturn(flashColumns);
         Map<String, ColumnCache> testColumns = new HashMap<>();
         testColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         testColumns.put("TESTTIME", new ColumnCache("test_time", "test_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(TestRecord.class)).thenReturn(testColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(TestRecord.class))
+                .thenReturn(testColumns);
         Map<String, ColumnCache> reportColumns = new HashMap<>();
         reportColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         reportColumns.put("CREATETIME", new ColumnCache("create_time", "create_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(MesStationReport.class)).thenReturn(reportColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(MesStationReport.class))
+                .thenReturn(reportColumns);
         Map<String, ColumnCache> bindColumns = new HashMap<>();
         bindColumns.put("PARENTSNCODE", new ColumnCache("parent_sn_code", "parent_sn_code"));
-        bindColumns.put("COMPONENTSNCODE", new ColumnCache("component_sn_code", "component_sn_code"));
+        bindColumns.put(
+                "COMPONENTSNCODE", new ColumnCache("component_sn_code", "component_sn_code"));
         bindColumns.put("CREATETIME", new ColumnCache("create_time", "create_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(MesSnBindLog.class)).thenReturn(bindColumns);
+        lambdaUtilsMock
+                .when(() -> LambdaUtils.getColumnMap(MesSnBindLog.class))
+                .thenReturn(bindColumns);
     }
 
     @AfterEach
     void tearDown() {
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
+        if (lambdaUtilsMock != null) {
+            lambdaUtilsMock.close();
+        }
     }
 
     @Test
@@ -158,10 +164,12 @@ class StationTraceServiceTest {
         when(reportMapper.selectList(any())).thenReturn(List.of());
         when(bindLogMapper.selectList(any())).thenReturn(List.of());
         // 同一测试单 2 个 item 行(一 PASS 一 FAIL) + 另一测试单 1 行(全 PASS)
-        when(testRecordMapper.selectList(any())).thenReturn(List.of(
-            test("T1", "VOLTAGE", "PASS", date("2026-08-21 14:00:00")),
-            test("T1", "CURRENT", "FAIL", date("2026-08-21 14:00:00")),
-            test("T2", "VOLTAGE", "PASS", date("2026-08-21 12:00:00"))));
+        when(testRecordMapper.selectList(any()))
+                .thenReturn(
+                        List.of(
+                                test("T1", "VOLTAGE", "PASS", date("2026-08-21 14:00:00")),
+                                test("T1", "CURRENT", "FAIL", date("2026-08-21 14:00:00")),
+                                test("T2", "VOLTAGE", "PASS", date("2026-08-21 12:00:00"))));
 
         Map<String, Object> data = service.trace("SN-1");
 
@@ -172,7 +180,8 @@ class StationTraceServiceTest {
         assertEquals("FAIL", first.get("result"), "组内任一 FAIL 整组 FAIL");
         assertTrue(first.get("summary").toString().contains("T1"));
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> items = (List<Map<String, Object>>) ((Map<?, ?>) first.get("detail")).get("items");
+        List<Map<String, Object>> items =
+                (List<Map<String, Object>>) ((Map<?, ?>) first.get("detail")).get("items");
         assertEquals(2, items.size());
         assertEquals("PASS", ((Map<?, ?>) records.get(1)).get("result"));
     }
@@ -202,8 +211,9 @@ class StationTraceServiceTest {
 
         List<?> records = (List<?>) data.get("records");
         assertEquals(2, records.size());
-        assertTrue(((Map<?, ?>) records.get(0)).get("summary").toString().contains("换板 → SN-C2"),
-            "REBIND 摘要应含换板新 SN: " + records.get(0));
+        assertTrue(
+                ((Map<?, ?>) records.get(0)).get("summary").toString().contains("换板 → SN-C2"),
+                "REBIND 摘要应含换板新 SN: " + records.get(0));
         assertTrue(((Map<?, ?>) records.get(1)).get("summary").toString().contains("解绑"));
     }
 
@@ -244,26 +254,33 @@ class StationTraceServiceTest {
     private Date date(String s) {
         return new Date(java.sql.Timestamp.valueOf(s).getTime());
     }
+
     @Test
     @SuppressWarnings("unchecked")
     void unknownTestResultNeverBecomesAPassingQualityFact() {
         when(proSnMapper.selectOne(any())).thenReturn(sn());
-        when(testRecordMapper.selectList(any())).thenReturn(List.of(test("UNKNOWN-TEST","V",null,date("2026-10-19 00:00:00"))));
-        var result=service.trace("SN-1");
-        var records=(List<Map<String,Object>>)result.get("records");
-        var record=records.stream().filter(r->"TEST".equals(r.get("type"))).findFirst().orElseThrow();
-        assertEquals("UNKNOWN",record.get("result"));
-        var detail=(Map<String,Object>)record.get("detail");var items=(List<Map<String,Object>>)detail.get("items");
-        assertEquals(false,items.get(0).get("pass"));
+        when(testRecordMapper.selectList(any()))
+                .thenReturn(List.of(test("UNKNOWN-TEST", "V", null, date("2026-10-19 00:00:00"))));
+        var result = service.trace("SN-1");
+        var records = (List<Map<String, Object>>) result.get("records");
+        var record =
+                records.stream()
+                        .filter(r -> "TEST".equals(r.get("type")))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals("UNKNOWN", record.get("result"));
+        var detail = (Map<String, Object>) record.get("detail");
+        var items = (List<Map<String, Object>>) detail.get("items");
+        assertEquals(false, items.get(0).get("pass"));
     }
 
     @Test
     void sourceLimitIsVisibleRatherThanPresentedAsCompleteHistory() {
         when(proSnMapper.selectOne(any())).thenReturn(sn());
         when(testRecordMapper.selectCount(any())).thenReturn(201L);
-        var result=service.trace("SN-1");
-        assertEquals(true,result.get("truncated"));
-        assertTrue(((List<?>)result.get("truncatedSources")).contains("TEST"));
-        assertEquals("LEGACY_SN_CODE",result.get("traceScope"));
+        var result = service.trace("SN-1");
+        assertEquals(true, result.get("truncated"));
+        assertTrue(((List<?>) result.get("truncatedSources")).contains("TEST"));
+        assertEquals("LEGACY_SN_CODE", result.get("traceScope"));
     }
 }

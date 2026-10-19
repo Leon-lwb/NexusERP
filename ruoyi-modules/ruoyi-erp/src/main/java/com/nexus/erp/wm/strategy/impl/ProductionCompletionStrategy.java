@@ -45,29 +45,59 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：生产入库 */
+    /**
+     * 事务类型：生产入库
+     */
     private static final String TX_TYPE_PRODUCTION_IN = "PRODUCTION_IN";
-    /** 来源单据类型：生产工单 */
+
+    /**
+     * 来源单据类型：生产工单
+     */
     private static final String SOURCE_DOC_TYPE_WORK_ORDER = "PRD_WORK_ORDER";
-    /** 事务标志：入库（正数） */
+
+    /**
+     * 事务标志：入库（正数）
+     */
     private static final int TX_FLAG_IN = 1;
-    /** 库存流水金额精度 */
+
+    /**
+     * 库存流水金额精度
+     */
     private static final int TX_AMOUNT_SCALE = 4;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 批次数据访问映射器（Mapper） */
+
+    /**
+     * 批次数据访问映射器（Mapper）
+     */
     private final WmBatchMapper batchMapper;
-    /** 生产完工数据访问映射器（Mapper） */
+
+    /**
+     * 生产完工数据访问映射器（Mapper）
+     */
     private final BdMaterialMapper bdMaterialMapper;
-    /** 仓库数据访问映射器（Mapper） */
+
+    /**
+     * 仓库数据访问映射器（Mapper）
+     */
     private final WmWarehouseMapper wmWarehouseMapper;
-    /** 存储库位数据访问映射器（Mapper） */
+
+    /**
+     * 存储库位数据访问映射器（Mapper）
+     */
     private final WmStorageLocationMapper wmStorageLocationMapper;
-    /** 存储区域数据访问映射器（Mapper） */
+
+    /**
+     * 存储区域数据访问映射器（Mapper）
+     */
     private final WmStorageAreaMapper wmStorageAreaMapper;
-    /** 生产完工数据访问映射器（Mapper） */
+
+    /**
+     * 生产完工数据访问映射器（Mapper）
+     */
     private final BdUnitOfMeasureMapper bdUnitOfMeasureMapper;
 
     /**
@@ -82,14 +112,15 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
      * @param bdUnitOfMeasureMapper    计量单位Mapper（取单位名称）
      * @param batchMapper              批次Mapper（累计生产实际收量）
      */
-    public ProductionCompletionStrategy(WmMaterialStockTxMapper stockTxMapper,
-                                        WmMaterialStockMapper stockMapper,
-                                        BdMaterialMapper bdMaterialMapper,
-                                        WmWarehouseMapper wmWarehouseMapper,
-                                        WmStorageLocationMapper wmStorageLocationMapper,
-                                        WmStorageAreaMapper wmStorageAreaMapper,
-                                        BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
-                                        WmBatchMapper batchMapper) {
+    public ProductionCompletionStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialStockMapper stockMapper,
+            BdMaterialMapper bdMaterialMapper,
+            WmWarehouseMapper wmWarehouseMapper,
+            WmStorageLocationMapper wmStorageLocationMapper,
+            WmStorageAreaMapper wmStorageAreaMapper,
+            BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
+            WmBatchMapper batchMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.batchMapper = batchMapper;
@@ -130,8 +161,21 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         Long batchId = args[8] != null ? (Long) args[8] : null;
         String batchCode = (String) args[9];
         Date now = (Date) args[10];
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
-            "PRD_WORK_ORDER",woId,null,"PRODUCTION_IN",materialId,quantity,warehouseId,locationId,batchId,null)))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                "PRD_WORK_ORDER",
+                                woId,
+                                null,
+                                "PRODUCTION_IN",
+                                materialId,
+                                quantity,
+                                warehouseId,
+                                locationId,
+                                batchId,
+                                null))) {
+            return;
+        }
 
         // 已有流水不授权另一张单据成功；原结果恢复只能由上层完整凭据守卫确认。
         if (hasPosted(SOURCE_DOC_TYPE_WORK_ORDER, woId)) {
@@ -139,8 +183,19 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         }
 
         // 1. 查询或创建库存记录（新建时完整填充维度字段）
-        WmMaterialStock stock = findOrCreateStock(materialId, warehouseId, locationId, batchId, batchCode,
-            materialCode, materialName, woId, woNo, quantity, now);
+        WmMaterialStock stock =
+                findOrCreateStock(
+                        materialId,
+                        warehouseId,
+                        locationId,
+                        batchId,
+                        batchCode,
+                        materialCode,
+                        materialName,
+                        woId,
+                        woNo,
+                        quantity,
+                        now);
 
         // 2. 原子增加库存数量
         int affected = stockMapper.addStock(stock.getStockId(), quantity, stock.getVersion());
@@ -152,15 +207,31 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         BigDecimal beforeQty = afterQty.subtract(quantity);
 
         // 3. 仅对本次明确指定的生产批次累计收量，沿用原库存事务与无批次兼容边界
-        if (batchId != null && batchMapper.increaseProductionReceivedQty(batchId, refreshedStock.getMaterialId(),
-            refreshedStock.getTenantId(), woId, quantity) != 1) {
+        if (batchId != null
+                && batchMapper.increaseProductionReceivedQty(
+                                batchId,
+                                refreshedStock.getMaterialId(),
+                                refreshedStock.getTenantId(),
+                                woId,
+                                quantity)
+                        != 1) {
             throw new ServiceException("生产入库批次收量更新失败，请核对工单与批次");
         }
 
         // 4. 生成库存流水，金额使用本次入库后实际库存单位成本，不从总成本反推
-        WmMaterialStockTx tx = buildBaseTxFromStock(refreshedStock, TX_TYPE_PRODUCTION_IN, TX_FLAG_IN,
-            quantity, beforeQty, afterQty, now);
-        BigDecimal unitCost = refreshedStock.getUnitCost() != null ? refreshedStock.getUnitCost() : BigDecimal.ZERO;
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        refreshedStock,
+                        TX_TYPE_PRODUCTION_IN,
+                        TX_FLAG_IN,
+                        quantity,
+                        beforeQty,
+                        afterQty,
+                        now);
+        BigDecimal unitCost =
+                refreshedStock.getUnitCost() != null
+                        ? refreshedStock.getUnitCost()
+                        : BigDecimal.ZERO;
         tx.setUnitCost(unitCost);
         tx.setTxAmount(quantity.multiply(unitCost).setScale(TX_AMOUNT_SCALE, RoundingMode.HALF_UP));
         tx.setSourceDocType(SOURCE_DOC_TYPE_WORK_ORDER);
@@ -170,7 +241,11 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
             throw new ServiceException("生产入库库存流水写入失败");
         }
 
-        log.info("工单[{}]完工入库，物料[{}]，数量[{}]", woId, materialCode, quantity.stripTrailingZeros().toPlainString());
+        log.info(
+                "工单[{}]完工入库，物料[{}]，数量[{}]",
+                woId,
+                materialCode,
+                quantity.stripTrailingZeros().toPlainString());
     }
 
     /**
@@ -179,10 +254,18 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
      * 匹配维度：物料 + 仓库 + 库位 + 批次（批次非空时按批次隔离，与采购入库一致）。
      * 新建时按物料/仓库/库位/库区主数据完整填充维度字段，避免库存记录信息缺失。
      */
-    private WmMaterialStock findOrCreateStock(Long materialId, Long warehouseId, Long locationId,
-                                               Long batchId, String batchCode,
-                                               String materialCode, String materialName,
-                                               Long woId, String woNo, BigDecimal quantity, Date now) {
+    private WmMaterialStock findOrCreateStock(
+            Long materialId,
+            Long warehouseId,
+            Long locationId,
+            Long batchId,
+            String batchCode,
+            String materialCode,
+            String materialName,
+            Long woId,
+            String woNo,
+            BigDecimal quantity,
+            Date now) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, materialId);
         lqw.eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId);
@@ -192,8 +275,19 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         WmMaterialStock stock = stockMapper.selectOne(lqw);
 
         if (stock == null) {
-            stock = buildStock(materialId, warehouseId, locationId, batchId, batchCode,
-                materialCode, materialName, woId, woNo, quantity, now);
+            stock =
+                    buildStock(
+                            materialId,
+                            warehouseId,
+                            locationId,
+                            batchId,
+                            batchCode,
+                            materialCode,
+                            materialName,
+                            woId,
+                            woNo,
+                            quantity,
+                            now);
             stockMapper.insert(stock);
         }
         return stock;
@@ -205,17 +299,31 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
      * 物料维度取自 bd_material（分类/规格/单位/成本），仓库维度取自 wm_warehouse，
      * 库位/库区维度取自 wm_storage_location + wm_storage_area，单位名称取自 bd_unit_of_measure。
      */
-    private WmMaterialStock buildStock(Long materialId, Long warehouseId, Long locationId,
-                                        Long batchId, String batchCode,
-                                        String materialCode, String materialName,
-                                        Long woId, String woNo, BigDecimal quantity, Date now) {
+    private WmMaterialStock buildStock(
+            Long materialId,
+            Long warehouseId,
+            Long locationId,
+            Long batchId,
+            String batchCode,
+            String materialCode,
+            String materialName,
+            Long woId,
+            String woNo,
+            BigDecimal quantity,
+            Date now) {
         BdMaterial material = bdMaterialMapper.selectById(materialId);
-        WmWarehouse warehouse = warehouseId != null ? wmWarehouseMapper.selectById(warehouseId) : null;
-        WmStorageLocation location = locationId != null ? wmStorageLocationMapper.selectById(locationId) : null;
-        WmStorageArea area = (location != null && location.getAreaId() != null)
-            ? wmStorageAreaMapper.selectById(location.getAreaId()) : null;
-        BdUnitOfMeasure uom = (material != null && material.getBaseUomId() != null)
-            ? bdUnitOfMeasureMapper.selectById(material.getBaseUomId()) : null;
+        WmWarehouse warehouse =
+                warehouseId != null ? wmWarehouseMapper.selectById(warehouseId) : null;
+        WmStorageLocation location =
+                locationId != null ? wmStorageLocationMapper.selectById(locationId) : null;
+        WmStorageArea area =
+                (location != null && location.getAreaId() != null)
+                        ? wmStorageAreaMapper.selectById(location.getAreaId())
+                        : null;
+        BdUnitOfMeasure uom =
+                (material != null && material.getBaseUomId() != null)
+                        ? bdUnitOfMeasureMapper.selectById(material.getBaseUomId())
+                        : null;
 
         WmMaterialStock stock = new WmMaterialStock();
         stock.setMaterialId(materialId);
@@ -223,8 +331,10 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         stock.setMaterialName(materialName);
         stock.setMaterialSpec(material != null ? material.getMaterialSpec() : null);
         stock.setCategoryId(material != null ? material.getCategoryId() : null);
-        stock.setBaseUomId(material != null && material.getBaseUomId() != null
-            ? String.valueOf(material.getBaseUomId()) : null);
+        stock.setBaseUomId(
+                material != null && material.getBaseUomId() != null
+                        ? String.valueOf(material.getBaseUomId())
+                        : null);
         stock.setBaseUomName(uom != null ? uom.getUomName() : null);
         stock.setBatchId(batchId);
         stock.setBatchCode(batchCode);
@@ -242,8 +352,10 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         stock.setStockQuantity(BigDecimal.ZERO);
         stock.setProductionDate(now);
         stock.setRecptDate(now);
-        BigDecimal unitCost = material != null && material.getStandardCost() != null
-            ? material.getStandardCost() : BigDecimal.ZERO;
+        BigDecimal unitCost =
+                material != null && material.getStandardCost() != null
+                        ? material.getStandardCost()
+                        : BigDecimal.ZERO;
         stock.setUnitCost(unitCost);
         stock.setTotalCost(unitCost.multiply(quantity != null ? quantity : BigDecimal.ZERO));
         stock.setFrozenFlag(0L);

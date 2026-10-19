@@ -48,43 +48,74 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：返工入库 */
+    /**
+     * 事务类型：返工入库
+     */
     private static final String TX_TYPE_REWORK_RECEIVE = "REWORK_RECEIVE";
-    /** 来源单据类型：返工入库（与返工出库 PRD_REWORK_ORDER 区分，保证幂等键互不干扰） */
+
+    /**
+     * 来源单据类型：返工入库（与返工出库 PRD_REWORK_ORDER 区分，保证幂等键互不干扰）
+     */
     private static final String SOURCE_DOC_TYPE_REWORK_RECEIVE = "PRD_REWORK_ORDER_RECEIVE";
-    /** 事务标志：入库（正数） */
+
+    /**
+     * 事务标志：入库（正数）
+     */
     private static final int TX_FLAG_IN = 1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 消息提供器 */
+
+    /**
+     * 消息提供器
+     */
     private final ReliableMessageProducer messageProducer;
-    /** 上架策略服务（仓库维度缺省时按规则解析目标仓库） */
+
+    /**
+     * 上架策略服务（仓库维度缺省时按规则解析目标仓库）
+     */
     private final IPutawayStrategyService putawayStrategyService;
-    /** 物料主数据 Mapper（新建库存行补全规格/单位维度） */
+
+    /**
+     * 物料主数据 Mapper（新建库存行补全规格/单位维度）
+     */
     private final BdMaterialMapper bdMaterialMapper;
-    /** 计量单位 Mapper（新建库存行补全单位名称） */
+
+    /**
+     * 计量单位 Mapper（新建库存行补全单位名称）
+     */
     private final BdUnitOfMeasureMapper bdUnitOfMeasureMapper;
-    /** 仓库 Mapper（新建库存行补全仓库编码名称） */
+
+    /**
+     * 仓库 Mapper（新建库存行补全仓库编码名称）
+     */
     private final WmWarehouseMapper wmWarehouseMapper;
-    /** 库位 Mapper（新建库存行补全库位/库区维度） */
+
+    /**
+     * 库位 Mapper（新建库存行补全库位/库区维度）
+     */
     private final WmStorageLocationMapper wmStorageLocationMapper;
-    /** 库区 Mapper（新建库存行补全库区维度） */
+
+    /**
+     * 库区 Mapper（新建库存行补全库区维度）
+     */
     private final WmStorageAreaMapper wmStorageAreaMapper;
 
     /**
      * 构造返工入库策略实例
      */
-    public ReworkReceiveStrategy(WmMaterialStockTxMapper stockTxMapper,
-                                 WmMaterialStockMapper stockMapper,
-                                 ReliableMessageProducer messageProducer,
-                                 IPutawayStrategyService putawayStrategyService,
-                                 BdMaterialMapper bdMaterialMapper,
-                                 BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
-                                 WmWarehouseMapper wmWarehouseMapper,
-                                 WmStorageLocationMapper wmStorageLocationMapper,
-                                 WmStorageAreaMapper wmStorageAreaMapper) {
+    public ReworkReceiveStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialStockMapper stockMapper,
+            ReliableMessageProducer messageProducer,
+            IPutawayStrategyService putawayStrategyService,
+            BdMaterialMapper bdMaterialMapper,
+            BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
+            WmWarehouseMapper wmWarehouseMapper,
+            WmStorageLocationMapper wmStorageLocationMapper,
+            WmStorageAreaMapper wmStorageAreaMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.messageProducer = messageProducer;
@@ -107,11 +138,11 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
     }
 
     /**
-     * 执行返工入库操作
-     * <p>参数契约与 {@code IWmStockOperationService#postReworkReceive} 一致(9参):
-     * args[0]=reworkId, args[1]=reworkNo, args[2]=materialId, args[3]=materialCode,
-     * args[4]=materialName, args[5]=quantity, args[6]=warehouseId(可空), args[7]=locationId(可空), args[8]=now。
-     * 仓库维度: 调用方指定优先, 缺省时按上架规则解析(与完工入库同源), 解析失败回退历史"物料任意仓库"行为。</p>
+     * 执行返工入库。
+     *
+     * 参数与 {@link IWmStockOperationService#postReworkReceive} 保持九项顺序一致：
+     * 返工单标识、返工单号、物料标识、物料编码、物料名称、数量、仓库标识、库位标识及业务时间。
+     * 仓库优先使用调用方指定值，否则按上架规则解析；保留现有历史兼容回退。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -126,7 +157,21 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
         Long locationId = (Long) args[7];
         Date now = args[8] instanceof Date ? (Date) args[8] : new Date();
 
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in("PRD_REWORK_ORDER_RECEIVE",reworkId,null,"REWORK_RECEIVE",materialId,quantity,warehouseId,locationId,null,null)))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                "PRD_REWORK_ORDER_RECEIVE",
+                                reworkId,
+                                null,
+                                "REWORK_RECEIVE",
+                                materialId,
+                                quantity,
+                                warehouseId,
+                                locationId,
+                                null,
+                                null))) {
+            return;
+        }
         if (hasPosted(SOURCE_DOC_TYPE_REWORK_RECEIVE, reworkId)) {
             return;
         }
@@ -145,7 +190,10 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
                     locationId = putaway.getLocationId();
                 }
             } catch (Exception e) {
-                log.info("返工入库未解析到上架规则目标仓库, 回退不限仓库: materialId={}, 原因={}", materialId, e.getMessage());
+                log.info(
+                        "返工入库未解析到上架规则目标仓库, 回退不限仓库: materialId={}, 原因={}",
+                        materialId,
+                        e.getMessage());
             }
         }
 
@@ -162,21 +210,38 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
 
         BigDecimal beforeQty = BigDecimal.ZERO;
         if (stock != null) {
-            beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+            beforeQty =
+                    stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
             int affected = stockMapper.addStock(stock.getStockId(), quantity, stock.getVersion());
             if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + materialCode + "/" + materialName + "】");
+                throw new ServiceException(
+                        "库存并发冲突，请重试: 物料【" + materialCode + "/" + materialName + "】");
             }
             stock = stockMapper.selectById(stock.getStockId());
         } else {
             // 新建库存行按主数据完整补全维度(参照 ProductionCompletionStrategy.buildStock)
-            stock = buildReworkStock(materialId, materialCode, materialName, quantity, now,
-                warehouseId, locationId, putaway);
+            stock =
+                    buildReworkStock(
+                            materialId,
+                            materialCode,
+                            materialName,
+                            quantity,
+                            now,
+                            warehouseId,
+                            locationId,
+                            putaway);
             stockMapper.insert(stock);
         }
 
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_REWORK_RECEIVE, TX_FLAG_IN,
-            quantity, beforeQty, beforeQty.add(quantity), now);
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        stock,
+                        TX_TYPE_REWORK_RECEIVE,
+                        TX_FLAG_IN,
+                        quantity,
+                        beforeQty,
+                        beforeQty.add(quantity),
+                        now);
         tx.setSourceDocType(SOURCE_DOC_TYPE_REWORK_RECEIVE);
         tx.setSourceDocId(reworkId);
         tx.setSourceDocCode(reworkNo);
@@ -200,8 +265,8 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
         } catch (NumberFormatException e) {
             throw new ServiceException("返工入库 MQ 消息租户ID非法, 拒绝投递: tenantId=" + tenantIdStr);
         }
-        messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
-            RoutingKeyConstants.REWORK_STOCK, msg);
+        messageProducer.send(
+                ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.REWORK_STOCK, msg);
     }
 
     /**
@@ -209,31 +274,52 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
      * <p>物料维度取自 bd_material（规格/单位），仓库/库位/库区维度取自 wm 主数据；
      * 上架规则解析结果携带的编码名称优先于按 ID 反查。批次维度无来源（返工单无批次字段），暂不填。</p>
      */
-    private WmMaterialStock buildReworkStock(Long materialId, String materialCode, String materialName,
-                                             BigDecimal quantity, Date now,
-                                             Long warehouseId, Long locationId, PutawayLocation putaway) {
+    private WmMaterialStock buildReworkStock(
+            Long materialId,
+            String materialCode,
+            String materialName,
+            BigDecimal quantity,
+            Date now,
+            Long warehouseId,
+            Long locationId,
+            PutawayLocation putaway) {
         BdMaterial material = bdMaterialMapper.selectById(materialId);
-        WmWarehouse warehouse = warehouseId != null ? wmWarehouseMapper.selectById(warehouseId) : null;
-        WmStorageLocation location = locationId != null ? wmStorageLocationMapper.selectById(locationId) : null;
-        WmStorageArea area = (location != null && location.getAreaId() != null)
-            ? wmStorageAreaMapper.selectById(location.getAreaId()) : null;
-        BdUnitOfMeasure uom = (material != null && material.getBaseUomId() != null)
-            ? bdUnitOfMeasureMapper.selectById(material.getBaseUomId()) : null;
-        boolean fromPutaway = putaway != null && warehouseId != null && warehouseId.equals(putaway.getWarehouseId());
+        WmWarehouse warehouse =
+                warehouseId != null ? wmWarehouseMapper.selectById(warehouseId) : null;
+        WmStorageLocation location =
+                locationId != null ? wmStorageLocationMapper.selectById(locationId) : null;
+        WmStorageArea area =
+                (location != null && location.getAreaId() != null)
+                        ? wmStorageAreaMapper.selectById(location.getAreaId())
+                        : null;
+        BdUnitOfMeasure uom =
+                (material != null && material.getBaseUomId() != null)
+                        ? bdUnitOfMeasureMapper.selectById(material.getBaseUomId())
+                        : null;
+        boolean fromPutaway =
+                putaway != null
+                        && warehouseId != null
+                        && warehouseId.equals(putaway.getWarehouseId());
 
         WmMaterialStock stock = new WmMaterialStock();
         stock.setMaterialId(materialId);
         stock.setMaterialCode(materialCode);
         stock.setMaterialName(materialName);
         stock.setMaterialSpec(material != null ? material.getMaterialSpec() : null);
-        stock.setBaseUomId(material != null && material.getBaseUomId() != null
-            ? String.valueOf(material.getBaseUomId()) : null);
+        stock.setBaseUomId(
+                material != null && material.getBaseUomId() != null
+                        ? String.valueOf(material.getBaseUomId())
+                        : null);
         stock.setBaseUomName(uom != null ? uom.getUomName() : null);
         stock.setWarehouseId(warehouseId);
-        stock.setWarehouseCode(fromPutaway ? putaway.getWarehouseCode()
-            : (warehouse != null ? warehouse.getWarehouseCode() : null));
-        stock.setWarehouseName(fromPutaway ? putaway.getWarehouseName()
-            : (warehouse != null ? warehouse.getWarehouseName() : null));
+        stock.setWarehouseCode(
+                fromPutaway
+                        ? putaway.getWarehouseCode()
+                        : (warehouse != null ? warehouse.getWarehouseCode() : null));
+        stock.setWarehouseName(
+                fromPutaway
+                        ? putaway.getWarehouseName()
+                        : (warehouse != null ? warehouse.getWarehouseName() : null));
         stock.setAreaId(location != null ? location.getAreaId() : null);
         stock.setAreaCode(area != null ? area.getAreaCode() : null);
         stock.setAreaName(area != null ? area.getAreaName() : null);

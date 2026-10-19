@@ -235,7 +235,7 @@
                 <version>${p6spy.version}</version>
             </dependency>
 
-            <!--  AWS SDK for Java 2.x  -->
+            <!-- 亚马逊云服务的第二代 Java 客户端依赖。 -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>s3</artifactId>

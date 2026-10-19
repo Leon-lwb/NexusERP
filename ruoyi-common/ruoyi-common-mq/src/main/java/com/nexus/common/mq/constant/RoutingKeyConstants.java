@@ -18,31 +18,69 @@ public interface RoutingKeyConstants {
     String SUBCONTRACT_STOCK = "subcontract.stock";
     String REWORK_STOCK = "rework.stock";
     String MES_WORKORDER_RELEASE = "mes.workorder.release";
-    /** MES工单完工路由键 (MES->ERP) */
+
+    /**
+     * MES工单完工路由键 (MES->ERP)
+     */
     String ERP_WORKORDER_COMPLETED = "erp.workorder.completed";
-    /** MES IQC检验完成路由键 (MES->ERP) */
+
+    /**
+     * MES IQC检验完成路由键 (MES->ERP)
+     */
     String ERP_IQC_COMPLETED = "erp.iqc.completed";
-    /** MES OQC检验完成路由键 (MES->ERP, 回写销售订单行OQC状态) */
+
+    /**
+     * MES OQC检验完成路由键 (MES->ERP, 回写销售订单行OQC状态)
+     */
     String ERP_OQC_COMPLETED = "erp.oqc.completed";
-    /** MES IPQC检验完成路由键 (MES->ERP, 回写工单聚合质检状态) */
+
+    /**
+     * MES IPQC检验完成路由键 (MES->ERP, 回写工单聚合质检状态)
+     */
     String ERP_IPQC_COMPLETED = "erp.ipqc.completed";
-    /** ERP 收货审批通过 -> MES 自动创建 IQC */
+
+    /**
+     * ERP 收货审批通过 -> MES 自动创建 IQC
+     */
     String MES_IQC_CREATE = "mes.iqc.create";
-    /** MES 委外SN生成 */
+
+    /**
+     * MES 委外SN生成
+     */
     String MES_SUBCONTRACT_SN = "mes.subcontract.sn";
-    /** ERP 销售出库审批通过 -> MES 自动创建 OQC */
+
+    /**
+     * ERP 销售出库审批通过 -> MES 自动创建 OQC
+     */
     String MES_OQC_CREATE = "mes.oqc.create";
+
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";
-    /** MES 设备状态变更路由键 */
+
+    /**
+     * MES 设备状态变更路由键
+     */
     String MES_EQUIPMENT_STATUS = "mes.equipment.status";
-    /** GL 过账路由键 - 销售发票 (fin -> GL, 匹配 gl.posting.#) */
+
+    /**
+     * GL 过账路由键 - 销售发票 (fin -> GL, 匹配 gl.posting.#)
+     */
     String GL_POSTING_SO_INVOICE = "gl.posting.so.invoice";
-    /** GL 过账路由键 - 采购发票 (fin -> GL) */
+
+    /**
+     * GL 过账路由键 - 采购发票 (fin -> GL)
+     */
     String GL_POSTING_PU_INVOICE = "gl.posting.pu.invoice";
-    /** GL 过账路由键 - 收付款 (fin -> GL) */
+
+    /**
+     * GL 过账路由键 - 收付款 (fin -> GL)
+     */
     String GL_POSTING_RECEIPT = "gl.posting.receipt";
-    /** 支付收款通知路由键 (pay -> ERP, 匹配 pay.received.#) */
+
+    /**
+     * 支付收款通知路由键 (pay -> ERP, 匹配 pay.received.#)
+     */
     String PAY_RECEIVED_CALLBACK = "pay.received.callback";
+
     String TRACE_TO_ERP = "trace.to.erp.v1";
     String TRACE_TO_MES = "trace.to.mes.v1";
     String TRACE_DEAD = "trace.dead.v1";

@@ -30,7 +30,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/** 经过真实事件、渲染及任务存储验证正式身份校准，旧冻结记录始终保留原文字节。 */
+/**
+ * 经过真实事件、渲染及任务存储验证正式身份校准，旧冻结记录始终保留原文字节。
+ */
 class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
     private static final long IDENTITY_ID = 9007199254740993L;
     private static final String LOCAL_CODE = "MES-LOCAL-OLD";
@@ -45,7 +47,8 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
 
     @BeforeAll
     static void metadata() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), MesLabelTemplate.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), MesLabelTemplate.class);
     }
 
     @BeforeEach
@@ -69,7 +72,8 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
         when(templates.selectList(any())).thenReturn(List.of(template));
         when(templates.selectById(5L)).thenReturn(template);
         when(sns.selectById(1L)).thenReturn(sn);
-        when(identities.find("000001", IDENTITY_ID)).thenReturn(new SerialIdentity(IDENTITY_ID, FORMAL_CODE, 100L, null, null));
+        when(identities.find("000001", IDENTITY_ID))
+                .thenReturn(new SerialIdentity(IDENTITY_ID, FORMAL_CODE, 100L, null, null));
         context = new AnnotationConfigApplicationContext();
         context.registerBean(SerialIdentityPort.class, () -> identities);
         context.registerBean(MesLabelTemplateMapper.class, () -> templates);
@@ -84,11 +88,14 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
 
     @AfterEach
     void closeContext() {
-        if (context != null) context.close();
+        if (context != null) {
+            context.close();
+        }
     }
 
     @Test
-    void newAutomaticTaskFreezesErpFormalCodeAndStableIdentityWithoutChangingMesAlias() throws Exception {
+    void newAutomaticTaskFreezesErpFormalCodeAndStableIdentityWithoutChangingMesAlias()
+            throws Exception {
         automatic();
         var frozen = store.record(onlyTask());
         assertEquals("PENDING", onlyTask().getStatus());
@@ -119,8 +126,14 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
         assertEquals(90L, frozen.getOriginalPrintLogId());
         assertEquals("核实身份后规范化重贴", frozen.getReprintReason());
         assertTrue(frozen.getRemark().contains("不能证明"));
-        assertEquals(LOCAL_CODE, jdbc.queryForObject("SELECT sn_code FROM mes_label_print_log WHERE log_id=90", String.class));
-        assertNull(jdbc.queryForObject("SELECT rendered_payload FROM mes_label_print_log WHERE log_id=90", String.class));
+        assertEquals(
+                LOCAL_CODE,
+                jdbc.queryForObject(
+                        "SELECT sn_code FROM mes_label_print_log WHERE log_id=90", String.class));
+        assertNull(
+                jdbc.queryForObject(
+                        "SELECT rendered_payload FROM mes_label_print_log WHERE log_id=90",
+                        String.class));
         var repeated = workflow.reprintTask(1L, 5L, 90L, "核实身份后规范化重贴", "canonical-legacy");
         assertEquals(receipt.getTaskId(), repeated.getTaskId());
         assertEquals(1, sends.get());
@@ -142,7 +155,8 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
 
     @Test
     void materialConflictCannotCreateFormalTask() {
-        when(identities.find("000001", IDENTITY_ID)).thenReturn(new SerialIdentity(IDENTITY_ID, FORMAL_CODE, 200L, null, null));
+        when(identities.find("000001", IDENTITY_ID))
+                .thenReturn(new SerialIdentity(IDENTITY_ID, FORMAL_CODE, 200L, null, null));
         assertBothCreationPathsRejected();
     }
 
@@ -155,13 +169,15 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
 
     @Test
     void unexpectedStableIdentityCannotCreateFormalTask() {
-        when(identities.find("000001", IDENTITY_ID)).thenReturn(new SerialIdentity(IDENTITY_ID + 1, FORMAL_CODE, 100L, null, null));
+        when(identities.find("000001", IDENTITY_ID))
+                .thenReturn(new SerialIdentity(IDENTITY_ID + 1, FORMAL_CODE, 100L, null, null));
         assertBothCreationPathsRejected();
     }
 
     @Test
     void blankFormalCodeCannotUseLocalCodeAsProof() {
-        when(identities.find("000001", IDENTITY_ID)).thenReturn(new SerialIdentity(IDENTITY_ID, " ", 100L, null, null));
+        when(identities.find("000001", IDENTITY_ID))
+                .thenReturn(new SerialIdentity(IDENTITY_ID, " ", 100L, null, null));
         assertBothCreationPathsRejected();
     }
 
@@ -188,7 +204,12 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
         service.freezeFields(original, oldFields);
         DynamicDataSourceContextHolder.push("mes");
         try {
-            business.executeWithoutResult(tx -> service.submit(original, renderer.render(template, oldFields), renderer.charsetOf(template)));
+            business.executeWithoutResult(
+                    tx ->
+                            service.submit(
+                                    original,
+                                    renderer.render(template, oldFields),
+                                    renderer.charsetOf(template)));
         } finally {
             DynamicDataSourceContextHolder.poll();
         }
@@ -224,20 +245,27 @@ class LabelCanonicalIdentityWorkflowTest extends LabelDurableTestSupport {
     private void automatic() {
         DynamicDataSourceContextHolder.push("mes");
         try {
-            business.executeWithoutResult(tx -> context.publishEvent(new SnCreatedEvent(1L, LOCAL_CODE, null, 100L)));
+            business.executeWithoutResult(
+                    tx -> context.publishEvent(new SnCreatedEvent(1L, LOCAL_CODE, null, 100L)));
         } finally {
             DynamicDataSourceContextHolder.poll();
         }
     }
 
     private void legacyRecord() {
-        jdbc.update("INSERT INTO mes_label_print_log(log_id,tenant_id,sn_id,sn_code,template_id,result,print_source) VALUES(90,'000001',1,?,5,'SUCCESS','AUTO')", LOCAL_CODE);
+        jdbc.update(
+                "INSERT INTO"
+                    + " mes_label_print_log(log_id,tenant_id,sn_id,sn_code,template_id,result,print_source)"
+                    + " VALUES(90,'000001',1,?,5,'SUCCESS','AUTO')",
+                LOCAL_CODE);
     }
 
     private void assertBothCreationPathsRejected() {
         assertThrows(ServiceException.class, this::automatic);
         legacyRecord();
-        assertThrows(ServiceException.class, () -> workflow.reprintTask(1L, 5L, 90L, "核实后重贴", "blocked-new-content"));
+        assertThrows(
+                ServiceException.class,
+                () -> workflow.reprintTask(1L, 5L, 90L, "核实后重贴", "blocked-new-content"));
         assertEquals(0, count("mes_label_print_task"));
         assertEquals(1, count("mes_label_print_log"));
         assertEquals(0, sends.get());

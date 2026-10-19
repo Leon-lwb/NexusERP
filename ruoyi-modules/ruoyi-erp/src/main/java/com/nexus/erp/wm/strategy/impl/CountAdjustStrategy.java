@@ -31,17 +31,29 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：盘点调整 */
+    /**
+     * 事务类型：盘点调整
+     */
     private static final String TX_TYPE_COUNT_ADJUST = "COUNT_ADJUST";
-    /** 来源单据类型：库存盘点单 */
+
+    /**
+     * 来源单据类型：库存盘点单
+     */
     private static final String SOURCE_DOC_TYPE_STOCK_TAKING = "WM_STOCK_TAKING";
-    /** 事务标志：入库（正数，盘盈） */
+
+    /**
+     * 事务标志：入库（正数，盘盈）
+     */
     private static final int TX_FLAG_IN = 1;
-    /** 事务标志：出库（负数，盘亏） */
+
+    /**
+     * 事务标志：出库（负数，盘亏）
+     */
     private static final int TX_FLAG_OUT = -1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
 
     /**
@@ -50,8 +62,8 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
      * @param stockTxMapper 库存事务Mapper
      * @param stockMapper   库存Mapper
      */
-    public CountAdjustStrategy(WmMaterialStockTxMapper stockTxMapper,
-                               WmMaterialStockMapper stockMapper) {
+    public CountAdjustStrategy(
+            WmMaterialStockTxMapper stockTxMapper, WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
@@ -82,10 +94,35 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
 
         int txFlag = diffQuantity.compareTo(BigDecimal.ZERO) > 0 ? TX_FLAG_IN : TX_FLAG_OUT;
         BigDecimal absDiff = diffQuantity.abs();
-        if(absDiff.signum()==0)return;
-        var serialRequest=txFlag>0?com.nexus.erp.wm.domain.WmSerialPostingRequest.in("WM_STOCK_TAKING",line.getPlanId(),line.getLineId(),"COUNT_ADJUST",line.getMaterialId(),absDiff,null,line.getLocationId(),line.getBatchId(),null)
-            :com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_STOCK_TAKING",line.getPlanId(),line.getLineId(),"COUNT_ADJUST",line.getMaterialId(),absDiff,null,line.getLocationId(),line.getBatchId());
-        if(serialInventory!=null && serialInventory.post(serialRequest))return;
+        if (absDiff.signum() == 0) {
+            return;
+        }
+        var serialRequest =
+                txFlag > 0
+                        ? com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                "WM_STOCK_TAKING",
+                                line.getPlanId(),
+                                line.getLineId(),
+                                "COUNT_ADJUST",
+                                line.getMaterialId(),
+                                absDiff,
+                                null,
+                                line.getLocationId(),
+                                line.getBatchId(),
+                                null)
+                        : com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                                "WM_STOCK_TAKING",
+                                line.getPlanId(),
+                                line.getLineId(),
+                                "COUNT_ADJUST",
+                                line.getMaterialId(),
+                                absDiff,
+                                null,
+                                line.getLocationId(),
+                                line.getBatchId());
+        if (serialInventory != null && serialInventory.post(serialRequest)) {
+            return;
+        }
 
         WmMaterialStock stock;
         if (line.getStockId() != null) {
@@ -94,7 +131,10 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
             LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
             lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
             lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
-            lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
+            lqw.eq(
+                    line.getLocationId() != null,
+                    WmMaterialStock::getLocationId,
+                    line.getLocationId());
             lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
             stock = stockMapper.selectOne(lqw);
         }
@@ -103,7 +143,8 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("盘点物料【" + line.getMaterialName() + "】找不到对应的库存记录");
         }
 
-        BigDecimal beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+        BigDecimal beforeQty =
+                stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
 
         int affected;
         if (diffQuantity.compareTo(BigDecimal.ZERO) > 0) {
@@ -111,7 +152,9 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         } else {
             // 盘点盘亏必须能把冻结行调整到实盘值(冻结是质量状态、不是库存维度),
             // 故此处用不带 frozen_flag 守卫的入口; deductStock 已按 ERP-WM-09 加了冻结守卫。
-            affected = stockMapper.deductStockIgnoreFrozen(stock.getStockId(), absDiff, stock.getVersion());
+            affected =
+                    stockMapper.deductStockIgnoreFrozen(
+                            stock.getStockId(), absDiff, stock.getVersion());
         }
         if (affected == 0) {
             throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
@@ -120,11 +163,14 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         // afterQty 用原子更新后的实际库存（重读），不能用快照推算——
         // 盘点行生成后、过账前若发生出入库，bookQuantity+diff 与真实库存对不上，流水前后断裂
         WmMaterialStock afterStock = stockMapper.selectById(stock.getStockId());
-        BigDecimal afterQty = afterStock != null && afterStock.getStockQuantity() != null
-            ? afterStock.getStockQuantity() : beforeQty.add(diffQuantity);
+        BigDecimal afterQty =
+                afterStock != null && afterStock.getStockQuantity() != null
+                        ? afterStock.getStockQuantity()
+                        : beforeQty.add(diffQuantity);
 
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_COUNT_ADJUST, txFlag, absDiff,
-            beforeQty, afterQty, now);
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        stock, TX_TYPE_COUNT_ADJUST, txFlag, absDiff, beforeQty, afterQty, now);
         tx.setSourceDocType(SOURCE_DOC_TYPE_STOCK_TAKING);
         tx.setSourceDocId(line.getPlanId());
         tx.setSourceDocLineId(line.getLineId());

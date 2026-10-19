@@ -32,36 +32,56 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 流水类型：预留 */
+    /**
+     * 流水类型：预留
+     */
     public static final String TX_TYPE_RESERVE = "RESERVE";
-    /** 流水类型：预留消耗（出库时核销预留，ERP-WM-03） */
+
+    /**
+     * 流水类型：预留消耗（出库时核销预留，ERP-WM-03）
+     */
     public static final String TX_TYPE_CONSUME_RESERVE = "CONSUME_RESERVE";
-    /** 流水类型：预留释放 */
+
+    /**
+     * 流水类型：预留释放
+     */
     public static final String TX_TYPE_UNRESERVE = "UNRESERVE";
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 流水数据访问映射器（Mapper） */
+
+    /**
+     * 流水数据访问映射器（Mapper）
+     */
     private final WmMaterialStockTxMapper txMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public BigDecimal reserve(Long materialId, Long warehouseId, BigDecimal reserveQty,
-                              String sourceDocType, Long sourceDocId, Long sourceDocLineId) {
+    public BigDecimal reserve(
+            Long materialId,
+            Long warehouseId,
+            BigDecimal reserveQty,
+            String sourceDocType,
+            Long sourceDocId,
+            Long sourceDocLineId) {
         if (reserveQty == null || reserveQty.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
-        if(serialInventory!=null)serialInventory.validateReservation(materialId,reserveQty);
+        if (serialInventory != null) {
+            serialInventory.validateReservation(materialId, reserveQty);
+        }
         // 查询可用库存批次 (FIFO: 先到期先出)
-        LambdaQueryWrapper<WmMaterialStock> wrapper = Wrappers.<WmMaterialStock>lambdaQuery()
-            .eq(WmMaterialStock::getMaterialId, materialId)
-            .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
-            .eq(WmMaterialStock::getFrozenFlag, 0L)
-            .apply("(stock_quantity - reserved_quantity) > 0")
-            .orderByAsc(WmMaterialStock::getExpireDate)
-            .orderByAsc(WmMaterialStock::getRecptDate)
-            .orderByAsc(WmMaterialStock::getStockId);
+        LambdaQueryWrapper<WmMaterialStock> wrapper =
+                Wrappers.<WmMaterialStock>lambdaQuery()
+                        .eq(WmMaterialStock::getMaterialId, materialId)
+                        .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
+                        .eq(WmMaterialStock::getFrozenFlag, 0L)
+                        .apply("(stock_quantity - reserved_quantity) > 0")
+                        .orderByAsc(WmMaterialStock::getExpireDate)
+                        .orderByAsc(WmMaterialStock::getRecptDate)
+                        .orderByAsc(WmMaterialStock::getStockId);
         List<WmMaterialStock> stocks = stockMapper.selectList(wrapper);
 
         BigDecimal remaining = reserveQty;
@@ -79,14 +99,25 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             if (rows > 0) {
                 reserved = reserved.add(toReserve);
                 remaining = remaining.subtract(toReserve);
-                recordStockTx(stock, toReserve, TX_TYPE_RESERVE, sourceDocType, sourceDocId, sourceDocLineId);
-                log.info("预留库存: stockId={}, qty={}, source={}/{}", stock.getStockId(), toReserve, sourceDocType, sourceDocId);
+                recordStockTx(
+                        stock,
+                        toReserve,
+                        TX_TYPE_RESERVE,
+                        sourceDocType,
+                        sourceDocId,
+                        sourceDocLineId);
+                log.info(
+                        "预留库存: stockId={}, qty={}, source={}/{}",
+                        stock.getStockId(),
+                        toReserve,
+                        sourceDocType,
+                        sourceDocId);
             }
         }
         if (reserved.compareTo(reserveQty) < 0) {
             // 预留不足显式抛异常，禁止静默部分预留（调用方无法感知会导致销售承诺落空）
             throw new com.nexus.common.core.exception.ServiceException(
-                "库存预留不足: 需求=" + reserveQty + ", 实际可预留=" + reserved + ", 物料ID=" + materialId);
+                    "库存预留不足: 需求=" + reserveQty + ", 实际可预留=" + reserved + ", 物料ID=" + materialId);
         }
         return reserved;
     }
@@ -119,11 +150,19 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal unreserve(String sourceDocType, Long sourceDocId, Long sourceDocLineId) {
         // 查询该来源单据的预留 / 预留消耗 / 已释放流水，按库存行计算净额
-        LambdaQueryWrapper<WmMaterialStockTx> wrapper = Wrappers.<WmMaterialStockTx>lambdaQuery()
-            .in(WmMaterialStockTx::getTxType, TX_TYPE_RESERVE, TX_TYPE_CONSUME_RESERVE, TX_TYPE_UNRESERVE)
-            .eq(WmMaterialStockTx::getSourceDocType, sourceDocType)
-            .eq(WmMaterialStockTx::getSourceDocId, sourceDocId)
-            .eq(sourceDocLineId != null, WmMaterialStockTx::getSourceDocLineId, sourceDocLineId);
+        LambdaQueryWrapper<WmMaterialStockTx> wrapper =
+                Wrappers.<WmMaterialStockTx>lambdaQuery()
+                        .in(
+                                WmMaterialStockTx::getTxType,
+                                TX_TYPE_RESERVE,
+                                TX_TYPE_CONSUME_RESERVE,
+                                TX_TYPE_UNRESERVE)
+                        .eq(WmMaterialStockTx::getSourceDocType, sourceDocType)
+                        .eq(WmMaterialStockTx::getSourceDocId, sourceDocId)
+                        .eq(
+                                sourceDocLineId != null,
+                                WmMaterialStockTx::getSourceDocLineId,
+                                sourceDocLineId);
         List<WmMaterialStockTx> txs = txMapper.selectList(wrapper);
 
         // 按库存行聚合净预留额：RESERVE 为正，CONSUME_RESERVE / UNRESERVE 为负
@@ -163,10 +202,11 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             if (rows == 0) {
                 // 重试仍失败：库存行被并发操作修改或预留不足，抛异常回滚，禁止静默跳过
                 throw new com.nexus.common.core.exception.ServiceException(
-                    "释放预留失败(并发冲突或预留不足): stockId=" + stockId + ", qty=" + netQty);
+                        "释放预留失败(并发冲突或预留不足): stockId=" + stockId + ", qty=" + netQty);
             }
             released = released.add(netQty);
-            recordStockTx(stock, netQty, TX_TYPE_UNRESERVE, sourceDocType, sourceDocId, sourceDocLineId);
+            recordStockTx(
+                    stock, netQty, TX_TYPE_UNRESERVE, sourceDocType, sourceDocId, sourceDocLineId);
         }
         log.info("释放预留: source={}/{}, 释放量={}", sourceDocType, sourceDocId, released);
         return released;
@@ -181,21 +221,27 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
      */
     @Override
     public BigDecimal checkAvailable(Long materialId, Long warehouseId) {
-        LambdaQueryWrapper<WmMaterialStock> wrapper = Wrappers.<WmMaterialStock>lambdaQuery()
-            .eq(WmMaterialStock::getMaterialId, materialId)
-            .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
-            .eq(WmMaterialStock::getFrozenFlag, 0L);
+        LambdaQueryWrapper<WmMaterialStock> wrapper =
+                Wrappers.<WmMaterialStock>lambdaQuery()
+                        .eq(WmMaterialStock::getMaterialId, materialId)
+                        .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
+                        .eq(WmMaterialStock::getFrozenFlag, 0L);
         List<WmMaterialStock> stocks = stockMapper.selectList(wrapper);
         return stocks.stream()
-            .map(WmMaterialStock::getAvailableQuantity)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(WmMaterialStock::getAvailableQuantity)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**
      * 记录库存事务流水
      */
-    private void recordStockTx(WmMaterialStock stock, BigDecimal qty, String txType,
-                               String sourceDocType, Long sourceDocId, Long sourceDocLineId) {
+    private void recordStockTx(
+            WmMaterialStock stock,
+            BigDecimal qty,
+            String txType,
+            String sourceDocType,
+            Long sourceDocId,
+            Long sourceDocLineId) {
         WmMaterialStockTx tx = new WmMaterialStockTx();
         // 流水身份完整继承真实库存，不从请求拼接仓库或臆造批次、单位。
         tx.setTenantId(stock.getTenantId());
@@ -220,7 +266,8 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         tx.setLocationCode(stock.getLocationCode());
         tx.setLocationName(stock.getLocationName());
         tx.setRecptDate(stock.getRecptDate());
-        tx.setTrackingVersion(stock.getTrackingVersion()!=null && stock.getTrackingVersion()>=2?2L:1L);
+        tx.setTrackingVersion(
+                stock.getTrackingVersion() != null && stock.getTrackingVersion() >= 2 ? 2L : 1L);
         tx.setTxType(txType);
         tx.setTxFlag(0); // 预留/释放不改变在库数量, flag=0
         tx.setTxQuantity(qty);

@@ -21,8 +21,7 @@ import java.math.BigDecimal;
 @AutoMapper(target = BdMaterial.class)
 public class BdMaterialVo implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     /**
      * 物料ID
@@ -120,16 +119,22 @@ public class BdMaterialVo implements Serializable {
     @ExcelProperty(value = "是否序列号管理")
     private Long isSerialManage;
 
-    /** 同一产品SN的同种组件是否允许来自多个批次，0否1是。 */
+    /**
+     * 同一产品SN的同种组件是否允许来自多个批次，0否1是。
+     */
     private Integer allowMixedLot;
 
-    /** 服务端管理的追踪策略版本，编辑策略时作为预期版本。 */
-    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /**
+     * 服务端管理的追踪策略版本，编辑策略时作为预期版本。
+     */
+    @com.fasterxml.jackson.annotation.JsonFormat(
+            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
     private Long trackingVersion;
 
-    /** AUDIT或STRICT，严格切换必须通过库存及在制就绪检查。 */
+    /**
+     * AUDIT或STRICT，严格切换必须通过库存及在制就绪检查。
+     */
     private String trackingStage;
-
 
     /**
      * 安全库存
@@ -188,5 +193,4 @@ public class BdMaterialVo implements Serializable {
      * 体积(m³)
      */
     private BigDecimal volume;
-
 }

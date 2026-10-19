@@ -32,9 +32,13 @@ import java.math.BigDecimal;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@ConditionalOnProperty(name="nexus.trace.relay.enabled",havingValue="false",matchIfMissing=true)
+@ConditionalOnProperty(
+        name = "nexus.trace.relay.enabled",
+        havingValue = "false",
+        matchIfMissing = true)
 @DS("erp")
-public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOrderCompletedMessage> {
+public class ErpWorkOrderCompletedConsumer
+        extends BaseMessageConsumer<MesWorkOrderCompletedMessage> {
 
     private final IPrdWorkOrderService workOrderService;
 
@@ -93,11 +97,16 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
         }
 
         // 使用消息中的实际完工数量, 调用service原子更新(内部触发完工倒冲入库链路)
-        BigDecimal completedQty = message.getCompletedQty() != null ? message.getCompletedQty() : BigDecimal.ZERO;
-        BigDecimal scrappedQty = message.getScrappedQty() != null ? message.getScrappedQty() : BigDecimal.ZERO;
+        BigDecimal completedQty =
+                message.getCompletedQty() != null ? message.getCompletedQty() : BigDecimal.ZERO;
+        BigDecimal scrappedQty =
+                message.getScrappedQty() != null ? message.getScrappedQty() : BigDecimal.ZERO;
         workOrderService.complete(erpWoId, completedQty, scrappedQty);
-        log.info("MES完工回写ERP工单完成: woNo={}, completedQty={}, scrapQty={}",
-            wo.getWoNo(), completedQty, scrappedQty);
+        log.info(
+                "MES完工回写ERP工单完成: woNo={}, completedQty={}, scrapQty={}",
+                wo.getWoNo(),
+                completedQty,
+                scrappedQty);
     }
 
     /**
@@ -109,7 +118,9 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
      * @throws Exception 异常
      */
     @RabbitListener(queues = QueueConstants.ERP_WORKORDER_COMPLETED_QUEUE)
-    public void onMessage(MesWorkOrderCompletedMessage message, Channel channel, Message amqpMessage) throws Exception {
+    public void onMessage(
+            MesWorkOrderCompletedMessage message, Channel channel, Message amqpMessage)
+            throws Exception {
         processMessage(message, channel, amqpMessage);
     }
 }

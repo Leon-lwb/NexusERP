@@ -16,30 +16,48 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class LabelSnIdentityTest {
 
-    private final LabelRenderService renderService = new LabelRenderService(mock(SerialIdentityPort.class));
+    private final LabelRenderService renderService =
+            new LabelRenderService(mock(SerialIdentityPort.class));
 
     @Test
     void render_rejectsMaterialBarcodeEvenWhenSnAppearsAsText() {
-        MesLabelTemplate template = template("{\"items\":[{\"type\":\"text\",\"field\":\"snCode\"},"
-            + "{\"type\":\"barcode\",\"field\":\"materialCode\"}]}");
-        ServiceException error = assertThrows(ServiceException.class,
-            () -> renderService.render(template, Map.of("snCode", "SN-1", "materialCode", "MAT-1")));
+        MesLabelTemplate template =
+                template(
+                        "{\"items\":[{\"type\":\"text\",\"field\":\"snCode\"},"
+                                + "{\"type\":\"barcode\",\"field\":\"materialCode\"}]}");
+        ServiceException error =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                renderService.render(
+                                        template,
+                                        Map.of("snCode", "SN-1", "materialCode", "MAT-1")));
         assertTrue(error.getMessage().contains("snCode"));
     }
 
     @Test
     void render_rejectsEmptySnInMachineReadableItem() {
-        ServiceException error = assertThrows(ServiceException.class,
-            () -> renderService.render(template("{\"items\":[{\"type\":\"qrcode\",\"field\":\"snCode\"}]}"),
-                Map.of("snCode", " ")));
+        ServiceException error =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                renderService.render(
+                                        template(
+                                                "{\"items\":[{\"type\":\"qrcode\",\"field\":\"snCode\"}]}"),
+                                        Map.of("snCode", " ")));
         assertTrue(error.getMessage().contains("SN"));
     }
 
     @Test
     void render_acceptsBarcodeAndQrcodeBoundToSn() {
-        for (String kind : new String[]{"barcode", "qrcode"}) {
-            String payload = renderService.render(template("{\"items\":[{\"type\":\"" + kind
-                + "\",\"field\":\"snCode\"}]}"), Map.of("snCode", "SN-1"));
+        for (String kind : new String[] {"barcode", "qrcode"}) {
+            String payload =
+                    renderService.render(
+                            template(
+                                    "{\"items\":[{\"type\":\""
+                                            + kind
+                                            + "\",\"field\":\"snCode\"}]}"),
+                            Map.of("snCode", "SN-1"));
             assertTrue(payload.contains("SN-1"));
         }
     }

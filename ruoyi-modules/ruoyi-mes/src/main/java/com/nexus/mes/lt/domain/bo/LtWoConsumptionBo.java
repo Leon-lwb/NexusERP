@@ -25,31 +25,47 @@ public class LtWoConsumptionBo extends BaseEntity {
     private Long processId;
     private String operationRef;
 
-    /** 消耗记录ID */
+    /**
+     * 消耗记录ID
+     */
     private Long consumptionId;
 
-    /** 工单ID */
+    /**
+     * 工单ID
+     */
     @NotNull(message = "工单ID不能为空")
     private Long woId;
 
-    /** 批次ID */
+    /**
+     * 批次ID
+     */
     @NotNull(message = "批次ID不能为空")
     private Long lotId;
 
-    /** 物料ID */
+    /**
+     * 物料ID
+     */
     @NotNull(message = "物料ID不能为空")
     private Long materialId;
 
-    /** 消耗数量 */
+    /**
+     * 消耗数量
+     */
     @NotNull(message = "消耗数量不能为空")
     private BigDecimal consumedQty;
 
-    /** 操作员ID */
+    /**
+     * 操作员ID
+     */
     private Long operatorId;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 
-    /** 批量删除ID集合 */
+    /**
+     * 批量删除ID集合
+     */
     private Long[] ids;
 }

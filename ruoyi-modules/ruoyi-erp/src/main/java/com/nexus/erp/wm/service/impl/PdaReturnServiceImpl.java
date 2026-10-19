@@ -42,25 +42,32 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
     private final WmMaterialReturnMapper returnMapper;
     private final WmMaterialReturnLineMapper lineMapper;
     private final IWmStockOperationService stockOperationService;
 
     @Override
     public TableDataInfo<PdaTodoItemVo> todo(String keyword, PageQuery pageQuery) {
-        Page<WmMaterialReturn> page = returnMapper.selectPage(pageQuery.build(),
-            Wrappers.<WmMaterialReturn>lambdaQuery()
-                .like(StringUtils.isNotBlank(keyword), WmMaterialReturn::getReturnNo, keyword)
-                .orderByDesc(WmMaterialReturn::getCreateTime));
+        Page<WmMaterialReturn> page =
+                returnMapper.selectPage(
+                        pageQuery.build(),
+                        Wrappers.<WmMaterialReturn>lambdaQuery()
+                                .like(
+                                        StringUtils.isNotBlank(keyword),
+                                        WmMaterialReturn::getReturnNo,
+                                        keyword)
+                                .orderByDesc(WmMaterialReturn::getCreateTime));
         List<PdaTodoItemVo> items = new ArrayList<>(page.getRecords().size());
         for (WmMaterialReturn r : page.getRecords()) {
             PdaTodoItemVo item = new PdaTodoItemVo();
             item.setId(r.getReturnId());
             item.setCode(r.getReturnNo());
             item.setStatus(r.getStatus());
-            item.setName(typeLabel(r.getReturnType())
-                + (StringUtils.isNotBlank(r.getSourceDoc()) ? " · " + r.getSourceDoc() : ""));
+            item.setName(
+                    typeLabel(r.getReturnType())
+                            + (StringUtils.isNotBlank(r.getSourceDoc())
+                                    ? " · " + r.getSourceDoc()
+                                    : ""));
             item.setWarehouseName(r.getWarehouseName());
             item.setDate(r.getReturnDate() != null ? DateUtil.formatDate(r.getReturnDate()) : null);
             items.add(item);
@@ -78,7 +85,8 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
         vo.setStatus(head.getStatus());
         vo.setWarehouseName(head.getWarehouseName());
         vo.setSourceDoc(head.getSourceDoc());
-        vo.setReturnDate(head.getReturnDate() != null ? DateUtil.formatDate(head.getReturnDate()) : null);
+        vo.setReturnDate(
+                head.getReturnDate() != null ? DateUtil.formatDate(head.getReturnDate()) : null);
 
         List<WmMaterialReturnLine> lines = linesOf(returnId);
         List<PdaReturnDetailVo.PdaReturnLineVo> lineVos = new ArrayList<>(lines.size());
@@ -106,9 +114,11 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
         if (WmMaterialReturn.STATUS_COMPLETED.equals(head.getStatus())) {
             return PdaActionResultVo.fail("退料单已完成");
         }
-        WmMaterialReturnLine line = lineMapper.selectOne(Wrappers.<WmMaterialReturnLine>lambdaQuery()
-            .eq(WmMaterialReturnLine::getLineId, bo.getLineId())
-            .eq(WmMaterialReturnLine::getReturnId, returnId));
+        WmMaterialReturnLine line =
+                lineMapper.selectOne(
+                        Wrappers.<WmMaterialReturnLine>lambdaQuery()
+                                .eq(WmMaterialReturnLine::getLineId, bo.getLineId())
+                                .eq(WmMaterialReturnLine::getReturnId, returnId));
         if (line == null) {
             return PdaActionResultVo.fail("行不属于本退料单");
         }
@@ -136,8 +146,12 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
             return PdaActionResultVo.fail("单据当前状态不允许完成");
         }
         List<WmMaterialReturnLine> lines = linesOf(returnId);
-        boolean anyActual = lines.stream()
-            .anyMatch(l -> l.getActualQty() != null && l.getActualQty().compareTo(BigDecimal.ZERO) > 0);
+        boolean anyActual =
+                lines.stream()
+                        .anyMatch(
+                                l ->
+                                        l.getActualQty() != null
+                                                && l.getActualQty().compareTo(BigDecimal.ZERO) > 0);
         if (!anyActual) {
             return PdaActionResultVo.fail("无实退记录，请先扫码核销");
         }
@@ -151,10 +165,15 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
         wrapper.setWarehouseName(head.getWarehouseName());
 
         for (WmMaterialReturnLine line : lines) {
-            if (line.getActualQty() == null || line.getActualQty().compareTo(BigDecimal.ZERO) <= 0) {
+            if (line.getActualQty() == null
+                    || line.getActualQty().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            if(serialInventory!=null && serialInventory.postSource("WM_MATERIAL_RETURN",returnId,line.getLineId()))continue;
+            if (serialInventory != null
+                    && serialInventory.postSource(
+                            "WM_MATERIAL_RETURN", returnId, line.getLineId())) {
+                continue;
+            }
             if (WmMaterialReturn.TYPE_SCRAP.equals(head.getReturnType())) {
                 continue; // 报废: 留痕不回库存
             }
@@ -192,7 +211,8 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
 
     private List<WmMaterialReturnLine> linesOf(Long returnId) {
         return lineMapper.selectList(
-            Wrappers.<WmMaterialReturnLine>lambdaQuery().eq(WmMaterialReturnLine::getReturnId, returnId));
+                Wrappers.<WmMaterialReturnLine>lambdaQuery()
+                        .eq(WmMaterialReturnLine::getReturnId, returnId));
     }
 
     private String typeLabel(String type) {

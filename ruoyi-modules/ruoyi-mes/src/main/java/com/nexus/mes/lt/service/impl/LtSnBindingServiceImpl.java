@@ -88,17 +88,23 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         if (lot == null) {
             throw new RuntimeException("批次不存在: " + bo.getLotId());
         }
-        if(!Objects.equals(sn.getMaterialId(),bo.getMaterialId()) || !Objects.equals(lot.getMaterialId(),sn.getMaterialId()))
+        if (!Objects.equals(sn.getMaterialId(), bo.getMaterialId())
+                || !Objects.equals(lot.getMaterialId(), sn.getMaterialId())) {
             throw new RuntimeException("组件批次必须通过有实际数量和工序的组件消耗账分配，不能用成品批次绑定代替");
-        if(sn.getProductLotId()!=null && !sn.getProductLotId().equals(bo.getLotId()))
+        }
+        if (sn.getProductLotId() != null && !sn.getProductLotId().equals(bo.getLotId())) {
             throw new RuntimeException("成品批次已指定，变更需保留原凭据并走纠正流程");
-        productLots.attachProductLot(bo.getSnId(),bo.getLotId());
+        }
+        productLots.attachProductLot(bo.getSnId(), bo.getLotId());
         // 3. 校验唯一性: 同SN同物料仅一个绑定(uk_sn_material 兜底,这里友好提示)
-        Long existCount = baseMapper.selectCount(Wrappers.<LtSnBinding>lambdaQuery()
-            .eq(LtSnBinding::getSnId, bo.getSnId())
-            .eq(LtSnBinding::getMaterialId, bo.getMaterialId()));
+        Long existCount =
+                baseMapper.selectCount(
+                        Wrappers.<LtSnBinding>lambdaQuery()
+                                .eq(LtSnBinding::getSnId, bo.getSnId())
+                                .eq(LtSnBinding::getMaterialId, bo.getMaterialId()));
         if (existCount != null && existCount > 0) {
-            throw new RuntimeException("SN " + sn.getSnCode() + " 已绑定物料 " + bo.getMaterialId() + " 的批次");
+            throw new RuntimeException(
+                    "SN " + sn.getSnCode() + " 已绑定物料 " + bo.getMaterialId() + " 的批次");
         }
         // 4. 写入(冗余字段)
         LtSnBinding binding = new LtSnBinding();
@@ -110,7 +116,11 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         binding.setBoundTime(new Date());
         binding.setBoundBy(LoginHelper.getUserId());
         int rows = baseMapper.insert(binding);
-        log.info("SN-批次绑定: snId={}, lotId={}, materialId={}", bo.getSnId(), bo.getLotId(), bo.getMaterialId());
+        log.info(
+                "SN-批次绑定: snId={}, lotId={}, materialId={}",
+                bo.getSnId(),
+                bo.getLotId(),
+                bo.getMaterialId());
         return rows > 0;
     }
 
@@ -137,9 +147,10 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
      */
     @Override
     public List<LtSnBindingVo> selectBySnId(Long snId) {
-        return baseMapper.selectVoList(Wrappers.<LtSnBinding>lambdaQuery()
-            .eq(LtSnBinding::getSnId, snId)
-            .orderByDesc(LtSnBinding::getBoundTime));
+        return baseMapper.selectVoList(
+                Wrappers.<LtSnBinding>lambdaQuery()
+                        .eq(LtSnBinding::getSnId, snId)
+                        .orderByDesc(LtSnBinding::getBoundTime));
     }
 
     /**
@@ -150,9 +161,10 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
      */
     @Override
     public List<LtSnBindingVo> selectByLotId(Long lotId) {
-        return baseMapper.selectVoList(Wrappers.<LtSnBinding>lambdaQuery()
-            .eq(LtSnBinding::getLotId, lotId)
-            .orderByDesc(LtSnBinding::getBoundTime));
+        return baseMapper.selectVoList(
+                Wrappers.<LtSnBinding>lambdaQuery()
+                        .eq(LtSnBinding::getLotId, lotId)
+                        .orderByDesc(LtSnBinding::getBoundTime));
     }
 
     // ==================== 私有辅助方法 ====================
@@ -165,18 +177,20 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         if (records == null || records.isEmpty()) {
             return;
         }
-        List<Long> lotIds = records.stream()
-            .map(LtSnBindingVo::getLotId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
+        List<Long> lotIds =
+                records.stream()
+                        .map(LtSnBindingVo::getLotId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
         if (lotIds.isEmpty()) {
             return;
         }
-        Map<Long, LtLot> lotMap = lotMapper.selectList(
-            Wrappers.<LtLot>lambdaQuery().in(LtLot::getLotId, lotIds))
-            .stream()
-            .collect(Collectors.toMap(LtLot::getLotId, l -> l, (a, b) -> a));
+        Map<Long, LtLot> lotMap =
+                lotMapper
+                        .selectList(Wrappers.<LtLot>lambdaQuery().in(LtLot::getLotId, lotIds))
+                        .stream()
+                        .collect(Collectors.toMap(LtLot::getLotId, l -> l, (a, b) -> a));
         for (LtSnBindingVo vo : records) {
             LtLot lot = lotMap.get(vo.getLotId());
             if (lot != null) {
@@ -191,9 +205,9 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
      */
     private LambdaQueryWrapper<LtSnBinding> buildQueryWrapper(LtSnBindingBo bo) {
         return Wrappers.<LtSnBinding>lambdaQuery()
-            .eq(bo.getSnId() != null, LtSnBinding::getSnId, bo.getSnId())
-            .eq(bo.getLotId() != null, LtSnBinding::getLotId, bo.getLotId())
-            .eq(bo.getMaterialId() != null, LtSnBinding::getMaterialId, bo.getMaterialId())
-            .orderByDesc(LtSnBinding::getBoundTime);
+                .eq(bo.getSnId() != null, LtSnBinding::getSnId, bo.getSnId())
+                .eq(bo.getLotId() != null, LtSnBinding::getLotId, bo.getLotId())
+                .eq(bo.getMaterialId() != null, LtSnBinding::getMaterialId, bo.getMaterialId())
+                .orderByDesc(LtSnBinding::getBoundTime);
     }
 }

@@ -18,45 +18,71 @@ import lombok.EqualsAndHashCode;
 @AutoMapper(target = MesLabelTemplate.class, reverseConvertGenerate = false)
 public class MesLabelTemplateBo extends BaseEntity {
 
-    /** 模板ID */
+    /**
+     * 模板ID
+     */
     private Long templateId;
 
-    /** 模板编码(唯一) */
+    /**
+     * 模板编码(唯一)
+     */
     @NotBlank(message = "模板编码不能为空")
     private String templateCode;
 
-    /** 模板修订号；旧客户端可不传，服务端仍按实际修订号保护并发保存 */
+    /**
+     * 模板修订号；旧客户端可不传，服务端仍按实际修订号保护并发保存
+     */
     private Long templateRevision;
 
-    /** 模板名称 */
+    /**
+     * 模板名称
+     */
     @NotBlank(message = "模板名称不能为空")
     private String templateName;
 
-    /** 标签类型: SN */
+    /**
+     * 标签类型: SN
+     */
     private String labelType;
 
-    /** 打印机语言: TSPL / ZPL */
+    /**
+     * 打印机语言: TSPL / ZPL
+     */
     @NotBlank(message = "打印机语言不能为空")
     private String labelLang;
 
-    /** 标签宽度(mm) */
+    /**
+     * 标签宽度(mm)
+     */
     private Integer widthMm;
 
-    /** 标签高度(mm) */
+    /**
+     * 标签高度(mm)
+     */
     private Integer heightMm;
 
-    /** 网络打印机地址 */
+    /**
+     * 网络打印机地址
+     */
     private String printerHost;
 
-    /** 网络打印机端口(RAW 9100) */
+    /**
+     * 网络打印机端口(RAW 9100)
+     */
     private Integer printerPort;
 
-    /** 字段映射布局 JSON */
+    /**
+     * 字段映射布局 JSON
+     */
     private String content;
 
-    /** 是否启用(Y/N) */
+    /**
+     * 是否启用(Y/N)
+     */
     private String enabled;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 }

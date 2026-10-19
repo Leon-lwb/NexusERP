@@ -23,58 +23,92 @@ import java.util.Date;
 @TableName("lt_lot")
 public class LtLot extends TenantEntity {
 
-    /** 批次ID(主键) */
+    /**
+     * 批次ID(主键)
+     */
     @TableId(value = "lot_id")
     private Long lotId;
+
     private Long erpBatchId;
     private Long allocationVersion;
 
-    /** 批次编码 */
+    /**
+     * 批次编码
+     */
     private String lotCode;
 
-    /** 物料ID */
+    /**
+     * 物料ID
+     */
     private Long materialId;
 
-    /** 物料编码(冗余) */
+    /**
+     * 物料编码(冗余)
+     */
     private String materialCode;
 
-    /** 物料名称(冗余) */
+    /**
+     * 物料名称(冗余)
+     */
     private String materialName;
 
-    /** 供应商ID */
+    /**
+     * 供应商ID
+     */
     private Long supplierId;
 
-    /** 供应商名称(冗余) */
+    /**
+     * 供应商名称(冗余)
+     */
     private String supplierName;
 
-    /** 供应商批次号 */
+    /**
+     * 供应商批次号
+     */
     private String supplierLot;
 
-    /** 批次数量 */
+    /**
+     * 批次数量
+     */
     private BigDecimal quantity;
 
-    /** 已消耗数量 */
+    /**
+     * 已消耗数量
+     */
     private BigDecimal consumedQty;
 
-    /** 生产日期 */
+    /**
+     * 生产日期
+     */
     private Date producedDate;
 
-    /** 有效期 */
+    /**
+     * 有效期
+     */
     private Date expiryDate;
 
-    /** 状态: IN_STOCK/IN_USE/CONSUMED/QUARANTINED/SCRAPPED */
+    /**
+     * 状态: IN_STOCK/IN_USE/CONSUMED/QUARANTINED/SCRAPPED
+     */
     private String status;
 
-    /** QC状态: PENDING/PASS/FAIL */
+    /**
+     * QC状态: PENDING/PASS/FAIL
+     */
     private String qcStatus;
 
-    /** IQC检验单ID(关联qc_iqc.iqc_id,可空;关联后IQC完成自动回写qc_status) */
+    /**
+     * IQC检验单ID(关联qc_iqc.iqc_id,可空;关联后IQC完成自动回写qc_status)
+     */
     private Long iqcId;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 
-    /** 删除标志 */
-    @TableLogic
-    private String delFlag;
+    /**
+     * 删除标志
+     */
+    @TableLogic private String delFlag;
 }

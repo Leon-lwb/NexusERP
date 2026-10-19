@@ -276,14 +276,17 @@ public class WmMaterialStockTx extends TenantEntity {
     /**
      * 删除标志
      */
-    @TableLogic
-    private String delFlag;
+    @TableLogic private String delFlag;
 
     /**
      * 备注
      */
     private String remark;
-    /** 单件过账证明版本及不可变证明组。 */
+
+    /**
+     * 单件过账证明版本及不可变证明组。
+     */
     private Long trackingVersion;
+
     private Long postingGroupId;
 }

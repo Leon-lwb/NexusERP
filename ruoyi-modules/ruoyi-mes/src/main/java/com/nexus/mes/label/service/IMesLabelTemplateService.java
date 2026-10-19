@@ -17,22 +17,34 @@ import java.util.Map;
  */
 public interface IMesLabelTemplateService {
 
-    /** 分页查询 */
+    /**
+     * 分页查询
+     */
     TableDataInfo<MesLabelTemplateVo> selectPageList(MesLabelTemplateBo bo, PageQuery pageQuery);
 
-    /** 详情 */
+    /**
+     * 详情
+     */
     MesLabelTemplateVo selectById(Long templateId);
 
-    /** 列表查询 */
+    /**
+     * 列表查询
+     */
     List<MesLabelTemplateVo> selectList(MesLabelTemplateBo bo);
 
-    /** 新增 */
+    /**
+     * 新增
+     */
     Boolean insertByBo(MesLabelTemplateBo bo);
 
-    /** 修改 */
+    /**
+     * 修改
+     */
     Boolean updateByBo(MesLabelTemplateBo bo);
 
-    /** 批量删除 */
+    /**
+     * 批量删除
+     */
     Boolean deleteByIds(Collection<Long> ids);
 
     /**
@@ -68,12 +80,24 @@ public interface IMesLabelTemplateService {
      * @return 仅表示 TCP 发送成功，未确认实际出纸
      */
     boolean reprint(Long snId, Long templateId, Long originalPrintLogId, String reprintReason);
-    /** 持久化测试打印，返回任务状态；请求ID用于人工提交幂等。 */
+
+    /**
+     * 持久化测试打印，返回任务状态；请求ID用于人工提交幂等。
+     */
     LabelPrintTaskVo testPrintTask(Long templateId, String requestId);
 
-    /** 持久化显式补打，必须关联原任务和原因。 */
-    LabelPrintTaskVo reprintTask(Long snId, Long templateId, Long originalPrintLogId, String reprintReason, String requestId);
+    /**
+     * 持久化显式补打，必须关联原任务和原因。
+     */
+    LabelPrintTaskVo reprintTask(
+            Long snId,
+            Long templateId,
+            Long originalPrintLogId,
+            String reprintReason,
+            String requestId);
 
-    /** 按当前租户查询任务状态，不暴露冻结指令。 */
+    /**
+     * 按当前租户查询任务状态，不暴露冻结指令。
+     */
     LabelPrintTaskVo printTask(Long taskId);
 }

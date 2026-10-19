@@ -78,7 +78,7 @@ class StationProgressCurrentReadTest {
     private static final long WORK_ORDER_ID = 20L;
     private static final long STEP_ID = 200L;
     private static final StationPassService.OperatorInfo OPERATOR =
-        new StationPassService.OperatorInfo(105L, "EMP-1", "操作员");
+            new StationPassService.OperatorInfo(105L, "EMP-1", "操作员");
 
     @Mock private StationReportMapper reportMapper;
     @Mock private StationSchWorkerMapper schWorkerMapper;
@@ -117,22 +117,30 @@ class StationProgressCurrentReadTest {
     @BeforeAll
     static void prepareTableMetadata() {
         var assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "当前读报工测试");
-        for (Class<?> entity : List.of(ProSn.class, ProFlowCardStep.class, MesStationReport.class)) {
+        for (Class<?> entity :
+                List.of(ProSn.class, ProFlowCardStep.class, MesStationReport.class)) {
             TableInfoHelper.initTableInfo(assistant, entity);
         }
     }
 
     @BeforeEach
     void setUp() {
-        lenient().when(serialReferences.submissionStatus(any())).thenReturn(java.util.Map.of("submissionState","SERVER_COMMITTED","handoffStatus","NONE"));
+        lenient()
+                .when(serialReferences.submissionStatus(any()))
+                .thenReturn(
+                        java.util.Map.of(
+                                "submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
         assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
         dataSource = new JdbcDataSource();
         dataSource.setURL("jdbc:h2:mem:station_current_read_" + UUID.randomUUID());
         transactionManager = new DataSourceTransactionManager(dataSource);
         var factory = new ProxyFactory(target);
         factory.setProxyTargetClass(true);
-        factory.addAdvisor(new DynamicDataSourceAnnotationAdvisor(
-            new DynamicDataSourceAnnotationInterceptor(true, new DsSpelExpressionProcessor()), DS.class));
+        factory.addAdvisor(
+                new DynamicDataSourceAnnotationAdvisor(
+                        new DynamicDataSourceAnnotationInterceptor(
+                                true, new DsSpelExpressionProcessor()),
+                        DS.class));
         var transaction = new TransactionInterceptor();
         transaction.setTransactionManager(transactionManager);
         transaction.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
@@ -182,75 +190,126 @@ class StationProgressCurrentReadTest {
         device.setStationCode(STATION);
         device.setProcessCode("ASM");
         // 早期拒绝分支不会使用后续来源；共享替身保留所有路径而不降低结果断言。
-        lenient().when(serialReferences.resolve(SN)).thenAnswer(invocation ->
-            new com.nexus.mes.trace.MesSerialReferenceService.Resolved(TENANT,10001L,1L,SN,SN,sn.getMaterialId(),sn));
+        lenient()
+                .when(serialReferences.resolve(SN))
+                .thenAnswer(
+                        invocation ->
+                                new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                        TENANT, 10001L, 1L, SN, SN, sn.getMaterialId(), sn));
         lenient().when(progressService.lockForSn(SN)).thenReturn(WORK_ORDER_ID);
         lenient().when(guard.lockSn(TENANT, SN)).thenAnswer(invocation -> List.of(sn));
-        lenient().when(guard.lockReports(TENANT, SN)).thenAnswer(invocation -> new ArrayList<>(history));
+        lenient()
+                .when(guard.lockReports(TENANT, SN))
+                .thenAnswer(invocation -> new ArrayList<>(history));
         lenient().when(guard.lockCard(TENANT, CARD_ID)).thenAnswer(invocation -> card);
         lenient().when(guard.lockSteps(TENANT, CARD_ID)).thenAnswer(invocation -> cardSteps);
         lenient().when(guard.lockDevices(TENANT, STATION)).thenReturn(List.of(device));
         lenient().when(guard.lockTests(TENANT, SN)).thenReturn(List.of());
         lenient().when(guard.lockNcrs(TENANT, CARD_ID)).thenReturn(List.of());
-        lenient().when(reportMapper.insert(any(MesStationReport.class))).thenAnswer(invocation -> {
-            assertWriteContext();
-            var stored = new StationPassGuardMapper.StoredReport();
-            BeanUtils.copyProperties(invocation.getArgument(0), stored);
-            stored.setDelFlag("0");
-            history.add(stored);
-            return 1;
-        });
-        lenient().when(stepMapper.selectOne(any())).thenAnswer(invocation -> {
-            assertWriteContext();
-            Wrapper<?> query = invocation.getArgument(0);
-            assertEquals(TENANT, parameter(query, "tenant_id", "="));
-            assertEquals(CARD_ID, parameter(query, "card_id", "="));
-            assertEquals(STEP_ID, parameter(query, "step_record_id", "="));
-            return query.getSqlSegment().contains("FOR UPDATE")
-                ? (freshVisible ? freshStep : null) : snapshotStep;
-        });
-        lenient().when(stepMapper.update(isNull(), any())).thenAnswer(invocation -> updateStep(invocation.getArgument(1)));
-        lenient().when(stepMapper.selectCount(any())).thenAnswer(invocation -> {
-            assertWriteContext();
-            Wrapper<?> query = invocation.getArgument(0);
-            assertEquals(CARD_ID, parameter(query, "card_id", "="));
-            assertTrue(query.getSqlSegment().contains("step_status NOT IN"));
-            var values = ((AbstractWrapper<?, ?, ?>) query).getParamNameValuePairs().values();
-            assertTrue(values.containsAll(List.of("COMPLETED", "SKIPPED")));
-            boolean currentRead = query.getSqlSegment().contains("FOR UPDATE");
-            // 计数的租户插件边界在此显式建模；生产插件的注入 SQL 不属于本夹具证明范围。
-            return cardSteps.stream().map(row -> currentRead && row.getStepRecordId().equals(STEP_ID) ? freshStep : row)
-                .filter(row -> TENANT.equals(row.getTenantId()) && row.getCardId().equals(CARD_ID))
-                .filter(row -> !List.of("COMPLETED", "SKIPPED").contains(row.getStepStatus())).count();
-        });
-        lenient().doAnswer(invocation -> {
-            assertWriteContext();
-            assertEquals(CARD_ID, invocation.<Long>getArgument(0));
-            card.setCardStatus("COMPLETED");
-            return null;
-        }).when(flowCardService).completeCard(anyLong());
-        lenient().doAnswer(invocation -> {
-            assertWriteContext();
-            assertEquals(1L, invocation.<Long>getArgument(0));
-            sn.setSnStatus("COMPLETED");
-            return null;
-        }).when(proSnService).completeSn(anyLong());
-        lenient().doAnswer(invocation -> {
-            assertWriteContext();
-            assertEquals(CARD_ID, invocation.<Long>getArgument(0));
-            assertEquals(STEP_ID, invocation.<Long>getArgument(1));
-            assertEquals(OPERATOR.userId(), invocation.getArgument(2));
-            freshStep.setStepStatus("IN_PROGRESS");
-            return null;
-        }).when(flowCardService).startStep(anyLong(), anyLong(), anyLong());
-        lenient().when(proSnMapper.update(isNull(), any())).thenAnswer(invocation -> {
-            Wrapper<?> update = invocation.getArgument(1);
-            assertEquals(TENANT, parameter(update, "tenant_id", "="));
-            assertEquals(1L, parameter(update, "sn_id", "="));
-            assertEquals("IN_PRODUCTION", parameter(update, "sn_status", "="));
-            sn.setCurrentStepSeq(((Number) assignment(update, "current_step_seq")).intValue());
-            return 1;
-        });
+        lenient()
+                .when(reportMapper.insert(any(MesStationReport.class)))
+                .thenAnswer(
+                        invocation -> {
+                            assertWriteContext();
+                            var stored = new StationPassGuardMapper.StoredReport();
+                            BeanUtils.copyProperties(invocation.getArgument(0), stored);
+                            stored.setDelFlag("0");
+                            history.add(stored);
+                            return 1;
+                        });
+        lenient()
+                .when(stepMapper.selectOne(any()))
+                .thenAnswer(
+                        invocation -> {
+                            assertWriteContext();
+                            Wrapper<?> query = invocation.getArgument(0);
+                            assertEquals(TENANT, parameter(query, "tenant_id", "="));
+                            assertEquals(CARD_ID, parameter(query, "card_id", "="));
+                            assertEquals(STEP_ID, parameter(query, "step_record_id", "="));
+                            return query.getSqlSegment().contains("FOR UPDATE")
+                                    ? (freshVisible ? freshStep : null)
+                                    : snapshotStep;
+                        });
+        lenient()
+                .when(stepMapper.update(isNull(), any()))
+                .thenAnswer(invocation -> updateStep(invocation.getArgument(1)));
+        lenient()
+                .when(stepMapper.selectCount(any()))
+                .thenAnswer(
+                        invocation -> {
+                            assertWriteContext();
+                            Wrapper<?> query = invocation.getArgument(0);
+                            assertEquals(CARD_ID, parameter(query, "card_id", "="));
+                            assertTrue(query.getSqlSegment().contains("step_status NOT IN"));
+                            var values =
+                                    ((AbstractWrapper<?, ?, ?>) query)
+                                            .getParamNameValuePairs()
+                                            .values();
+                            assertTrue(values.containsAll(List.of("COMPLETED", "SKIPPED")));
+                            boolean currentRead = query.getSqlSegment().contains("FOR UPDATE");
+                            // 计数的租户插件边界在此显式建模；生产插件的注入 SQL 不属于本夹具证明范围。
+                            return cardSteps.stream()
+                                    .map(
+                                            row ->
+                                                    currentRead
+                                                                    && row.getStepRecordId()
+                                                                            .equals(STEP_ID)
+                                                            ? freshStep
+                                                            : row)
+                                    .filter(
+                                            row ->
+                                                    TENANT.equals(row.getTenantId())
+                                                            && row.getCardId().equals(CARD_ID))
+                                    .filter(
+                                            row ->
+                                                    !List.of("COMPLETED", "SKIPPED")
+                                                            .contains(row.getStepStatus()))
+                                    .count();
+                        });
+        lenient()
+                .doAnswer(
+                        invocation -> {
+                            assertWriteContext();
+                            assertEquals(CARD_ID, invocation.<Long>getArgument(0));
+                            card.setCardStatus("COMPLETED");
+                            return null;
+                        })
+                .when(flowCardService)
+                .completeCard(anyLong());
+        lenient()
+                .doAnswer(
+                        invocation -> {
+                            assertWriteContext();
+                            assertEquals(1L, invocation.<Long>getArgument(0));
+                            sn.setSnStatus("COMPLETED");
+                            return null;
+                        })
+                .when(proSnService)
+                .completeSn(anyLong());
+        lenient()
+                .doAnswer(
+                        invocation -> {
+                            assertWriteContext();
+                            assertEquals(CARD_ID, invocation.<Long>getArgument(0));
+                            assertEquals(STEP_ID, invocation.<Long>getArgument(1));
+                            assertEquals(OPERATOR.userId(), invocation.getArgument(2));
+                            freshStep.setStepStatus("IN_PROGRESS");
+                            return null;
+                        })
+                .when(flowCardService)
+                .startStep(anyLong(), anyLong(), anyLong());
+        lenient()
+                .when(proSnMapper.update(isNull(), any()))
+                .thenAnswer(
+                        invocation -> {
+                            Wrapper<?> update = invocation.getArgument(1);
+                            assertEquals(TENANT, parameter(update, "tenant_id", "="));
+                            assertEquals(1L, parameter(update, "sn_id", "="));
+                            assertEquals("IN_PRODUCTION", parameter(update, "sn_status", "="));
+                            sn.setCurrentStepSeq(
+                                    ((Number) assignment(update, "current_step_seq")).intValue());
+                            return 1;
+                        });
     }
 
     @AfterEach
@@ -264,7 +323,8 @@ class StationProgressCurrentReadTest {
 
     @Test
     void lastPassUsesPostIncrementQuantitiesAndCompletesCardExactlyOnce() {
-        assertEquals("SERVER_COMMITTED",service.reportSingle(request, OPERATOR).get("submissionState"));
+        assertEquals(
+                "SERVER_COMMITTED", service.reportSingle(request, OPERATOR).get("submissionState"));
 
         assertEquals(new BigDecimal("2"), freshStep.getGoodQty());
         assertEquals("COMPLETED", freshStep.getStepStatus(), "快照数量 1 不能阻止当前累计量 2 触发收口");
@@ -279,7 +339,8 @@ class StationProgressCurrentReadTest {
         assertEquals(CARD_ID, report.getValue().getCardId());
         assertEquals(STEP_ID, report.getValue().getStepRecordId());
         assertEquals(BigDecimal.ONE, report.getValue().getGoodQty());
-        var order = inOrder(progressService, reportMapper, stepMapper, flowCardService, proSnService);
+        var order =
+                inOrder(progressService, reportMapper, stepMapper, flowCardService, proSnService);
         order.verify(progressService).lockForSn(SN);
         order.verify(reportMapper).insert(any(MesStationReport.class));
         order.verify(stepMapper).update(isNull(), any());
@@ -304,14 +365,9 @@ class StationProgressCurrentReadTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "5, 1, 0, 0, false",
-        "2, 1, 0, 0, true",
-        "1, 1, 0, 0, true",
-        "4, 1, 1, 1, true"
-    })
+    @CsvSource({"5, 1, 0, 0, false", "2, 1, 0, 0, true", "1, 1, 0, 0, true", "4, 1, 1, 1, true"})
     void completionUsesGoodDefectAndScrapTotalAgainstPlan(
-        String planned, String good, String defect, String scrap, boolean reached) {
+            String planned, String good, String defect, String scrap, boolean reached) {
         quantities(planned, good, defect, scrap);
 
         service.reportSingle(request, OPERATOR);
@@ -431,8 +487,10 @@ class StationProgressCurrentReadTest {
 
     @Test
     void committedReplayCannotIncrementOrCompleteCardTwice() {
-        assertEquals("SERVER_COMMITTED",service.reportSingle(request, OPERATOR).get("submissionState"));
-        assertEquals("SERVER_COMMITTED",service.reportSingle(request, OPERATOR).get("submissionState"));
+        assertEquals(
+                "SERVER_COMMITTED", service.reportSingle(request, OPERATOR).get("submissionState"));
+        assertEquals(
+                "SERVER_COMMITTED", service.reportSingle(request, OPERATOR).get("submissionState"));
 
         assertEquals(1, history.size());
         assertEquals(new BigDecimal("2"), freshStep.getGoodQty());
@@ -447,7 +505,17 @@ class StationProgressCurrentReadTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"snTenant", "cardTenant", "stepTenant", "cardId", "stepCard", "stepWorkOrder", "identityId", "localSnId"})
+    @ValueSource(
+            strings = {
+                "snTenant",
+                "cardTenant",
+                "stepTenant",
+                "cardId",
+                "stepCard",
+                "stepWorkOrder",
+                "identityId",
+                "localSnId"
+            })
     void mismatchedTenantOrCardSourceIsRejectedBeforeBusinessWrites(String mismatch) {
         switch (mismatch) {
             case "snTenant" -> sn.setTenantId("OTHER");
@@ -469,19 +537,24 @@ class StationProgressCurrentReadTest {
     @ParameterizedTest
     @CsvSource({"mes, false, false", "mes, true, true", "erp, true, false"})
     void invalidWriteContextCannotTakeProgressLocksOrWrite(
-        String source, boolean actualTransaction, boolean readOnly) {
+            String source, boolean actualTransaction, boolean readOnly) {
         DynamicDataSourceContextHolder.push(source);
         try {
-            ServiceException error = assertThrows(ServiceException.class, () -> {
-                if (actualTransaction) {
-                    var transaction = new TransactionTemplate(transactionManager);
-                    transaction.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
-                    transaction.setReadOnly(readOnly);
-                    transaction.execute(status -> target.reportSingle(request, OPERATOR));
-                } else {
-                    target.reportSingle(request, OPERATOR);
-                }
-            });
+            ServiceException error =
+                    assertThrows(
+                            ServiceException.class,
+                            () -> {
+                                if (actualTransaction) {
+                                    var transaction = new TransactionTemplate(transactionManager);
+                                    transaction.setIsolationLevel(
+                                            TransactionDefinition.ISOLATION_REPEATABLE_READ);
+                                    transaction.setReadOnly(readOnly);
+                                    transaction.execute(
+                                            status -> target.reportSingle(request, OPERATOR));
+                                } else {
+                                    target.reportSingle(request, OPERATOR);
+                                }
+                            });
             assertTrue(error.getMessage().contains("实际 MES RR 写事务"));
             assertNoBusinessWrites();
             verifyNoInteractions(progressService, guard);
@@ -494,8 +567,8 @@ class StationProgressCurrentReadTest {
     void failedCounterIncrementStopsBeforeFreshReadAndSnCompletion() {
         incrementRows = 0;
 
-        ServiceException error = assertThrows(ServiceException.class,
-            () -> service.reportSingle(request, OPERATOR));
+        ServiceException error =
+                assertThrows(ServiceException.class, () -> service.reportSingle(request, OPERATOR));
 
         assertTrue(error.getMessage().contains("数量未写入"));
         verify(stepMapper, never()).selectOne(any());
@@ -507,7 +580,8 @@ class StationProgressCurrentReadTest {
     private int updateStep(Wrapper<?> update) {
         assertWriteContext();
         String assignment = update.getSqlSet();
-        if (assignment.contains("good_qty = good_qty + 1") || assignment.contains("defect_qty = defect_qty + 1")) {
+        if (assignment.contains("good_qty = good_qty + 1")
+                || assignment.contains("defect_qty = defect_qty + 1")) {
             assertEquals(TENANT, parameter(update, "tenant_id", "="));
             assertEquals(CARD_ID, parameter(update, "card_id", "="));
             assertEquals(STEP_ID, parameter(update, "step_record_id", "="));
@@ -559,8 +633,9 @@ class StationProgressCurrentReadTest {
         assertEquals("mes", DynamicDataSourceContextHolder.peek());
         assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
         assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
-        assertEquals(Connection.TRANSACTION_REPEATABLE_READ,
-            TransactionSynchronizationManager.getCurrentTransactionIsolationLevel());
+        assertEquals(
+                Connection.TRANSACTION_REPEATABLE_READ,
+                TransactionSynchronizationManager.getCurrentTransactionIsolationLevel());
     }
 
     private static ProFlowCardStep step(long id, int sequence, String status, String process) {
@@ -596,10 +671,19 @@ class StationProgressCurrentReadTest {
         return boundValue(wrapper, wrapper.getSqlSet(), column, "=");
     }
 
-    /** 对完整约束及真实绑定值作断言，锁选择同时驱动不同数据返回和最终业务结果。 */
-    private static Object boundValue(Wrapper<?> wrapper, String sql, String column, String operator) {
-        var matcher = Pattern.compile("\\b" + Pattern.quote(column) + "\\s*" + Pattern.quote(operator)
-            + "\\s*#\\{ew\\.paramNameValuePairs\\.([^},]+)(?:,[^}]+)?}").matcher(sql);
+    /**
+     * 对完整约束及真实绑定值作断言，锁选择同时驱动不同数据返回和最终业务结果。
+     */
+    private static Object boundValue(
+            Wrapper<?> wrapper, String sql, String column, String operator) {
+        var matcher =
+                Pattern.compile(
+                                "\\b"
+                                        + Pattern.quote(column)
+                                        + "\\s*"
+                                        + Pattern.quote(operator)
+                                        + "\\s*#\\{ew\\.paramNameValuePairs\\.([^},]+)(?:,[^}]+)?}")
+                        .matcher(sql);
         assertTrue(matcher.find(), "缺少业务约束: " + column + " " + operator + ": " + sql);
         return ((AbstractWrapper<?, ?, ?>) wrapper).getParamNameValuePairs().get(matcher.group(1));
     }

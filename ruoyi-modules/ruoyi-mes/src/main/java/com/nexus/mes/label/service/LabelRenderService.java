@@ -34,21 +34,35 @@ public class LabelRenderService {
 
     private final SerialIdentityPort identities;
 
-    /** TSPL 中文点阵字体(TSC 标配), 基准字号 24 dot */
+    /**
+     * TSPL 中文点阵字体(TSC 标配), 基准字号 24 dot
+     */
     private static final String TSPL_CN_FONT = "TSS24.BF2";
+
     private static final int TSPL_CN_FONT_BASE = 24;
-    /** ZPL 203dpi 换算: 1mm = 8 dots */
+
+    /**
+     * ZPL 203dpi 换算: 1mm = 8 dots
+     */
     private static final int ZPL_DOTS_PER_MM = 8;
 
-    /** 标签类型: SN 标签 */
+    /**
+     * 标签类型: SN 标签
+     */
     public static final String TYPE_SN = "SN";
-    /** 打印机语言 */
+
+    /**
+     * 打印机语言
+     */
     public static final String LANG_TSPL = "TSPL";
+
     public static final String LANG_ZPL = "ZPL";
 
-    /** 内容 JSON 解析用独立 mapper(内部 DTO, 不涉 API 序列化; 亦使本服务为纯函数可单测) */
-    private static final ObjectMapper CONTENT_MAPPER = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    /**
+     * 内容 JSON 解析用独立 mapper(内部 DTO, 不涉 API 序列化; 亦使本服务为纯函数可单测)
+     */
+    private static final ObjectMapper CONTENT_MAPPER =
+            new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * 渲染标签指令串
@@ -59,25 +73,37 @@ public class LabelRenderService {
      */
     public String render(MesLabelTemplate template, Map<String, String> fields) {
         if (template == null || StringUtils.isBlank(template.getContent())) {
-            throw new ServiceException("模板内容为空: " + (template == null ? null : template.getTemplateCode()));
+            throw new ServiceException(
+                    "模板内容为空: " + (template == null ? null : template.getTemplateCode()));
         }
         LabelContent content = parseContent(template.getContent());
         if (content.getItems() == null || content.getItems().isEmpty()) {
             throw new ServiceException("模板未配置任何打印项: " + template.getTemplateCode());
         }
-        String payload = LANG_ZPL.equalsIgnoreCase(template.getLabelLang())
-            ? renderZpl(template, content, fields) : renderTspl(template, content, fields);
+        String payload =
+                LANG_ZPL.equalsIgnoreCase(template.getLabelLang())
+                        ? renderZpl(template, content, fields)
+                        : renderTspl(template, content, fields);
         validateSnIdentity(template, content, fields);
         return payload;
     }
 
-    /** SN 标签必须包含绑定正式 snCode 的条码或二维码，文字 SN 与物料码都不能替代。 */
-    private void validateSnIdentity(MesLabelTemplate template, LabelContent content, Map<String, String> fields) {
-        if (StringUtils.isNotBlank(template.getLabelType()) && !TYPE_SN.equalsIgnoreCase(template.getLabelType())) {
+    /**
+     * SN 标签必须包含绑定正式 snCode 的条码或二维码，文字 SN 与物料码都不能替代。
+     */
+    private void validateSnIdentity(
+            MesLabelTemplate template, LabelContent content, Map<String, String> fields) {
+        if (StringUtils.isNotBlank(template.getLabelType())
+                && !TYPE_SN.equalsIgnoreCase(template.getLabelType())) {
             return;
         }
-        boolean snMachineCode = content.getItems().stream().anyMatch(item -> "snCode".equals(item.getField())
-            && ("barcode".equals(item.typeSafe()) || "qrcode".equals(item.typeSafe())));
+        boolean snMachineCode =
+                content.getItems().stream()
+                        .anyMatch(
+                                item ->
+                                        "snCode".equals(item.getField())
+                                                && ("barcode".equals(item.typeSafe())
+                                                        || "qrcode".equals(item.typeSafe())));
         if (!snMachineCode) {
             throw new ServiceException("SN 标签至少需要一个绑定 snCode 的条码或二维码");
         }
@@ -86,10 +112,13 @@ public class LabelRenderService {
         }
     }
 
-    /** 模板语言对应的发送字符集: TSPL 中文点阵字体需 GBK, ZPL(^CI28) 用 UTF-8 */
+    /**
+     * 模板语言对应的发送字符集: TSPL 中文点阵字体需 GBK, ZPL(^CI28) 用 UTF-8
+     */
     public Charset charsetOf(MesLabelTemplate template) {
         return LANG_ZPL.equalsIgnoreCase(template.getLabelLang())
-            ? StandardCharsets.UTF_8 : Charset.forName("GBK");
+                ? StandardCharsets.UTF_8
+                : Charset.forName("GBK");
     }
 
     /**
@@ -104,13 +133,18 @@ public class LabelRenderService {
         if (StringUtils.isBlank(tenant) || sn == null || !tenant.equals(sn.getTenantId())) {
             throw new ServiceException("正式SN标签需要当前租户内的真实MES记录");
         }
-        if (sn.getIdentityId() == null || sn.getIdentityId() <= 0 || sn.getMaterialId() == null || sn.getMaterialId() <= 0) {
+        if (sn.getIdentityId() == null
+                || sn.getIdentityId() <= 0
+                || sn.getMaterialId() == null
+                || sn.getMaterialId() <= 0) {
             throw new ServiceException("正式SN标签缺少ERP身份映射或物料依据");
         }
         // 必须调用ERP端口代理；其独立只读事务挂起MES事务，返回后恢复原数据源及业务事务。
         var formal = identities.find(tenant, sn.getIdentityId());
-        if (formal == null || !Objects.equals(sn.getIdentityId(), formal.identityId())
-            || !Objects.equals(sn.getMaterialId(), formal.materialId()) || StringUtils.isBlank(formal.snCode())) {
+        if (formal == null
+                || !Objects.equals(sn.getIdentityId(), formal.identityId())
+                || !Objects.equals(sn.getMaterialId(), formal.materialId())
+                || StringUtils.isBlank(formal.snCode())) {
             throw new ServiceException("正式SN标签的ERP身份不存在、物料冲突或正式码无效");
         }
         Map<String, String> fields = new LinkedHashMap<>(10);
@@ -121,15 +155,22 @@ public class LabelRenderService {
         fields.put("materialName", sn.getMaterialName());
         fields.put("woNo", sn.getWoNo());
         fields.put("cardNo", sn.getCardNo());
-        fields.put("productionDate", sn.getProductionDate() == null ? "" : String.format("%tF", sn.getProductionDate()));
+        fields.put(
+                "productionDate",
+                sn.getProductionDate() == null ? "" : String.format("%tF", sn.getProductionDate()));
         return fields;
     }
 
     // ==================== TSPL ====================
 
-    private String renderTspl(MesLabelTemplate t, LabelContent content, Map<String, String> fields) {
+    private String renderTspl(
+            MesLabelTemplate t, LabelContent content, Map<String, String> fields) {
         StringBuilder sb = new StringBuilder(256);
-        sb.append("SIZE ").append(nvl(t.getWidthMm(), 60)).append(" mm,").append(nvl(t.getHeightMm(), 40)).append(" mm\r\n");
+        sb.append("SIZE ")
+                .append(nvl(t.getWidthMm(), 60))
+                .append(" mm,")
+                .append(nvl(t.getHeightMm(), 40))
+                .append(" mm\r\n");
         sb.append("GAP 2 mm,0\r\n");
         sb.append("DIRECTION 1,0\r\n");
         sb.append("CLS\r\n");
@@ -142,17 +183,43 @@ public class LabelRenderService {
                     // 放大倍数按基准字号换算(最小 1), 缺省 24 即 1 倍
                     int size = nvl(item.getSize(), TSPL_CN_FONT_BASE);
                     int mag = Math.max(1, Math.round((float) size / TSPL_CN_FONT_BASE));
-                    sb.append("TEXT ").append(x).append(',').append(y)
-                        .append(",\"").append(TSPL_CN_FONT).append("\",0,").append(mag).append(',').append(mag)
-                        .append(",\"").append(escapeTspl(value)).append("\"\r\n");
+                    sb.append("TEXT ")
+                            .append(x)
+                            .append(',')
+                            .append(y)
+                            .append(",\"")
+                            .append(TSPL_CN_FONT)
+                            .append("\",0,")
+                            .append(mag)
+                            .append(',')
+                            .append(mag)
+                            .append(",\"")
+                            .append(escapeTspl(value))
+                            .append("\"\r\n");
                 }
-                case "barcode" -> sb.append("BARCODE ").append(x).append(',').append(y)
-                    .append(",\"128\",").append(nvl(item.getHeight(), 48))
-                    .append(",0,0,2,2,\"").append(escapeTspl(value)).append("\"\r\n");
-                case "qrcode" -> sb.append("QRCODE ").append(x).append(',').append(y)
-                    .append(",H,").append(nvl(item.getSize(), 4)).append(",A,0,M2,S7,\"")
-                    .append(escapeTspl(value)).append("\"\r\n");
-                default -> throw new ServiceException("未知打印项类型: " + item.getType() + "(仅支持 text/barcode/qrcode)");
+                case "barcode" ->
+                        sb.append("BARCODE ")
+                                .append(x)
+                                .append(',')
+                                .append(y)
+                                .append(",\"128\",")
+                                .append(nvl(item.getHeight(), 48))
+                                .append(",0,0,2,2,\"")
+                                .append(escapeTspl(value))
+                                .append("\"\r\n");
+                case "qrcode" ->
+                        sb.append("QRCODE ")
+                                .append(x)
+                                .append(',')
+                                .append(y)
+                                .append(",H,")
+                                .append(nvl(item.getSize(), 4))
+                                .append(",A,0,M2,S7,\"")
+                                .append(escapeTspl(value))
+                                .append("\"\r\n");
+                default ->
+                        throw new ServiceException(
+                                "未知打印项类型: " + item.getType() + "(仅支持 text/barcode/qrcode)");
             }
         }
         sb.append("PRINT 1,1\r\n");
@@ -177,20 +244,45 @@ public class LabelRenderService {
             switch (item.typeSafe()) {
                 case "text" -> {
                     int size = nvl(item.getSize(), 24) * ZPL_DOTS_PER_MM / 4;
-                    sb.append("^FO").append(x).append(',').append(y)
-                        .append("^A0N,").append(size).append(',').append(Math.max(1, size * 4 / 5))
-                        .append("^FD").append(safe).append("^FS\r\n");
+                    sb.append("^FO")
+                            .append(x)
+                            .append(',')
+                            .append(y)
+                            .append("^A0N,")
+                            .append(size)
+                            .append(',')
+                            .append(Math.max(1, size * 4 / 5))
+                            .append("^FD")
+                            .append(safe)
+                            .append("^FS\r\n");
                 }
                 case "barcode" -> {
                     int height = nvl(item.getHeight(), 48) * ZPL_DOTS_PER_MM / 4;
-                    sb.append("^FO").append(x).append(',').append(y)
-                        .append("^BY2,3,").append(height)
-                        .append("^BCN,").append(height).append(",Y,N,N^FD").append(safe).append("^FS\r\n");
+                    sb.append("^FO")
+                            .append(x)
+                            .append(',')
+                            .append(y)
+                            .append("^BY2,3,")
+                            .append(height)
+                            .append("^BCN,")
+                            .append(height)
+                            .append(",Y,N,N^FD")
+                            .append(safe)
+                            .append("^FS\r\n");
                 }
-                case "qrcode" -> sb.append("^FO").append(x).append(',').append(y)
-                    .append("^BQN,2,").append(nvl(item.getSize(), 4))
-                    .append("^FDQA,").append(safe).append("^FS\r\n");
-                default -> throw new ServiceException("未知打印项类型: " + item.getType() + "(仅支持 text/barcode/qrcode)");
+                case "qrcode" ->
+                        sb.append("^FO")
+                                .append(x)
+                                .append(',')
+                                .append(y)
+                                .append("^BQN,2,")
+                                .append(nvl(item.getSize(), 4))
+                                .append("^FDQA,")
+                                .append(safe)
+                                .append("^FS\r\n");
+                default ->
+                        throw new ServiceException(
+                                "未知打印项类型: " + item.getType() + "(仅支持 text/barcode/qrcode)");
             }
         }
         sb.append("^XZ\r\n");
@@ -199,7 +291,9 @@ public class LabelRenderService {
 
     // ==================== 辅助 ====================
 
-    /** 解析并校验 content JSON */
+    /**
+     * 解析并校验 content JSON
+     */
     public LabelContent parseContent(String content) {
         try {
             LabelContent parsed = CONTENT_MAPPER.readValue(content, LabelContent.class);
@@ -217,7 +311,9 @@ public class LabelRenderService {
         return value == null ? "" : value;
     }
 
-    /** TSPL 字符串字面量转义(双引号与反斜杠; 并剥离 CR/LF 等控制字符, 否则换行会把一条指令拆成两条) */
+    /**
+     * TSPL 字符串字面量转义(双引号与反斜杠; 并剥离 CR/LF 等控制字符, 否则换行会把一条指令拆成两条)
+     */
     private String escapeTspl(String value) {
         return sanitize(value).replace("\\", "\\\\").replace("\"", "\\\"");
     }
@@ -230,7 +326,9 @@ public class LabelRenderService {
         return sanitize(value).replace("^", "").replace("~", "");
     }
 
-    /** 通用清洗: 去除 CR/LF/TAB 及其余 C0 控制字符与 DEL(标签指令按行解析, 换行即注入新的指令行) */
+    /**
+     * 通用清洗: 去除 CR/LF/TAB 及其余 C0 控制字符与 DEL(标签指令按行解析, 换行即注入新的指令行)
+     */
     private String sanitize(String value) {
         if (value == null || value.isEmpty()) {
             return "";
@@ -250,29 +348,52 @@ public class LabelRenderService {
         return v == null ? def : v;
     }
 
-    /** 字段映射布局 */
+    /**
+     * 字段映射布局
+     */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LabelContent {
-        /** 打印项列表 */
+        /**
+         * 打印项列表
+         */
         private List<LabelItem> items;
     }
 
-    /** 单个打印项 */
+    /**
+     * 单个打印项
+     */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LabelItem {
-        /** 类型: text / barcode / qrcode */
+        /**
+         * 类型: text / barcode / qrcode
+         */
         private String type;
-        /** 绑定字段: snCode/materialCode/materialName/woNo/cardNo/productionDate */
+
+        /**
+         * 绑定字段: snCode/materialCode/materialName/woNo/cardNo/productionDate
+         */
         private String field;
-        /** X 坐标(mm) */
+
+        /**
+         * X 坐标(mm)
+         */
         private Integer x;
-        /** Y 坐标(mm) */
+
+        /**
+         * Y 坐标(mm)
+         */
         private Integer y;
-        /** text 字号 / qrcode 单元格 */
+
+        /**
+         * text 字号 / qrcode 单元格
+         */
         private Integer size;
-        /** barcode 高度 */
+
+        /**
+         * barcode 高度
+         */
         private Integer height;
 
         public String typeSafe() {

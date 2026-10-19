@@ -63,7 +63,6 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
     private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     private final PuPurchaseReturnMapper baseMapper;
     private final PuPurchaseReturnLineMapper lineMapper;
@@ -80,8 +79,10 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      * 分页查询采购退货单列表
      */
     @Override
-    public TableDataInfo<PuPurchaseReturnVo> selectPageList(PuPurchaseReturnBo bo, PageQuery pageQuery) {
-        Page<PuPurchaseReturnVo> page = baseMapper.selectVoPage(pageQuery.build(), buildQueryWrapper(bo));
+    public TableDataInfo<PuPurchaseReturnVo> selectPageList(
+            PuPurchaseReturnBo bo, PageQuery pageQuery) {
+        Page<PuPurchaseReturnVo> page =
+                baseMapper.selectVoPage(pageQuery.build(), buildQueryWrapper(bo));
         return TableDataInfo.build(page);
     }
 
@@ -116,8 +117,11 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseReturnBo bo) {
-        if (bo == null) throw new ServiceException("采购退货单不能为空");
-        certifiedDocumentGuard.requireLegacyReturnInput(bo.getOrderId(), bo.getPuPurchaseReturnLineList());
+        if (bo == null) {
+            throw new ServiceException("采购退货单不能为空");
+        }
+        certifiedDocumentGuard.requireLegacyReturnInput(
+                bo.getOrderId(), bo.getPuPurchaseReturnLineList());
         PuPurchaseReturn entity = MapstructUtils.convert(bo, PuPurchaseReturn.class);
         if (StringUtils.isBlank(entity.getReturnNo())) {
             entity.setReturnNo(autoCodeUtil.genSerialCode("PU_RETURN_CODE", null));
@@ -140,9 +144,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseReturnBo bo) {
-        if (bo == null) throw new ServiceException("采购退货单不能为空");
+        if (bo == null) {
+            throw new ServiceException("采购退货单不能为空");
+        }
         certifiedDocumentGuard.requireLegacyReturnMutation(bo.getReturnId());
-        certifiedDocumentGuard.requireLegacyReturnInput(bo.getOrderId(), bo.getPuPurchaseReturnLineList());
+        certifiedDocumentGuard.requireLegacyReturnInput(
+                bo.getOrderId(), bo.getPuPurchaseReturnLineList());
         PuPurchaseReturn entity = MapstructUtils.convert(bo, PuPurchaseReturn.class);
         PuPurchaseReturn current = baseMapper.selectById(entity.getReturnId());
         if (current == null) {
@@ -166,12 +173,18 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        if (ids == null || ids.length == 0) throw new ServiceException("采购退货单ID不能为空");
+        if (ids == null || ids.length == 0) {
+            throw new ServiceException("采购退货单ID不能为空");
+        }
         java.util.Set<Long> unique = new java.util.HashSet<>();
         for (Long id : ids) {
-            if (id == null || id <= 0 || !unique.add(id)) throw new ServiceException("采购退货单ID无效或重复");
+            if (id == null || id <= 0 || !unique.add(id)) {
+                throw new ServiceException("采购退货单ID无效或重复");
+            }
         }
-        for (Long id : ids) certifiedDocumentGuard.requireLegacyReturnMutation(id);
+        for (Long id : ids) {
+            certifiedDocumentGuard.requireLegacyReturnMutation(id);
+        }
         for (Long id : ids) {
             deleteLines(id);
         }
@@ -215,16 +228,21 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (!STATUS_CONFIRMED.equals(purchaseReturn.getStatus())) {
             throw new ServiceException("只有已确认状态的采购退货单才能执行退货，当前状态：" + purchaseReturn.getStatus());
         }
-        List<PuPurchaseReturnLine> lines = lineMapper.selectList(Wrappers.lambdaQuery(PuPurchaseReturnLine.class).eq(PuPurchaseReturnLine::getReturnId, returnId));
+        List<PuPurchaseReturnLine> lines =
+                lineMapper.selectList(
+                        Wrappers.lambdaQuery(PuPurchaseReturnLine.class)
+                                .eq(PuPurchaseReturnLine::getReturnId, returnId));
         if (lines == null || lines.isEmpty()) {
             throw new ServiceException("采购退货单无明细行");
         }
         // 条件更新抢占状态 CONFIRMED → EXECUTED, 防并发双执行(重复扣库存/重复红冲)
-        int updated = baseMapper.update(null,
-            Wrappers.<PuPurchaseReturn>lambdaUpdate()
-                .set(PuPurchaseReturn::getStatus, STATUS_EXECUTED)
-                .eq(PuPurchaseReturn::getReturnId, returnId)
-                .eq(PuPurchaseReturn::getStatus, STATUS_CONFIRMED));
+        int updated =
+                baseMapper.update(
+                        null,
+                        Wrappers.<PuPurchaseReturn>lambdaUpdate()
+                                .set(PuPurchaseReturn::getStatus, STATUS_EXECUTED)
+                                .eq(PuPurchaseReturn::getReturnId, returnId)
+                                .eq(PuPurchaseReturn::getStatus, STATUS_CONFIRMED));
         if (updated == 0) {
             throw new ServiceException("采购退货单状态已被并发操作变更，请刷新后重试");
         }
@@ -234,20 +252,30 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         // 退货进项转出:查找覆盖退货 PO 行的已抵扣蓝字进项发票,部分红冲(仅 cert_status=DEDUCTED 才转出)
         Map<Long, BigDecimal> poLineReturnQty = new HashMap<>();
         for (PuPurchaseReturnLine line : lines) {
-            if (line.getOrderLineId() != null && line.getReturnQuantity() != null
-                && line.getReturnQuantity().compareTo(BigDecimal.ZERO) > 0) {
-                poLineReturnQty.merge(line.getOrderLineId(), line.getReturnQuantity(), BigDecimal::add);
+            if (line.getOrderLineId() != null
+                    && line.getReturnQuantity() != null
+                    && line.getReturnQuantity().compareTo(BigDecimal.ZERO) > 0) {
+                poLineReturnQty.merge(
+                        line.getOrderLineId(), line.getReturnQuantity(), BigDecimal::add);
             }
         }
         if (!poLineReturnQty.isEmpty()) {
             // ★ 回写采购订单行退货数量(ERP-PU-05)：净采购量 = order_quantity - returned_quantity
             for (Map.Entry<Long, BigDecimal> entry : poLineReturnQty.entrySet()) {
-                int rows = orderLineMapper.update(null,
-                    Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
-                        .eq(PuPurchaseOrderLine::getLineId, entry.getKey())
-                        .setSql("returned_quantity = IFNULL(returned_quantity, 0) + " + entry.getValue().toPlainString()));
+                int rows =
+                        orderLineMapper.update(
+                                null,
+                                Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
+                                        .eq(PuPurchaseOrderLine::getLineId, entry.getKey())
+                                        .setSql(
+                                                "returned_quantity = IFNULL(returned_quantity, 0) +"
+                                                        + " "
+                                                        + entry.getValue().toPlainString()));
                 if (rows == 0) {
-                    log.warn("采购退货[{}]回写订单行退货数量失败, orderLineId={}", purchaseReturn.getReturnNo(), entry.getKey());
+                    log.warn(
+                            "采购退货[{}]回写订单行退货数量失败, orderLineId={}",
+                            purchaseReturn.getReturnNo(),
+                            entry.getKey());
                 }
             }
             int redCount = puInvoiceService.redFlushForReturnByPoLines(poLineReturnQty);
@@ -291,7 +319,9 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         variables.put("requireTaskOnStart", true);
         variables.put("returnId", entity.getReturnId());
         variables.put("returnNo", entity.getReturnNo());
-        R<Void> result = processService.startProcessByDataId(returnIdStr, selectFlowId, "puPurchaseReturnService", variables);
+        R<Void> result =
+                processService.startProcessByDataId(
+                        returnIdStr, selectFlowId, "puPurchaseReturnService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -306,10 +336,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      */
     @Override
     public String getProcInsId(String returnIdStr) {
-        return procInsIdHelper.resolve(returnIdStr, () -> {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(returnIdStr);
-            return business != null ? business.getProcessInstanceId() : null;
-        });
+        return procInsIdHelper.resolve(
+                returnIdStr,
+                () -> {
+                    WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(returnIdStr);
+                    return business != null ? business.getProcessInstanceId() : null;
+                });
     }
 
     /**
@@ -331,7 +363,9 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         Long returnId = Long.parseLong(business.getDataId());
         certifiedDocumentGuard.requireLegacyReturnMutation(returnId);
         PuPurchaseReturn entity = baseMapper.selectById(returnId);
-        if (entity == null) return;
+        if (entity == null) {
+            return;
+        }
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
             entity.setStatus(STATUS_APPROVING);
@@ -339,7 +373,9 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
             entity.setStatus(STATUS_CONFIRMED);
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setStatus(STATUS_DRAFT);
-        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+        } else if (ActStatus.revoke.equals(actStatus)
+                || ActStatus.stop.equals(actStatus)
+                || ActStatus.recall.equals(actStatus)) {
             entity.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(entity);
@@ -377,7 +413,8 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      * @return 候选用户名列表
      */
     @Override
-    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+    public List<String> flowCandidateUsernamesOfTask(
+            String taskNameId, Map<String, Object> values) {
         return null;
     }
 
@@ -391,24 +428,42 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      * @param line           退货明细行
      * @param now            当前时间
      */
-    private void postReturnOut(PuPurchaseReturn purchaseReturn, PuPurchaseReturnLine line, Date now) {
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
-            "PU_PURCHASE_RETURN",purchaseReturn.getReturnId(),line.getLineId(),"PUR_RETURN_OUT",line.getMaterialId(),line.getReturnQuantity(),null,null,null)))return;
-        if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+    private void postReturnOut(
+            PuPurchaseReturn purchaseReturn, PuPurchaseReturnLine line, Date now) {
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                                "PU_PURCHASE_RETURN",
+                                purchaseReturn.getReturnId(),
+                                line.getLineId(),
+                                "PUR_RETURN_OUT",
+                                line.getMaterialId(),
+                                line.getReturnQuantity(),
+                                null,
+                                null,
+                                null))) {
+            return;
+        }
+        if (line.getReturnQuantity() == null
+                || line.getReturnQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("退货数量必须大于0");
         }
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         WmMaterialStock stock = stockMapper.selectOne(lqw);
-        if (stock == null || stock.getStockQuantity() == null || stock.getStockQuantity().compareTo(line.getReturnQuantity()) < 0) {
+        if (stock == null
+                || stock.getStockQuantity() == null
+                || stock.getStockQuantity().compareTo(line.getReturnQuantity()) < 0) {
             throw new ServiceException("库存不足，无法执行采购退货");
         }
         BigDecimal beforeQuantity = stock.getStockQuantity();
         BigDecimal afterQuantity = beforeQuantity.subtract(line.getReturnQuantity());
         // 原子扣减(乐观锁 version + stock_quantity>=qty SQL 守卫), 替换读-改-写
         // 注: 退货单头/行无仓库维度字段, 无法按单据仓库过滤, 维度补齐属后续 schema 改造
-        int rows = stockMapper.deductStock(stock.getStockId(), line.getReturnQuantity(), stock.getVersion());
+        int rows =
+                stockMapper.deductStock(
+                        stock.getStockId(), line.getReturnQuantity(), stock.getVersion());
         if (rows == 0) {
             throw new ServiceException("库存并发变更冲突，请重试: stockId=" + stock.getStockId());
         }
@@ -469,7 +524,9 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (returnId == null) {
             return;
         }
-        lineMapper.delete(Wrappers.lambdaQuery(PuPurchaseReturnLine.class).eq(PuPurchaseReturnLine::getReturnId, returnId));
+        lineMapper.delete(
+                Wrappers.lambdaQuery(PuPurchaseReturnLine.class)
+                        .eq(PuPurchaseReturnLine::getReturnId, returnId));
     }
 
     /**
@@ -496,10 +553,19 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      */
     private LambdaQueryWrapper<PuPurchaseReturn> buildQueryWrapper(PuPurchaseReturnBo bo) {
         LambdaQueryWrapper<PuPurchaseReturn> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getReturnNo()), PuPurchaseReturn::getReturnNo, bo.getReturnNo());
-        lqw.eq(StringUtils.isNotBlank(bo.getOrderNo()), PuPurchaseReturn::getOrderNo, bo.getOrderNo());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getReturnNo()),
+                PuPurchaseReturn::getReturnNo,
+                bo.getReturnNo());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getOrderNo()),
+                PuPurchaseReturn::getOrderNo,
+                bo.getOrderNo());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseReturn::getStatus, bo.getStatus());
-        lqw.like(StringUtils.isNotBlank(bo.getVendorName()), PuPurchaseReturn::getVendorName, bo.getVendorName());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getVendorName()),
+                PuPurchaseReturn::getVendorName,
+                bo.getVendorName());
         lqw.orderByDesc(PuPurchaseReturn::getCreateTime);
         return lqw;
     }

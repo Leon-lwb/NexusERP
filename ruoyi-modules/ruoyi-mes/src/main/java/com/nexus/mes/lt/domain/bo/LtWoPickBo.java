@@ -19,15 +19,23 @@ public class LtWoPickBo {
     private Long processId;
     private String operationRef;
 
-    /** 工单ID */
+    /**
+     * 工单ID
+     */
     private Long woId;
 
-    /** 物料ID */
+    /**
+     * 物料ID
+     */
     private Long materialId;
 
-    /** SN ID(可空; 传入则为该 SN 写 SN↔批次绑定, 用于组件消费追溯) */
+    /**
+     * SN ID(可空; 传入则为该 SN 写 SN↔批次绑定, 用于组件消费追溯)
+     */
     private Long snId;
 
-    /** 领料明细(每条含 lotId + consumedQty; woId/materialId 由本 BO 统一覆盖) */
+    /**
+     * 领料明细(每条含 lotId + consumedQty; woId/materialId 由本 BO 统一覆盖)
+     */
     private List<LtWoConsumptionBo> picks;
 }

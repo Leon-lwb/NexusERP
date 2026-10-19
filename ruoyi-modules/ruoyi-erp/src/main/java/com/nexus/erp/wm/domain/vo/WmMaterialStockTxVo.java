@@ -22,8 +22,7 @@ import java.util.Date;
 @AutoMapper(target = WmMaterialStockTx.class)
 public class WmMaterialStockTxVo implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     /**
      * 事务ID
@@ -167,6 +166,7 @@ public class WmMaterialStockTxVo implements Serializable {
      */
     @ExcelProperty(value = "接收日期")
     private Date recptDate;
+
     private Long trackingVersion;
     private Long postingGroupId;
 }

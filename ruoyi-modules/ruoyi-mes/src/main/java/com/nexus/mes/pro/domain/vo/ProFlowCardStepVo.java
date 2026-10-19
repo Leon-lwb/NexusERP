@@ -21,90 +21,145 @@ import java.util.Date;
 @AutoMapper(target = ProFlowCardStep.class)
 public class ProFlowCardStepVo implements Serializable {
 
-    /** 当前实际工序的产品lot、原生产分配与已登记产出；证据不足时为空。 */
-    private java.util.Map<String,Object> productOutputContext;
+    /**
+     * 当前实际工序的产品lot、原生产分配与已登记产出；证据不足时为空。
+     */
+    private java.util.Map<String, Object> productOutputContext;
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
-    /** 工序记录ID */
+    /**
+     * 工序记录ID
+     */
     private Long stepRecordId;
 
-    /** 关联流转卡ID */
+    /**
+     * 关联流转卡ID
+     */
     private Long cardId;
 
-    /** 流转卡编号 */
+    /**
+     * 流转卡编号
+     */
     private String cardNo;
 
-    /** 关联MES工单ID */
+    /**
+     * 关联MES工单ID
+     */
     private Long mesWoId;
 
-    /** 关联工单工序步骤ID */
+    /**
+     * 关联工单工序步骤ID
+     */
     private Long woStepId;
 
-    /** 工序序号 */
+    /**
+     * 工序序号
+     */
     private Integer sequenceNum;
 
-    /** 工序ID */
+    /**
+     * 工序ID
+     */
     private Long processId;
 
-    /** 工序编码 */
+    /**
+     * 工序编码
+     */
     private String processCode;
 
-    /** 工序名称 */
+    /**
+     * 工序名称
+     */
     private String processName;
 
-    /** 工作中心ID */
+    /**
+     * 工作中心ID
+     */
     private Long workcenterId;
 
-    /** 工作中心编码 */
+    /**
+     * 工作中心编码
+     */
     private String workcenterCode;
 
-    /** 是否关键工序 */
+    /**
+     * 是否关键工序
+     */
     private Integer isKeyProcess;
 
-    /** 工序状态 */
+    /**
+     * 工序状态
+     */
     private String stepStatus;
 
-    /** 操作员ID */
+    /**
+     * 操作员ID
+     */
     private Long operatorId;
 
-    /** 操作员姓名 */
+    /**
+     * 操作员姓名
+     */
     private String operatorName;
 
-    /** 计划数量 */
+    /**
+     * 计划数量
+     */
     private BigDecimal plannedQty;
 
-    /** 良品数量 */
+    /**
+     * 良品数量
+     */
     private BigDecimal goodQty;
 
-    /** 不良品数量 */
+    /**
+     * 不良品数量
+     */
     private BigDecimal defectQty;
 
-    /** 报废数量 */
+    /**
+     * 报废数量
+     */
     private BigDecimal scrapQty;
 
-    /** 实际开始时间 */
+    /**
+     * 实际开始时间
+     */
     private Date actualStartTime;
 
-    /** 实际结束时间 */
+    /**
+     * 实际结束时间
+     */
     private Date actualEndTime;
 
-    /** 备注 */
+    /**
+     * 备注
+     */
     private String remark;
 
-    /** 进站校验结果(PASS/FAIL) */
+    /**
+     * 进站校验结果(PASS/FAIL)
+     */
     private String entryCheckResult;
 
-    /** 进站校验备注(失败原因) */
+    /**
+     * 进站校验备注(失败原因)
+     */
     private String entryCheckRemark;
 
-    /** 出站校验结果(PASS/FAIL) */
+    /**
+     * 出站校验结果(PASS/FAIL)
+     */
     private String exitCheckResult;
 
-    /** 出站校验备注(失败原因) */
+    /**
+     * 出站校验备注(失败原因)
+     */
     private String exitCheckRemark;
 
-    /** 跳站原因 */
+    /**
+     * 跳站原因
+     */
     private String skipReason;
 }

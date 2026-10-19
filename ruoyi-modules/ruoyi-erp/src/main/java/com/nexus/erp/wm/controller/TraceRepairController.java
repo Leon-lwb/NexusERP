@@ -7,16 +7,35 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
-@RestController @RequestMapping("/erp/wm/trace/repair") @RequiredArgsConstructor
+/**
+ * 历史身份差异的审计入口，输出待核实结果，不通过维护接口直接改写库存事实。
+ */
+@RestController
+@RequestMapping("/erp/wm/trace/repair")
+@RequiredArgsConstructor
 public class TraceRepairController {
     private final TraceRepairAuditService audits;
-    @SaCheckPermission("wm:trace:query") @GetMapping("/runs")
-    public R<Map<String,Object>> runs(@RequestParam(defaultValue="1") int pageNum,@RequestParam(defaultValue="10") int pageSize,
-        @RequestParam(required=false) Long materialId,@RequestParam(required=false) String status) {
-        return R.ok(audits.runs(pageNum,pageSize,materialId,status));
+
+    @SaCheckPermission("wm:trace:query")
+    @GetMapping("/runs")
+    public R<Map<String, Object>> runs(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Long materialId,
+            @RequestParam(required = false) String status) {
+        return R.ok(audits.runs(pageNum, pageSize, materialId, status));
     }
-    @SaCheckPermission("wm:trace:query") @GetMapping("/runs/{id}")
-    public R<Map<String,Object>> detail(@PathVariable String id){return R.ok(audits.detail(id));}
-    @SaCheckPermission("wm:trace:audit") @PostMapping("/audit")
-    public R<Map<String,Object>> audit(@RequestBody(required=false) TraceRepairAuditService.Request request){return R.ok(audits.audit(request));}
+
+    @SaCheckPermission("wm:trace:query")
+    @GetMapping("/runs/{id}")
+    public R<Map<String, Object>> detail(@PathVariable String id) {
+        return R.ok(audits.detail(id));
+    }
+
+    @SaCheckPermission("wm:trace:audit")
+    @PostMapping("/audit")
+    public R<Map<String, Object>> audit(
+            @RequestBody(required = false) TraceRepairAuditService.Request request) {
+        return R.ok(audits.audit(request));
+    }
 }

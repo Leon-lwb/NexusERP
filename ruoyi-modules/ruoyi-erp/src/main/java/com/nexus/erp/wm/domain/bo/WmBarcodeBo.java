@@ -16,7 +16,7 @@ import java.util.Date;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target=WmBarcode.class,reverseConvertGenerate=false)
+@AutoMapper(target = WmBarcode.class, reverseConvertGenerate = false)
 public class WmBarcodeBo extends BaseEntity {
 
     /**
@@ -30,7 +30,9 @@ public class WmBarcodeBo extends BaseEntity {
     @NotBlank(message = "条码不能为空")
     private String barcodeCode;
 
-    /** 登记时冻结的主对象类型；历史空值保留证据缺口。 */
+    /**
+     * 登记时冻结的主对象类型；历史空值保留证据缺口。
+     */
     private String primaryObjectType;
 
     /**

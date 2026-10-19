@@ -60,12 +60,19 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 入库流水类型 */
+    /**
+     * 入库流水类型
+     */
     private static final String TX_TYPE_IN = "MES_SPARE_IN";
-    /** 出库流水类型 */
+
+    /**
+     * 出库流水类型
+     */
     private static final String TX_TYPE_OUT = "MES_SPARE_OUT";
-    /** 原子更新重试次数 */
+
+    /**
+     * 原子更新重试次数
+     */
     private static final int MAX_RETRY = 3;
 
     private final WmMaterialStockMapper stockMapper;
@@ -88,7 +95,8 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         if (materialId == null) {
             return BigDecimal.ZERO;
         }
-        List<WmMaterialStock> stocks = stockMapper.selectList(buildAvailableQuery(materialId, warehouseId));
+        List<WmMaterialStock> stocks =
+                stockMapper.selectList(buildAvailableQuery(materialId, warehouseId));
         BigDecimal total = BigDecimal.ZERO;
         for (WmMaterialStock stock : stocks) {
             total = total.add(stock.getAvailableQuantity());
@@ -112,21 +120,27 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         if (qty == null || qty.signum() <= 0) {
             throw new ServiceException("备件过账数量必须大于0: bizKey=" + message.getBizKey());
         }
-        if(serialInventory!=null && serialInventory.isStrictSerial(message.getMaterialId()))throw new ServiceException("STRICT备件消息缺少冻结SN/ERP原始来源证明，禁止走旧数量直写；请使用单据单件过账入口");
+        if (serialInventory != null && serialInventory.isStrictSerial(message.getMaterialId())) {
+            throw new ServiceException("STRICT备件消息缺少冻结SN/ERP原始来源证明，禁止走旧数量直写；请使用单据单件过账入口");
+        }
         String bizKey = message.getBizKey();
         // 幂等①: Redis 原子占位
         if (!dedupGuard.tryMark(bizKey)) {
             log.info("备件过账消息重复, 已跳过: bizKey={}", bizKey);
-            return new WmSpareStockPostingResult(true, availableOf(message.getMaterialId(), message.getWarehouseId()));
+            return new WmSpareStockPostingResult(
+                    true, availableOf(message.getMaterialId(), message.getWarehouseId()));
         }
         try {
             // 幂等②: 持久层流水查重(Redis 过期后的迟到重投)
-            Long posted = stockTxMapper.selectCount(Wrappers.<WmMaterialStockTx>lambdaQuery()
-                .eq(WmMaterialStockTx::getSourceDocType, SOURCE_DOC_TYPE)
-                .eq(WmMaterialStockTx::getSourceDocCode, bizKey));
+            Long posted =
+                    stockTxMapper.selectCount(
+                            Wrappers.<WmMaterialStockTx>lambdaQuery()
+                                    .eq(WmMaterialStockTx::getSourceDocType, SOURCE_DOC_TYPE)
+                                    .eq(WmMaterialStockTx::getSourceDocCode, bizKey));
             if (posted != null && posted > 0) {
                 log.info("备件过账流水已存在, 已跳过: bizKey={}", bizKey);
-                return new WmSpareStockPostingResult(true, availableOf(message.getMaterialId(), message.getWarehouseId()));
+                return new WmSpareStockPostingResult(
+                        true, availableOf(message.getMaterialId(), message.getWarehouseId()));
             }
             boolean inbound = isInbound(message.getTransactionType());
             if (inbound) {
@@ -135,8 +149,12 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
                 applyOutbound(message, qty);
             }
             BigDecimal available = availableOf(message.getMaterialId(), message.getWarehouseId());
-            log.info("备件过账成功: bizKey={}, type={}, qty={}, 过账后ERP可用量={}",
-                bizKey, message.getTransactionType(), qty, available);
+            log.info(
+                    "备件过账成功: bizKey={}, type={}, qty={}, 过账后ERP可用量={}",
+                    bizKey,
+                    message.getTransactionType(),
+                    qty,
+                    available);
             return new WmSpareStockPostingResult(false, available);
         } catch (RuntimeException e) {
             // 事务将回滚: 释放幂等占位, 否则重投会被误判为"已过账"而永久丢失
@@ -164,11 +182,12 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
      * @param warehouseId 仓库ID(可空)
      * @return 查询条件
      */
-    private LambdaQueryWrapper<WmMaterialStock> buildAvailableQuery(Long materialId, Long warehouseId) {
+    private LambdaQueryWrapper<WmMaterialStock> buildAvailableQuery(
+            Long materialId, Long warehouseId) {
         return Wrappers.<WmMaterialStock>lambdaQuery()
-            .eq(WmMaterialStock::getMaterialId, materialId)
-            .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
-            .eq(WmMaterialStock::getFrozenFlag, 0L);
+                .eq(WmMaterialStock::getMaterialId, materialId)
+                .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
+                .eq(WmMaterialStock::getFrozenFlag, 0L);
     }
 
     /**
@@ -179,27 +198,35 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
      * @param qty     数量
      */
     private void applyInbound(MesSpareErpMessage message, BigDecimal qty) {
-        List<WmMaterialStock> stocks = stockMapper.selectList(Wrappers.<WmMaterialStock>lambdaQuery()
-            .eq(WmMaterialStock::getMaterialId, message.getMaterialId())
-            .eq(message.getWarehouseId() != null, WmMaterialStock::getWarehouseId, message.getWarehouseId())
-            .orderByAsc(WmMaterialStock::getStockId));
+        List<WmMaterialStock> stocks =
+                stockMapper.selectList(
+                        Wrappers.<WmMaterialStock>lambdaQuery()
+                                .eq(WmMaterialStock::getMaterialId, message.getMaterialId())
+                                .eq(
+                                        message.getWarehouseId() != null,
+                                        WmMaterialStock::getWarehouseId,
+                                        message.getWarehouseId())
+                                .orderByAsc(WmMaterialStock::getStockId));
         if (stocks == null || stocks.isEmpty()) {
             // Mapper 查询沿用消费端 TenantHelper.dynamic 上下文和本服务 ERP 数据源，消息名称不作为主数据。
             BdMaterial material = materialMapper.selectById(message.getMaterialId());
-            if (material == null || !Long.valueOf(1L).equals(material.getStatus())
-                || StringUtils.isBlank(material.getMaterialCode()) || StringUtils.isBlank(material.getMaterialName())) {
-                throw new ServiceException("ERP 备件物料不存在、已停用或编码/名称缺失, 拒绝新建库存: materialId="
-                    + message.getMaterialId());
+            if (material == null
+                    || !Long.valueOf(1L).equals(material.getStatus())
+                    || StringUtils.isBlank(material.getMaterialCode())
+                    || StringUtils.isBlank(material.getMaterialName())) {
+                throw new ServiceException(
+                        "ERP 备件物料不存在、已停用或编码/名称缺失, 拒绝新建库存: materialId=" + message.getMaterialId());
             }
             if (material.getBaseUomId() == null) {
-                throw new ServiceException("ERP 备件物料缺少基本计量单位, 拒绝新建库存: materialId="
-                    + message.getMaterialId());
+                throw new ServiceException(
+                        "ERP 备件物料缺少基本计量单位, 拒绝新建库存: materialId=" + message.getMaterialId());
             }
             BdUnitOfMeasure baseUnit = unitOfMeasureMapper.selectById(material.getBaseUomId());
-            if (baseUnit == null || !Long.valueOf(1L).equals(baseUnit.getStatus())
-                || StringUtils.isBlank(baseUnit.getUomName())) {
-                throw new ServiceException("ERP 备件基本计量单位不存在、已停用或名称为空, 拒绝新建库存: baseUomId="
-                    + material.getBaseUomId());
+            if (baseUnit == null
+                    || !Long.valueOf(1L).equals(baseUnit.getStatus())
+                    || StringUtils.isBlank(baseUnit.getUomName())) {
+                throw new ServiceException(
+                        "ERP 备件基本计量单位不存在、已停用或名称为空, 拒绝新建库存: baseUomId=" + material.getBaseUomId());
             }
             WmMaterialStock created = new WmMaterialStock();
             created.setMaterialId(message.getMaterialId());
@@ -230,7 +257,14 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             stockMapper.insert(created);
             // 新建行按 updateStockCost 语义设置初值: 数量已含本次入库, total_cost = 0 + qty*单价 → unit_cost = 单价
             applyInboundCost(created.getStockId(), qty, message.getUnitCost(), message.getBizKey());
-            writeTx(message, created, qty, true, BigDecimal.ZERO, qty, inboundTxUnitCost(message, created));
+            writeTx(
+                    message,
+                    created,
+                    qty,
+                    true,
+                    BigDecimal.ZERO,
+                    qty,
+                    inboundTxUnitCost(message, created));
             return;
         }
         WmMaterialStock target = stocks.get(0);
@@ -239,17 +273,29 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             if (fresh == null) {
                 break;
             }
-            BigDecimal before = fresh.getStockQuantity() == null ? BigDecimal.ZERO : fresh.getStockQuantity();
+            BigDecimal before =
+                    fresh.getStockQuantity() == null ? BigDecimal.ZERO : fresh.getStockQuantity();
             int affected = stockMapper.addStock(fresh.getStockId(), qty, fresh.getVersion());
             if (affected > 0) {
                 // 数量原子增加成功后计价(同一事务): 移动平均 = (原总成本 + 本次金额) / 入库后数量
-                applyInboundCost(fresh.getStockId(), qty, message.getUnitCost(), message.getBizKey());
-                writeTx(message, fresh, qty, true, before, before.add(qty), inboundTxUnitCost(message, fresh));
+                applyInboundCost(
+                        fresh.getStockId(), qty, message.getUnitCost(), message.getBizKey());
+                writeTx(
+                        message,
+                        fresh,
+                        qty,
+                        true,
+                        before,
+                        before.add(qty),
+                        inboundTxUnitCost(message, fresh));
                 return;
             }
         }
-        throw new ServiceException("ERP 备件入库失败(库存行并发冲突): stockId=" + target.getStockId()
-            + ", bizKey=" + message.getBizKey());
+        throw new ServiceException(
+                "ERP 备件入库失败(库存行并发冲突): stockId="
+                        + target.getStockId()
+                        + ", bizKey="
+                        + message.getBizKey());
     }
 
     /**
@@ -259,22 +305,46 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
      * @param qty     数量
      */
     private void applyOutbound(MesSpareErpMessage message, BigDecimal qty) {
-        List<WmMaterialStock> stocks = stockMapper.selectList(Wrappers.<WmMaterialStock>lambdaQuery()
-            .eq(WmMaterialStock::getMaterialId, message.getMaterialId())
-            .eq(message.getWarehouseId() != null, WmMaterialStock::getWarehouseId, message.getWarehouseId())
-            .eq(WmMaterialStock::getFrozenFlag, 0L)
-            .apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0")
-            .orderByAsc(WmMaterialStock::getRecptDate)
-            .orderByAsc(WmMaterialStock::getStockId));
+        List<WmMaterialStock> stocks =
+                stockMapper.selectList(
+                        Wrappers.<WmMaterialStock>lambdaQuery()
+                                .eq(WmMaterialStock::getMaterialId, message.getMaterialId())
+                                .eq(
+                                        message.getWarehouseId() != null,
+                                        WmMaterialStock::getWarehouseId,
+                                        message.getWarehouseId())
+                                .eq(WmMaterialStock::getFrozenFlag, 0L)
+                                .apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0")
+                                .orderByAsc(WmMaterialStock::getRecptDate)
+                                .orderByAsc(WmMaterialStock::getStockId));
         if (stocks == null || stocks.isEmpty()) {
-            throw new ServiceException("ERP 库存无可用量, 备件领用被拒绝: materialId=" + message.getMaterialId()
-                + ", warehouseId=" + message.getWarehouseId() + ", 需扣减=" + qty + ", bizKey=" + message.getBizKey());
+            throw new ServiceException(
+                    "ERP 库存无可用量, 备件领用被拒绝: materialId="
+                            + message.getMaterialId()
+                            + ", warehouseId="
+                            + message.getWarehouseId()
+                            + ", 需扣减="
+                            + qty
+                            + ", bizKey="
+                            + message.getBizKey());
         }
         BigDecimal remaining = qty;
         // 先收集拟写流水, 待全量覆盖后再落库: 任一缺口即整单回滚, 不留"半成品"流水
-        record PendingTx(WmMaterialStock stock, BigDecimal qty, BigDecimal before, BigDecimal after,
-                         BigDecimal outUnitCost) {
-        }
+        /**
+         * 在所属库存事务中待记录的库存流水。
+         *
+         * @param stock 已核实来源与位置的实际库存记录。
+         * @param qty 当前实际业务数量。
+         * @param before 更正前的原持久化事实。
+         * @param after 上次处理完成的稳定位置。
+         * @param outUnitCost 原出库时冻结的单位成本，退回沿用该成本。
+         */
+        record PendingTx(
+                WmMaterialStock stock,
+                BigDecimal qty,
+                BigDecimal before,
+                BigDecimal after,
+                BigDecimal outUnitCost) {}
         List<PendingTx> pending = new ArrayList<>();
         for (WmMaterialStock row : stocks) {
             if (remaining.signum() <= 0) {
@@ -290,8 +360,13 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
                     break;
                 }
                 deduct = available.min(remaining);
-                before = fresh.getStockQuantity() == null ? BigDecimal.ZERO : fresh.getStockQuantity();
-                affected = stockMapper.deductStockAvailable(fresh.getStockId(), deduct, fresh.getVersion());
+                before =
+                        fresh.getStockQuantity() == null
+                                ? BigDecimal.ZERO
+                                : fresh.getStockQuantity();
+                affected =
+                        stockMapper.deductStockAvailable(
+                                fresh.getStockId(), deduct, fresh.getVersion());
                 if (affected > 0) {
                     break;
                 }
@@ -300,18 +375,36 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             if (affected == 0 || deduct.signum() <= 0) {
                 continue;
             }
-            pending.add(new PendingTx(fresh, deduct, before, before.subtract(deduct),
-                // 出库成本结转: 按行内当前移动平均单位成本扣减 total_cost, 返回出库单位成本
-                valuationService.issueStockCost(fresh.getStockId(), deduct)));
+            pending.add(
+                    new PendingTx(
+                            fresh,
+                            deduct,
+                            before,
+                            before.subtract(deduct),
+                            // 出库成本结转: 按行内当前移动平均单位成本扣减 total_cost, 返回出库单位成本
+                            valuationService.issueStockCost(fresh.getStockId(), deduct)));
             remaining = remaining.subtract(deduct);
         }
         if (remaining.signum() > 0) {
-            throw new ServiceException("ERP 备件可用库存不足, 已整单回滚: materialId=" + message.getMaterialId()
-                + ", warehouseId=" + message.getWarehouseId() + ", 缺口=" + remaining
-                + ", bizKey=" + message.getBizKey());
+            throw new ServiceException(
+                    "ERP 备件可用库存不足, 已整单回滚: materialId="
+                            + message.getMaterialId()
+                            + ", warehouseId="
+                            + message.getWarehouseId()
+                            + ", 缺口="
+                            + remaining
+                            + ", bizKey="
+                            + message.getBizKey());
         }
         for (PendingTx tx : pending) {
-            writeTx(message, tx.stock(), tx.qty(), false, tx.before(), tx.after(), tx.outUnitCost());
+            writeTx(
+                    message,
+                    tx.stock(),
+                    tx.qty(),
+                    false,
+                    tx.before(),
+                    tx.after(),
+                    tx.outUnitCost());
         }
     }
 
@@ -325,10 +418,14 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
      * @param unitCost 本次入库参考单价（MES 侧服务端下发）
      * @param bizKey   业务幂等键（仅用于日志定位）
      */
-    private void applyInboundCost(Long stockId, BigDecimal qty, BigDecimal unitCost, String bizKey) {
+    private void applyInboundCost(
+            Long stockId, BigDecimal qty, BigDecimal unitCost, String bizKey) {
         if (unitCost == null || unitCost.signum() <= 0) {
-            log.warn("备件入库未携带有效参考单价, 跳过移动平均计价(不以 0 拉低均价): stockId={}, qty={}, bizKey={}",
-                stockId, qty, bizKey);
+            log.warn(
+                    "备件入库未携带有效参考单价, 跳过移动平均计价(不以 0 拉低均价): stockId={}, qty={}, bizKey={}",
+                    stockId,
+                    qty,
+                    bizKey);
             return;
         }
         valuationService.updateStockCost(stockId, qty, unitCost);
@@ -358,14 +455,22 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
      * @param after    变动后数量
      * @param unitCost 本笔成本单价：入库 = 本次入库参考单价；出库 = {@code issueStockCost} 返回的移动平均单位成本
      */
-    private void writeTx(MesSpareErpMessage message, WmMaterialStock stock, BigDecimal qty,
-                         boolean inbound, BigDecimal before, BigDecimal after, BigDecimal unitCost) {
+    private void writeTx(
+            MesSpareErpMessage message,
+            WmMaterialStock stock,
+            BigDecimal qty,
+            boolean inbound,
+            BigDecimal before,
+            BigDecimal after,
+            BigDecimal unitCost) {
         WmMaterialStockTx tx = new WmMaterialStockTx();
         tx.setTxType(inbound ? TX_TYPE_IN : TX_TYPE_OUT);
         tx.setTxFlag(inbound ? 1 : 0);
         tx.setMaterialId(message.getMaterialId());
-        tx.setMaterialCode(stock.getMaterialCode() != null ? stock.getMaterialCode() : message.getSpareCode());
-        tx.setMaterialName(stock.getMaterialName() != null ? stock.getMaterialName() : message.getSpareName());
+        tx.setMaterialCode(
+                stock.getMaterialCode() != null ? stock.getMaterialCode() : message.getSpareCode());
+        tx.setMaterialName(
+                stock.getMaterialName() != null ? stock.getMaterialName() : message.getSpareName());
         tx.setMaterialSpec(stock.getMaterialSpec());
         tx.setBaseUomId(stock.getBaseUomId());
         tx.setBaseUomName(stock.getBaseUomName());
@@ -387,9 +492,14 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         tx.setTxDate(new Date());
         tx.setPosted(0);
         tx.setDelFlag("0");
-        tx.setRemark("MES备件" + (inbound ? "入库" : "出库")
-            + " refType=" + message.getRefType() + " refId=" + message.getRefId()
-            + (unitCost == null ? " (无有效单价, 未计价)" : " 单位成本=" + unitCost));
+        tx.setRemark(
+                "MES备件"
+                        + (inbound ? "入库" : "出库")
+                        + " refType="
+                        + message.getRefType()
+                        + " refId="
+                        + message.getRefId()
+                        + (unitCost == null ? " (无有效单价, 未计价)" : " 单位成本=" + unitCost));
         stockTxMapper.insert(tx);
     }
 }

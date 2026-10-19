@@ -86,11 +86,19 @@ public class ProSnController extends BaseController {
     @SaCheckPermission("mes:pro:sn:add")
     @Log(title = "SN批量生成", businessType = BusinessType.INSERT)
     @PostMapping("/generate")
-    public R<List<ProSnVo>> generate(@RequestParam(required=false) String commandId, @RequestParam Long cardId,
-                                     @RequestParam Integer quantity,
-                                     @RequestParam(required = false) String initialStatus,
-                                     @RequestParam(required = false) Long lotId) {
-        return R.ok(proSnService.generateSnForCard(commandId==null?"MES:CARD:"+cardId:commandId,cardId, quantity, initialStatus, lotId));
+    public R<List<ProSnVo>> generate(
+            @RequestParam(required = false) String commandId,
+            @RequestParam Long cardId,
+            @RequestParam Integer quantity,
+            @RequestParam(required = false) String initialStatus,
+            @RequestParam(required = false) Long lotId) {
+        return R.ok(
+                proSnService.generateSnForCard(
+                        commandId == null ? "MES:CARD:" + cardId : commandId,
+                        cardId,
+                        quantity,
+                        initialStatus,
+                        lotId));
     }
 
     /**
@@ -99,14 +107,28 @@ public class ProSnController extends BaseController {
     @SaCheckPermission("mes:pro:sn:add")
     @Log(title = "SN手动创建", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<ProSnVo> add(@RequestParam(required=false) String commandId, @RequestParam(required = false) Long mesWoId,
-                          @RequestParam(required = false) Long cardId,
-                          @RequestParam Long materialId,
-                          @RequestParam(required=false) String snCode,
-                          @RequestParam(required = false) Long parentSnId,
-                          @RequestParam(required = false) String remark,
-                          @RequestParam(required = false) Long lotId) {
-        return R.ok(commandId==null?proSnService.createSn(mesWoId,cardId,materialId,snCode,parentSnId,remark,lotId):proSnService.createSn(commandId,mesWoId,cardId,materialId,snCode,parentSnId,remark,lotId));
+    public R<ProSnVo> add(
+            @RequestParam(required = false) String commandId,
+            @RequestParam(required = false) Long mesWoId,
+            @RequestParam(required = false) Long cardId,
+            @RequestParam Long materialId,
+            @RequestParam(required = false) String snCode,
+            @RequestParam(required = false) Long parentSnId,
+            @RequestParam(required = false) String remark,
+            @RequestParam(required = false) Long lotId) {
+        return R.ok(
+                commandId == null
+                        ? proSnService.createSn(
+                                mesWoId, cardId, materialId, snCode, parentSnId, remark, lotId)
+                        : proSnService.createSn(
+                                commandId,
+                                mesWoId,
+                                cardId,
+                                materialId,
+                                snCode,
+                                parentSnId,
+                                remark,
+                                lotId));
     }
 
     /**
@@ -126,8 +148,7 @@ public class ProSnController extends BaseController {
     @SaCheckPermission("mes:pro:sn:scrap")
     @Log(title = "SN报废", businessType = BusinessType.UPDATE)
     @PutMapping("/scrap/{snId}")
-    public R<Void> scrap(@PathVariable Long snId,
-                         @RequestParam(required = false) String remark) {
+    public R<Void> scrap(@PathVariable Long snId, @RequestParam(required = false) String remark) {
         proSnService.scrapSn(snId, remark);
         return R.ok();
     }

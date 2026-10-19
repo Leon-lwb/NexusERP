@@ -44,7 +44,9 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/** 只替换数据库和MQ边界，直接执行真实下达方法及其提交后消息映射。 */
+/**
+ * 只替换数据库和MQ边界，直接执行真实下达方法及其提交后消息映射。
+ */
 @ExtendWith(MockitoExtension.class)
 @Tag("dev")
 class PrdWorkOrderReleaseRoutingTest {
@@ -55,18 +57,12 @@ class PrdWorkOrderReleaseRoutingTest {
     private static final long ROUTING_ID = 501L;
     private static final String TENANT_ID = "1001";
 
-    @Mock
-    private PrdWorkOrderMapper baseMapper;
-    @Mock
-    private IBdBomService bomService;
-    @Mock
-    private BdRoutingMapper bdRoutingMapper;
-    @Mock
-    private ReliableMessageProducer messageProducer;
-    @Mock
-    private PrdWorkOrderTrackingPolicyService trackingPolicies;
-    @InjectMocks
-    private PrdWorkOrderServiceImpl service;
+    @Mock private PrdWorkOrderMapper baseMapper;
+    @Mock private IBdBomService bomService;
+    @Mock private BdRoutingMapper bdRoutingMapper;
+    @Mock private ReliableMessageProducer messageProducer;
+    @Mock private PrdWorkOrderTrackingPolicyService trackingPolicies;
+    @InjectMocks private PrdWorkOrderServiceImpl service;
 
     private PrdWorkOrder workOrder;
     private BdBomVo bom;
@@ -74,7 +70,8 @@ class PrdWorkOrderReleaseRoutingTest {
 
     @BeforeAll
     static void initTableInfo() {
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        MapperBuilderAssistant assistant =
+                new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, PrdWorkOrder.class);
         TableInfoHelper.initTableInfo(assistant, BdRouting.class);
     }
@@ -201,13 +198,24 @@ class PrdWorkOrderReleaseRoutingTest {
 
     @Test
     void release_rejectsMultipleCurrentDedicatedRoutingsInsteadOfChoosingLatest() {
-        lenient().when(bdRoutingMapper.selectList(any())).thenReturn(List.of(routing, dedicatedRouting(502L)));
+        lenient()
+                .when(bdRoutingMapper.selectList(any()))
+                .thenReturn(List.of(routing, dedicatedRouting(502L)));
         rejectBeforeClaim("多个");
     }
 
     @ParameterizedTest(name = "不可信路线不得下达：{0}")
-    @ValueSource(strings = {"wrong-material", "generic-material", "disabled", "not-current",
-        "deleted", "wrong-tenant", "missing-id", "zero-id"})
+    @ValueSource(
+            strings = {
+                "wrong-material",
+                "generic-material",
+                "disabled",
+                "not-current",
+                "deleted",
+                "wrong-tenant",
+                "missing-id",
+                "zero-id"
+            })
     void release_rejectsUntrustedRoutingRowsBeforeStateClaim(String invalidCase) {
         switch (invalidCase) {
             case "wrong-material" -> routing.setMaterialId(202L);
@@ -227,12 +235,15 @@ class PrdWorkOrderReleaseRoutingTest {
     @SuppressWarnings("unchecked")
     void release_queriesOnlyPersistedWorkOrderMaterialTenantAndEnabledCurrentRows() {
         service.release(WO_ID);
-        ArgumentCaptor<LambdaQueryWrapper<BdRouting>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        ArgumentCaptor<LambdaQueryWrapper<BdRouting>> captor =
+                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(bdRoutingMapper).selectList(captor.capture());
         LambdaQueryWrapper<BdRouting> query = captor.getValue();
         String sql = query.getSqlSegment();
         assertTrue(sql.contains("material_id") && sql.contains("tenant_id"), sql);
-        assertTrue(sql.contains("status") && sql.contains("is_current") && sql.contains("del_flag"), sql);
+        assertTrue(
+                sql.contains("status") && sql.contains("is_current") && sql.contains("del_flag"),
+                sql);
         assertTrue(query.getParamNameValuePairs().containsValue(MATERIAL_ID));
         assertTrue(query.getParamNameValuePairs().containsValue(TENANT_ID));
         assertTrue(query.getParamNameValuePairs().containsValue(1L));
@@ -242,9 +253,13 @@ class PrdWorkOrderReleaseRoutingTest {
     private WorkOrderReleaseMessage commitAndCapture() {
         assertEquals(1, TransactionSynchronizationManager.getSynchronizations().size());
         TransactionSynchronizationManager.getSynchronizations().get(0).afterCommit();
-        ArgumentCaptor<WorkOrderReleaseMessage> captor = ArgumentCaptor.forClass(WorkOrderReleaseMessage.class);
-        verify(messageProducer).send(eq(ExchangeConstants.TOPIC_EXCHANGE),
-            eq(RoutingKeyConstants.MES_WORKORDER_RELEASE), captor.capture());
+        ArgumentCaptor<WorkOrderReleaseMessage> captor =
+                ArgumentCaptor.forClass(WorkOrderReleaseMessage.class);
+        verify(messageProducer)
+                .send(
+                        eq(ExchangeConstants.TOPIC_EXCHANGE),
+                        eq(RoutingKeyConstants.MES_WORKORDER_RELEASE),
+                        captor.capture());
         return captor.getValue();
     }
 

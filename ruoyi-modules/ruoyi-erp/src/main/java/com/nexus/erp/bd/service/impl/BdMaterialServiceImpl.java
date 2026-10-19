@@ -47,7 +47,6 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     private final BdServiceHelper bd;
     private final com.nexus.erp.wm.trace.MaterialTrackingPolicyGuard trackingGuard;
 
-
     /**
      * 查询物料产品主分页列表
      *
@@ -101,7 +100,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdMaterialBo bo) {
         BdMaterial entity = MapstructUtils.convert(bo, BdMaterial.class);
-        entity.setAllowMixedLot(bo.getAllowMixedLot()==null?1:bo.getAllowMixedLot());
+        entity.setAllowMixedLot(bo.getAllowMixedLot() == null ? 1 : bo.getAllowMixedLot());
         entity.setTrackingVersion(1L);
         entity.setTrackingStage("AUDIT");
         if (StringUtils.isBlank(entity.getMaterialCode())) {
@@ -119,13 +118,20 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdMaterialBo bo) {
-        String tenant=com.nexus.common.tenant.helper.TenantHelper.getTenantId();
-        BdMaterial old=baseMapper.lockTracking(tenant,bo.getMaterialId());
-        if(old==null) throw new com.nexus.common.core.exception.ServiceException("物料不存在或不在当前租户范围");
+        String tenant = com.nexus.common.tenant.helper.TenantHelper.getTenantId();
+        BdMaterial old = baseMapper.lockTracking(tenant, bo.getMaterialId());
+        if (old == null) {
+            throw new com.nexus.common.core.exception.ServiceException("物料不存在或不在当前租户范围");
+        }
         BdMaterial entity = MapstructUtils.convert(bo, BdMaterial.class);
-        trackingGuard.prepare(old,entity,bo.getTrackingVersion());
-        return baseMapper.update(entity,Wrappers.<BdMaterial>lambdaUpdate().eq(BdMaterial::getMaterialId,old.getMaterialId())
-            .eq(BdMaterial::getTrackingVersion,old.getTrackingVersion()==null?1L:old.getTrackingVersion()));
+        trackingGuard.prepare(old, entity, bo.getTrackingVersion());
+        return baseMapper.update(
+                entity,
+                Wrappers.<BdMaterial>lambdaUpdate()
+                        .eq(BdMaterial::getMaterialId, old.getMaterialId())
+                        .eq(
+                                BdMaterial::getTrackingVersion,
+                                old.getTrackingVersion() == null ? 1L : old.getTrackingVersion()));
     }
 
     /**
@@ -153,11 +159,11 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         }
         // ★ ERP-BD-10: 这是「选择器」语义（分类树点选物料），必须只返回启用物料；
         // 物料列表页仍可查停用物料（由列表查询条件控制）。
-        List<BdMaterialVo> list = baseMapper.selectVoList(
-            Wrappers.lambdaQuery(BdMaterial.class)
-                .in(BdMaterial::getCategoryId, categoryIds)
-                .eq(BdMaterial::getStatus, 1L)
-        );
+        List<BdMaterialVo> list =
+                baseMapper.selectVoList(
+                        Wrappers.lambdaQuery(BdMaterial.class)
+                                .in(BdMaterial::getCategoryId, categoryIds)
+                                .eq(BdMaterial::getStatus, 1L));
         fillRefNames(list);
         return list;
     }
@@ -170,8 +176,8 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return false;
         }
-        return baseMapper.exists(new LambdaQueryWrapper<BdMaterial>()
-            .in(BdMaterial::getCategoryId, categoryIds));
+        return baseMapper.exists(
+                new LambdaQueryWrapper<BdMaterial>().in(BdMaterial::getCategoryId, categoryIds));
     }
 
     /**
@@ -182,9 +188,9 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
      */
     @Override
     public Map<Long, Long> countMaterialByCategory() {
-        List<BdMaterial> list = baseMapper.selectList(
-            Wrappers.lambdaQuery(BdMaterial.class).select(BdMaterial::getCategoryId)
-        );
+        List<BdMaterial> list =
+                baseMapper.selectList(
+                        Wrappers.lambdaQuery(BdMaterial.class).select(BdMaterial::getCategoryId));
         Map<Long, Long> map = new HashMap<>();
         if (CollUtil.isEmpty(list)) {
             return map;
@@ -204,15 +210,37 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
      * @return 查询条件包装器
      */
     private LambdaQueryWrapper<BdMaterial> buildQueryWrapper(BdMaterialBo bo) {
-        LambdaQueryWrapper<BdMaterial> lqw = Wrappers.<BdMaterial>lambdaQuery()
-            .eq(StringUtils.isNotBlank(bo.getMaterialCode()), BdMaterial::getMaterialCode, bo.getMaterialCode())
-            .like(StringUtils.isNotBlank(bo.getMaterialName()), BdMaterial::getMaterialName, bo.getMaterialName())
-            .eq(StringUtils.isNotBlank(bo.getMaterialSpec()), BdMaterial::getMaterialSpec, bo.getMaterialSpec())
-            .eq(bo.getMaterialType() != null, BdMaterial::getMaterialType, bo.getMaterialType())
-            .eq(bo.getSourceType() != null, BdMaterial::getSourceType, bo.getSourceType())
-            .eq(bo.getCategoryId() != null, BdMaterial::getCategoryId, bo.getCategoryId())
-            .eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus())
-            .eq(StringUtils.isNotBlank(bo.getQualityStatus()), BdMaterial::getQualityStatus, bo.getQualityStatus());
+        LambdaQueryWrapper<BdMaterial> lqw =
+                Wrappers.<BdMaterial>lambdaQuery()
+                        .eq(
+                                StringUtils.isNotBlank(bo.getMaterialCode()),
+                                BdMaterial::getMaterialCode,
+                                bo.getMaterialCode())
+                        .like(
+                                StringUtils.isNotBlank(bo.getMaterialName()),
+                                BdMaterial::getMaterialName,
+                                bo.getMaterialName())
+                        .eq(
+                                StringUtils.isNotBlank(bo.getMaterialSpec()),
+                                BdMaterial::getMaterialSpec,
+                                bo.getMaterialSpec())
+                        .eq(
+                                bo.getMaterialType() != null,
+                                BdMaterial::getMaterialType,
+                                bo.getMaterialType())
+                        .eq(
+                                bo.getSourceType() != null,
+                                BdMaterial::getSourceType,
+                                bo.getSourceType())
+                        .eq(
+                                bo.getCategoryId() != null,
+                                BdMaterial::getCategoryId,
+                                bo.getCategoryId())
+                        .eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus())
+                        .eq(
+                                StringUtils.isNotBlank(bo.getQualityStatus()),
+                                BdMaterial::getQualityStatus,
+                                bo.getQualityStatus());
         // 按分类集合过滤（分类树点击时传入选中分类及其全部子孙ID）
         if (ArrayUtil.isNotEmpty(bo.getCategoryIds())) {
             lqw.in(BdMaterial::getCategoryId, Arrays.asList(bo.getCategoryIds()));
@@ -220,8 +248,9 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         // 按仓库/库区/库位过滤：仅返回在 wm_material_stock 中存在库存记录的物料
         // (warehouseId/areaId/locationId 均为 Long 类型，拼接安全；wm_material_stock 同处 erp 数据源)
         if (bo.getWarehouseId() != null || bo.getAreaId() != null || bo.getLocationId() != null) {
-            StringBuilder sub = new StringBuilder(
-                "SELECT material_id FROM wm_material_stock WHERE del_flag = '0'");
+            StringBuilder sub =
+                    new StringBuilder(
+                            "SELECT material_id FROM wm_material_stock WHERE del_flag = '0'");
             if (bo.getWarehouseId() != null) {
                 sub.append(" AND warehouse_id = ").append(bo.getWarehouseId());
             }
@@ -259,21 +288,23 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         if (CollUtil.isEmpty(list)) {
             return;
         }
-        List<Long> categoryIds = list.stream()
-            .map(BdMaterialVo::getCategoryId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
+        List<Long> categoryIds =
+                list.stream()
+                        .map(BdMaterialVo::getCategoryId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
         if (CollUtil.isEmpty(categoryIds)) {
             return;
         }
-        Map<Long, String> categoryNameMap = categoryMapper.selectBatchIds(categoryIds).stream()
-            .filter(c -> c.getCategoryName() != null)
-            .collect(Collectors.toMap(
-                BdMaterialCategory::getCategoryId,
-                BdMaterialCategory::getCategoryName,
-                (v1, v2) -> v1
-            ));
+        Map<Long, String> categoryNameMap =
+                categoryMapper.selectBatchIds(categoryIds).stream()
+                        .filter(c -> c.getCategoryName() != null)
+                        .collect(
+                                Collectors.toMap(
+                                        BdMaterialCategory::getCategoryId,
+                                        BdMaterialCategory::getCategoryName,
+                                        (v1, v2) -> v1));
         for (BdMaterialVo vo : list) {
             if (vo.getCategoryId() != null) {
                 vo.setCategoryName(categoryNameMap.get(vo.getCategoryId()));
@@ -290,20 +321,22 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         if (CollUtil.isEmpty(list)) {
             return;
         }
-        List<Long> uomIds = list.stream()
-            .map(BdMaterialVo::getBaseUomId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
+        List<Long> uomIds =
+                list.stream()
+                        .map(BdMaterialVo::getBaseUomId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
         if (CollUtil.isEmpty(uomIds)) {
             return;
         }
-        Map<Long, String> uomNameMap = uomMapper.selectBatchIds(uomIds).stream()
-            .collect(Collectors.toMap(
-                com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId,
-                com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomName,
-                (v1, v2) -> v1
-            ));
+        Map<Long, String> uomNameMap =
+                uomMapper.selectBatchIds(uomIds).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId,
+                                        com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomName,
+                                        (v1, v2) -> v1));
         for (BdMaterialVo vo : list) {
             if (vo.getBaseUomId() != null) {
                 vo.setBaseUomName(uomNameMap.get(vo.getBaseUomId()));

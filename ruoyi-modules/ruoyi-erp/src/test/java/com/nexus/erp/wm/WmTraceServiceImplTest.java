@@ -33,7 +33,8 @@ class WmTraceServiceImplTest {
     private final WmMaterialStockTxMapper txMapper = mock(WmMaterialStockTxMapper.class);
     private final WmSnMapper snMapper = mock(WmSnMapper.class);
     private final WmBatchMapper batchMapper = mock(WmBatchMapper.class);
-    private final WmTraceServiceImpl service = new WmTraceServiceImpl(txMapper, snMapper, batchMapper);
+    private final WmTraceServiceImpl service =
+            new WmTraceServiceImpl(txMapper, snMapper, batchMapper);
 
     @BeforeAll
     static void initTables() {
@@ -68,7 +69,9 @@ class WmTraceServiceImplTest {
         var queries = queries();
         String sql = queries.get(0).getSqlSegment();
         assertTrue(sql.contains("sn_id"), sql);
-        assertFalse(sql.contains("batch_code"), "Exact SN history must not be limited to its current batch: " + sql);
+        assertFalse(
+                sql.contains("batch_code"),
+                "Exact SN history must not be limited to its current batch: " + sql);
         assertTrue(sql.contains("sn_code"), sql);
         assertTrue(sql.contains("sn_id IS NULL AND sn_code"), sql);
         assertTrue(queries.get(0).getParamNameValuePairs().containsValue(71L), sql);
@@ -132,8 +135,10 @@ class WmTraceServiceImplTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void reportsRowTruncationInExistingTraceKey(boolean forward) {
-        List<WmMaterialStockTx> transactions = IntStream.rangeClosed(1, 201)
-            .mapToObj(i -> tx((long) i, 100L, forward ? -1 : 1)).toList();
+        List<WmMaterialStockTx> transactions =
+                IntStream.rangeClosed(1, 201)
+                        .mapToObj(i -> tx((long) i, 100L, forward ? -1 : 1))
+                        .toList();
         when(txMapper.selectList(any(Wrapper.class))).thenReturn(transactions, List.of());
         WmTraceResultVo result = trace(forward, 100L, "B001", null);
         assertTrue(result.getTraceKey().contains("TRUNCATED:ROWS_200"), result.getTraceKey());
@@ -144,8 +149,10 @@ class WmTraceServiceImplTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void exactlyTwoHundredRowsAreNotFalselyMarkedTruncated(boolean forward) {
-        List<WmMaterialStockTx> transactions = IntStream.rangeClosed(1, 200)
-            .mapToObj(i -> tx((long) i, 100L, forward ? -1 : 1)).toList();
+        List<WmMaterialStockTx> transactions =
+                IntStream.rangeClosed(1, 200)
+                        .mapToObj(i -> tx((long) i, 100L, forward ? -1 : 1))
+                        .toList();
         when(txMapper.selectList(any(Wrapper.class))).thenReturn(transactions, List.of());
         WmTraceResultVo result = trace(forward, 100L, "B001", null);
         assertFalse(result.getTraceKey().contains("TRUNCATED"), result.getTraceKey());
@@ -168,7 +175,8 @@ class WmTraceServiceImplTest {
         related.setMaterialId(200L);
         related.setBatchCode("B002");
         when(snMapper.selectOne(any(Wrapper.class))).thenReturn(related);
-        when(txMapper.selectList(any(Wrapper.class))).thenReturn(List.of(input), List.of(output), List.of());
+        when(txMapper.selectList(any(Wrapper.class)))
+                .thenReturn(List.of(input), List.of(output), List.of());
         WmTraceResultVo result = trace(true, 100L, "B001", null);
         assertEquals("SN002", result.getTree().getChildren().get(0).getSnCode());
         var relatedQuery = queries().get(2);
@@ -209,7 +217,8 @@ class WmTraceServiceImplTest {
         output.setSourceDocType("PRODUCTION");
         output.setSourceDocId(90L);
         when(snMapper.selectOne(any(Wrapper.class))).thenReturn(sn());
-        when(txMapper.selectList(any(Wrapper.class))).thenReturn(List.of(input), List.of(output), List.of());
+        when(txMapper.selectList(any(Wrapper.class)))
+                .thenReturn(List.of(input), List.of(output), List.of());
         WmTraceResultVo result = trace(true, 100L, "B001", "SN001");
         assertTrue(result.getTraceKey().contains("SCOPE:EXACT_SN"));
         assertTrue(result.getTraceKey().contains("RELATED_SCOPE:BATCH"));
@@ -218,14 +227,18 @@ class WmTraceServiceImplTest {
     }
 
     private WmTraceResultVo trace(boolean forward, Long material, String batch, String sn) {
-        return forward ? service.traceForward(material, batch, sn) : service.traceBackward(material, batch, sn);
+        return forward
+                ? service.traceForward(material, batch, sn)
+                : service.traceBackward(material, batch, sn);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private List<LambdaQueryWrapper<WmMaterialStockTx>> queries() {
         ArgumentCaptor<Wrapper<WmMaterialStockTx>> captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(txMapper, atLeastOnce()).selectList(captor.capture());
-        return captor.getAllValues().stream().map(wrapper -> (LambdaQueryWrapper<WmMaterialStockTx>) wrapper).toList();
+        return captor.getAllValues().stream()
+                .map(wrapper -> (LambdaQueryWrapper<WmMaterialStockTx>) wrapper)
+                .toList();
     }
 
     private WmSn sn() {

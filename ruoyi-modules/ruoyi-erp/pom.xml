@@ -126,7 +126,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Opt-in isolated MySQL/Spring runners use the same JUnit platform managed by Spring Boot. -->
+        <!-- 显式启用的隔离数据库测试沿用应用构建管理的单元测试平台版本。 -->
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>

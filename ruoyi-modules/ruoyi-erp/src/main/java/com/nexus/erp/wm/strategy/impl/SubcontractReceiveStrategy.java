@@ -43,42 +43,73 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 事务类型：委外收货 */
+    /**
+     * 事务类型：委外收货
+     */
     private static final String TX_TYPE_SUBCONTRACT_RECEIVE = "SUBCONTRACT_RECEIVE";
-    /** 来源单据类型：委外收货单 */
+
+    /**
+     * 来源单据类型：委外收货单
+     */
     private static final String SOURCE_DOC_TYPE = "WM_SUBCONTRACT_RECEIVE";
-    /** 批次来源单据类型：委外收货 */
+
+    /**
+     * 批次来源单据类型：委外收货
+     */
     private static final String BATCH_SOURCE_DOC_TYPE = "SUBCONTRACT_RECEIVE";
-    /** 事务标志：入库（正数） */
+
+    /**
+     * 事务标志：入库（正数）
+     */
     private static final int TX_FLAG_IN = 1;
 
-    /** 库存数据访问映射器（Mapper） */
+    /**
+     * 库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper stockMapper;
-    /** 批次数据访问映射器（Mapper） */
+
+    /**
+     * 批次数据访问映射器（Mapper）
+     */
     private final WmBatchMapper batchMapper;
-    /** 物料数据访问映射器（Mapper） */
+
+    /**
+     * 物料数据访问映射器（Mapper）
+     */
     private final BdMaterialMapper bdMaterialMapper;
-    /** 计量单位数据访问映射器（Mapper） */
+
+    /**
+     * 计量单位数据访问映射器（Mapper）
+     */
     private final BdUnitOfMeasureMapper bdUnitOfMeasureMapper;
-    /** 仓库数据访问映射器（Mapper） */
+
+    /**
+     * 仓库数据访问映射器（Mapper）
+     */
     private final WmWarehouseMapper warehouseMapper;
-    /** 库位数据访问映射器（Mapper） */
+
+    /**
+     * 库位数据访问映射器（Mapper）
+     */
     private final WmStorageLocationMapper locationMapper;
-    /** 库区数据访问映射器（Mapper） */
+
+    /**
+     * 库区数据访问映射器（Mapper）
+     */
     private final WmStorageAreaMapper areaMapper;
 
     /**
      * 构造委外收货策略实例
      */
-    public SubcontractReceiveStrategy(WmMaterialStockTxMapper stockTxMapper,
-                                      WmMaterialStockMapper stockMapper,
-                                      WmBatchMapper batchMapper,
-                                      BdMaterialMapper bdMaterialMapper,
-                                      BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
-                                      WmWarehouseMapper warehouseMapper,
-                                      WmStorageLocationMapper locationMapper,
-                                      WmStorageAreaMapper areaMapper) {
+    public SubcontractReceiveStrategy(
+            WmMaterialStockTxMapper stockTxMapper,
+            WmMaterialStockMapper stockMapper,
+            WmBatchMapper batchMapper,
+            BdMaterialMapper bdMaterialMapper,
+            BdUnitOfMeasureMapper bdUnitOfMeasureMapper,
+            WmWarehouseMapper warehouseMapper,
+            WmStorageLocationMapper locationMapper,
+            WmStorageAreaMapper areaMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.batchMapper = batchMapper;
@@ -128,7 +159,21 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
         String vendorBatchCode = (String) args[14];
         BigDecimal quantity = (BigDecimal) args[15];
         Date now = (Date) args[16];
-        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in("WM_SUBCONTRACT_RECEIVE",receiveId,null,"SUBCONTRACT_RECEIVE",materialId,quantity,warehouseId,locationId,null,null)))return;
+        if (serialInventory != null
+                && serialInventory.post(
+                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                                "WM_SUBCONTRACT_RECEIVE",
+                                receiveId,
+                                null,
+                                "SUBCONTRACT_RECEIVE",
+                                materialId,
+                                quantity,
+                                warehouseId,
+                                locationId,
+                                null,
+                                null))) {
+            return;
+        }
 
         if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("委外收货数量必须大于0");
@@ -142,55 +187,109 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
         }
 
         // 1. 自动创建批次(来源=委外收货, 记录外协批次号), 批次号 = 委外单号-R+收货单尾号
-        WmBatch batch = createBatch(subcontractId, subcontractNo, receiveId, receiveNo,
-            materialId, vendorId, vendorCode, vendorName, warehouseId, vendorBatchCode, quantity, now);
+        WmBatch batch =
+                createBatch(
+                        subcontractId,
+                        subcontractNo,
+                        receiveId,
+                        receiveNo,
+                        materialId,
+                        vendorId,
+                        vendorCode,
+                        vendorName,
+                        warehouseId,
+                        vendorBatchCode,
+                        quantity,
+                        now);
 
         // 2. 精确查找或新建库存行(物料+仓库+库位+批次维度)
-        WmMaterialStock stock = findOrCreateStock(materialId, materialCode, materialName, materialSpec,
-            baseUomName, warehouseId, locationId, batch.getBatchId(), batch.getBatchCode(), quantity, now);
+        WmMaterialStock stock =
+                findOrCreateStock(
+                        materialId,
+                        materialCode,
+                        materialName,
+                        materialSpec,
+                        baseUomName,
+                        warehouseId,
+                        locationId,
+                        batch.getBatchId(),
+                        batch.getBatchCode(),
+                        quantity,
+                        now);
 
         // 3. 原子加库存
-        BigDecimal beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+        BigDecimal beforeQty =
+                stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
         int affected = stockMapper.addStock(stock.getStockId(), quantity, stock.getVersion());
         if (affected == 0) {
             throw new ServiceException("库存并发冲突, 请重试: 物料【" + materialName + "】");
         }
-        stockMapper.update(null, Wrappers.<WmMaterialStock>lambdaUpdate()
-            .set(WmMaterialStock::getRecptDate, now)
-            .eq(WmMaterialStock::getStockId, stock.getStockId()));
+        stockMapper.update(
+                null,
+                Wrappers.<WmMaterialStock>lambdaUpdate()
+                        .set(WmMaterialStock::getRecptDate, now)
+                        .eq(WmMaterialStock::getStockId, stock.getStockId()));
 
         // 4. 库存流水
         WmMaterialStock refreshed = stockMapper.selectById(stock.getStockId());
-        WmMaterialStockTx tx = buildBaseTxFromStock(refreshed, TX_TYPE_SUBCONTRACT_RECEIVE, TX_FLAG_IN,
-            quantity, beforeQty, beforeQty.add(quantity), now);
+        WmMaterialStockTx tx =
+                buildBaseTxFromStock(
+                        refreshed,
+                        TX_TYPE_SUBCONTRACT_RECEIVE,
+                        TX_FLAG_IN,
+                        quantity,
+                        beforeQty,
+                        beforeQty.add(quantity),
+                        now);
         tx.setSourceDocType(SOURCE_DOC_TYPE);
         tx.setSourceDocId(receiveId);
         tx.setRemark("委外收货入库-" + subcontractNo + "-" + receiveNo);
         stockTxMapper.insert(tx);
 
-        log.info("委外收货入库完成: 收货单[{}], 委外单[{}], 物料[{}] 数量[{}], 批次[{}], 仓库[{}]",
-            receiveNo, subcontractNo, materialCode, quantity.stripTrailingZeros().toPlainString(),
-            batch.getBatchCode(), warehouseId);
+        log.info(
+                "委外收货入库完成: 收货单[{}], 委外单[{}], 物料[{}] 数量[{}], 批次[{}], 仓库[{}]",
+                receiveNo,
+                subcontractNo,
+                materialCode,
+                quantity.stripTrailingZeros().toPlainString(),
+                batch.getBatchCode(),
+                warehouseId);
     }
 
     /**
      * 创建委外收货批次(wm_batch), 批次号 = 委外单号-R+收货单号尾段
      */
-    private WmBatch createBatch(Long subcontractId, String subcontractNo, Long receiveId, String receiveNo,
-                                Long materialId, Long vendorId, String vendorCode, String vendorName,
-                                Long warehouseId, String vendorBatchCode, BigDecimal quantity, Date now) {
-        String tail = receiveNo.contains("-") ? receiveNo.substring(receiveNo.lastIndexOf('-') + 1) : receiveNo;
+    private WmBatch createBatch(
+            Long subcontractId,
+            String subcontractNo,
+            Long receiveId,
+            String receiveNo,
+            Long materialId,
+            Long vendorId,
+            String vendorCode,
+            String vendorName,
+            Long warehouseId,
+            String vendorBatchCode,
+            BigDecimal quantity,
+            Date now) {
+        String tail =
+                receiveNo.contains("-")
+                        ? receiveNo.substring(receiveNo.lastIndexOf('-') + 1)
+                        : receiveNo;
         String batchCode = subcontractNo + "-R" + tail;
-        WmBatch existing = batchMapper.selectOne(Wrappers.<WmBatch>lambdaQuery()
-            .eq(WmBatch::getBatchCode, batchCode)
-            .eq(WmBatch::getMaterialId, materialId)
-            .last("LIMIT 1"));
+        WmBatch existing =
+                batchMapper.selectOne(
+                        Wrappers.<WmBatch>lambdaQuery()
+                                .eq(WmBatch::getBatchCode, batchCode)
+                                .eq(WmBatch::getMaterialId, materialId)
+                                .last("LIMIT 1"));
         if (existing != null) {
             // 同收货单重复过账幂等: 复用既有批次
             return existing;
         }
         BdMaterial material = bdMaterialMapper.selectById(materialId);
-        WmWarehouse warehouse = warehouseId != null ? warehouseMapper.selectById(warehouseId) : null;
+        WmWarehouse warehouse =
+                warehouseId != null ? warehouseMapper.selectById(warehouseId) : null;
 
         WmBatch batch = new WmBatch();
         batch.setBatchCode(batchCode);
@@ -220,10 +319,18 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
     /**
      * 精确查找或新建库存行(与 ProductionCompletionStrategy 同款维度完整填充)
      */
-    private WmMaterialStock findOrCreateStock(Long materialId, String materialCode, String materialName,
-                                              String materialSpec, String baseUomName, Long warehouseId,
-                                              Long locationId, Long batchId, String batchCode,
-                                              BigDecimal quantity, Date now) {
+    private WmMaterialStock findOrCreateStock(
+            Long materialId,
+            String materialCode,
+            String materialName,
+            String materialSpec,
+            String baseUomName,
+            Long warehouseId,
+            Long locationId,
+            Long batchId,
+            String batchCode,
+            BigDecimal quantity,
+            Date now) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, materialId);
         lqw.eq(WmMaterialStock::getWarehouseId, warehouseId);
@@ -238,23 +345,34 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
 
         BdMaterial material = bdMaterialMapper.selectById(materialId);
         WmWarehouse warehouse = warehouseMapper.selectById(warehouseId);
-        WmStorageLocation location = locationId != null ? locationMapper.selectById(locationId) : null;
-        WmStorageArea area = (location != null && location.getAreaId() != null)
-            ? areaMapper.selectById(location.getAreaId()) : null;
-        BdUnitOfMeasure uom = (material != null && material.getBaseUomId() != null)
-            ? bdUnitOfMeasureMapper.selectById(material.getBaseUomId()) : null;
+        WmStorageLocation location =
+                locationId != null ? locationMapper.selectById(locationId) : null;
+        WmStorageArea area =
+                (location != null && location.getAreaId() != null)
+                        ? areaMapper.selectById(location.getAreaId())
+                        : null;
+        BdUnitOfMeasure uom =
+                (material != null && material.getBaseUomId() != null)
+                        ? bdUnitOfMeasureMapper.selectById(material.getBaseUomId())
+                        : null;
 
         stock = new WmMaterialStock();
         stock.setMaterialId(materialId);
         stock.setMaterialCode(materialCode);
         stock.setMaterialName(materialName);
-        stock.setMaterialSpec(StringUtils.isNotBlank(materialSpec) ? materialSpec
-            : (material != null ? material.getMaterialSpec() : null));
+        stock.setMaterialSpec(
+                StringUtils.isNotBlank(materialSpec)
+                        ? materialSpec
+                        : (material != null ? material.getMaterialSpec() : null));
         stock.setCategoryId(material != null ? material.getCategoryId() : null);
-        stock.setBaseUomId(material != null && material.getBaseUomId() != null
-            ? String.valueOf(material.getBaseUomId()) : null);
-        stock.setBaseUomName(StringUtils.isNotBlank(baseUomName) ? baseUomName
-            : (uom != null ? uom.getUomName() : null));
+        stock.setBaseUomId(
+                material != null && material.getBaseUomId() != null
+                        ? String.valueOf(material.getBaseUomId())
+                        : null);
+        stock.setBaseUomName(
+                StringUtils.isNotBlank(baseUomName)
+                        ? baseUomName
+                        : (uom != null ? uom.getUomName() : null));
         stock.setBatchId(batchId);
         stock.setBatchCode(batchCode);
         stock.setWarehouseId(warehouseId);
@@ -269,8 +387,10 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
         stock.setStockQuantity(BigDecimal.ZERO);
         stock.setProductionDate(now);
         stock.setRecptDate(now);
-        BigDecimal unitCost = material != null && material.getStandardCost() != null
-            ? material.getStandardCost() : BigDecimal.ZERO;
+        BigDecimal unitCost =
+                material != null && material.getStandardCost() != null
+                        ? material.getStandardCost()
+                        : BigDecimal.ZERO;
         stock.setUnitCost(unitCost);
         stock.setTotalCost(unitCost.multiply(quantity));
         stock.setFrozenFlag(0L);

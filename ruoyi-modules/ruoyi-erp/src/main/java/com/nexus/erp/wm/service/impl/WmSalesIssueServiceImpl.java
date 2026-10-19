@@ -70,33 +70,64 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
-
-    /** 基础数据访问映射器（Mapper） */
+    /**
+     * 基础数据访问映射器（Mapper）
+     */
     private final WmSalesIssueMapper baseMapper;
-    /** 行数据访问映射器（Mapper） */
+
+    /**
+     * 行数据访问映射器（Mapper）
+     */
     private final WmSalesIssueLineMapper lineMapper;
-    /** 物料库存数据访问映射器（Mapper） */
+
+    /**
+     * 物料库存数据访问映射器（Mapper）
+     */
     private final WmMaterialStockMapper wmMaterialStockMapper;
-    /** 库存流水数据访问映射器（Mapper） */
+
+    /**
+     * 库存流水数据访问映射器（Mapper）
+     */
     private final WmMaterialStockTxMapper stockTxMapper;
-    /** WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询） */
+
+    /**
+     * WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询）
+     */
     private final WmServiceHelper wm;
-    /** 销售发料业务服务，提供销售发料相关能力 */
+
+    /**
+     * 销售发料业务服务，提供销售发料相关能力
+     */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
-    /** 可靠消息生产者：销售出库审批通过后发 OQC 自动创建消息 */
+
+    /**
+     * 可靠消息生产者：销售出库审批通过后发 OQC 自动创建消息
+     */
     private final ReliableMessageProducer messageProducer;
-    /** 物料主数据 Mapper：查 inspection_required 门控 OQC 自动创建 */
+
+    /**
+     * 物料主数据 Mapper：查 inspection_required 门控 OQC 自动创建
+     */
     private final BdMaterialMapper bdMaterialMapper;
 
-    /** SO 行 Mapper（出库完成时同步消耗 SO 行预留数量） */
+    /**
+     * SO 行 Mapper（出库完成时同步消耗 SO 行预留数量）
+     */
     private final SoSalesOrderLineMapper salesOrderLineMapper;
 
-    /** 库存计价服务（ERP-WM-01: 出库成本结转，与 SalesOutStrategy 完全同口径） */
+    /**
+     * 库存计价服务（ERP-WM-01: 出库成本结转，与 SalesOutStrategy 完全同口径）
+     */
     private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
 
-    /** 实际出库入口的来源校验与订单悲观锁。 */
+    /**
+     * 实际出库入口的来源校验与订单悲观锁。
+     */
     private final SalesIssueSourceGuard sourceGuard;
-    /** 实际库存批次已发数量的原子累计。 */
+
+    /**
+     * 实际库存批次已发数量的原子累计。
+     */
     private final WmBatchMapper batchMapper;
 
     /**
@@ -134,9 +165,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     public WmSalesIssueVo selectById(Long id) {
         WmSalesIssueVo vo = baseMapper.selectVoById(id);
         if (vo != null) {
-            List<WmSalesIssueLine> lineList = lineMapper.selectList(
-                new LambdaQueryWrapper<WmSalesIssueLine>()
-                    .eq(WmSalesIssueLine::getIssueId, id));
+            List<WmSalesIssueLine> lineList =
+                    lineMapper.selectList(
+                            new LambdaQueryWrapper<WmSalesIssueLine>()
+                                    .eq(WmSalesIssueLine::getIssueId, id));
             vo.setWmSalesIssueLineList(MapstructUtils.convert(lineList, WmSalesIssueLineVo.class));
         }
         return vo;
@@ -179,12 +211,14 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (existing == null) {
             throw new ServiceException("销售出库单不存在");
         }
-        if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+        if (!STATUS_DRAFT.equals(existing.getStatus())
+                && !STATUS_REJECTED.equals(existing.getStatus())) {
             throw new ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
         }
         entity.setStatus(existing.getStatus());
-        lineMapper.delete(new LambdaQueryWrapper<WmSalesIssueLine>()
-            .eq(WmSalesIssueLine::getIssueId, entity.getIssueId()));
+        lineMapper.delete(
+                new LambdaQueryWrapper<WmSalesIssueLine>()
+                        .eq(WmSalesIssueLine::getIssueId, entity.getIssueId()));
         insertLines(entity.getIssueId(), bo.getWmSalesIssueLineList());
         return baseMapper.updateById(entity);
     }
@@ -205,8 +239,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 throw new ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
             }
         }
-        lineMapper.delete(new LambdaQueryWrapper<WmSalesIssueLine>()
-            .in(WmSalesIssueLine::getIssueId, List.of(ids)));
+        lineMapper.delete(
+                new LambdaQueryWrapper<WmSalesIssueLine>()
+                        .in(WmSalesIssueLine::getIssueId, List.of(ids)));
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
@@ -225,10 +260,13 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         }
         // ERP-WM-16: 只允许 APPROVED → CONFIRMED（DRAFT 不得绕过审批直接确认，而 CONFIRMED 是
         // completeSalesIssue 的唯一前置状态），并改为条件更新 CAS，防并发双击同时通过
-        int rows = baseMapper.update(null, Wrappers.<WmSalesIssue>lambdaUpdate()
-            .set(WmSalesIssue::getStatus, STATUS_CONFIRMED)
-            .eq(WmSalesIssue::getIssueId, issueId)
-            .eq(WmSalesIssue::getStatus, STATUS_APPROVED));
+        int rows =
+                baseMapper.update(
+                        null,
+                        Wrappers.<WmSalesIssue>lambdaUpdate()
+                                .set(WmSalesIssue::getStatus, STATUS_CONFIRMED)
+                                .eq(WmSalesIssue::getIssueId, issueId)
+                                .eq(WmSalesIssue::getStatus, STATUS_APPROVED));
         if (rows == 0) {
             throw new ServiceException("只有已批准(APPROVED)的出库单才能确认，或状态已被并发变更");
         }
@@ -252,47 +290,76 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             throw new ServiceException("只有已确认的出库单才能完成");
         }
         // 已有流水但单据尚未完成时明确拒绝对账，不认领状态、不自动补历史或再次扣库。
-        Long txCount = stockTxMapper.selectCount(Wrappers.<WmMaterialStockTx>lambdaQuery()
-            .eq(WmMaterialStockTx::getTenantId, salesIssue.getTenantId())
-            .eq(WmMaterialStockTx::getSourceDocType, "WM_SALES_ISSUE")
-            .eq(WmMaterialStockTx::getSourceDocId, issueId));
+        Long txCount =
+                stockTxMapper.selectCount(
+                        Wrappers.<WmMaterialStockTx>lambdaQuery()
+                                .eq(WmMaterialStockTx::getTenantId, salesIssue.getTenantId())
+                                .eq(WmMaterialStockTx::getSourceDocType, "WM_SALES_ISSUE")
+                                .eq(WmMaterialStockTx::getSourceDocId, issueId));
         if (txCount != null && txCount > 0) {
             throw new ServiceException("销售出库单已有库存流水但尚未完成，请先对账，禁止重复出库");
         }
 
         // 并发防重：条件更新抢占（CONFIRMED → EXECUTING），影响行数为 0 说明已被并发执行/已过期
-        int claimed = baseMapper.update(null, Wrappers.<WmSalesIssue>lambdaUpdate()
-            .set(WmSalesIssue::getStatus, "EXECUTING")
-            .eq(WmSalesIssue::getIssueId, issueId)
-            .eq(WmSalesIssue::getStatus, STATUS_CONFIRMED));
+        int claimed =
+                baseMapper.update(
+                        null,
+                        Wrappers.<WmSalesIssue>lambdaUpdate()
+                                .set(WmSalesIssue::getStatus, "EXECUTING")
+                                .eq(WmSalesIssue::getIssueId, issueId)
+                                .eq(WmSalesIssue::getStatus, STATUS_CONFIRMED));
         if (claimed == 0) {
             log.warn("销售出库单[{}]状态已变更，跳过重复处理", issueId);
             return 1;
         }
 
-        List<WmSalesIssueLine> lineList = lineMapper.selectList(
-            new LambdaQueryWrapper<WmSalesIssueLine>()
-                .eq(WmSalesIssueLine::getIssueId, issueId));
+        List<WmSalesIssueLine> lineList =
+                lineMapper.selectList(
+                        new LambdaQueryWrapper<WmSalesIssueLine>()
+                                .eq(WmSalesIssueLine::getIssueId, issueId));
         if (lineList == null || lineList.isEmpty()) {
             throw new ServiceException("出库单明细为空");
         }
 
         // 所有明细和关联来源必须先过门禁；原事务失败时会回滚上面的状态认领。
-        Map<Long, SoSalesOrderLine> lockedSources = sourceGuard.validateAndLock(salesIssue, lineList);
+        Map<Long, SoSalesOrderLine> lockedSources =
+                sourceGuard.validateAndLock(salesIssue, lineList);
         Date now = new Date();
 
         // 扣减库存：按批次效期、收货时间、库存ID排序，跨库存记录 FIFO 扣减
         for (WmSalesIssueLine line : lineList) {
             BigDecimal issueQty = line.getQuantityIssue();
-            SoSalesOrderLine serialSource = line.getSourceDocLineId()==null?null:lockedSources.get(line.getSourceDocLineId());
-            BigDecimal serialReserved=serialSource==null || serialSource.getReservedQty()==null?BigDecimal.ZERO:serialSource.getReservedQty();
-            var serialRequest=com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_SALES_ISSUE",issueId,line.getLineId(),"SALES_OUT",
-                line.getMaterialId(),issueQty,salesIssue.getWarehouseId(),line.getLocationId(),line.getBatchId())
-                .reservation(salesIssue.getSoId(),line.getSourceDocLineId(),issueQty.min(serialReserved));
-            if(serialInventory!=null && serialInventory.post(serialRequest)) {
-                BigDecimal consumed=serialInventory.consumedReservation(serialRequest);
-                if(serialSource!=null)serialSource.setReservedQty(serialReserved.subtract(consumed));
-                if(line.getSourceDocLineId()!=null)fulfillmentWritebackService.addShippedQty(line.getSourceDocLineId(),issueQty);
+            SoSalesOrderLine serialSource =
+                    line.getSourceDocLineId() == null
+                            ? null
+                            : lockedSources.get(line.getSourceDocLineId());
+            BigDecimal serialReserved =
+                    serialSource == null || serialSource.getReservedQty() == null
+                            ? BigDecimal.ZERO
+                            : serialSource.getReservedQty();
+            var serialRequest =
+                    com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                                    "WM_SALES_ISSUE",
+                                    issueId,
+                                    line.getLineId(),
+                                    "SALES_OUT",
+                                    line.getMaterialId(),
+                                    issueQty,
+                                    salesIssue.getWarehouseId(),
+                                    line.getLocationId(),
+                                    line.getBatchId())
+                            .reservation(
+                                    salesIssue.getSoId(),
+                                    line.getSourceDocLineId(),
+                                    issueQty.min(serialReserved));
+            if (serialInventory != null && serialInventory.post(serialRequest)) {
+                BigDecimal consumed = serialInventory.consumedReservation(serialRequest);
+                if (serialSource != null) {
+                    serialSource.setReservedQty(serialReserved.subtract(consumed));
+                }
+                if (line.getSourceDocLineId() != null) {
+                    fulfillmentWritebackService.addShippedQty(line.getSourceDocLineId(), issueQty);
+                }
                 continue;
             }
 
@@ -300,7 +367,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             stockLqw.eq(WmMaterialStock::getTenantId, salesIssue.getTenantId());
             stockLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
             stockLqw.eq(WmMaterialStock::getWarehouseId, salesIssue.getWarehouseId());
-            stockLqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
+            stockLqw.eq(
+                    line.getLocationId() != null,
+                    WmMaterialStock::getLocationId,
+                    line.getLocationId());
             stockLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
             stockLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
             stockLqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
@@ -318,17 +388,31 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             BigDecimal remaining = issueQty;
             BigDecimal totalAvailable = BigDecimal.ZERO;
             for (WmMaterialStock stock : stockList) {
-                totalAvailable = totalAvailable.add(stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO);
+                totalAvailable =
+                        totalAvailable.add(
+                                stock.getStockQuantity() != null
+                                        ? stock.getStockQuantity()
+                                        : BigDecimal.ZERO);
             }
             if (totalAvailable.compareTo(issueQty) < 0) {
-                throw new ServiceException("物料【" + line.getMaterialName() + "】库存不足，当前库存："
-                    + totalAvailable + "，出库数量：" + issueQty);
+                throw new ServiceException(
+                        "物料【"
+                                + line.getMaterialName()
+                                + "】库存不足，当前库存："
+                                + totalAvailable
+                                + "，出库数量："
+                                + issueQty);
             }
 
             // 预留消耗: SO 行预留量随出库同步释放(与 SalesOutStrategy 口径一致)
-            SoSalesOrderLine soLine = line.getSourceDocLineId() == null ? null : lockedSources.get(line.getSourceDocLineId());
-            BigDecimal soReservedQty = soLine != null && soLine.getReservedQty() != null
-                ? soLine.getReservedQty() : BigDecimal.ZERO;
+            SoSalesOrderLine soLine =
+                    line.getSourceDocLineId() == null
+                            ? null
+                            : lockedSources.get(line.getSourceDocLineId());
+            BigDecimal soReservedQty =
+                    soLine != null && soLine.getReservedQty() != null
+                            ? soLine.getReservedQty()
+                            : BigDecimal.ZERO;
             BigDecimal totalConsumeReserved = issueQty.min(soReservedQty);
             BigDecimal remainingConsumeReserved = totalConsumeReserved;
 
@@ -337,17 +421,22 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                     break;
                 }
                 if (!Objects.equals(stock.getTenantId(), salesIssue.getTenantId())
-                    || !Objects.equals(stock.getMaterialId(), line.getMaterialId())
-                    || !Objects.equals(stock.getWarehouseId(), salesIssue.getWarehouseId())) {
+                        || !Objects.equals(stock.getMaterialId(), line.getMaterialId())
+                        || !Objects.equals(stock.getWarehouseId(), salesIssue.getWarehouseId())) {
                     throw new ServiceException("实际库存租户、物料或仓库与销售出库不一致");
                 }
-                BigDecimal currentQty = stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO;
+                BigDecimal currentQty =
+                        stock.getStockQuantity() != null
+                                ? stock.getStockQuantity()
+                                : BigDecimal.ZERO;
                 if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }
 
-                BigDecimal stockReserved = stock.getReservedQuantity() == null
-                    ? BigDecimal.ZERO : stock.getReservedQuantity();
+                BigDecimal stockReserved =
+                        stock.getReservedQuantity() == null
+                                ? BigDecimal.ZERO
+                                : stock.getReservedQuantity();
                 // ERP-WM-02: 可动用上限 = 未预留可用量 + 本单尚可消耗的预留量（无 SO 行时严格不越过可用量）
                 BigDecimal consumableReserved = stockReserved.min(remainingConsumeReserved);
                 BigDecimal maxDeduct = currentQty.subtract(stockReserved).add(consumableReserved);
@@ -356,11 +445,18 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 }
                 BigDecimal consumeQty = maxDeduct.min(remaining);
                 // 本次扣减消费的预留量: min(本次扣减, 该库存行已预留, 剩余待消费预留)
-                BigDecimal batchConsumeReserved = consumeQty.min(stockReserved).min(remainingConsumeReserved);
+                BigDecimal batchConsumeReserved =
+                        consumeQty.min(stockReserved).min(remainingConsumeReserved);
                 // 原子扣减库存（乐观锁 + 不允许负库存; 命中预留时同步释放预留, 未命中时按可用量守卫）
-                int affected = batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0
-                    ? wmMaterialStockMapper.deductStockWithReserved(stock.getStockId(), consumeQty, batchConsumeReserved, stock.getVersion())
-                    : wmMaterialStockMapper.deductStockAvailable(stock.getStockId(), consumeQty, stock.getVersion());
+                int affected =
+                        batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0
+                                ? wmMaterialStockMapper.deductStockWithReserved(
+                                        stock.getStockId(),
+                                        consumeQty,
+                                        batchConsumeReserved,
+                                        stock.getVersion())
+                                : wmMaterialStockMapper.deductStockAvailable(
+                                        stock.getStockId(), consumeQty, stock.getVersion());
                 if (affected == 0) {
                     throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
                 }
@@ -371,17 +467,24 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 // postSalesIssue / SalesOutStrategy 全仓无调用方），导致库存数量减了而金额没减、
                 // 出库成本恒为 0、库存金额虚高，下一次入库的移动平均价被高估，误差逐笔累积。
                 // 与 SalesOutStrategy 完全同口径（内核批次已把该实现改为原子 SQL 相对扣减，无数量前置校验）。
-                BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), consumeQty);
+                BigDecimal outUnitCost =
+                        valuationService.issueStockCost(stock.getStockId(), consumeQty);
 
                 // 按实际扣减的库存身份相对累计批次已发量，失败与扣库、成本共用原事务回滚。
-                if (stock.getBatchId() != null && batchMapper.increaseIssuedQty(stock.getBatchId(),
-                    stock.getMaterialId(), stock.getTenantId(), consumeQty) != 1) {
+                if (stock.getBatchId() != null
+                        && batchMapper.increaseIssuedQty(
+                                        stock.getBatchId(),
+                                        stock.getMaterialId(),
+                                        stock.getTenantId(),
+                                        consumeQty)
+                                != 1) {
                     throw new ServiceException("销售出库批次累计失败，批次身份不符或已发数量超过已收数量");
                 }
 
                 // ERP-WM-03: 预留消耗必须记账（与 SalesOutStrategy 口径一致），
                 // 否则订单取消/关闭时 unreserve 会按历史 RESERVE 流水全额释放他人预留
-                if (batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && salesIssue.getSoId() != null) {
+                if (batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0
+                        && salesIssue.getSoId() != null) {
                     WmMaterialStockTx consumeTx = new WmMaterialStockTx();
                     consumeTx.setTenantId(stock.getTenantId());
                     consumeTx.setTxType("CONSUME_RESERVE");
@@ -463,28 +566,42 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             // ERP-WM-02: 扣减已按可用量守卫，若仍有缺口必须显式报错，
             // 不能像修复前那样静默按部分量出库（剩余量被无声丢弃，单据却标记 COMPLETED）
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                throw new ServiceException("物料【" + line.getMaterialName() + "】可用库存不足，尚缺："
-                    + remaining.stripTrailingZeros().toPlainString());
+                throw new ServiceException(
+                        "物料【"
+                                + line.getMaterialName()
+                                + "】可用库存不足，尚缺："
+                                + remaining.stripTrailingZeros().toPlainString());
             }
 
             // ERP-WM-15: SO 行预留递减量必须等于库存行"实际释放量"。
             // 修复前 SO 行按 totalConsumeReserved 递减、库存行按各行 batchConsumeReserved 之和释放，
             // 两者不等时差额永久残留为库存行 reserved_quantity 假占用（可用量虚减、ATP 与拣货都取不到该批次）。
-            BigDecimal actualConsumeReserved = totalConsumeReserved.subtract(remainingConsumeReserved);
+            BigDecimal actualConsumeReserved =
+                    totalConsumeReserved.subtract(remainingConsumeReserved);
             if (remainingConsumeReserved.compareTo(BigDecimal.ZERO) > 0) {
-                log.warn("销售出库单[{}] 物料[{}] 预留释放口径不一致: SO行预留={}, 库存行实际释放={}, 按实际释放量递减 SO 行",
-                    salesIssue.getIssueCode(), line.getMaterialName(), totalConsumeReserved, actualConsumeReserved);
+                log.warn(
+                        "销售出库单[{}] 物料[{}] 预留释放口径不一致: SO行预留={}, 库存行实际释放={}, 按实际释放量递减 SO 行",
+                        salesIssue.getIssueCode(),
+                        line.getMaterialName(),
+                        totalConsumeReserved,
+                        actualConsumeReserved);
             }
             // 原子扣减 SO 行剩余预留数量(预留已随出库消耗, setSql 原子递减 + 预留充足守卫)
             if (actualConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
-                int reservedRows = salesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
-                    .eq(SoSalesOrderLine::getTenantId, salesIssue.getTenantId())
-                    .eq(SoSalesOrderLine::getSoId, salesIssue.getSoId())
-                    .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
-                    .ge(SoSalesOrderLine::getReservedQty, actualConsumeReserved)
-                    .setSql("reserved_qty = reserved_qty - " + actualConsumeReserved.toPlainString()));
+                int reservedRows =
+                        salesOrderLineMapper.update(
+                                null,
+                                Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                                        .eq(SoSalesOrderLine::getTenantId, salesIssue.getTenantId())
+                                        .eq(SoSalesOrderLine::getSoId, salesIssue.getSoId())
+                                        .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
+                                        .ge(SoSalesOrderLine::getReservedQty, actualConsumeReserved)
+                                        .setSql(
+                                                "reserved_qty = reserved_qty - "
+                                                        + actualConsumeReserved.toPlainString()));
                 if (reservedRows == 0) {
-                    throw new ServiceException("SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
+                    throw new ServiceException(
+                            "SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
                 }
                 // 同源多明细复用锁内行，并同步其剩余预留，防止后续明细重复消费旧预留量。
                 soLine.setReservedQty(soReservedQty.subtract(actualConsumeReserved));
@@ -534,7 +651,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         variables.put("issueId", entity.getIssueId());
         variables.put("issueCode", entity.getIssueCode());
         variables.put("clientName", entity.getClientName());
-        R<Void> result = wm.processService.startProcessByDataId(issueIdStr, selectFlowId, "wmSalesIssueService", variables);
+        R<Void> result =
+                wm.processService.startProcessByDataId(
+                        issueIdStr, selectFlowId, "wmSalesIssueService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -549,10 +668,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      */
     @Override
     public String getProcInsId(String issueIdStr) {
-        return wm.procInsIdHelper.resolve(issueIdStr, () -> {
-            WfMyBusiness business = wm.wfMyBusinessServiceImpl.getByDataId(issueIdStr);
-            return business != null ? business.getProcessInstanceId() : null;
-        });
+        return wm.procInsIdHelper.resolve(
+                issueIdStr,
+                () -> {
+                    WfMyBusiness business = wm.wfMyBusinessServiceImpl.getByDataId(issueIdStr);
+                    return business != null ? business.getProcessInstanceId() : null;
+                });
     }
 
     /**
@@ -566,7 +687,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     public void afterFlowHandle(WfMyBusiness business) {
         Long issueId = Long.parseLong(business.getDataId());
         WmSalesIssue entity = baseMapper.selectById(issueId);
-        if (entity == null) return;
+        if (entity == null) {
+            return;
+        }
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
             entity.setStatus(STATUS_APPROVING);
@@ -576,7 +699,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             registerOqcCreateMessages(entity);
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setStatus(STATUS_REJECTED);
-        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+        } else if (ActStatus.revoke.equals(actStatus)
+                || ActStatus.stop.equals(actStatus)
+                || ActStatus.recall.equals(actStatus)) {
             entity.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(entity);
@@ -597,9 +722,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 log.warn("销售出库 {} 无关联销售订单，跳过 OQC 自动创建", entity.getIssueId());
                 return;
             }
-            List<WmSalesIssueLine> lines = lineMapper.selectList(
-                new LambdaQueryWrapper<WmSalesIssueLine>()
-                    .eq(WmSalesIssueLine::getIssueId, entity.getIssueId()));
+            List<WmSalesIssueLine> lines =
+                    lineMapper.selectList(
+                            new LambdaQueryWrapper<WmSalesIssueLine>()
+                                    .eq(WmSalesIssueLine::getIssueId, entity.getIssueId()));
             if (lines == null || lines.isEmpty()) {
                 log.warn("销售出库 {} 无明细行，跳过 OQC 自动创建", entity.getIssueId());
                 return;
@@ -614,8 +740,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             if (materialIds.isEmpty()) {
                 return;
             }
-            List<BdMaterial> materials = bdMaterialMapper.selectList(
-                new LambdaQueryWrapper<BdMaterial>().in(BdMaterial::getMaterialId, materialIds));
+            List<BdMaterial> materials =
+                    bdMaterialMapper.selectList(
+                            new LambdaQueryWrapper<BdMaterial>()
+                                    .in(BdMaterial::getMaterialId, materialIds));
             Set<Long> needOqcMaterialIds = new HashSet<>();
             for (BdMaterial m : materials) {
                 if (Integer.valueOf(1).equals(m.getInspectionRequired())) {
@@ -663,19 +791,30 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 return;
             }
             final List<OqcAutoCreateMessage> toSend = messages;
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    for (OqcAutoCreateMessage msg : toSend) {
-                        try {
-                            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_OQC_CREATE, msg);
-                            log.info("销售出库审批通过 OQC MQ 已发送: soId={}, materialId={}", entity.getSoId(), msg.getMaterialId());
-                        } catch (Exception e) {
-                            log.error("销售出库审批通过 OQC MQ 发送失败: soId={}, materialId={}", entity.getSoId(), msg.getMaterialId(), e);
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            for (OqcAutoCreateMessage msg : toSend) {
+                                try {
+                                    messageProducer.send(
+                                            ExchangeConstants.TOPIC_EXCHANGE,
+                                            RoutingKeyConstants.MES_OQC_CREATE,
+                                            msg);
+                                    log.info(
+                                            "销售出库审批通过 OQC MQ 已发送: soId={}, materialId={}",
+                                            entity.getSoId(),
+                                            msg.getMaterialId());
+                                } catch (Exception e) {
+                                    log.error(
+                                            "销售出库审批通过 OQC MQ 发送失败: soId={}, materialId={}",
+                                            entity.getSoId(),
+                                            msg.getMaterialId(),
+                                            e);
+                                }
+                            }
                         }
-                    }
-                }
-            });
+                    });
         } catch (Exception e) {
             log.error("注册销售出库 OQC MQ 失败: issueId={}", entity.getIssueId(), e);
         }
@@ -713,13 +852,15 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      * @return 结果对象
      */
     @Override
-    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+    public List<String> flowCandidateUsernamesOfTask(
+            String taskNameId, Map<String, Object> values) {
         return null;
     }
 
     private void insertLines(Long issueId, List<WmSalesIssueLineBo> lineBoList) {
         if (lineBoList != null && !lineBoList.isEmpty()) {
-            List<WmSalesIssueLine> lineList = MapstructUtils.convert(lineBoList, WmSalesIssueLine.class);
+            List<WmSalesIssueLine> lineList =
+                    MapstructUtils.convert(lineBoList, WmSalesIssueLine.class);
             for (WmSalesIssueLine line : lineList) {
                 line.setLineId(null);
                 line.setIssueId(issueId);
@@ -730,21 +871,41 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
     private LambdaQueryWrapper<WmSalesIssue> buildQueryWrapper(WmSalesIssueBo bo) {
         LambdaQueryWrapper<WmSalesIssue> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getIssueCode()), WmSalesIssue::getIssueCode, bo.getIssueCode());
-        lqw.like(StringUtils.isNotBlank(bo.getIssueName()), WmSalesIssue::getIssueName, bo.getIssueName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getIssueCode()),
+                WmSalesIssue::getIssueCode,
+                bo.getIssueCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getIssueName()),
+                WmSalesIssue::getIssueName,
+                bo.getIssueName());
         lqw.eq(bo.getSoId() != null, WmSalesIssue::getSoId, bo.getSoId());
         lqw.eq(StringUtils.isNotBlank(bo.getSoNo()), WmSalesIssue::getSoNo, bo.getSoNo());
         lqw.eq(bo.getClientId() != null, WmSalesIssue::getClientId, bo.getClientId());
-        lqw.eq(StringUtils.isNotBlank(bo.getClientCode()), WmSalesIssue::getClientCode, bo.getClientCode());
-        lqw.like(StringUtils.isNotBlank(bo.getClientName()), WmSalesIssue::getClientName, bo.getClientName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getClientCode()),
+                WmSalesIssue::getClientCode,
+                bo.getClientCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getClientName()),
+                WmSalesIssue::getClientName,
+                bo.getClientName());
         lqw.eq(bo.getWarehouseId() != null, WmSalesIssue::getWarehouseId, bo.getWarehouseId());
-        lqw.eq(StringUtils.isNotBlank(bo.getWarehouseCode()), WmSalesIssue::getWarehouseCode, bo.getWarehouseCode());
-        lqw.like(StringUtils.isNotBlank(bo.getWarehouseName()), WmSalesIssue::getWarehouseName, bo.getWarehouseName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getWarehouseCode()),
+                WmSalesIssue::getWarehouseCode,
+                bo.getWarehouseCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getWarehouseName()),
+                WmSalesIssue::getWarehouseName,
+                bo.getWarehouseName());
         lqw.eq(bo.getIssueDate() != null, WmSalesIssue::getIssueDate, bo.getIssueDate());
-        lqw.eq(bo.getTotalQuantity() != null, WmSalesIssue::getTotalQuantity, bo.getTotalQuantity());
+        lqw.eq(
+                bo.getTotalQuantity() != null,
+                WmSalesIssue::getTotalQuantity,
+                bo.getTotalQuantity());
         lqw.eq(bo.getTotalAmount() != null, WmSalesIssue::getTotalAmount, bo.getTotalAmount());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), WmSalesIssue::getStatus, bo.getStatus());
         return lqw;
     }
-
 }

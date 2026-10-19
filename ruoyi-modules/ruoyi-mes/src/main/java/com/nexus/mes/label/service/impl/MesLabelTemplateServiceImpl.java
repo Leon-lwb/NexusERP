@@ -52,7 +52,8 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
     private final ProSnMapper proSnMapper;
 
     @Override
-    public TableDataInfo<MesLabelTemplateVo> selectPageList(MesLabelTemplateBo bo, PageQuery pageQuery) {
+    public TableDataInfo<MesLabelTemplateVo> selectPageList(
+            MesLabelTemplateBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<MesLabelTemplate> lqw = buildQueryWrapper(bo);
         Page<MesLabelTemplateVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
@@ -91,14 +92,21 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         checkCodeUnique(template);
         MesLabelTemplate current = requireTemplate(template.getTemplateId());
         Long revision = current.getTemplateRevision();
-        if (bo.getTemplateRevision() != null && !Objects.equals(bo.getTemplateRevision(), revision)) {
+        if (bo.getTemplateRevision() != null
+                && !Objects.equals(bo.getTemplateRevision(), revision)) {
             throw new ServiceException("模板已被修改，请重新加载后保存");
         }
         template.setTemplateRevision(revision == null ? 1L : Math.addExact(revision, 1L));
-        int updated = baseMapper.update(template, Wrappers.<MesLabelTemplate>lambdaUpdate()
-            .eq(MesLabelTemplate::getTemplateId, template.getTemplateId())
-            .eq(revision != null, MesLabelTemplate::getTemplateRevision, revision)
-            .isNull(revision == null, MesLabelTemplate::getTemplateRevision));
+        int updated =
+                baseMapper.update(
+                        template,
+                        Wrappers.<MesLabelTemplate>lambdaUpdate()
+                                .eq(MesLabelTemplate::getTemplateId, template.getTemplateId())
+                                .eq(
+                                        revision != null,
+                                        MesLabelTemplate::getTemplateRevision,
+                                        revision)
+                                .isNull(revision == null, MesLabelTemplate::getTemplateRevision));
         if (updated == 0) {
             throw new ServiceException("模板已被修改，请重新加载后保存");
         }
@@ -127,15 +135,20 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         return "SENT".equals(testPrintTask(templateId, null).getStatus());
     }
 
-    /** 测试打印先保存任务，再在事务外尝试发送，返回可查询的持久化任务回执。 */
+    /**
+     * 测试打印先保存任务，再在事务外尝试发送，返回可查询的持久化任务回执。
+     */
     @Override
     public LabelPrintTaskVo testPrintTask(Long templateId, String requestId) {
         MesLabelTemplate template = requireTemplate(templateId);
         Map<String, String> fields = sampleFields();
         String payload = renderService.render(template, fields);
-        MesLabelPrintLog printLog = printService.newLog(null, null, template, MesLabelPrintLog.SOURCE_TEST);
+        MesLabelPrintLog printLog =
+                printService.newLog(null, null, template, MesLabelPrintLog.SOURCE_TEST);
         printService.freezeFields(printLog, fields);
-        return printService.view(printService.submitAndSend(printLog, payload, renderService.charsetOf(template), requestId));
+        return printService.view(
+                printService.submitAndSend(
+                        printLog, payload, renderService.charsetOf(template), requestId));
     }
 
     /**
@@ -146,15 +159,28 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         throw new ServiceException("补打必须提供原打印任务 originalPrintLogId 和非空补打原因");
     }
 
-    /** 显式补打必须关联本 SN、本模板的原任务并填写原因；不得覆盖原任务审计。 */
+    /**
+     * 显式补打必须关联本 SN、本模板的原任务并填写原因；不得覆盖原任务审计。
+     */
     @Override
-    public boolean reprint(Long snId, Long templateId, Long originalPrintLogId, String reprintReason) {
-        return "SENT".equals(reprintTask(snId, templateId, originalPrintLogId, reprintReason, null).getStatus());
+    public boolean reprint(
+            Long snId, Long templateId, Long originalPrintLogId, String reprintReason) {
+        return "SENT"
+                .equals(
+                        reprintTask(snId, templateId, originalPrintLogId, reprintReason, null)
+                                .getStatus());
     }
 
-    /** 显式补打以原任务及原因作为稳定业务意图，重复请求复用同一新任务。 */
+    /**
+     * 显式补打以原任务及原因作为稳定业务意图，重复请求复用同一新任务。
+     */
     @Override
-    public LabelPrintTaskVo reprintTask(Long snId, Long templateId, Long originalPrintLogId, String reprintReason, String requestId) {
+    public LabelPrintTaskVo reprintTask(
+            Long snId,
+            Long templateId,
+            Long originalPrintLogId,
+            String reprintReason,
+            String requestId) {
         if (originalPrintLogId == null) {
             throw new ServiceException("补打必须提供原打印任务 originalPrintLogId");
         }
@@ -169,7 +195,8 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         if (original == null) {
             throw new ServiceException("原打印任务不存在或无权访问: " + originalPrintLogId);
         }
-        if (!Objects.equals(snId, original.getSnId()) || !Objects.equals(templateId, original.getTemplateId())) {
+        if (!Objects.equals(snId, original.getSnId())
+                || !Objects.equals(templateId, original.getTemplateId())) {
             throw new ServiceException("原打印任务与本次 SN 或模板不匹配");
         }
         if ("PENDING".equals(original.getResult()) || "SENDING".equals(original.getResult())) {
@@ -178,17 +205,32 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         return reprintAttempt(snId, templateId, original, reason, requestId);
     }
 
-    /** 优先使用原任务已冻结指令；只对缺少快照的历史记录按当前数据生成并明确标注。 */
-    private LabelPrintTaskVo reprintAttempt(Long snId, Long templateId, MesLabelPrintLog original, String reason,
-                                           String requestId) {
-        if (original != null && StringUtils.isNotBlank(original.getRenderedPayload())
-            && StringUtils.isNotBlank(original.getPayloadCharset())) {
+    /**
+     * 优先使用原任务已冻结指令；只对缺少快照的历史记录按当前数据生成并明确标注。
+     */
+    private LabelPrintTaskVo reprintAttempt(
+            Long snId,
+            Long templateId,
+            MesLabelPrintLog original,
+            String reason,
+            String requestId) {
+        if (original != null
+                && StringUtils.isNotBlank(original.getRenderedPayload())
+                && StringUtils.isNotBlank(original.getPayloadCharset())) {
             MesLabelPrintLog attempt = printService.newReprintLog(original, reason, false);
-            return printService.view(printService.submitAndSend(attempt, original.getRenderedPayload(), Charset.forName(original.getPayloadCharset()), requestId));
+            return printService.view(
+                    printService.submitAndSend(
+                            attempt,
+                            original.getRenderedPayload(),
+                            Charset.forName(original.getPayloadCharset()),
+                            requestId));
         }
-        if (original != null && ("FROZEN".equals(original.getSnapshotMode())
-            || StringUtils.isNotBlank(original.getTemplateSnapshot()) || StringUtils.isNotBlank(original.getFieldSnapshot())
-            || StringUtils.isNotBlank(original.getContentHash()) || StringUtils.isNotBlank(original.getPayloadHash()))) {
+        if (original != null
+                && ("FROZEN".equals(original.getSnapshotMode())
+                        || StringUtils.isNotBlank(original.getTemplateSnapshot())
+                        || StringUtils.isNotBlank(original.getFieldSnapshot())
+                        || StringUtils.isNotBlank(original.getContentHash())
+                        || StringUtils.isNotBlank(original.getPayloadHash()))) {
             throw new ServiceException("原任务未形成完整可发送的冻结指令，不能用当前模板替代");
         }
         ProSn sn = proSnMapper.selectById(snId);
@@ -198,19 +240,29 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         MesLabelTemplate template = requireTemplate(templateId);
         Map<String, String> fields = renderService.snFields(sn);
         String payload = renderService.render(template, fields);
-        MesLabelPrintLog attempt = printService.newLog(sn.getSnId(), fields.get("snCode"), template,
-            MesLabelPrintLog.SOURCE_REPRINT);
+        MesLabelPrintLog attempt =
+                printService.newLog(
+                        sn.getSnId(),
+                        fields.get("snCode"),
+                        template,
+                        MesLabelPrintLog.SOURCE_REPRINT);
         printService.freezeFields(attempt, fields);
         attempt.setOriginalPrintLogId(original == null ? null : original.getLogId());
         attempt.setReprintReason(reason);
         attempt.setSnapshotMode("LEGACY_RECORD");
         attempt.setRemark("原任务为历史记录且缺少冻结内容；本次按当前模板与SN生成，不能证明与原标签一致");
-        return printService.view(printService.submitAndSend(attempt, payload, renderService.charsetOf(template), requestId));
+        return printService.view(
+                printService.submitAndSend(
+                        attempt, payload, renderService.charsetOf(template), requestId));
     }
 
-    /** 任务状态查询与原打印权限、当前租户范围一致。 */
+    /**
+     * 任务状态查询与原打印权限、当前租户范围一致。
+     */
     @Override
-    public LabelPrintTaskVo printTask(Long taskId) { return printService.taskInfo(taskId); }
+    public LabelPrintTaskVo printTask(Long taskId) {
+        return printService.taskInfo(taskId);
+    }
 
     // ==================== 辅助 ====================
 
@@ -234,21 +286,30 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         }
     }
 
-    /** 增改时用样例字段预渲染一遍, 保证 content JSON 结构合法(防脏模板上线) */
+    /**
+     * 增改时用样例字段预渲染一遍, 保证 content JSON 结构合法(防脏模板上线)
+     */
     private void validateRenderable(MesLabelTemplate template) {
         renderService.render(template, sampleFields());
     }
 
     private void checkCodeUnique(MesLabelTemplate template) {
-        Long count = baseMapper.selectCount(Wrappers.<MesLabelTemplate>lambdaQuery()
-            .eq(MesLabelTemplate::getTemplateCode, template.getTemplateCode())
-            .ne(template.getTemplateId() != null, MesLabelTemplate::getTemplateId, template.getTemplateId()));
+        Long count =
+                baseMapper.selectCount(
+                        Wrappers.<MesLabelTemplate>lambdaQuery()
+                                .eq(MesLabelTemplate::getTemplateCode, template.getTemplateCode())
+                                .ne(
+                                        template.getTemplateId() != null,
+                                        MesLabelTemplate::getTemplateId,
+                                        template.getTemplateId()));
         if (count != null && count > 0) {
             throw new ServiceException("模板编码已存在: " + template.getTemplateCode());
         }
     }
 
-    /** 样例字段域(预览/测试打印/增改校验共用) */
+    /**
+     * 样例字段域(预览/测试打印/增改校验共用)
+     */
     private Map<String, String> sampleFields() {
         Map<String, String> fields = new LinkedHashMap<>(8);
         fields.put("snCode", "SN-FC-TEST-0001");
@@ -262,11 +323,26 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
 
     private LambdaQueryWrapper<MesLabelTemplate> buildQueryWrapper(MesLabelTemplateBo bo) {
         return Wrappers.<MesLabelTemplate>lambdaQuery()
-            .eq(StringUtils.isNotBlank(bo.getTemplateCode()), MesLabelTemplate::getTemplateCode, bo.getTemplateCode())
-            .like(StringUtils.isNotBlank(bo.getTemplateName()), MesLabelTemplate::getTemplateName, bo.getTemplateName())
-            .eq(StringUtils.isNotBlank(bo.getLabelType()), MesLabelTemplate::getLabelType, bo.getLabelType())
-            .eq(StringUtils.isNotBlank(bo.getLabelLang()), MesLabelTemplate::getLabelLang, bo.getLabelLang())
-            .eq(StringUtils.isNotBlank(bo.getEnabled()), MesLabelTemplate::getEnabled, bo.getEnabled())
-            .orderByDesc(MesLabelTemplate::getCreateTime);
+                .eq(
+                        StringUtils.isNotBlank(bo.getTemplateCode()),
+                        MesLabelTemplate::getTemplateCode,
+                        bo.getTemplateCode())
+                .like(
+                        StringUtils.isNotBlank(bo.getTemplateName()),
+                        MesLabelTemplate::getTemplateName,
+                        bo.getTemplateName())
+                .eq(
+                        StringUtils.isNotBlank(bo.getLabelType()),
+                        MesLabelTemplate::getLabelType,
+                        bo.getLabelType())
+                .eq(
+                        StringUtils.isNotBlank(bo.getLabelLang()),
+                        MesLabelTemplate::getLabelLang,
+                        bo.getLabelLang())
+                .eq(
+                        StringUtils.isNotBlank(bo.getEnabled()),
+                        MesLabelTemplate::getEnabled,
+                        bo.getEnabled())
+                .orderByDesc(MesLabelTemplate::getCreateTime);
     }
 }

@@ -37,6 +37,7 @@ import java.util.List;
 public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService {
 
     private final BdSerialNumberRuleMapper baseMapper;
+
     /**
      * 分页查询序列号规则列表
      *
@@ -44,91 +45,106 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
      * @param pageQuery 分页参数，包含页码、每页大小及排序信息
      * @return 分页结果
      */
-
     @Override
-    public TableDataInfo<BdSerialNumberRuleVo> selectPageList(BdSerialNumberRuleBo bo, PageQuery pageQuery) {
+    public TableDataInfo<BdSerialNumberRuleVo> selectPageList(
+            BdSerialNumberRuleBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<BdSerialNumberRule> lqw = buildQueryWrapper(bo);
         Page<BdSerialNumberRuleVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
     }
+
     /**
      * 查询序列号规则列表
      *
      * @param bo 业务对象，包含筛选条件或待保存字段
      * @return 结果列表
      */
-
     @Override
     public List<BdSerialNumberRuleVo> selectList(BdSerialNumberRuleBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
+
     /**
      * 根据主键查询序列号规则详情
      *
      * @param id 主键ID
      * @return 结果
      */
-
     @Override
     public BdSerialNumberRuleVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
+
     /**
      * 根据规则编码查询序列号规则
      *
      * @param ruleCode 规则编码
      * @return 结果
      */
-
     @Override
     public BdSerialNumberRuleVo selectByCode(String ruleCode) {
         LambdaQueryWrapper<BdSerialNumberRule> lqw = Wrappers.lambdaQuery();
         lqw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
         return baseMapper.selectVoOne(lqw);
     }
+
     /**
      * 新增序列号规则
      *
      * @param bo 业务对象，包含筛选条件或待保存字段
      * @return 操作结果/影响行数
      */
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdSerialNumberRuleBo bo) {
         BdSerialNumberRule entity = MapstructUtils.convert(bo, BdSerialNumberRule.class);
-        validateRule(entity);entity.setRuleVersion(1L);entity.setCurrentSeq(0);entity.setAttr1(null);
+        validateRule(entity);
+        entity.setRuleVersion(1L);
+        entity.setCurrentSeq(0);
+        entity.setAttr1(null);
         return baseMapper.insert(entity);
     }
+
     /**
      * 修改序列号规则
      *
      * @param bo 业务对象，包含筛选条件或待保存字段
      * @return 操作结果/影响行数
      */
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdSerialNumberRuleBo bo) {
-        BdSerialNumberRule current=baseMapper.selectById(bo.getRuleId());
-        if(current==null) throw new ServiceException("编号规则不存在");
-        long version=current.getRuleVersion()==null?1L:current.getRuleVersion();
-        if(bo.getRuleVersion()==null || bo.getRuleVersion()!=version) throw new ServiceException("编号规则已变更，请刷新后操作");
+        BdSerialNumberRule current = baseMapper.selectById(bo.getRuleId());
+        if (current == null) {
+            throw new ServiceException("编号规则不存在");
+        }
+        long version = current.getRuleVersion() == null ? 1L : current.getRuleVersion();
+        if (bo.getRuleVersion() == null || bo.getRuleVersion() != version) {
+            throw new ServiceException("编号规则已变更，请刷新后操作");
+        }
         BdSerialNumberRule entity = MapstructUtils.convert(bo, BdSerialNumberRule.class);
-        validateRule(entity);entity.setRuleVersion(Math.addExact(version,1L));
-        entity.setCurrentSeq(null);entity.setAttr1(null);
-        int changed=baseMapper.update(entity,Wrappers.<BdSerialNumberRule>lambdaUpdate()
-            .eq(BdSerialNumberRule::getRuleId,bo.getRuleId()).eq(BdSerialNumberRule::getRuleVersion,version));
-        if(changed!=1) throw new ServiceException("编号规则已被并发修改，请刷新后操作");
+        validateRule(entity);
+        entity.setRuleVersion(Math.addExact(version, 1L));
+        entity.setCurrentSeq(null);
+        entity.setAttr1(null);
+        int changed =
+                baseMapper.update(
+                        entity,
+                        Wrappers.<BdSerialNumberRule>lambdaUpdate()
+                                .eq(BdSerialNumberRule::getRuleId, bo.getRuleId())
+                                .eq(BdSerialNumberRule::getRuleVersion, version));
+        if (changed != 1) {
+            throw new ServiceException("编号规则已被并发修改，请刷新后操作");
+        }
         return changed;
     }
+
     /**
      * 批量删除序列号规则
      *
      * @param ids 主键ID数组（支持批量）
      * @return 操作结果/影响行数
      */
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -176,19 +192,26 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
             uw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
             uw.setSql("current_seq = COALESCE(current_seq, 0) + 1");
             baseMapper.update(uw);
-            BdSerialNumberRule updated = baseMapper.selectOne(
-                Wrappers.<BdSerialNumberRule>lambdaQuery().eq(BdSerialNumberRule::getRuleCode, ruleCode));
+            BdSerialNumberRule updated =
+                    baseMapper.selectOne(
+                            Wrappers.<BdSerialNumberRule>lambdaQuery()
+                                    .eq(BdSerialNumberRule::getRuleCode, ruleCode));
             currentSeq = updated.getCurrentSeq() != null ? updated.getCurrentSeq() : 1;
         } else {
             // 周期段（DAY/MONTH/YEAR）变化时重置：条件更新只在周期段匹配时递增，否则置 1
             String cycleSegment = buildCycleDatePart(cycle);
             LambdaUpdateWrapper<BdSerialNumberRule> uw = Wrappers.lambdaUpdate();
             uw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
-            uw.setSql("current_seq = CASE WHEN attr1 = '" + cycleSegment + "' THEN COALESCE(current_seq, 0) + 1 ELSE 1 END");
+            uw.setSql(
+                    "current_seq = CASE WHEN attr1 = '"
+                            + cycleSegment
+                            + "' THEN COALESCE(current_seq, 0) + 1 ELSE 1 END");
             uw.set(BdSerialNumberRule::getAttr1, cycleSegment);
             baseMapper.update(uw);
-            BdSerialNumberRule updated = baseMapper.selectOne(
-                Wrappers.<BdSerialNumberRule>lambdaQuery().eq(BdSerialNumberRule::getRuleCode, ruleCode));
+            BdSerialNumberRule updated =
+                    baseMapper.selectOne(
+                            Wrappers.<BdSerialNumberRule>lambdaQuery()
+                                    .eq(BdSerialNumberRule::getRuleCode, ruleCode));
             currentSeq = updated.getCurrentSeq() != null ? updated.getCurrentSeq() : 1;
         }
 
@@ -207,9 +230,19 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
     }
 
     private void validateRule(BdSerialNumberRule rule) {
-        if(!java.util.Set.of("PRODUCT_SN","BARCODE","BATCH_NO").contains(rule.getRuleType())) throw new ServiceException("编号规则类型无效");
-        if(rule.getSeqLength()==null || rule.getSeqLength()<1 || rule.getSeqLength()>18) throw new ServiceException("流水号长度须为1至18");
-        new com.nexus.erp.wm.trace.ErpSerialIdentityService.Rule(rule.getPrefix(),rule.getDateFormat(),rule.getSeqLength(),rule.getSeqCycle(),rule.getCheckDigitRule(),1);
+        if (!java.util.Set.of("PRODUCT_SN", "BARCODE", "BATCH_NO").contains(rule.getRuleType())) {
+            throw new ServiceException("编号规则类型无效");
+        }
+        if (rule.getSeqLength() == null || rule.getSeqLength() < 1 || rule.getSeqLength() > 18) {
+            throw new ServiceException("流水号长度须为1至18");
+        }
+        new com.nexus.erp.wm.trace.ErpSerialIdentityService.Rule(
+                rule.getPrefix(),
+                rule.getDateFormat(),
+                rule.getSeqLength(),
+                rule.getSeqCycle(),
+                rule.getCheckDigitRule(),
+                1);
     }
 
     private String buildCycleDatePart(String cycle) {
@@ -245,9 +278,18 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
 
     private LambdaQueryWrapper<BdSerialNumberRule> buildQueryWrapper(BdSerialNumberRuleBo bo) {
         LambdaQueryWrapper<BdSerialNumberRule> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getRuleCode()), BdSerialNumberRule::getRuleCode, bo.getRuleCode());
-        lqw.like(StringUtils.isNotBlank(bo.getRuleName()), BdSerialNumberRule::getRuleName, bo.getRuleName());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), BdSerialNumberRule::getStatus, bo.getStatus());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getRuleCode()),
+                BdSerialNumberRule::getRuleCode,
+                bo.getRuleCode());
+        lqw.like(
+                StringUtils.isNotBlank(bo.getRuleName()),
+                BdSerialNumberRule::getRuleName,
+                bo.getRuleName());
+        lqw.eq(
+                StringUtils.isNotBlank(bo.getStatus()),
+                BdSerialNumberRule::getStatus,
+                bo.getStatus());
         lqw.orderByAsc(BdSerialNumberRule::getRuleCode);
         return lqw;
     }
