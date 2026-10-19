@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-19T10:25:54.305459+08:00",
+  "generatedAt": "2026-10-19T10:31:57.730491+08:00",
   "scope": "Uncommitted source changes in isolated task worktrees; this manifest excludes itself and ignored build/test artifacts. Not deployment or migration evidence.",
   "repositories": [
     {
@@ -4118,8 +4118,8 @@
           "path": "components/common/IdentityTrace.vue",
           "absolutePath": "E:\\Nexus\\.worktrees\\material-trace-20261018\\nexus-pda\\components\\common\\IdentityTrace.vue",
           "state": "NEW",
-          "bytes": 12524,
-          "sha256": "982d38dc6dbce000ff47839c44af536536b0d6d96875f4ea0766b7bca43ca52f"
+          "bytes": 12546,
+          "sha256": "eef913a49dd76d97a924e980753a561f51a1543b54dd57a7d2377dffaeff24f6"
         },
         {
           "path": "components/common/OfflineTasks.vue",
