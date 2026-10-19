@@ -36,6 +36,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class SalesOutStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 来源单据类型：销售出库单 */
     private static final String SOURCE_DOC_TYPE_SALES_ISSUE = "WM_SALES_ISSUE";
@@ -120,6 +123,7 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
 
         Date now = new Date();
         for (WmSalesIssueLine line : lineList) {
+            if(serialInventory!=null && serialInventory.postSource("WM_SALES_ISSUE",issueId,line.getLineId()))continue;
             if (line.getQuantityIssue() == null || line.getQuantityIssue().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new RuntimeException("物料【" + line.getMaterialName() + "】出库数量必须大于0");
             }

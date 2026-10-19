@@ -66,6 +66,7 @@ public class StationTraceService {
      * @param snCode SN编码
      * @return {sn, steps, records: [{type, time, result?, summary, items?}]} 记录按时间倒序
      */
+    @org.springframework.transaction.annotation.Transactional(readOnly=true,propagation=org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public Map<String, Object> trace(String snCode) {
         String sn = snCode == null ? null : snCode.trim();
         if (StringUtils.isBlank(sn)) {
@@ -78,15 +79,19 @@ public class StationTraceService {
         }
 
         Map<String, Object> data = new LinkedHashMap<>(4);
+        var truncated=truncatedSources(sn);
+        data.put("truncated",!truncated.isEmpty());data.put("truncatedSources",truncated);data.put("sourceLimit",SOURCE_LIMIT);
+        data.put("traceScope",proSn.getIdentityId()==null?"LEGACY_SN_CODE":"IDENTITY");
         data.put("sn", snSummary(proSn));
         data.put("steps", steps(proSn.getCardId()));
-        data.put("records", records(sn, proSn));
+        data.put("records", records(sn, proSn,truncated.contains(TYPE_TEST)));
         return data;
     }
 
     private Map<String, Object> snSummary(ProSn sn) {
         Map<String, Object> m = new LinkedHashMap<>(10);
         m.put("snCode", sn.getSnCode());
+        m.put("identityId",sn.getIdentityId()==null?null:sn.getIdentityId().toString());
         m.put("woNo", sn.getWoNo());
         m.put("cardNo", sn.getCardNo());
         m.put("materialCode", sn.getMaterialCode());
@@ -120,10 +125,10 @@ public class StationTraceService {
     }
 
     /** 四源记录合并时间线, 按时间倒序(最新在前) */
-    private List<Map<String, Object>> records(String sn, ProSn proSn) {
+    private List<Map<String, Object>> records(String sn, ProSn proSn,boolean testTruncated) {
         List<Map<String, Object>> records = new ArrayList<>();
         records.addAll(flashRecords(sn));
-        records.addAll(testRecords(sn));
+        records.addAll(testRecords(sn,testTruncated));
         records.addAll(passReports(sn));
         records.addAll(bindLogs(sn));
         records.sort(Comparator.comparing(r -> (Date) r.get("time"), Comparator.nullsLast(Comparator.reverseOrder())));
@@ -156,7 +161,7 @@ public class StationTraceService {
     }
 
     /** 综测按 test_no 分组: 一次测试多 item 行归一, 组内任一 FAIL 则整组 FAIL */
-    private List<Map<String, Object>> testRecords(String sn) {
+    private List<Map<String, Object>> testRecords(String sn,boolean truncated) {
         List<TestRecord> rows = testRecordMapper.selectList(Wrappers.<TestRecord>lambdaQuery()
             .eq(TestRecord::getSnCode, sn)
             .orderByDesc(TestRecord::getTestTime)
@@ -169,10 +174,12 @@ public class StationTraceService {
         for (List<TestRecord> group : groups.values()) {
             TestRecord head = group.get(0);
             boolean anyFail = group.stream().anyMatch(r -> "FAIL".equals(r.getResult()));
+            boolean allPass=group.stream().allMatch(r->"PASS".equals(r.getResult()));
+            String result=anyFail?"FAIL":allPass && !truncated?"PASS":"UNKNOWN";
             Map<String, Object> m = base(TYPE_TEST, head.getTestTime());
-            m.put("result", anyFail ? "FAIL" : "PASS");
+            m.put("result",result);m.put("truncated",truncated);
             m.put("summary", String.format("综测[%s] 版本%s %s %d项",
-                head.getTestNo(), nvl(head.getContentVersion()), anyFail ? "FAIL" : "PASS", group.size()));
+                head.getTestNo(), nvl(head.getContentVersion()), result, group.size()));
             List<Map<String, Object>> items = new ArrayList<>(group.size());
             for (TestRecord r : group) {
                 Map<String, Object> item = new LinkedHashMap<>(8);
@@ -181,7 +188,8 @@ public class StationTraceService {
                 item.put("value", r.getNumericValue() != null ? String.valueOf(r.getNumericValue()) : r.getTextValue());
                 item.put("upperLimit", r.getUpperLimit());
                 item.put("lowerLimit", r.getLowerLimit());
-                item.put("pass", !"FAIL".equals(r.getResult()));
+                String itemResult="PASS".equals(r.getResult())?"PASS":"FAIL".equals(r.getResult())?"FAIL":"UNKNOWN";
+                item.put("result",itemResult);item.put("pass","PASS".equals(itemResult));
                 items.add(item);
             }
             Map<String, Object> detail = new LinkedHashMap<>(4);
@@ -250,6 +258,16 @@ public class StationTraceService {
         }
         return records;
     }
+
+    private List<String> truncatedSources(String sn) {
+        List<String> result=new ArrayList<>();
+        if(overLimit(flashRecordMapper.selectCount(Wrappers.<FlashRecord>lambdaQuery().eq(FlashRecord::getSnCode,sn))))result.add(TYPE_FLASH);
+        if(overLimit(testRecordMapper.selectCount(Wrappers.<TestRecord>lambdaQuery().eq(TestRecord::getSnCode,sn))))result.add(TYPE_TEST);
+        if(overLimit(reportMapper.selectCount(Wrappers.<MesStationReport>lambdaQuery().eq(MesStationReport::getSnCode,sn))))result.add(TYPE_PASS_REPORT);
+        if(overLimit(bindLogMapper.selectCount(Wrappers.<MesSnBindLog>lambdaQuery().and(w->w.eq(MesSnBindLog::getParentSnCode,sn).or().eq(MesSnBindLog::getComponentSnCode,sn)))))result.add(TYPE_SN_BIND);
+        return List.copyOf(result);
+    }
+    private boolean overLimit(Long count){return count!=null && count>SOURCE_LIMIT;}
 
     private Map<String, Object> base(String type, Date time) {
         Map<String, Object> m = new LinkedHashMap<>(6);

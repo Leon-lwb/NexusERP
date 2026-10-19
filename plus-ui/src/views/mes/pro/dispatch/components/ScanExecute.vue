@@ -1,4 +1,5 @@
 <template>
+  <ProductOutputDialog ref="productOutputRef" />
   <el-dialog v-model="visible" title="扫码执行" width="640px" append-to-body>
     <el-input v-model="barcode" placeholder="请扫描或输入流转卡条码" @keyup.enter="handleScan">
       <template #append>
@@ -37,6 +38,10 @@
 </template>
 
 <script setup lang="ts" name="ScanExecute">
+import ProductOutputDialog from '@/components/material-trace/ProductOutputDialog.vue';
+import { decimalSum } from '@/components/material-trace/model';
+const productOutputRef = ref<InstanceType<typeof ProductOutputDialog>>();
+
 import { getFlowCardByBarcode } from '@/api/mes/pro/dispatch';
 import { startStep, completeStep } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardStepVO } from '@/api/mes/pro/flowcard';
@@ -86,13 +91,14 @@ const handleStartStep = async () => {
 const handleCompleteStep = async () => {
   if (!currentStep.value) return;
   const { value: goodQty } = await proxy?.$modal.prompt('请输入良品数量:', '完工 - ' + currentStep.value.processName);
-  if (!goodQty || isNaN(Number(goodQty)) || Number(goodQty) <= 0) {
-    proxy?.$modal.msgWarning('请输入有效数量');
-    return;
-  }
   const { value: defectQty } = await proxy?.$modal.prompt('请输入不良品数量（默认0）:', '完工 - ' + currentStep.value.processName);
   const { value: scrapQty } = await proxy?.$modal.prompt('请输入报废数量（默认0）:', '完工 - ' + currentStep.value.processName);
-  await completeStep(flowCard.value.cardId, currentStep.value.stepRecordId, Number(goodQty), Number(defectQty || 0), Number(scrapQty || 0));
+  decimalSum([goodQty || '0', defectQty || '0', scrapQty || '0']);
+  const step = currentStep.value;
+  await productOutputRef.value!.run(
+    { cardId: flowCard.value.cardId, stepRecordId: step.stepRecordId, goodQty: goodQty || '0', scrapQty: scrapQty || '0' },
+    () => completeStep(flowCard.value.cardId, step.stepRecordId, goodQty || '0', defectQty || '0', scrapQty || '0')
+  );
   proxy?.$modal.msgSuccess('完工成功');
   handleScan();
 };

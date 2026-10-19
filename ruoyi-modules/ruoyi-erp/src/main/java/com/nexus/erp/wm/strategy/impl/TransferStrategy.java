@@ -29,6 +29,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class TransferStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：调拨出库 */
     private static final String TX_TYPE_TRANSFER_OUT = "TRANSFER_OUT";
@@ -80,6 +83,9 @@ public class TransferStrategy extends BaseStockOperationStrategy {
         }
 
         Date now = new Date();
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+            "WM_TRANSFER",line.getTransferId(),line.getLineId(),"TRANSFER",line.getMaterialId(),line.getQuantity(),line.getFromWarehouseId(),line.getFromLocationId(),line.getBatchId())
+            .transfer(line.getToWarehouseId(),line.getToAreaId(),line.getToLocationId())))return;
 
         // 1. 来源库存扣减（按来源仓库过滤，防止跨仓调拨从错误仓库扣减；排除已预留量）
         LambdaQueryWrapper<WmMaterialStock> fromLqw = Wrappers.lambdaQuery();

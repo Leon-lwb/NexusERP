@@ -9,6 +9,9 @@ import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.bo.WmBatchBo;
 import com.nexus.erp.wm.domain.vo.WmBatchVo;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
+import com.nexus.erp.wm.service.WmBatchWriteGuard;
+import com.nexus.erp.wm.trace.ErpTraceContext;
 import com.nexus.erp.wm.service.impl.DailyCodeSequenceProvider;
 import com.nexus.erp.wm.service.impl.WmBatchServiceImpl;
 import io.github.linpeilie.Converter;
@@ -20,7 +23,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.MockedStatic;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -49,7 +51,11 @@ class WmBatchServiceImplTest {
     @Mock
     private DailyCodeSequenceProvider dailyCodeSequenceProvider;
 
-    @InjectMocks
+    @Mock
+    private WmMaterialReceiveLineMapper materialReceiveLineMapper;
+    @Mock
+    private ErpTraceContext traceContext;
+
     private WmBatchServiceImpl wmBatchService;
 
     /** 静态 mock：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器子类 */
@@ -90,6 +96,9 @@ class WmBatchServiceImplTest {
     @BeforeEach
     void setUp() {
         lenient().when(dailyCodeSequenceProvider.next(anyString(), any())).thenReturn(6L);
+        lenient().when(traceContext.tenant()).thenReturn("000001");
+        wmBatchService = new WmBatchServiceImpl(baseMapper, dailyCodeSequenceProvider, materialReceiveLineMapper,
+            new WmBatchWriteGuard(baseMapper, traceContext));
     }
 
     /** createBatch：自动生成批次编码（provider 提供序号），格式 B{yyyyMMdd}{4位} 且默认值补齐 */
@@ -149,57 +158,49 @@ class WmBatchServiceImplTest {
         assertTrue(exception.getMessage().contains("物料ID不能为空"));
     }
 
-    /** 更新批次数量 - 收货时 received_qty 增加 */
+    /** 旧URL对应服务不再允许无来源累计，正数/负数均不能绕过单据。 */
     @Test
-    void testUpdateQuantity_Receive() {
-        WmBatch existingBatch = batch("B202606010001");
-        when(baseMapper.selectById(1L)).thenReturn(existingBatch);
-        when(baseMapper.updateById(any(WmBatch.class))).thenReturn(1);
-
-        wmBatchService.updateQuantity(1L, new BigDecimal("20"), true);
-
-        ArgumentCaptor<WmBatch> captor = ArgumentCaptor.forClass(WmBatch.class);
-        verify(baseMapper).updateById(captor.capture());
-        assertEquals(0, new BigDecimal("70").compareTo(captor.getValue().getReceivedQty())); // 50 + 20
-    }
-
-    /** 更新数量 - 批次不存在应抛出异常 */
-    @Test
-    void testUpdateQuantity_BatchNotFound() {
-        when(baseMapper.selectById(anyLong())).thenReturn(null);
+    void testUpdateQuantity_RequiresSourceDocument() {
         ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmBatchService.updateQuantity(999L, BigDecimal.ONE, true)
-        );
-        assertTrue(exception.getMessage().contains("不存在"));
+            wmBatchService.updateQuantity(1L, new BigDecimal("20"), true));
+        assertTrue(exception.getMessage().contains("来源单据"));
+        verifyNoInteractions(baseMapper);
     }
 
-    /** 检查过期批次 - 过期批次状态应变为 EXPIRED */
+    @Test
+    void testUpdateQuantity_MissingBatchCannotBecomeAnUnguardedAdjustment() {
+        assertThrows(ServiceException.class, () -> wmBatchService.updateQuantity(999L, BigDecimal.ONE, false));
+        verifyNoInteractions(baseMapper);
+    }
+
+    /** 过期任务只写状态，不把候选实体中的累计/QC快照写回。 */
     @Test
     void testCheckExpiry() {
-        WmBatch expiredBatch = batch("B202606010001");
-        expiredBatch.setExpiryDate(new Date(System.currentTimeMillis() - 86400000L));
-        when(baseMapper.selectList(any())).thenReturn(List.of(expiredBatch));
-        when(baseMapper.updateById(any(WmBatch.class))).thenReturn(1);
-
+        when(baseMapper.update(isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(1);
         wmBatchService.checkExpiry();
-
-        ArgumentCaptor<WmBatch> captor = ArgumentCaptor.forClass(WmBatch.class);
-        verify(baseMapper).updateById(captor.capture());
-        assertEquals("EXPIRED", captor.getValue().getStatus());
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>> captor =
+            ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
+        verify(baseMapper).update(isNull(), captor.capture());
+        String fields = captor.getValue().getSqlSet();
+        assertTrue(fields.contains("status="));
+        assertFalse(fields.contains("received_qty"));
+        assertFalse(fields.contains("issued_qty"));
+        assertFalse(fields.contains("qc_status"));
+        verify(baseMapper, never()).updateById(any(WmBatch.class));
     }
 
-    /** 变更批次状态 */
+    /** 状态元数据采用锁定批次+局部更新，不能写回整实体。 */
     @Test
     void testChangeStatus() {
-        WmBatch existingBatch = batch("B202606010001");
-        when(baseMapper.selectById(1L)).thenReturn(existingBatch);
-        when(baseMapper.updateById(any(WmBatch.class))).thenReturn(1);
-
+        when(baseMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(batch("B202606010001"));
+        when(baseMapper.update(isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(1);
         wmBatchService.changeStatus(1L, "CLOSED");
-
-        ArgumentCaptor<WmBatch> captor = ArgumentCaptor.forClass(WmBatch.class);
-        verify(baseMapper).updateById(captor.capture());
-        assertEquals("CLOSED", captor.getValue().getStatus());
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>> captor =
+            ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
+        verify(baseMapper).update(isNull(), captor.capture());
+        assertTrue(captor.getValue().getSqlSet().contains("status="));
+        assertFalse(captor.getValue().getSqlSet().contains("quantity"));
+        verify(baseMapper, never()).updateById(any(WmBatch.class));
     }
 
     private WmBatch batch(String code) {

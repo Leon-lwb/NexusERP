@@ -32,6 +32,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class ReworkIssueStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：返工领料 */
     private static final String TX_TYPE_REWORK_ISSUE = "REWORK_ISSUE";
@@ -88,6 +91,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         Long warehouseId = (Long) args[6];
         Date now = args[8] instanceof Date ? (Date) args[8] : new Date();
 
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out("PRD_REWORK_ORDER",reworkId,null,"REWORK_ISSUE",materialId,quantity,warehouseId,null,null)))return;
         if (hasPosted(SOURCE_DOC_TYPE_REWORK, reworkId)) {
             return;
         }

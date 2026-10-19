@@ -1,3 +1,5 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface SalesIssueQuery extends PageQuery {
   issueCode?: string;
   issueName?: string;
@@ -8,7 +10,7 @@ export interface SalesIssueQuery extends PageQuery {
   issueDate?: string;
 }
 
-export interface SalesIssueVO {
+export interface SalesIssueVO extends TraceDocumentFields {
   issueId: number;
   issueCode: string;
   issueName: string;
@@ -33,7 +35,7 @@ export interface SalesIssueVO {
   wmSalesIssueLineList?: SalesIssueLineVO[];
 }
 
-export interface SalesIssueLineVO {
+export interface SalesIssueLineVO extends TraceDocumentFields {
   lineId: number;
   issueId: number;
   sourceDocLineId: number;
@@ -58,7 +60,7 @@ export interface SalesIssueLineVO {
   stockQuantity?: number;
 }
 
-export interface SalesIssueForm {
+export interface SalesIssueForm extends TraceDocumentFields {
   issueId?: number;
   issueCode?: string;
   issueName?: string;

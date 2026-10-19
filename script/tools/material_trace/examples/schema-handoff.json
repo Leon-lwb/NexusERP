@@ -1,0 +1,426 @@
+{
+  "additional_converter_source_projection": "conversion_run_states",
+  "adoption_interoperability": {
+    "actor": "Actual authenticated user must equal original approvedBy.",
+    "adopt": "POST /erp/prd/work/tracking-policy/adopt",
+    "permission": "prd:work:trackingPolicyAdopt",
+    "preview": "GET /erp/prd/work/tracking-policy/preview/{woId}",
+    "summary_path": "script/tools/material_trace/examples/policy-adoption/interop-verification.json",
+    "transaction": "ERP Entry REQUIRED -> writer MANDATORY"
+  },
+  "all_column_read_only_source_count": 18,
+  "barcode": {
+    "complete_columns": 29,
+    "complete_row_hash_includes_primary_object": true,
+    "legacy_null": "Preserved and reported unknown; never backfilled.",
+    "new_column": "primary_object_type VARCHAR(16) COLLATE utf8mb4_bin NULL",
+    "table": "wm_barcode"
+  },
+  "cancellation_storage": {
+    "erp_service_select_variants": 6,
+    "existing_sources": [
+      "wm_trace_inbox",
+      "wm_trace_outbox",
+      "mes_trace_inbox",
+      "mes_trace_outbox",
+      "pro_completion_manifest"
+    ],
+    "full_column_projection_required": true,
+    "journal_dynamic_sql_boundary": "JdbcTraceJournal is frozen and its existing columns checked; dynamic table-name SQL is not claimed as fully executed by the source parser.",
+    "new_tables_or_columns_required": false
+  },
+  "captured_at": "2026-10-19T04:29:52+08:00",
+  "converter_mysql57": {
+    "captured_inputs": 21,
+    "counts": {
+      "executed": 32,
+      "fail": 0,
+      "pass": 32,
+      "skip": 0
+    },
+    "current_inputs_match": true,
+    "owned_container_ids_verified_absent": 10,
+    "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/final-harness-current-20261019-10/report.json",
+    "report_sha256": "ca64dcf32fd2edf326c21cf1c22eeb0e300e62e6faa9250b5c6816b4db7a3f04",
+    "summary_path": "script/tools/material_trace/examples/converter-mysql57-validation.json"
+  },
+  "current_review_source_hash_boundary": "Owner handoff snapshot; coverage is separately bound to each execution report, not inferred from this capture.",
+  "current_review_source_sha256": {
+    "ruoyi-admin/src/main/java/com/nexus/web/service/MaterialIdentityTraceService.java": "30c871c7479d5218777cca98afd3e9dc7b240b7495ea9a85492b7d410268733b",
+    "ruoyi-admin/src/test/java/com/nexus/web/trace/LabelCanonicalIdentityContextTest.java": "88b51bfdb433f212e612a94a3523b3a386eebffe6545664d3447e47cedeca4f5",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/BatchTracePart.java": "de282528f648b80b399b3a29d9feb9b32378645eb3545ddfaf0e7564d51e89cd",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CodeCandidate.java": "450376f7ad3db136356e7f05000ffc3a090ab3ea8de18125539152b51a817af8",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CodeObjectType.java": "4820a1509e80e85a6312f3083c0a9baabf513c9fb20ccd6be7e426f04ecc251c",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CodeResolution.java": "d77ac2fbbd806a0474053c09e177b571fb1b4729d95e7647e4c4a3a25d80f017",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CodeResolveRequest.java": "3447876b99bcb38bb3593a8811ef39f8683202e2ea80f95bf140bce4d1b14c78",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CompletionCancellationProof.java": "5bd9b858875e9c00ea4632f859bab95f7dd1ab0f525f859aa44c27794a3447c0",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CompletionCancellationRequest.java": "b36f045750265394e46758b198969f69ea636856043288bf800903dacd7d5a23",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CompletionCancellationResult.java": "1f987ca3006c1959e1b5b06b36c9c756a1dcb21cf0b33d02c814dfc413d8d659",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/Gs1Identity.java": "0650722cc5380925d0e6bf3f01a9ee263caf635dc2f79368acbbd521d59f0f91",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/IdentityTracePart.java": "7f77c6ad1c19718cf259033059c7424ec60088a8825027fd415d06aa28d59c5e",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/RecallSubjectSnapshot.java": "3fc8007c52e2bd3b77f5fe1bad69995b8356f95ad96b71cf5f19053d4addc9f7",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/SerialIdentity.java": "e7563703d466cdd86905f6024bdac48392151692bf893a4897de0cf856238233",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/TraceCursor.java": "444779a5ef6c22af753eae84853c8654a1a56620a4cc81940877c056c85a590b",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/TraceReadValues.java": "90ff95d051281ac6b45e661c88931b7cc3c51986094526819b276bc444f3e658",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/TraceRecallSnapshots.java": "178917b2841f92460dd27cab0906f43c10de995407c3607dd08da1bc1b52071e",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/WorkOrderTraceImpact.java": "b20f6b359be4140f2d6f17a3f19d0e67cd3eaafbd7ff06bbd6e6d4d66503b355",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/WorkOrderTrackingPolicySnapshot.java": "3e98750bec7299931fe0273b6b6ba002bc8c99d467a39725e0cf99fdecbc7644",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/jdbc/JdbcTraceJournal.java": "3cb0859d34d1d09a412c202373988118ebf2cec37a6b4fb41d6343bb409a8d76",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/port/CodeResolverPort.java": "94e0b73fdf8a2cfdfd25f921cc1231fbb3cf893d8eca0e22ffe8e3491311a7e3",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/port/CompletionCancellationPort.java": "91ae1b1f10a953a029ffdd4e02a635c9febb67d509daacc6995004c06aa0a5a4",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/port/IdentityTraceReadPort.java": "4dcfece66415b90808b73d512ea63488011217f9748f1b86da573356df440873",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/port/SerialIdentityPort.java": "40bd58647ff121e5e8d28d00dab8e58989a751fdf008fcb46059cdf371467d57",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/port/WorkOrderTrackingPolicyPort.java": "0b6e58ca138ef2257e338e1cfe466157520e80271026c8bf994537f5cdda3dc7",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/controller/PrdWorkOrderPolicyAdoptionController.java": "3c03bf14e925e73f030c51a8fbfe3d05444b5a7a93038113879b4cf02c63b88d",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionAuthorizer.java": "04f66ae711dcb6cf67833db222a25d465678f0b346ab3c3196666bbcbec7f438",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionEntry.java": "27e79146471df816059ef97f7280b257ecb6ea32f1a822b6c1aca70cc5b8565e",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionService.java": "d352c1a0bd0981141b47d5f4ee46318048f9909a1fa4c0e3e219d5f0e984dad0",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderTrackingPolicyService.java": "7b9cf75b6f3c9874ddc89f1c39e2940a28d5d86c88564eedb4cf823efe84aaa8",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpCodeResolverService.java": "2eb7ee9f42d1456403805ffba479631576440688ebcb3b710a44961947d9cfc3",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpCompletionCancellationHandler.java": "4fee7237451d5b7d75e8b74e84db6641b32abeb03f34b6d8a70c986ae0e1a9f6",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpCompletionCancellationService.java": "3bf4854731fff9653d304540027d7a8e2671d338c367dafd49b0c3162eccb311",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpDocumentCodeResolver.java": "f5322436c5c47ba97a3f5d506d16735cbe965b5bfec6985aa417e75c01750f60",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpIdentityTraceReader.java": "0996f91f4927321cf26ed6e765d5fc9795a7ed16b893373c963b648d19e537a0",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpMaterialPolicyService.java": "d04e46b8bc34e25a767cee35e37dd01f030e545126db0249ba61aebb41fb94d3",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpSerialIdentityService.java": "5741772337c7fac36569d3c71e2a6a96bdd9e25e2ed6e46fa65a02743d8136ae",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpTraceContext.java": "e34a7e078cf9ebedf6a9f81d9fbcbc603f753cdc96b47720837270a028555e45",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/MaterialTrackingPolicyGuard.java": "922ff6efd67f6cb9fab17af320b2482a62cd577c2f54876c4d6a997245b7272d",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ScopedMaterialCodeResolver.java": "30528abb60923647f15f3ccd4f8c2fe1ac1f6f41fc01cba7fef339bf8f5b5ba0",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/StructuredLabelResolver.java": "44acaab7242ceeff0cb13a757d0a83e9a1b6f131ec776fa216b6a4cc76a6d461",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/WmBarcodeIdentityGuard.java": "df18c463e47d447086d8701779c035c36511e384fca1817d6846dd227339e058",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/integration/trace/MesIdentityTraceReader.java": "64ef65b9807bf8e9f537e84fdf8e69865fa3ea8a9b491c93fa28613a8d86889a",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/integration/trace/MesWorkOrderReferenceReader.java": "d874a0c4726f5b366ef8525d162c3864210d0ff06e17bd88319c8486b0ebd5e5",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/integration/trace/MesWorkOrderTrackingPolicyReader.java": "b35208dcc95ac8c7e5876153ca49bf33eb499ec0e665f927a3055a2d9edf8259",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/label/listener/SnLabelPrintEventListener.java": "417ab24d52d36cb11cc993e65cecd9d63ae6027bd8fbdad313fb84d239debd8d",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/label/service/LabelRenderService.java": "cabfe50140c31e3ff5c30c9f246c3ea11fac4e47be4f63f6020d9fdb9e2b9b33",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/label/service/impl/MesLabelTemplateServiceImpl.java": "262238e22de3c27c35db859653da0e1b037cf043ebd781e58c215f6e3e21975e",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesCompletionCancellationService.java": "c5c36aee1232b91c9c15e515e2556632c0f3c6a8efbb7787302e7fbc7ef93937",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesCompletionManifestService.java": "6ca5e385c81a43744fc89155dd178695dbc8cdb66f58969f91bf1da4330eaa20",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesErpSourceReader.java": "6d1b9b66e565d84582839d0494a7344015dad16fd41f06c47eed2f69c8ad8d41",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesMaterialTraceWriter.java": "14375e32075a91b36a97f9dcdbd2de1865756f145e7462e935a2932e104bfcc8",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesPreparedWorkOrderPolicies.java": "d92c02e22465e3df1c76e91af33ef747988c0ccab5ad502fc23c09fdc3fd9e29",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesProductLotOutputWriter.java": "d32c9fe27f38eb81aa4546bd152f23a2bd2085cd4062f04f43fe46764f5ff30a",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesTraceContext.java": "ef17bac0ff9610e36ad93639c3f4eddaa1de50f1df3e60b49d7c99ac7fd241ea",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesTraceStore.java": "1f7b63b195b5b9a5f87c390ee3138fe14943ea940b9f5f58cdc61f30c700899f",
+    "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesTrackingUsageService.java": "5566c6efdbad5776135608647ac52fa7002af41cb56513d2ef8799356bf3da48",
+    "ruoyi-modules/ruoyi-mes/src/test/java/com/nexus/mes/label/service/LabelCanonicalIdentityWorkflowTest.java": "77b4082368b5d5ad4a1a6e0a88ac13d89cf78ad5e248bb716d3211336c3c4170",
+    "script/sql/ry-erp.sql": "e08c873b519880eb8683182101a03bec8e88ea1a408925f97d9f3e7d7f7f9132",
+    "script/sql/ry-mes.sql": "8176b0c4125844419a313aeb94ed8921ff850a0bb6321a88a3165df0cb285b0a",
+    "script/sql/update/2026-10-18-material-trace-erp.sql": "1a2507dc67fc8f1e4f50f958172fd38861d4d20cf7be1a2780095e175a19b921",
+    "script/sql/update/2026-10-18-material-trace-mes.sql": "ce450e5c63ac39c8e6745d4d5cf176f22064070b544a863cae8cfddc35068263",
+    "script/sql/update/2026-10-18-material-trace-preflight-erp.sql": "a9557d77cb009f27f52587f9274d14efcded45becdc00542b83e39afb0eaec02",
+    "script/sql/update/2026-10-18-material-trace-preflight-mes.sql": "672ac3f44a57ada3fb32804d6ccfd9a4ae056d185a6a70b3dbc52415984ba7c2",
+    "script/sql/update/2026-10-19-material-trace-strict-constraints-erp.sql": "56426d317c8397d066d0fee6003f5138be50f882efc4481b4fda41a0d4dddda4",
+    "script/tools/material_trace/audit.py": "c80eece952a36d5b0a70d9ea282e3d4a39f580d8e5087d8da2b1a08dbdcd0c19",
+    "script/tools/material_trace/cli.py": "2a884bbd71e39dc8123c0152e0f11af71319c2203ed5cf1a14172b3813e4a376",
+    "script/tools/material_trace/core.py": "36e532c41edaa77b96730ca9989cc48e085f9bf3684775c35ea98726751f7f6f",
+    "script/tools/material_trace/metadata.py": "3fb49c3df47f2022684ce83800c820925848783f53c782fc5ec8af900aff8474",
+    "script/tools/material_trace/policy_adoption.py": "67b1f2040637d07d6ec201066a98c7e896a7656e94de0b06ba2fd18c4b94ddd7",
+    "script/tools/material_trace/repair.py": "e71fe2ef6351d37aa1349cc47ec5c41e564a2ee2fbf5195699c836a386cbaa5a",
+    "script/tools/material_trace/schema_contract.py": "5bffa5d36ccd4e0929a07d5129281a239d6f90e184c75162ef207e9ab7b67652",
+    "script/tools/material_trace/sql_writer.py": "5c0cd13dfdb2fbc81fb4ce0d88b61bcbd014c747d5cdb6a14121dd5572b99b40",
+    "script/tools/material_trace/stock_conversion_sql.py": "97c09f81ac16a93128d019a76c77c4c17cf9c058874225e1d30d9b3acd98f290",
+    "script/tools/material_trace/stock_converter.py": "d16f03a57cdd2e510adaddadd32f006a30a464d568741a92762537310e679f5b",
+    "script/tools/material_trace/tests/conversion_fixtures.py": "2e0cc048291fc4ae34a2c3f9ccd72d823d654241653c4fa195dcfee19576a2b1",
+    "script/tools/material_trace/tests/fixtures.py": "8864b7bbc15b0558b9be9744c3e444c3d2b25ba266726c36a724d6c663c13968",
+    "script/tools/material_trace/tests/test_policy_adoption.py": "96e80a521e7d1ea3f06baede2b1202ab7a04342600ff1a70ecf202a14401057b",
+    "script/tools/material_trace/tests_mysql57/business_reader_cases.py": "aa589c97fb96af03bba88fbe5696e3804c3447d1ae1b994bd96e0c52b70dae7e",
+    "script/tools/material_trace/tests_mysql57/converter_mysql57_cases.py": "4b6b652a1ca8d6db61857d5e96ac4aa3eccafe96a543bc83890629070416629f",
+    "script/tools/material_trace/tests_mysql57/converter_mysql57_runner.py": "146f9ab9759e2d9b3ecaf918920bb3adac84b650124782be9c613a40be762f6c",
+    "script/tools/material_trace/tests_mysql57/document_sql.py": "bd7805e6a6e3bb3832118ed9ce282374d69726d8db7fde3e12a8c073ad9f8b00",
+    "script/tools/material_trace/tests_mysql57/extended_cases.py": "58afc20dd7f011fdd627b35928e372caf4b5518e7d58efcd86cea3bc81acdf30",
+    "script/tools/material_trace/tests_mysql57/harness.py": "6babc8750ba8901046fa79716c39bc3067d2dc5c41cb509f21ee50af77b3ed02",
+    "script/tools/material_trace/tests_mysql57/java_sql.py": "a0fd58db57de17d17227b46f91836f794ef025b9f43c94d08e671a5d775725af",
+    "script/tools/material_trace/tests_mysql57/policy_cases.py": "5b785a98cef8c710ee6b8dee3f9e6a725396bf374689083a6c72cb6a5b5fc648",
+    "script/tools/material_trace/tests_mysql57/reader_cases.py": "f3db2410c486d6ad170fed57126fd2dd560d0ba779f3609a1f91c6429405eb18",
+    "script/tools/material_trace/tests_mysql57/run.py": "87b7d15918d680ec1ca89a245388114dada17a6e2f921d28525e548e59383ee6",
+    "script/tools/material_trace/tests_mysql57/strict_cases.py": "da184b54981628720a2ca6a9f0fa4fee7d03513efc96e9906d5e55a26c034684"
+  },
+  "isolated_label_verification": {
+    "admin_self_contained_erp_routing_tests": 2,
+    "full_maven_run_by_this_slice": false,
+    "jdk": "21 using javac --release 17",
+    "logs": [
+      "target/label-canonical-review-20261019/mes-common-port-only-tests.log",
+      "target/label-canonical-review-20261019/admin-self-contained-tests.log"
+    ],
+    "mes_common_port_only_tests": 91,
+    "new_canonical_workflow_tests": 12
+  },
+  "offline_verification": [
+    {
+      "command": "PYTHONUTF8=1 python -B -m unittest discover -s script/tools/material_trace/tests",
+      "failed": 0,
+      "log": "target/label-canonical-review-20261019/offline-final.log",
+      "skipped": 0,
+      "tests": 178
+    },
+    {
+      "command": "python -B -m unittest discover -s script/tools/material_trace/tests_mysql57 -p test_converter_mysql57_runner.py",
+      "failed": 0,
+      "log": "target/label-canonical-review-20261019/runner-safety-final.log",
+      "skipped": 0,
+      "tests": 4
+    }
+  ],
+  "posting_group_required_fields": {
+    "policy_version": "BIGINT NOT NULL",
+    "source_hash": "CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL"
+  },
+  "read_only_source_tables": [
+    "lt_wo_consumption",
+    "mes_label_print_task",
+    "mes_trace_inbox",
+    "mes_trace_outbox",
+    "pro_completion_manifest",
+    "pro_completion_material_allocation",
+    "pro_product_lot_output",
+    "wm_barcode",
+    "wm_serial_lifecycle_command",
+    "wm_serial_reservation",
+    "wm_serial_sequence",
+    "wm_trace_inbox",
+    "wm_trace_material_consumption",
+    "wm_trace_material_reservation",
+    "wm_trace_material_reservation_line",
+    "wm_trace_outbox",
+    "wm_work_order_policy_adoption",
+    "wm_work_order_tracking_policy"
+  ],
+  "remaining_limitations": [
+    "Main/Hume must revalidate their final source inputs and unified Maven; this slice did not start Maven or the general SQL matrix.",
+    "No existing database, real census/approval authenticity, production rollout or physical printer confirmation verified.",
+    "Shared historical qty>1 SN source is rejected with a review task; old stock, code, identity and aggregate ledger remain unchanged.",
+    "Whole-material converter stays AUDIT; reservations/WIP, unknown cost scope and missing evidence require actual business resolution.",
+    "Strict tenant phase requires explicit cleanup/stop-write/backup confirmation; expansion alone does not close NULL uniqueness.",
+    "Approval tool imports independent APPROVED row only; real ERP endpoint enforces original actor and future activation.",
+    "Label SENT is TCP transport completion only; historical frozen content and signed DHR are preserved.",
+    "No cross-database atomicity, high-volume lock/performance or real service/permission acceptance claimed."
+  ],
+  "repair_writable_tables": [
+    "lt_lot",
+    "pro_sn",
+    "wm_material_stock",
+    "wm_material_stock_tx",
+    "wm_sn"
+  ],
+  "required_business_table_count": 35,
+  "required_business_tables": [
+    "bd_material",
+    "lt_lot",
+    "lt_lot_allocation",
+    "lt_sn_consumption",
+    "lt_sn_material_guard",
+    "lt_wo_consumption",
+    "mes_label_print_log",
+    "mes_label_print_task",
+    "mes_label_template",
+    "mes_trace_inbox",
+    "mes_trace_outbox",
+    "pro_completion_manifest",
+    "pro_completion_manifest_line",
+    "pro_completion_material_allocation",
+    "pro_product_lot_output",
+    "pro_sn",
+    "wm_barcode",
+    "wm_batch",
+    "wm_document_sn",
+    "wm_material_stock",
+    "wm_material_stock_tx",
+    "wm_serial_lifecycle_command",
+    "wm_serial_reservation",
+    "wm_serial_sequence",
+    "wm_sn",
+    "wm_sn_alias",
+    "wm_trace_inbox",
+    "wm_trace_material_consumption",
+    "wm_trace_material_reservation",
+    "wm_trace_material_reservation_line",
+    "wm_trace_outbox",
+    "wm_trace_posting_group",
+    "wm_valuation_group",
+    "wm_work_order_policy_adoption",
+    "wm_work_order_tracking_policy"
+  ],
+  "schema_new_table_names": {
+    "erp": [
+      "wm_document_sn",
+      "wm_serial_lifecycle_command",
+      "wm_serial_reservation",
+      "wm_serial_sequence",
+      "wm_sn_alias",
+      "wm_trace_audit_run",
+      "wm_trace_inbox",
+      "wm_trace_material_consumption",
+      "wm_trace_material_reservation",
+      "wm_trace_material_reservation_line",
+      "wm_trace_outbox",
+      "wm_trace_posting_group",
+      "wm_trace_repair_item",
+      "wm_trace_repair_run",
+      "wm_trace_stock_conversion_run",
+      "wm_valuation_group",
+      "wm_work_order_policy_adoption",
+      "wm_work_order_tracking_policy"
+    ],
+    "mes": [
+      "lt_lot_allocation",
+      "lt_sn_consumption",
+      "lt_sn_material_guard",
+      "mes_label_print_task",
+      "mes_trace_inbox",
+      "mes_trace_outbox",
+      "mes_trace_repair_item",
+      "mes_trace_repair_run",
+      "pro_completion_manifest",
+      "pro_completion_manifest_line",
+      "pro_completion_material_allocation",
+      "pro_product_lot_output"
+    ]
+  },
+  "schema_new_tables": {
+    "erp": 18,
+    "mes": 12
+  },
+  "schema_version": 2,
+  "separate_general_mysql_report": {
+    "changed_since_report": [
+      "script/tools/material_trace/tests_mysql57/harness.py",
+      "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/CompletionCancellationRequest.java",
+      "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpCodeResolverService.java"
+    ],
+    "counts": {
+      "blocked": 0,
+      "executed": 251,
+      "fail": 0,
+      "pass": 251
+    },
+    "covers_current_inputs": false,
+    "finished_at": "2026-10-18T20:07:43.164561+00:00",
+    "not_invoked_by_this_slice": true,
+    "owner": "Hume/main",
+    "path": "script/tools/material_trace/tests_mysql57/results/latest.json",
+    "report_sha256": "75907d9b9676d72e195bf15210fff503de23413a4246bceab3c3d25f71259bdb"
+  },
+  "sql_extraction_coverage_recorded_by_separate_owner": [
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpIdentityTraceReader.java",
+      "variants": 11
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/integration/trace/MesIdentityTraceReader.java",
+      "variants": 15
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/integration/trace/MesWorkOrderReferenceReader.java",
+      "variants": 1
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesErpSourceReader.java",
+      "variants": 9
+    },
+    {
+      "scope": "canonical find SELECT",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpSerialIdentityService.java",
+      "variants": 1
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderTrackingPolicyService.java",
+      "variants": 9
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionService.java",
+      "variants": 3
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/integration/trace/MesWorkOrderTrackingPolicyReader.java",
+      "variants": 1
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesPreparedWorkOrderPolicies.java",
+      "variants": 6
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/MaterialTrackingPolicyGuard.java",
+      "variants": 10
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpMaterialPolicyService.java",
+      "variants": 1
+    },
+    {
+      "scope": "all SELECTs with closed document targets",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/WmBarcodeIdentityGuard.java",
+      "variants": 14
+    },
+    {
+      "scope": "all SELECTs with closed document targets",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpDocumentCodeResolver.java",
+      "variants": 19
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/trace/ErpCompletionCancellationService.java",
+      "variants": 6
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesProductLotOutputWriter.java",
+      "variants": 16
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesCompletionCancellationService.java",
+      "variants": 6
+    },
+    {
+      "scope": "all SELECTs",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesTraceStore.java",
+      "variants": 13
+    },
+    {
+      "scope": "LT JOIN/EXISTS",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesMaterialTraceWriter.java",
+      "variants": 1
+    },
+    {
+      "scope": "LT JOIN/EXISTS",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesCompletionManifestService.java",
+      "variants": 2
+    },
+    {
+      "scope": "LT JOIN/EXISTS",
+      "source": "ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/trace/MesTrackingUsageService.java",
+      "variants": 6
+    }
+  ],
+  "sql_sha256": {
+    "script/sql/ry-erp.sql": "e08c873b519880eb8683182101a03bec8e88ea1a408925f97d9f3e7d7f7f9132",
+    "script/sql/ry-mes.sql": "8176b0c4125844419a313aeb94ed8921ff850a0bb6321a88a3165df0cb285b0a",
+    "script/sql/update/2026-10-18-material-trace-erp.sql": "1a2507dc67fc8f1e4f50f958172fd38861d4d20cf7be1a2780095e175a19b921",
+    "script/sql/update/2026-10-18-material-trace-mes.sql": "ce450e5c63ac39c8e6745d4d5cf176f22064070b544a863cae8cfddc35068263",
+    "script/sql/update/2026-10-18-material-trace-preflight-erp.sql": "a9557d77cb009f27f52587f9274d14efcded45becdc00542b83e39afb0eaec02",
+    "script/sql/update/2026-10-18-material-trace-preflight-mes.sql": "672ac3f44a57ada3fb32804d6ccfd9a4ae056d185a6a70b3dbc52415984ba7c2",
+    "script/sql/update/2026-10-19-material-trace-strict-constraints-erp.sql": "56426d317c8397d066d0fee6003f5138be50f882efc4481b4fda41a0d4dddda4"
+  },
+  "status": "READY_AUTHORIZED_SCHEMA_CONVERTER_CANONICAL_PRINT_SLICE",
+  "strict_tenant_phase": {
+    "automatic_in_expansion": false,
+    "ddl_implicit_commit": true,
+    "generator": "python -B script/tools/material_trace/schema_contract.py --strict-constraints",
+    "no_unknown_tenant_backfill": true,
+    "path": "script/sql/update/2026-10-19-material-trace-strict-constraints-erp.sql",
+    "real_mysql_cases": 4
+  },
+  "workspace": "E:\\Nexus\\.worktrees\\material-trace-20261018\\nexus-erp"
+}

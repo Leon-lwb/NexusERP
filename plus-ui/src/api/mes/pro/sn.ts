@@ -3,6 +3,11 @@ import { AxiosPromise } from 'axios';
 
 /** SN视图对象 */
 export interface ProSnVO {
+  identityId?: string;
+  identityVersion?: string;
+  handoffStatus?: string;
+  canonicalSnCode?: string | null;
+  localSnCode?: string | null;
   snId: number;
   snCode: string;
   mesWoId: number;
@@ -29,7 +34,7 @@ export interface ProSnQuery extends PageQuery {
   snCode?: string;
   snStatus?: string;
   source?: string;
-  mesWoId?: number;
+  mesWoId?: number | string;
   cardId?: number;
   materialId?: number;
   parentSnId?: number;
@@ -54,6 +59,8 @@ export interface SnTraceStep {
 
 /** 追溯结果 */
 export interface SnTraceResult {
+  /** 不可变消耗原分录；缺字段不当作零消耗。 */
+  componentConsumptions?: Record<string, any>[];
   sn: ProSnVO;
   forwardSteps: SnTraceStep[];
   children: ProSnVO[];

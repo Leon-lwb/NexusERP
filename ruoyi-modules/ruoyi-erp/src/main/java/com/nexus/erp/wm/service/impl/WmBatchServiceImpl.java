@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -18,6 +17,7 @@ import com.nexus.erp.wm.domain.vo.WmBatchVo;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.service.IWmBatchService;
+import com.nexus.erp.wm.service.WmBatchWriteGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +47,9 @@ public class WmBatchServiceImpl implements IWmBatchService {
 
     /** 收货单行映射器（IQC 回写按收货行批次号定位批次） */
     private final WmMaterialReceiveLineMapper materialReceiveLineMapper;
+
+    /** 批次身份/来源事实边界，与库存执行器共用ERP事务和批次行锁。 */
+    private final WmBatchWriteGuard writeGuard;
 
     /**
      * 分页查询批次列表
@@ -93,26 +96,8 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBatchBo bo) {
-        if (bo.getMaterialId() == null) {
-            throw new ServiceException("物料ID不能为空");
-        }
-        if (StringUtils.isBlank(bo.getBatchCode())) {
-            bo.setBatchCode(generateBatchCode());
-        }
-        if (StringUtils.isBlank(bo.getStatus())) {
-            bo.setStatus("ACTIVE");
-        }
-        if (bo.getQuantity() == null) {
-            bo.setQuantity(BigDecimal.ZERO);
-        }
-        if (bo.getReceivedQty() == null) {
-            bo.setReceivedQty(BigDecimal.ZERO);
-        }
-        if (bo.getIssuedQty() == null) {
-            bo.setIssuedQty(BigDecimal.ZERO);
-        }
-        WmBatch entity = MapstructUtils.convert(bo, WmBatch.class);
-        return baseMapper.insert(entity);
+        insertRegistration(bo, false);
+        return 1;
     }
 
     /**
@@ -124,8 +109,7 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmBatchBo bo) {
-        WmBatch entity = MapstructUtils.convert(bo, WmBatch.class);
-        return baseMapper.updateById(entity);
+        return writeGuard.updateMetadata(bo);
     }
 
     /**
@@ -137,7 +121,8 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        writeGuard.rejectDeletion();
+        return 0;
     }
 
     /**
@@ -162,24 +147,17 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public WmBatchVo createBatch(WmBatchBo bo) {
-        // 自动生成批次编码
-        String batchCode = generateBatchCode();
-        bo.setBatchCode(batchCode);
-        if (StringUtils.isBlank(bo.getStatus())) {
-            bo.setStatus("ACTIVE");
-        }
-        if (bo.getQuantity() == null) {
-            bo.setQuantity(BigDecimal.ZERO);
-        }
-        if (bo.getReceivedQty() == null) {
-            bo.setReceivedQty(BigDecimal.ZERO);
-        }
-        if (bo.getIssuedQty() == null) {
-            bo.setIssuedQty(BigDecimal.ZERO);
-        }
-        WmBatch entity = MapstructUtils.convert(bo, WmBatch.class);
-        baseMapper.insert(entity);
+        WmBatch entity = insertRegistration(bo, true);
         return baseMapper.selectVoById(entity.getBatchId());
+    }
+
+    private WmBatch insertRegistration(WmBatchBo bo, boolean generateCode) {
+        WmBatch entity = writeGuard.registration(bo);
+        if (generateCode || StringUtils.isBlank(entity.getBatchCode())) entity.setBatchCode(generateBatchCode());
+        if (baseMapper.insert(entity) != 1) throw new ServiceException("批次登记失败");
+        bo.setBatchId(entity.getBatchId());
+        bo.setBatchCode(entity.getBatchCode());
+        return entity;
     }
 
     /**
@@ -219,16 +197,7 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateQuantity(Long batchId, BigDecimal deltaQty, boolean isReceive) {
-        WmBatch batch = baseMapper.selectById(batchId);
-        if (batch == null) {
-            throw new ServiceException("批次不存在");
-        }
-        if (isReceive) {
-            batch.setReceivedQty(batch.getReceivedQty().add(deltaQty));
-        } else {
-            batch.setIssuedQty(batch.getIssuedQty().add(deltaQty));
-        }
-        baseMapper.updateById(batch);
+        writeGuard.rejectQuantityEdit();
     }
 
     /**
@@ -241,12 +210,11 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void changeStatus(Long batchId, String status) {
-        WmBatch batch = baseMapper.selectById(batchId);
-        if (batch == null) {
-            throw new ServiceException("批次不存在");
-        }
-        batch.setStatus(status);
-        baseMapper.updateById(batch);
+        WmBatchBo metadata = new WmBatchBo();
+        metadata.setBatchId(batchId);
+        metadata.setStatus(status);
+        if (status == null) throw new ServiceException("批次状态不能为空");
+        writeGuard.updateMetadata(metadata);
     }
 
     /**
@@ -256,22 +224,8 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkExpiry() {
-        log.info("开始执行批次过期检查");
-        Date today = new Date();
-        LambdaQueryWrapper<WmBatch> lqw = Wrappers.lambdaQuery();
-        lqw.eq(WmBatch::getStatus, "ACTIVE");
-        lqw.lt(WmBatch::getExpiryDate, today);
-        lqw.isNotNull(WmBatch::getExpiryDate);
-        List<WmBatch> expiredBatches = baseMapper.selectList(lqw);
-        if (expiredBatches == null || expiredBatches.isEmpty()) {
-            log.info("无过期批次需要更新");
-            return;
-        }
-        for (WmBatch batch : expiredBatches) {
-            batch.setStatus("EXPIRED");
-            baseMapper.updateById(batch);
-        }
-        log.info("批次过期检查完成，更新{}条过期批次", expiredBatches.size());
+        int rows = writeGuard.expireDue();
+        log.info("批次过期检查完成，更新{}条过期批次", rows);
     }
 
     /**

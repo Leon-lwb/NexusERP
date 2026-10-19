@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.math.BigDecimal;
 
@@ -31,6 +32,7 @@ import java.math.BigDecimal;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@ConditionalOnProperty(name="nexus.trace.relay.enabled",havingValue="false",matchIfMissing=true)
 @DS("erp")
 public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOrderCompletedMessage> {
 

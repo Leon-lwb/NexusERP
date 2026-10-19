@@ -42,6 +42,7 @@ class StationSnServiceTest {
     private ProSnMapper proSnMapper;
     @Mock
     private StationSnBindLogMapper bindLogMapper;
+    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
     @InjectMocks
     private StationSnService service;
 
@@ -50,6 +51,7 @@ class StationSnServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(serialReferences.resolve(anyString())).thenAnswer(call->{String code=call.getArgument(0);ProSn row=proSnMapper.selectOne(com.baomidou.mybatisplus.core.toolkit.Wrappers.<ProSn>lambdaQuery().eq(ProSn::getSnCode,code));return row==null?null:new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",row.getIdentityId(),row.getSnId(),code,row.getSnCode(),row.getMaterialId(),row);});
         tenantHelperMock = mockStatic(TenantHelper.class);
         lambdaUtilsMock = mockStatic(LambdaUtils.class, CALLS_REAL_METHODS);
         Map<String, ColumnCache> snColumns = new HashMap<>();
@@ -59,6 +61,15 @@ class StationSnServiceTest {
         snColumns.put("PARENTSNCODE", new ColumnCache("parent_sn_code", "parent_sn_code"));
         snColumns.put("SNSTATUS", new ColumnCache("sn_status", "sn_status"));
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(ProSn.class)).thenReturn(snColumns);
+    }
+
+    @Test
+    void formalCodesBindActualMappedIdsAndPreserveLocalAuditText() {
+        var parent=sn(1L,"LOCAL-P",null);var component=sn(2L,"LOCAL-C",null);parent.setIdentityId(101L);component.setIdentityId(102L);
+        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",101L,1L,"ERP-P","LOCAL-P",null,parent)).when(serialReferences).resolve("ERP-P");
+        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",102L,2L,"ERP-C","LOCAL-C",null,component)).when(serialReferences).resolve("ERP-C");
+        when(proSnMapper.update(any(),any())).thenReturn(1);var dto=new StationSnDtos.BindDto();dto.setParentSnCode("ERP-P");dto.setComponentSnCodes(List.of("ERP-C"));
+        assertEquals(1,service.bind(dto).get("boundQty"));ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> log=ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);verify(bindLogMapper).insert(log.capture());assertEquals(1L,log.getValue().getParentSnId());assertEquals(2L,log.getValue().getComponentSnId());assertEquals("LOCAL-P",log.getValue().getParentSnCode());assertEquals("LOCAL-C",log.getValue().getComponentSnCode());verify(proSnMapper,never()).selectOne(any());
     }
 
     @AfterEach
@@ -219,6 +230,17 @@ class StationSnServiceTest {
             ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
         verify(bindLogMapper, times(1)).insert(logCaptor.capture());
         assertEquals("UNBIND", logCaptor.getValue().getAction());
+    }
+
+    @Test
+    void unbindConcurrentParentChangeCannotEraseRelationshipOrWriteAudit() {
+        ProSn component=sn(2L,"SN-C",1L);component.setParentSnCode("SN-P");
+        when(proSnMapper.selectOne(any())).thenReturn(component);
+        when(proSnMapper.selectById(1L)).thenReturn(sn(1L,"SN-P",null));
+        when(proSnMapper.update(any(),any())).thenReturn(0);
+        var dto=new StationSnDtos.UnbindDto();dto.setComponentSnCode("SN-C");dto.setReason("wrong component");
+        assertThrows(ServiceException.class,()->service.unbind(dto));
+        verify(bindLogMapper,never()).insert(any(com.nexus.station.domain.MesSnBindLog.class));
     }
 
     @Test

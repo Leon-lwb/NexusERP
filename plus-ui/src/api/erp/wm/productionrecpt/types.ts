@@ -1,23 +1,25 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface ProductionRecptQuery extends PageQuery {
   recptCode?: string;
-  woId?: number;
+  woId?: string | number;
   woNo?: string;
   status?: string;
 }
 
-export interface ProductionRecptVO {
-  recptId: number;
+export interface ProductionRecptVO extends TraceDocumentFields {
+  recptId: string | number;
   recptCode: string;
-  woId: number;
+  woId: string | number;
   woNo: string;
-  materialId: number;
+  materialId: string | number;
   materialCode: string;
   materialName: string;
   materialSpec: string;
-  quantity: number;
-  warehouseId: number;
+  quantity: string | number;
+  warehouseId: string | number;
   warehouseName: string;
-  locationId: number;
+  locationId: string | number;
   locationName: string;
   status: string;
   remark: string;
@@ -27,20 +29,20 @@ export interface ProductionRecptVO {
   updateTime: string;
 }
 
-export interface ProductionRecptForm {
-  recptId?: number;
+export interface ProductionRecptForm extends TraceDocumentFields {
+  recptId?: string | number;
   recptCode?: string;
-  woId?: number;
+  woId?: string | number;
   woNo?: string;
-  materialId?: number;
+  materialId?: string | number;
   materialCode?: string;
   materialName?: string;
   materialSpec?: string;
-  quantity?: number;
-  warehouseId?: number;
+  quantity?: string | number;
+  warehouseId?: string | number;
   warehouseCode?: string;
   warehouseName?: string;
-  locationId?: number;
+  locationId?: string | number;
   locationCode?: string;
   locationName?: string;
   status?: string;

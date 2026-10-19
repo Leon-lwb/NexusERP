@@ -81,15 +81,6 @@
             v-hasPermi="['mes:pro:sn:scrap']"
             >报废</el-button
           >
-          <el-button
-            link
-            type="primary"
-            icon="Promotion"
-            @click="handleShip(scope.row)"
-            v-if="scope.row.snStatus === 'COMPLETED'"
-            v-hasPermi="['mes:pro:sn:ship']"
-            >发货</el-button
-          >
         </template>
       </el-table-column>
     </el-table>
@@ -276,7 +267,7 @@
 </template>
 
 <script setup lang="ts" name="MesSn">
-import { listSn, getSn, generateSnForCard, createSn, completeSn, scrapSn, shipSn } from '@/api/mes/pro/sn';
+import { listSn, getSn, generateSnForCard, createSn, completeSn, scrapSn } from '@/api/mes/pro/sn';
 import type { ProSnVO, ProSnQuery } from '@/api/mes/pro/sn';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
@@ -451,14 +442,6 @@ async function handleScrap(row: ProSnVO) {
   const { value: remark } = await proxy.$modal.prompt('请输入报废原因(可选):', '报废 - ' + row.snCode);
   await scrapSn(row.snId, remark || undefined);
   proxy.$modal.msgSuccess('报废成功');
-  getList();
-}
-
-/** SN发货 */
-async function handleShip(row: ProSnVO) {
-  await proxy.$modal.confirm('确认发货SN"' + row.snCode + '"？');
-  await shipSn(row.snId);
-  proxy.$modal.msgSuccess('发货成功');
   getList();
 }
 

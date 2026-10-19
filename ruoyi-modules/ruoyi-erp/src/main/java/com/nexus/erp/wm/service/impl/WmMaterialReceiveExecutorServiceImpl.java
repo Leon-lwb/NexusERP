@@ -47,6 +47,9 @@ import java.util.Map;
 @DS("erp")
 @Service
 public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveExecutorService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
@@ -127,6 +130,9 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         // 按明细/行构建库存对象，去重校验
         Map<String, WmMaterialStock> stockMap = new LinkedHashMap<>();
         for (WmMaterialReceiveLineVo line : lines) {
+            if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                "WM_MATERIAL_RECEIVE",receiveId,line.getLineId(),"RECEIVE_IN",line.getMaterialId(),line.getQuantityReceived(),
+                line.getWarehouseId()!=null?line.getWarehouseId():receiveVo.getWarehouseId(),line.getLocationId(),line.getBatchId(),resolveReceiveUnitCost(line.getMaterialId()))))continue;
             List<WmMaterialReceiveDetailVo> details = line.getWmMaterialReceiveLineDetailList();
             if (details != null && !details.isEmpty()) {
                 for (WmMaterialReceiveDetailVo detail : details) {

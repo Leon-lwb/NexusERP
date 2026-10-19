@@ -1,0 +1,196 @@
+{
+  "census": {
+    "approved_by": "synthetic-reviewer",
+    "artifact": {
+      "approved_by": "synthetic-reviewer",
+      "conversion": {
+        "cutover_at": "2026-10-19 00:00:00",
+        "expected_policy_version": "1",
+        "material_id": "10",
+        "policy_before_hash": "b64dd8389aac82b01bef9ff30bc5d9bbafeee9d043bc0d4ef2e8573f4d623aff",
+        "run_id": "SYNTH-CONVERT-1",
+        "snapshot_hash": "2443121ca02890c8bee8efa4e3ec7cdea2891bb5d1c54ab75f5333637f6d377a",
+        "sources": [
+          {
+            "before_hash": "add8612f29166567d87174055bee3ffcf93753eae42b9014cfffb0ba7492b424",
+            "cost_scope": {
+              "dimensions": {
+                "area_id": "2",
+                "base_uom_id": "1",
+                "batch_id": "301",
+                "location_id": "3",
+                "material_id": "10",
+                "tenant_id": "T1",
+                "vendor_id": "4",
+                "warehouse_id": "1",
+                "wo_id": null
+              },
+              "method": "MOVING_AVERAGE",
+              "source_reference": "synthetic://cost-scope/401",
+              "unit_cost": "3.333333"
+            },
+            "stock_id": "401",
+            "targets": [
+              {
+                "identity_hash": "6d6c399a9286abb3b3ce7881565fe068ded21438d99937a29e9ce10597e866a0",
+                "identity_id": "101",
+                "stock_id": "901"
+              },
+              {
+                "identity_hash": "5225bc3aab8e964570f683bcc377804e56b8f395dccb5f469022d4408099b516",
+                "identity_id": "102",
+                "stock_id": "902"
+              },
+              {
+                "identity_hash": "76f7b90a234b8eb022b014351a2d11110b8f81be06ac8544871dcb6181aa1965",
+                "identity_id": "103",
+                "stock_id": "903"
+              }
+            ],
+            "valuation_group_id": "801"
+          }
+        ],
+        "target": {
+          "environment": "synthetic",
+          "erp_database": "fixture_erp",
+          "mes_database": "fixture_mes"
+        },
+        "tenant_id": "T1"
+      },
+      "history_boundary": {
+        "coverage": "COMPLETE_AGGREGATE",
+        "ledger_hash": "dabd01bf361cbf93896a5a2374c024f838227e7aa07aeb80634485d8bf1b8df4",
+        "reference": "synthetic://original-ledger/1",
+        "through": "2026-10-19 00:00:00"
+      },
+      "inventory_state": "AVAILABLE_ONLY",
+      "kind": "PHYSICAL_COUNT",
+      "movement_freeze_reference": "synthetic://freeze/1",
+      "observed_at": "2026-10-19 00:00:00",
+      "reference": "synthetic://physical-census/1",
+      "tenant_id": "T1"
+    },
+    "artifact_sha256": "b802f0c5910b613866b5d6b2d16417028e3f4b9118c901844a7b669954ba6800",
+    "conversion": {
+      "cutover_at": "2026-10-19 00:00:00",
+      "expected_policy_version": "1",
+      "material_id": "10",
+      "policy_before_hash": "b64dd8389aac82b01bef9ff30bc5d9bbafeee9d043bc0d4ef2e8573f4d623aff",
+      "run_id": "SYNTH-CONVERT-1",
+      "snapshot_hash": "2443121ca02890c8bee8efa4e3ec7cdea2891bb5d1c54ab75f5333637f6d377a",
+      "sources": [
+        {
+          "before_hash": "add8612f29166567d87174055bee3ffcf93753eae42b9014cfffb0ba7492b424",
+          "cost_scope": {
+            "dimensions": {
+              "area_id": "2",
+              "base_uom_id": "1",
+              "batch_id": "301",
+              "location_id": "3",
+              "material_id": "10",
+              "tenant_id": "T1",
+              "vendor_id": "4",
+              "warehouse_id": "1",
+              "wo_id": null
+            },
+            "method": "MOVING_AVERAGE",
+            "source_reference": "synthetic://cost-scope/401",
+            "unit_cost": "3.333333"
+          },
+          "stock_id": "401",
+          "targets": [
+            {
+              "identity_hash": "6d6c399a9286abb3b3ce7881565fe068ded21438d99937a29e9ce10597e866a0",
+              "identity_id": "101",
+              "stock_id": "901"
+            },
+            {
+              "identity_hash": "5225bc3aab8e964570f683bcc377804e56b8f395dccb5f469022d4408099b516",
+              "identity_id": "102",
+              "stock_id": "902"
+            },
+            {
+              "identity_hash": "76f7b90a234b8eb022b014351a2d11110b8f81be06ac8544871dcb6181aa1965",
+              "identity_id": "103",
+              "stock_id": "903"
+            }
+          ],
+          "valuation_group_id": "801"
+        }
+      ],
+      "target": {
+        "environment": "synthetic",
+        "erp_database": "fixture_erp",
+        "mes_database": "fixture_mes"
+      },
+      "tenant_id": "T1"
+    },
+    "evidence_id": "SYNTH-CENSUS-1",
+    "history_boundary": {
+      "coverage": "COMPLETE_AGGREGATE",
+      "ledger_hash": "dabd01bf361cbf93896a5a2374c024f838227e7aa07aeb80634485d8bf1b8df4",
+      "reference": "synthetic://original-ledger/1",
+      "through": "2026-10-19 00:00:00"
+    },
+    "inventory_state": "AVAILABLE_ONLY",
+    "kind": "PHYSICAL_COUNT",
+    "movement_freeze_reference": "synthetic://freeze/1",
+    "observed_at": "2026-10-19 00:00:00",
+    "reference": "synthetic://physical-census/1",
+    "tenant_id": "T1"
+  },
+  "converter": "CURRENT_STOCK_TO_SN",
+  "cutover_at": "2026-10-19 00:00:00",
+  "expected_policy_version": "1",
+  "material_id": "10",
+  "policy_before_hash": "b64dd8389aac82b01bef9ff30bc5d9bbafeee9d043bc0d4ef2e8573f4d623aff",
+  "run_id": "SYNTH-CONVERT-1",
+  "schema_version": 1,
+  "snapshot_hash": "2443121ca02890c8bee8efa4e3ec7cdea2891bb5d1c54ab75f5333637f6d377a",
+  "sources": [
+    {
+      "before_hash": "add8612f29166567d87174055bee3ffcf93753eae42b9014cfffb0ba7492b424",
+      "cost_scope": {
+        "dimensions": {
+          "area_id": "2",
+          "base_uom_id": "1",
+          "batch_id": "301",
+          "location_id": "3",
+          "material_id": "10",
+          "tenant_id": "T1",
+          "vendor_id": "4",
+          "warehouse_id": "1",
+          "wo_id": null
+        },
+        "method": "MOVING_AVERAGE",
+        "source_reference": "synthetic://cost-scope/401",
+        "unit_cost": "3.333333"
+      },
+      "stock_id": "401",
+      "targets": [
+        {
+          "identity_hash": "6d6c399a9286abb3b3ce7881565fe068ded21438d99937a29e9ce10597e866a0",
+          "identity_id": "101",
+          "stock_id": "901"
+        },
+        {
+          "identity_hash": "5225bc3aab8e964570f683bcc377804e56b8f395dccb5f469022d4408099b516",
+          "identity_id": "102",
+          "stock_id": "902"
+        },
+        {
+          "identity_hash": "76f7b90a234b8eb022b014351a2d11110b8f81be06ac8544871dcb6181aa1965",
+          "identity_id": "103",
+          "stock_id": "903"
+        }
+      ],
+      "valuation_group_id": "801"
+    }
+  ],
+  "target": {
+    "environment": "synthetic",
+    "erp_database": "fixture_erp",
+    "mes_database": "fixture_mes"
+  },
+  "tenant_id": "T1"
+}

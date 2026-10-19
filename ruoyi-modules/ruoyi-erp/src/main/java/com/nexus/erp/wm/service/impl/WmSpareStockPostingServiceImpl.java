@@ -57,6 +57,9 @@ import java.util.List;
 @DS("erp")
 @RequiredArgsConstructor
 public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 入库流水类型 */
     private static final String TX_TYPE_IN = "MES_SPARE_IN";
@@ -109,6 +112,7 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         if (qty == null || qty.signum() <= 0) {
             throw new ServiceException("备件过账数量必须大于0: bizKey=" + message.getBizKey());
         }
+        if(serialInventory!=null && serialInventory.isStrictSerial(message.getMaterialId()))throw new ServiceException("STRICT备件消息缺少冻结SN/ERP原始来源证明，禁止走旧数量直写；请使用单据单件过账入口");
         String bizKey = message.getBizKey();
         // 幂等①: Redis 原子占位
         if (!dedupGuard.tryMark(bizKey)) {

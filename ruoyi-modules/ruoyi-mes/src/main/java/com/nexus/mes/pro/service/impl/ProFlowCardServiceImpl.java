@@ -91,6 +91,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     /** 程序化分布式锁模板: 卡级锁覆盖整个事务(见 CARD_LOCK_PREFIX 注释) */
     private final LockTemplate lockTemplate;
     private final IProWorkOrderService proWorkOrderService;
+    private final com.nexus.mes.trace.MesProductLotOutputWriter productLotOutputs;
+    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
     /** IPQC 服务：关键工序报工时自动建过程检验单 */
     private final IQcIpqcService iqcIpqcService;
     /** 进站/出站校验规则引擎(P0-3) */
@@ -134,6 +137,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         ProFlowCardVo vo = baseMapper.selectVoById(cardId);
         if (vo != null) {
             vo.setSteps(selectStepsByCardId(cardId));
+            attachProductOutputContexts(vo);
         }
         return vo;
     }
@@ -164,6 +168,15 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             }
         }
         return sum;
+    }
+
+    private void attachProductOutputContexts(ProFlowCardVo vo) {
+        if(vo.getSteps()!=null)for(var step:vo.getSteps())step.setProductOutputContext(null);
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
+            && !org.springframework.transaction.support.TransactionSynchronizationManager.isCurrentTransactionReadOnly()) return;
+        var facts=detailFacts.productOutputs(vo.getCardId(),vo.getMesWoId(),vo.getMaterialId());
+        if(vo.getSteps()!=null)for(var step:vo.getSteps())
+            step.setProductOutputContext(Objects.equals(vo.getCardId(),step.getCardId()) && Objects.equals(vo.getMesWoId(),step.getMesWoId())?facts.get(step.getStepRecordId()):null);
     }
 
     private List<ProFlowCardStepVo> selectStepsByCardId(Long cardId) {
@@ -302,6 +315,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     public void completeStep(Long cardId, Long stepRecordId,
                              BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+        preparedPolicies.prepareCard(cardId);
         progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
@@ -321,6 +335,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     public void doCompleteStep(Long cardId, Long stepRecordId,
                                BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+        preparedPolicies.prepareCard(cardId);
         ProFlowCard lockedCard = progressService.lockForCard(cardId);
         requireStepReferenceForCard(stepRecordId, cardId);
         log.info("完成工序: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
@@ -537,6 +552,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void completeCard(Long cardId) {
+        preparedPolicies.prepareCard(cardId);
         progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
@@ -558,6 +574,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void manualCompleteCard(Long cardId) {
+        preparedPolicies.prepareCard(cardId);
         progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
@@ -577,6 +594,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void doCompleteCard(Long cardId, boolean strict) {
+        preparedPolicies.prepareCard(cardId);
         ProFlowCard card = progressService.lockForCard(cardId);
         if (card == null) {
             throw new ServiceException("流转卡不存在: " + cardId);
@@ -730,6 +748,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("条码对应的流转卡不存在: " + barcode);
         }
         vo.setSteps(selectStepsByCardId(vo.getCardId()));
+        attachProductOutputContexts(vo);
         return vo;
     }
 
@@ -742,6 +761,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkAndCompleteStep(Long cardId, Long stepRecordId) {
+        preparedPolicies.prepareCard(cardId);
         progressService.lockForCard(cardId);
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + cardId, CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
@@ -762,6 +782,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void checkAndCompleteStepUnderLock(Long cardId, Long stepRecordId) {
+        preparedPolicies.prepareCard(cardId);
         progressService.lockForCard(cardId);
         requireStepReferenceForCard(stepRecordId, cardId);
         // 刷写门禁(派工聚合完工路径, 与 completeStep 一致; 覆盖 completeDispatch→本方法路径)
@@ -837,6 +858,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProCheckResultVo exit(ProExitBo bo) {
+        preparedPolicies.prepareCard(bo.getCardId());
         progressService.lockForCard(bo.getCardId());
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + bo.getCardId(), CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
@@ -854,6 +876,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ProCheckResultVo doExit(ProExitBo bo) {
+        preparedPolicies.prepareCard(bo.getCardId());
         progressService.lockForCard(bo.getCardId());
         log.info("工序出站: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
             bo.getCardId(), bo.getStepRecordId(), bo.getGoodQty(), bo.getDefectQty(), bo.getScrapQty());
@@ -869,6 +892,10 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         }
 
         // 2. 校验通过: 完工(复用既有工序完工状态机; 卡级锁与事务已由 exit 入口持有)
+        if (bo.getProductOutputCommandId() != null || bo.getProductOutputs() != null) {
+            productLotOutputs.record(bo.getProductOutputCommandId(), bo.getCardId(), bo.getStepRecordId(),
+                bo.getProductOutputs(), com.nexus.common.satoken.utils.LoginHelper.getUserId());
+        }
         doCompleteStep(bo.getCardId(), bo.getStepRecordId(), bo.getGoodQty(), bo.getDefectQty(), bo.getScrapQty());
 
         // P0-4: 出站报工不良(defectQty>0)自动创建NCR单(幂等;关联流转卡/工单)
@@ -891,6 +918,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void skip(ProSkipBo bo) {
+        preparedPolicies.prepareCard(bo.getCardId());
         progressService.lockForCard(bo.getCardId());
         LockInfo lock = lockTemplate.lock(CARD_LOCK_PREFIX + bo.getCardId(), CARD_LOCK_EXPIRE, CARD_LOCK_ACQUIRE_TIMEOUT);
         if (lock == null) {
@@ -908,6 +936,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void doSkip(ProSkipBo bo) {
+        preparedPolicies.prepareCard(bo.getCardId());
         progressService.lockForCard(bo.getCardId());
         requireStepReferenceForCard(bo.getStepRecordId(), bo.getCardId());
         log.info("工序跳站: cardId={}, stepRecordId={}", bo.getCardId(), bo.getStepRecordId());

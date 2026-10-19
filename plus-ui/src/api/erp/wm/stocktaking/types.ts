@@ -1,3 +1,5 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface StockTakingPlanQuery extends PageQuery {
   planCode?: string;
   planName?: string;
@@ -7,7 +9,7 @@ export interface StockTakingPlanQuery extends PageQuery {
   countMode?: string;
 }
 
-export interface StockTakingLineVO {
+export interface StockTakingLineVO extends TraceDocumentFields {
   lineId?: number;
   planId?: number;
   materialId?: number;
@@ -29,7 +31,7 @@ export interface StockTakingLineVO {
   remark?: string;
 }
 
-export interface StockTakingPlanVO {
+export interface StockTakingPlanVO extends TraceDocumentFields {
   planId?: number;
   planCode?: string;
   planName?: string;
@@ -53,7 +55,7 @@ export interface StockTakingPlanVO {
   updateTime?: string;
 }
 
-export interface StockTakingPlanForm {
+export interface StockTakingPlanForm extends TraceDocumentFields {
   planId?: number;
   planCode: string;
   planName?: string;

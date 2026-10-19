@@ -1,18 +1,26 @@
+import { traceSave } from '@/api/erp/wm/identity/document';
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import type { LtLotVO } from './lot';
 
 /** 工单批次消耗视图对象 */
 export interface LtWoConsumptionVO {
+  productIdentityId?: string;
+  componentMaterialId?: string;
+  componentIdentityId?: string;
+  erpBatchId?: string;
+  quantity?: string;
+  entryType?: string;
   consumptionId: number;
-  woId: number;
+  woId: string | number;
   woNo?: string;
-  lotId: number;
+  lotId: string | number;
   lotCode?: string;
-  materialId: number;
+  materialId: string | number;
   materialCode?: string;
   materialName?: string;
-  consumedQty: number;
+  consumedQty: string | number;
   consumedTime: string;
   operatorId?: number;
   operatorName?: string;
@@ -30,14 +38,14 @@ export interface LtWoConsumptionQuery extends PageQuery {
 /** 工单批次消耗表单 */
 export interface LtWoConsumptionForm {
   consumptionId?: number;
-  woId: number;
+  woId: string | number;
   woNo?: string;
-  lotId: number;
+  lotId: string | number;
   lotCode?: string;
-  materialId: number;
+  materialId: string | number;
   materialCode?: string;
   materialName?: string;
-  consumedQty: number;
+  consumedQty: string | number;
   operatorId?: number;
   operatorName?: string;
   remark?: string;
@@ -52,7 +60,7 @@ export const getConsumption = (consumptionId: number | string): AxiosPromise<LtW
   request({ url: `/mes/lt/consumption/${consumptionId}`, method: 'get' });
 
 /** 新增工单批次消耗(联动扣减批次数量) */
-export const addConsumption = (data: LtWoConsumptionForm) => request({ url: '/mes/lt/consumption', method: 'post', data });
+export const addConsumption = (data: LtWoConsumptionForm) => request({ url: '/mes/lt/consumption', method: 'post', data: traceSave(data) });
 
 /** 批量删除消耗记录 */
 export const delConsumption = (consumptionIds: number | number[]) => request({ url: `/mes/lt/consumption/${consumptionIds}`, method: 'delete' });
@@ -67,23 +75,26 @@ export const listConsumptionByLot = (lotId: number | string): AxiosPromise<LtWoC
 
 /** 工单 FEFO 领料明细行(单条领料) */
 export interface LtWoPickLine {
-  lotId: number;
-  consumedQty: number;
+  lotId: string | number;
+  consumedQty: string | number;
   remark?: string;
 }
 
 /** 工单 FEFO 领料请求 */
-export interface LtWoPickBO {
-  woId: number;
-  materialId: number;
+export interface LtWoPickBO extends TraceDocumentFields {
+  productIdentityId?: string;
+  identityId?: string;
+  sourceHeader?: Record<string, unknown>;
+  woId: string | number;
+  materialId: string | number;
   /** 可空; 传入则为该 SN 写 SN↔批次绑定(组件消费追溯) */
-  snId?: number;
+  snId?: string | number;
   picks: LtWoPickLine[];
 }
 
 /** 工单 FEFO 推荐: 按到期升序返回可用批次(两步领料第一步) */
-export const recommendForWo = (woId: number | string, materialId: number | string, requiredQty?: number): AxiosPromise<LtLotVO[]> =>
+export const recommendForWo = (woId: number | string, materialId: number | string, requiredQty?: number | string): AxiosPromise<LtLotVO[]> =>
   request({ url: `/mes/lt/consumption/fefo/${woId}/${materialId}`, method: 'get', params: { requiredQty } });
 
 /** 工单 FEFO 领料确认: 逐条扣减批次数量 + 写消耗记录(+可选 SN↔批次绑定) */
-export const confirmPick = (data: LtWoPickBO) => request({ url: '/mes/lt/consumption/pick', method: 'post', data });
+export const confirmPick = (data: LtWoPickBO) => request({ url: '/mes/lt/consumption/pick', method: 'post', data: traceSave(data) });

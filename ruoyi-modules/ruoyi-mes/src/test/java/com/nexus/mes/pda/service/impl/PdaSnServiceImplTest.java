@@ -56,8 +56,11 @@ class PdaSnServiceImplTest {
     private LtLotMapper lotMapper;
     @Mock
     private ProSnMapper proSnMapper;
+    @Mock private com.nexus.mes.trace.MesSnCreationWriter productLots;
+    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
     @InjectMocks
     private PdaSnServiceImpl service;
+    @org.junit.jupiter.api.BeforeEach void identityLookup(){org.mockito.Mockito.lenient().when(serialReferences.resolve(anyString())).thenAnswer(call->{String code=call.getArgument(0);ProSn row=proSnMapper.selectOne(com.baomidou.mybatisplus.core.toolkit.Wrappers.<ProSn>lambdaQuery().eq(ProSn::getSnCode,code));return row==null?null:new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000001",row.getIdentityId(),row.getSnId(),code,row.getSnCode(),row.getMaterialId(),row);});}
 
     private PdaSnBindBo bo(String snCode, String lotCode) {
         PdaSnBindBo bo = new PdaSnBindBo();
@@ -70,6 +73,7 @@ class PdaSnServiceImplTest {
         ProSn sn = new ProSn();
         sn.setSnId(snId);
         sn.setSnCode(snCode);
+        sn.setMaterialId(555L);
         return sn;
     }
 
@@ -145,7 +149,7 @@ class PdaSnServiceImplTest {
         MesActionResultVo result = service.bind(bo("SN-001", "LOT-001"));
 
         assertFalse(Boolean.TRUE.equals(result.getOk()));
-        assertTrue(result.getMessage().contains("请先解绑"), result.getMessage());
+        assertTrue(result.getMessage().contains("业务纠正"), result.getMessage());
     }
 
     @Test
@@ -165,5 +169,24 @@ class PdaSnServiceImplTest {
         }
 
         assertTrue(Boolean.TRUE.equals(result.getOk()), result.getMessage());
+    }    @Test
+    void unbindCannotDeleteTraceAudit() {
+        when(proSnMapper.selectOne(any())).thenReturn(sn(9001L,"SN-001"));
+        when(snBindingMapper.selectOne(any())).thenReturn(binding(1L,9001L,77L));
+        var request=new com.nexus.mes.pda.domain.bo.PdaSnUnbindBo();request.setSnCode("SN-001");
+        assertFalse(Boolean.TRUE.equals(service.unbind(request).getOk()));
+        verify(snBindingMapper,never()).deleteById(any(Long.class));
     }
+    @Test
+    void componentMaterialCannotBeRecordedAsAProductLotWithoutActualConsumption() {
+        var product=sn(9001L,"SN-001");product.setMaterialId(100L);
+        when(proSnMapper.selectOne(any())).thenReturn(product);
+        when(lotMapper.selectOne(any())).thenReturn(lot(77L,"COMPONENT",555L));
+        try(var login=mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            assertFalse(Boolean.TRUE.equals(service.bind(bo("SN-001","COMPONENT")).getOk()));
+        }
+        verify(snBindingMapper,never()).insert(any(LtSnBinding.class));
+    }
+
 }

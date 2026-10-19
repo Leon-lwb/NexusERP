@@ -39,6 +39,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PdaReturnServiceImpl implements IPdaReturnService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     private final WmMaterialReturnMapper returnMapper;
     private final WmMaterialReturnLineMapper lineMapper;
@@ -151,6 +154,7 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
             if (line.getActualQty() == null || line.getActualQty().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            if(serialInventory!=null && serialInventory.postSource("WM_MATERIAL_RETURN",returnId,line.getLineId()))continue;
             if (WmMaterialReturn.TYPE_SCRAP.equals(head.getReturnType())) {
                 continue; // 报废: 留痕不回库存
             }

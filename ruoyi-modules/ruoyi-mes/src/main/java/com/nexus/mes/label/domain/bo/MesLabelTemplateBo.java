@@ -25,6 +25,9 @@ public class MesLabelTemplateBo extends BaseEntity {
     @NotBlank(message = "模板编码不能为空")
     private String templateCode;
 
+    /** 模板修订号；旧客户端可不传，服务端仍按实际修订号保护并发保存 */
+    private Long templateRevision;
+
     /** 模板名称 */
     @NotBlank(message = "模板名称不能为空")
     private String templateName;

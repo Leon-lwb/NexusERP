@@ -1,23 +1,27 @@
+/** 正式SN身份与版本按服务端字符串保留，库存使用资格由后端原事实核验。 */
 export interface WmSnVO {
-  snId: number;
+  identityId?: string;
+  canonicalSnCode?: string;
+  identityVersion?: string;
+  snId: string;
   snCode: string;
-  materialId: number;
+  materialId: string;
   materialCode: string;
   materialName: string;
   materialSpec: string;
-  batchId: number;
+  batchId: string;
   batchCode: string;
-  warehouseId: number;
+  warehouseId: string;
   warehouseCode: string;
   warehouseName: string;
-  locationId: number;
+  locationId: string;
   locationCode: string;
-  stockId: number;
+  stockId: string;
   status: string;
   sourceDocType: string;
-  sourceDocId: number;
+  sourceDocId: string | null;
   sourceDocNo: string;
-  ruleId: number;
+  ruleId: string;
   productionDate: string;
   expiryDate: string;
   remark: string;
@@ -31,29 +35,29 @@ export interface WmSnQuery extends PageQuery {
   materialName?: string;
   status?: string;
   batchCode?: string;
-  warehouseId?: number;
+  warehouseId?: string;
 }
 
 export interface WmSnForm {
-  snId?: number;
+  snId?: string;
   snCode?: string;
-  materialId?: number;
+  materialId?: string;
   materialCode?: string;
   materialName?: string;
   materialSpec?: string;
-  batchId?: number;
+  batchId?: string;
   batchCode?: string;
-  warehouseId?: number;
+  warehouseId?: string;
   warehouseCode?: string;
   warehouseName?: string;
-  locationId?: number;
+  locationId?: string;
   locationCode?: string;
-  stockId?: number;
+  stockId?: string;
   status?: string;
   sourceDocType?: string;
-  sourceDocId?: number;
+  sourceDocId?: string;
   sourceDocNo?: string;
-  ruleId?: number;
+  ruleId?: string;
   productionDate?: string;
   expiryDate?: string;
   remark?: string;

@@ -24,6 +24,7 @@ function scriptAst(filename, source = readSource(filename)) {
 
 const routerAst = scriptAst('src/router/index.ts');
 const permissionAst = scriptAst('src/store/modules/permission.ts');
+const navigationAst = scriptAst('src/views/ai/engineering/navigation.ts');
 
 /** 提取顶层变量的真实初始化表达式，不根据正则或测试内自建路由判断存在性。 */
 function initializer(ast, name) {
@@ -65,6 +66,8 @@ function readRoutes(name) {
     const source = ts.createPrinter().printNode(ts.EmitHint.Expression, transformed.transformed[0], routerAst);
     return evaluate(source, {
       Layout,
+      ENGINEERING_TASK_LIST_PATH: evaluate(initializer(navigationAst, 'ENGINEERING_TASK_LIST_PATH').getText(navigationAst)),
+      LEGACY_ENGINEERING_TASK_LIST_PATH: evaluate(initializer(navigationAst, 'LEGACY_ENGINEERING_TASK_LIST_PATH').getText(navigationAst)),
       __routeView: (path) => Promise.resolve({ name: 'ViewRouteStub', __source: path })
     });
   } finally {
@@ -224,6 +227,7 @@ test('真实路由 params 传入现有 loadTrace 和 traceSn 后，GET 路径保
     }
   });
   const state = {
+    traceEvidence: { value: {} },
     loading: { value: true },
     sn: { value: {} },
     forwardSteps: { value: [] },
@@ -292,3 +296,16 @@ for (const neighbor of neighbors) {
     }
   });
 }
+
+/** 修复审计入口沿用真实追溯查询权限与 Layout 隐藏详情契约。 */
+test('追溯修复审计路由受查询权限控制并使用实际页面', async () => {
+  const { router, dynamicRoutes } = routeFixture(['wm:trace:query']);
+  const record = dynamicRoutes.find((route) => route.path === '/erp/wm/trace/repair');
+  assert.equal(record.hidden, true);
+  assert.deepEqual(record.permissions, ['wm:trace:query']);
+  const resolved = router.resolve('/erp/wm/trace/repair');
+  assert.equal(resolved.name, 'MaterialTraceRepair');
+  assert.equal((await resolved.matched.at(-1).components.default()).__source, '@/views/erp/wm/trace/repair/index.vue');
+  const denied = routeFixture([]).router.resolve('/erp/wm/trace/repair');
+  assert.notEqual(denied.name, 'MaterialTraceRepair');
+});

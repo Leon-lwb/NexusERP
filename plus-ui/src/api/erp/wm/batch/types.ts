@@ -1,26 +1,26 @@
 export interface WmBatchVO {
-  batchId: number;
+  batchId: string;
   batchCode: string;
-  materialId: number;
+  materialId: string;
   materialCode: string;
   materialName: string;
   materialSpec: string;
-  vendorId: number;
+  vendorId: string;
   vendorCode: string;
   vendorName: string;
-  warehouseId: number;
+  warehouseId: string;
   warehouseCode: string;
   warehouseName: string;
   productionDate: string;
   expiryDate: string;
-  quantity: number;
-  receivedQty: number;
-  issuedQty: number;
+  quantity: string;
+  receivedQty: string;
+  issuedQty: string;
   status: string;
   sourceDocType: string;
-  sourceDocId: number;
+  sourceDocId: string;
   sourceDocNo: string;
-  ruleId: number;
+  ruleId: string;
   remark: string;
   createTime: string;
   updateTime: string;
@@ -28,36 +28,36 @@ export interface WmBatchVO {
 
 export interface WmBatchQuery extends PageQuery {
   batchCode?: string;
-  materialId?: number | string;
+  materialId?: string;
   materialCode?: string;
   materialName?: string;
   vendorCode?: string;
-  warehouseId?: number;
+  warehouseId?: string;
   status?: string;
 }
 
 export interface WmBatchForm {
-  batchId?: number;
+  batchId?: string;
   batchCode?: string;
-  materialId?: number;
+  materialId?: string;
   materialCode?: string;
   materialName?: string;
   materialSpec?: string;
-  vendorId?: number;
+  vendorId?: string;
   vendorCode?: string;
   vendorName?: string;
-  warehouseId?: number;
+  warehouseId?: string;
   warehouseCode?: string;
   warehouseName?: string;
   productionDate?: string;
   expiryDate?: string;
-  quantity?: number;
-  receivedQty?: number;
-  issuedQty?: number;
+  quantity?: string;
+  receivedQty?: string;
+  issuedQty?: string;
   status?: string;
   sourceDocType?: string;
-  sourceDocId?: number;
+  sourceDocId?: string;
   sourceDocNo?: string;
-  ruleId?: number;
+  ruleId?: string;
   remark?: string;
 }

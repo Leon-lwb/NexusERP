@@ -119,7 +119,17 @@ async function mount(path, domain, protection = 'CERTIFIED', options = {}) {
     'nextTick'
   ];
   const header = `import { ${vueNames.filter((name) => !Object.hasOwn(compiled.bindings, name)).join(',')} } from 'vue';\n`;
+  /** 执行真实追溯纯逻辑，新增解析与命令依赖仍不访问网络。 */
+  const traceModel = evaluate(readFileSync(new URL('../src/components/material-trace/model.ts', import.meta.url), 'utf8'), (name) =>
+    assert.fail(`追溯纯逻辑不应加载运行时依赖 ${name}`)
+  );
+  const traceSubmission = evaluate(readFileSync(new URL('../src/components/material-trace/submission.ts', import.meta.url), 'utf8'), (name) => {
+    assert.equal(name, './model');
+    return traceModel;
+  });
   const modules = {
+    '@/components/material-trace/submission': traceSubmission,
+    '@/components/material-trace/model': traceModel,
     vue: Vue,
     'vue-router': { useRoute: () => route, useRouter: () => ({ push: (...args) => log.push(['route', ...args]) }) },
     '@/utils/auth': { getToken: () => token },

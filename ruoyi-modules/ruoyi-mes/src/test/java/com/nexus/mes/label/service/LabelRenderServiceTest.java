@@ -1,12 +1,15 @@
 package com.nexus.mes.label.service;
 
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.mes.label.domain.MesLabelTemplate;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.mockito.Mockito.mock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("dev")
 class LabelRenderServiceTest {
 
-    private final LabelRenderService renderService = new LabelRenderService();
+    private final LabelRenderService renderService = new LabelRenderService(mock(SerialIdentityPort.class));
 
     private MesLabelTemplate template(String lang, String content) {
         MesLabelTemplate t = new MesLabelTemplate();
@@ -72,7 +75,7 @@ class LabelRenderServiceTest {
 
     @Test
     void tspl_textSizeScalesFontMagnification() {
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0,\"size\":48}]}";
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0,\"size\":48},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("TSPL", content), fields());
         // 48/24 = 2 倍放大
         assertTrue(payload.contains("\"TSS24.BF2\",0,2,2"), payload);
@@ -82,7 +85,7 @@ class LabelRenderServiceTest {
     void tspl_escapesQuotesInValues() {
         Map<String, String> f = fields();
         f.put("materialName", "含\"引号\"物料");
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0}]}";
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("TSPL", content), f);
         assertTrue(payload.contains("\\\"引号\\\""), "双引号应转义: " + payload);
     }
@@ -119,10 +122,10 @@ class LabelRenderServiceTest {
         // 物料名被注入 ZPL 指令: 修复前会提前 ^XZ 截断标签并打印 SCRAP
         f.put("materialName", "X^FS^FO0,0^A0N,60,60^FDSCRAP^FS^XZ");
         // 打印项自身坐标取 5,5(→^FO40,40), 便于区分注入的 ^FO0,0
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":5,\"y\":5}]}";
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":5,\"y\":5},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("ZPL", content), f);
 
-        assertEquals(1, countOccurrences(payload, "^FS"), "整串只应有一个 ^FS(本打印项自己的结束符): " + payload);
+        assertEquals(2, countOccurrences(payload, "^FS"), "文字和 SN 二维码各有一个结束符，不允许注入增加: " + payload);
         assertEquals(1, countOccurrences(payload, "^XZ"), "标签只应有一个 ^XZ(末尾), 未被注入提前截断: " + payload);
         assertFalse(payload.contains("^FO0,0"), "不得出现注入的定位指令: " + payload);
         assertFalse(payload.contains("^A0N,60,60"), "不得出现注入的字体指令: " + payload);
@@ -148,7 +151,7 @@ class LabelRenderServiceTest {
     void zpl_stripsNewlinesInValues() {
         Map<String, String> f = fields();
         f.put("materialName", "第一行\r\n^FS^XA第二行");
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0}]}";
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("ZPL", content), f);
 
         assertEquals(1, countOccurrences(payload, "^XA"), "换行不得拆出新的指令行: " + payload);
@@ -159,7 +162,7 @@ class LabelRenderServiceTest {
     void tspl_stripsNewlinesInValues() {
         Map<String, String> f = fields();
         f.put("materialName", "行一\r\nPRINT 9,9");
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0}]}";
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         String payload = renderService.render(template("TSPL", content), f);
 
         // 换行被剥离后整串仍在同一字面量内(修复前会被拆成两条指令)
@@ -180,8 +183,9 @@ class LabelRenderServiceTest {
 
     @Test
     void missingFieldRendersEmptyString() {
-        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"cardNo\",\"x\":0,\"y\":0}]}";
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"cardNo\",\"x\":0,\"y\":0},{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8}]}";
         Map<String, String> empty = new HashMap<>();
+        empty.put("snCode", "SN-FC-0001");
         String payload = renderService.render(template("TSPL", content), empty);
         assertTrue(payload.contains(",\"\""), "缺失字段应渲染为空串: " + payload);
     }

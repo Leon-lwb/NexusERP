@@ -50,6 +50,8 @@ class StationSinglePassWriteTest {
     @Mock NcrOrderMapper ncrOrderMapper;
     @Mock StationPassGuardMapper guard;
     @Mock ProWorkOrderStepProgressService progressService;
+    @Mock com.nexus.mes.trace.MesSerialReferenceService serialReferences;
+    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks StationPassService service;
     MockedStatic<TenantHelper> tenant;
     ProSn sn;
@@ -61,6 +63,7 @@ class StationSinglePassWriteTest {
 
     @BeforeEach
     void setup() {
+        lenient().when(serialReferences.submissionStatus(any())).thenReturn(java.util.Map.of("submissionState","SERVER_COMMITTED","handoffStatus","NONE"));
         lenient().when(progressService.lockForSn(anyString())).thenAnswer(i -> sn.getMesWoId());
         lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> flowCardMapper.selectById((Long)i.getArgument(0)));
         for (Class<?> entity : List.of(ProSn.class,ProFlowCard.class,ProFlowCardStep.class,
@@ -73,13 +76,15 @@ class StationSinglePassWriteTest {
         DynamicDataSourceContextHolder.push("mes");
         TransactionSynchronizationManager.setActualTransactionActive(true);
         TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(Connection.TRANSACTION_REPEATABLE_READ);
-        sn=new ProSn(); sn.setSnId(1L); sn.setTenantId("000000"); sn.setDelFlag("0");
+        sn=new ProSn(); sn.setSnId(1L); sn.setIdentityId(10001L); sn.setTenantId("000000"); sn.setDelFlag("0");
         sn.setSnCode("SN-1"); sn.setCardId(10L); sn.setMesWoId(20L); sn.setCurrentStepSeq(30); sn.setSnStatus("IN_PRODUCTION");
         card=new ProFlowCard(); card.setCardId(10L); card.setTenantId("000000"); card.setDelFlag("0"); card.setCardStatus("IN_PROGRESS"); card.setMesWoId(20L);
         current=step(30,"ASM","IN_PROGRESS");
         device=new MesStationDevice(); device.setDeviceId(5L); device.setTenantId("000000"); device.setDelFlag("0");
         device.setStationCode("STN|JZ|L1|ASM|GENERAL"); device.setProcessCode("ASM");
         dto=new StationPassReportDto(); dto.setSnCode("SN-1"); dto.setStationCode(device.getStationCode()); dto.setResult("PASS"); dto.setClientTs(1787295823000L);
+        lenient().when(serialReferences.resolve("SN-1")).thenAnswer(i ->
+            new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",10001L,1L,"SN-1","SN-1",sn.getMaterialId(),sn));
         lenient().when(proSnMapper.selectOne(any())).thenReturn(sn);
         lenient().when(flowCardMapper.selectById(anyLong())).thenReturn(card);
         lenient().when(stepMapper.selectOne(any())).thenReturn(current);
@@ -159,6 +164,7 @@ class StationSinglePassWriteTest {
     }
     @Test void missingTenantCannotAuthorizeWrite() { tenant.when(TenantHelper::getTenantId).thenReturn(null); rejectWithoutWrites(); }
     @Test void wrongSourceTenantCannotAuthorizeWrite() { sn.setTenantId("OTHER"); rejectWithoutWrites(); }
+    @Test void changedIdentityCannotReuseResolvedLocalReference() { sn.setIdentityId(20002L); rejectWithoutWrites(); }
     @Test void noPhysicalTransactionCannotAuthorizeWrite() { TransactionSynchronizationManager.setActualTransactionActive(false); rejectWithoutWrites(); }
     @Test void wrongDatasourceCannotAuthorizeWrite() { DynamicDataSourceContextHolder.push("erp"); rejectWithoutWrites(); }
     @Test void readOnlyTransactionCannotAuthorizeWrite() { TransactionSynchronizationManager.setCurrentTransactionReadOnly(true); rejectWithoutWrites(); }
@@ -166,7 +172,7 @@ class StationSinglePassWriteTest {
     @Test void requestCannotOverflowStoredClientKey() { dto.setSnCode("S".repeat(65)); rejectWithoutWrites(); }
     @Test void sameCommittedPayloadReplaysWithoutAdvancingAgain() {
         lenient().when(reportMapper.selectByClientKey(any())).thenReturn(replay()); sn.setSnStatus("COMPLETED");
-        assertTrue(service.reportSingle(dto,operator).isEmpty());
+        assertEquals("SERVER_COMMITTED",service.reportSingle(dto,operator).get("submissionState"));
         verify(reportMapper,never()).insert(any(MesStationReport.class)); verify(proSnMapper,never()).update(any(),any());
     }
 
@@ -196,7 +202,7 @@ class StationSinglePassWriteTest {
         r.setClientKey("SINGLE|SN-1|"+device.getStationCode()+"|"+dto.getClientTs()); r.setClientTs(dto.getClientTs());
         r.setResult(dto.getResult()); r.setOperatorId(operator.userId()); r.setOperatorCode(operator.code()); r.setDefectCodes(null);
         r.setGoodQty("PASS".equals(dto.getResult())?BigDecimal.ONE:BigDecimal.ZERO); r.setDefectQty("FAIL".equals(dto.getResult())?BigDecimal.ONE:BigDecimal.ZERO);
-        r.setCardId(10L); r.setStepRecordId(30L);
+        r.setMesWoId(20L); r.setCardId(10L); r.setStepRecordId(30L);
         r.setRequestFingerprint(StationSinglePassFingerprint.of("000000","SN-1",device.getStationCode(),dto.getClientTs(),dto.getResult(),
             dto.getOperatorId(),dto.getOperatorCode(),dto.getDefectCodes()==null?null:String.join(",",dto.getDefectCodes()))); return r;
     }

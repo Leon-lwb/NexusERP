@@ -20,6 +20,11 @@ import java.math.BigDecimal;
 @AutoMapper(target = LtWoConsumption.class, reverseConvertGenerate = false)
 public class LtWoConsumptionBo extends BaseEntity {
 
+    private String commandId;
+    private Long sourceAllocationId;
+    private Long processId;
+    private String operationRef;
+
     /** 消耗记录ID */
     private Long consumptionId;
 

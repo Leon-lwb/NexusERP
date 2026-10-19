@@ -283,4 +283,7 @@ public class WmMaterialStockTx extends TenantEntity {
      * 备注
      */
     private String remark;
+    /** 单件过账证明版本及不可变证明组。 */
+    private Long trackingVersion;
+    private Long postingGroupId;
 }

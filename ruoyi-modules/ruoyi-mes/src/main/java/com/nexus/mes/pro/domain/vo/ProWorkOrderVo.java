@@ -23,6 +23,9 @@ import java.util.List;
 @AutoMapper(target = ProWorkOrder.class)
 public class ProWorkOrderVo implements Serializable {
 
+    /** 已核实的当前完工清单和取消修订状态；无清单与未知证据严格区分。 */
+    private java.util.Map<String,Object> completionState;
+
     @Serial
     private static final long serialVersionUID = 1L;
 

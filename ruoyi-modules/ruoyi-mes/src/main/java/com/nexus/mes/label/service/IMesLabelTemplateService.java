@@ -4,6 +4,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.label.domain.bo.MesLabelTemplateBo;
 import com.nexus.mes.label.domain.vo.MesLabelTemplateVo;
+import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -49,13 +50,30 @@ public interface IMesLabelTemplateService {
     boolean testPrint(Long templateId);
 
     /**
-     * 人工补打(MES-LABEL-02): 按 SN + 模板重新渲染并直发打印机, 留痕 print_source=REPRINT。
-     * <p>造码联动的自动打印带幂等键(同 SN 同模板已成功打印则跳过), 重打必须走本入口,
-     * 保证"一个 SN 打了几张"在留痕里可查。</p>
+     * 保留历史二参数方法签名，但缺少原任务和原因的补打现在明确拒绝。
      *
-     * @param snId       SN ID
-     * @param templateId 模板ID
-     * @return true 发送成功
+     * @param snId SN ID
+     * @param templateId 模板 ID
+     * @return 仅表示 TCP 发送成功，未确认实际出纸
      */
     boolean reprint(Long snId, Long templateId);
+
+    /**
+     * 显式补打：原任务引用及原因必填，原任务存在快照时复用其冻结指令，逐次追加审计。
+     *
+     * @param snId SN ID
+     * @param templateId 模板 ID
+     * @param originalPrintLogId 本租户、本 SN、本模板的原任务 ID
+     * @param reprintReason 非空补打原因，最多 500 字符
+     * @return 仅表示 TCP 发送成功，未确认实际出纸
+     */
+    boolean reprint(Long snId, Long templateId, Long originalPrintLogId, String reprintReason);
+    /** 持久化测试打印，返回任务状态；请求ID用于人工提交幂等。 */
+    LabelPrintTaskVo testPrintTask(Long templateId, String requestId);
+
+    /** 持久化显式补打，必须关联原任务和原因。 */
+    LabelPrintTaskVo reprintTask(Long snId, Long templateId, Long originalPrintLogId, String reprintReason, String requestId);
+
+    /** 按当前租户查询任务状态，不暴露冻结指令。 */
+    LabelPrintTaskVo printTask(Long taskId);
 }

@@ -340,7 +340,13 @@ test('实际 wm API 暴露分领域 context/detail 与既有 POST 合同', async
     '@/utils/request': { default: () => assert.fail('不得调用真 request') },
     '@/utils/certified-business': transport
   });
+  const traceModel = loadTS('../src/components/material-trace/model.ts');
+  const traceDocument = loadTS('../src/api/erp/wm/identity/document.ts', {
+    '@/utils/request': { default: () => assert.fail('认证流程不得调用普通追溯 request') },
+    '@/components/material-trace/model': traceModel
+  });
   const r = loadTS('../src/api/erp/wm/receive/index.ts', {
+    '@/api/erp/wm/identity/document': traceDocument,
     '@/utils/request': { default: () => assert.fail('不得调用真 request') },
     '@/utils/certified-business': transport
   });

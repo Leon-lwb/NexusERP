@@ -116,6 +116,7 @@
 </template>
 
 <script setup lang="ts" name="Transfer">
+import { showTraceSubmission } from '@/components/material-trace/submission';
 import {
   listTransfer,
   getTransfer,
@@ -247,9 +248,9 @@ function handleExecute(row: any) {
     .then(() => {
       return executeTransfer(row.transferId);
     })
-    .then(() => {
+    .then((response) => {
       getList();
-      proxy.$modal.msgSuccess('调拨执行成功');
+      showTraceSubmission(proxy.$modal, response, '调拨执行成功');
     })
     .catch(() => {});
 }

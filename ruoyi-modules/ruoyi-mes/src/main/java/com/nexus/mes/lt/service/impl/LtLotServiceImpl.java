@@ -170,15 +170,21 @@ public class LtLotServiceImpl implements ILtLotService {
             && bo.getQuantity().compareTo(lot.getConsumedQty()) < 0) {
             throw new RuntimeException("批次数量不可小于已消耗数量: " + lot.getConsumedQty());
         }
-        // 不允许通过编辑修改 status/consumedQty/qcStatus(走专用接口)
-        lot.setSupplierId(bo.getSupplierId());
-        lot.setSupplierName(bo.getSupplierName());
-        lot.setSupplierLot(bo.getSupplierLot());
-        lot.setQuantity(bo.getQuantity());
-        lot.setProducedDate(bo.getProducedDate());
-        lot.setExpiryDate(bo.getExpiryDate());
-        lot.setRemark(bo.getRemark());
-        int rows = baseMapper.updateById(lot);
+        if (bo.getQuantity()!=null && bo.getQuantity().signum()<=0) throw new ServiceException("批次数量必须大于0");
+        var update=Wrappers.<LtLot>lambdaUpdate()
+            .set(bo.getSupplierId()!=null,LtLot::getSupplierId,bo.getSupplierId())
+            .set(bo.getSupplierName()!=null,LtLot::getSupplierName,bo.getSupplierName())
+            .set(bo.getSupplierLot()!=null,LtLot::getSupplierLot,bo.getSupplierLot())
+            .set(bo.getQuantity()!=null,LtLot::getQuantity,bo.getQuantity())
+            .set(bo.getProducedDate()!=null,LtLot::getProducedDate,bo.getProducedDate())
+            .set(bo.getExpiryDate()!=null,LtLot::getExpiryDate,bo.getExpiryDate())
+            .set(bo.getRemark()!=null,LtLot::getRemark,bo.getRemark())
+            .eq(LtLot::getLotId,bo.getLotId()).in(LtLot::getStatus,STATUS_IN_STOCK,STATUS_IN_USE);
+        if(bo.getQuantity()!=null) update.apply("consumed_qty <= {0}",bo.getQuantity())
+            .apply("{0} >= (SELECT COALESCE(SUM(a.quantity),0) FROM lt_lot_allocation a WHERE CAST(a.tenant_id AS BINARY(80))=CAST(lt_lot.tenant_id AS BINARY(80)) AND a.lot_id=lt_lot.lot_id)",bo.getQuantity());
+        if(update.getSqlSet()==null || update.getSqlSet().isBlank()) return true;
+        int rows=baseMapper.update(null,update);
+        if(rows!=1) throw new ServiceException("批次状态、实耗或来源分配已变化，编辑未生效");
         log.info("修改批次成功: lotId={}", bo.getLotId());
         return rows > 0;
     }
@@ -220,9 +226,7 @@ public class LtLotServiceImpl implements ILtLotService {
         if (bindingCount != null && bindingCount > 0) {
             throw new RuntimeException("存在SN批次绑定记录,不可删除(追溯完整性)");
         }
-        int rows = baseMapper.deleteByIds(idList);
-        log.info("批量删除批次: count={}", ids.length);
-        return rows > 0;
+        throw new ServiceException("批次主档不可删除，请使用隔离、报废或有凭据的冲正保留追溯");
     }
 
     /**
@@ -440,8 +444,8 @@ public class LtLotServiceImpl implements ILtLotService {
             result.put("reason", "批次物料与要求物料不符");
             return result;
         }
-        if (!STATUS_IN_STOCK.equals(lot.getStatus())) {
-            result.put("reason", "批次状态非在库: " + lot.getStatus());
+        if (!STATUS_IN_STOCK.equals(lot.getStatus()) && !STATUS_IN_USE.equals(lot.getStatus())) {
+            result.put("reason", "批次状态非在库/使用中: " + lot.getStatus());
             return result;
         }
         if (!QC_STATUS_PASS.equals(lot.getQcStatus())) {
@@ -476,7 +480,7 @@ public class LtLotServiceImpl implements ILtLotService {
         }
         List<LtLotVo> all = baseMapper.selectVoList(Wrappers.<LtLot>lambdaQuery()
             .eq(LtLot::getMaterialId, materialId)
-            .eq(LtLot::getStatus, STATUS_IN_STOCK)
+            .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
             .eq(LtLot::getQcStatus, QC_STATUS_PASS)
             // MES-LT-03: 过期批次不得进入 FEFO 推荐(否则"先到期先出"会优先推荐已过期批次)
             .and(w -> w.isNull(LtLot::getExpiryDate).or().ge(LtLot::getExpiryDate, startOfToday()))
@@ -552,6 +556,7 @@ public class LtLotServiceImpl implements ILtLotService {
             .eq(LtLot::getLotId, lotId)
             .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
             .eq(LtLot::getQcStatus, QC_STATUS_PASS)
+            .and(w -> w.isNull(LtLot::getExpiryDate).or().ge(LtLot::getExpiryDate,startOfToday()))
             .apply("consumed_qty + {0} <= quantity", consumedQty));
         if (rows == 0) {
             throw new RuntimeException("批次剩余数量不足或状态已变更,消耗失败");

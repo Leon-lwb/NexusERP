@@ -1,3 +1,4 @@
+import { traceSave, executeTraceDocument } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import {
@@ -28,7 +29,7 @@ export const addProductionIssue = (data: ProductionIssueForm) => {
   return request({
     url: '/erp/wm/productionissue',
     method: 'post',
-    data
+    data: traceSave(data)
   });
 };
 
@@ -36,7 +37,7 @@ export const updateProductionIssue = (data: ProductionIssueForm) => {
   return request({
     url: '/erp/wm/productionissue',
     method: 'put',
-    data
+    data: traceSave(data)
   });
 };
 
@@ -48,12 +49,14 @@ export const delProductionIssue = (issueIds: string | number | (string | number)
 };
 
 /** 执行生产领料过账（扣减库存），支持多次部分领料 */
-export const executeProductionIssue = (issueId: string | number) => {
-  return request({
+export const executeProductionIssue = (issueId: string | number, data?: Record<string, any>) =>
+  executeTraceDocument({
     url: '/erp/wm/productionissue/execute/' + issueId,
-    method: 'put'
+    detailUrl: '/erp/wm/productionissue/' + issueId,
+    linesKey: 'wmProductionIssueLineList',
+    quantityKey: 'currentQty',
+    data
   });
-};
 
 /** 查询物料可用库存（ATP），按 FEFO 排序 */
 export const getAvailableStock = (materialId: number, warehouseId?: number): AxiosPromise<AvailableStockVO[]> => {

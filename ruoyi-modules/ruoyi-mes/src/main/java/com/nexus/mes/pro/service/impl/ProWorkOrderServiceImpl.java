@@ -1,6 +1,7 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.mes.trace.MesCompletionManifestService;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Dict;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -96,6 +97,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final FlowableProcInsIdHelper procInsIdHelper;
     private final MesMqSendService mesMqSendService;
+    private final MesCompletionManifestService completionManifests;
+    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
     private final EqEquipmentMapper equipmentMapper;
     /**
      * IPQC Mapper：completeWo 门禁查关键工序检验结果。
@@ -158,6 +162,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             vo.setBomLines(selectBomLinesByWoId(mesWoId));
             // 富集工艺路线信息(若routingId/bomId存在)
             enrichWorkOrderVo(vo);
+            vo.setCompletionState(null);
+            if (!TransactionSynchronizationManager.isActualTransactionActive() || TransactionSynchronizationManager.isCurrentTransactionReadOnly())
+                vo.setCompletionState(detailFacts.completionState(vo.getMesWoId(),vo.getErpWoId(),vo.getMaterialId()));
         }
         return vo;
     }
@@ -1195,6 +1202,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             return;
         }
 
+        preparedPolicies.prepareWorkOrder(mesWoId);
+
         // IPQC 门禁(QC-03)：关键工序(isKeyProcess=1)必须有 QUALIFIED 的 IPQC 才允许工单完工。
         // 报工侧 autoCreateForKeyProcess 失败仅告警(不阻断报工), 此门禁是"关键工序未经检验即完工"的唯一兜底。
         List<ProWorkOrderStep> keySteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
@@ -1241,6 +1250,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             }
         }
 
+        // Rework remains an internal NCR transaction; every other completion chooses one delivery path.
+        boolean traceDelivery = !"REWORK".equals(wo.getSourceType()) && completionManifests.usesOutbox(wo);
         // CAS更新 RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
         Date now = new Date();
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
@@ -1284,18 +1295,19 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             return;  // 返工工单是 MES 内部事务, 不通知 ERP, 不注册 MQ afterCommit
         }
 
-        TransactionSynchronizationManager.registerSynchronization(
-            new TransactionSynchronization() {
-                @Override
-                /**
-                 * afterCommit 操作
-                 */
-                public void afterCommit() {
-                    String tenantId = TenantHelper.getTenantId();
-                    mesMqSendService.sendWorkOrderCompleted(
-                        mesWoId, erpWoId, woNo, completedQty, scrappedQty, tenantId);
+        wo.setWoStatus(STATUS_COMPLETED);
+        if (traceDelivery) {
+            // The source transition, immutable lines and outbox commit in this MES transaction.
+            completionManifests.freeze(wo);
+        } else {
+            // Compatibility is limited to wholly untracked quantity business, checked before the CAS.
+            final String tenantId = wo.getTenantId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() {
+                    mesMqSendService.sendWorkOrderCompleted(mesWoId,erpWoId,woNo,completedQty,scrappedQty,tenantId);
                 }
             });
+        }
     }
 
     /**

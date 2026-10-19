@@ -51,6 +51,9 @@
           >删除</el-button
         >
       </el-col>
+      <el-col :span="1.5">
+        <el-button plain icon="Printer" v-hasPermi="['mes:label:template:print']" @click="printTaskVisible = true">查询打印任务</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -58,6 +61,9 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="模板编码" align="center" prop="templateCode" width="120" />
       <el-table-column label="模板名称" align="center" prop="templateName" min-width="140" />
+      <el-table-column label="修订" align="center" width="80">
+        <template #default="scope">{{ scope.row.templateRevision ?? '历史' }}</template>
+      </el-table-column>
       <el-table-column label="语言" align="center" prop="labelLang" width="80" />
       <el-table-column label="尺寸(mm)" align="center" width="100">
         <template #default="scope">{{ scope.row.widthMm || '-' }} × {{ scope.row.heightMm || '-' }}</template>
@@ -81,7 +87,13 @@
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:label:template:edit']">修改</el-button>
           <el-button link type="primary" icon="View" @click="handlePreview(scope.row)">预览指令</el-button>
-          <el-button link type="primary" icon="Printer" @click="handleTestPrint(scope.row)" v-hasPermi="['mes:label:template:print']"
+          <el-button
+            link
+            type="primary"
+            icon="Printer"
+            :disabled="printSubmitting"
+            @click="handleTestPrint(scope.row)"
+            v-hasPermi="['mes:label:template:print']"
             >测试打印</el-button
           >
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:label:template:remove']">删除</el-button>
@@ -202,7 +214,8 @@
               添加打印项
             </el-button>
             <div class="layout-tip">
-              文本"字号"按 24=标准字号的倍数缩放(TSPL)/点阵高度(ZPL)；条码用"条码高度"；二维码用"字号"作单元格大小。坐标单位 mm，原点左上。
+              文本"字号"按 24=标准字号的倍数缩放(TSPL)/点阵高度(ZPL)；条码用"条码高度"；二维码用"字号"作单元格大小。坐标单位 mm，原点左上。 SN
+              标签至少包含一个绑定 SN 码的条码或二维码，物料码不能替代单件身份。
             </div>
           </div>
         </el-form-item>
@@ -226,6 +239,29 @@
         <div class="layout-tip">样例数据渲染结果(SN-FC-TEST-0001)；实际打印在 SN 造码后自动触发。</div>
       </div>
     </el-dialog>
+    <el-dialog v-model="printTaskVisible" title="打印任务" width="640px" append-to-body>
+      <el-input v-model="printTaskLookupId" placeholder="输入打印任务 ID，保留完整数字" clearable>
+        <template #append><el-button :loading="printTaskLoading" @click="refreshPrintTask">查询 / 刷新</el-button></template>
+      </el-input>
+      <el-descriptions v-if="printTask" :column="1" border class="mt4">
+        <el-descriptions-item label="任务 ID">{{ printTask.taskId }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ printTaskLabels[printTask.status] }}</el-descriptions-item>
+        <el-descriptions-item label="发送尝试">{{ printTask.attemptCount ?? 0 }}</el-descriptions-item>
+        <el-descriptions-item label="原任务">{{ printTask.originalPrintLogId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="说明">{{ printTask.detail || '发送记录不代表打印机确认出纸，请核验实物。' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-alert
+        v-if="printTask?.status === 'UNKNOWN'"
+        class="mt4"
+        type="warning"
+        :closable="false"
+        title="无法判断是否已出纸，请先核验实物；系统不会自动重打。"
+      />
+      <template v-if="canReprintTask">
+        <el-input v-model="reprintReason" class="mt4" type="textarea" :maxlength="500" show-word-limit placeholder="核验后填写补打原因" />
+        <el-button class="mt4" type="warning" :loading="printSubmitting" @click="handleTaskReprint">关联当前任务补打</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -237,9 +273,11 @@ import {
   updateLabelTemplate,
   delLabelTemplate,
   previewLabelTemplate,
-  testPrintLabelTemplate
+  testPrintLabelTemplate,
+  getLabelPrintTask,
+  reprintLabelTemplate
 } from '@/api/mes/label/template';
-import type { MesLabelTemplateVO } from '@/api/mes/label/template';
+import type { MesLabelTemplateVO, LabelPrintTaskVO } from '@/api/mes/label/template';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
@@ -312,6 +350,7 @@ const {
   queryParams,
   initForm: () => ({
     templateId: undefined,
+    templateRevision: undefined,
     templateCode: undefined,
     templateName: undefined,
     labelType: 'SN',
@@ -373,11 +412,97 @@ const handlePreview = async (row: MesLabelTemplateVO) => {
   }
 };
 
-/** 测试打印: 样例数据直发打印机 */
+/** 持久化任务回执与人工核验；传输异常保留请求ID，重试同一动作不会产生新任务。 */
+const printSubmitting = ref(false);
+const printTaskVisible = ref(false);
+const printTaskLoading = ref(false);
+const printTaskLookupId = ref('');
+const printTask = ref<LabelPrintTaskVO>();
+const reprintReason = ref('');
+const printRequestIds = new Map<string, string>();
+const printTaskLabels: Record<LabelPrintTaskVO['status'], string> = {
+  PENDING: '已保存，等待发送',
+  SENDING: '正在发送，暂不可补打',
+  SENT: '指令已发送，未确认出纸',
+  FAIL: '发送失败，核验后可显式补打',
+  UNKNOWN: '状态未知，需先人工核验',
+  LEGACY_SENT: '已有历史发送记录，本任务未发送'
+};
+const canReprintTask = computed(
+  () =>
+    printTask.value?.snId != null &&
+    printTask.value?.templateId != null &&
+    ['SENT', 'FAIL', 'UNKNOWN', 'LEGACY_SENT'].includes(printTask.value.status)
+);
+
+/** 同一次明确提交在请求失败后继续使用原请求ID。 */
+const requestIdFor = (key: string) => {
+  if (!printRequestIds.has(key))
+    printRequestIds.set(key, globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
+  return printRequestIds.get(key)!;
+};
+
+/** 回执只展示服务端状态，不据HTTP成功推断物理出纸。 */
+const showPrintTask = (task: LabelPrintTaskVO) => {
+  printTask.value = task;
+  printTaskLookupId.value = String(task.taskId);
+  printTaskVisible.value = true;
+};
+
+/** 手动查询仅取任务状态，不触发重发。 */
+const refreshPrintTask = async () => {
+  if (!/^\d+$/.test(printTaskLookupId.value.trim())) {
+    proxy?.$modal.msgWarning('请输入完整数字任务 ID');
+    return;
+  }
+  printTaskLoading.value = true;
+  try {
+    showPrintTask((await getLabelPrintTask(printTaskLookupId.value.trim())).data);
+  } finally {
+    printTaskLoading.value = false;
+  }
+};
+
+/** 测试打印先落任务，显示持久化ID；未知或失败保留原动作的请求ID。 */
 const handleTestPrint = async (row: MesLabelTemplateVO) => {
-  await proxy.$modal.confirm(`确认向 ${row.printerHost || '未配置地址的打印机'} 发送测试打印？`);
-  await testPrintLabelTemplate(row.templateId as number);
-  proxy?.$modal.msgSuccess('测试打印已发送');
+  if (printSubmitting.value) return;
+  printSubmitting.value = true;
+  const key = `TEST:${row.templateId}:${row.templateRevision ?? 'legacy'}`;
+  try {
+    await proxy.$modal.confirm(`确认向 ${row.printerHost || '未配置地址的打印机'} 提交测试任务？请核验实际出纸。`);
+    const result = await testPrintLabelTemplate(row.templateId, requestIdFor(key));
+    showPrintTask(result.data);
+    if (result.data.status === 'SENT') printRequestIds.delete(key);
+  } finally {
+    printSubmitting.value = false;
+  }
+};
+
+/** 原任务及原因明确后才创建补打任务，发送中的原任务不能补打。 */
+const handleTaskReprint = async () => {
+  if (!canReprintTask.value || !printTask.value || printSubmitting.value) return;
+  const reason = reprintReason.value.trim();
+  if (!reason) {
+    proxy?.$modal.msgWarning('补打原因不能为空');
+    return;
+  }
+  const original = printTask.value;
+  const key = `REPRINT:${original.taskId}:${reason}`;
+  printSubmitting.value = true;
+  try {
+    await proxy.$modal.confirm(`已核验原任务 ${original.taskId} 的实际出纸情况，并确认补打？`);
+    const result = await reprintLabelTemplate({
+      snId: original.snId!,
+      templateId: original.templateId!,
+      originalPrintLogId: original.taskId,
+      reprintReason: reason,
+      requestId: requestIdFor(key)
+    });
+    showPrintTask(result.data);
+    reprintReason.value = '';
+  } finally {
+    printSubmitting.value = false;
+  }
 };
 
 function resetQuery() {

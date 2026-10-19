@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.pro.domain.ProSn;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.Charset;
@@ -15,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 标签渲染服务 — 字段映射 JSON → TSPL/ZPL 指令串(纯字符串拼接, 无重依赖)
@@ -25,7 +29,10 @@ import java.util.Map;
  * @author Nexus
  */
 @Service
+@RequiredArgsConstructor
 public class LabelRenderService {
+
+    private final SerialIdentityPort identities;
 
     /** TSPL 中文点阵字体(TSC 标配), 基准字号 24 dot */
     private static final String TSPL_CN_FONT = "TSS24.BF2";
@@ -58,10 +65,25 @@ public class LabelRenderService {
         if (content.getItems() == null || content.getItems().isEmpty()) {
             throw new ServiceException("模板未配置任何打印项: " + template.getTemplateCode());
         }
-        if (LANG_ZPL.equalsIgnoreCase(template.getLabelLang())) {
-            return renderZpl(template, content, fields);
+        String payload = LANG_ZPL.equalsIgnoreCase(template.getLabelLang())
+            ? renderZpl(template, content, fields) : renderTspl(template, content, fields);
+        validateSnIdentity(template, content, fields);
+        return payload;
+    }
+
+    /** SN 标签必须包含绑定正式 snCode 的条码或二维码，文字 SN 与物料码都不能替代。 */
+    private void validateSnIdentity(MesLabelTemplate template, LabelContent content, Map<String, String> fields) {
+        if (StringUtils.isNotBlank(template.getLabelType()) && !TYPE_SN.equalsIgnoreCase(template.getLabelType())) {
+            return;
         }
-        return renderTspl(template, content, fields);
+        boolean snMachineCode = content.getItems().stream().anyMatch(item -> "snCode".equals(item.getField())
+            && ("barcode".equals(item.typeSafe()) || "qrcode".equals(item.typeSafe())));
+        if (!snMachineCode) {
+            throw new ServiceException("SN 标签至少需要一个绑定 snCode 的条码或二维码");
+        }
+        if (StringUtils.isBlank(fields.get("snCode"))) {
+            throw new ServiceException("SN 标签的 snCode 不能为空");
+        }
     }
 
     /** 模板语言对应的发送字符集: TSPL 中文点阵字体需 GBK, ZPL(^CI28) 用 UTF-8 */
@@ -71,16 +93,30 @@ public class LabelRenderService {
     }
 
     /**
-     * SN 六字段值域(与模板字段绑定一一对应): 造码联动打印与人工补打共用, 避免两处字段映射漂移
+     * 新标签字段必须由当前租户的ERP正式身份校准；MES旧码只作为历史别名保留，不作为正式码证据。
+     * 自动任务与历史记录按当前模板重建共用本入口，原任务冻结内容的补打不重新构建字段。
      *
-     * @param sn SN(可空, 空则全部渲染为空串)
+     * @param sn 当前MES记录，必须具有真实身份映射及一致的租户、物料
+     * @return 正式码与业务字段，稳定身份及物料ID以字符串冻结，避免长整型精度丢失
      */
     public Map<String, String> snFields(ProSn sn) {
-        Map<String, String> fields = new LinkedHashMap<>(8);
-        if (sn == null) {
-            return fields;
+        String tenant = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenant) || sn == null || !tenant.equals(sn.getTenantId())) {
+            throw new ServiceException("正式SN标签需要当前租户内的真实MES记录");
         }
-        fields.put("snCode", sn.getSnCode());
+        if (sn.getIdentityId() == null || sn.getIdentityId() <= 0 || sn.getMaterialId() == null || sn.getMaterialId() <= 0) {
+            throw new ServiceException("正式SN标签缺少ERP身份映射或物料依据");
+        }
+        // 必须调用ERP端口代理；其独立只读事务挂起MES事务，返回后恢复原数据源及业务事务。
+        var formal = identities.find(tenant, sn.getIdentityId());
+        if (formal == null || !Objects.equals(sn.getIdentityId(), formal.identityId())
+            || !Objects.equals(sn.getMaterialId(), formal.materialId()) || StringUtils.isBlank(formal.snCode())) {
+            throw new ServiceException("正式SN标签的ERP身份不存在、物料冲突或正式码无效");
+        }
+        Map<String, String> fields = new LinkedHashMap<>(10);
+        fields.put("snCode", formal.snCode());
+        fields.put("identityId", formal.identityId().toString());
+        fields.put("materialId", formal.materialId().toString());
         fields.put("materialCode", sn.getMaterialCode());
         fields.put("materialName", sn.getMaterialName());
         fields.put("woNo", sn.getWoNo());

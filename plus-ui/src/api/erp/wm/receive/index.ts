@@ -1,3 +1,4 @@
+import { traceSave, executeTraceDocument } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import type { AxiosRequestConfig } from 'axios';
@@ -23,7 +24,7 @@ export const addReceive = (data: ReceiveForm, session?: CertifiedBusinessSession
     {
       url: '/erp/wm/receive',
       method: 'post',
-      data
+      data: traceSave(data)
     },
     session
   );
@@ -34,7 +35,7 @@ export const updateReceive = (data: ReceiveForm, session?: CertifiedBusinessSess
     {
       url: '/erp/wm/receive',
       method: 'put',
-      data
+      data: traceSave(data)
     },
     session
   );
@@ -50,26 +51,27 @@ export const delReceive = (receiveId: string | number | (string | number)[], ses
   );
 };
 
-export const execute = (receiveId: string | number, data: any, session?: CertifiedBusinessSession) => {
-  return guardedWarehouseRequest(
-    {
-      url: '/erp/wm/receive/execute/' + receiveId,
-      method: 'post',
-      data
-    },
-    session
-  );
-};
+/** 原收货执行 URL 保留，详情重新读取，写边界继续固定会话。 */
+export const execute = (receiveId: string | number, data: any, session?: CertifiedBusinessSession) =>
+  executeTraceDocument({
+    url: '/erp/wm/receive/execute/' + receiveId,
+    detailUrl: '/erp/wm/receive/' + receiveId,
+    linesKey: 'wmMaterialReceiveLineList',
+    quantityKey: 'quantity',
+    method: 'post',
+    data: data?.detailVersion ? data : undefined,
+    send: (config) => guardedWarehouseRequest(config, session)
+  });
 
-export const confirmShelf = (receiveId: string | number, session?: CertifiedBusinessSession) => {
-  return guardedWarehouseRequest(
-    {
-      url: '/erp/wm/receive/shelf/' + receiveId,
-      method: 'put'
-    },
-    session
-  );
-};
+/** 上架确认仍走原会话守卫，实物分配和服务端详情版本随原端点提交。 */
+export const confirmShelf = (receiveId: string | number, session?: CertifiedBusinessSession) =>
+  executeTraceDocument({
+    url: '/erp/wm/receive/shelf/' + receiveId,
+    detailUrl: '/erp/wm/receive/' + receiveId,
+    linesKey: 'wmMaterialReceiveLineList',
+    quantityKey: 'quantity',
+    send: (config) => guardedWarehouseRequest(config, session)
+  });
 
 export const submitReceive = (receiveId: string, selectFlowId?: string, session?: CertifiedBusinessSession) => {
   return guardedWarehouseRequest(

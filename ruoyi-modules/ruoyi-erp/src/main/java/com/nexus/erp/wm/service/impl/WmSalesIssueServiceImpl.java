@@ -67,6 +67,9 @@ import java.util.Set;
 @DS("erp")
 @Service("wmSalesIssueService")
 public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 基础数据访问映射器（Mapper） */
     private final WmSalesIssueMapper baseMapper;
@@ -281,6 +284,17 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         // 扣减库存：按批次效期、收货时间、库存ID排序，跨库存记录 FIFO 扣减
         for (WmSalesIssueLine line : lineList) {
             BigDecimal issueQty = line.getQuantityIssue();
+            SoSalesOrderLine serialSource = line.getSourceDocLineId()==null?null:lockedSources.get(line.getSourceDocLineId());
+            BigDecimal serialReserved=serialSource==null || serialSource.getReservedQty()==null?BigDecimal.ZERO:serialSource.getReservedQty();
+            var serialRequest=com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_SALES_ISSUE",issueId,line.getLineId(),"SALES_OUT",
+                line.getMaterialId(),issueQty,salesIssue.getWarehouseId(),line.getLocationId(),line.getBatchId())
+                .reservation(salesIssue.getSoId(),line.getSourceDocLineId(),issueQty.min(serialReserved));
+            if(serialInventory!=null && serialInventory.post(serialRequest)) {
+                BigDecimal consumed=serialInventory.consumedReservation(serialRequest);
+                if(serialSource!=null)serialSource.setReservedQty(serialReserved.subtract(consumed));
+                if(line.getSourceDocLineId()!=null)fulfillmentWritebackService.addShippedQty(line.getSourceDocLineId(),issueQty);
+                continue;
+            }
 
             LambdaQueryWrapper<WmMaterialStock> stockLqw = Wrappers.lambdaQuery();
             stockLqw.eq(WmMaterialStock::getTenantId, salesIssue.getTenantId());

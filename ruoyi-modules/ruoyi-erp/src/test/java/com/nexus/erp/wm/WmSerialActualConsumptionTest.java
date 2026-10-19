@@ -1,0 +1,44 @@
+package com.nexus.erp.wm;
+import com.nexus.common.trace.*;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
+import com.nexus.erp.wm.domain.*;
+import com.nexus.erp.wm.mapper.*;
+import com.nexus.erp.wm.service.*;
+import com.nexus.system.strategy.AutoCodeUtil;
+import org.junit.jupiter.api.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
+import java.math.BigDecimal;
+import java.util.*;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+class WmSerialActualConsumptionTest {
+ WmSerialInventoryRepository store;WmSerialInventoryService serial;WmProductionRecptWriteGuard source;WmProductionIssueMapper heads;WmProductionIssueLineMapper lines;IWmStockOperationService posting;JdbcTemplate jdbc;WmTraceMaterialConsumptionService service;
+ CompletionManifest manifest;CompletionMaterialAllocation allocation;Map<String,Object> reservedLine;
+ @BeforeEach void setup(){store=mock(WmSerialInventoryRepository.class);serial=mock(WmSerialInventoryService.class);source=mock(WmProductionRecptWriteGuard.class);heads=mock(WmProductionIssueMapper.class);lines=mock(WmProductionIssueLineMapper.class);posting=mock(IWmStockOperationService.class);jdbc=mock(JdbcTemplate.class);ReflectionTestUtils.setField(store,"jdbc",jdbc);AutoCodeUtil codes=mock(AutoCodeUtil.class);when(codes.genSerialCode(anyString(),isNull())).thenReturn("I600");service=new WmTraceMaterialConsumptionService(store,serial,source,heads,lines,posting,codes);
+  when(store.tenant()).thenReturn("t1");PrdWorkOrder wo=new PrdWorkOrder();wo.setWoId(1L);wo.setWoNo("W1");when(source.lockWorkOrder(1L)).thenReturn(wo);when(store.policy(20L)).thenReturn(new TrackingPolicy(true,true,true,7L,TrackingStage.STRICT));
+  manifest=new CompletionManifest(900L,1,"t1",2L,1L,99L,1,BigDecimal.ONE,BigDecimal.ZERO,"a".repeat(64),"FROZEN");allocation=new CompletionMaterialAllocation(800L,20L,300L,301L,null,1001L,101L,50L,BigDecimal.ONE,1,"b".repeat(64),"RESERVE301");
+  String payload="{\"erpWoId\":\"1\",\"mesWoId\":\"2\",\"materialId\":\"20\",\"erpBatchId\":\"50\",\"quantity\":\"1\",\"reservationId\":\"300\",\"reservationLineId\":\"301\",\"identityId\":\"1001\",\"sourceStockId\":\"101\"}";
+  reservedLine=new HashMap<>(Map.of("source_stock_id",101L,"identity_id",1001L,"erp_batch_id",50L,"quantity",BigDecimal.ONE,"consumed_quantity",BigDecimal.ZERO,"version",1L));
+  doAnswer(a->{String sql=a.getArgument(0);if(sql.contains("wm_trace_outbox"))return Map.of("payload",payload,"content_hash",TraceHashes.sha256(payload),"event_type","ERP_BACKFLUSH_ALLOCATION_AUTHORIZED");if(sql.contains("wm_trace_material_reservation_line"))return reservedLine;if(sql.contains("wm_trace_material_reservation"))return Map.of("erp_wo_id",1L,"mes_wo_id",2L,"material_id",20L,"status","RESERVED","policy_version",7L,"requirement_detail_id",500L);throw new AssertionError(sql);}).when(store).row(anyString(),any(Object[].class));
+  WmMaterialStock stock=new WmMaterialStock();stock.setStockId(101L);stock.setSnId(1001L);stock.setMaterialId(20L);stock.setBatchId(50L);stock.setWarehouseId(30L);stock.setLocationId(40L);stock.setBaseUomId("1");when(store.stock(101L)).thenReturn(stock);
+  when(jdbc.update(anyString(),any(Object[].class))).thenReturn(1);when(jdbc.queryForList(anyString(),any(Object[].class))).thenReturn(List.of());when(heads.insert(any(WmProductionIssue.class))).thenAnswer(a->{((WmProductionIssue)a.getArgument(0)).setIssueId(600L);return 1;});when(lines.insert(any(WmProductionIssueLine.class))).thenAnswer(a->{((WmProductionIssueLine)a.getArgument(0)).setLineId(601L);return 1;});when(store.group(any())).thenReturn(new WmSerialInventoryRepository.Group(700L,"actual",1,"fp","hash",BigDecimal.ONE,BigDecimal.ONE,"POSTED",200L));
+ }
+ @Test void consumesOnlyFrozenReservedPieceAndPassesExactStockToActualPosting(){assertEquals(Set.of(20L),service.consume(manifest,List.of(allocation)));verify(posting).postProductionIssueAllocated(eq(600L),eq(601L),argThat(picks->picks.size()==1 && picks.get(0).getStockId()==101L && picks.get(0).getDeductQty().compareTo(BigDecimal.ONE)==0),any());verify(serial).freeze(any(),eq("MES_ACTUAL/900/1/301"),eq(1L),eq(7L),argThat(items->items.size()==1 && items.get(0).identityId()==1001L));}
+ @Test void changedStockCannotReplaceFrozenActualReservation(){reservedLine.put("source_stock_id",102L);assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(allocation)));verifyNoInteractions(posting);verify(jdbc,never()).update(anyString(),any(Object[].class));}
+ @Test void previouslyConsumedReservationCannotBeDebitedAgain(){reservedLine.put("consumed_quantity",BigDecimal.ONE);assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(allocation)));verifyNoInteractions(posting);}
+ @Test void repeatedActualSerialIsRejectedBeforePosting(){var repeat=new CompletionMaterialAllocation(801L,20L,300L,301L,null,1001L,101L,50L,BigDecimal.ONE,1,"b".repeat(64),"RESERVE301");assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(allocation,repeat)));verifyNoInteractions(posting);}
+ @Test void reservationCannotDebitAStockWhoseMaterialWasChanged(){when(store.stock(101L)).thenReturn(newStockWithWrongMaterial());assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(allocation)));verifyNoInteractions(posting);verify(jdbc,never()).update(contains("reserved_quantity"),any(Object[].class));}
+ WmMaterialStock newStockWithWrongMaterial(){var stock=new WmMaterialStock();stock.setStockId(101L);stock.setMaterialId(21L);stock.setBatchId(50L);stock.setSnId(1001L);stock.setWarehouseId(30L);return stock;}
+ @Test void originalReservationVersionCannotBeReplacedByClientClaim(){reservedLine.put("version",2L);assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(allocation)));verifyNoInteractions(posting);}
+ @Test void preissuedActualConsumptionNeverDebitsItsStockASecondTime(){var a=preissued(false);assertEquals(Set.of(20L),service.consume(manifest,List.of(a)));verifyNoInteractions(posting,heads,lines);verify(jdbc).update(contains("actual_consumed_qty"),any(Object[].class));verify(jdbc,never()).update(contains("reserved_quantity"),any(Object[].class));}
+ @Test void returnedPreissuedPieceCannotBeConsumedFromOldSourceAgain(){var a=preissued(true);assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(a)));verifyNoInteractions(posting);verify(jdbc,never()).update(contains("INSERT INTO wm_trace_material_consumption"),any(Object[].class));}
+ @Test void perPieceSourceEventCannotAuthorizeAnotherPieceFromSamePostingGroup(){var a=preissued(false);var changed=new CompletionMaterialAllocation(a.allocationId(),a.materialId(),null,null,a.postingGroupId(),1002L,102L,a.erpBatchId(),a.quantity(),a.sourceVersion(),a.evidenceHash(),a.sourceEventId());when(jdbc.queryForList(contains("wm_material_stock_tx"),any(Object[].class))).thenReturn(List.of(Map.of("tx_id",902L,"material_stock_id",102L,"tx_quantity",BigDecimal.ONE)));assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(changed)));verify(jdbc,never()).update(contains("INSERT INTO wm_trace_material_consumption"),any(Object[].class));}
+ @Test void actualBatchConsumptionCannotRoundAwayFractionalDatabaseQuantity(){var original=preissued(false);when(store.policy(20L)).thenReturn(new TrackingPolicy(true,false,true,7L,TrackingStage.STRICT));var tiny=new CompletionMaterialAllocation(original.allocationId(),20L,null,null,700L,null,null,50L,new BigDecimal("0.00001"),3,original.evidenceHash(),original.sourceEventId());assertThrows(RuntimeException.class,()->service.consume(manifest,List.of(tiny)));verify(jdbc,never()).update(contains("INSERT INTO wm_trace_material_consumption"),any(Object[].class));}
+ CompletionMaterialAllocation preissued(boolean returned) {
+  String payload="{\"erpWoId\":\"1\",\"mesWoId\":\"2\",\"materialId\":\"20\",\"erpBatchId\":\"50\",\"quantity\":\"1\",\"postingGroupId\":\"700\",\"identityId\":\"1001\",\"sourceStockId\":\"101\"}";
+  doAnswer(a->{String sql=a.getArgument(0);if(sql.contains("wm_trace_outbox"))return Map.of("payload",payload,"content_hash",TraceHashes.sha256(payload),"event_type","ERP_MATERIAL_SOURCE_POSTED");if(sql.contains("wm_trace_posting_group"))return Map.of("wo_id",1L,"detail_version",3L,"requirement_detail_id",500L);throw new AssertionError(sql);}).when(store).row(anyString(),any(Object[].class));
+  when(jdbc.queryForList(contains("wm_material_stock_tx"),any(Object[].class))).thenReturn(List.of(Map.of("tx_id",901L,"material_stock_id",101L,"tx_quantity",BigDecimal.ONE)));when(jdbc.queryForObject(anyString(),eq(BigDecimal.class),any(Object[].class))).thenReturn(returned?BigDecimal.ONE:BigDecimal.ZERO);
+  return new CompletionMaterialAllocation(800L,20L,null,null,700L,1001L,101L,50L,BigDecimal.ONE,3,"b".repeat(64),"ISSUE700-1");
+ }
+}

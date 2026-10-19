@@ -97,7 +97,14 @@
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:serialNumberRule:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:serialNumberRule:remove']">删除</el-button>
-          <el-button link type="primary" icon="Key" @click="handleGenerate(scope.row)" v-hasPermi="['bd:serialNumberRule:generate']">生成</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Key"
+            @click="handleGenerate(scope.row)"
+            v-hasPermi="scope.row.ruleType === 'PRODUCT_SN' ? ['wm:sn:add'] : ['bd:serialNumberRule:generate']"
+            >{{ scope.row.ruleType === 'PRODUCT_SN' ? '正式登记 SN' : '生成' }}</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -107,6 +114,9 @@
     <!-- 添加或修改序列号规则对话框 -->
     <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="ruleRef" :model="form" :rules="rules" label-width="110px" :disabled="isViewMode">
+        <el-form-item v-if="form.ruleId != null" label="原规则版本" prop="ruleVersion">
+          <el-input :model-value="form.ruleVersion || '服务端未返回版本，请重新加载'" readonly />
+        </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="规则编码" prop="ruleCode">
@@ -206,10 +216,13 @@
         </div>
       </template>
     </el-dialog>
+    <SerialRegistration ref="registrationDialog" />
   </div>
 </template>
 
 <script setup lang="ts" name="SerialNumberRule">
+import SerialRegistration from '@/components/material-trace/SerialRegistration.vue';
+import { identityText } from '@/components/material-trace/model';
 import {
   listSerialNumberRule,
   getSerialNumberRule,
@@ -223,6 +236,7 @@ import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
+const registrationDialog = ref<InstanceType<typeof SerialRegistration>>();
 const ruleRef = ref<FormInstance>();
 
 const genVisible = ref(false);
@@ -258,6 +272,15 @@ const queryParams = ref({
 });
 
 const rules = {
+  ruleVersion: [
+    {
+      validator: (_rule: unknown, value: unknown, callback: (error?: Error) => void) => {
+        if (form.value.ruleId != null && (typeof value !== 'string' || !value)) callback(new Error('缺少原规则版本，请重新加载'));
+        else callback();
+      },
+      trigger: 'change'
+    }
+  ],
   ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
   ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
   ruleType: [{ required: true, message: '规则类型不能为空', trigger: 'change' }],
@@ -294,6 +317,7 @@ const {
   queryParams,
   initForm: () => ({
     ruleId: null,
+    ruleVersion: undefined as string | undefined,
     ruleCode: null,
     ruleName: null,
     ruleType: 'PRODUCT_SN',
@@ -307,7 +331,10 @@ const {
     remark: null
   }),
   exportUrl: '/erp/bd/serialNumberRule/export',
-  exportFileName: 'serial-number-rule'
+  exportFileName: 'serial-number-rule',
+  afterLoad: (data) => {
+    form.value.ruleVersion = data.ruleVersion;
+  }
 });
 
 function handleAdd() {
@@ -325,10 +352,15 @@ function resetQuery() {
   handleQuery();
 }
 
+/** 正式产品 SN 复用登记流程，其它编码保持旧生成行为。 */
 function handleGenerate(row: any) {
+  if (row.ruleType === 'PRODUCT_SN') {
+    registrationDialog.value?.open({ ruleId: identityText(row.ruleId) });
+    return;
+  }
   genRuleCode.value = row.ruleCode;
   genResult.value = '';
-  generateSerialNumber(row.ruleCode).then((response: any) => {
+  generateSerialNumber(row.ruleCode, row.ruleType).then((response: any) => {
     genResult.value = response.data;
     genVisible.value = true;
   });

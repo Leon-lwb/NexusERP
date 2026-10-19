@@ -1062,6 +1062,9 @@ CREATE TABLE `bd_material` (
   `del_flag` char(1) COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
   `is_phantom` tinyint(1) DEFAULT '0' COMMENT '是否虚拟件: 0-否 1-是（虚拟件展开时跳层，不入库不生成工单）',
   `inspection_required` int(1) DEFAULT '0' COMMENT '是否需要来料检验(0否/1是)',
+  `allow_mixed_lot` tinyint(1) NOT NULL DEFAULT 1 COMMENT '同实物同组件物料是否允许混批，默认允许',
+  `tracking_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '物料追踪策略版本',
+  `tracking_stage` varchar(16) NOT NULL DEFAULT 'AUDIT' COMMENT 'AUDIT只审计，STRICT按物料逐步启用',
   PRIMARY KEY (`material_id`) USING BTREE,
   UNIQUE KEY `uk_material_code` (`material_code`,`tenant_id`) USING BTREE,
   KEY `idx_category_id` (`category_id`) USING BTREE,
@@ -2411,6 +2414,7 @@ CREATE TABLE `bd_serial_number_rule` (
   `update_by` bigint(20) DEFAULT NULL COMMENT '更新人',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `rule_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '发号规则版本，规则变更递增',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE KEY `uk_rule_code` (`rule_code`,`tenant_id`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE,
@@ -10655,6 +10659,7 @@ CREATE TABLE `wm_barcode` (
   `del_flag` char(1) COLLATE utf8mb4_unicode_ci DEFAULT '0',
   `batch_code` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '批次编码',
   `sn_id` bigint(20) DEFAULT NULL COMMENT '序列号ID',
+  `primary_object_type` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '不可重绑的主对象类型SN/BATCH/MATERIAL/DOCUMENT，历史NULL保持未知',
   PRIMARY KEY (`barcode_id`) USING BTREE,
   UNIQUE KEY `uk_barcode_code` (`barcode_code`,`tenant_id`) USING BTREE,
   KEY `idx_barcode_config_id` (`config_id`) USING BTREE,
@@ -11369,14 +11374,18 @@ CREATE TABLE `wm_material_stock` (
   `unit_cost` decimal(14,6) DEFAULT '0.000000' COMMENT '单位成本(移动加权平均)',
   `total_cost` decimal(14,4) DEFAULT '0.0000' COMMENT '库存总金额',
   `sn_id` bigint(20) DEFAULT NULL COMMENT '序列号ID（序列号管理物料的唯一标识）',
-  `sn_code` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '序列号编码（序列号管理物料的唯一编码）',
+  `sn_code` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '序列号编码（序列号管理物料的唯一编码）',
+  `tracking_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '历史默认1，已对账单件库存才升级2',
+  `valuation_group_id` bigint(20) DEFAULT NULL COMMENT '原计价组ID，不改变原金额',
+  `active_sn_id` bigint(20) GENERATED ALWAYS AS (CASE WHEN tracking_version >= 2 AND stock_quantity > 0 THEN sn_id ELSE NULL END) STORED COMMENT '仅新版正库存占用正式身份',
   PRIMARY KEY (`stock_id`) USING BTREE,
   KEY `idx_tenant_id` (`tenant_id`) USING BTREE,
   KEY `idx_wm_material_stock_material` (`material_id`,`frozen_flag`,`recpt_date`) USING BTREE,
   KEY `idx_wm_material_stock_vendor` (`material_id`,`vendor_id`,`frozen_flag`) USING BTREE,
   KEY `idx_wm_material_stock_sn_id` (`sn_id`) USING BTREE,
   KEY `idx_wm_material_stock_sn_code` (`sn_code`) USING BTREE,
-  KEY `idx_wm_material_stock_location` (`location_id`,`del_flag`) USING BTREE
+  KEY `idx_wm_material_stock_location` (`location_id`,`del_flag`) USING BTREE,
+  UNIQUE KEY `uk_material_stock_active_sn` (`tenant_id`,`active_sn_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='库存物料记录表';
 
 INSERT INTO `wm_material_stock` (`stock_id`, `category_id`, `material_id`, `material_type`, `material_code`, `material_name`, `material_spec`, `base_uom_id`, `base_uom_name`, `batch_id`, `batch_code`, `warehouse_id`, `warehouse_code`, `warehouse_name`, `area_id`, `area_code`, `area_name`, `location_id`, `location_code`, `location_name`, `vendor_id`, `vendor_code`, `vendor_name`, `vendor_nick`, `stock_quantity`, `reserved_quantity`, `wo_id`, `wo_no`, `production_date`, `recpt_date`, `expire_date`, `frozen_flag`, `attr1`, `attr2`, `attr3`, `attr4`, `tenant_id`, `create_dept`, `del_flag`, `remark`, `version`, `create_by`, `create_time`, `update_by`, `update_time`, `unit_cost`, `total_cost`, `sn_id`, `sn_code`) VALUES
@@ -11491,7 +11500,7 @@ CREATE TABLE `wm_material_stock_tx` (
   `batch_id` bigint(20) DEFAULT NULL COMMENT '批次ID',
   `batch_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '批次号',
   `sn_id` bigint(20) DEFAULT NULL COMMENT '序列号ID',
-  `sn_code` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '序列号编码',
+  `sn_code` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '序列号编码',
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
   `warehouse_code` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库编码',
   `warehouse_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库名称',
@@ -11532,6 +11541,8 @@ CREATE TABLE `wm_material_stock_tx` (
   `tx_amount` decimal(14,4) DEFAULT '0.0000' COMMENT '事务金额',
   `posted` tinyint(1) DEFAULT '0' COMMENT '成本过账标记 0-未过账 1-已过账',
   `posted_voucher_no` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '成本过账凭证号',
+  `tracking_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '事务追踪版本，历史保留1',
+  `posting_group_id` bigint(20) DEFAULT NULL COMMENT '冻结过账证明组ID',
   PRIMARY KEY (`tx_id`) USING BTREE,
   KEY `idx_tenant_id` (`tenant_id`) USING BTREE,
   KEY `idx_wm_stock_tx_source` (`source_doc_type`,`source_doc_id`) USING BTREE,
@@ -12177,7 +12188,7 @@ CREATE TABLE `wm_sn` (
   `location_id` bigint(20) DEFAULT NULL COMMENT '当前库位ID',
   `location_code` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位编码',
   `stock_id` bigint(20) DEFAULT NULL COMMENT '关联库存记录ID',
-  `status` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT 'IN_STOCK' COMMENT '状态',
+  `status` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT 'REGISTERED' COMMENT '状态',
   `source_doc_type` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源单据类型',
   `source_doc_id` bigint(20) DEFAULT NULL COMMENT '来源单据ID',
   `source_doc_no` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源单据编号',
@@ -12195,6 +12206,8 @@ CREATE TABLE `wm_sn` (
   `update_by` bigint(20) DEFAULT NULL COMMENT '更新人',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `registration_command` varchar(128) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '原发号预留命令ID，不补造历史命令',
+  `identity_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '正式身份版本',
   PRIMARY KEY (`sn_id`) USING BTREE,
   UNIQUE KEY `uk_sn_code` (`sn_code`,`tenant_id`) USING BTREE,
   KEY `idx_material_id` (`material_id`) USING BTREE,
@@ -12203,7 +12216,8 @@ CREATE TABLE `wm_sn` (
   KEY `idx_status` (`status`) USING BTREE,
   KEY `idx_stock_id` (`stock_id`) USING BTREE,
   KEY `idx_source_doc` (`source_doc_type`,`source_doc_id`) USING BTREE,
-  KEY `idx_tenant_id` (`tenant_id`) USING BTREE
+  KEY `idx_tenant_id` (`tenant_id`) USING BTREE,
+  KEY `idx_sn_registration_command` (`tenant_id`,`registration_command`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='序列号管理表';
 
 DROP TABLE IF EXISTS `wm_stock_alert`;
@@ -12836,3 +12850,382 @@ INSERT INTO `wm_warehouse` (`warehouse_id`, `warehouse_code`, `warehouse_name`, 
 (2108783857954148353, 'WH008', '维修备件库', '设备维修中心备件间', NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2026-10-10 12:57:06', 1, '2026-10-10 17:41:33', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- material-trace-20261018:begin
+-- 追溯增量对应的新装表；存量库只能使用独立增量脚本。
+CREATE TABLE IF NOT EXISTS `wm_serial_reservation` (
+  `reservation_id` bigint(20) NOT NULL COMMENT '发号预留ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '规范请求摘要，相同命令不能改变参数',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `quantity` int(11) NOT NULL COMMENT '本次预留件数',
+  `rule_id` bigint(20) DEFAULT NULL COMMENT '号码规则ID',
+  `rule_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '预留时规则版本',
+  `rule_snapshot` longtext NOT NULL COMMENT '预留时冻结规则JSON，重试不得读取新规则',
+  `source_type` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '业务来源类型',
+  `source_id` bigint(20) DEFAULT NULL COMMENT '业务来源ID',
+  `cycle_key` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '号段周期键',
+  `biz_date` date NOT NULL COMMENT '发号业务日期',
+  `status` varchar(24) NOT NULL DEFAULT 'RESERVED' COMMENT '预留状态，取消不回收号码',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`reservation_id`),
+  UNIQUE KEY `uk_serial_reservation_command` (`tenant_id`,`command_id`),
+  KEY `idx_serial_reservation_source` (`tenant_id`,`source_type`,`source_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='正式实物发号预留，号码永久占用';
+
+CREATE TABLE IF NOT EXISTS `wm_serial_lifecycle_command` (
+  `operation_id` bigint(20) NOT NULL COMMENT '正式身份生命周期操作ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '身份、操作人、原因、版本及动作的规范摘要',
+  `action` varchar(32) NOT NULL COMMENT 'RETIRE_UNUSED_MANUAL等已核实生命周期动作',
+  `identity_id` bigint(20) NOT NULL COMMENT '原正式身份wm_sn.sn_id',
+  `reservation_id` bigint(20) NOT NULL COMMENT '原正式发号预留ID',
+  `actor_id` bigint(20) NOT NULL COMMENT '认证上下文中的操作人',
+  `reason` varchar(500) NOT NULL COMMENT '明确人工退休原因',
+  `before_version` bigint(20) NOT NULL COMMENT '原身份版本',
+  `after_version` bigint(20) NOT NULL COMMENT '动作提交后的身份版本',
+  `before_status` varchar(16) NOT NULL COMMENT '原身份状态',
+  `after_status` varchar(16) NOT NULL COMMENT '动作提交后的身份状态',
+  `reservation_status` varchar(24) NOT NULL COMMENT '动作提交后的原预留状态，取消不回收号码',
+  `source_type` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '核实后的原注册来源类型',
+  `source_id` bigint(20) DEFAULT NULL COMMENT '原业务来源ID，ERP_MANUAL为空',
+  `before_json` longtext NOT NULL COMMENT '完整原身份冻结JSON',
+  `after_json` longtext NOT NULL COMMENT '动作后身份冻结JSON',
+  `result_json` longtext NOT NULL COMMENT '同命令幂等回执冻结JSON',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uk_serial_lifecycle_command` (`tenant_id`,`command_id`),
+  KEY `idx_serial_lifecycle_identity` (`tenant_id`,`identity_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='正式SN生命周期命令审计，状态与审计同ERP事务提交，不回收号码';
+
+CREATE TABLE IF NOT EXISTS `wm_serial_sequence` (
+  `sequence_id` bigint(20) NOT NULL COMMENT '号段计数器ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `namespace` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '计数器命名空间',
+  `rule_key` varchar(64) COLLATE utf8mb4_bin NOT NULL COMMENT '规则或共享范围键',
+  `cycle_key` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '周期键',
+  `current_value` bigint(20) NOT NULL DEFAULT 0 COMMENT '已分配最大序号，只增不回收',
+  `version` bigint(20) NOT NULL DEFAULT 1 COMMENT '乐观锁版本',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`sequence_id`),
+  UNIQUE KEY `uk_serial_sequence_scope` (`tenant_id`,`namespace`,`rule_key`,`cycle_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='事务号段计数器';
+
+CREATE TABLE IF NOT EXISTS `wm_sn_alias` (
+  `alias_id` bigint(20) NOT NULL COMMENT '别名ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `identity_id` bigint(20) NOT NULL COMMENT '正式身份wm_sn.sn_id',
+  `source_type` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '供应商、客户或旧凭据来源类型',
+  `source_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '来源主体ID，无主体使用0避免空值绕过唯一键',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `alias_code` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '外部原码，区分大小写且不改写',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`alias_id`),
+  UNIQUE KEY `uk_sn_alias_identity_source` (`tenant_id`,`identity_id`,`source_type`,`source_id`,`material_id`,`alias_code`),
+  UNIQUE KEY `uk_sn_alias_command` (`tenant_id`,`command_id`),
+  KEY `idx_sn_alias_lookup` (`tenant_id`,`alias_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='外部原码与正式实物身份的证据映射';
+
+CREATE TABLE IF NOT EXISTS `wm_document_sn` (
+  `document_sn_id` bigint(20) NOT NULL COMMENT '单据实物明细ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `line_no` bigint(20) NOT NULL COMMENT '命令内稳定行号',
+  `source_doc_type` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '来源单据类型',
+  `source_doc_id` bigint(20) NOT NULL COMMENT '来源单据ID',
+  `source_doc_line_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '来源单据行ID',
+  `detail_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '提交时单据明细版本',
+  `identity_id` bigint(20) NOT NULL COMMENT '正式实物身份',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `batch_id` bigint(20) DEFAULT NULL COMMENT 'ERP批次ID',
+  `source_stock_id` bigint(20) DEFAULT NULL COMMENT '来源库存ID',
+  `target_location_id` bigint(20) DEFAULT NULL COMMENT '目标储位ID',
+  `original_tx_id` bigint(20) DEFAULT NULL COMMENT '退回或冲正所引用的原事务ID',
+  `posting_group_id` bigint(20) DEFAULT NULL COMMENT '过账证明组ID',
+  `quantity` decimal(18,4) NOT NULL DEFAULT 1.0000 COMMENT '基本单位数量，SN行由服务校验为1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`document_sn_id`),
+  UNIQUE KEY `uk_document_sn_command_line` (`tenant_id`,`command_id`,`line_no`),
+  UNIQUE KEY `uk_document_sn_version_identity` (`tenant_id`,`source_doc_type`,`source_doc_id`,`source_doc_line_id`,`detail_version`,`identity_id`),
+  KEY `idx_document_sn_identity` (`tenant_id`,`identity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='版本化单据实物明细，不改写历史凭据';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_posting_group` (
+  `posting_group_id` bigint(20) NOT NULL COMMENT '过账证明组ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `source_doc_type` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT '来源单据类型',
+  `source_doc_id` bigint(20) NOT NULL COMMENT '来源单据ID',
+  `source_doc_line_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '来源单据行ID',
+  `detail_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '冻结明细版本',
+  `tx_type` varchar(64) COLLATE utf8mb4_bin NOT NULL COMMENT '库存业务类型',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `valuation_group_id` bigint(20) DEFAULT NULL COMMENT '原计价组ID',
+  `quantity` decimal(18,4) NOT NULL COMMENT '冻结基本单位数量',
+  `amount` decimal(18,4) NOT NULL COMMENT '冻结四位金额，单件拆分合计保持不变',
+  `fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '幂等请求摘要',
+  `content_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '冻结明细内容摘要',
+  `source_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '冻结原业务单据行内容摘要，不补造历史来源',
+  `policy_version` bigint(20) NOT NULL COMMENT '冻结时物料追踪策略版本，不推定旧证明版本',
+  `original_posting_group_id` bigint(20) DEFAULT NULL COMMENT '补偿所引用的原过账组ID',
+  `status` varchar(24) NOT NULL DEFAULT 'PREPARED' COMMENT '过账状态',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`posting_group_id`),
+  UNIQUE KEY `uk_trace_posting_command` (`tenant_id`,`command_id`),
+  UNIQUE KEY `uk_trace_posting_document_version` (`tenant_id`,`source_doc_type`,`source_doc_id`,`source_doc_line_id`,`detail_version`,`tx_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='原子库存过账证明，补偿另建新组';
+
+CREATE TABLE IF NOT EXISTS `wm_valuation_group` (
+  `valuation_group_id` bigint(20) NOT NULL COMMENT '计价组ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '原计价仓库ID',
+  `batch_id` bigint(20) DEFAULT NULL COMMENT '原计价批次ID',
+  `source_stock_id` bigint(20) DEFAULT NULL COMMENT '拆分前原库存ID',
+  `quantity` decimal(18,4) NOT NULL COMMENT '原计价数量',
+  `amount` decimal(18,4) NOT NULL COMMENT '原四位总金额',
+  `unit_cost` decimal(18,6) NOT NULL COMMENT '冻结原单位成本，禁止按SN重新计价',
+  `valuation_method` varchar(32) NOT NULL DEFAULT 'MOVING_AVERAGE' COMMENT '原计价方式',
+  `policy_version` bigint(20) NOT NULL DEFAULT 1 COMMENT '原计价策略版本',
+  `valuation_snapshot` longtext NOT NULL COMMENT '冻结计价依据JSON',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`valuation_group_id`),
+  KEY `idx_valuation_group_material` (`tenant_id`,`material_id`,`warehouse_id`,`batch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='原计价范围冻结快照，拆分数量金额守恒';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_outbox` (
+  `event_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '跨库稳定事件ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `source_module` varchar(16) COLLATE utf8mb4_bin NOT NULL COMMENT '事件源模块',
+  `aggregate_type` varchar(64) COLLATE utf8mb4_bin NOT NULL COMMENT '来源业务聚合类型',
+  `aggregate_id` bigint(20) NOT NULL COMMENT '来源业务聚合ID',
+  `aggregate_version` bigint(20) NOT NULL COMMENT '同来源聚合单调版本',
+  `event_type` varchar(64) NOT NULL COMMENT '事件类型',
+  `schema_version` int(11) NOT NULL DEFAULT 1 COMMENT '消息契约版本',
+  `payload` longtext NOT NULL COMMENT '原始冻结载荷JSON，禁止重试时重新计算',
+  `content_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原始载荷UTF8字节SHA256',
+  `status` varchar(24) NOT NULL DEFAULT 'NEW' COMMENT 'NEW、WAITING、BROKER_SENT、APPLIED或CONFLICT状态',
+  `attempts` int(11) NOT NULL DEFAULT 0 COMMENT '已尝试次数',
+  `next_attempt_at` datetime DEFAULT NULL COMMENT '下次可重试时间，ACK重新激活时允许空值',
+  `lease_owner` varchar(128) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '当前租约持有者',
+  `lease_until` datetime DEFAULT NULL COMMENT '租约截止时间',
+  `last_error` text COMMENT '脱敏后的最近错误',
+  `result_payload` longtext COMMENT '幂等消费结果JSON',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `applied_at` datetime DEFAULT NULL COMMENT '成功应用时间',
+  PRIMARY KEY (`event_id`),
+  UNIQUE KEY `uk_trace_event_stream_version` (`tenant_id`,`source_module`,`aggregate_type`,`aggregate_id`,`aggregate_version`),
+  KEY `idx_trace_event_retry` (`status`,`next_attempt_at`,`lease_until`),
+  KEY `idx_trace_event_tenant` (`tenant_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='本数据源事务内冻结的追溯发件箱';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_inbox` (
+  `event_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '跨库稳定事件ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `source_module` varchar(16) COLLATE utf8mb4_bin NOT NULL COMMENT '事件源模块',
+  `aggregate_type` varchar(64) COLLATE utf8mb4_bin NOT NULL COMMENT '来源业务聚合类型',
+  `aggregate_id` bigint(20) NOT NULL COMMENT '来源业务聚合ID',
+  `aggregate_version` bigint(20) NOT NULL COMMENT '同来源聚合单调版本',
+  `event_type` varchar(64) NOT NULL COMMENT '事件类型',
+  `schema_version` int(11) NOT NULL DEFAULT 1 COMMENT '消息契约版本',
+  `payload` longtext NOT NULL COMMENT '原始冻结载荷JSON，禁止重试时重新计算',
+  `content_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原始载荷UTF8字节SHA256',
+  `status` varchar(24) NOT NULL DEFAULT 'NEW' COMMENT 'NEW、WAITING、BROKER_SENT、APPLIED或CONFLICT状态',
+  `attempts` int(11) NOT NULL DEFAULT 0 COMMENT '已尝试次数',
+  `next_attempt_at` datetime DEFAULT NULL COMMENT '下次可重试时间，ACK重新激活时允许空值',
+  `lease_owner` varchar(128) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '当前租约持有者',
+  `lease_until` datetime DEFAULT NULL COMMENT '租约截止时间',
+  `last_error` text COMMENT '脱敏后的最近错误',
+  `result_payload` longtext COMMENT '幂等消费结果JSON',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `applied_at` datetime DEFAULT NULL COMMENT '成功应用时间',
+  PRIMARY KEY (`event_id`),
+  UNIQUE KEY `uk_trace_event_stream_version` (`tenant_id`,`source_module`,`aggregate_type`,`aggregate_id`,`aggregate_version`),
+  KEY `idx_trace_event_retry` (`status`,`next_attempt_at`,`lease_until`),
+  KEY `idx_trace_event_tenant` (`tenant_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='本数据源事务内冻结的追溯幂等收件箱';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_repair_run` (
+  `run_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '修复运行ID',
+  `target_database` varchar(64) NOT NULL COMMENT '显式核实的目标业务库',
+  `target_environment` varchar(128) NOT NULL COMMENT '环境标识，不保存口令或连接串',
+  `backup_reference` varchar(255) NOT NULL COMMENT '已核实的离线备份引用',
+  `plan_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '批准计划摘要',
+  `before_snapshot_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '完整修复前导出摘要',
+  `after_snapshot_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '离线预演结果摘要',
+  `journal_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '批准运行日志摘要',
+  `status` varchar(24) NOT NULL DEFAULT 'PLANNED' COMMENT 'PLANNED、APPLIED、REVERTED或待补偿',
+  `version` bigint(20) NOT NULL DEFAULT 1 COMMENT '运行状态CAS版本',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`run_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='本数据源历史修复运行日志，跨库不伪装原子事务';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_repair_item` (
+  `run_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '修复运行ID',
+  `item_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '计划内修复项ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `target_table` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '白名单目标表',
+  `target_key` longtext NOT NULL COMMENT '包含租户的完整主键JSON',
+  `before_json` longtext NOT NULL COMMENT '修复前完整行JSON',
+  `after_json` longtext NOT NULL COMMENT '修复后完整行JSON',
+  `evidence_json` longtext NOT NULL COMMENT '冻结来源凭据及审核依据JSON',
+  `before_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '修复前规范行摘要，CAS比较依据',
+  `after_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '修复后规范行摘要',
+  `evidence_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '证据摘要',
+  `status` varchar(24) NOT NULL DEFAULT 'PLANNED' COMMENT '修复项状态',
+  `version` bigint(20) NOT NULL DEFAULT 1 COMMENT '修复项CAS版本',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`run_id`,`item_id`),
+  KEY `idx_trace_repair_target` (`tenant_id`,`target_table`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='历史修复前后镜像与证据，不覆盖原业务凭据';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_audit_run` (
+  `audit_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '审计工件ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `material_id` bigint(20) DEFAULT NULL COMMENT '审计物料，未限定时为空',
+  `status` varchar(24) NOT NULL DEFAULT 'REVIEW_REQUIRED' COMMENT '只读审计结论状态，不修改原业务',
+  `summary` text COMMENT '审计摘要',
+  `report_json` longtext NOT NULL COMMENT '完整审计报告工件',
+  `content_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '审计报告原始UTF8字节SHA256',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`audit_id`),
+  KEY `idx_trace_audit_tenant_created` (`tenant_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='物料追溯审计工件，只追加报告不改原业务';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_material_reservation` (
+  `reservation_id` bigint(20) NOT NULL COMMENT '实际库存预留ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `erp_wo_id` bigint(20) NOT NULL COMMENT '原ERP生产工单',
+  `mes_wo_id` bigint(20) NOT NULL COMMENT '原MES生产工单',
+  `requirement_detail_id` bigint(20) NOT NULL COMMENT '原确认物料需求行',
+  `material_id` bigint(20) NOT NULL COMMENT '预留组件物料ID',
+  `policy_version` bigint(20) NOT NULL COMMENT '授权时物料追踪策略版本',
+  `quantity` decimal(18,4) NOT NULL COMMENT '实际预留合计数量',
+  `content_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原命令和实际选择的规范摘要',
+  `status` varchar(24) NOT NULL DEFAULT 'RESERVED' COMMENT 'RESERVED预留或CONSUMED完工核销',
+  PRIMARY KEY (`reservation_id`),
+  UNIQUE KEY `uk_material_reservation_command` (`tenant_id`,`command_id`),
+  KEY `idx_material_reservation_wo` (`tenant_id`,`erp_wo_id`,`status`),
+  KEY `idx_material_reservation_requirement` (`tenant_id`,`requirement_detail_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='ERP倒冲实际库存预留头，与原库存同事务';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_material_reservation_line` (
+  `reservation_line_id` bigint(20) NOT NULL COMMENT '实际库存预留行ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `reservation_id` bigint(20) NOT NULL COMMENT '原预留头ID',
+  `line_no` bigint(20) NOT NULL COMMENT '原命令内预留行号',
+  `source_stock_id` bigint(20) NOT NULL COMMENT '实际选定的原库存行',
+  `identity_id` bigint(20) DEFAULT NULL COMMENT 'ERP正式组件身份',
+  `erp_batch_id` bigint(20) DEFAULT NULL COMMENT 'ERP批次ID，SN-only来源允许空值',
+  `valuation_group_id` bigint(20) DEFAULT NULL COMMENT '原库存计价组，不按SN重新计价',
+  `quantity` decimal(18,4) NOT NULL COMMENT '本行实际预留数量',
+  `consumed_quantity` decimal(18,4) NOT NULL DEFAULT 0.0000 COMMENT '完工实际核销数量',
+  `version` bigint(20) NOT NULL DEFAULT 1 COMMENT '原预留行并发版本',
+  PRIMARY KEY (`reservation_line_id`),
+  UNIQUE KEY `uk_material_reservation_line` (`tenant_id`,`reservation_id`,`line_no`),
+  KEY `idx_material_reservation_stock` (`tenant_id`,`source_stock_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='ERP实际预留库存明细，保留正式组件与批次证据';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_material_consumption` (
+  `consumption_id` bigint(20) NOT NULL COMMENT 'ERP实际消耗接收记录ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `manifest_id` bigint(20) NOT NULL COMMENT '原MES完工清单ID',
+  `manifest_revision` int(11) NOT NULL COMMENT '原清单修订',
+  `allocation_id` bigint(20) NOT NULL COMMENT '原实际消耗lt_wo_consumption.consumption_id，不是额度分配ID',
+  `erp_wo_id` bigint(20) NOT NULL COMMENT '原ERP生产工单',
+  `material_id` bigint(20) NOT NULL COMMENT '实际组件物料ID',
+  `reservation_id` bigint(20) DEFAULT NULL COMMENT '原实际库存预留头',
+  `reservation_line_id` bigint(20) DEFAULT NULL COMMENT '原实际库存预留行',
+  `posting_group_id` bigint(20) DEFAULT NULL COMMENT '原发料过账证明组',
+  `identity_id` bigint(20) DEFAULT NULL COMMENT 'ERP正式组件身份',
+  `source_stock_id` bigint(20) DEFAULT NULL COMMENT '实际来源库存行',
+  `erp_batch_id` bigint(20) DEFAULT NULL COMMENT 'ERP批次ID，SN-only来源允许空值',
+  `quantity` decimal(18,4) NOT NULL COMMENT '实际消耗基本单位数量',
+  `source_version` bigint(20) NOT NULL COMMENT 'MES冻结的实际来源版本',
+  `evidence_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原实际来源证据SHA256',
+  `source_event_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'ERP原授权或过账事件ID',
+  PRIMARY KEY (`consumption_id`),
+  UNIQUE KEY `uk_material_consumption_allocation` (`tenant_id`,`manifest_id`,`manifest_revision`,`allocation_id`),
+  KEY `idx_material_consumption_wo` (`tenant_id`,`erp_wo_id`,`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='ERP按原MES实际消耗分配接收，不按BOM推算';
+
+CREATE TABLE IF NOT EXISTS `wm_trace_stock_conversion_run` (
+  `run_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '当前库存转换运行ID，不重用已回退运行',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `material_id` bigint(20) NOT NULL COMMENT '整物料当前库存转换范围',
+  `target_database` varchar(64) NOT NULL COMMENT '显式核实的ERP目标库',
+  `target_environment` varchar(128) NOT NULL COMMENT '显式核实的目标环境',
+  `backup_reference` varchar(255) NOT NULL COMMENT '操作者核实的备份引用，不含连接凭据',
+  `cutover_at` datetime NOT NULL COMMENT '真实physical census切点，不代表补造历史收货',
+  `plan_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '批准转换计划摘要',
+  `before_snapshot_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '完整转换前快照摘要',
+  `after_snapshot_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '完整转换后快照摘要',
+  `bridge_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'census当前身份桥摘要，保留原聚合流水',
+  `journal_json` longtext NOT NULL COMMENT '不可变完整转换日志，不含journal_hash自身；回退不覆盖',
+  `journal_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原完整日志原始UTF8字节SHA256，回退保持原值',
+  `revert_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT '实际回退日志摘要，未回退保持NULL',
+  `status` varchar(24) NOT NULL DEFAULT 'PREPARED' COMMENT '同事务PREPARED到APPLIED，安全回退后REVERTED',
+  `version` bigint(20) NOT NULL DEFAULT 1 COMMENT '审计状态CAS，回退后为2',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`run_id`),
+  KEY `idx_stock_conversion_material` (`tenant_id`,`material_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='当前库存到正式SN的零损益转换审计，仅追加工件并CAS状态';
+
+CREATE TABLE IF NOT EXISTS `wm_work_order_tracking_policy` (
+  `snapshot_id` bigint(20) NOT NULL COMMENT '不可变工单策略记录ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `erp_wo_id` bigint(20) NOT NULL COMMENT '真实ERP工单来源ID',
+  `material_id` bigint(20) NOT NULL COMMENT '根物料或原组件物料ID',
+  `snapshot_version` int(11) NOT NULL COMMENT '策略证据格式版本，不推定历史版本',
+  `policy_version` bigint(20) NOT NULL COMMENT '原追踪策略版本',
+  `policy_json` longtext NOT NULL COMMENT '原追踪策略冻结JSON',
+  `policy_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原策略JSON原始UTF8字节摘要',
+  `source_json` longtext NOT NULL COMMENT '原工单及完整物料来源范围JSON',
+  `source_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原工单来源JSON原始字节摘要',
+  `snapshot_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '同工单整组策略证据摘要',
+  `provenance` varchar(32) COLLATE utf8mb4_bin NOT NULL COMMENT 'ERP_RELEASE或有明确原证据的SOURCE_POLICY_ADOPTION',
+  `evidence_ref` varchar(255) NOT NULL COMMENT '原release或经批准历史策略凭据引用',
+  `frozen_at` datetime(3) NOT NULL COMMENT '原策略证据冻结时点',
+  `effective_from` datetime(3) NOT NULL COMMENT '明确原生效切点，不以当前时间补造历史',
+  `actor_id` bigint(20) DEFAULT NULL COMMENT '明确采纳操作人；原自动release可空',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_wo_tracking_policy` (`tenant_id`,`erp_wo_id`,`material_id`),
+  KEY `idx_wo_tracking_policy_material` (`tenant_id`,`material_id`,`erp_wo_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='不可变工单原追踪策略证据，旧工单缺失保持UNKNOWN';
+
+CREATE TABLE IF NOT EXISTS `wm_work_order_policy_adoption` (
+  `adoption_id` bigint(20) NOT NULL COMMENT '已独立审批的采纳申请ID',
+  `tenant_id` varchar(20) NOT NULL COMMENT '租户ID，必须由认证上下文提供',
+  `command_id` varchar(128) COLLATE utf8mb4_bin NOT NULL COMMENT '幂等业务命令ID',
+  `erp_wo_id` bigint(20) NOT NULL COMMENT '真实在途ERP工单ID',
+  `expected_wo_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '已核实WO/BOM/需求来源预览摘要',
+  `source_json` longtext NOT NULL COMMENT '完整原始策略归档集合，不使用当前主数据',
+  `source_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原始策略归档字节摘要',
+  `approval_json` longtext NOT NULL COMMENT '独立审核人对原申请意图的批准工件',
+  `approval_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '原批准工件字节摘要',
+  `request_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '工单来源、原策略、双方操作人及审批时间窗的长度分帧摘要',
+  `proposed_by` bigint(20) NOT NULL COMMENT '明确申请人，与批准人不同',
+  `approved_by` bigint(20) NOT NULL COMMENT '独立批准人',
+  `approved_at` datetime(3) NOT NULL COMMENT '原批准时间',
+  `expires_at` datetime(3) NOT NULL COMMENT '批准有效期截止，过期拒绝',
+  `status` varchar(16) NOT NULL DEFAULT 'PENDING_REVIEW' COMMENT '只有显式独立批准后才可APPROVED，实际服务CAS到APPLIED',
+  `version` bigint(20) NOT NULL DEFAULT 1 COMMENT '批准/执行版本CAS',
+  `applied_at` datetime(3) DEFAULT NULL COMMENT '实际执行后未来生效时间，不回填历史生效',
+  `snapshot_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT '实际服务冻结后的整组策略摘要，未执行保持NULL',
+  PRIMARY KEY (`adoption_id`),
+  UNIQUE KEY `uk_wo_policy_adoption_command` (`tenant_id`,`command_id`),
+  KEY `idx_wo_policy_adoption_state` (`tenant_id`,`erp_wo_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='原工单策略独立审批采纳账，实际生效由ERP业务事务执行';
+-- material-trace-20261018:end

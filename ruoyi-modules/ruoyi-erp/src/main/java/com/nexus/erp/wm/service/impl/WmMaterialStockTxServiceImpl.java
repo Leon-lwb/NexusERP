@@ -74,8 +74,7 @@ public class WmMaterialStockTxServiceImpl extends ServiceImpl<WmMaterialStockTxM
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialStockTxBo bo) {
-        WmMaterialStockTx entity = MapstructUtils.convert(bo, WmMaterialStockTx.class);
-        return baseMapper.insert(entity);
+        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**
@@ -87,8 +86,7 @@ public class WmMaterialStockTxServiceImpl extends ServiceImpl<WmMaterialStockTxM
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialStockTxBo bo) {
-        WmMaterialStockTx entity = MapstructUtils.convert(bo, WmMaterialStockTx.class);
-        return baseMapper.updateById(entity);
+        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**
@@ -100,7 +98,7 @@ public class WmMaterialStockTxServiceImpl extends ServiceImpl<WmMaterialStockTxM
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     private LambdaQueryWrapper<WmMaterialStockTx> buildQueryWrapper(WmMaterialStockTxBo bo) {

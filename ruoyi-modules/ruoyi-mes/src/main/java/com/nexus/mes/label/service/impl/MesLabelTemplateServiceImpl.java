@@ -13,6 +13,7 @@ import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.label.domain.bo.MesLabelTemplateBo;
 import com.nexus.mes.label.domain.vo.MesLabelTemplateVo;
+import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
 import com.nexus.mes.label.mapper.MesLabelTemplateMapper;
 import com.nexus.mes.label.service.IMesLabelTemplateService;
 import com.nexus.mes.label.service.LabelPrintService;
@@ -24,10 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 标签打印模板 Service 实现
@@ -72,6 +75,7 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         applyDefaults(template);
         validateRenderable(template);
         checkCodeUnique(template);
+        template.setTemplateRevision(1L);
         return baseMapper.insert(template) > 0;
     }
 
@@ -85,7 +89,20 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         applyDefaults(template);
         validateRenderable(template);
         checkCodeUnique(template);
-        return baseMapper.updateById(template) > 0;
+        MesLabelTemplate current = requireTemplate(template.getTemplateId());
+        Long revision = current.getTemplateRevision();
+        if (bo.getTemplateRevision() != null && !Objects.equals(bo.getTemplateRevision(), revision)) {
+            throw new ServiceException("模板已被修改，请重新加载后保存");
+        }
+        template.setTemplateRevision(revision == null ? 1L : Math.addExact(revision, 1L));
+        int updated = baseMapper.update(template, Wrappers.<MesLabelTemplate>lambdaUpdate()
+            .eq(MesLabelTemplate::getTemplateId, template.getTemplateId())
+            .eq(revision != null, MesLabelTemplate::getTemplateRevision, revision)
+            .isNull(revision == null, MesLabelTemplate::getTemplateRevision));
+        if (updated == 0) {
+            throw new ServiceException("模板已被修改，请重新加载后保存");
+        }
+        return true;
     }
 
     @Override
@@ -101,33 +118,99 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         data.put("payload", payload);
         data.put("charset", renderService.charsetOf(template).name());
         data.put("lang", template.getLabelLang());
+        data.put("templateRevision", template.getTemplateRevision());
         return data;
     }
 
     @Override
     public boolean testPrint(Long templateId) {
+        return "SENT".equals(testPrintTask(templateId, null).getStatus());
+    }
+
+    /** 测试打印先保存任务，再在事务外尝试发送，返回可查询的持久化任务回执。 */
+    @Override
+    public LabelPrintTaskVo testPrintTask(Long templateId, String requestId) {
         MesLabelTemplate template = requireTemplate(templateId);
-        String payload = renderService.render(template, sampleFields());
-        // MES-LABEL-02: 测试打印同样留痕(print_source=TEST), 便于排查"打印了但没出纸"
+        Map<String, String> fields = sampleFields();
+        String payload = renderService.render(template, fields);
         MesLabelPrintLog printLog = printService.newLog(null, null, template, MesLabelPrintLog.SOURCE_TEST);
-        return printService.send(printLog, payload, renderService.charsetOf(template));
+        printService.freezeFields(printLog, fields);
+        return printService.view(printService.submitAndSend(printLog, payload, renderService.charsetOf(template), requestId));
     }
 
     /**
-     * 人工补打(MES-LABEL-02): SN + 模板重新渲染直发, 留痕 print_source=REPRINT(重打计数可查)
+     * 历史二参数补打适配：能定位原任务时复用冻结指令，缺少原因的事实明确记录为兼容模式。
      */
     @Override
     public boolean reprint(Long snId, Long templateId) {
+        throw new ServiceException("补打必须提供原打印任务 originalPrintLogId 和非空补打原因");
+    }
+
+    /** 显式补打必须关联本 SN、本模板的原任务并填写原因；不得覆盖原任务审计。 */
+    @Override
+    public boolean reprint(Long snId, Long templateId, Long originalPrintLogId, String reprintReason) {
+        return "SENT".equals(reprintTask(snId, templateId, originalPrintLogId, reprintReason, null).getStatus());
+    }
+
+    /** 显式补打以原任务及原因作为稳定业务意图，重复请求复用同一新任务。 */
+    @Override
+    public LabelPrintTaskVo reprintTask(Long snId, Long templateId, Long originalPrintLogId, String reprintReason, String requestId) {
+        if (originalPrintLogId == null) {
+            throw new ServiceException("补打必须提供原打印任务 originalPrintLogId");
+        }
+        if (StringUtils.isBlank(reprintReason)) {
+            throw new ServiceException("补打原因不能为空");
+        }
+        String reason = reprintReason.trim();
+        if (reason.length() > 500) {
+            throw new ServiceException("补打原因不能超过500个字符");
+        }
+        MesLabelPrintLog original = printService.findLog(originalPrintLogId);
+        if (original == null) {
+            throw new ServiceException("原打印任务不存在或无权访问: " + originalPrintLogId);
+        }
+        if (!Objects.equals(snId, original.getSnId()) || !Objects.equals(templateId, original.getTemplateId())) {
+            throw new ServiceException("原打印任务与本次 SN 或模板不匹配");
+        }
+        if ("PENDING".equals(original.getResult()) || "SENDING".equals(original.getResult())) {
+            throw new ServiceException("原任务仍待发或发送中，不能另建补打任务");
+        }
+        return reprintAttempt(snId, templateId, original, reason, requestId);
+    }
+
+    /** 优先使用原任务已冻结指令；只对缺少快照的历史记录按当前数据生成并明确标注。 */
+    private LabelPrintTaskVo reprintAttempt(Long snId, Long templateId, MesLabelPrintLog original, String reason,
+                                           String requestId) {
+        if (original != null && StringUtils.isNotBlank(original.getRenderedPayload())
+            && StringUtils.isNotBlank(original.getPayloadCharset())) {
+            MesLabelPrintLog attempt = printService.newReprintLog(original, reason, false);
+            return printService.view(printService.submitAndSend(attempt, original.getRenderedPayload(), Charset.forName(original.getPayloadCharset()), requestId));
+        }
+        if (original != null && ("FROZEN".equals(original.getSnapshotMode())
+            || StringUtils.isNotBlank(original.getTemplateSnapshot()) || StringUtils.isNotBlank(original.getFieldSnapshot())
+            || StringUtils.isNotBlank(original.getContentHash()) || StringUtils.isNotBlank(original.getPayloadHash()))) {
+            throw new ServiceException("原任务未形成完整可发送的冻结指令，不能用当前模板替代");
+        }
         ProSn sn = proSnMapper.selectById(snId);
         if (sn == null) {
             throw new ServiceException("SN不存在: " + snId);
         }
         MesLabelTemplate template = requireTemplate(templateId);
-        String payload = renderService.render(template, renderService.snFields(sn));
-        MesLabelPrintLog printLog = printService.newLog(sn.getSnId(), sn.getSnCode(), template,
+        Map<String, String> fields = renderService.snFields(sn);
+        String payload = renderService.render(template, fields);
+        MesLabelPrintLog attempt = printService.newLog(sn.getSnId(), fields.get("snCode"), template,
             MesLabelPrintLog.SOURCE_REPRINT);
-        return printService.send(printLog, payload, renderService.charsetOf(template));
+        printService.freezeFields(attempt, fields);
+        attempt.setOriginalPrintLogId(original == null ? null : original.getLogId());
+        attempt.setReprintReason(reason);
+        attempt.setSnapshotMode("LEGACY_RECORD");
+        attempt.setRemark("原任务为历史记录且缺少冻结内容；本次按当前模板与SN生成，不能证明与原标签一致");
+        return printService.view(printService.submitAndSend(attempt, payload, renderService.charsetOf(template), requestId));
     }
+
+    /** 任务状态查询与原打印权限、当前租户范围一致。 */
+    @Override
+    public LabelPrintTaskVo printTask(Long taskId) { return printService.taskInfo(taskId); }
 
     // ==================== 辅助 ====================
 

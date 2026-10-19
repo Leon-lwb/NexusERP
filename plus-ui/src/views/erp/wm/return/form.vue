@@ -139,6 +139,13 @@
           title="目标库位为退料过账回库存的入库库位；不良退料建议指向不良品库区库位。"
           class="mt8"
         />
+        <MaterialTraceLines
+          :rows="lineList"
+          :header="form"
+          scene="RETURN"
+          quantity-key="quantity"
+          :disabled="isViewMode || form.status === 'COMPLETED'"
+        />
       </el-form>
     </el-card>
 
@@ -178,6 +185,7 @@
 </template>
 
 <script setup lang="ts" name="MaterialReturnForm">
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import { getReturn, addReturn } from '@/api/erp/wm/return';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { getMeasure } from '@/api/erp/bd/measure';

@@ -1,3 +1,6 @@
+/** 条码主对象只引用现有身份；NULL历史映射保留为旧来源，不推造类型。 */
+export type BarcodePrimaryObjectType = 'SN' | 'BATCH' | 'MATERIAL' | 'DOCUMENT';
+
 /**
  * 条形码配置查询条件接口
  */
@@ -9,7 +12,7 @@ export interface BarcodeConfigQuery extends PageQuery {
   /** 业务类型 */
   bizType?: string;
   /** 物料类别ID */
-  categoryId?: number;
+  categoryId?: string;
   /** 启用状态 */
   enableFlag?: number;
 }
@@ -19,7 +22,7 @@ export interface BarcodeConfigQuery extends PageQuery {
  */
 export interface BarcodeConfigVO {
   /** 配置ID */
-  configId: number;
+  configId: string;
   /** 配置编码 */
   configCode: string;
   /** 配置名称 */
@@ -37,7 +40,7 @@ export interface BarcodeConfigVO {
   /** 业务类型 */
   bizType?: string;
   /** 物料类别ID */
-  categoryId?: number;
+  categoryId?: string;
   /** 启用状态 */
   enableFlag?: number;
   /** 备注 */
@@ -53,7 +56,7 @@ export interface BarcodeConfigVO {
  */
 export interface BarcodeConfigForm {
   /** 配置ID */
-  configId?: number;
+  configId?: string;
   /** 配置编码 */
   configCode: string;
   /** 配置名称 */
@@ -71,7 +74,7 @@ export interface BarcodeConfigForm {
   /** 业务类型 */
   bizType?: string;
   /** 物料类别ID */
-  categoryId?: number;
+  categoryId?: string;
   /** 启用状态 */
   enableFlag?: number;
   /** 备注 */
@@ -82,18 +85,24 @@ export interface BarcodeConfigForm {
  * 条形码查询条件接口
  */
 export interface BarcodeQuery extends PageQuery {
+  configCode?: string;
+  /** 主对象类型；历史NULL或缺省只显示原来源。 */
+  primaryObjectType?: BarcodePrimaryObjectType | null;
+  /** 正式ERP SN身份ID，不使用MES本地SN ID。 */
+  snId?: string;
+
   /** 条码 */
   barcodeCode?: string;
   /** 配置ID */
-  configId?: number;
+  configId?: string;
   /** 业务类型 */
   bizType?: string;
   /** 业务ID */
-  bizId?: number;
+  bizId?: string;
   /** 物料ID */
-  materialId?: number;
+  materialId?: string;
   /** 库存ID */
-  stockId?: number;
+  stockId?: string;
   /** 状态 */
   status?: string;
 }
@@ -102,26 +111,33 @@ export interface BarcodeQuery extends PageQuery {
  * 条形码视图对象接口
  */
 export interface BarcodeVO {
+  /** 主对象类型；历史NULL或缺省只显示原来源。 */
+  primaryObjectType?: BarcodePrimaryObjectType | null;
+  /** 正式ERP SN身份ID，不使用MES本地SN ID。 */
+  snId?: string;
+
   /** 条码ID */
-  barcodeId: number;
+  barcodeId: string;
   /** 条码 */
   barcodeCode: string;
   /** 配置ID */
-  configId?: number;
+  configId?: string;
   /** 配置编码 */
   configCode?: string;
   /** 业务类型 */
   bizType?: string;
   /** 业务ID */
-  bizId?: number;
+  bizId?: string;
   /** 业务行ID */
-  bizLineId?: number;
+  bizLineId?: string;
   /** 物料ID */
-  materialId?: number;
+  materialId?: string;
   /** 批次ID */
-  batchId?: number;
+  batchId?: string;
+  /** 原批次编码上下文，创建后不可重绑。 */
+  batchCode?: string;
   /** 库存ID */
-  stockId?: number;
+  stockId?: string;
   /** 状态 */
   status?: string;
   /** 生成时间 */
@@ -142,26 +158,33 @@ export interface BarcodeVO {
  * 条形码表单接口
  */
 export interface BarcodeForm {
+  /** 主对象类型；历史NULL或缺省只显示原来源。 */
+  primaryObjectType?: BarcodePrimaryObjectType | null;
+  /** 正式ERP SN身份ID，不使用MES本地SN ID。 */
+  snId?: string;
+
   /** 条码ID */
-  barcodeId?: number;
+  barcodeId?: string;
   /** 条码 */
   barcodeCode: string;
   /** 配置ID */
-  configId?: number;
+  configId?: string;
   /** 配置编码 */
   configCode?: string;
   /** 业务类型 */
   bizType?: string;
   /** 业务ID */
-  bizId?: number;
+  bizId?: string;
   /** 业务行ID */
-  bizLineId?: number;
+  bizLineId?: string;
   /** 物料ID */
-  materialId?: number;
+  materialId?: string;
   /** 批次ID */
-  batchId?: number;
+  batchId?: string;
+  /** 原批次编码上下文，创建后不可重绑。 */
+  batchCode?: string;
   /** 库存ID */
-  stockId?: number;
+  stockId?: string;
   /** 状态 */
   status?: string;
   /** 生成时间 */

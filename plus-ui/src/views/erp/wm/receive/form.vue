@@ -270,6 +270,13 @@
           </el-table-column>
         </el-table>
         <!-- 子表部分结束 -->
+        <MaterialTraceLines
+          :rows="receiveTraceRows"
+          :header="form"
+          scene="PURCHASE_RECEIVE"
+          quantity-key="quantity"
+          :disabled="formDisabled || !ordinaryAllowed"
+        />
       </el-form>
     </el-card>
 
@@ -405,6 +412,15 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <SnSelector
+          ref="shelfSnSelectorRef"
+          :row="shelfForm"
+          :header="form"
+          scene="PURCHASE_RECEIVE"
+          bind-object
+          :disabled="isShelfViewMode || !ordinaryAllowed"
+          @change="Object.assign(shelfForm, $event)"
+        />
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -455,6 +471,7 @@
 </template>
 
 <script setup lang="ts" name="ReceiveForm">
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import { updateReceive as guardedUpdateReceive, confirmShelf as guardedConfirmShelf } from '@/api/erp/wm/receive';
 import { getToken } from '@/utils/auth';
 import { useUserStore } from '@/store/modules/user';
@@ -470,7 +487,8 @@ import { getWareHouseTree, listWarehouse } from '@/api/erp/wm/warehouse';
 import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
-import { listMaterial } from '@/api/erp/bd/material';
+import SnSelector from '@/components/material-trace/SnSelector.vue';
+import { createCommandSession, generatedBatchBinding, inventoryLineError } from '@/components/material-trace/model';
 import LabelCapture from '@/components/cv/LabelCapture.vue';
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
@@ -502,34 +520,24 @@ const shelfTitle = ref('');
 const isShelfViewMode = ref(false);
 const labelCaptureRef = ref<InstanceType<typeof LabelCapture> | null>(null);
 
-/**
- * OCR 扫标签回填上架表单(Web 仅测试用,最终落地 App/PAD)
- * 料号 → 主数据校验 → 回填 名称/批次;识别结果可继续手改
- */
-function onLabelRecognized(payload: any) {
-  if (payload.materialCode) {
-    shelfForm.value.materialCode = payload.materialCode;
-    if (payload.materialName) {
-      shelfForm.value.materialName = payload.materialName;
-    } else {
-      /** 主数据未命中时尝试按料号查物料(兜底) */
-      listMaterial({ materialCode: payload.materialCode, pageNum: 1, pageSize: 5 } as any)
-        .then((res: any) => {
-          const rows = res?.rows || [];
-          if (rows.length) {
-            shelfForm.value.materialCode = rows[0].materialCode;
-            shelfForm.value.materialName = rows[0].materialName;
-          }
-        })
-        .catch(() => {});
-    }
-  }
-  if (payload.batchCode) {
-    shelfForm.value.batchCode = payload.batchCode;
-  }
-  if (payload.snCode) {
-    shelfForm.value.snCode = payload.snCode;
-  }
+/** 将已有实际上架明细交给统一实物选择，不丢弃来源行和版本。 */
+const receiveTraceRows = computed(() =>
+  wmMaterialReceiveLineList.value.flatMap((line) =>
+    line.detailList?.length ? line.detailList : line.wmMaterialReceiveLineDetailList?.length ? line.wmMaterialReceiveLineDetailList : []
+  )
+);
+const shelfSnSelectorRef = ref<InstanceType<typeof SnSelector>>();
+const receiveCommands = createCommandSession();
+
+/** 会话守卫冻结请求体前固定本页命令，内容修改产生新号，网络重试保留原号。 */
+function receiveCommandBody(body: ReceiveForm): ReceiveForm & { _traceCommandId: string } {
+  const copy = JSON.parse(JSON.stringify(body));
+  return { ...copy, _traceCommandId: receiveCommands.forPayload(copy) };
+}
+
+/** OCR 原对象先整体解析，成功前不修改任何料号、身份或批次。 */
+function onLabelRecognized(payload: object) {
+  shelfSnSelectorRef.value?.resolve(payload);
 }
 
 /** 仓库树相关数据 */
@@ -965,7 +973,7 @@ async function handleConfirmShelf() {
   if (!session) return;
   const updateReceive = (body: ReceiveForm) => {
     session.assertCurrent();
-    return guardedUpdateReceive(JSON.parse(JSON.stringify(body)), session);
+    return guardedUpdateReceive(receiveCommandBody(body), session);
   };
   const confirmShelf = (value: string | number) => {
     session.assertCurrent();
@@ -1001,7 +1009,9 @@ async function handleConfirmShelf() {
       /** 刷新页面数据 */
       getInfo(form.value.receiveId);
     })
-    .catch(() => {});
+    .catch((cause) => {
+      if (cause !== 'cancel' && cause !== 'close') proxy.$modal.msgWarning(cause instanceof Error ? cause.message : '追溯校验失败');
+    });
 }
 
 /** 查看流程 */
@@ -1049,13 +1059,13 @@ async function submitForm() {
       }
       form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
       if (form.value.receiveId != null) {
-        updateReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+        updateReceive(receiveCommandBody(form.value), session).then(() => {
           session.assertCurrent();
           proxy.$modal.msgSuccess('修改成功');
           router.push('/erp/inbound/receive');
         });
       } else {
-        addReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+        addReceive(receiveCommandBody(form.value), session).then(() => {
           session.assertCurrent();
           proxy.$modal.msgSuccess('新增成功');
           router.push('/erp/inbound/receive');
@@ -1075,13 +1085,13 @@ async function submitApprovingForm() {
       form.value.status = 'APPROVING';
       form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails();
       if (form.value.receiveId != null) {
-        updateReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+        updateReceive(receiveCommandBody(form.value), session).then(() => {
           session.assertCurrent();
           proxy.$modal.msgSuccess('审核提交成功');
           router.push('/erp/inbound/receive');
         });
       } else {
-        addReceive(JSON.parse(JSON.stringify(form.value)), session).then(() => {
+        addReceive(receiveCommandBody(form.value), session).then(() => {
           session.assertCurrent();
           proxy.$modal.msgSuccess('审核提交成功');
           router.push('/erp/inbound/receive');
@@ -1235,6 +1245,8 @@ async function handleShelf(row: any) {
   loadWarehouseTree();
 
   /** 填充从主表传递过来的数据 */
+  shelfForm.value.detailVersion = row.detailVersion;
+  shelfForm.value.policy = row.policy;
   shelfForm.value.lineId = row.lineId;
   shelfForm.value.materialId = row.materialId;
   shelfForm.value.materialCode = row.materialCode;
@@ -1271,13 +1283,14 @@ async function autoGenerateBatch(row: any) {
     quantity: row.quantityReceived
   };
 
+  const originalShelf = { ...shelfForm.value };
   createBatch(batchData)
     .then((response: any) => {
       session.assertCurrent();
       if (response.code === 200 && response.data) {
-        /** 自动回填批次ID和批次号到上架表单 */
-        shelfForm.value.batchId = response.data.batchId;
-        shelfForm.value.batchCode = response.data.batchCode;
+        /** 迟到结果不能覆盖已解析的实物对象或另一个来源行。 */
+        const bound = generatedBatchBinding(shelfForm.value, originalShelf, response.data);
+        if (bound) Object.assign(shelfForm.value, bound);
       }
     })
     .catch((error: any) => {
@@ -1457,6 +1470,12 @@ async function submitShelfForm() {
   if (!session) return;
   (proxy.$refs['shelfRef'] as any).validate((valid: boolean) => {
     if (valid) {
+      const traceError = inventoryLineError(shelfForm.value);
+      if (traceError) {
+        proxy.$modal.msgWarning(traceError);
+        return;
+      }
+
       /** 校验 lineId：若为空则不允许保存，防止生成孤儿明细记录 */
       if (!shelfForm.value.lineId) {
         proxy.$modal.msgWarning('当前入库单行未保存，请先保存入库单主表后再进行上架操作');

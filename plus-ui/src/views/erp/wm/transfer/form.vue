@@ -173,6 +173,13 @@
             </template>
           </el-table-column>
         </el-table>
+        <MaterialTraceLines
+          :rows="lineList"
+          :header="form"
+          scene="TRANSFER"
+          quantity-key="quantity"
+          :disabled="formDisabled || form.status === 'EXECUTED'"
+        />
       </el-form>
     </el-card>
 
@@ -217,6 +224,8 @@
 </template>
 
 <script setup lang="ts" name="TransferForm">
+import { showTraceSubmission } from '@/components/material-trace/submission';
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import { getTransfer, addTransfer, updateTransfer, submitTransferFlow, getTransferProcId, executeTransfer } from '@/api/erp/wm/transfer';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { getMeasure } from '@/api/erp/bd/measure';
@@ -434,13 +443,15 @@ function handleExecute() {
   proxy.$modal
     .confirm('确认执行调拨单【' + form.value.transferNo + '】吗？执行后库存将过账。')
     .then(() => {
-      return executeTransfer(form.value.transferId);
+      return executeTransfer(form.value.transferId, { ...form.value, wmTransferLineList: lineList.value });
     })
-    .then(() => {
-      proxy.$modal.msgSuccess('调拨执行成功');
+    .then((response) => {
+      showTraceSubmission(proxy.$modal, response, '调拨执行成功');
       getInfo(form.value.transferId);
     })
-    .catch(() => {});
+    .catch((cause) => {
+      if (cause !== 'cancel' && cause !== 'close') proxy.$modal.msgWarning(cause instanceof Error ? cause.message : '追溯校验失败');
+    });
 }
 
 function getStatusType(status: string) {

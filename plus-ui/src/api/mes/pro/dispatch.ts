@@ -56,7 +56,7 @@ export const addDispatch = (cardId: number, stepRecordId: number, operatorId: nu
 
 export const startDispatch = (dispatchId: string | number) => request({ url: `/mes/pro/dispatch/start/${dispatchId}`, method: 'put' });
 
-export const completeDispatch = (dispatchId: string | number, goodQty: number, defectQty?: number, scrapQty?: number) =>
+export const completeDispatch = (dispatchId: string | number, goodQty: string | number, defectQty?: string | number, scrapQty?: string | number) =>
   request({ url: `/mes/pro/dispatch/complete/${dispatchId}`, method: 'put', params: { goodQty, defectQty, scrapQty } });
 
 export const cancelDispatch = (dispatchId: string | number) => request({ url: `/mes/pro/dispatch/cancel/${dispatchId}`, method: 'put' });

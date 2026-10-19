@@ -16,6 +16,7 @@ import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
+import com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
@@ -73,6 +74,7 @@ class PrdWorkOrderCompletionPostingWarningTest {
     @Mock WmProductionIssueLineMapper issueLineMapper;
     @Mock IWmStockOperationService stockOperationService;
     @Mock ReliableMessageProducer messageProducer;
+    @Mock PrdWorkOrderTrackingPolicyService trackingPolicies;
     @InjectMocks PrdWorkOrderServiceImpl service;
 
     private final Logger logger = (Logger) LoggerFactory.getLogger(PrdWorkOrderServiceImpl.class);

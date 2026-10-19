@@ -42,6 +42,9 @@ class WmBarcodeServiceImplTest {
     @Mock
     private BarcodeSequenceProvider barcodeSequenceProvider;
 
+    @Mock
+    private com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
+
     @InjectMocks
     private WmBarcodeServiceImpl wmBarcodeService;
 
@@ -90,5 +93,11 @@ class WmBarcodeServiceImplTest {
         assertEquals(9L, saved.getBatchId());
         assertEquals(5L, saved.getStockId());
         assertEquals(100L, saved.getMaterialId());
+        var locks=inOrder(identities,barcodeSequenceProvider,barcodeGenerator,baseMapper);
+        locks.verify(identities).lockBinding(any(WmBarcode.class),eq(true));
+        locks.verify(barcodeSequenceProvider).nextSequence("WM_RECEIVE_DEFAULT");
+        locks.verify(barcodeGenerator).generate(any(BarcodeRule.class),any(Date.class),anyLong());
+        locks.verify(identities).finishRegistration(any(WmBarcode.class));
+        locks.verify(baseMapper).insert(any(WmBarcode.class));
     }
 }

@@ -60,6 +60,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProFlowCardServiceImplTest {
 
+    @Mock private com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
     @Mock
     private ProFlowCardMapper baseMapper;
     @Mock
@@ -92,6 +93,10 @@ class ProFlowCardServiceImplTest {
     @Mock
     private ProWorkOrderStepProgressService progressService;
 
+    @Mock
+    private com.nexus.mes.trace.MesProductLotOutputWriter productLotOutputs;
+
+    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks
     private ProFlowCardServiceImpl service;
 
@@ -135,6 +140,21 @@ class ProFlowCardServiceImplTest {
         if (aopProxyMock != null) {
             aopProxyMock.close();
         }
+    }
+
+    @Test
+    void exitClassifiesPhysicalProductLotsBeforeStepCanAggregateAndFreeze() {
+        var bo=new com.nexus.mes.pro.domain.bo.ProExitBo();bo.setCardId(11L);bo.setStepRecordId(31L);bo.setGoodQty(BigDecimal.TEN);bo.setDefectQty(BigDecimal.ZERO);bo.setScrapQty(BigDecimal.ZERO);
+        bo.setProductOutputCommandId("exit-output");bo.setProductOutputs(List.of(new com.nexus.mes.trace.MesProductLotOutputWriter.OutputLine(7L,9L,BigDecimal.TEN,"GOOD")));
+        var checks=new com.nexus.mes.pro.domain.vo.ProCheckResultVo();checks.setPassed(true);
+        when(proEntryCheckService.runExitChecks(31L,bo)).thenReturn(checks);
+        lenient().when(productLotOutputs.record(eq("exit-output"),eq(11L),eq(31L),eq(bo.getProductOutputs()),eq(1L))).thenThrow(new ServiceException("output registration refused"));
+        try(var auth=mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
+            auth.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(1L);
+            var error=assertThrows(ServiceException.class,()->service.doExit(bo));assertEquals("output registration refused",error.getMessage());
+        }
+        var ordered=inOrder(proEntryCheckService,productLotOutputs);ordered.verify(proEntryCheckService).runExitChecks(31L,bo);ordered.verify(productLotOutputs).record("exit-output",11L,31L,bo.getProductOutputs(),1L);
+        verify(stepMapper,never()).update(isNull(),any());verify(proWorkOrderService,never()).completeWo(anyLong());
     }
 
     // ==================== MES-PRO-01 手工完工门禁 ====================

@@ -29,4 +29,11 @@ public class WmTraceResultVo implements Serializable {
 
     /** 树形结构根节点 */
     private WmTraceNodeVo tree;
+    /** Stable physical subject when the query has been constrained to one formal SN. */
+    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    private Long identityId;
+    private String traceScope;
+    private Boolean truncated;
+    private String truncationReason;
+    private List<String> evidenceGaps;
 }

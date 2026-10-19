@@ -2,6 +2,7 @@ package com.nexus.mes.label.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -9,6 +10,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.label.domain.bo.MesLabelTemplateBo;
 import com.nexus.mes.label.domain.vo.MesLabelTemplateVo;
+import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
 import com.nexus.mes.label.service.IMesLabelTemplateService;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -98,32 +100,54 @@ public class MesLabelTemplateController extends BaseController {
         return R.ok(labelTemplateService.preview(templateId));
     }
 
-    /**
-     * 测试打印: 样例数据渲染并直发打印机(需打印机在线)
-     */
+    /** 测试打印先保存任务，再按已提交租约发送，返回准确状态供人工核验。 */
     @SaCheckPermission("mes:label:template:print")
     @Log(title = "标签模板", businessType = BusinessType.OTHER)
     @PostMapping("/{templateId}/test-print")
-    public R<Void> testPrint(@NotNull @PathVariable Long templateId) {
-        boolean success = labelTemplateService.testPrint(templateId);
-        if (success) {
-            return R.ok("测试打印已发送", null);
-        }
-        return R.fail("打印发送失败(打印机不在线或地址未配置), 详情见服务端日志");
+    public R<LabelPrintTaskVo> testPrint(@NotNull @PathVariable Long templateId,
+                                       @RequestParam(required = false) String requestId) {
+        return receipt(labelTemplateService.testPrintTask(templateId, requestId));
     }
 
-    /**
-     * 人工补打(MES-LABEL-02): 按 SN + 模板重新打印并留痕(print_source=REPRINT)。
-     * <p>造码联动的自动打印带幂等键(同 SN 同模板已成功打印则跳过), 重打必须走本入口。</p>
-     */
+    /** 保留旧Java调用签名，HTTP参数requestId为可选新增字段。 */
+    public R<LabelPrintTaskVo> testPrint(Long templateId) { return testPrint(templateId, null); }
+
+    /** 补打保留原URL，原任务及原因现在必须明确提供，绝不自动重发 UNKNOWN。 */
     @SaCheckPermission("mes:label:template:print")
     @Log(title = "标签补打", businessType = BusinessType.OTHER)
     @PostMapping("/reprint")
-    public R<Void> reprint(@NotNull @RequestParam Long snId, @NotNull @RequestParam Long templateId) {
-        boolean success = labelTemplateService.reprint(snId, templateId);
-        if (success) {
-            return R.ok("补打已发送", null);
-        }
-        return R.fail("补打发送失败(打印机不在线或地址未配置), 详情见服务端日志与打印留痕");
+    public R<LabelPrintTaskVo> reprint(@NotNull @RequestParam Long snId, @NotNull @RequestParam Long templateId,
+                                     @RequestParam(required = false) String printSource,
+                                     @RequestParam(required = false) Long originalPrintLogId,
+                                     @RequestParam(required = false) String reprintReason,
+                                     @RequestParam(required = false) String requestId) {
+        if (printSource != null && !"REPRINT".equals(printSource)) throw new ServiceException("补打来源只允许 REPRINT");
+        return receipt(labelTemplateService.reprintTask(snId, templateId, originalPrintLogId, reprintReason, requestId));
+    }
+
+    /** 保留旧Java签名，缺少原任务及原因由实际服务明确拒绝。 */
+    public R<LabelPrintTaskVo> reprint(Long snId, Long templateId) { return reprint(snId, templateId, null, null, null, null); }
+    /** 保留上一版五参数Java签名。 */
+    public R<LabelPrintTaskVo> reprint(Long snId, Long templateId, String printSource, Long originalPrintLogId, String reprintReason) {
+        return reprint(snId, templateId, printSource, originalPrintLogId, reprintReason, null);
+    }
+
+    /** 人工查询待发或 UNKNOWN 的原任务，保留原权限及租户隔离。 */
+    @SaCheckPermission("mes:label:template:print")
+    @GetMapping("/print-task/{taskId}")
+    public R<LabelPrintTaskVo> printTask(@NotNull @PathVariable Long taskId) {
+        return receipt(labelTemplateService.printTask(taskId));
+    }
+
+    /** 成功接收任务不等于物理打印成功；失败和未知也返回持久化ID，禁止前端自动重发。 */
+    private R<LabelPrintTaskVo> receipt(LabelPrintTaskVo task) {
+        String message = switch (task.getStatus()) {
+            case "SENT" -> "打印指令已发送，未确认打印机实际出纸";
+            case "UNKNOWN" -> "打印状态未知，请核验原任务，禁止直接重发";
+            case "FAIL" -> "打印任务失败，核实后需按原任务及原因显式补打";
+            case "LEGACY_SENT" -> "已有历史发送留痕，本任务未发送；实际出纸未知";
+            default -> "打印任务已持久化，等待发送或正在发送";
+        };
+        return R.ok(message, task);
     }
 }

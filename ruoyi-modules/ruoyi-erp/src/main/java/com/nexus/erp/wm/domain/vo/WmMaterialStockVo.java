@@ -206,4 +206,6 @@ public class WmMaterialStockVo implements Serializable {
      * 冻结标志
      */
     private Long frozenFlag;
+    private Long trackingVersion;
+    private Long valuationGroupId;
 }

@@ -136,6 +136,7 @@
             </template>
           </el-table-column>
         </el-table>
+        <MaterialTraceLines :rows="lineList" :header="form" scene="MISC_RECEIPT" :disabled="isViewMode || form.status === 'EXECUTED'" />
       </el-form>
     </el-card>
 
@@ -210,6 +211,7 @@
 </template>
 
 <script setup lang="ts" name="MiscRecptForm">
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import { getMiscRecpt, addMiscRecpt, updateMiscRecpt } from '@/api/erp/wm/miscrecpt';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listStoragearea } from '@/api/erp/wm/storagearea';

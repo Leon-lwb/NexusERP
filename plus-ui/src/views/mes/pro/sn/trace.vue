@@ -25,6 +25,7 @@
       </el-descriptions>
     </el-card>
 
+    <TraceEvidence :result="traceEvidence" class="mt-3" />
     <el-row :gutter="12" class="mt-2">
       <!-- 前向追溯: SN → 工序链 → 子SN -->
       <el-col :span="14">
@@ -51,7 +52,7 @@
           <template #header>
             <span>后向追溯（父SN组装链）</span>
           </template>
-          <el-empty v-if="parentChain.length === 0" description="无父SN(顶层成品)" />
+          <el-empty v-if="parentChain.length === 0" description="当前响应未提供父 SN 关系" />
           <el-tree v-else :data="backwardTree" :props="treeProps" default-expand-all>
             <template #default="{ node, data }">
               <span>
@@ -66,6 +67,7 @@
 </template>
 
 <script setup lang="ts" name="MesSnTrace">
+import TraceEvidence from '@/components/material-trace/TraceEvidence.vue';
 import { traceSn } from '@/api/mes/pro/sn';
 import type { ProSnVO, SnTraceResult, SnTraceStep } from '@/api/mes/pro/sn';
 
@@ -74,6 +76,7 @@ const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_sn_status } = toRefs<any>(proxy?.useDict('mes_sn_status'));
 
+const traceEvidence = ref<Record<string, any>>({});
 const loading = ref(true);
 const sn = ref<ProSnVO>({} as ProSnVO);
 const forwardSteps = ref<SnTraceStep[]>([]);
@@ -88,6 +91,7 @@ const loadTrace = async () => {
     const snId = route.params.snId as string;
     const res = await traceSn(snId);
     const data = res.data as SnTraceResult;
+    traceEvidence.value = data;
     sn.value = data.sn;
     forwardSteps.value = data.forwardSteps || [];
     children.value = data.children || [];

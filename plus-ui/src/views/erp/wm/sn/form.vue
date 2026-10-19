@@ -5,13 +5,30 @@
         <div class="card-header">
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="primary" @click="registrationDialog?.open()" v-if="route.query.action === 'add'" v-hasPermi="['wm:sn:add']"
+              >登记正式 SN</el-button
+            >
+            <el-button v-if="form.snId" @click="aliasDialog?.open(form)" v-hasPermi="['wm:sn:edit']">外部别名</el-button>
+            <el-button
+              v-if="form.status === 'REGISTERED' && form.sourceDocType === 'ERP_MANUAL' && form.sourceDocId == null"
+              type="danger"
+              @click="retireDialog?.open(form)"
+              v-hasPermi="['wm:sn:remove']"
+              >弃用</el-button
+            >
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
       </template>
 
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-alert
+        v-if="form.status === 'RETIRED'"
+        title="该身份已弃用，原号码与审计记录保留，不能重新登记或回收。"
+        type="warning"
+        :closable="false"
+        class="mb-3"
+      />
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="true">
         <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
@@ -114,13 +131,23 @@
         </el-row>
       </el-form>
     </el-card>
+    <SerialRegistration ref="registrationDialog" />
+    <SerialAliasDialog ref="aliasDialog" />
+    <SerialRetireDialog ref="retireDialog" @retired="getInfo(form.snId)" />
   </div>
 </template>
 
 <script setup lang="ts" name="WmSnForm">
-import { getSn, addSn, updateSn } from '@/api/erp/wm/sn';
+import { getSn } from '@/api/erp/wm/sn';
+import SerialRetireDialog from '@/components/material-trace/SerialRetireDialog.vue';
+import SerialRegistration from '@/components/material-trace/SerialRegistration.vue';
+import SerialAliasDialog from '@/components/material-trace/SerialAliasDialog.vue';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRoute, useRouter } from 'vue-router';
+
+const registrationDialog = ref<InstanceType<typeof SerialRegistration>>();
+const aliasDialog = ref<InstanceType<typeof SerialAliasDialog>>();
+const retireDialog = ref<InstanceType<typeof SerialRetireDialog>>();
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_sn_status } = toRefs<any>(proxy.useDict('wm_sn_status'));
@@ -215,19 +242,6 @@ function reset() {
     expiryDate: null,
     remark: null
   };
-}
-
-function submitForm() {
-  const formRef = proxy.$refs['formRef'] as any;
-  formRef.validate((valid: boolean) => {
-    if (valid) {
-      const isEdit = route.query.action === 'edit' || form.value.snId != null;
-      (isEdit ? updateSn(form.value) : addSn(form.value)).then(() => {
-        proxy.$modal.msgSuccess('保存成功');
-        router.push('/erp/barcode/sn');
-      });
-    }
-  });
 }
 
 function cancel() {

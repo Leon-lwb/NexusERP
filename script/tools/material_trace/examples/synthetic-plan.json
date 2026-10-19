@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "before_hash": "610973b04e6f8621b0cd6af62b7b1ac5e3b3873e59baaa51f5285cbba3ab19a1",
+      "changes": {
+        "identity_id": "101",
+        "identity_version": "2"
+      },
+      "datasource": "mes",
+      "evidence_id": "SYNTH-E1",
+      "item_id": "1",
+      "key": {
+        "sn_id": "201",
+        "tenant_id": "T1"
+      },
+      "table": "pro_sn"
+    }
+  ],
+  "run_id": "SYNTH-REPAIR-1",
+  "schema_version": 1,
+  "snapshot_hash": "3cc498c1405f660a6a180c199c876744c5ae69ab05483027d902a9f876a6e30c",
+  "target": {
+    "environment": "synthetic",
+    "erp_database": "fixture_erp",
+    "mes_database": "fixture_mes"
+  }
+}

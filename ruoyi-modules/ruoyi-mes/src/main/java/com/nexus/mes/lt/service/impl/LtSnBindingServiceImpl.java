@@ -42,6 +42,7 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
     private final LtSnBindingMapper baseMapper;
     private final LtLotMapper lotMapper;
     private final ProSnMapper snMapper;
+    private final com.nexus.mes.trace.MesSnCreationWriter productLots;
 
     /**
      * 分页查询SN批次绑定列表
@@ -87,6 +88,11 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         if (lot == null) {
             throw new RuntimeException("批次不存在: " + bo.getLotId());
         }
+        if(!Objects.equals(sn.getMaterialId(),bo.getMaterialId()) || !Objects.equals(lot.getMaterialId(),sn.getMaterialId()))
+            throw new RuntimeException("组件批次必须通过有实际数量和工序的组件消耗账分配，不能用成品批次绑定代替");
+        if(sn.getProductLotId()!=null && !sn.getProductLotId().equals(bo.getLotId()))
+            throw new RuntimeException("成品批次已指定，变更需保留原凭据并走纠正流程");
+        productLots.attachProductLot(bo.getSnId(),bo.getLotId());
         // 3. 校验唯一性: 同SN同物料仅一个绑定(uk_sn_material 兜底,这里友好提示)
         Long existCount = baseMapper.selectCount(Wrappers.<LtSnBinding>lambdaQuery()
             .eq(LtSnBinding::getSnId, bo.getSnId())
@@ -120,9 +126,7 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        int rows = baseMapper.deleteByIds(java.util.Arrays.asList(ids));
-        log.info("批量删除SN-批次绑定: count={}", ids.length);
-        return rows > 0;
+        throw new RuntimeException("批次绑定凭据不可删除，组件请使用引用原分录的冲正");
     }
 
     /**

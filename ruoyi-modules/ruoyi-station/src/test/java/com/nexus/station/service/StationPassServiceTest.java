@@ -75,6 +75,8 @@ class StationPassServiceTest {
     @Mock
     private StationPassGuardMapper guard;
     @Mock ProWorkOrderStepProgressService progressService;
+    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
+    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks
     private StationPassService service;
 
@@ -83,6 +85,13 @@ class StationPassServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(serialReferences.submissionStatus(any())).thenReturn(java.util.Map.of("submissionState","SERVER_COMMITTED","handoffStatus","NONE"));
+        lenient().when(serialReferences.resolve(anyString())).thenAnswer(call->{
+            String code=call.getArgument(0);ProSn row=proSnMapper.selectOne(com.baomidou.mybatisplus.core.toolkit.Wrappers.<ProSn>lambdaQuery().eq(ProSn::getSnCode,code));
+            if(row==null){var rows=guard.lockSn("000000",code);row=rows==null || rows.size()!=1?null:rows.get(0);}
+            if(row==null)return null;if(row.getIdentityId()==null)row.setIdentityId(10000L+row.getSnId());
+            return new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",row.getIdentityId(),row.getSnId(),code,row.getSnCode(),row.getMaterialId(),row);
+        });
         lenient().when(progressService.lockForSn(anyString())).thenReturn(20L);
         lenient().when(progressService.lockForCard(anyLong())).thenAnswer(i -> flowCardMapper.selectById((Long)i.getArgument(0)));
         tenantHelperMock = mockStatic(TenantHelper.class);
@@ -137,6 +146,8 @@ class StationPassServiceTest {
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(com.nexus.station.domain.MesStationDevice.class))
             .thenReturn(deviceColumns);
         Map<String, ColumnCache> testRecordColumns = new HashMap<>();
+        testRecordColumns.put("SNID",new ColumnCache("sn_id","sn_id"));
+        testRecordColumns.put("TENANTID",new ColumnCache("tenant_id","tenant_id"));
         testRecordColumns.put("TESTRECORDID", new ColumnCache("test_record_id", "test_record_id"));
         testRecordColumns.put("SNCODE", new ColumnCache("sn_code", "sn_code"));
         testRecordColumns.put("RESULT", new ColumnCache("result", "result"));
@@ -148,6 +159,42 @@ class StationPassServiceTest {
             .thenReturn(testRecordColumns);
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(com.nexus.mes.ncr.domain.NcrOrder.class))
             .thenReturn(ncrColumns);
+    }
+
+    @Test
+    void finalSnIsCompletedBeforeStepCanAggregateCardAndWorkOrder() throws Exception {
+        ProSn sn = new ProSn(); sn.setSnId(44L); sn.setSnCode("CANONICAL-44");
+        ProFlowCard card = new ProFlowCard(); card.setCardId(12L);
+        ProFlowCardStep step = new ProFlowCardStep(); step.setSequenceNum(30); step.setStepRecordId(99L);
+        // No quantity closure is needed to observe the ordering boundary.
+        when(stepMapper.selectOne(any())).thenReturn(null);
+        var advance = StationPassService.class.getDeclaredMethod("advanceSn", ProSn.class,
+            ProFlowCardStep.class, ProFlowCard.class, List.class);
+        advance.setAccessible(true);
+        advance.invoke(service, sn, step, card, List.of(step));
+        var order = inOrder(proSnService, stepMapper);
+        order.verify(proSnService).completeSn(44L);
+        order.verify(stepMapper).selectOne(any());
+    }
+
+    @Test
+    void canonicalValidationUsesMappedLocalIdentityWithoutRenamingHistoricalText() {
+        var row=inProductionSn();row.setSnCode("LOCAL-OLD");row.setIdentityId(10001L);row.setWoNo("WO-20");
+        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",10001L,1L,"ERP-FORMAL","LOCAL-OLD",row.getMaterialId(),row)).when(serialReferences).resolve("ERP-FORMAL");
+        var result=service.validate("ERP-FORMAL","STN|JZ|L1|ASM|GENERAL");var info=(Map<?,?>)result.get("snInfo");
+        assertEquals("WO-20",info.get("woNo"));assertEquals(1L,info.get("localSnId"));assertEquals("ERP-FORMAL",info.get("canonicalSnCode"));assertEquals("LOCAL-OLD",info.get("localSnCode"));assertEquals("LOCAL-OLD",row.getSnCode());
+        verify(proSnMapper,never()).selectOne(any());
+    }
+
+    @Test
+    void canonicalReplayPreservesRawClientFingerprintAndUsesRealLocalReportHistory() {
+        var row=inProductionSn();row.setSnCode("LOCAL-OLD");row.setIdentityId(10001L);
+        doReturn(new com.nexus.mes.trace.MesSerialReferenceService.Resolved("000000",10001L,1L,"ERP-FORMAL","LOCAL-OLD",row.getMaterialId(),row)).when(serialReferences).resolve("ERP-FORMAL");
+        when(guard.lockSn("000000","LOCAL-OLD")).thenReturn(List.of(row));
+        var dto=new StationPassReportDto();dto.setSnCode("ERP-FORMAL");dto.setStationCode("STN|JZ|L1|ASM|GENERAL");dto.setResult("PASS");dto.setClientTs(1L);
+        var stored=new StationPassGuardMapper.StoredReport();stored.setTenantId("000000");stored.setDelFlag("0");stored.setSnCode("LOCAL-OLD");stored.setMesWoId(20L);stored.setCardId(1L);stored.setReportType("SINGLE");stored.setStationCode(dto.getStationCode());stored.setClientTs(1L);stored.setClientKey("SINGLE|ERP-FORMAL|STN|JZ|L1|ASM|GENERAL|1");stored.setResult("PASS");stored.setGoodQty(java.math.BigDecimal.ONE);stored.setDefectQty(java.math.BigDecimal.ZERO);stored.setRequestFingerprint(StationSinglePassFingerprint.of("000000","ERP-FORMAL",dto.getStationCode(),1L,"PASS",null,null,null));
+        when(guard.lockReports("000000","LOCAL-OLD")).thenReturn(List.of(stored));
+        assertEquals("SERVER_COMMITTED",service.reportSingle(dto,null).get("submissionState"));verify(reportMapper,never()).insert(any(MesStationReport.class));verify(guard,never()).lockSn("000000","ERP-FORMAL");
     }
 
     @AfterEach
@@ -298,6 +345,7 @@ class StationPassServiceTest {
     @Test
     void reportSingle_idempotentReplay_returnsWithoutInsert() {
         var stored=new StationPassGuardMapper.StoredReport();
+        stored.setMesWoId(20L);stored.setCardId(1L);
         stored.setDelFlag("0"); stored.setTenantId("000000"); stored.setSnCode("SN-1"); stored.setReportType("SINGLE");
         stored.setStationCode("STN|JZ|L1|ASM|GENERAL"); stored.setClientKey("SINGLE|SN-1|STN|JZ|L1|ASM|GENERAL|1787295823000");
         stored.setClientTs(1787295823000L); stored.setResult("PASS"); stored.setOperatorId(105L); stored.setOperatorCode("SCZX-1");
@@ -315,7 +363,7 @@ class StationPassServiceTest {
         Map<String, Object> data = service.reportSingle(dto,
             new StationPassService.OperatorInfo(105L, "SCZX-1", "张明"));
 
-        assertTrue(data.isEmpty());
+        assertEquals("SERVER_COMMITTED",data.get("submissionState"));
         verify(reportMapper, never()).insert(any(MesStationReport.class));
         verify(proSnMapper, never()).update(any(), any());
     }

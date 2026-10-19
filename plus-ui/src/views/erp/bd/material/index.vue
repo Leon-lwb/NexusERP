@@ -264,6 +264,25 @@
               </el-col>
             </el-row>
 
+            <el-alert :title="policyCombination(materialPolicy(form))" type="info" :closable="false" class="mb-3" />
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="组件允许混批" prop="allowMixedLot">
+                  <el-switch v-model="form.allowMixedLot" :active-value="true" :inactive-value="false" />
+                  <p class="text-gray-500">仅控制同一产品 SN 内同一组件物料是否可消耗多个批次，默认允许。</p>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="追溯阶段" prop="trackingStage">
+                  <el-select v-model="form.trackingStage">
+                    <el-option label="AUDIT 审计" value="AUDIT" />
+                    <el-option label="STRICT 严格" value="STRICT" />
+                  </el-select>
+                  <p class="text-gray-500">策略变更由服务端核对既有业务事实；STRICT 需通过审计。</p>
+                </el-form-item>
+                <el-form-item label="策略版本"><el-input :model-value="form.trackingVersion || '保存后由服务端返回'" readonly /></el-form-item>
+              </el-col>
+            </el-row>
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="批次管理" prop="isBatchManage">
@@ -455,6 +474,7 @@
 </template>
 
 <script setup lang="ts" name="Material">
+import { materialPolicy, policyCombination } from '@/components/material-trace/model';
 import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } from '@/api/erp/bd/material';
 import type { MaterialQuery } from '@/api/erp/bd/material/types';
 import { getAllChildrenIds } from '@/api/erp/bd/category';
@@ -553,6 +573,9 @@ const {
     isPhantom: 0,
     isBatchManage: 0,
     isSerialManage: 0,
+    allowMixedLot: true,
+    trackingVersion: undefined,
+    trackingStage: 'AUDIT' as const,
     safetyStock: 0,
     minStock: 0,
     maxStock: 0,
@@ -588,6 +611,8 @@ const {
     }
   },
   afterLoad: (data) => {
+    form.value.allowMixedLot = materialPolicy(data).allowMixedLot;
+    form.value.trackingStage = data.trackingStage || 'AUDIT';
     // 修改/查看时加载供应商Tab数据
     loadVendorList(data.materialId);
   }

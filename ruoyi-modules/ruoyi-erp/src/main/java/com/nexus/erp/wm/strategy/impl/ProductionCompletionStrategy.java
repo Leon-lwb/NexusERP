@@ -42,6 +42,9 @@ import java.util.Date;
 @Slf4j
 @Component
 public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：生产入库 */
     private static final String TX_TYPE_PRODUCTION_IN = "PRODUCTION_IN";
@@ -127,6 +130,8 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         Long batchId = args[8] != null ? (Long) args[8] : null;
         String batchCode = (String) args[9];
         Date now = (Date) args[10];
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+            "PRD_WORK_ORDER",woId,null,"PRODUCTION_IN",materialId,quantity,warehouseId,locationId,batchId,null)))return;
 
         // 已有流水不授权另一张单据成功；原结果恢复只能由上层完整凭据守卫确认。
         if (hasPosted(SOURCE_DOC_TYPE_WORK_ORDER, woId)) {

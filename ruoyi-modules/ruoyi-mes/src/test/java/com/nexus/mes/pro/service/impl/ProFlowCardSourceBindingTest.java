@@ -30,6 +30,7 @@ class ProFlowCardSourceBindingTest {
     @Mock private ProFlowCardStepMapper stepMapper;
     @Mock private ProWorkOrderStepMapper workOrderStepMapper;
     @Mock private ProWorkOrderStepProgressService progressService;
+    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks private ProFlowCardServiceImpl service;
     private MockedStatic<TenantHelper> tenant;
 

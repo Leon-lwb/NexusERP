@@ -68,6 +68,8 @@ public abstract class BaseStockOperationStrategy implements StockOperationStrate
         tx.setBaseUomName(stock.getBaseUomName());
         tx.setBatchId(stock.getBatchId());
         tx.setBatchCode(stock.getBatchCode());
+        tx.setSnId(stock.getSnId());
+        tx.setSnCode(stock.getSnCode());
         tx.setWarehouseId(stock.getWarehouseId());
         tx.setWarehouseCode(stock.getWarehouseCode());
         tx.setWarehouseName(stock.getWarehouseName());

@@ -24,6 +24,7 @@ public class LtWoConsumption extends TenantEntity {
     /** 消耗记录ID(主键) */
     @TableId(value = "consumption_id")
     private Long consumptionId;
+    private Long sourceAllocationId;
 
     /** 工单ID */
     private Long woId;

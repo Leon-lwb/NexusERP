@@ -109,3 +109,6 @@ doc/ai/benchmark/delivery-risk/reports/latest.md
 
 # Private self-developed report snapshots and exports
 /data/report/
+
+# 本机 javac 失败时生成的参数快照，不纳入业务源码
+/javac.*.args

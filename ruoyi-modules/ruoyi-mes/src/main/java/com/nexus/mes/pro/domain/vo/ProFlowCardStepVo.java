@@ -21,6 +21,9 @@ import java.util.Date;
 @AutoMapper(target = ProFlowCardStep.class)
 public class ProFlowCardStepVo implements Serializable {
 
+    /** 当前实际工序的产品lot、原生产分配与已登记产出；证据不足时为空。 */
+    private java.util.Map<String,Object> productOutputContext;
+
     @Serial
     private static final long serialVersionUID = 1L;
 

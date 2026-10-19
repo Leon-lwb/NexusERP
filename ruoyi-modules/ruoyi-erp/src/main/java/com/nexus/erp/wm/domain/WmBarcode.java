@@ -29,6 +29,9 @@ public class WmBarcode extends TenantEntity {
     /** 条码值 */
     private String barcodeCode;
 
+    /** 登记时冻结的主对象类型；历史空值保留证据缺口。 */
+    private String primaryObjectType;
+
     /** 配置ID */
     private Long configId;
 

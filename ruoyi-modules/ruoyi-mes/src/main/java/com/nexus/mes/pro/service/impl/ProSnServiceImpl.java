@@ -1,32 +1,28 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.lock.annotation.Lock4j;
+import com.nexus.mes.trace.*;
+import com.nexus.common.trace.TraceHashes;
+import org.springframework.transaction.annotation.Propagation;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.bo.ProSnBo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardStepVo;
 import com.nexus.mes.pro.domain.vo.ProSnVo;
-import com.nexus.mes.pro.event.SnCreatedEvent;
-import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProSnService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,10 +47,11 @@ public class ProSnServiceImpl implements IProSnService {
     private static final int MAX_PARENT_DEPTH = 10;
 
     private final ProSnMapper baseMapper;
-    private final ProFlowCardMapper flowCardMapper;
     private final ProFlowCardStepMapper stepMapper;
-    /** 事件发布器: SN 创建并指定批次时发布 SnCreatedEvent -> lt 模块写 SN↔批次绑定 */
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final MesSerialOrchestrator serialOrchestrator;
+    private final MesSnLifecycleWriter lifecycle;
+    private final MesMaterialTraceWriter componentTrace;
+    private final MesSerialReferenceService serialReferences;
 
     @Override
     /**
@@ -96,173 +93,47 @@ public class ProSnServiceImpl implements IProSnService {
      * @return 返回视图对象
      */
     public ProSnVo selectByCode(String snCode) {
-        return baseMapper.selectVoOne(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getSnCode, snCode));
+        var reference=serialReferences.resolve(snCode);if(reference==null)return null;
+        var view=baseMapper.selectVoById(reference.localSnId());
+        if(view!=null) {view.setLocalSnCode(reference.localSnCode());view.setCanonicalSnCode(reference.canonicalSnCode());view.setSnCode(reference.canonicalSnCode());}
+        return view;
     }
 
     /**
      * 从流转卡批量生成SN
      */
-    @Lock4j(keys = {"#cardId"})
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus, Long lotId) {
-        if (quantity == null || quantity <= 0) {
-            throw new RuntimeException("生成数量必须大于0");
-        }
-        // 1. 查流转卡(校验存在), 取冗余字段
-        ProFlowCard card = flowCardMapper.selectById(cardId);
-        if (card == null) {
-            throw new RuntimeException("流转卡不存在: " + cardId);
-        }
-
-        // 2. 计算起始序号(该卡已有SN数 + 1), @Lock4j 保证并发安全
-        Long existingCount = baseMapper.selectCount(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getCardId, cardId));
-        int startSeq = existingCount == null ? 1 : existingCount.intValue() + 1;
-
-        String status = StringUtils.isNotBlank(initialStatus) ? initialStatus : STATUS_IN_PRODUCTION;
-        LocalDate today = LocalDate.now();
-
-        // 3. 循环生成
-        List<ProSn> snList = new ArrayList<>();
-        for (int i = 0; i < quantity; i++) {
-            ProSn sn = new ProSn();
-            sn.setSnCode(generateSnCode(card.getCardNo(), startSeq + i));
-            sn.setMesWoId(card.getMesWoId());
-            sn.setWoNo(card.getWoNo());
-            sn.setCardId(cardId);
-            sn.setCardNo(card.getCardNo());
-            sn.setMaterialId(card.getMaterialId());
-            sn.setMaterialCode(card.getMaterialCode());
-            sn.setMaterialName(card.getMaterialName());
-            sn.setSnStatus(status);
-            sn.setSource(SOURCE_BATCH);
-            sn.setProductionDate(java.sql.Date.valueOf(today));
-            snList.add(sn);
-        }
-
-        for (ProSn sn : snList) {
-            baseMapper.insert(sn);
-        }
-        log.info("批量生成SN成功: cardId={}, quantity={}, startSeq={}", cardId, quantity, startSeq);
-
-        // 造码即发 SnCreatedEvent: lt 模块写 lt_sn_binding(lotId 非空时), label 模块打印 SN 标签
-        for (ProSn sn : snList) {
-            applicationEventPublisher.publishEvent(
-                new SnCreatedEvent(sn.getSnId(), sn.getSnCode(), lotId, sn.getMaterialId()));
-        }
-
-        // 4. 返回VO列表
-        List<Long> ids = snList.stream().map(ProSn::getSnId).toList();
-        return baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery()
-            .in(ProSn::getSnId, ids)
-            .orderByAsc(ProSn::getSnCode));
+    @Transactional(propagation=Propagation.NEVER)
+    public List<ProSnVo> generateSnForCard(Long cardId,Integer quantity,String initialStatus,Long lotId) {
+        return generateSnForCard("MES:CARD:"+cardId,cardId,quantity,initialStatus,lotId);
     }
-
-    /**
-     * 按委外订单批量生成SN (PCBA 委外闭环, ERP 发料完成经 MQ 触发)
-     * <p>编码: SN-{委外单号}-{4位序号}; 起始序号=该单已生成数+1(@Lock4j 防并发),
-     * source=SUBCONTRACT, 冗余 sourceId/subcontractNo 供 SN 直达追溯委外订单。</p>
-     */
-    @Lock4j(keys = {"#subcontractNo"})
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public List<ProSnVo> generateSnForSubcontract(Long subcontractId, String subcontractNo,
-                                                  Long materialId, String materialCode,
-                                                  String materialName, int quantity) {
-        if (quantity <= 0) {
-            throw new RuntimeException("生成数量必须大于0");
-        }
-        // 起始序号 = 该委外单已生成 SN 数 + 1 (幂等续号)
-        Long existingCount = baseMapper.selectCount(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getSubcontractNo, subcontractNo));
-        int startSeq = existingCount == null ? 1 : existingCount.intValue() + 1;
-        LocalDate today = LocalDate.now();
-
-        List<ProSn> snList = new ArrayList<>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            ProSn sn = new ProSn();
-            sn.setSnCode("SN-" + subcontractNo + "-" + String.format("%04d", startSeq + i));
-            sn.setMaterialId(materialId);
-            sn.setMaterialCode(materialCode);
-            sn.setMaterialName(materialName);
-            sn.setSnStatus(STATUS_IN_PRODUCTION);
-            sn.setSource(SOURCE_SUBCONTRACT);
-            sn.setSourceId(subcontractId);
-            sn.setSubcontractNo(subcontractNo);
-            sn.setProductionDate(java.sql.Date.valueOf(today));
-            snList.add(sn);
-        }
-        snList.forEach(baseMapper::insert);
-        log.info("委外SN批量生成成功: subcontractNo={}, quantity={}, startSeq={}",
-            subcontractNo, quantity, startSeq);
-
-        // 造码即发 SnCreatedEvent(与流转卡 SN 同链路: label 打印/lt 绑定)
-        for (ProSn sn : snList) {
-            applicationEventPublisher.publishEvent(
-                new SnCreatedEvent(sn.getSnId(), sn.getSnCode(), null, sn.getMaterialId()));
-        }
-        List<Long> ids = snList.stream().map(ProSn::getSnId).toList();
-        return baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery()
-            .in(ProSn::getSnId, ids)
-            .orderByAsc(ProSn::getSnCode));
+    @Transactional(propagation=Propagation.NEVER)
+    public List<ProSnVo> generateSnForCard(String commandId,Long cardId,Integer quantity,String initialStatus,Long lotId) {
+        return createdViews(serialOrchestrator.forCard(commandId,cardId,quantity,initialStatus,lotId));
     }
-
-    /**
-     * 手动创建单个SN(可指定parentSnId用于组装追溯)
-     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ProSnVo createSn(Long mesWoId, Long cardId, Long materialId,
-                            String snCode, Long parentSnId, String remark, Long lotId) {
-        if (StringUtils.isBlank(snCode)) {
-            throw new RuntimeException("SN编码不能为空");
-        }
-        // 1. 校验 sn_code 唯一
-        Long existCount = baseMapper.selectCount(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getSnCode, snCode));
-        if (existCount != null && existCount > 0) {
-            throw new RuntimeException("SN编码已存在: " + snCode);
-        }
-
-        String parentSnCode = null;
-        if (parentSnId != null) {
-            // 2. 校验父SN存在 + 防环(parentSnId 不能是当前SN的后代, 但此处新建无snId, 仅校验父SN存在)
-            ProSn parent = baseMapper.selectById(parentSnId);
-            if (parent == null) {
-                throw new RuntimeException("父SN不存在: " + parentSnId);
-            }
-            parentSnCode = parent.getSnCode();
-            // 冗余父SN的物料族校验(可选: 同物料才允许组装, 此处放宽为仅记录关联)
-            if (materialId == null) {
-                materialId = parent.getMaterialId();
-            }
-        }
-        if (materialId == null) {
-            throw new RuntimeException("物料ID不能为空");
-        }
-
-        // 3. 构造并插入
-        ProSn sn = new ProSn();
-        sn.setSnCode(snCode);
-        sn.setMesWoId(mesWoId);
-        sn.setCardId(cardId);
-        sn.setMaterialId(materialId);
-        sn.setSnStatus(STATUS_IN_PRODUCTION);
-        sn.setParentSnId(parentSnId);
-        sn.setParentSnCode(parentSnCode);
-        sn.setSource(SOURCE_MANUAL);
-        sn.setProductionDate(java.sql.Date.valueOf(LocalDate.now()));
-        sn.setRemark(remark);
-        baseMapper.insert(sn);
-
-        // 造码即发 SnCreatedEvent: lt 模块写 lt_sn_binding(lotId 非空时), label 模块打印 SN 标签
-        applicationEventPublisher.publishEvent(
-            new SnCreatedEvent(sn.getSnId(), snCode, lotId, materialId));
-
-        log.info("手动创建SN成功: snCode={}, parentSnId={}, lotId={}", snCode, parentSnId, lotId);
-        return baseMapper.selectVoById(sn.getSnId());
+    @Transactional(propagation=Propagation.NEVER)
+    public List<ProSnVo> generateSnForSubcontract(Long id,String no,Long materialId,String materialCode,String materialName,int quantity) {
+        return generateSnForSubcontract("MES:SUBCONTRACT:"+id,id,no,materialId,materialCode,materialName,quantity);
+    }
+    @Override
+    @Transactional(propagation=Propagation.NEVER)
+    public List<ProSnVo> generateSnForSubcontract(String commandId,Long id,String no,Long materialId,String materialCode,String materialName,int quantity) {
+        return createdViews(serialOrchestrator.forSubcontract(commandId,id,no,materialId,quantity));
+    }
+    @Override
+    @Transactional(propagation=Propagation.NEVER)
+    public ProSnVo createSn(Long wo,Long card,Long material,String code,Long parent,String remark,Long lot) {
+        return createSn("MES:MANUAL:"+TraceHashes.fingerprint(wo,card,material,code,parent),wo,card,material,code,parent,remark,lot);
+    }
+    @Override
+    @Transactional(propagation=Propagation.NEVER)
+    public ProSnVo createSn(String commandId,Long wo,Long card,Long material,String code,Long parent,String remark,Long lot) {
+        return createdViews(serialOrchestrator.manual(commandId,wo,card,material,code,parent,remark,lot)).get(0);
+    }
+    private List<ProSnVo> createdViews(List<Long> ids) {
+        return baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery().in(ProSn::getSnId,ids).orderByAsc(ProSn::getSnCode));
     }
 
     /**
@@ -271,14 +142,7 @@ public class ProSnServiceImpl implements IProSnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void completeSn(Long snId) {
-        int rows = baseMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
-            .set(ProSn::getSnStatus, STATUS_COMPLETED)
-            .eq(ProSn::getSnId, snId)
-            .eq(ProSn::getSnStatus, STATUS_IN_PRODUCTION));
-        if (rows == 0) {
-            throw new RuntimeException("SN状态已变更, 仅生产中可完工");
-        }
-        log.info("SN完工: snId={}", snId);
+        lifecycle.complete(snId);
     }
 
     /**
@@ -287,31 +151,15 @@ public class ProSnServiceImpl implements IProSnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void scrapSn(Long snId, String remark) {
-        int rows = baseMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
-            .set(ProSn::getSnStatus, STATUS_SCRAPPED)
-            .set(StringUtils.isNotBlank(remark), ProSn::getRemark, remark)
-            .eq(ProSn::getSnId, snId)
-            .in(ProSn::getSnStatus, STATUS_IN_PRODUCTION, STATUS_COMPLETED));
-        if (rows == 0) {
-            throw new RuntimeException("SN状态已变更, 仅生产中或已完成可报废");
-        }
-        log.info("SN报废: snId={}", snId);
+        lifecycle.scrap(snId,remark);
     }
 
     /**
      * 发货(COMPLETED -> SHIPPED)
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void shipSn(Long snId) {
-        int rows = baseMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
-            .set(ProSn::getSnStatus, STATUS_SHIPPED)
-            .eq(ProSn::getSnId, snId)
-            .eq(ProSn::getSnStatus, STATUS_COMPLETED));
-        if (rows == 0) {
-            throw new RuntimeException("SN状态已变更, 仅已完成可发货");
-        }
-        log.info("SN发货: snId={}", snId);
+        throw new com.nexus.common.core.exception.ServiceException("发货状态只由ERP已过账发货事件投影，不能手动标记");
     }
 
     /**
@@ -325,6 +173,7 @@ public class ProSnServiceImpl implements IProSnService {
             throw new RuntimeException("SN不存在: " + snId);
         }
         result.put("sn", sn);
+        result.put("componentConsumptions",componentTrace.entriesForSn(snId));
 
         // 前向: 流转卡工序链(若SN关联了流转卡)
         List<Map<String, Object>> forwardSteps = new ArrayList<>();
@@ -377,13 +226,6 @@ public class ProSnServiceImpl implements IProSnService {
     }
 
     // ==================== 私有辅助方法 ====================
-
-    /**
-     * 生成SN编码: SN + 流转卡编号 + 4位序号
-     */
-    private String generateSnCode(String cardNo, int seq) {
-        return "SN-" + cardNo + "-" + String.format("%04d", seq);
-    }
 
     private LambdaQueryWrapper<ProSn> buildQueryWrapper(ProSnBo bo) {
         return Wrappers.<ProSn>lambdaQuery()

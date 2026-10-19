@@ -24,6 +24,12 @@ import java.util.function.Supplier;
 @Service
 @RequiredArgsConstructor
 public class WmProductionRecptWriteGuard {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmBatchProductionReceiptProofService batchProof;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private WmSerialInventoryProofService serialProof;
+
     private final WmProductionRecptGuardMapper mapper;
     public record LockedReceipt(PrdWorkOrder workOrder, WmProductionRecpt receipt) { }
 
@@ -130,6 +136,16 @@ public class WmProductionRecptWriteGuard {
         if (receipt.getBatchId() != null) validateBatch(wo, receipt, false);
     }
 
+    /** 全报废是零库存结果，单独验证原计划和根单位，不制造零数量收货单。 */
+    public void validateNoGoodOutput(PrdWorkOrder wo,com.nexus.common.trace.CompletionManifest manifest) {
+        require(Set.of("RELEASED","IN_PROGRESS").contains(wo.getWoStatus()) && quantity(wo.getPlannedQty()) && equal(wo.getPlannedQty(),manifest.scrapQty())
+            && equal(BigDecimal.ZERO,wo.getCompletedQty()) && equal(BigDecimal.ZERO,wo.getScrapQty()),"全报废必须对应原工单完整计划且没有历史完成效果");
+        BigDecimal reported=io(()->mapper.approvedReportedQuantity(tenant(),wo.getWoId()));require(equal(BigDecimal.ZERO,reported),"工单已有审核报工，不能伪作全报废零良品");
+        var material=io(()->mapper.lockMaterial(tenant(),wo.getMaterialId()));
+        require(material!=null && wo.getMaterialId().equals(material.materialId()) && wo.getUnitId().equals(material.baseUomId()) && material.baseUomId().equals(material.primaryId())
+            && Long.valueOf(1).equals(material.isBase()) && equal(BigDecimal.ONE,material.conversionRate()) && material.quantityScale()!=null && material.quantityScale()>=0 && material.quantityScale()<=4
+            && manifest.scrapQty().stripTrailingZeros().scale()<=material.quantityScale() && StringUtils.isNotBlank(material.conversionVersion()) && material.conversionVerifiedAt()!=null,"全报废物料根单位或数量精度来源不完整");
+    }
     public BigDecimal readyQuantity(PrdWorkOrder wo) {
         require(Set.of("COMPLETED", "CLOSED").contains(Objects.toString(wo.getWoStatus(), "")) && wo.getActualEndDate() != null
             && !"UNQUALIFIED".equals(wo.getQualityStatus()) && quantity(wo.getCompletedQty())
@@ -176,6 +192,10 @@ public class WmProductionRecptWriteGuard {
             && Objects.equals(requested.getBatchId(), receipt.getBatchId())
             && Objects.equals(requested.getBatchCode(), receipt.getBatchCode()), "生产入库请求与原结果仓储或批次不一致");
         List<WmMaterialStockTx> txs = io(() -> mapper.lockTransactions(tenant(), wo.getWoId()));
+        if(batchProof!=null && batchProof.exists(wo.getWoId())){batchProof.verify(wo,receipt,txs);return receipt;}
+        if(serialProof!=null && serialProof.isV2(txs)) {
+            serialProof.verifyProduction(receipt,txs);return receipt;
+        }
         require(txs != null && txs.size() == 1, "生产入库必须有唯一完整库存流水，不能凭已执行标签确认成功");
         WmMaterialStockTx tx = txs.get(0);
         require(tx != null && positive(tx.getTxId()) && "0".equals(tx.getDelFlag()) && tenant().equals(tx.getTenantId())
@@ -207,7 +227,7 @@ public class WmProductionRecptWriteGuard {
     private void validateBatch(PrdWorkOrder wo, WmProductionRecpt receipt, boolean posted) {
         WmBatch b = io(() -> mapper.lockBatch(tenant(), receipt.getBatchId()));
         require(b != null && tenant().equals(b.getTenantId()) && "0".equals(b.getDelFlag())
-            && (posted ? Set.of("ACTIVE", "EXPIRED", "LOCKED", "CLOSED").contains(Objects.toString(b.getStatus(), ""))
+            && (posted ? Set.of("ACTIVE", "EXPIRED", "LOCKED", "INACTIVE", "CLOSED").contains(Objects.toString(b.getStatus(), ""))
                 : "ACTIVE".equals(b.getStatus())) && receipt.getBatchId().equals(b.getBatchId())
             && receipt.getBatchCode().equals(b.getBatchCode()) && wo.getMaterialId().equals(b.getMaterialId())
             && receipt.getWarehouseId().equals(b.getWarehouseId()) && "PRD_WORK_ORDER".equals(b.getSourceDocType())

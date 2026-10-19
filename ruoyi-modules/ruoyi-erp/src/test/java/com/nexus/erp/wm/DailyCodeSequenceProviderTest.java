@@ -45,7 +45,8 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class DailyCodeSequenceProviderTest {
 
-    private static final String KEY = "erp:batch:seq:20261005";
+    private static final String INPUT_KEY = "erp:batch:seq:20261005";
+    private static final String KEY = INPUT_KEY + ":tenant:000000";
     private static final String LOCK_KEY = "erp:code:seq:lock:" + KEY;
     private static final Duration TTL = Duration.ofHours(48);
 
@@ -62,14 +63,14 @@ class DailyCodeSequenceProviderTest {
         when(loader.getAsLong()).thenReturn(5L);
         RAtomicLong atomic = atomicReturning(6L);
 
-        assertEquals(6L, provider.next(KEY, loader));
+        assertEquals(6L, provider.next(INPUT_KEY, loader));
 
         InOrder order = inOrder(lock, bucket, loader, atomic);
         order.verify(lock).tryLock(3, 10, TimeUnit.SECONDS);
         order.verify(bucket).get();
         order.verify(loader).getAsLong();
         order.verify(bucket).set(5L, TTL);
-        order.verify(atomic).incrementAndGet();
+        order.verify(atomic).addAndGet(1L);
         order.verify(lock).unlock();
         verifyNoMoreInteractions(bucket, loader, atomic);
     }
@@ -83,12 +84,12 @@ class DailyCodeSequenceProviderTest {
         LongSupplier loader = mock(LongSupplier.class);
         RAtomicLong atomic = atomicReturning(6L);
 
-        assertEquals(6L, provider.next(KEY, loader));
+        assertEquals(6L, provider.next(INPUT_KEY, loader));
 
         verify(bucket).get();
         verifyNoMoreInteractions(bucket);
         verifyNoInteractions(loader);
-        verify(atomic).incrementAndGet();
+        verify(atomic).addAndGet(1L);
         verify(lock).unlock();
     }
 
@@ -108,19 +109,19 @@ class DailyCodeSequenceProviderTest {
         when(loader.getAsLong()).thenReturn(0L);
         RAtomicLong atomic = mock(RAtomicLong.class);
         when(client.getAtomicLong(KEY)).thenReturn(atomic);
-        when(atomic.incrementAndGet()).thenAnswer(invocation -> {
-            long next = counter.incrementAndGet();
+        when(atomic.addAndGet(1L)).thenAnswer(invocation -> {
+            long next = counter.addAndGet(1L);
             cached.set(decodeCachedInteger(next));
             return next;
         });
 
-        assertEquals(1L, provider.next(KEY, loader));
+        assertEquals(1L, provider.next(INPUT_KEY, loader));
         assertInstanceOf(Integer.class, cached.get());
-        assertEquals(2L, provider.next(KEY, loader));
+        assertEquals(2L, provider.next(INPUT_KEY, loader));
 
         verify(loader).getAsLong();
         verify(bucket).set(0L, TTL);
-        verify(atomic, times(2)).incrementAndGet();
+        verify(atomic, times(2)).addAndGet(1L);
         verify(lock, times(2)).tryLock(3, 10, TimeUnit.SECONDS);
         verify(lock, times(2)).unlock();
     }
@@ -136,12 +137,12 @@ class DailyCodeSequenceProviderTest {
         long expected = cached.longValue() + 1;
         RAtomicLong atomic = atomicReturning(expected);
 
-        assertEquals(expected, provider.next(KEY, loader));
+        assertEquals(expected, provider.next(INPUT_KEY, loader));
 
         verify(bucket).get();
         verifyNoMoreInteractions(bucket);
         verifyNoInteractions(loader);
-        verify(atomic).incrementAndGet();
+        verify(atomic).addAndGet(1L);
         verify(lock).unlock();
     }
 
@@ -154,7 +155,7 @@ class DailyCodeSequenceProviderTest {
         when(bucket.get()).thenReturn(cached);
         LongSupplier loader = mock(LongSupplier.class);
 
-        assertThrows(ServiceException.class, () -> provider.next(KEY, loader));
+        assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader));
 
         verify(bucket).get();
         verifyNoMoreInteractions(bucket);
@@ -173,7 +174,7 @@ class DailyCodeSequenceProviderTest {
         LongSupplier loader = mock(LongSupplier.class);
         when(loader.getAsLong()).thenReturn(maximum);
 
-        assertThrows(ServiceException.class, () -> provider.next(KEY, loader));
+        assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader));
 
         verify(bucket).get();
         verifyNoMoreInteractions(bucket);
@@ -192,12 +193,12 @@ class DailyCodeSequenceProviderTest {
         LongSupplier loader = mock(LongSupplier.class);
         RAtomicLong atomic = atomicReturning(result);
 
-        assertThrows(ServiceException.class, () -> provider.next(KEY, loader));
+        assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader));
 
         verify(bucket).get();
         verifyNoMoreInteractions(bucket);
         verifyNoInteractions(loader);
-        verify(atomic).incrementAndGet();
+        verify(atomic).addAndGet(1L);
         verify(lock).unlock();
     }
 
@@ -211,9 +212,9 @@ class DailyCodeSequenceProviderTest {
         RAtomicLong atomic = mock(RAtomicLong.class);
         when(client.getAtomicLong(KEY)).thenReturn(atomic);
         ServiceException failure = new ServiceException("原子自增失败");
-        when(atomic.incrementAndGet()).thenThrow(failure);
+        when(atomic.addAndGet(1L)).thenThrow(failure);
 
-        assertSame(failure, assertThrows(ServiceException.class, () -> provider.next(KEY, loader)));
+        assertSame(failure, assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader)));
 
         verifyNoInteractions(loader);
         verify(bucket).get();
@@ -229,7 +230,7 @@ class DailyCodeSequenceProviderTest {
         when(lock.tryLock(3, 10, TimeUnit.SECONDS)).thenReturn(false);
         LongSupplier loader = mock(LongSupplier.class);
 
-        assertThrows(ServiceException.class, () -> provider.next(KEY, loader));
+        assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader));
 
         verifyNoInteractions(loader);
         verify(client, never()).getBucket(KEY);
@@ -245,7 +246,7 @@ class DailyCodeSequenceProviderTest {
         when(lock.tryLock(3, 10, TimeUnit.SECONDS)).thenThrow(new InterruptedException());
         LongSupplier loader = mock(LongSupplier.class);
         try {
-            assertThrows(ServiceException.class, () -> provider.next(KEY, loader));
+            assertThrows(ServiceException.class, () -> provider.next(INPUT_KEY, loader));
             assertTrue(Thread.currentThread().isInterrupted());
             verifyNoInteractions(loader);
             verify(client, never()).getBucket(KEY);
@@ -301,7 +302,7 @@ class DailyCodeSequenceProviderTest {
     private RAtomicLong atomicReturning(long value) {
         RAtomicLong atomic = mock(RAtomicLong.class);
         when(client.getAtomicLong(KEY)).thenReturn(atomic);
-        when(atomic.incrementAndGet()).thenReturn(value);
+        when(atomic.addAndGet(1L)).thenReturn(value);
         return atomic;
     }
 }

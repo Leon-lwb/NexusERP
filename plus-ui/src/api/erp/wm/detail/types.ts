@@ -1,3 +1,5 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface DetailQuery extends PageQuery {
   lineId?: number;
   receiveId?: number;
@@ -18,7 +20,7 @@ export interface DetailQuery extends PageQuery {
   locationName?: string;
 }
 
-export interface DetailVO {
+export interface DetailVO extends TraceDocumentFields {
   detailId: number;
   lineId: number;
   receiveId: number;
@@ -47,7 +49,7 @@ export interface DetailVO {
   updateTime: string;
 }
 
-export interface DetailForm {
+export interface DetailForm extends TraceDocumentFields {
   detailId?: number | string;
   lineId?: number | string;
   receiveId?: number | string;

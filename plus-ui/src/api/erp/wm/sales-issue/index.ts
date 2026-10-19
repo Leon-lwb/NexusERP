@@ -1,3 +1,4 @@
+import { traceSave, executeTraceDocument } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { SalesIssueQuery, SalesIssueVO, SalesIssueForm } from './types';
@@ -21,7 +22,7 @@ export const addSalesIssue = (data: SalesIssueForm) => {
   return request({
     url: '/erp/wm/salesIssue',
     method: 'post',
-    data
+    data: traceSave(data)
   });
 };
 
@@ -29,7 +30,7 @@ export const updateSalesIssue = (data: SalesIssueForm) => {
   return request({
     url: '/erp/wm/salesIssue',
     method: 'put',
-    data
+    data: traceSave(data)
   });
 };
 
@@ -47,12 +48,14 @@ export const confirmSalesIssue = (issueId: string | number) => {
   });
 };
 
-export const completeSalesIssue = (issueId: string | number) => {
-  return request({
+export const completeSalesIssue = (issueId: string | number, data?: Record<string, any>) =>
+  executeTraceDocument({
     url: '/erp/wm/salesIssue/complete/' + issueId,
-    method: 'put'
+    detailUrl: '/erp/wm/salesIssue/' + issueId,
+    linesKey: 'wmSalesIssueLineList',
+    quantityKey: 'quantityIssue',
+    data
   });
-};
 
 // ==================== Flowable 审批 ====================
 

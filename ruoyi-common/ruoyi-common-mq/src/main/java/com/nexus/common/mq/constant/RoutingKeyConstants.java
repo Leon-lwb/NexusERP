@@ -43,4 +43,7 @@ public interface RoutingKeyConstants {
     String GL_POSTING_RECEIPT = "gl.posting.receipt";
     /** 支付收款通知路由键 (pay -> ERP, 匹配 pay.received.#) */
     String PAY_RECEIVED_CALLBACK = "pay.received.callback";
+    String TRACE_TO_ERP = "trace.to.erp.v1";
+    String TRACE_TO_MES = "trace.to.mes.v1";
+    String TRACE_DEAD = "trace.dead.v1";
 }

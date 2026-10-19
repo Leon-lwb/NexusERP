@@ -27,6 +27,7 @@
         </div>
       </template>
 
+      <CompletionManifestPanel v-if="workOrder.mesWoId" :mes-wo-id="workOrder.mesWoId" :initial="workOrder.completionState" @changed="loadDetail" />
       <el-tabs v-model="activeTab">
         <el-tab-pane label="基本信息" name="info">
           <el-descriptions :column="3" border>
@@ -236,6 +237,7 @@
 </template>
 
 <script setup lang="ts" name="MesWorkOrderDetail">
+import CompletionManifestPanel from '@/components/material-trace/CompletionManifestPanel.vue';
 import { getWorkOrder, submitWorkOrderFlow, getWorkOrderProcId, getProcessList, updateStepFirmware } from '@/api/mes/pro/workorder';
 import { addFlowCard, listFlowCardByWoId } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO } from '@/api/mes/pro/flowcard';

@@ -81,6 +81,7 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency><groupId>com.nexus</groupId><artifactId>ruoyi-common-trace</artifactId></dependency>
     </dependencies>
 
     <properties>

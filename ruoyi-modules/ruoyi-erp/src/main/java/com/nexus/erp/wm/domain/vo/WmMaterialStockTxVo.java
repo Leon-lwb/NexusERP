@@ -167,4 +167,6 @@ public class WmMaterialStockTxVo implements Serializable {
      */
     @ExcelProperty(value = "接收日期")
     private Date recptDate;
+    private Long trackingVersion;
+    private Long postingGroupId;
 }

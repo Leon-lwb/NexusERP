@@ -59,4 +59,7 @@ public interface QueueConstants {
      * {@code SPARE_STOCK}（出入库过账）/ {@code SPARE_PURCHASE}（低库存一键生成采购申请）。</p>
      */
     String MES_SPARE_ERP_QUEUE = "erp.mes.spare.erp.queue";
+    String TRACE_ERP_QUEUE = "trace.erp.v1.queue";
+    String TRACE_MES_QUEUE = "trace.mes.v1.queue";
+    String TRACE_DEAD_QUEUE = "trace.v1.dead.queue";
 }

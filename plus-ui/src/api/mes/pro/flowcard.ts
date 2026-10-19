@@ -1,3 +1,4 @@
+import type { ProductOutputContext } from './completion';
 export interface ProFlowCardVO {
   cardId: number;
   cardNo: string;
@@ -18,6 +19,8 @@ export interface ProFlowCardVO {
 }
 
 export interface ProFlowCardStepVO {
+  /** 既有详情可选的真实产出来源读模型；未提供时不能猜测allocation。 */
+  productOutputContext?: ProductOutputContext;
   stepRecordId: number;
   cardId: number;
   cardNo: string;

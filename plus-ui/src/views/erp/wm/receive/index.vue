@@ -333,6 +333,7 @@
 </template>
 
 <script setup lang="ts" name="Receive">
+import { showTraceSubmission } from '@/components/material-trace/submission';
 import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, confirmShelf, getReceiveProcId } from '@/api/erp/wm/receive';
 import type { ReceiveForm, ReceiveVO } from '@/api/erp/wm/receive/types';
@@ -777,9 +778,9 @@ async function handleExecute() {
     .then(function () {
       return execute(selectedRow.receiveId, {}, session);
     })
-    .then(() => {
+    .then((response) => {
       getList();
-      proxy.$modal.msgSuccess('入库成功');
+      showTraceSubmission(proxy.$modal, response, '入库成功');
     })
     .catch(() => {});
 }
@@ -833,9 +834,9 @@ async function handleExecuteRow(row: any) {
     .then(function () {
       return execute(row.receiveId, {}, session);
     })
-    .then(() => {
+    .then((response) => {
       getList();
-      proxy.$modal.msgSuccess('入库成功');
+      showTraceSubmission(proxy.$modal, response, '入库成功');
     })
     .catch(() => {});
 }

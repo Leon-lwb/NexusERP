@@ -4,146 +4,159 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.wm.domain.WmBatch;
+import com.nexus.common.trace.SerialReservation;
+import com.nexus.common.trace.SerialReservationCommand;
+import com.nexus.erp.wm.trace.ErpSerialIdentityService;
 import com.nexus.erp.wm.domain.WmSn;
 import com.nexus.erp.wm.domain.bo.WmSnBo;
 import com.nexus.erp.wm.domain.vo.WmSnVo;
-import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.IWmSnService;
+import com.nexus.erp.wm.trace.ErpTraceContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
-/**
- * 序列号管理Service业务层处理
- *
- * @author nexus
- * @date 2026-06-02
- */
-@Slf4j
+/** 序列号旧入口适配：正式号码仅由ERP注册，库存与生命周期事实只能通过业务单据改变。 */
 @RequiredArgsConstructor
 @DS("erp")
 @Service
 public class WmSnServiceImpl implements IWmSnService {
-
-    /** 基础数据访问映射器（Mapper） */
     private final WmSnMapper baseMapper;
+    private final ErpSerialIdentityService identities;
+    private final ErpTraceContext context;
 
-    /** 批次数据访问映射器（Mapper） */
-    private final WmBatchMapper batchMapper;
-
-    /** 按日自增序号提供器（序列号并发安全） */
-    private final DailyCodeSequenceProvider dailyCodeSequenceProvider;
-
-    /**
-     * 分页查询序列号列表
-     *
-     * @param bo        查询参数
-     * @param pageQuery 分页参数
-     * @return 序列号分页列表
-     */
     @Override
     public TableDataInfo<WmSnVo> selectPageList(WmSnBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<WmSn> lqw = buildQueryWrapper(bo);
-        Page<WmSnVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        Page<WmSnVo> page = baseMapper.selectVoPage(pageQuery.build(), buildQueryWrapper(bo));
         return TableDataInfo.build(page);
     }
 
-    /**
-     * 查询序列号列表
-     *
-     * @param bo 查询参数
-     * @return 序列号列表
-     */
     @Override
     public List<WmSnVo> selectList(WmSnBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
-    /**
-     * 根据ID获取序列号详情
-     *
-     * @param id 序列号ID
-     * @return 序列号详情
-     */
     @Override
     public WmSnVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
-    /**
-     * 新增序列号
-     *
-     * @param bo 序列号业务对象
-     * @return 影响行数
-     */
+    /** 原新增URL注册一条正式身份；不自造命令，不直接插SN，更不声明已入库。 */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmSnBo bo) {
-        if (bo.getMaterialId() == null) {
-            throw new ServiceException("物料ID不能为空");
+        if (bo != null && bo.getQuantity() != null && bo.getQuantity() != 1) {
+            throw new ServiceException("单个新增只允许注册一条SN，请使用带commandId的批量入口");
         }
-        if (StringUtils.isBlank(bo.getSnCode())) {
-            String prefix = "SN";
-            String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-            long seq = dailyCodeSequenceProvider.next("erp:sn:seq:" + dateStr, () -> loadMaxSnSeq(prefix + dateStr));
-            bo.setSnCode(prefix + dateStr + String.format("%04d", seq));
-        }
-        if (bo.getBatchId() != null && StringUtils.isBlank(bo.getBatchCode())) {
-            WmBatch batch = batchMapper.selectById(bo.getBatchId());
-            if (batch == null) {
-                throw new ServiceException("关联批次不存在");
-            }
-            bo.setBatchCode(batch.getBatchCode());
-        }
-        WmSn entity = MapstructUtils.convert(bo, WmSn.class);
-        return baseMapper.insert(entity);
+        SerialReservation reservation = register(bo, 1);
+        var identity = reservation.identities().get(0);
+        bo.setSnId(identity.identityId());
+        bo.setSnCode(identity.snCode());
+        return 1;
     }
 
-    /**
-     * 修改序列号
-     *
-     * @param bo 序列号业务对象
-     * @return 影响行数
-     */
+    /** 原批量URL按调用方持久命令一次预留完整号段，规则及批次由注册服务冻结。 */
+    @Override
+    public void batchGenerate(WmSnBo bo) {
+        if (bo == null || bo.getQuantity() == null || bo.getQuantity() <= 0) {
+            throw new ServiceException("生成数量必须大于0");
+        }
+        register(bo, bo.getQuantity());
+    }
+
+    /** 无命令旧签名不能生成可靠指纹，明确停用而不替调用方生成随机幂等号。 */
+    @Deprecated
+    @Override
+    public void batchGenerate(Long materialId, Integer quantity, Long batchId, Long ruleId,
+                              Long sourceDocId, String sourceDocType, String sourceDocNo) {
+        throw new ServiceException("旧批量接口缺少commandId，请使用带commandId的注册请求");
+    }
+
+    private SerialReservation register(WmSnBo bo, int quantity) {
+        if (bo == null || StringUtils.isBlank(bo.getCommandId()) || bo.getCommandId().length() > 128) {
+            throw new ServiceException("注册必须提供有效commandId，长度不得超过128位");
+        }
+        if (bo.getSnCode() != null && bo.getSnCode().length() > 64) {
+            throw new ServiceException("新SN编码不得超过64位；历史号码不可截断重写");
+        }
+        if (StringUtils.isNotBlank(bo.getSnCode()) || bo.getSnId() != null) {
+            throw new ServiceException("正式SN及身份ID只能由ERP统一注册生成，外部号码请走别名维护");
+        }
+        if (bo.getStockId() != null || bo.getWarehouseId() != null || bo.getLocationId() != null
+            || StringUtils.isNotBlank(bo.getWarehouseCode()) || StringUtils.isNotBlank(bo.getWarehouseName())
+            || StringUtils.isNotBlank(bo.getLocationCode())
+            || (StringUtils.isNotBlank(bo.getStatus()) && !"REGISTERED".equals(bo.getStatus()))) {
+            throw new ServiceException("注册仅产生REGISTERED身份，库存和状态请通过业务单据处理");
+        }
+        if (bo.getBatchId() == null && StringUtils.isNotBlank(bo.getBatchCode())) {
+            throw new ServiceException("指定批次必须提供batchId，由注册服务校验租户及物料");
+        }
+        try {
+            var command = new SerialReservationCommand(bo.getCommandId(), bo.getMaterialId(), quantity,
+                bo.getRuleId(), StringUtils.isBlank(bo.getSourceDocType()) ? "ERP_MANUAL" : bo.getSourceDocType(),
+                bo.getSourceDocId(), bo.getBatchId());
+            return identities.reserveManual(context.tenant(), command);
+        } catch (IllegalArgumentException error) {
+            throw new ServiceException(error.getMessage());
+        }
+    }
+
+    /** 只允许备注及预留元数据；完整表单可回传相同事实，但不能改写或清空事实列。 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmSnBo bo) {
-        WmSn entity = MapstructUtils.convert(bo, WmSn.class);
-        return baseMapper.updateById(entity);
+        if (bo == null || bo.getSnId() == null) throw new ServiceException("序列号ID不能为空");
+        WmSn existing = baseMapper.selectById(bo.getSnId());
+        if (existing == null) throw new ServiceException("序列号不存在或不可访问");
+        rejectFactChange(bo.getSnCode(), existing.getSnCode());
+        rejectFactChange(bo.getMaterialId(), existing.getMaterialId());
+        rejectFactChange(bo.getMaterialCode(), existing.getMaterialCode());
+        rejectFactChange(bo.getMaterialName(), existing.getMaterialName());
+        rejectFactChange(bo.getMaterialSpec(), existing.getMaterialSpec());
+        rejectFactChange(bo.getBatchId(), existing.getBatchId());
+        rejectFactChange(bo.getBatchCode(), existing.getBatchCode());
+        rejectFactChange(bo.getStockId(), existing.getStockId());
+        rejectFactChange(bo.getWarehouseId(), existing.getWarehouseId());
+        rejectFactChange(bo.getWarehouseCode(), existing.getWarehouseCode());
+        rejectFactChange(bo.getWarehouseName(), existing.getWarehouseName());
+        rejectFactChange(bo.getLocationId(), existing.getLocationId());
+        rejectFactChange(bo.getLocationCode(), existing.getLocationCode());
+        rejectFactChange(bo.getStatus(), existing.getStatus());
+        rejectFactChange(bo.getSourceDocId(), existing.getSourceDocId());
+        rejectFactChange(bo.getSourceDocType(), existing.getSourceDocType());
+        rejectFactChange(bo.getSourceDocNo(), existing.getSourceDocNo());
+        rejectFactChange(bo.getRuleId(), existing.getRuleId());
+        rejectFactChange(bo.getProductionDate(), existing.getProductionDate());
+        rejectFactChange(bo.getExpiryDate(), existing.getExpiryDate());
+        WmSn patch = new WmSn();
+        patch.setSnId(existing.getSnId());
+        patch.setRemark(bo.getRemark());
+        patch.setAttr1(bo.getAttr1());
+        patch.setAttr2(bo.getAttr2());
+        patch.setAttr3(bo.getAttr3());
+        patch.setAttr4(bo.getAttr4());
+        return baseMapper.updateById(patch);
     }
 
-    /**
-     * 批量删除序列号
-     *
-     * @param ids 序列号ID数组
-     * @return 影响行数
-     */
+    private void rejectFactChange(Object requested, Object current) {
+        if (requested != null && !Objects.equals(requested, current)) {
+            throw new ServiceException("正式SN号码、物料、批次、库存、来源及状态等事实不可直接修改，请通过业务单据处理");
+        }
+    }
+
+    /** 正式号码永久占用，删除不能成为回收号码的旁路。 */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        throw new ServiceException("正式SN不可删除或回收，请通过业务单据作废或报废并保留追溯身份");
     }
 
-    /**
-     * 根据物料和状态查询序列号列表
-     *
-     * @param materialId 物料ID
-     * @param status     状态
-     * @return 序列号集合
-     */
     @Override
     public List<WmSnVo> selectByMaterialAndStatus(Long materialId, String status) {
         LambdaQueryWrapper<WmSn> lqw = Wrappers.lambdaQuery();
@@ -152,160 +165,25 @@ public class WmSnServiceImpl implements IWmSnService {
         return baseMapper.selectVoList(lqw);
     }
 
-    /**
-     * 绑定序列号到库存记录
-     *
-     * @param snId        序列号ID
-     * @param stockId     库存记录ID
-     * @param warehouseId 仓库ID
-     * @param locationId  库位ID
-     */
+    /** 库存绑定只允许由受控业务单据过账。 */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void bindStock(Long snId, Long stockId, Long warehouseId, Long locationId) {
-        WmSn sn = baseMapper.selectById(snId);
-        if (sn == null) {
-            throw new ServiceException("序列号不存在");
-        }
-        if (sn.getStockId() != null) {
-            throw new ServiceException("序列号已绑定库存记录，请先解绑");
-        }
-        sn.setStockId(stockId);
-        sn.setWarehouseId(warehouseId);
-        sn.setLocationId(locationId);
-        sn.setStatus("IN_STOCK");
-        baseMapper.updateById(sn);
+        throw new ServiceException("不支持直接绑定SN库存，请通过收货、入库或调拨业务单据过账");
     }
 
-    /**
-     * 解绑序列号与库存记录
-     *
-     * @param snId 序列号ID
-     */
+    /** 库存解绑只允许由受控业务单据过账。 */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void unbindStock(Long snId) {
-        WmSn sn = baseMapper.selectById(snId);
-        if (sn == null) {
-            throw new ServiceException("序列号不存在");
-        }
-        if (sn.getStockId() == null) {
-            throw new ServiceException("序列号未绑定库存记录");
-        }
-        sn.setStockId(null);
-        sn.setWarehouseId(null);
-        sn.setLocationId(null);
-        sn.setStatus("OUT");
-        baseMapper.updateById(sn);
+        throw new ServiceException("不支持直接解绑SN库存，请通过出库、退料或调拨业务单据过账");
     }
 
-    /**
-     * 批量生成序列号
-     * <p>
-     * 使用简单格式：{prefix}{yyyyMMdd}{4位序号}，prefix默认为"SN"
-     *
-     * @param materialId    物料ID
-     * @param quantity      生成数量
-     * @param batchId       关联批次ID（可空）
-     * @param ruleId        生成规则ID
-     * @param sourceDocId   来源单据ID
-     * @param sourceDocType 来源单据类型
-     * @param sourceDocNo   来源单据编号
-     */
+    /** 生命周期状态由对应业务单据驱动，维护接口不接受任意状态。 */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void batchGenerate(Long materialId, Integer quantity, Long batchId, Long ruleId,
-                              Long sourceDocId, String sourceDocType, String sourceDocNo) {
-        if (quantity == null || quantity <= 0) {
-            throw new ServiceException("生成数量必须大于0");
-        }
-        if (materialId == null) {
-            throw new ServiceException("物料ID不能为空");
-        }
-
-        String prefix = "SN";
-        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-
-        // 关联批次：校验存在且物料一致，回填批次编码
-        String batchCode = null;
-        if (batchId != null) {
-            WmBatch batch = batchMapper.selectById(batchId);
-            if (batch == null) {
-                throw new ServiceException("关联批次不存在");
-            }
-            if (!materialId.equals(batch.getMaterialId())) {
-                throw new ServiceException("批次[" + batch.getBatchCode() + "]不属于该物料");
-            }
-            batchCode = batch.getBatchCode();
-        }
-
-        // 序号使用锁内初始化 + Redis 原子自增（跨实例唯一、并发安全），首次访问当天键时按当日最大已有序号初始化
-        long startSeq = dailyCodeSequenceProvider.next("erp:sn:seq:" + dateStr, () -> loadMaxSnSeq(prefix + dateStr));
-
-        long seq = startSeq;
-        List<WmSn> batchList = new ArrayList<>();
-        for (int i = 0; i < quantity; i++) {
-            WmSn sn = new WmSn();
-            sn.setSnCode(prefix + dateStr + String.format("%04d", seq + i));
-            sn.setMaterialId(materialId);
-            sn.setBatchId(batchId);
-            sn.setBatchCode(batchCode);
-            sn.setRuleId(ruleId);
-            sn.setSourceDocId(sourceDocId);
-            sn.setSourceDocType(sourceDocType);
-            sn.setSourceDocNo(sourceDocNo);
-            sn.setStatus("IN_STOCK");
-            batchList.add(sn);
-        }
-
-        // 批量插入
-        for (WmSn sn : batchList) {
-            baseMapper.insert(sn);
-        }
-
-        log.info("批量生成序列号完成，物料ID：{}，数量：{}，批次：{}", materialId, quantity, batchCode);
-    }
-
-    /** 查询当日最大 SN 序号（likeRight 前缀 + 截取 4 位序号） */
-    private long loadMaxSnSeq(String likeRightPrefix) {
-        List<WmSn> existingList = baseMapper.selectList(Wrappers.<WmSn>lambdaQuery()
-            .likeRight(WmSn::getSnCode, likeRightPrefix)
-            .orderByDesc(WmSn::getSnCode)
-            .last("LIMIT 1"));
-        if (existingList == null || existingList.isEmpty()) {
-            return 0L;
-        }
-        String lastCode = existingList.get(0).getSnCode();
-        try {
-            return Long.parseLong(lastCode.substring(likeRightPrefix.length()));
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
-    }
-
-    /**
-     * 变更序列号状态
-     *
-     * @param snId   序列号ID
-     * @param status 目标状态
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public void changeStatus(Long snId, String status) {
-        WmSn sn = baseMapper.selectById(snId);
-        if (sn == null) {
-            throw new ServiceException("序列号不存在");
-        }
-        sn.setStatus(status);
-        baseMapper.updateById(sn);
+        throw new ServiceException("不支持直接变更SN状态，请通过对应业务单据执行");
     }
 
-    /**
-     * 构建查询条件
-     *
-     * @param bo 查询参数
-     * @return MyBatis查询包装器
-     */
+    /** 保留原查询过滤条件与排序。 */
     private LambdaQueryWrapper<WmSn> buildQueryWrapper(WmSnBo bo) {
         LambdaQueryWrapper<WmSn> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getSnCode()), WmSn::getSnCode, bo.getSnCode());

@@ -72,6 +72,48 @@ class LtLotServiceImplTest {
     void tearDown() {
     }
 
+    @Test
+    void inUseLotWithRemainingQuantityCanBePickedAgain() {
+        LtLot lot=new LtLot();lot.setLotId(1L);lot.setMaterialId(2L);lot.setStatus("IN_USE");
+        lot.setQcStatus("PASS");lot.setQuantity(new BigDecimal("10"));lot.setConsumedQty(new BigDecimal("3"));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        assertEquals(Boolean.TRUE,service.checkLotUsable(2L,1L).get("usable"));
+    }
+    @Test
+    void metadataEditUsesColumnUpdateWithoutReplayingLoadedConsumptionOrStatus() {
+        LtLot lot=new LtLot();lot.setLotId(1L);lot.setStatus("IN_USE");lot.setQuantity(new BigDecimal("10"));lot.setConsumedQty(new BigDecimal("3"));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(isNull(),any())).thenReturn(1);
+        LtLotBo bo=new LtLotBo();bo.setLotId(1L);bo.setRemark("checked");
+        assertTrue(service.updateByBo(bo));
+        verify(baseMapper,never()).updateById(any(LtLot.class));
+        ArgumentCaptor<LambdaUpdateWrapper<LtLot>> update=ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(baseMapper).update(isNull(),update.capture());
+        assertFalse(update.getValue().getSqlSet().contains("consumed_qty"));
+        assertFalse(update.getValue().getSqlSet().contains("qc_status"));
+        assertFalse(update.getValue().getSqlSet().contains("status"));
+    }
+
+    @Test
+    void quantityEditCannotBorrowAnotherCaseFoldedTenantAllocation() {
+        var ds=new org.h2.jdbcx.JdbcDataSource();ds.setURL("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var jdbc=new org.springframework.jdbc.core.JdbcTemplate(ds);
+        jdbc.execute("CREATE TABLE lt_lot(lot_id bigint,tenant_id VARCHAR_IGNORECASE(20),quantity decimal(18,4),consumed_qty decimal(18,4),status varchar(24))");
+        jdbc.execute("CREATE TABLE lt_lot_allocation(lot_id bigint,tenant_id VARCHAR_IGNORECASE(20),quantity decimal(18,4))");
+        jdbc.update("INSERT INTO lt_lot VALUES(1,'tenant_case',20,0,'IN_STOCK')");
+        jdbc.update("INSERT INTO lt_lot_allocation VALUES(1,'TENANT_CASE',20)");
+        LtLot lot=new LtLot();lot.setLotId(1L);lot.setTenantId("tenant_case");lot.setQuantity(new BigDecimal("20"));lot.setConsumedQty(BigDecimal.ZERO);lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(isNull(),any())).thenAnswer(call->{
+            LambdaUpdateWrapper<LtLot> w=call.getArgument(1);String sql=w.getSqlSegment();
+            var params=w.getParamNameValuePairs();
+            for(var entry:params.entrySet())sql=sql.replace("#{ew.paramNameValuePairs."+entry.getKey()+"}",entry.getValue() instanceof Number?entry.getValue().toString():"'"+entry.getValue()+"'");
+            return jdbc.update("UPDATE lt_lot SET quantity=10 WHERE "+sql);
+        });
+        LtLotBo bo=new LtLotBo();bo.setLotId(1L);bo.setQuantity(BigDecimal.TEN);
+        assertTrue(service.updateByBo(bo));assertEquals(0,BigDecimal.TEN.compareTo(jdbc.queryForObject("SELECT quantity FROM lt_lot",BigDecimal.class)));
+    }
+
     // ==================== 状态机 5 态流转 ====================
 
     @Test
@@ -440,7 +482,7 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setMaterialId(1L);
-        lot.setStatus("IN_USE");
+        lot.setStatus("QUARANTINED");
         lot.setQcStatus("PASS");
         when(baseMapper.selectById(1L)).thenReturn(lot);
 

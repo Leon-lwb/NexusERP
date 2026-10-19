@@ -16,9 +16,9 @@ export interface ProEntryBo {
 export interface ProExitBo {
   cardId: number;
   stepRecordId: number;
-  goodQty: number;
-  defectQty?: number;
-  scrapQty?: number;
+  goodQty: string | number;
+  defectQty?: string | number;
+  scrapQty?: string | number;
 }
 
 /** 工序跳站入参 */
@@ -94,7 +94,13 @@ export const startStep = (cardId: number | string, stepRecordId: number | string
 };
 
 /** 完成工序 */
-export const completeStep = (cardId: number | string, stepRecordId: number | string, goodQty: number, defectQty?: number, scrapQty?: number) => {
+export const completeStep = (
+  cardId: number | string,
+  stepRecordId: number | string,
+  goodQty: string | number,
+  defectQty?: string | number,
+  scrapQty?: string | number
+) => {
   return request({
     url: '/mes/pro/flow-card/complete-step',
     method: 'put',

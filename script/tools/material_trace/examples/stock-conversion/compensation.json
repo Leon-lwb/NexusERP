@@ -1,0 +1,21 @@
+{
+  "compensation_tasks": [
+    {
+      "action": "REVIEW_ORIGINAL_DOCUMENT_AND_COMPENSATE; NO_DIRECT_RESTORE",
+      "current_hash": "5e12883290e85d85efbd6a8534c79b0081395d16b19cd1b36be12b1bb30b121b",
+      "expected_hash": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "key": {
+        "task_id": "88",
+        "tenant_id": "T1"
+      },
+      "table": "mes_label_print_task"
+    }
+  ],
+  "converter": "CURRENT_STOCK_TO_SN",
+  "current_snapshot_hash": "52bedba72b7c975283fc14bcdb15c14ded0893070614b596143778d84679120e",
+  "expected_snapshot_hash": "c809d7706c01f57d63a3f413a08aa5d0b1174e166652f71ea50ff5c1e1354688",
+  "run_id": "SYNTH-CONVERT-1",
+  "schema_version": 1,
+  "sql_executable": false,
+  "status": "COMPENSATION_REQUIRED"
+}

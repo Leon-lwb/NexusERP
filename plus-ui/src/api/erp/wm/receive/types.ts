@@ -1,3 +1,5 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface ReceiveQuery extends PageQuery {
   receiveCode?: string;
   receiveName?: string;
@@ -8,7 +10,7 @@ export interface ReceiveQuery extends PageQuery {
   status?: string;
 }
 
-export interface ReceiveVO {
+export interface ReceiveVO extends TraceDocumentFields {
   receiveId: number;
   receiveCode: string;
   receiveName: string;
@@ -45,7 +47,7 @@ export interface ReceiveVO {
   wmMaterialReceiveLineList?: ReceiveLineVO[];
 }
 
-export interface ReceiveLineVO {
+export interface ReceiveLineVO extends TraceDocumentFields {
   lineId: number;
   receiveId: number;
   sourceDocLineId: number;
@@ -73,7 +75,7 @@ export interface ReceiveLineVO {
   wmMaterialReceiveLineDetailList?: ReceiveDetailVO[];
 }
 
-export interface ReceiveDetailVO {
+export interface ReceiveDetailVO extends TraceDocumentFields {
   detailId: number;
   lineId: number;
   receiveId: number;
@@ -106,7 +108,7 @@ export interface ReceiveDetailVO {
   updateTime?: string;
 }
 
-export interface ReceiveForm {
+export interface ReceiveForm extends TraceDocumentFields {
   receiveId?: number;
   receiveCode?: string;
   receiveName?: string;

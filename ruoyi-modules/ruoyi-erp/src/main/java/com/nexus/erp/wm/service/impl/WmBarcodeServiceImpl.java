@@ -45,6 +45,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     private final BarcodeGenerator barcodeGenerator;
     /** 条码序列提供器 */
     private final BarcodeSequenceProvider barcodeSequenceProvider;
+    private final com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
 
     /**
      * 分页查询条码列表
@@ -92,6 +93,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBarcodeBo bo) {
         WmBarcode entity = MapstructUtils.convert(bo, WmBarcode.class);
+        identities.prepare(entity,false);
         return baseMapper.insert(entity);
     }
 
@@ -104,7 +106,9 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmBarcodeBo bo) {
-        WmBarcode entity = MapstructUtils.convert(bo, WmBarcode.class);
+        WmBarcode requested = MapstructUtils.convert(bo, WmBarcode.class);
+        identities.assertImmutable(identities.lock(bo.getBarcodeId()),requested);
+        WmBarcode entity = new WmBarcode();entity.setBarcodeId(bo.getBarcodeId());entity.setStatus(bo.getStatus());entity.setExpireTime(bo.getExpireTime());entity.setRemark(bo.getRemark());
         return baseMapper.updateById(entity);
     }
 
@@ -117,7 +121,11 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        int count=0;
+        for(Long id:java.util.Arrays.stream(ids).distinct().sorted().toList()){
+            identities.lock(id);WmBarcode disabled=new WmBarcode();disabled.setBarcodeId(id);disabled.setStatus("INACTIVE");count+=baseMapper.updateById(disabled);
+        }
+        return count;
     }
 
     /**
@@ -175,12 +183,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
             throw new RuntimeException("条码配置不存在，且未找到可用默认配置");
         }
 
-        BarcodeRule rule = buildRule(effectiveConfig);
-        long sequence = barcodeSequenceProvider.nextSequence(effectiveConfig.getConfigCode());
-        String barcodeCode = barcodeGenerator.generate(rule, bizDate, sequence);
-
         WmBarcode barcode = new WmBarcode();
-        barcode.setBarcodeCode(barcodeCode);
         barcode.setConfigId(effectiveConfig.getConfigId());
         barcode.setConfigCode(effectiveConfig.getConfigCode());
         barcode.setBizType(bizType);
@@ -193,6 +196,12 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         barcode.setStatus("ACTIVE");
         barcode.setGenerateTime(bizDate == null ? new Date() : bizDate);
         barcode.setRemark("系统生成条码");
+        identities.lockBinding(barcode,true);
+        BarcodeRule rule = buildRule(effectiveConfig);
+        long sequence = barcodeSequenceProvider.nextSequence(effectiveConfig.getConfigCode());
+        String barcodeCode = barcodeGenerator.generate(rule, bizDate, sequence);
+        barcode.setBarcodeCode(barcodeCode);
+        identities.finishRegistration(barcode);
         baseMapper.insert(barcode);
         return barcodeCode;
     }
@@ -251,6 +260,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     private LambdaQueryWrapper<WmBarcode> buildQueryWrapper(WmBarcodeBo bo) {
         LambdaQueryWrapper<WmBarcode> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getBarcodeCode()), WmBarcode::getBarcodeCode, bo.getBarcodeCode());
+        lqw.eq(StringUtils.isNotBlank(bo.getPrimaryObjectType()), WmBarcode::getPrimaryObjectType, bo.getPrimaryObjectType());
         lqw.eq(bo.getConfigId() != null, WmBarcode::getConfigId, bo.getConfigId());
         lqw.eq(StringUtils.isNotBlank(bo.getBizType()), WmBarcode::getBizType, bo.getBizType());
         lqw.eq(bo.getBizId() != null, WmBarcode::getBizId, bo.getBizId());

@@ -68,6 +68,9 @@ public interface IProSnService {
     List<ProSnVo> selectList(ProSnBo bo);
 
     List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus, Long lotId);
+    List<ProSnVo> generateSnForCard(String commandId,Long cardId,Integer quantity,String initialStatus,Long lotId);
+    List<ProSnVo> generateSnForSubcontract(String commandId,Long id,String no,Long materialId,String materialCode,String materialName,int quantity);
+    ProSnVo createSn(String commandId,Long mesWoId,Long cardId,Long materialId,String snCode,Long parentSnId,String remark,Long lotId);
 
     /**
      * 按委外订单批量生成SN (PCBA 委外闭环, MQ 触发)

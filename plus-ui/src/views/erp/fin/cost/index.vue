@@ -37,6 +37,14 @@
       style="margin-bottom: 12px"
     />
 
+    <el-alert
+      title="库存流水为来源业务单据产生的只读过账记录。数量、批次或库存差异应回到来源单据按业务流程更正；本页成本过账与期间暂估仅处理对应财务凭证。"
+      type="info"
+      :closable="false"
+      show-icon
+      class="mb8"
+    />
+
     <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="流水ID" align="center" prop="txId" width="180" />
       <el-table-column label="事务类型" align="center" prop="txType" width="120" />
@@ -84,9 +92,8 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const provisioning = ref(false);
 
-// 成本过账为只读列表页（无新增/修改/删除），以下占位仅为满足 useCrud 的 API 签名，不会被调用
+// 库存流水仅查询，财务过账和期间暂估使用各自原业务接口。
 const formRef = ref<FormInstance>();
-const readonlyApi = () => Promise.resolve({ data: {} as any });
 
 const queryParams = ref({ pageNum: 1, pageSize: 10, txType: '' });
 
@@ -98,7 +105,7 @@ const {
   getList,
   handleQuery
 } = useCrud({
-  apis: { list: listStockTx, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  apis: { list: listStockTx },
   idField: 'txId',
   entityName: '成本流水',
   formRef,

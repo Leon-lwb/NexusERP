@@ -1,3 +1,5 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface TransferQuery extends PageQuery {
   transferNo?: string;
   fromWarehouseId?: number;
@@ -5,7 +7,7 @@ export interface TransferQuery extends PageQuery {
   status?: string;
 }
 
-export interface TransferLineVO {
+export interface TransferLineVO extends TraceDocumentFields {
   lineId?: number;
   transferId?: number;
   materialId?: number;
@@ -26,7 +28,7 @@ export interface TransferLineVO {
   remark?: string;
 }
 
-export interface TransferVO {
+export interface TransferVO extends TraceDocumentFields {
   transferId?: number;
   transferNo?: string;
   fromWarehouseId?: number;
@@ -57,7 +59,7 @@ export interface TransferVO {
   updateTime?: string;
 }
 
-export interface TransferForm {
+export interface TransferForm extends TraceDocumentFields {
   transferId?: number;
   transferNo: string;
   fromWarehouseId?: number;

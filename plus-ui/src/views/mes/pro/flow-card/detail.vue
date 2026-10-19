@@ -1,4 +1,5 @@
 <template>
+  <ProductOutputDialog ref="productOutputRef" />
   <div class="p-2">
     <el-card>
       <template #header>
@@ -210,17 +211,17 @@
           <el-input :model-value="currentStep?.processName" disabled />
         </el-form-item>
         <el-form-item label="良品数量" prop="goodQty">
-          <el-input-number v-model="exitForm.goodQty" :min="0" :precision="0" style="width: 100%" />
+          <el-input v-model="exitForm.goodQty" inputmode="decimal" placeholder="十进制数量" />
         </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="不良数量">
-              <el-input-number v-model="exitForm.defectQty" :min="0" :precision="0" controls-position="right" style="width: 100%" />
+              <el-input v-model="exitForm.defectQty" inputmode="decimal" placeholder="十进制数量" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="报废数量">
-              <el-input-number v-model="exitForm.scrapQty" :min="0" :precision="0" controls-position="right" style="width: 100%" />
+              <el-input v-model="exitForm.scrapQty" inputmode="decimal" placeholder="十进制数量" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -266,6 +267,10 @@
 </template>
 
 <script setup lang="ts" name="MesFlowCardDetail">
+import ProductOutputDialog from '@/components/material-trace/ProductOutputDialog.vue';
+import { decimalSum } from '@/components/material-trace/model';
+const productOutputRef = ref<InstanceType<typeof ProductOutputDialog>>();
+
 import {
   getFlowCard,
   startStep,
@@ -369,9 +374,9 @@ const exitDialogVisible = ref(false);
 const exitSubmitting = ref(false);
 const exitFormRef = ref<FormInstance>();
 const exitForm = ref({
-  goodQty: 0,
-  defectQty: 0,
-  scrapQty: 0
+  goodQty: '0',
+  defectQty: '0',
+  scrapQty: '0'
 });
 const exitRules: FormRules = {
   goodQty: [{ required: true, message: '请输入良品数量', trigger: 'blur' }]
@@ -466,9 +471,9 @@ const handleSubmitEntry = async () => {
 const handleExit = (row: ProFlowCardStepVO) => {
   currentStep.value = row;
   exitForm.value = {
-    goodQty: Number(row.plannedQty) || 0,
-    defectQty: 0,
-    scrapQty: 0
+    goodQty: String(row.plannedQty ?? '0'),
+    defectQty: '0',
+    scrapQty: '0'
   };
   exitDialogVisible.value = true;
 };
@@ -487,7 +492,11 @@ const handleSubmitExit = async () => {
       defectQty: exitForm.value.defectQty,
       scrapQty: exitForm.value.scrapQty
     };
-    const res = await exitFlowCard(bo);
+    decimalSum([String(bo.goodQty), String(bo.defectQty || '0'), String(bo.scrapQty || '0')]);
+    const res = await productOutputRef.value!.run(
+      { cardId: bo.cardId, stepRecordId: bo.stepRecordId, goodQty: String(bo.goodQty), scrapQty: String(bo.scrapQty || '0') },
+      () => exitFlowCard(bo)
+    );
     const result: ProCheckResultVo = res.data;
     if (result.passed) {
       proxy?.$modal.msgSuccess('出站成功，已完工');
@@ -540,17 +549,30 @@ const handleStartStep = async (row: ProFlowCardStepVO) => {
 
 const handleCompleteStep = async (row: ProFlowCardStepVO) => {
   const { value: goodQty } = await proxy?.$modal.prompt('请输入良品数量:', '完工 - ' + row.processName);
-  if (!goodQty || isNaN(Number(goodQty))) {
-    proxy?.$modal.msgWarning('请输入有效数量');
-    return;
-  }
-  await completeStep(row.cardId, row.stepRecordId, Number(goodQty));
+  const { value: scrapQty } = await proxy?.$modal.prompt('请输入报废数量（默认0）:', '完工 - ' + row.processName);
+  decimalSum([goodQty || '0', scrapQty || '0']);
+  await productOutputRef.value!.run({ cardId: row.cardId, stepRecordId: row.stepRecordId, goodQty: goodQty || '0', scrapQty: scrapQty || '0' }, () =>
+    completeStep(row.cardId, row.stepRecordId, goodQty || '0', '0', scrapQty || '0')
+  );
   proxy?.$modal.msgSuccess('完工成功');
   loadDetail();
 };
 
 const handleCompleteFlowCard = async () => {
   await proxy?.$modal.confirm('确认完成该流转卡？将聚合完工数量到工单。');
+  // 补齐既有已完成工序的实际产出后，只调用一次原流转卡完工。
+  for (const step of flowCard.value.steps || []) {
+    if (step.stepStatus === 'SKIPPED') continue;
+    await productOutputRef.value!.run(
+      {
+        cardId: flowCard.value.cardId,
+        stepRecordId: step.stepRecordId,
+        goodQty: String(step.goodQty || '0'),
+        scrapQty: String(step.scrapQty || '0')
+      },
+      async () => undefined
+    );
+  }
   await completeFlowCard(flowCard.value.cardId);
   proxy?.$modal.msgSuccess('流转卡完工成功');
   loadDetail();

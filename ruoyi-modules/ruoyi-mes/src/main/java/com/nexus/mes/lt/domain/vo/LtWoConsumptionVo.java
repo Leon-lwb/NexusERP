@@ -27,6 +27,7 @@ public class LtWoConsumptionVo implements Serializable {
     /** 消耗记录ID */
     @ExcelProperty("消耗记录ID")
     private Long consumptionId;
+    private Long sourceAllocationId;
 
     /** 工单ID */
     private Long woId;

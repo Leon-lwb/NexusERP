@@ -33,6 +33,14 @@ import java.util.Objects;
 @DS("erp")
 @RequiredArgsConstructor
 public class ProductionCompletionPostingService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmBatchProductionReceiptProofService batchProof;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryProofService serialProof;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmProductionRecptWriteGuard serialReceiptGuard;
+
     private final ProductionCompletionPostingMapper postingMapper;
     private final PrdBackflushServiceImpl backflushService;
     private final IPutawayStrategyService putawayStrategyService;
@@ -122,6 +130,15 @@ public class ProductionCompletionPostingService {
         }
         if (receipts.isEmpty() && transactions.isEmpty()) {
             return null;
+        }
+        if(batchProof!=null && batchProof.exists(wo.getWoId())){
+            require(receipts.size()==1,"同工单必须只有一张最终生产入库凭据");
+            WmProductionRecpt receipt=serialReceiptGuard.verifyExecuted(wo,quantity,null);batchProof.verify(wo,receipt,transactions);return receipt.getRecptId();
+        }
+        if(serialProof!=null && serialProof.isV2(transactions)) {
+            require(receipts.size()==1,"同工单必须只有一张最终生产入库凭据");
+            WmProductionRecpt receipt=serialReceiptGuard.verifyExecuted(wo,quantity,null);
+            serialProof.verifyProduction(receipt,transactions);return receipt.getRecptId();
         }
         require(receipts.size() == 1 && transactions.size() == 1,
             "工单成品过账凭据缺失或重复，禁止重复倒冲和确认成功");

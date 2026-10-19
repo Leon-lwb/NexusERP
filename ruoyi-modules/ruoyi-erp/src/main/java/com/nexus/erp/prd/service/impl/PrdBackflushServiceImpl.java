@@ -41,6 +41,9 @@ import java.util.List;
 @DS("erp")
 @Service
 public class PrdBackflushServiceImpl {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     private final PrdWorkOrderMapper workOrderMapper;
     private final PrdMaterialRequirementMapper requirementMapper;
@@ -59,7 +62,10 @@ public class PrdBackflushServiceImpl {
      * @param completionQty 本次完工数量
      */
     @Transactional(rollbackFor = Exception.class)
-    public void backflushOnCompletion(Long woId, BigDecimal completionQty) {
+    public void backflushOnCompletion(Long woId, BigDecimal completionQty) {backflushInternal(woId,completionQty,java.util.Set.of());}
+    @Transactional(rollbackFor=Exception.class)
+    public void backflushFromManifest(Long woId,BigDecimal quantity,java.util.Set<Long> actualMaterials) {backflushInternal(woId,quantity,actualMaterials);}
+    private void backflushInternal(Long woId,BigDecimal completionQty,java.util.Set<Long> actualMaterials) {
         if (woId == null || completionQty == null || completionQty.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
@@ -81,6 +87,11 @@ public class PrdBackflushServiceImpl {
             return;
         }
 
+        if(serialInventory!=null) {
+            for(var detail:backflushDetails)if(serialInventory.isStrictTracked(detail.getMaterialId()) && !actualMaterials.contains(detail.getMaterialId()))throw new ServiceException("STRICT追踪倒冲缺少冻结MES实际分配及ERP原预留凭据，不能使用BOM或重新拣货");
+            backflushDetails=backflushDetails.stream().filter(d->!serialInventory.isStrictTracked(d.getMaterialId())).toList();
+            if(backflushDetails.isEmpty()){if(wo.getPlanId()!=null)autoCompleteMaterialRequirements(wo.getPlanId());return;}
+        }
         // 3. 创建生产领料单头（记录倒冲痕迹）
         WmProductionIssue issue = createProductionIssueHeader(wo, completionQty);
 
@@ -89,6 +100,10 @@ public class PrdBackflushServiceImpl {
         List<WmProductionIssueLine> lines = new ArrayList<>();
 
         for (PrdMaterialRequirementDetail detail : backflushDetails) {
+            if(serialInventory!=null && serialInventory.isStrictTracked(detail.getMaterialId())) {
+                if(!actualMaterials.contains(detail.getMaterialId()))throw new ServiceException("STRICT追踪倒冲缺少冻结MES实际分配及ERP原预留凭据，不能使用BOM或重新拣货");
+                continue;
+            }
             // 消耗量 = 完工数量 × BOM单位用量 × (1 + 损耗率/100)
             BigDecimal bomQty = detail.getBomQuantity() != null ? detail.getBomQuantity() : BigDecimal.ONE;
             BigDecimal lossRate = detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO;

@@ -29,6 +29,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class WmStockReservationServiceImpl implements IWmStockReservationService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 流水类型：预留 */
     public static final String TX_TYPE_RESERVE = "RESERVE";
@@ -49,6 +52,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         if (reserveQty == null || reserveQty.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
+        if(serialInventory!=null)serialInventory.validateReservation(materialId,reserveQty);
         // 查询可用库存批次 (FIFO: 先到期先出)
         LambdaQueryWrapper<WmMaterialStock> wrapper = Wrappers.<WmMaterialStock>lambdaQuery()
             .eq(WmMaterialStock::getMaterialId, materialId)
@@ -216,6 +220,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         tx.setLocationCode(stock.getLocationCode());
         tx.setLocationName(stock.getLocationName());
         tx.setRecptDate(stock.getRecptDate());
+        tx.setTrackingVersion(stock.getTrackingVersion()!=null && stock.getTrackingVersion()>=2?2L:1L);
         tx.setTxType(txType);
         tx.setTxFlag(0); // 预留/释放不改变在库数量, flag=0
         tx.setTxQuantity(qty);

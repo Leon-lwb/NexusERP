@@ -31,24 +31,28 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:lt:consumption:add']">新增消耗记录</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:lt:consumption:add']">按产品 SN 记录消耗</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="MagicStick" @click="handlePick()" v-hasPermi="['mes:lt:lot:fefo']">FEFO 领料</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:lt:consumption:remove']"
-          >删除</el-button
-        >
-      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert
+      title="历史工单级消耗不能证明某一产品 SN 的实际用料。新增消耗需选择正式产品身份并逐批填写数量。"
+      type="info"
+      :closable="false"
+      class="mb-3"
+    />
     <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工单编号" prop="woNo" min-width="140" />
       <el-table-column label="批次编码" prop="lotCode" min-width="140" />
       <el-table-column label="物料编码" prop="materialCode" min-width="120" />
+      <el-table-column label="产品正式身份" min-width="180"
+        ><template #default="{ row }">{{ row.productIdentityId || '历史工单范围' }}</template></el-table-column
+      >
       <el-table-column label="消耗数量" prop="consumedQty" align="right" width="100" />
       <el-table-column label="消耗时间" prop="consumedTime" width="160" />
       <el-table-column label="操作员" prop="operatorName" width="100" />
@@ -82,7 +86,7 @@
           </el-input>
         </el-form-item>
         <el-form-item label="消耗数量" prop="consumedQty">
-          <el-input-number v-model="form.consumedQty" :min="0" :precision="4" controls-position="right" style="width: 100%" />
+          <el-input v-model="form.consumedQty" placeholder="精确十进制数量" />
         </el-form-item>
         <el-form-item label="操作员">
           <el-input v-model="form.operatorName" placeholder="请选择操作员" readonly>
@@ -117,7 +121,7 @@
           </el-input>
         </el-form-item>
         <el-form-item label="需求数量">
-          <el-input-number v-model="pickDialog.requiredQty" :min="0" :precision="4" controls-position="right" />
+          <el-input v-model="pickDialog.requiredQty" placeholder="十进制字符串" />
         </el-form-item>
         <el-form-item label="SN">
           <el-input v-model="pickDialog.snCode" placeholder="可空,选择SN" readonly style="width: 180px">
@@ -130,6 +134,22 @@
           <el-button type="primary" icon="Search" @click="loadPickFefo()">查询推荐</el-button>
         </el-form-item>
       </el-form>
+      <CodeResolver
+        ref="productResolver"
+        scene="MES_COMPONENT_CONSUMPTION"
+        :context="{ sourceDocType: 'MES_WORK_ORDER', sourceDocId: identityText(pickDialog.woId) }"
+        @resolved="selectProductIdentity"
+        @state="productResolveState = $event"
+      />
+      <p>产品正式身份：{{ productIdentityId || '尚未选择' }}；MES 本地 SN：{{ pickDialog.snId || '未映射' }}；{{ pickDialog.snCode }}</p>
+      <el-alert
+        v-if="pickPolicy"
+        :title="`${pickPolicy.allowMixedLot ? '允许' : '禁止'}同产品 SN 内同组件跨批次消耗 · ${pickPolicy.stage} / ${pickPolicy.version}`"
+        type="info"
+        :closable="false"
+        class="mb-3"
+      />
+      <el-alert v-if="pickError" :title="pickError" type="warning" :closable="false" class="mb-3" />
       <el-table :data="pickDialog.list" v-loading="pickDialog.loading" show-overflow-tooltip>
         <el-table-column label="批次编码" prop="lotCode" min-width="140" />
         <el-table-column label="物料" prop="materialName" min-width="120" />
@@ -138,15 +158,7 @@
         <el-table-column label="推荐顺序" type="index" width="80" align="center" />
         <el-table-column label="本次领料数量" width="160" align="center">
           <template #default="scope">
-            <el-input-number
-              v-model="scope.row.pickQty"
-              :min="0"
-              :precision="4"
-              :max="scope.row.remainingQty"
-              controls-position="right"
-              size="small"
-              style="width: 140px"
-            />
+            <el-input v-model="scope.row.pickQty" placeholder="精确数量" size="small" style="width: 140px" />
           </template>
         </el-table-column>
       </el-table>
@@ -308,11 +320,25 @@
 </template>
 
 <script setup lang="ts" name="LtWoConsumption">
-import { listConsumption, getConsumption, addConsumption, delConsumption, recommendForWo, confirmPick } from '@/api/mes/lt/consumption';
+import CodeResolver from '@/components/material-trace/CodeResolver.vue';
+import { consumptionError, decimalCompare, identityText, materialPolicy, resolvedObject } from '@/components/material-trace/model';
+import type { ConsumptionEntry } from '@/components/material-trace/model';
+import type { CodeResolution, TrackingPolicy } from '@/api/erp/wm/identity/types';
+import { getMaterial } from '@/api/erp/bd/material';
+
+import {
+  listConsumption,
+  getConsumption,
+  addConsumption,
+  delConsumption,
+  recommendForWo,
+  confirmPick,
+  listConsumptionByWo
+} from '@/api/mes/lt/consumption';
 import type { LtWoConsumptionVO, LtWoConsumptionForm, LtWoConsumptionQuery, LtWoPickBO } from '@/api/mes/lt/consumption';
 import { listLot } from '@/api/mes/lt/lot';
 import type { LtLotVO } from '@/api/mes/lt/lot';
-import { listWorkOrder } from '@/api/mes/pro/workorder';
+import { listWorkOrder, getWorkOrder } from '@/api/mes/pro/workorder';
 import { listSn } from '@/api/mes/pro/sn';
 import { listUser } from '@/api/system/user';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
@@ -386,7 +412,7 @@ const {
 });
 
 function handleAdd() {
-  rawHandleAdd();
+  handlePick();
 }
 
 function resetQuery() {
@@ -412,14 +438,19 @@ const pickDialog = reactive({
   woNo: '' as string,
   materialId: undefined as number | undefined,
   materialCode: '' as string,
-  requiredQty: undefined as number | undefined,
-  snId: undefined as number | undefined,
+  requiredQty: undefined as string | undefined,
+  snId: undefined as string | number | undefined,
   snCode: '' as string,
-  list: [] as (LtLotVO & { pickQty?: number })[],
+  list: [] as (LtLotVO & { pickQty?: string })[],
   loading: false
 });
 
 const handlePick = () => {
+  pickError.value = '';
+  productIdentityId.value = '';
+  pickSourceHeader.value = {};
+  priorConsumptions.value = [];
+  productResolver.value?.discard();
   pickDialog.visible = true;
   pickDialog.list = [];
   pickDialog.woId = undefined;
@@ -439,30 +470,121 @@ const loadPickFefo = async () => {
   pickDialog.loading = true;
   try {
     const res = await recommendForWo(pickDialog.woId, pickDialog.materialId, pickDialog.requiredQty);
-    pickDialog.list = ((res.data || []) as LtLotVO[]).map((l) => ({ ...l, pickQty: 0 }));
+    pickDialog.list = ((res.data || []) as LtLotVO[]).map((l) => ({ ...l, pickQty: '' }));
     proxy?.$modal.msgSuccess(`推荐 ${pickDialog.list.length} 个批次`);
   } finally {
     pickDialog.loading = false;
   }
 };
 
+/** 每次确认只针对一个产品实物，可对多个组件批次分别填写精确数量。 */
 const submitPick = async () => {
-  const picks = pickDialog.list.filter((l) => l.pickQty && l.pickQty > 0).map((l) => ({ lotId: l.lotId, consumedQty: l.pickQty! }));
-  if (!picks.length) {
-    proxy?.$modal.msgWarning('请填写至少一条领料数量');
-    return;
+  pickError.value = '';
+  try {
+    if (productResolveState.value.pending || productResolveState.value.error)
+      throw new Error(productResolveState.value.error || '产品 SN 解析尚未完成');
+    if (!productIdentityId.value || !pickDialog.snId || !pickPolicy.value) throw new Error('请选择完整正式产品 SN 并加载组件策略');
+    if (typeof pickSourceHeader.value.detailVersion !== 'string' || !pickSourceHeader.value.detailVersion)
+      throw new Error('工单缺少服务端详情版本，请重新选择工单');
+    const selected = pickDialog.list.filter((lot) => lot.pickQty?.trim());
+    const entries: ConsumptionEntry[] = selected.map((lot) => ({
+      productIdentityId: productIdentityId.value,
+      componentMaterialId: identityText(pickDialog.materialId)!,
+      lotId: identityText(lot.lotId)!,
+      quantity: lot.pickQty!
+    }));
+    const error = consumptionError(entries, pickPolicy.value.allowMixedLot, priorConsumptions.value);
+    if (error) throw new Error(error);
+    for (const lot of selected) {
+      if (identityText(lot.materialId) !== identityText(pickDialog.materialId)) throw new Error('批次物料与当前组件不一致');
+      if (lot.remainingQty == null || decimalCompare(lot.pickQty!, String(lot.remainingQty)) > 0)
+        throw new Error('消耗数量超过批次余额或余额未知，请刷新推荐');
+    }
+    const payload: LtWoPickBO = {
+      woId: identityText(pickDialog.woId)!,
+      materialId: identityText(pickDialog.materialId)!,
+      snId: identityText(pickDialog.snId),
+      productIdentityId: productIdentityId.value,
+      identityId: productIdentityId.value,
+      detailVersion: pickSourceHeader.value.detailVersion,
+      sourceHeader: pickSourceHeader.value.sourceHeader,
+      picks: selected.map((lot) => ({ lotId: identityText(lot.lotId)!, consumedQty: lot.pickQty! }))
+    };
+    await confirmPick(payload);
+    proxy?.$modal.msgSuccess('消耗已提交，以服务端返回的实物分录为准');
+    pickDialog.visible = false;
+    getList();
+  } catch (cause) {
+    pickError.value = cause instanceof Error ? cause.message : '消耗提交失败';
   }
-  const payload: LtWoPickBO = {
-    woId: pickDialog.woId!,
-    materialId: pickDialog.materialId!,
-    snId: pickDialog.snId,
-    picks
-  };
-  await confirmPick(payload);
-  proxy?.$modal.msgSuccess('领料成功,已联动扣减批次数量');
-  pickDialog.visible = false;
-  getList();
 };
+
+const productResolver = ref<InstanceType<typeof CodeResolver>>();
+const productResolveState = ref({ pending: false, error: '' });
+const productIdentityId = ref('');
+const pickPolicy = ref<TrackingPolicy>();
+const pickError = ref('');
+const pickSourceHeader = ref<Record<string, any>>({});
+const priorConsumptions = ref<ConsumptionEntry[]>([]);
+
+/** 正式身份与 MES 本地身份分别保存，缺少映射时不能静默降级成工单级消耗。 */
+function selectProductIdentity(resolution: CodeResolution) {
+  try {
+    const object = resolvedObject(resolution);
+    if (object.objectType !== 'SN' || !object.identityId || !object.localSnId) throw new Error('产品 SN 缺少正式身份或 MES 映射');
+    productIdentityId.value = object.identityId;
+    pickDialog.snId = object.localSnId;
+    pickDialog.snCode = object.canonicalSnCode || object.snCode || '';
+    pickError.value = '';
+  } catch (cause) {
+    productIdentityId.value = '';
+    pickDialog.snId = undefined;
+    pickError.value = cause instanceof Error ? cause.message : '产品身份不完整';
+  }
+}
+
+/** 工单详情和历史消耗只读取事实，不用工单级旧记录补造产品身份。 */
+watch(
+  () => pickDialog.woId,
+  async (woId) => {
+    pickSourceHeader.value = {};
+    priorConsumptions.value = [];
+    productIdentityId.value = '';
+    pickDialog.snId = undefined;
+    if (!woId) return;
+    try {
+      const [detail, history] = await Promise.all([getWorkOrder(woId), listConsumptionByWo(woId)]);
+      if (woId !== pickDialog.woId) return;
+      pickSourceHeader.value = detail.data;
+      priorConsumptions.value = (history.data || [])
+        .filter((entry) => entry.productIdentityId && (entry.componentMaterialId || entry.materialId))
+        .map((entry) => ({
+          productIdentityId: entry.productIdentityId!,
+          componentMaterialId: identityText(entry.componentMaterialId || entry.materialId)!,
+          lotId: identityText(entry.lotId),
+          quantity: String(entry.quantity ?? entry.consumedQty)
+        }));
+    } catch (cause) {
+      pickError.value = cause instanceof Error ? cause.message : '工单证据读取失败';
+    }
+  }
+);
+
+/** 组件混批策略来自精确物料详情，切换组件立即清空旧候选。 */
+watch(
+  () => pickDialog.materialId,
+  async (materialId) => {
+    pickDialog.list = [];
+    pickPolicy.value = undefined;
+    if (!materialId) return;
+    try {
+      const response = await getMaterial(materialId);
+      if (materialId === pickDialog.materialId) pickPolicy.value = materialPolicy(response.data);
+    } catch (cause) {
+      pickError.value = cause instanceof Error ? cause.message : '组件策略读取失败';
+    }
+  }
+);
 
 // ==================== 工单选择 ====================
 const woSelectTarget = ref<'query' | 'form' | 'pick'>('form');
@@ -618,8 +740,7 @@ const resetSnQuery = () => {
   querySns();
 };
 const selectSn = (row: any) => {
-  pickDialog.snId = row.snId;
-  pickDialog.snCode = row.snCode;
+  productResolver.value?.resolve(row.snCode);
   snDialog.visible = false;
 };
 

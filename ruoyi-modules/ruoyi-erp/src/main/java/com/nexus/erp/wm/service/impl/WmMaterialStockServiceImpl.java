@@ -104,15 +104,7 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialStockBo bo) {
-        // 虚拟件校验：虚拟件不入库
-        if (bo.getMaterialId() != null) {
-            BdMaterial material = bdMaterialMapper.selectById(bo.getMaterialId());
-            if (material != null && Integer.valueOf(1).equals(material.getIsPhantom())) {
-                throw new RuntimeException("物料[" + material.getMaterialCode() + "]为虚拟件，不入库");
-            }
-        }
-        WmMaterialStock entity = MapstructUtils.convert(bo, WmMaterialStock.class);
-        return baseMapper.insert(entity);
+        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**
@@ -124,8 +116,7 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialStockBo bo) {
-        WmMaterialStock entity = MapstructUtils.convert(bo, WmMaterialStock.class);
-        return baseMapper.updateById(entity);
+        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**
@@ -137,7 +128,7 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**

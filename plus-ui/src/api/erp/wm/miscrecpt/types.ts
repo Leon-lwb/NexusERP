@@ -1,10 +1,12 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface MiscRecptQuery extends PageQuery {
   recptCode?: string;
   warehouseId?: number;
   status?: string;
 }
 
-export interface MiscRecptLineVO {
+export interface MiscRecptLineVO extends TraceDocumentFields {
   lineId?: number;
   recptId?: number;
   materialId?: number;
@@ -24,7 +26,7 @@ export interface MiscRecptLineVO {
   remark?: string;
 }
 
-export interface MiscRecptVO {
+export interface MiscRecptVO extends TraceDocumentFields {
   recptId?: number;
   recptCode?: string;
   recptType?: string;
@@ -44,7 +46,7 @@ export interface MiscRecptVO {
   updateTime?: string;
 }
 
-export interface MiscRecptForm {
+export interface MiscRecptForm extends TraceDocumentFields {
   recptId?: number;
   recptCode: string;
   recptType?: string;

@@ -29,6 +29,13 @@ public class ProSnVo implements Serializable {
     /** SN ID */
     @ExcelProperty("SN ID")
     private Long snId;
+    /** Stable ERP wm_sn.sn_id; snId remains the local MES identity. */
+    private Long identityId;
+    private Long identityVersion;
+    private Long productLotId;
+    private String handoffStatus;
+    private String canonicalSnCode;
+    private String localSnCode;
 
     /** SN序列号编码 */
     @ExcelProperty("SN序列号")

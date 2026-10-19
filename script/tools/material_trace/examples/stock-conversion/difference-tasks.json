@@ -1,0 +1,17 @@
+{
+  "converter": "CURRENT_STOCK_TO_SN",
+  "ready": false,
+  "schema_version": 1,
+  "strict_gate": "AUDIT_ONLY; STRICT须另行核实全部当前库存、未完成单据及历史缺口",
+  "tasks": [
+    {
+      "action": "REVIEW_ORIGINAL_DOCUMENT_BEFORE_CONVERSION",
+      "code": "BUSINESS_DOCUMENT_REQUIRED",
+      "detail": "预留、冻结或工单/在制库存不能凭数量均分，先按真实业务单据处理",
+      "key": {
+        "stock_id": "401",
+        "tenant_id": "T1"
+      }
+    }
+  ]
+}

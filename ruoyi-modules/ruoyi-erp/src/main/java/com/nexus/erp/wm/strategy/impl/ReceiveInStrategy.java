@@ -31,6 +31,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class ReceiveInStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 来源单据类型：物料入库单 */
     private static final String SOURCE_DOC_TYPE_RECEIVE = "WM_MATERIAL_RECEIVE";
@@ -126,8 +129,10 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("入库单明细为空，无法入库过账");
         }
 
+        java.util.Set<Long> serialLines=serialInventory==null?java.util.Set.of():serialInventory.postReceiveDocument(receiveId);
         Date now = new Date();
         for (WmMaterialReceiveDetail detail : detailList) {
+            if(serialLines.contains(detail.getLineId()))continue;
             if (detail.getQuantity() == null || detail.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new RuntimeException("物料【" + detail.getMaterialName() + "】入库明细数量必须大于0");
             }

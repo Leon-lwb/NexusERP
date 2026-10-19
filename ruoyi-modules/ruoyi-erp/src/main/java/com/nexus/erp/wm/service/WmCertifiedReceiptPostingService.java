@@ -23,6 +23,9 @@ import java.util.*;
  */
 @Service
 public class WmCertifiedReceiptPostingService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private WmSerialInventoryService serialInventory;
+
     private static final BigDecimal ZERO=new BigDecimal("0.0000");
     private static final BigDecimal SECOND_MILLIS=new BigDecimal("1000");
     private static final BigDecimal MAX=new BigDecimal("99999999999999.9999");
@@ -185,6 +188,7 @@ public class WmCertifiedReceiptPostingService {
             && Long.valueOf(1).equals(material.unitStatus()) && "0".equals(material.unitDelFlag()) && text(material.conversionVersion())
             && material.verifiedAt()!=null && material.verifiedAt().compareTo(draftCreatedAt)<=0
             && material.quantityScale()!=null && material.quantityScale()>=0 && material.quantityScale()<=4,"根单位/批次物料来源不完整");
+        boolean serialV2=serialInventory!=null && (replay?serialInventory.hasV2Receipt(receiveId):serialInventory.isStrictSerial(materialId));
         String unit=material.baseUomId().toString();int scale=material.quantityScale();
         List<Line> lines=read(()->mapper.lockLines(tenant,receiveId));
         List<Detail> details=read(()->mapper.lockDetails(tenant,receiveId));
@@ -229,7 +233,7 @@ public class WmCertifiedReceiptPostingService {
         for (Detail detail:details) {
             need(detail!=null && positive(detail.detailId()) && detailIds.add(detail.detailId()) && tenant.equals(detail.tenantId())
                 && receiveId.equals(detail.receiveId()) && byLine.containsKey(detail.lineId()) && materialId.equals(detail.materialId())
-                && unit.equals(detail.baseUomId()) && positive(detail.batchId()) && detail.snId()==null && "0".equals(detail.delFlag())
+                && unit.equals(detail.baseUomId()) && positive(detail.batchId()) && (detail.snId()==null || serialV2 && BigDecimal.ONE.compareTo(detail.quantity())==0) && "0".equals(detail.delFlag())
                 && head.warehouseId().equals(detail.warehouseId()) && positive(detail.areaId()) && nullablePositive(detail.locationId()),"批次分配身份不完整或SN未支持");
             quantity(detail.quantity(),scale,true);money(detail.quantity().multiply(costsByReceiveLine.get(detail.lineId())),4,true);byLineQuantity.merge(detail.lineId(),detail.quantity(),BigDecimal::add);
             byBatchQuantity.merge(detail.batchId(),detail.quantity(),BigDecimal::add);
@@ -249,7 +253,7 @@ public class WmCertifiedReceiptPostingService {
                 && "0".equals(batch.delFlag()) && batch.expiryAt()!=null && batch.expiryAt().compareTo(originalAt)>0
                 && quantity(batch.quantity(),scale,true).compareTo(entry.getValue())==0
                 && (replay?quantity(batch.issued(),scale,false).compareTo(quantity(batch.received(),scale,false))<=0:quantity(batch.issued(),scale,false).signum()==0)
-                && quantity(batch.received(),scale,false).compareTo(replay?entry.getValue():ZERO)==0,"真实批次来源/有效期/收货余额不能证明");
+                && (serialV2 && replay?quantity(batch.received(),scale,false).compareTo(entry.getValue())>=0:quantity(batch.received(),scale,false).compareTo(replay?entry.getValue():ZERO)==0),"真实批次来源/有效期/收货余额不能证明");
             batches.put(batch.batchId(),batch);
             source.append(batch.batchId()).append('|').append(batch.batchCode()).append('|').append(batch.sourceId()).append('|')
                 .append(batch.expiryAt()).append('|').append(batch.quantity().toPlainString()).append('\n');
@@ -266,16 +270,27 @@ public class WmCertifiedReceiptPostingService {
                 && text(prior.postedAt()) && Set.of("PENDING","ENQUEUED").contains(prior.notificationStatus()),"永久过账与当前原单据不符");
             // 历史通知恢复不是新供给授权：不受当前余额、预留、效期/冻结变化阻断，也不再写库存。
             // 专属批准恢复门禁 + 冻结源摘要 + 原物理RX全集/零起点/成本/时点均必须仍可证明。
-            verifyPosted(tenant,receiveId,details,unit,scale,costsByReceiveLine,prior.postedAt());
+            if(serialV2)serialInventory.verifyCertifiedReceive(receiveId,costsByReceiveLine);
+            else verifyPosted(tenant,receiveId,details,unit,scale,costsByReceiveLine,prior.postedAt());
             return new Result(receiveId,materialId,total,fingerprint,true,"PENDING".equals(prior.notificationStatus()));
         }
         for(Stock old:stocks) need(old!=null && !byBatchQuantity.containsKey(old.batchId()),"本次原始批次已有库存，不能覆盖旧来源或重新授予零起点");
         if (stocks.isEmpty()) need(txIds.isEmpty(),"孤立历史流水不能作为真实零起点");
+        else if(serialV2)serialInventory.verifyMaterialPools(materialId);
         else verifyLineage(tenant,materialId);
         if(shelving) {
             // 出生范围不变：这里只改变上架状态/操作者/实际时点，不走旧头或行的任意更新。
             if("APPROVED".equals(head.status())) one(mapper.markShelved(tenant,receiveId,clock.databaseAt(),actor));
             qualification.requireSourceChainTransaction();return new Result(receiveId,materialId,total,fingerprint,"SHELVED".equals(head.status()),false);
+        }
+        // 同一来源门禁全部通过后，v2使用冻结SN证明；旧证明的分支及校验保持原样。
+        if(serialV2) {
+            serialInventory.postCertifiedReceive(receiveId,costsByReceiveLine);
+            String at=clock.databaseAt();one(mapper.finish(tenant,receiveId,at,actor));
+            serialInventory.verifyCertifiedReceive(receiveId,costsByReceiveLine);serialInventory.verifyMaterialPools(materialId);
+            one(mapper.recordPosting(tenant,receiveId,materialId,actor,fingerprint,total,at));
+            if(head.noticeId()!=null)for(Line line:lines)arrivals.receiveLocked(tenant,head.noticeId(),line.noticeLineId(),line.quantity());
+            return new Result(receiveId,materialId,total,fingerprint,false,true);
         }
         // 完整来源全部核验后才开始过账；相同批次不能覆盖旧库存维度/历史。
         Map<String,Stock> dimensions=new HashMap<>();

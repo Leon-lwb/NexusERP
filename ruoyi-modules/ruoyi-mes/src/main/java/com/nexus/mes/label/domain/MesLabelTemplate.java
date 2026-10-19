@@ -28,6 +28,9 @@ public class MesLabelTemplate extends TenantEntity {
     /** 模板编码(唯一) */
     private String templateCode;
 
+    /** 模板修订号，新增为 1，每次保存递增，打印时冻结 */
+    private Long templateRevision;
+
     /** 模板名称 */
     private String templateName;
 

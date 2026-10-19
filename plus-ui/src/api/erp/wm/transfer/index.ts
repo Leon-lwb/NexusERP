@@ -1,3 +1,4 @@
+import { traceSave, executeTraceDocument } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { TransferQuery, TransferVO, TransferForm } from './types';
@@ -8,15 +9,16 @@ export const listTransfer = (query: TransferQuery): AxiosPromise<TransferVO[]> =
 
 export const getTransfer = (id: string | number): AxiosPromise<TransferVO> => request({ url: BASE + '/' + id, method: 'get' });
 
-export const addTransfer = (data: TransferForm) => request({ url: BASE, method: 'post', data });
+export const addTransfer = (data: TransferForm) => request({ url: BASE, method: 'post', data: traceSave(data) });
 
-export const updateTransfer = (data: TransferForm) => request({ url: BASE, method: 'put', data });
+export const updateTransfer = (data: TransferForm) => request({ url: BASE, method: 'put', data: traceSave(data) });
 
 export const delTransfer = (id: string | number | (string | number)[]) => request({ url: BASE + '/' + id, method: 'delete' });
 
 export const exportTransfer = (query: TransferQuery) => request({ url: BASE + '/export', method: 'post', params: query });
 
-export const executeTransfer = (id: number) => request({ url: BASE + '/execute/' + id, method: 'put' });
+export const executeTransfer = (id: string | number, data?: Record<string, any>) =>
+  executeTraceDocument({ url: BASE + '/execute/' + id, detailUrl: BASE + '/' + id, linesKey: 'wmTransferLineList', quantityKey: 'quantity', data });
 
 // ==================== Flowable 审批 ====================
 

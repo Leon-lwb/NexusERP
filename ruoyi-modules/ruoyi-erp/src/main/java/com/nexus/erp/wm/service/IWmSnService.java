@@ -41,7 +41,7 @@ public interface IWmSnService {
     WmSnVo selectById(Long id);
 
     /**
-     * 新增序列号
+     * 通过统一注册新增正式身份，必须有commandId且初始状态为REGISTERED
      *
      * @param bo 序列号业务对象
      * @return 结果
@@ -49,7 +49,7 @@ public interface IWmSnService {
     int insertByBo(WmSnBo bo);
 
     /**
-     * 修改序列号
+     * 仅修改备注等非事实元数据
      *
      * @param bo 序列号业务对象
      * @return 结果
@@ -57,7 +57,7 @@ public interface IWmSnService {
     int updateByBo(WmSnBo bo);
 
     /**
-     * 批量删除序列号
+     * 已停用：正式号码不可删除或回收，须通过业务单据处理
      *
      * @param ids 需要删除的序列号主键集合
      * @return 结果
@@ -91,7 +91,7 @@ public interface IWmSnService {
     void unbindStock(Long snId);
 
     /**
-     * 批量生成序列号
+     * 无命令旧签名已停用，请使用带commandId的BO重载
      *
      * @param materialId    物料ID
      * @param quantity      生成数量
@@ -101,7 +101,11 @@ public interface IWmSnService {
      * @param sourceDocType 来源单据类型
      * @param sourceDocNo   来源单据编号
      */
+    @Deprecated
     void batchGenerate(Long materialId, Integer quantity, Long batchId, Long ruleId, Long sourceDocId, String sourceDocType, String sourceDocNo);
+
+    /** 按显式commandId调用ERP注册服务预留完整号段，不直接产生库存。 */
+    void batchGenerate(WmSnBo bo);
 
     /**
      * 变更序列号状态

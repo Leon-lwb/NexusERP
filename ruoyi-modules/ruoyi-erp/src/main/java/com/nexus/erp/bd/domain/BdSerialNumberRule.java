@@ -33,6 +33,10 @@ public class BdSerialNumberRule extends TenantEntity {
     @TableId(value = "rule_id")
     private Long ruleId;
 
+    /** 冻结编号规则的并发版本，已预留号码仍按原快照重放。 */
+    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    private Long ruleVersion;
+
     /** 规则编码 */
     private String ruleCode;
 

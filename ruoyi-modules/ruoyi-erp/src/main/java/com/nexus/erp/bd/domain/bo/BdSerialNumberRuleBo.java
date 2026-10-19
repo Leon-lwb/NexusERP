@@ -23,6 +23,10 @@ public class BdSerialNumberRuleBo extends BaseEntity {
     /** 规则ID */
     private Long ruleId;
 
+    /** 冻结编号规则的并发版本，已预留号码仍按原快照重放。 */
+    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    private Long ruleVersion;
+
     /** 规则编码 */
     @NotBlank(message = "规则编码不能为空")
     private String ruleCode;

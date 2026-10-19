@@ -32,6 +32,33 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="handleQuery" />
     </el-row>
 
+    <el-button class="mb-3" @click="router.push('/erp/wm/trace/repair')" v-hasPermi="['wm:trace:query']">审计与修复记录</el-button>
+    <CodeResolver ref="codeResolver" scene="TRACE" @resolved="queryResolved" @state="handleResolveState" />
+    <el-alert v-if="traceError" :title="traceError" type="warning" :closable="false" class="mt-3" />
+    <el-descriptions v-if="selectedObject?.objectType === 'DOCUMENT'" :column="3" border class="mt-3">
+      <el-descriptions-item label="单据身份">{{ selectedObject.objectId }}</el-descriptions-item>
+      <el-descriptions-item label="单据类型">{{ selectedObject.documentType }}</el-descriptions-item>
+      <el-descriptions-item label="单据编号">{{ selectedObject.documentCode }}</el-descriptions-item>
+    </el-descriptions>
+    <div v-if="selectedObject && selectedObject.objectType !== 'DOCUMENT'" class="my-3">
+      <el-button v-if="selectedObject.materialId" :loading="loading" @click="legacyQuery">查询已有仓储汇总</el-button>
+      <el-button v-if="selectedObject.batchId && selectedObject.objectType !== 'BATCH'" @click="recallBatchId = selectedObject.batchId"
+        >召回所属组件批次</el-button
+      >
+    </div>
+    <IdentityTracePanel v-if="identityResult" :result="identityResult" />
+    <el-button v-if="identityResult" class="my-2" @click="componentUsageId = identityResult.identityId">查询该组件身份去向及可能影响批次</el-button>
+    <BatchRecallPanel v-if="componentUsageId" :component-identity-id="componentUsageId" @identity="openIdentity" />
+    <BatchRecallPanel v-if="recallBatchId" :batch-id="recallBatchId" @identity="openIdentity" />
+    <el-alert
+      v-if="traceResult"
+      title="以下为已有仓储查询结果，跨库范围和历史证据完整性以服务端声明为准。"
+      type="info"
+      :closable="false"
+      class="mt-3"
+    />
+    <TraceEvidence v-if="traceResult" :result="traceResult" class="mt-3" />
+
     <!-- 追溯结果信息 -->
     <el-alert
       v-if="traceResult"
@@ -85,7 +112,7 @@
     </el-table>
 
     <!-- 空状态 -->
-    <el-empty v-if="!traceResult && !loading" description="请输入查询条件进行追溯查询" />
+    <el-empty v-if="!traceResult && !identityResult && !recallBatchId && !selectedObject && !loading" description="请输入查询条件进行追溯查询" />
 
     <!-- 节点详情弹窗 -->
     <el-dialog title="追溯节点详情" v-model="detailVisible" width="640px">
@@ -111,13 +138,28 @@
 </template>
 
 <script setup name="WmTrace" lang="ts">
-import { traceForward, traceBackward } from '@/api/erp/wm/trace';
-import { listMaterial } from '@/api/erp/bd/material';
+import { traceForward, traceBackward, traceIdentity } from '@/api/erp/wm/trace';
+import CodeResolver from '@/components/material-trace/CodeResolver.vue';
+import TraceEvidence from '@/components/material-trace/TraceEvidence.vue';
+import { resolvedObject } from '@/components/material-trace/model';
+import IdentityTracePanel from '@/components/material-trace/IdentityTracePanel.vue';
+import BatchRecallPanel from '@/components/material-trace/BatchRecallPanel.vue';
+import type { IdentityTraceResult } from '@/api/erp/wm/trace/types';
+import type { ResolvedMaterialObject, CodeResolution } from '@/api/erp/wm/identity/types';
 import { WmTraceResultVO, WmTraceNodeVO } from '@/api/erp/wm/trace/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_trace_direction } = toRefs<any>(proxy?.useDict('wm_trace_direction'));
 
+const router = useRouter();
+const codeResolver = ref<InstanceType<typeof CodeResolver>>();
+const resolverState = ref({ pending: false, error: '' });
+const selectedObject = ref<ResolvedMaterialObject>();
+const identityResult = ref<IdentityTraceResult>();
+const recallBatchId = ref('');
+const componentUsageId = ref('');
+const traceError = ref('');
+let traceRequest = 0;
 const loading = ref(false);
 const showSearch = ref(true);
 const viewMode = ref<'tree' | 'table'>('tree');
@@ -168,47 +210,93 @@ function docTypeLabel(docType: string): string {
   return docTypeMap[docType] || docType;
 }
 
-/** 执行追溯查询 */
+/** 料号、批次和 SN 作为同一个对象解析，歧义不自动查询。 */
 const handleQuery = async () => {
-  if (!queryParams.value.materialCode) {
-    proxy?.$modal.msgWarning('请输入物料编码');
-    return;
-  }
-  loading.value = true;
-  try {
-    // 后端追溯接口需要 materialId（Long），先按物料编码查询物料再追溯，不能把编码当 ID 传
-    const materialRes: any = await listMaterial({ materialCode: queryParams.value.materialCode, pageNum: 1, pageSize: 1 } as any);
-    const materialRow = materialRes?.rows?.[0] || materialRes?.data?.[0];
-    if (!materialRow?.materialId) {
-      proxy?.$modal.msgWarning('未找到该物料编码对应的物料');
-      loading.value = false;
-      return;
-    }
-    const params: any = {
-      materialId: materialRow.materialId
-    };
-    if (queryParams.value.batchCode) {
-      params.batchCode = queryParams.value.batchCode;
-    }
-    if (queryParams.value.snCode) {
-      params.snCode = queryParams.value.snCode;
-    }
-
-    if (queryParams.value.direction === 'FORWARD') {
-      const res = await traceForward(params);
-      traceResult.value = res.data;
-    } else {
-      const res = await traceBackward(params);
-      traceResult.value = res.data;
-    }
-  } catch (e) {
-    console.error('追溯查询失败', e);
-  } finally {
-    loading.value = false;
-  }
+  traceResult.value = null;
+  await codeResolver.value?.resolve({
+    materialCode: queryParams.value.materialCode,
+    batchCode: queryParams.value.batchCode,
+    snCode: queryParams.value.snCode
+  });
 };
 
+/** 新扫描立即使旧查询失效；错误或歧义不会沿用上一对象。 */
+function handleResolveState(state: { pending: boolean; error: string }) {
+  resolverState.value = state;
+  if (state.pending) clearResults();
+}
+
+/** 清理查询状态，不修改已扫描对象的身份字段。 */
+function clearResults() {
+  ++traceRequest;
+  identityResult.value = undefined;
+  recallBatchId.value = '';
+  componentUsageId.value = '';
+  selectedObject.value = undefined;
+  traceResult.value = null;
+  traceError.value = '';
+  loading.value = false;
+}
+
+/** SN 走统一身份追溯，批次走组件召回，单据使用独立字段展示。 */
+async function queryResolved(resolution: CodeResolution) {
+  if (resolverState.value.pending || resolverState.value.error) return;
+  try {
+    const object = resolvedObject(resolution);
+    selectedObject.value = object;
+    if (object.objectType === 'DOCUMENT') return;
+    if (object.objectType === 'SN' && object.identityId) await openIdentity(object.identityId);
+    else if (object.objectType === 'BATCH' && object.batchId) recallBatchId.value = object.batchId;
+    else await legacyQuery();
+  } catch (cause) {
+    traceError.value = cause instanceof Error ? cause.message : '追溯查询失败';
+  }
+}
+
+/** 首次不指定模块，由服务端返回当前身份获准查看的 ERP/MES 部分。 */
+async function openIdentity(identityId: string) {
+  const request = ++traceRequest;
+  loading.value = true;
+  traceError.value = '';
+  identityResult.value = undefined;
+  try {
+    const response = await traceIdentity(identityId);
+    if (request !== traceRequest) return;
+    if (response.data.identityId !== identityId) throw new Error('统一追溯返回了不同正式身份');
+    identityResult.value = response.data;
+  } catch (cause) {
+    if (request === traceRequest) traceError.value = cause instanceof Error ? cause.message : '统一身份追溯不可用，可明确选择已有仓储汇总';
+  } finally {
+    if (request === traceRequest) loading.value = false;
+  }
+}
+
+/** 已有查询作为显式汇总入口，不在统一接口错误时静默降低证据范围。 */
+async function legacyQuery() {
+  const object = selectedObject.value;
+  if (!object || object.objectType === 'DOCUMENT' || !object.materialId) return;
+  const request = ++traceRequest;
+  loading.value = true;
+  traceError.value = '';
+  try {
+    const params = {
+      materialId: object.materialId,
+      batchCode: object.batchCode,
+      snCode: object.canonicalSnCode || object.snCode,
+      identityId: object.identityId
+    };
+    const response = queryParams.value.direction === 'FORWARD' ? await traceForward(params) : await traceBackward(params);
+    if (request === traceRequest) traceResult.value = response.data;
+  } catch (cause) {
+    if (request === traceRequest) traceError.value = cause instanceof Error ? cause.message : '已有仓储查询失败';
+  } finally {
+    if (request === traceRequest) loading.value = false;
+  }
+}
+
 const resetQuery = () => {
+  clearResults();
+  codeResolver.value?.discard();
   queryRef.value?.resetFields();
   queryParams.value.direction = 'FORWARD';
   traceResult.value = null;

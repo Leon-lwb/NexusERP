@@ -204,6 +204,13 @@
             </template>
           </el-table-column>
         </el-table>
+        <MaterialTraceLines
+          :rows="lineList"
+          :header="form"
+          scene="PRODUCTION_ISSUE"
+          quantity-key="currentQty"
+          :disabled="isViewMode || !canEditLine"
+        />
       </el-form>
     </el-card>
 
@@ -322,6 +329,8 @@
 </template>
 
 <script setup lang="ts" name="ProductionIssueForm">
+import { showTraceSubmission } from '@/components/material-trace/submission';
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import {
   getProductionIssue,
   addProductionIssue,
@@ -532,16 +541,20 @@ function handleExecute() {
       form.value.wmProductionIssueLineList = lineList.value;
       updateProductionIssue(form.value)
         .then(() => executeProductionIssue(form.value.issueId))
-        .then(() => {
-          proxy.$modal.msgSuccess('执行成功，库存已扣减');
+        .then((response) => {
+          showTraceSubmission(proxy.$modal, response, '执行成功，库存已扣减');
           getInfo(form.value.issueId);
         })
-        .catch(() => {})
+        .catch((cause) => {
+          if (cause !== 'cancel' && cause !== 'close') proxy.$modal.msgWarning(cause instanceof Error ? cause.message : '追溯校验失败');
+        })
         .finally(() => {
           executeLoading.value = false;
         });
     })
-    .catch(() => {});
+    .catch((cause) => {
+      if (cause !== 'cancel' && cause !== 'close') proxy.$modal.msgWarning(cause instanceof Error ? cause.message : '追溯校验失败');
+    });
 }
 
 function handleAutoGenChange(autoGenFlag: boolean) {

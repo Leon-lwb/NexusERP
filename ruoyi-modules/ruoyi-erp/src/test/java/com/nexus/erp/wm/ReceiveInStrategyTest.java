@@ -145,8 +145,20 @@ class ReceiveInStrategyTest {
         }
     }
 
+    @Test void failedSpringSetupReleasesItsOwnTenantStaticMock() throws Exception {
+        assertThrows(IllegalStateException.class, () -> new Fixture(context ->
+            context.addBeanFactoryPostProcessor(factory -> {throw new IllegalStateException("fixture refresh failed");})));
+        try (MockedStatic<TenantHelper> recovered = mockStatic(TenantHelper.class)) {
+            recovered.when(TenantHelper::getTenantId).thenReturn("recovered");
+            assertEquals("recovered", TenantHelper.getTenantId());
+        }
+        try (Fixture next = new Fixture()) {
+            assertDoesNotThrow(next::execute);
+        }
+    }
+
     static class Fixture implements AutoCloseable {
-        final MockedStatic<TenantHelper> tenants = mockStatic(TenantHelper.class);
+        final MockedStatic<TenantHelper> tenants;
         final WmCertifiedReceiptPostingMapper sources = mock(WmCertifiedReceiptPostingMapper.class);
         final WmMaterialReceiveMapper receive = mock(WmMaterialReceiveMapper.class);
         final WmMaterialReceiveDetailMapper details = mock(WmMaterialReceiveDetailMapper.class);
@@ -160,52 +172,62 @@ class ReceiveInStrategyTest {
         final TransactionTemplate transaction;
         final ReceiveInStrategy strategy;
 
-        Fixture() throws Exception {
-            // 仅初始化元数据：真实 MyBatis 的 Lambda 条件封装必须在无数据库及启动扫描的情况下可用。
-            var assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "bounded-stockin-unit");
-            TableInfoHelper.initTableInfo(assistant, WmMaterialStock.class);
-            TableInfoHelper.initTableInfo(assistant, WmMaterialStockTx.class);
-            TableInfoHelper.initTableInfo(assistant, WmMaterialReceiveDetail.class);
-            tenants.when(TenantHelper::isEnable).thenReturn(true);
-            tenants.when(TenantHelper::getTenantId).thenReturn(TENANT);
-            when(dataSource.getConnection()).thenReturn(connection);
-            when(connection.getAutoCommit()).thenReturn(true);
-            var manager = new DataSourceTransactionManager(dataSource);
-            transaction = new TransactionTemplate(manager);
-            var guard = transactionProxy(new WmCertifiedReceiptMutationGuard(sources), manager);
-            when(sources.lockHead(TENANT, RECEIVE)).thenAnswer(call -> {
-                assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
-                return head(TENANT);
-            });
-            when(sources.lockCertifiedOrderIdentities(TENANT, ORDER)).thenReturn(List.of());
-            var header = new WmMaterialReceive();
-            header.setTenantId(TENANT); header.setReceiveId(RECEIVE); header.setReceiveCode("RK-101");
-            header.setPurId(ORDER); header.setVendorId(401L);
-            when(receive.selectById(RECEIVE)).thenReturn(header);
-            var detail = new WmMaterialReceiveDetail();
-            detail.setReceiveId(RECEIVE); detail.setLineId(701L); detail.setMaterialId(201L);
-            detail.setMaterialName("Legacy material"); detail.setQuantity(new BigDecimal("3"));
-            detail.setBaseUomId("501"); detail.setWarehouseId(501L);
-            when(details.selectList(any())).thenReturn(List.of(detail));
-            when(transactions.selectCount(any())).thenReturn(0L);
-            var existing = new WmMaterialStock();
-            existing.setStockId(801L); existing.setMaterialId(201L); existing.setBaseUomId("501");
-            existing.setStockQuantity(BigDecimal.ZERO); existing.setVersion(0); existing.setUnitCost(new BigDecimal("9"));
-            when(stock.selectList(any())).thenReturn(List.of(existing));
-            when(stock.addStock(801L, new BigDecimal("3"), 0)).thenReturn(1);
-            when(stock.selectById(801L)).thenReturn(existing);
-            var material = new BdMaterial();material.setReferencePrice(new BigDecimal("9"));
-            when(materials.selectById(201L)).thenReturn(material);
-            context.registerBean(WmMaterialStockTxMapper.class, () -> transactions);
-            context.registerBean(WmMaterialReceiveMapper.class, () -> receive);
-            context.registerBean(WmMaterialReceiveDetailMapper.class, () -> details);
-            context.registerBean(WmMaterialStockMapper.class, () -> stock);
-            context.registerBean(IInventoryValuationService.class, () -> valuation);
-            context.registerBean(BdMaterialMapper.class, () -> materials);
-            context.registerBean(WmCertifiedReceiptMutationGuard.class, () -> guard);
-            context.registerBean(ReceiveInStrategy.class);
-            context.refresh();
-            strategy = context.getBean(ReceiveInStrategy.class);
+        Fixture() throws Exception {this(context -> { });}
+
+        Fixture(java.util.function.Consumer<AnnotationConfigApplicationContext> beforeRefresh) throws Exception {
+            tenants = mockStatic(TenantHelper.class);
+            try {
+                // 仅初始化元数据：真实 MyBatis 的 Lambda 条件封装必须在无数据库及启动扫描的情况下可用。
+                var assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "bounded-stockin-unit");
+                TableInfoHelper.initTableInfo(assistant, WmMaterialStock.class);
+                TableInfoHelper.initTableInfo(assistant, WmMaterialStockTx.class);
+                TableInfoHelper.initTableInfo(assistant, WmMaterialReceiveDetail.class);
+                tenants.when(TenantHelper::isEnable).thenReturn(true);
+                tenants.when(TenantHelper::getTenantId).thenReturn(TENANT);
+                when(dataSource.getConnection()).thenReturn(connection);
+                when(connection.getAutoCommit()).thenReturn(true);
+                var manager = new DataSourceTransactionManager(dataSource);
+                transaction = new TransactionTemplate(manager);
+                var guard = transactionProxy(new WmCertifiedReceiptMutationGuard(sources), manager);
+                when(sources.lockHead(TENANT, RECEIVE)).thenAnswer(call -> {
+                    assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
+                    return head(TENANT);
+                });
+                when(sources.lockCertifiedOrderIdentities(TENANT, ORDER)).thenReturn(List.of());
+                var header = new WmMaterialReceive();
+                header.setTenantId(TENANT); header.setReceiveId(RECEIVE); header.setReceiveCode("RK-101");
+                header.setPurId(ORDER); header.setVendorId(401L);
+                when(receive.selectById(RECEIVE)).thenReturn(header);
+                var detail = new WmMaterialReceiveDetail();
+                detail.setReceiveId(RECEIVE); detail.setLineId(701L); detail.setMaterialId(201L);
+                detail.setMaterialName("Legacy material"); detail.setQuantity(new BigDecimal("3"));
+                detail.setBaseUomId("501"); detail.setWarehouseId(501L);
+                when(details.selectList(any())).thenReturn(List.of(detail));
+                when(transactions.selectCount(any())).thenReturn(0L);
+                var existing = new WmMaterialStock();
+                existing.setStockId(801L); existing.setMaterialId(201L); existing.setBaseUomId("501");
+                existing.setStockQuantity(BigDecimal.ZERO); existing.setVersion(0); existing.setUnitCost(new BigDecimal("9"));
+                when(stock.selectList(any())).thenReturn(List.of(existing));
+                when(stock.addStock(801L, new BigDecimal("3"), 0)).thenReturn(1);
+                when(stock.selectById(801L)).thenReturn(existing);
+                var material = new BdMaterial();material.setReferencePrice(new BigDecimal("9"));
+                when(materials.selectById(201L)).thenReturn(material);
+                context.registerBean(WmMaterialStockTxMapper.class, () -> transactions);
+                context.registerBean(WmMaterialReceiveMapper.class, () -> receive);
+                context.registerBean(WmMaterialReceiveDetailMapper.class, () -> details);
+                context.registerBean(WmMaterialStockMapper.class, () -> stock);
+                context.registerBean(IInventoryValuationService.class, () -> valuation);
+                context.registerBean(BdMaterialMapper.class, () -> materials);
+                context.registerBean(WmCertifiedReceiptMutationGuard.class, () -> guard);
+                context.registerBean(com.nexus.erp.wm.service.WmSerialInventoryService.class, () -> mock(com.nexus.erp.wm.service.WmSerialInventoryService.class));
+                context.registerBean(ReceiveInStrategy.class);
+                beforeRefresh.accept(context);
+                context.refresh();
+                strategy = context.getBean(ReceiveInStrategy.class);
+            } catch (Exception | Error failure) {
+                try {close();} catch (Throwable cleanupFailure) {failure.addSuppressed(cleanupFailure);}
+                throw failure;
+            }
         }
 
         void execute() {transaction.executeWithoutResult(status -> strategy.execute(RECEIVE));}

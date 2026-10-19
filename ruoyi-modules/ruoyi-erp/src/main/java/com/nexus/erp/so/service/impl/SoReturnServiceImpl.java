@@ -52,6 +52,9 @@ import java.util.Map;
 @DS("erp")
 @Service("soReturnService")
 public class SoReturnServiceImpl implements ISoReturnService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     private final SoReturnMapper baseMapper;
     private final SoReturnLineMapper lineMapper;
@@ -402,6 +405,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
      * @param now      操作时间
      */
     private void postReturnStock(SoReturn soReturn, SoReturnLine line, Date now) {
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+            "SO_RETURN",soReturn.getReturnId(),line.getLineId(),"RETURN_IN",line.getMaterialId(),line.getReturnQuantity(),
+            soReturn.getWarehouseId(),null,null,null)))return;
         if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("退货数量必须大于0");
         }

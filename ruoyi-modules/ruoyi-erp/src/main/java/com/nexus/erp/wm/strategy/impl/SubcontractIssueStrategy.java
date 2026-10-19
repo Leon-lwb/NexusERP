@@ -33,6 +33,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：委外发料 */
     private static final String TX_TYPE_SUBCONTRACT_ISSUE = "SUBCONTRACT_ISSUE";
@@ -84,6 +87,7 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
         @SuppressWarnings("unchecked")
         List<AllocatedStock> allocations = (List<AllocatedStock>) args[1];
         Date now = (Date) args[2];
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_SUBCONTRACT_ISSUE",line.getIssueId(),line.getLineId(),"SUBCONTRACT_ISSUE",line.getMaterialId(),line.getIssueQty(),null,null,null)))return;
 
         if (line.getIssueQty() == null || line.getIssueQty().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("委外发料数量必须大于0: " + line.getMaterialName());

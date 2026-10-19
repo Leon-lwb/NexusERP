@@ -40,6 +40,9 @@ import java.util.Date;
 @Slf4j
 @Component
 public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：委外收货 */
     private static final String TX_TYPE_SUBCONTRACT_RECEIVE = "SUBCONTRACT_RECEIVE";
@@ -125,6 +128,7 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
         String vendorBatchCode = (String) args[14];
         BigDecimal quantity = (BigDecimal) args[15];
         Date now = (Date) args[16];
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in("WM_SUBCONTRACT_RECEIVE",receiveId,null,"SUBCONTRACT_RECEIVE",materialId,quantity,warehouseId,locationId,null,null)))return;
 
         if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("委外收货数量必须大于0");

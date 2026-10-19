@@ -1,323 +1,261 @@
 package com.nexus.erp.wm;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.trace.SerialIdentity;
+import com.nexus.common.trace.SerialReservation;
+import com.nexus.common.trace.SerialReservationCommand;
+import com.nexus.erp.wm.trace.ErpSerialIdentityService;
+import com.nexus.erp.wm.controller.WmSnController;
 import com.nexus.erp.wm.domain.WmSn;
 import com.nexus.erp.wm.domain.bo.WmSnBo;
+import com.nexus.erp.wm.domain.vo.WmSnVo;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.impl.WmSnServiceImpl;
-import io.github.linpeilie.Converter;
+import com.nexus.erp.wm.trace.ErpTraceContext;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
-import org.mockito.MockedStatic;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Date;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * 序列号管理Service单元测试
- *
- * @author nexus
- */
+/** 旧SN维护入口必须服从统一注册及业务单据边界；全部使用合成对象与Mock端口。 */
 @ExtendWith(MockitoExtension.class)
-@Tag("dev")
 class WmSnServiceImplTest {
+    @Mock private WmSnMapper baseMapper;
+    @Mock private ErpSerialIdentityService identities;
+    @Mock private ErpTraceContext context;
+    @InjectMocks private WmSnServiceImpl service;
+    private WmSn existing;
 
-    @Mock
-    private WmSnMapper baseMapper;
-    @Mock
-    private com.nexus.erp.wm.mapper.WmBatchMapper batchMapper;
-    @Mock
-    private com.nexus.erp.wm.service.impl.DailyCodeSequenceProvider dailyCodeSequenceProvider;
-
-    @InjectMocks
-    private WmSnServiceImpl wmSnService;
-
-    private WmSn existingSn;
-
-    /** 静态 mock：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器子类 */
-    private static MockedStatic<SpringUtil> springUtilMock;
-    private static Converter converter;
-
-    @BeforeAll
-    static void initMapstructAndLambda() {
-        springUtilMock = mockStatic(SpringUtil.class);
-        converter = new Converter() {
-            @Override
-            public <S, T> T convert(S source, Class<T> targetType) {
-                return BeanUtil.copyProperties(source, targetType);
-            }
-        };
-        lenient().when(SpringUtil.getBean(Converter.class)).thenReturn(converter);
-
-        // 预热 MyBatis-Plus Lambda 缓存（insertByBo 自动编号路径可能经 provider 的 maxSeqLoader 触达 lambda）
-        MybatisConfiguration configuration = new MybatisConfiguration();
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
-        TableInfoHelper.initTableInfo(assistant, WmSn.class);
+    @BeforeAll static void initializeLambdaMetadata() {
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), WmSn.class);
     }
 
-    @AfterAll
-    static void closeMapstruct() {
-        if (springUtilMock != null) {
-            springUtilMock.close();
-        }
+    @BeforeEach void setup() {
+        existing = new WmSn();
+        existing.setSnId(1L);
+        existing.setSnCode("SN-EXISTING");
+        existing.setMaterialId(100L);
+        existing.setStatus("REGISTERED");
+        lenient().when(context.tenant()).thenReturn("T1");
     }
 
-    @BeforeEach
-    void setUp() {
-        existingSn = new WmSn();
-        existingSn.setSnId(1L);
-        existingSn.setSnCode("SN202606010001");
-        existingSn.setMaterialId(100L);
-        existingSn.setStatus("IN_STOCK");
-        lenient().when(dailyCodeSequenceProvider.next(anyString(), any())).thenReturn(1L);
-    }
-
-    /**
-     * 批量生成序列号 - 验证生成数量和编码格式
-     */
-    @Test
-    void testBatchGenerate() {
-        when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
-
-        wmSnService.batchGenerate(100L, 3, null, 1L, 200L, "PO", "PO20260601001");
-
-        // 验证插入了3条记录
-        verify(baseMapper, times(3)).insert(any(WmSn.class));
-    }
-
-    /**
-     * 批量生成序列号 - 第二批生成时序号递增
-     */
-    @Test
-    void testBatchGenerate_SequenceIncrement() {
-        // 序号提供器返回当日已有序号 6（原逻辑查询当日最大序号后自增）
-        when(dailyCodeSequenceProvider.next(anyString(), any())).thenReturn(6L);
-        when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
-
-        wmSnService.batchGenerate(100L, 2, null, 1L, 200L, "PO", "PO20260601001");
-
-        // 验证插入了2条记录
-        verify(baseMapper, times(2)).insert(any(WmSn.class));
-
-        // 捕获插入的SN对象，验证序号递增
-        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
-        verify(baseMapper, times(2)).insert(captor.capture());
-
-        List<WmSn> insertedSns = captor.getAllValues();
-        // 由于已有SN202606010005，下一个序号应从6开始
-        assertTrue(insertedSns.get(0).getSnCode().endsWith("0006"));
-        assertTrue(insertedSns.get(1).getSnCode().endsWith("0007"));
-    }
-
-    /** 批量生成关联批次：SN 应写入 batchId/batchCode */
-    @Test
-    void testBatchGenerate_WithBatch() {
-        com.nexus.erp.wm.domain.WmBatch batch = new com.nexus.erp.wm.domain.WmBatch();
-        batch.setBatchId(9L);
-        batch.setBatchCode("B202608160001");
-        batch.setMaterialId(100L);
-        when(batchMapper.selectById(9L)).thenReturn(batch);
-        when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
-
-        wmSnService.batchGenerate(100L, 2, 9L, 1L, 200L, "PO", "PO20260601001");
-
-        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
-        verify(baseMapper, times(2)).insert(captor.capture());
-        for (WmSn sn : captor.getAllValues()) {
-            assertEquals(9L, sn.getBatchId());
-            assertEquals("B202608160001", sn.getBatchCode());
-        }
-    }
-
-    /** 批量生成关联批次：批次物料不匹配应报错 */
-    @Test
-    void testBatchGenerate_BatchMaterialMismatch() {
-        com.nexus.erp.wm.domain.WmBatch batch = new com.nexus.erp.wm.domain.WmBatch();
-        batch.setBatchId(9L);
-        batch.setBatchCode("B202608160001");
-        batch.setMaterialId(999L);
-        when(batchMapper.selectById(9L)).thenReturn(batch);
-
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmSnService.batchGenerate(100L, 1, 9L, 1L, 200L, "PO", "PO001")
-        );
-        assertTrue(exception.getMessage().contains("不属于该物料"));
-    }
-
-    /**
-     * 绑定库存 - SN状态应变为IN_STOCK
-     */
-    @Test
-    void testBindStock() {
-        WmSn unboundSn = new WmSn();
-        unboundSn.setSnId(1L);
-        unboundSn.setSnCode("SN202606010001");
-        unboundSn.setMaterialId(100L);
-        unboundSn.setStatus("OUT");
-        unboundSn.setStockId(null);
-
-        when(baseMapper.selectById(1L)).thenReturn(unboundSn);
-        when(baseMapper.updateById(any(WmSn.class))).thenReturn(1);
-
-        wmSnService.bindStock(1L, 300L, 400L, 500L);
-
-        // 捕获updateById参数，验证状态和字段
-        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
-        verify(baseMapper).updateById(captor.capture());
-
-        WmSn updated = captor.getValue();
-        assertEquals("IN_STOCK", updated.getStatus());
-        assertEquals(300L, updated.getStockId());
-        assertEquals(400L, updated.getWarehouseId());
-        assertEquals(500L, updated.getLocationId());
-    }
-
-    /**
-     * 绑定库存 - SN已绑定时应抛出异常
-     */
-    @Test
-    void testBindStock_AlreadyBound() {
-        WmSn boundSn = new WmSn();
-        boundSn.setSnId(1L);
-        boundSn.setStockId(300L);
-
-        when(baseMapper.selectById(1L)).thenReturn(boundSn);
-
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmSnService.bindStock(1L, 301L, 400L, 500L)
-        );
-        assertTrue(exception.getMessage().contains("已绑定"));
-    }
-
-    /**
-     * 解绑库存 - SN状态应变为OUT
-     */
-    @Test
-    void testUnbindStock() {
-        WmSn boundSn = new WmSn();
-        boundSn.setSnId(1L);
-        boundSn.setSnCode("SN202606010001");
-        boundSn.setStatus("IN_STOCK");
-        boundSn.setStockId(300L);
-        boundSn.setWarehouseId(400L);
-        boundSn.setLocationId(500L);
-
-        when(baseMapper.selectById(1L)).thenReturn(boundSn);
-        when(baseMapper.updateById(any(WmSn.class))).thenReturn(1);
-
-        wmSnService.unbindStock(1L);
-
-        // 捕获updateById参数，验证状态和字段清空
-        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
-        verify(baseMapper).updateById(captor.capture());
-
-        WmSn updated = captor.getValue();
-        assertEquals("OUT", updated.getStatus());
-        assertNull(updated.getStockId());
-        assertNull(updated.getWarehouseId());
-        assertNull(updated.getLocationId());
-    }
-
-    /**
-     * 解绑库存 - SN未绑定时应抛出异常
-     */
-    @Test
-    void testUnbindStock_NotBound() {
-        WmSn unboundSn = new WmSn();
-        unboundSn.setSnId(1L);
-        unboundSn.setStockId(null);
-
-        when(baseMapper.selectById(1L)).thenReturn(unboundSn);
-
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmSnService.unbindStock(1L)
-        );
-        assertTrue(exception.getMessage().contains("未绑定"));
-    }
-
-    /**
-     * 变更序列号状态
-     */
-    @Test
-    void testChangeStatus() {
-        when(baseMapper.selectById(1L)).thenReturn(existingSn);
-        when(baseMapper.updateById(any(WmSn.class))).thenReturn(1);
-
-        wmSnService.changeStatus(1L, "SCRAP");
-
-        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
-        verify(baseMapper).updateById(captor.capture());
-
-        assertEquals("SCRAP", captor.getValue().getStatus());
-    }
-
-    /**
-     * 变更状态 - 序列号不存在时应抛出异常
-     */
-    @Test
-    void testChangeStatus_SnNotFound() {
-        when(baseMapper.selectById(anyLong())).thenReturn(null);
-
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmSnService.changeStatus(999L, "SCRAP")
-        );
-        assertTrue(exception.getMessage().contains("不存在"));
-    }
-
-    /**
-     * 批量生成 - 数量小于等于0应抛出异常
-     */
-    @Test
-    void testBatchGenerate_InvalidQuantity() {
-        ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmSnService.batchGenerate(100L, 0, null, 1L, 200L, "PO", "PO001")
-        );
-        assertTrue(exception.getMessage().contains("大于0"));
-
-        assertThrows(ServiceException.class, () ->
-            wmSnService.batchGenerate(100L, -1, null, 1L, 200L, "PO", "PO001")
-        );
-    }
-
-    /** insertByBo：SN编码为空时自动生成，关联批次自动回填批次编码（问题⑦回归） */
-    @Test
-    void testInsertByBo_AutoCodeAndBatchBackfill() {
-        com.nexus.erp.wm.domain.WmBatch batch = new com.nexus.erp.wm.domain.WmBatch();
-        batch.setBatchId(9L);
-        batch.setBatchCode("B202608160001");
-        batch.setMaterialId(100L);
-        when(batchMapper.selectById(9L)).thenReturn(batch);
-        when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
-
+    private WmSnBo command(String commandId) {
         WmSnBo bo = new WmSnBo();
+        bo.setCommandId(commandId);
         bo.setMaterialId(100L);
-        bo.setBatchId(9L);
-        // snCode 留空，期望自动生成
-        wmSnService.insertByBo(bo);
+        bo.setSourceDocType("ERP_MANUAL");
+        return bo;
+    }
 
-        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
-        verify(baseMapper).insert(captor.capture());
-        WmSn inserted = captor.getValue();
-        assertTrue(inserted.getSnCode().matches("SN\\d{8}\\d{4}"));
-        assertEquals("B202608160001", inserted.getBatchCode());
+    private void stubRegistry() {
+        when(identities.reserveManual(eq("T1"), any())).thenAnswer(call -> {
+            SerialReservationCommand command = call.getArgument(1);
+            var serials = IntStream.range(0, command.quantity()).mapToObj(index -> new SerialIdentity(
+                9007199254740993L + index, "ERP-" + command.commandId() + "-" + index,
+                command.materialId(), command.batchId(), command.batchId() == null ? null : "B9")).toList();
+            return new SerialReservation(88L, command.commandId(), command.fingerprint(), serials, "RESERVED");
+        });
+    }
+
+    /** 新增不能在缺命令时自行造幂等号，更不能直接插入SN。 */
+    @Test void insertRequiresExplicitCommandBeforeAnyWrite() {
+        for (String invalid : new String[] {null, "", " ", "X".repeat(129)}) {
+            WmSnBo bo = command(invalid);
+            assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        }
+        verifyNoInteractions(baseMapper, identities);
+    }
+
+    /** 单个新增接入ERP注册，回填统一身份，不把REGISTERED当库存。 */
+    @Test void singleInsertUsesRegistryAndFrozenBatchIdentity() {
+        stubRegistry();
+        WmSnBo bo = command("single");
+        bo.setBatchId(9L);
+        assertEquals(1, service.insertByBo(bo));
+        verify(identities).reserveManual("T1", new SerialReservationCommand("single",100L,1,null,"ERP_MANUAL",null,9L));
+        assertEquals(9007199254740993L, bo.getSnId());
+        assertEquals("ERP-single-0", bo.getSnCode());
+        verifyNoInteractions(baseMapper);
+    }
+
+    /** 原批量URL必须把BO中的命令交给统一注册，不再调用无命令旧重载。 */
+    @Test void originalControllerBatchUrlForwardsCommandAndWholeQuantity() {
+        stubRegistry();
+        WmSnBo bo = command("batch");
+        bo.setQuantity(3);
+        bo.setBatchId(9L);
+        bo.setRuleId(7L);
+        new WmSnController(service).batchGenerate(bo);
+        verify(identities).reserveManual("T1",new SerialReservationCommand("batch",100L,3,7L,"ERP_MANUAL",null,9L));
+        verifyNoInteractions(baseMapper);
+    }
+
+    /** 原新增URL与服务入口同样不能绕过命令和注册规则。 */
+    @Test void originalControllerAddUrlRejectsMissingCommand() {
+        assertThrows(ServiceException.class, () -> new WmSnController(service).add(command(null)));
+        verifyNoInteractions(baseMapper, identities);
+    }
+
+    /** 连续批量和单个入口分别传递完整请求；号段唯一性由真实注册服务回归证明。 */
+    @Test void consecutiveBatchAndSingleRequestsNeverUseLocalNumbering() {
+        stubRegistry();
+        WmSnBo first = command("first"); first.setQuantity(3);
+        WmSnBo second = command("second"); second.setQuantity(2);
+        service.batchGenerate(first);
+        service.batchGenerate(second);
+        service.insertByBo(command("single"));
+        ArgumentCaptor<SerialReservationCommand> commands = ArgumentCaptor.forClass(SerialReservationCommand.class);
+        verify(identities,times(3)).reserveManual(eq("T1"),commands.capture());
+        assertEquals(List.of(3,2,1),commands.getAllValues().stream().map(SerialReservationCommand::quantity).toList());
+        assertEquals(List.of("first","second","single"),commands.getAllValues().stream().map(SerialReservationCommand::commandId).toList());
+        verifyNoInteractions(baseMapper);
+    }
+
+    @Test void commandlessLegacyBatchOverloadIsDisabledEvenForValidInput() {
+        assertTrue(assertThrows(ServiceException.class, () -> service.batchGenerate(100L,3,9L,7L,200L,"PO","PO-200"))
+            .getMessage().contains("commandId"));
+        verifyNoInteractions(baseMapper,identities);
+    }
+
+    @Test void batchRequiresPositiveQuantityAndExplicitCommand() {
+        for (Integer quantity : new Integer[] {null,0,-1}) {
+            WmSnBo bo = command("quantity"); bo.setQuantity(quantity);
+            assertThrows(ServiceException.class, () -> service.batchGenerate(bo));
+        }
+        WmSnBo missing = command(null); missing.setQuantity(2);
+        assertThrows(ServiceException.class, () -> service.batchGenerate(missing));
+        verifyNoInteractions(baseMapper,identities);
+    }
+
+    @Test void singleInsertCannotSmuggleBatchQuantityOrInventFormalNumber() {
+        WmSnBo multiple = command("multiple"); multiple.setQuantity(2);
+        assertThrows(ServiceException.class, () -> service.insertByBo(multiple));
+        WmSnBo manual = command("manual"); manual.setSnCode("CUSTOMER-NUMBER");
+        assertThrows(ServiceException.class, () -> service.insertByBo(manual));
+        WmSnBo oversized = command("oversized"); oversized.setSnCode("X".repeat(65));
+        assertTrue(assertThrows(ServiceException.class, () -> service.insertByBo(oversized)).getMessage().contains("64"));
+        assertEquals(65,oversized.getSnCode().length());
+        verifyNoInteractions(baseMapper,identities);
+    }
+
+    /** 登记不能携带在库声明或库存位置等业务事实。 */
+    @Test void registrationCannotCreateInventoryOrChooseAnotherIdentity() {
+        for (Consumer<WmSnBo> mutate : List.<Consumer<WmSnBo>>of(
+            bo -> bo.setStatus("IN_STOCK"),bo -> bo.setStockId(1L),bo -> bo.setWarehouseId(2L),
+            bo -> bo.setLocationId(3L),bo -> bo.setSnId(7L))) {
+            WmSnBo bo = command("unsafe"); mutate.accept(bo);
+            assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        }
+        verifyNoInteractions(baseMapper,identities);
+    }
+
+    @Test void metadataUpdateAllowsHistoricalLongNumberWithoutRewritingFacts() {
+        String historical = "H".repeat(128);
+        existing.setSnCode(historical);
+        existing.setStockId(66L);
+        existing.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.updateById(any(WmSn.class))).thenReturn(1);
+        WmSnBo bo = new WmSnBo();
+        bo.setSnId(1L); bo.setSnCode(historical); bo.setMaterialId(100L); bo.setStockId(66L); bo.setStatus("IN_STOCK");
+        bo.setRemark("复核备注"); bo.setAttr1("维护信息");
+        assertEquals(1,service.updateByBo(bo));
+        ArgumentCaptor<WmSn> patch = ArgumentCaptor.forClass(WmSn.class);
+        verify(baseMapper).updateById(patch.capture());
+        assertEquals(1L,patch.getValue().getSnId());
+        assertEquals("复核备注",patch.getValue().getRemark());
+        assertEquals("维护信息",patch.getValue().getAttr1());
+        assertAll(() -> assertNull(patch.getValue().getSnCode()), () -> assertNull(patch.getValue().getMaterialId()),
+            () -> assertNull(patch.getValue().getBatchId()), () -> assertNull(patch.getValue().getStockId()),
+            () -> assertNull(patch.getValue().getStatus()), () -> assertNull(patch.getValue().getRegistrationCommand()));
+    }
+
+    @ParameterizedTest(name="不能直接修改事实字段 {0}")
+    @MethodSource("factChanges")
+    void factChangesAreRejected(String name, Consumer<WmSnBo> mutate) {
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        WmSnBo bo = new WmSnBo(); bo.setSnId(1L); bo.setRemark("备注"); mutate.accept(bo);
+        assertTrue(assertThrows(ServiceException.class, () -> service.updateByBo(bo)).getMessage().contains("业务单据"),name);
+        verify(baseMapper,never()).updateById(any(WmSn.class));
+    }
+
+    static Stream<Arguments> factChanges() {
+        return Stream.of(
+            Arguments.of("SnCode",(Consumer<WmSnBo>) bo -> bo.setSnCode("OTHER")),
+            Arguments.of("MaterialId",(Consumer<WmSnBo>) bo -> bo.setMaterialId(101L)),
+            Arguments.of("MaterialCode",(Consumer<WmSnBo>) bo -> bo.setMaterialCode("OTHER")),
+            Arguments.of("MaterialName",(Consumer<WmSnBo>) bo -> bo.setMaterialName("OTHER")),
+            Arguments.of("MaterialSpec",(Consumer<WmSnBo>) bo -> bo.setMaterialSpec("OTHER")),
+            Arguments.of("BatchId",(Consumer<WmSnBo>) bo -> bo.setBatchId(9L)),
+            Arguments.of("BatchCode",(Consumer<WmSnBo>) bo -> bo.setBatchCode("B9")),
+            Arguments.of("StockId",(Consumer<WmSnBo>) bo -> bo.setStockId(8L)),
+            Arguments.of("WarehouseId",(Consumer<WmSnBo>) bo -> bo.setWarehouseId(2L)),
+            Arguments.of("WarehouseCode",(Consumer<WmSnBo>) bo -> bo.setWarehouseCode("W")),
+            Arguments.of("WarehouseName",(Consumer<WmSnBo>) bo -> bo.setWarehouseName("W")),
+            Arguments.of("LocationId",(Consumer<WmSnBo>) bo -> bo.setLocationId(3L)),
+            Arguments.of("LocationCode",(Consumer<WmSnBo>) bo -> bo.setLocationCode("L")),
+            Arguments.of("Status",(Consumer<WmSnBo>) bo -> bo.setStatus("SCRAP")),
+            Arguments.of("SourceDocId",(Consumer<WmSnBo>) bo -> bo.setSourceDocId(200L)),
+            Arguments.of("SourceDocType",(Consumer<WmSnBo>) bo -> bo.setSourceDocType("PO")),
+            Arguments.of("SourceDocNo",(Consumer<WmSnBo>) bo -> bo.setSourceDocNo("PO200")),
+            Arguments.of("RuleId",(Consumer<WmSnBo>) bo -> bo.setRuleId(7L)),
+            Arguments.of("ProductionDate",(Consumer<WmSnBo>) bo -> bo.setProductionDate(new Date(1L))),
+            Arguments.of("ExpiryDate",(Consumer<WmSnBo>) bo -> bo.setExpiryDate(new Date(2L)))
+        );
+    }
+
+    /** 危险入口只给出业务错误，既不查写实体，也不回收正式号码。 */
+    @Test void deleteBindUnbindAndStatusRoutesAreClosed() {
+        assertAll(
+            () -> assertTrue(assertThrows(ServiceException.class, () -> service.deleteByIds(new Long[] {1L})).getMessage().contains("业务单据")),
+            () -> assertTrue(assertThrows(ServiceException.class, () -> service.bindStock(1L,2L,3L,4L)).getMessage().contains("业务单据")),
+            () -> assertTrue(assertThrows(ServiceException.class, () -> service.unbindStock(1L)).getMessage().contains("业务单据")),
+            () -> assertTrue(assertThrows(ServiceException.class, () -> service.changeStatus(1L,"IN_STOCK")).getMessage().contains("业务单据"))
+        );
+        verifyNoInteractions(baseMapper,identities);
+    }
+
+    /** 原查询仍返回历史原文，统一身份别名随主字段稳定映射。 */
+    @Test void queriesPreserveHistoryAndExposeStableIdentityAliases() {
+        WmSnVo vo = new WmSnVo(); vo.setSnId(9007199254740993L); vo.setSnCode("H".repeat(128));
+        when(baseMapper.selectVoById(9007199254740993L)).thenReturn(vo);
+        assertSame(vo,service.selectById(9007199254740993L));
+        assertEquals(vo.getSnId(),vo.getIdentityId());
+        assertEquals(vo.getSnCode(),vo.getCanonicalSnCode());
+        vo.setSnCode("CANONICAL");
+        assertEquals("CANONICAL",vo.getCanonicalSnCode());
+        WmSnBo filter = new WmSnBo(); filter.setMaterialId(100L); filter.setSnCode("H".repeat(128));
+        when(baseMapper.selectVoList(any(LambdaQueryWrapper.class))).thenReturn(List.of(vo));
+        assertEquals(List.of(vo),service.selectList(filter));
+        assertEquals(List.of(vo),service.selectByMaterialAndStatus(100L,"REGISTERED"));
+    }
+
+    @Test void pageQueryKeepsExistingPaginationContract() {
+        Page<WmSnVo> page = new Page<>(1,20); page.setTotal(0);
+        when(baseMapper.selectVoPage(any(Page.class),any(LambdaQueryWrapper.class))).thenReturn(page);
+        assertNotNull(service.selectPageList(new WmSnBo(),new PageQuery(20,1)));
     }
 }

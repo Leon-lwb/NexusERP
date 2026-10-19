@@ -1,5 +1,6 @@
 <template>
   <div class="app-container">
+    <ProductionReceiptDialog ref="receiptExecutionRef" @executed="getList" />
     <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
       <el-row :gutter="16">
         <el-col :span="6">
@@ -155,7 +156,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="入库数量" prop="quantity">
-              <el-input-number v-model="form.quantity" :precision="4" :min="0" style="width: 100%" />
+              <el-input v-model="form.quantity" inputmode="decimal" placeholder="本次实际良品数量（十进制）" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -186,6 +187,12 @@
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
         </el-form-item>
+        <MaterialTraceLines
+          :rows="[form]"
+          :header="form"
+          scene="PRODUCTION_RECEIPT"
+          :disabled="form.status === 'COMPLETED' || form.status === 'EXECUTED'"
+        />
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm()">确 定</el-button>
@@ -270,14 +277,10 @@
 </template>
 
 <script setup name="ProductionRecpt" lang="ts">
-import {
-  listProductionRecpt,
-  getProductionRecpt,
-  addProductionRecpt,
-  updateProductionRecpt,
-  delProductionRecpt,
-  executeProductionRecpt
-} from '@/api/erp/wm/productionrecpt';
+import ProductionReceiptDialog from '@/components/material-trace/ProductionReceiptDialog.vue';
+const receiptExecutionRef = ref<InstanceType<typeof ProductionReceiptDialog>>();
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
+import { listProductionRecpt, getProductionRecpt, addProductionRecpt, updateProductionRecpt, delProductionRecpt } from '@/api/erp/wm/productionrecpt';
 import { ProductionRecptVO, ProductionRecptQuery, ProductionRecptForm } from '@/api/erp/wm/productionrecpt/types';
 import { listWork } from '@/api/erp/prd/work';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
@@ -403,18 +406,9 @@ function handleAdd() {
   });
 }
 
-/** 执行入库（行内，仅草稿状态） */
+/** 原列表动作进入实际详情确认，保留原请求以便ACK丢失后重放。 */
 function handleExecute(row: ProductionRecptVO) {
-  proxy?.$modal
-    .confirm('确认执行入库单"' + row.recptCode + '"？执行后将增加成品库存，不可撤销。')
-    .then(() => {
-      return executeProductionRecpt(row.recptId);
-    })
-    .then(() => {
-      proxy?.$modal.msgSuccess('入库执行成功');
-      getList();
-    })
-    .catch(() => {});
+  receiptExecutionRef.value?.open(row.recptId);
 }
 
 const getWorkOrderList = async () => {

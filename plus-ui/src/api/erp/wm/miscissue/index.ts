@@ -1,3 +1,4 @@
+import { traceSave, executeTraceDocument } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { MiscIssueQuery, MiscIssueVO, MiscIssueForm } from './types';
@@ -8,12 +9,13 @@ export const listMiscIssue = (query: MiscIssueQuery): AxiosPromise<MiscIssueVO[]
 
 export const getMiscIssue = (id: string | number): AxiosPromise<MiscIssueVO> => request({ url: BASE + '/' + id, method: 'get' });
 
-export const addMiscIssue = (data: MiscIssueForm) => request({ url: BASE, method: 'post', data });
+export const addMiscIssue = (data: MiscIssueForm) => request({ url: BASE, method: 'post', data: traceSave(data) });
 
-export const updateMiscIssue = (data: MiscIssueForm) => request({ url: BASE, method: 'put', data });
+export const updateMiscIssue = (data: MiscIssueForm) => request({ url: BASE, method: 'put', data: traceSave(data) });
 
 export const delMiscIssue = (id: string | number | (string | number)[]) => request({ url: BASE + '/' + id, method: 'delete' });
 
 export const exportMiscIssue = (query: MiscIssueQuery) => request({ url: BASE + '/export', method: 'post', params: query });
 
-export const executeMiscIssue = (id: number) => request({ url: BASE + '/execute/' + id, method: 'put' });
+export const executeMiscIssue = (id: string | number, data?: Record<string, any>) =>
+  executeTraceDocument({ url: BASE + '/execute/' + id, detailUrl: BASE + '/' + id, linesKey: 'wmMiscIssueLineList', quantityKey: 'quantity', data });

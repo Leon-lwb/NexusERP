@@ -28,6 +28,9 @@ import java.util.Date;
 @Slf4j
 @Component
 public class CountAdjustStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：盘点调整 */
     private static final String TX_TYPE_COUNT_ADJUST = "COUNT_ADJUST";
@@ -79,6 +82,10 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
 
         int txFlag = diffQuantity.compareTo(BigDecimal.ZERO) > 0 ? TX_FLAG_IN : TX_FLAG_OUT;
         BigDecimal absDiff = diffQuantity.abs();
+        if(absDiff.signum()==0)return;
+        var serialRequest=txFlag>0?com.nexus.erp.wm.domain.WmSerialPostingRequest.in("WM_STOCK_TAKING",line.getPlanId(),line.getLineId(),"COUNT_ADJUST",line.getMaterialId(),absDiff,null,line.getLocationId(),line.getBatchId(),null)
+            :com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_STOCK_TAKING",line.getPlanId(),line.getLineId(),"COUNT_ADJUST",line.getMaterialId(),absDiff,null,line.getLocationId(),line.getBatchId());
+        if(serialInventory!=null && serialInventory.post(serialRequest))return;
 
         WmMaterialStock stock;
         if (line.getStockId() != null) {

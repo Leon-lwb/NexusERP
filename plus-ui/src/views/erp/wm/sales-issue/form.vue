@@ -264,6 +264,13 @@
             </template>
           </el-table-column>
         </el-table>
+        <MaterialTraceLines
+          :rows="wmSalesIssueLineList"
+          :header="form"
+          scene="SALES_ISSUE"
+          quantity-key="quantityIssue"
+          :disabled="formDisabled || form.status === 'COMPLETED'"
+        />
       </el-form>
     </el-card>
 
@@ -369,6 +376,8 @@
 </template>
 
 <script setup lang="ts" name="SalesIssueForm">
+import { showTraceSubmission } from '@/components/material-trace/submission';
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import {
   getSalesIssue,
   addSalesIssue,
@@ -641,10 +650,10 @@ function handleComplete() {
   proxy.$modal
     .confirm('完成后将扣减库存，是否继续？')
     .then(() => {
-      return completeSalesIssue(form.value.issueId);
+      return completeSalesIssue(form.value.issueId, { ...form.value, wmSalesIssueLineList: wmSalesIssueLineList.value });
     })
-    .then(() => {
-      proxy.$modal.msgSuccess('出库完成');
+    .then((response) => {
+      showTraceSubmission(proxy.$modal, response, '出库完成');
       getInfo(form.value.issueId);
     });
 }

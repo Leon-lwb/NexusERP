@@ -168,6 +168,13 @@
             </template>
           </el-table-column>
         </el-table>
+        <MaterialTraceLines
+          :rows="lineList"
+          :header="form"
+          scene="STOCKTAKING"
+          quantity-key="differenceQuantity"
+          :disabled="formDisabled || form.status === 'COMPLETED' || form.status === 'POSTED'"
+        />
       </el-form>
     </el-card>
 
@@ -234,6 +241,8 @@
 </template>
 
 <script setup lang="ts" name="StockTakingForm">
+import { showTraceSubmission } from '@/components/material-trace/submission';
+import MaterialTraceLines from '@/components/material-trace/MaterialTraceLines.vue';
 import {
   getStockTakingPlan,
   addStockTakingPlan,
@@ -481,12 +490,14 @@ function handlePostAdjustment() {
   proxy.$modal
     .confirm('确认过账盘点差异调整？')
     .then(() => {
-      postAdjustment(form.value.planId).then(() => {
-        proxy.$modal.msgSuccess('过账成功');
+      postAdjustment(form.value.planId, { ...form.value, wmStockTakingLineList: lineList.value }).then((response) => {
+        showTraceSubmission(proxy.$modal, response, '过账成功');
         getInfo(form.value.planId);
       });
     })
-    .catch(() => {});
+    .catch((cause) => {
+      if (cause !== 'cancel' && cause !== 'close') proxy.$modal.msgWarning(cause instanceof Error ? cause.message : '追溯校验失败');
+    });
 }
 
 function getWarehouseList() {

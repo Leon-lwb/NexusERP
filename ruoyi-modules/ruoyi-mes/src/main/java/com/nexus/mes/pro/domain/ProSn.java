@@ -23,6 +23,11 @@ public class ProSn extends TenantEntity {
     /** SN ID(主键) */
     @TableId(value = "sn_id")
     private Long snId;
+    /** Stable ERP wm_sn.sn_id; snId remains the local MES identity. */
+    private Long identityId;
+    private Long identityVersion;
+    private Long productLotId;
+    private String handoffStatus;
 
     /** SN序列号编码 */
     private String snCode;

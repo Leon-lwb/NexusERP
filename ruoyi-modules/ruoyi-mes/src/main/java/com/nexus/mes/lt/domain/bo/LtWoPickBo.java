@@ -14,6 +14,11 @@ import java.util.List;
 @Data
 public class LtWoPickBo {
 
+    private String commandId;
+    private Long sourceAllocationId;
+    private Long processId;
+    private String operationRef;
+
     /** 工单ID */
     private Long woId;
 

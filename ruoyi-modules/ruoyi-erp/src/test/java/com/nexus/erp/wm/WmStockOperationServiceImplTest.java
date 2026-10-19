@@ -163,8 +163,20 @@ class WmStockOperationServiceImplTest {
         return (T) proxy.getProxy();
     }
 
+    @Test void failedSpringSetupReleasesItsOwnTenantStaticMock() throws Exception {
+        assertThrows(IllegalStateException.class, () -> new Fixture(context ->
+            context.addBeanFactoryPostProcessor(factory -> {throw new IllegalStateException("fixture refresh failed");})));
+        try (MockedStatic<TenantHelper> recovered = mockStatic(TenantHelper.class)) {
+            recovered.when(TenantHelper::getTenantId).thenReturn("recovered");
+            assertEquals("recovered", TenantHelper.getTenantId());
+        }
+        try (Fixture next = new Fixture()) {
+            assertDoesNotThrow(() -> next.service.postMaterialReceive(RECEIVE));
+        }
+    }
+
     static class Fixture implements AutoCloseable {
-        final MockedStatic<TenantHelper> tenants = mockStatic(TenantHelper.class);
+        final MockedStatic<TenantHelper> tenants;
         final WmCertifiedReceiptPostingMapper sources = mock(WmCertifiedReceiptPostingMapper.class);
         final StockOperationStrategyFactory factory = mock(StockOperationStrategyFactory.class);
         final StockOperationStrategy strategy = mock(StockOperationStrategy.class);
@@ -175,26 +187,36 @@ class WmStockOperationServiceImplTest {
         final WmStockOperationServiceImpl target;
         final WmStockOperationServiceImpl service;
 
-        Fixture() throws Exception {
-            tenants.when(TenantHelper::isEnable).thenReturn(true);
-            tenants.when(TenantHelper::getTenantId).thenReturn(TENANT);
-            when(dataSource.getConnection()).thenReturn(connection);
-            when(connection.getAutoCommit()).thenReturn(true);
-            var manager = new DataSourceTransactionManager(dataSource);
-            var guard = transactionProxy(new WmCertifiedReceiptMutationGuard(sources), manager);
-            when(sources.lockHead(TENANT, RECEIVE)).thenAnswer(call -> {
-                assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
-                return head(TENANT);
-            });
-            when(sources.lockCertifiedOrderIdentities(TENANT, ORDER)).thenReturn(List.of());
-            when(factory.getStrategy(StockOperationTypeEnum.RECEIVE_IN)).thenReturn(strategy);
-            context.registerBean(StockOperationStrategyFactory.class, () -> factory);
-            context.registerBean(ProductionIssueStrategy.class, () -> production);
-            context.registerBean(WmCertifiedReceiptMutationGuard.class, () -> guard);
-            context.registerBean(WmStockOperationServiceImpl.class);
-            context.refresh();
-            target = context.getBean(WmStockOperationServiceImpl.class);
-            service = transactionProxy(target, manager);
+        Fixture() throws Exception {this(context -> { });}
+
+        Fixture(java.util.function.Consumer<AnnotationConfigApplicationContext> beforeRefresh) throws Exception {
+            tenants = mockStatic(TenantHelper.class);
+            try {
+                tenants.when(TenantHelper::isEnable).thenReturn(true);
+                tenants.when(TenantHelper::getTenantId).thenReturn(TENANT);
+                when(dataSource.getConnection()).thenReturn(connection);
+                when(connection.getAutoCommit()).thenReturn(true);
+                var manager = new DataSourceTransactionManager(dataSource);
+                var guard = transactionProxy(new WmCertifiedReceiptMutationGuard(sources), manager);
+                when(sources.lockHead(TENANT, RECEIVE)).thenAnswer(call -> {
+                    assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
+                    return head(TENANT);
+                });
+                when(sources.lockCertifiedOrderIdentities(TENANT, ORDER)).thenReturn(List.of());
+                when(factory.getStrategy(StockOperationTypeEnum.RECEIVE_IN)).thenReturn(strategy);
+                context.registerBean(StockOperationStrategyFactory.class, () -> factory);
+                context.registerBean(ProductionIssueStrategy.class, () -> production);
+                context.registerBean(com.nexus.erp.wm.service.WmSerialInventoryService.class, () -> mock(com.nexus.erp.wm.service.WmSerialInventoryService.class));
+                context.registerBean(WmCertifiedReceiptMutationGuard.class, () -> guard);
+                context.registerBean(WmStockOperationServiceImpl.class);
+                beforeRefresh.accept(context);
+                context.refresh();
+                target = context.getBean(WmStockOperationServiceImpl.class);
+                service = transactionProxy(target, manager);
+            } catch (Exception | Error failure) {
+                try {close();} catch (Throwable cleanupFailure) {failure.addSuppressed(cleanupFailure);}
+                throw failure;
+            }
         }
 
         @Override public void close() {

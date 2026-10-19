@@ -53,6 +53,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     private final ProFlowCardMapper flowCardMapper;
     private final IProFlowCardService proFlowCardService;
     private final LockTemplate lockTemplate;
+    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
 
     @Override
     /**
@@ -243,6 +244,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
         }
+        preparedPolicies.prepareCard(dispatch.getCardId());
         progressService.lockForCard(dispatch.getCardId());
         // 锁顺序固定为工单数据库父锁 -> 卡锁 -> 步锁，不能持卡锁再等待父锁。
         // 卡锁必须覆盖 doCompleteDispatch 的整个事务(含卡完工聚合判定): 若卡锁在事务提交前释放,
@@ -274,6 +276,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     public void doCompleteDispatch(Long dispatchId, BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
         ProDispatch reference = baseMapper.selectById(dispatchId);
         if (reference == null) throw new ServiceException("派工单不存在");
+        preparedPolicies.prepareCard(reference.getCardId());
         progressService.lockForCard(reference.getCardId());
         ProDispatch dispatch = baseMapper.selectOne(Wrappers.<ProDispatch>lambdaQuery()
             .eq(ProDispatch::getDispatchId, dispatchId).last("FOR UPDATE"));

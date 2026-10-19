@@ -75,6 +75,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProWorkOrderServiceImplTest {
 
+    @Mock private com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
+    @Mock private com.nexus.mes.trace.MesCompletionManifestService completionManifests;
+
     @BeforeAll
     static void initStatics() {
         // JsonUtils 静态初始化依赖 SpringUtils, 先激活静态桩(rewriteFlashConfigFirmware 真实走 Jackson)
@@ -138,6 +141,7 @@ class ProWorkOrderServiceImplTest {
     private FirmwareMapper firmwareMapper;
     @Mock
     private IReleasePackageService releasePackageService;
+    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks
     private ProWorkOrderServiceImpl service;
 
@@ -606,6 +610,7 @@ class ProWorkOrderServiceImplTest {
      */
     @Test
     void completeWo_passesWhenKeyProcessIpqcQualified() {
+        when(completionManifests.usesOutbox(any())).thenReturn(true);
         when(baseMapper.selectById(1L)).thenReturn(inProgressWo());
         when(stepMapper.selectList(any())).thenReturn(List.of(keyStep(10L, 3L, "BIOS刷写")));
         QcIpqc qualified = new QcIpqc();
@@ -623,6 +628,42 @@ class ProWorkOrderServiceImplTest {
             TransactionSynchronizationManager.clearSynchronization();
         }
         verify(baseMapper).update(any(), any());
+        verify(completionManifests).freeze(any(ProWorkOrder.class));
+        verify(mesMqSendService,never()).sendWorkOrderCompleted(any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
+    void ordinaryQuantityCompletionWithRelayDisabledKeepsOnlyLegacyAfterCommitSignal() {
+        var wo=inProgressWo();wo.setTenantId("000001");wo.setErpWoId(20L);wo.setMaterialId(100L);
+        wo.setCompletedQty(new BigDecimal("9"));wo.setScrapQty(BigDecimal.ONE);
+        when(baseMapper.selectById(1L)).thenReturn(wo);when(baseMapper.update(any(),any())).thenReturn(1);
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.completeWo(1L);
+            verify(mesMqSendService,never()).sendWorkOrderCompleted(any(),any(),any(),any(),any(),any());
+            var callbacks=TransactionSynchronizationManager.getSynchronizations();
+            assertEquals(1,callbacks.size());callbacks.forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+        } finally {TransactionSynchronizationManager.clearSynchronization();}
+        verify(mesMqSendService).sendWorkOrderCompleted(1L,20L,"WO-001",new BigDecimal("9"),BigDecimal.ONE,"000001");
+        verify(completionManifests,never()).freeze(any());
+    }
+
+    @Test
+    void trackedRelayDisabledGateRunsBeforeCompletionCasOrAnyDelivery() {
+        when(baseMapper.selectById(1L)).thenReturn(inProgressWo());
+        when(completionManifests.usesOutbox(any())).thenThrow(new ServiceException("追踪物料完工需启用 nexus.trace.relay.enabled=true"));
+        var error=assertThrows(ServiceException.class,()->service.completeWo(1L));
+        assertTrue(error.getMessage().contains("nexus.trace.relay.enabled"));
+        verify(baseMapper,never()).update(any(),any());verify(completionManifests,never()).freeze(any());
+        verify(mesMqSendService,never()).sendWorkOrderCompleted(any(),any(),any(),any(),any(),any());
+    }
+    @Test
+    void reworkCompletionRemainsInternalWithoutEitherErpDelivery() {
+        var wo=inProgressWo();wo.setSourceType("REWORK");when(baseMapper.selectById(1L)).thenReturn(wo);
+        when(baseMapper.update(any(),any())).thenReturn(1);
+        service.completeWo(1L);
+        verify(completionManifests,never()).usesOutbox(any());verify(completionManifests,never()).freeze(any());
+        verify(mesMqSendService,never()).sendWorkOrderCompleted(any(),any(),any(),any(),any(),any());
     }
 
     /**

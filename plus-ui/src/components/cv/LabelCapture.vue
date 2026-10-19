@@ -69,11 +69,8 @@ import { detectProduct } from '@/api/cv/detect';
 import type { LabelParseResult } from '@/api/cv/detect';
 
 /** 识别结果回填载荷（供调用方填表单字段） */
-export interface LabelCapturePayload {
-  materialCode?: string;
+export interface LabelCapturePayload extends LabelParseResult {
   materialName?: string;
-  batchCode?: string;
-  snCode?: string;
 }
 
 const emit = defineEmits<{
@@ -131,10 +128,8 @@ const handleRecognize = async () => {
 const handleApply = () => {
   if (!result.value) return;
   emit('recognized', {
-    materialCode: result.value.materialCode,
-    materialName: result.value.matchedMaterial?.materialName,
-    batchCode: result.value.batchCode,
-    snCode: result.value.snCode
+    ...result.value,
+    materialName: result.value.matchedMaterial?.materialName
   });
   visible.value = false;
   reset();

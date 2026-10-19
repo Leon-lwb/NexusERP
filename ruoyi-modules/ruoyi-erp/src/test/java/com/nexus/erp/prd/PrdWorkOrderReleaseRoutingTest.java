@@ -14,6 +14,7 @@ import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
+import com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,6 +63,8 @@ class PrdWorkOrderReleaseRoutingTest {
     private BdRoutingMapper bdRoutingMapper;
     @Mock
     private ReliableMessageProducer messageProducer;
+    @Mock
+    private PrdWorkOrderTrackingPolicyService trackingPolicies;
     @InjectMocks
     private PrdWorkOrderServiceImpl service;
 

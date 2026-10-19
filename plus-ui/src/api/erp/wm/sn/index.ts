@@ -6,7 +6,7 @@ export function listSn(query: WmSnQuery): AxiosPromise<WmSnVO[]> {
   return request({ url: '/erp/wm/sn/list', method: 'get', params: query });
 }
 
-export function getSn(snId: number): AxiosPromise<WmSnVO> {
+export function getSn(snId: string | number): AxiosPromise<WmSnVO> {
   return request({ url: '/erp/wm/sn/' + snId, method: 'get' });
 }
 
@@ -36,14 +36,14 @@ export function batchGenerateSn(data: {
   return request({ url: '/erp/wm/sn/batchGenerate', method: 'post', data });
 }
 
-export function bindStock(data: { snId: number; stockId?: number; warehouseId?: number; locationId?: number }) {
+export function bindStock(data: { snId: string | number; stockId?: number; warehouseId?: number; locationId?: number }) {
   return request({ url: '/erp/wm/sn/bindStock', method: 'put', data });
 }
 
-export function unbindStock(snId: number) {
+export function unbindStock(snId: string | number) {
   return request({ url: '/erp/wm/sn/unbindStock/' + snId, method: 'put' });
 }
 
-export function changeStatus(data: { snId: number; status: string }) {
+export function changeStatus(data: { snId: string | number; status: string }) {
   return request({ url: '/erp/wm/sn/changeStatus', method: 'put', data });
 }

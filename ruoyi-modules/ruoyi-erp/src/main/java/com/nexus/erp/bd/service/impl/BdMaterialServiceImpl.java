@@ -45,6 +45,8 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     private final BdUnitOfMeasureMapper uomMapper;
     private final BdMaterialCategoryMapper categoryMapper;
     private final BdServiceHelper bd;
+    private final com.nexus.erp.wm.trace.MaterialTrackingPolicyGuard trackingGuard;
+
 
     /**
      * 查询物料产品主分页列表
@@ -99,6 +101,9 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdMaterialBo bo) {
         BdMaterial entity = MapstructUtils.convert(bo, BdMaterial.class);
+        entity.setAllowMixedLot(bo.getAllowMixedLot()==null?1:bo.getAllowMixedLot());
+        entity.setTrackingVersion(1L);
+        entity.setTrackingStage("AUDIT");
         if (StringUtils.isBlank(entity.getMaterialCode())) {
             entity.setMaterialCode(bd.autoCodeUtil.genSerialCode("MATERIAL_CODE", null));
         }
@@ -114,8 +119,13 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdMaterialBo bo) {
+        String tenant=com.nexus.common.tenant.helper.TenantHelper.getTenantId();
+        BdMaterial old=baseMapper.lockTracking(tenant,bo.getMaterialId());
+        if(old==null) throw new com.nexus.common.core.exception.ServiceException("物料不存在或不在当前租户范围");
         BdMaterial entity = MapstructUtils.convert(bo, BdMaterial.class);
-        return baseMapper.updateById(entity);
+        trackingGuard.prepare(old,entity,bo.getTrackingVersion());
+        return baseMapper.update(entity,Wrappers.<BdMaterial>lambdaUpdate().eq(BdMaterial::getMaterialId,old.getMaterialId())
+            .eq(BdMaterial::getTrackingVersion,old.getTrackingVersion()==null?1L:old.getTrackingVersion()));
     }
 
     /**

@@ -120,6 +120,17 @@ public class BdMaterialVo implements Serializable {
     @ExcelProperty(value = "是否序列号管理")
     private Long isSerialManage;
 
+    /** 同一产品SN的同种组件是否允许来自多个批次，0否1是。 */
+    private Integer allowMixedLot;
+
+    /** 服务端管理的追踪策略版本，编辑策略时作为预期版本。 */
+    @com.fasterxml.jackson.annotation.JsonFormat(shape=com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    private Long trackingVersion;
+
+    /** AUDIT或STRICT，严格切换必须通过库存及在制就绪检查。 */
+    private String trackingStage;
+
+
     /**
      * 安全库存
      */

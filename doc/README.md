@@ -19,6 +19,9 @@
 | [报表中文注释与菜单图标记录](./system/plans/2026-10-16-report-schema-comments-icons-verification.md) | SQL中文说明、菜单SVG资源与plus合并验证 |
 | [E0/E1 验证报告](./system/plans/2026-10-14-system-report-e0-e1-verification-report.md)                                                           | 实际测试、集成、基准、迁移及未验证范围                                                     |
 | [system/specs/2026-10-13-system-reporting-design.md](./system/specs/2026-10-13-system-reporting-design.md)                                       | 自研报表建设方案 — 源码调研、独立模块设计，2026-10-14 已批准首期实施                       |
+| [物料追溯实施验证](./system/plans/2026-10-19-material-trace-verification.md) / [切换与现场验收](./system/guides/material-trace-rollout-checklist.md) | 四仓库最终代码、测试、构建、迁移边界及未执行验收 |
+| [物料身份与追溯接口契约](./system/guides/material-trace-api.md) | 正式SN、别名、扫码、单据明细、完工与取消、事件协议及发布门禁 |
+| [历史身份对账与修复](./system/guides/material-trace-repair.md) / [库存身份转换](./system/guides/material-trace-stock-conversion.md) | 离线审计、证据核实、迁移、回退与补偿；未执行现有库迁移 |
 | [system/数据库增量变更记录.md](./system/数据库增量变更记录.md)                                                                                   | 🗄️ 数据库变更登记（新装主 SQL / 存量迁移需区分）                                           |
 
 ## 目录结构

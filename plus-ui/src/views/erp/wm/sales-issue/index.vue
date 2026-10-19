@@ -180,6 +180,7 @@
 </template>
 
 <script setup lang="ts" name="SalesIssue">
+import { showTraceSubmission } from '@/components/material-trace/submission';
 import BusinessReportButton from '@/components/report/BusinessReportButton.vue';
 import {
   listSalesIssue,
@@ -378,9 +379,9 @@ function handleComplete(row: any) {
     .then(function () {
       return completeSalesIssue(row.issueId);
     })
-    .then(() => {
+    .then((response) => {
       getList();
-      proxy.$modal.msgSuccess('出库完成');
+      showTraceSubmission(proxy.$modal, response, '出库完成');
     })
     .catch(() => {});
 }

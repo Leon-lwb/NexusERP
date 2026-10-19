@@ -1,4 +1,5 @@
 <template>
+  <ProductOutputDialog ref="productOutputRef" />
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
       <el-row :gutter="16">
@@ -101,6 +102,10 @@
 </template>
 
 <script setup lang="ts" name="MesDispatch">
+import ProductOutputDialog from '@/components/material-trace/ProductOutputDialog.vue';
+import { decimalSum } from '@/components/material-trace/model';
+const productOutputRef = ref<InstanceType<typeof ProductOutputDialog>>();
+
 import { listDispatch, getDispatch, startDispatch, completeDispatch, cancelDispatch } from '@/api/mes/pro/dispatch';
 import type { ProDispatchVO, ProDispatchQuery } from '@/api/mes/pro/dispatch';
 import { listWorker } from '@/api/erp/sch/worker/index';
@@ -184,13 +189,20 @@ async function handleStart(row: ProDispatchVO) {
 /** 完工(依次录入良品/不良品/报废数量) */
 async function handleComplete(row: ProDispatchVO) {
   const { value: goodQty } = await proxy.$modal.prompt('请输入良品数量:', '完工 - ' + row.dispatchNo);
-  if (!goodQty || isNaN(Number(goodQty)) || Number(goodQty) <= 0) {
-    proxy.$modal.msgWarning('请输入有效数量');
-    return;
-  }
   const { value: defectQty } = await proxy.$modal.prompt('请输入不良品数量（默认0）:', '完工 - ' + row.dispatchNo);
   const { value: scrapQty } = await proxy.$modal.prompt('请输入报废数量（默认0）:', '完工 - ' + row.dispatchNo);
-  await completeDispatch(row.dispatchId, Number(goodQty), Number(defectQty || 0), Number(scrapQty || 0));
+  decimalSum([goodQty || '0', defectQty || '0', scrapQty || '0']);
+  await productOutputRef.value!.run(
+    {
+      cardId: row.cardId,
+      stepRecordId: row.stepRecordId,
+      goodQty: goodQty || '0',
+      scrapQty: scrapQty || '0',
+      incremental: true,
+      sourceKey: 'dispatch/' + row.dispatchId
+    },
+    () => completeDispatch(row.dispatchId, goodQty || '0', defectQty || '0', scrapQty || '0')
+  );
   proxy.$modal.msgSuccess('完工成功');
   getList();
 }

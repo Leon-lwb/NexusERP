@@ -95,6 +95,20 @@ export const constantRoutes: RouteRecordRaw[] = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes: RouteRecordRaw[] = [
   {
+    path: '/erp/wm/trace/repair',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:trace:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/trace/repair/index.vue'),
+        name: 'MaterialTraceRepair',
+        meta: { title: '追溯审计与修复记录', activeMenu: '/erp/wm/trace', noCache: true }
+      }
+    ]
+  },
+  {
     path: LEGACY_ENGINEERING_TASK_LIST_PATH,
     redirect: ENGINEERING_TASK_LIST_PATH,
     hidden: true,

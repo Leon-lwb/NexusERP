@@ -84,11 +84,11 @@ interface Props {
   /** 物料状态过滤，默认 1（启用） */
   statusFilter?: number;
   /** 按仓库过滤物料（仅返回该仓库有库存的物料） */
-  warehouseId?: number;
+  warehouseId?: string | number;
   /** 按库区过滤物料 */
-  areaId?: number;
+  areaId?: string | number;
   /** 按库位过滤物料 */
-  locationId?: number;
+  locationId?: string | number;
 }
 
 const props = withDefaults(defineProps<Props>(), {

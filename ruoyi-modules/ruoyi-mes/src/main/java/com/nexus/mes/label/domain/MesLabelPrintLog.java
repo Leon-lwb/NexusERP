@@ -1,6 +1,8 @@
 package com.nexus.mes.label.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.tenant.core.TenantEntity;
 import lombok.Data;
@@ -10,8 +12,8 @@ import java.util.Date;
 
 /**
  * 标签打印留痕对象 mes_label_print_log (MES-LABEL-02)
- * <p>每一次打印尝试(成功/失败)落一条: 可追溯"一个 SN 打了几张、哪个模板、打在哪台打印机、第几次重打、失败原因";
- * 同一 (sn_id, template_id) 的成功记录即造码联动的<b>幂等键</b> —— 事件重放/重复造码不会重复出纸,
+ * <p>每次发送尝试追加一条，记录冻结内容、来源、原任务和补打原因；TCP 发送不能证明实际出纸。
+ * 同一 (sn_id, template_id) 的已发送记录用于造码联动去重，
  * 重打必须走显式补打入口(print_source=REPRINT)。</p>
  *
  * @author Nexus
@@ -21,10 +23,15 @@ import java.util.Date;
 @TableName("mes_label_print_log")
 public class MesLabelPrintLog extends TenantEntity {
 
-    /** 结果-成功 */
+    /** 结果-已通过 TCP 发送，未获得打印机确认，不代表实际出纸 */
+    public static final String RESULT_SENT = "SENT";
+
+    /** 历史结果-原成功发送记录，仅用于兼容读取，不代表打印机确认 */
     public static final String RESULT_SUCCESS = "SUCCESS";
     /** 结果-失败 */
     public static final String RESULT_FAIL = "FAIL";
+    /** 发送是否到达打印机未知，只能核实后显式补打。 */
+    public static final String RESULT_UNKNOWN = "UNKNOWN";
 
     /** 来源-造码联动自动打印 */
     public static final String SOURCE_AUTO = "AUTO";
@@ -46,6 +53,36 @@ public class MesLabelPrintLog extends TenantEntity {
     /** 模板ID(mes_label_template.template_id) */
     private Long templateId;
 
+    /** 冻结的模板修订号；历史记录可能为空 */
+    private Long templateRevision;
+
+    /** 冻结的模板布局、语言、尺寸及修订 JSON */
+    private String templateSnapshot;
+
+    /** 冻结的 SN、物料、工单等字段 JSON */
+    private String fieldSnapshot;
+
+    /** 模板快照 UTF-8 字节的 SHA-256 */
+    private String contentHash;
+
+    /** 实际发送编码字节的 SHA-256 */
+    private String payloadHash;
+
+    /** 冻结的完整 TSPL/ZPL 指令；补打不得用当前内容替换 */
+    private String renderedPayload;
+
+    /** 实际发送字符集名称 */
+    private String payloadCharset;
+
+    /** 补打所引用的原打印任务 ID；历史兼容接口可能为空 */
+    private Long originalPrintLogId;
+
+    /** 人工补打原因；显式补打必填，不补造旧接口缺失的原因 */
+    private String reprintReason;
+
+    /** 快照模式：FROZEN、LEGACY_REQUEST、LEGACY_RECORD、LEGACY_DIRECT */
+    private String snapshotMode;
+
     /** 模板编码(快照, 模板改名/删除后仍可追溯) */
     private String templateCode;
 
@@ -58,13 +95,14 @@ public class MesLabelPrintLog extends TenantEntity {
     /** 打印时间(尝试发送的时刻) */
     private Date printTime;
 
-    /** 结果: SUCCESS/FAIL */
+    /** 结果：SENT/FAIL；旧 SUCCESS 仅表示历史发送成功 */
     private String result;
 
     /** 失败原因(渲染失败/打印机不在线/未配置地址等) */
     private String failReason;
 
-    /** 重打计数: 同一 (sn_id, template_id) 的历史打印次数, 首次打印为 0 */
+    /** 同 SN、同模板的历史发送尝试数；计数查询失败时为空，不伪装成首次打印。 */
+    @TableField(insertStrategy = FieldStrategy.ALWAYS)
     private Integer retryCount;
 
     /** 打印来源: AUTO(造码联动)/REPRINT(补打)/TEST(测试打印) */

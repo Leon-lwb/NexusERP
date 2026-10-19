@@ -4,6 +4,8 @@
 
 ## 当前入口
 
+2026-10-19物料身份与追溯：[接口和事件契约](guides/material-trace-api.md)、[历史对账与修复](guides/material-trace-repair.md)、[库存身份转换](guides/material-trace-stock-conversion.md)、[分库结构](guides/material-trace-schema.md)、[实施检查点](plans/2026-10-19-material-trace-integration-status.md)、[最终验证](plans/2026-10-19-material-trace-verification.md)、[现场验收表](guides/material-trace-rollout-checklist.md)。代码与隔离验证不代表现有库迁移或现场验收完成。
+
 2026-10-15报表扩展：[E2–E7实现计划](plans/2026-10-14-system-report-e2-e7-implementation-plan.md)、[E2–E7验证报告](plans/2026-10-15-system-report-e2-e7-verification-report.md)、[使用指南](guides/NexusERP_自研报表模块使用指南.md)。扩展DDL尚未在现有库执行。
 
 | 文档                                                                                                                               | 定位                                           | 边界                                                                                                 |

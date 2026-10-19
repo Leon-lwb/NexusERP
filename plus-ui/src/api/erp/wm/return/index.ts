@@ -1,3 +1,4 @@
+import { traceSave } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { ReturnQuery, ReturnVO, ReturnForm } from './types';
@@ -11,4 +12,4 @@ export const listReturn = (query: ReturnQuery): AxiosPromise<ReturnVO[]> => requ
 export const getReturn = (id: string | number): AxiosPromise<ReturnVO> => request({ url: BASE + '/' + id, method: 'get' });
 
 /** 新建退料单 (状态 DRAFT, 待 PDA 核销) */
-export const addReturn = (data: ReturnForm) => request({ url: BASE, method: 'post', data });
+export const addReturn = (data: ReturnForm) => request({ url: BASE, method: 'post', data: traceSave(data) });

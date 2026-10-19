@@ -97,6 +97,7 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdSerialNumberRuleBo bo) {
         BdSerialNumberRule entity = MapstructUtils.convert(bo, BdSerialNumberRule.class);
+        validateRule(entity);entity.setRuleVersion(1L);entity.setCurrentSeq(0);entity.setAttr1(null);
         return baseMapper.insert(entity);
     }
     /**
@@ -109,8 +110,17 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdSerialNumberRuleBo bo) {
+        BdSerialNumberRule current=baseMapper.selectById(bo.getRuleId());
+        if(current==null) throw new ServiceException("编号规则不存在");
+        long version=current.getRuleVersion()==null?1L:current.getRuleVersion();
+        if(bo.getRuleVersion()==null || bo.getRuleVersion()!=version) throw new ServiceException("编号规则已变更，请刷新后操作");
         BdSerialNumberRule entity = MapstructUtils.convert(bo, BdSerialNumberRule.class);
-        return baseMapper.updateById(entity);
+        validateRule(entity);entity.setRuleVersion(Math.addExact(version,1L));
+        entity.setCurrentSeq(null);entity.setAttr1(null);
+        int changed=baseMapper.update(entity,Wrappers.<BdSerialNumberRule>lambdaUpdate()
+            .eq(BdSerialNumberRule::getRuleId,bo.getRuleId()).eq(BdSerialNumberRule::getRuleVersion,version));
+        if(changed!=1) throw new ServiceException("编号规则已被并发修改，请刷新后操作");
+        return changed;
     }
     /**
      * 批量删除序列号规则
@@ -143,6 +153,9 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
         BdSerialNumberRule rule = baseMapper.selectOne(lqw);
         if (rule == null) {
             throw new ServiceException("序列号规则不存在: {}", ruleCode);
+        }
+        if ("PRODUCT_SN".equals(rule.getRuleType())) {
+            throw new ServiceException("正式SN须通过带命令号的身份注册服务生成");
         }
         if (!"ACTIVE".equals(rule.getStatus())) {
             throw new ServiceException("序列号规则未启用: {}", ruleCode);
@@ -191,6 +204,12 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
         String checkDigit = computeCheckDigit(baseCode, rule.getCheckDigitRule());
 
         return baseCode + checkDigit;
+    }
+
+    private void validateRule(BdSerialNumberRule rule) {
+        if(!java.util.Set.of("PRODUCT_SN","BARCODE","BATCH_NO").contains(rule.getRuleType())) throw new ServiceException("编号规则类型无效");
+        if(rule.getSeqLength()==null || rule.getSeqLength()<1 || rule.getSeqLength()>18) throw new ServiceException("流水号长度须为1至18");
+        new com.nexus.erp.wm.trace.ErpSerialIdentityService.Rule(rule.getPrefix(),rule.getDateFormat(),rule.getSeqLength(),rule.getSeqCycle(),rule.getCheckDigitRule(),1);
     }
 
     private String buildCycleDatePart(String cycle) {

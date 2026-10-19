@@ -18,6 +18,12 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = true)
 public class ProExitBo extends BaseEntity {
 
+    /** Stable command for the physical product lot classifications in this exit transaction. */
+    private String productOutputCommandId;
+
+    /** Batch-only product output, classified from actual lots before final card/WO aggregation. */
+    private java.util.List<com.nexus.mes.trace.MesProductLotOutputWriter.OutputLine> productOutputs;
+
     /** 流转卡ID */
     @NotNull(message = "流转卡不能为空")
     private Long cardId;

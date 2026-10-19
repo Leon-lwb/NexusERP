@@ -92,6 +92,8 @@ class StationProgressCurrentReadTest {
     @Mock private NcrOrderMapper ncrOrderMapper;
     @Mock private StationPassGuardMapper guard;
     @Mock private ProWorkOrderStepProgressService progressService;
+    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
+    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks private StationPassService target;
 
     private StationPassService service;
@@ -122,6 +124,7 @@ class StationProgressCurrentReadTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(serialReferences.submissionStatus(any())).thenReturn(java.util.Map.of("submissionState","SERVER_COMMITTED","handoffStatus","NONE"));
         assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
         dataSource = new JdbcDataSource();
         dataSource.setURL("jdbc:h2:mem:station_current_read_" + UUID.randomUUID());
@@ -141,6 +144,7 @@ class StationProgressCurrentReadTest {
 
         sn = new ProSn();
         sn.setSnId(1L);
+        sn.setIdentityId(10001L);
         sn.setTenantId(TENANT);
         sn.setDelFlag("0");
         sn.setSnCode(SN);
@@ -178,6 +182,8 @@ class StationProgressCurrentReadTest {
         device.setStationCode(STATION);
         device.setProcessCode("ASM");
         // 早期拒绝分支不会使用后续来源；共享替身保留所有路径而不降低结果断言。
+        lenient().when(serialReferences.resolve(SN)).thenAnswer(invocation ->
+            new com.nexus.mes.trace.MesSerialReferenceService.Resolved(TENANT,10001L,1L,SN,SN,sn.getMaterialId(),sn));
         lenient().when(progressService.lockForSn(SN)).thenReturn(WORK_ORDER_ID);
         lenient().when(guard.lockSn(TENANT, SN)).thenAnswer(invocation -> List.of(sn));
         lenient().when(guard.lockReports(TENANT, SN)).thenAnswer(invocation -> new ArrayList<>(history));
@@ -258,7 +264,7 @@ class StationProgressCurrentReadTest {
 
     @Test
     void lastPassUsesPostIncrementQuantitiesAndCompletesCardExactlyOnce() {
-        assertTrue(service.reportSingle(request, OPERATOR).isEmpty());
+        assertEquals("SERVER_COMMITTED",service.reportSingle(request, OPERATOR).get("submissionState"));
 
         assertEquals(new BigDecimal("2"), freshStep.getGoodQty());
         assertEquals("COMPLETED", freshStep.getStepStatus(), "快照数量 1 不能阻止当前累计量 2 触发收口");
@@ -277,11 +283,11 @@ class StationProgressCurrentReadTest {
         order.verify(progressService).lockForSn(SN);
         order.verify(reportMapper).insert(any(MesStationReport.class));
         order.verify(stepMapper).update(isNull(), any());
+        order.verify(proSnService).completeSn(1L);
         order.verify(stepMapper).selectOne(any());
         order.verify(stepMapper).update(isNull(), any());
         order.verify(stepMapper).selectCount(any());
         order.verify(flowCardService).completeCard(CARD_ID);
-        order.verify(proSnService).completeSn(1L);
         order.verify(progressService).rebuildForCard(CARD_ID);
     }
 
@@ -425,8 +431,8 @@ class StationProgressCurrentReadTest {
 
     @Test
     void committedReplayCannotIncrementOrCompleteCardTwice() {
-        assertTrue(service.reportSingle(request, OPERATOR).isEmpty());
-        assertTrue(service.reportSingle(request, OPERATOR).isEmpty());
+        assertEquals("SERVER_COMMITTED",service.reportSingle(request, OPERATOR).get("submissionState"));
+        assertEquals("SERVER_COMMITTED",service.reportSingle(request, OPERATOR).get("submissionState"));
 
         assertEquals(1, history.size());
         assertEquals(new BigDecimal("2"), freshStep.getGoodQty());
@@ -441,7 +447,7 @@ class StationProgressCurrentReadTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"snTenant", "cardTenant", "stepTenant", "cardId", "stepCard", "stepWorkOrder"})
+    @ValueSource(strings = {"snTenant", "cardTenant", "stepTenant", "cardId", "stepCard", "stepWorkOrder", "identityId", "localSnId"})
     void mismatchedTenantOrCardSourceIsRejectedBeforeBusinessWrites(String mismatch) {
         switch (mismatch) {
             case "snTenant" -> sn.setTenantId("OTHER");
@@ -450,6 +456,8 @@ class StationProgressCurrentReadTest {
             case "cardId" -> card.setCardId(999L);
             case "stepCard" -> lockedStep.setCardId(999L);
             case "stepWorkOrder" -> lockedStep.setMesWoId(999L);
+            case "identityId" -> sn.setIdentityId(20002L);
+            case "localSnId" -> sn.setSnId(2L);
             default -> fail("未定义的来源反例");
         }
 

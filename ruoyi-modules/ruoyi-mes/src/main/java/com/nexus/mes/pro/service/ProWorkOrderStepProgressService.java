@@ -102,6 +102,7 @@ public class ProWorkOrderStepProgressService {
         transactionGuard.requireMesConnection();
         String tenant = TenantHelper.getTenantId();
         require(tenant != null && tenant.matches("[0-9]{6,20}"), "可信租户上下文缺失");
+        com.nexus.mes.trace.MesPreparedWorkOrderPolicies.markWriteStarted();
         return tenant;
     }
 

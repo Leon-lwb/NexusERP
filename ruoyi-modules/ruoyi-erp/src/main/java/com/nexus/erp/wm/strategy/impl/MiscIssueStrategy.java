@@ -29,6 +29,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class MiscIssueStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：杂项出库 */
     private static final String TX_TYPE_MISC_OUT = "MISC_OUT";
@@ -76,6 +79,8 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
     public void execute(Object... args) {
         WmMiscIssueLine line = (WmMiscIssueLine) args[0];
         Date now = (Date) args[1];
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+            "WM_MISC_ISSUE",line.getIssueId(),line.getLineId(),"MISC_ISSUE",line.getMaterialId(),line.getQuantity(),null,line.getLocationId(),line.getBatchId())))return;
 
         if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("杂项出库数量必须大于0");

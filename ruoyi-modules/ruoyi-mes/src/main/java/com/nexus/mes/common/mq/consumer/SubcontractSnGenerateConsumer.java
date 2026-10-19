@@ -38,13 +38,14 @@ public class SubcontractSnGenerateConsumer extends BaseMessageConsumer<Subcontra
     protected void doProcess(SubcontractSnGenerateMessage message) {
         log.info("收到委外SN生成消息: subcontractId={}, subcontractNo={}, quantity={}",
             message.getSubcontractId(), message.getSubcontractNo(), message.getQuantity());
-        if (message.getQuantity() == null || message.getQuantity().intValue() <= 0) {
-            log.warn("委外SN生成消息数量无效, 跳过: {}", message.getSubcontractNo());
-            return;
-        }
-        proSnService.generateSnForSubcontract(message.getSubcontractId(), message.getSubcontractNo(),
-            message.getMaterialId(), message.getMaterialCode(), message.getMaterialName(),
-            message.getQuantity().intValue());
+        final int quantity;
+        try { quantity=message.getQuantity()==null?0:message.getQuantity().intValueExact(); }
+        catch(ArithmeticException error) {throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为32位正整数，不能截断或溢出");}
+        if(quantity<=0) throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为正整数，不能将无效消息当作已完成");
+        String commandId="MES:SUBCONTRACT:"+message.getSubcontractId();
+        if(message.getMessageId()!=null && !message.getMessageId().isBlank()) commandId+=":"+message.getMessageId();
+        proSnService.generateSnForSubcontract(commandId,message.getSubcontractId(),message.getSubcontractNo(),
+            message.getMaterialId(),message.getMaterialCode(),message.getMaterialName(),quantity);
     }
 
     /**

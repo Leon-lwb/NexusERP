@@ -60,6 +60,9 @@ import java.util.Map;
 @DS("erp")
 @Service("puPurchaseReturnService")
 public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     private final PuPurchaseReturnMapper baseMapper;
@@ -389,6 +392,8 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      * @param now            当前时间
      */
     private void postReturnOut(PuPurchaseReturn purchaseReturn, PuPurchaseReturnLine line, Date now) {
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+            "PU_PURCHASE_RETURN",purchaseReturn.getReturnId(),line.getLineId(),"PUR_RETURN_OUT",line.getMaterialId(),line.getReturnQuantity(),null,null,null)))return;
         if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("退货数量必须大于0");
         }

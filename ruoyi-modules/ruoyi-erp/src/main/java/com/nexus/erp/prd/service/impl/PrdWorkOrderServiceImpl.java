@@ -77,6 +77,15 @@ import java.util.Objects;
 @DS("erp")
 @Service("prdWorkOrderService")
 public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.prd.mapper.ProductionCompletionPostingMapper manifestSourceMapper;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService trackingPolicies;
+    @org.springframework.beans.factory.annotation.Value("${nexus.trace.relay.enabled:false}")
+    private boolean traceRelayEnabled;
+
 
     /** 生产计划状态：已确认（工单审批通过后据此自动下达） */
     private static final String PLAN_STATUS_CONFIRMED = "CONFIRMED";
@@ -296,6 +305,10 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         PrdMaterialRequirement sourceRequirement = resolveSourceRequirementOnRelease(wo);
         /** 提交前解析并固定专属路线，错绑或冲突不得认领状态及生成MES快照。 */
         final Long routingId = resolveRoutingIdOnRelease(wo);
+        /** 新追溯链路必须在原ERP下达事务冻结策略，失败不得认领状态或发布MES消息。 */
+        if (traceRelayEnabled) {
+            trackingPolicies.freezeForRelease(wo);
+        }
         /** 认领下达状态；并发请求即使都读到旧状态，也只有一方能继续生成领料单和 MES 消息。 */
         LambdaUpdateWrapper<PrdWorkOrder> claim = Wrappers.<PrdWorkOrder>lambdaUpdate()
             .eq(PrdWorkOrder::getWoId, woId)
@@ -580,10 +593,28 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long woId, BigDecimal completeQty, BigDecimal scrapQty) {
-        PrdWorkOrder wo = baseMapper.selectById(woId);
+        completeInternal(woId,completeQty,scrapQty,true,null);
+    }
+
+    /** 仅由冻结清单ERP入口调用；调用者已持有真实工单行锁且同事务复核清单。 */
+    @Transactional(rollbackFor=Exception.class)
+    public void completeFromManifest(com.nexus.common.trace.CompletionManifest manifest) {
+        if(manifest==null || !java.util.Set.of("FROZEN","APPLIED","RECEIVED").contains(manifest.status()) || !java.util.Objects.equals(TenantHelper.getTenantId(),manifest.tenantId())
+            || manifest.goodQty()==null || manifest.goodQty().signum()<0 || manifest.scrapQty()==null || manifest.scrapQty().signum()<0 || manifest.goodQty().add(manifest.scrapQty()).signum()<=0)
+            throw new com.nexus.common.core.exception.ServiceException("最终冻结清单来源或数量无效");
+        PrdWorkOrder wo=manifestSourceMapper.lockWorkOrder(TenantHelper.getTenantId(),manifest.erpWoId());
+        if(wo==null || !java.util.Objects.equals(wo.getMaterialId(),manifest.materialId()) || wo.getPlannedQty()==null || wo.getCompletedQty()==null || wo.getScrapQty()==null
+            || wo.getCompletedQty().add(wo.getScrapQty()).add(manifest.goodQty()).add(manifest.scrapQty()).compareTo(wo.getPlannedQty())>0)
+            throw new com.nexus.common.core.exception.ServiceException("清单物料、原计划或剩余可完成数量不符");
+        completeInternal(manifest.erpWoId(),manifest.goodQty(),manifest.scrapQty(),false,wo);
+    }
+
+    private void completeInternal(Long woId,BigDecimal completeQty,BigDecimal scrapQty,boolean publishLegacy,PrdWorkOrder locked) {
+        PrdWorkOrder wo = locked!=null?locked:baseMapper.selectById(woId);
         if (wo == null) {
             throw new RuntimeException("工单不存在: " + woId);
         }
+        if(publishLegacy && serialInventory!=null && serialInventory.isStrictSerial(wo.getMaterialId()))throw new com.nexus.common.core.exception.ServiceException("STRICT单件工单必须由最终冻结清单完成，不能触发旧数量MQ路径");
         WoStatusEnum currentStatus = WoStatusEnum.fromCode(wo.getWoStatus());
         if (currentStatus == null) {
             throw new RuntimeException("工单状态为空, 无法完工: " + woId);
@@ -642,6 +673,8 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
 
         warnIncompleteNormalIssues(wo);
+
+        if (!publishLegacy) return;
 
         /** 触发完工倒冲入库链路(保留原 complete 副作用) */
         BigDecimal done = completeQty != null ? completeQty : BigDecimal.ZERO;

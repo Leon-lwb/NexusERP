@@ -86,11 +86,11 @@ public class ProSnController extends BaseController {
     @SaCheckPermission("mes:pro:sn:add")
     @Log(title = "SN批量生成", businessType = BusinessType.INSERT)
     @PostMapping("/generate")
-    public R<List<ProSnVo>> generate(@RequestParam Long cardId,
+    public R<List<ProSnVo>> generate(@RequestParam(required=false) String commandId, @RequestParam Long cardId,
                                      @RequestParam Integer quantity,
                                      @RequestParam(required = false) String initialStatus,
                                      @RequestParam(required = false) Long lotId) {
-        return R.ok(proSnService.generateSnForCard(cardId, quantity, initialStatus, lotId));
+        return R.ok(proSnService.generateSnForCard(commandId==null?"MES:CARD:"+cardId:commandId,cardId, quantity, initialStatus, lotId));
     }
 
     /**
@@ -99,14 +99,14 @@ public class ProSnController extends BaseController {
     @SaCheckPermission("mes:pro:sn:add")
     @Log(title = "SN手动创建", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<ProSnVo> add(@RequestParam(required = false) Long mesWoId,
+    public R<ProSnVo> add(@RequestParam(required=false) String commandId, @RequestParam(required = false) Long mesWoId,
                           @RequestParam(required = false) Long cardId,
                           @RequestParam Long materialId,
-                          @RequestParam String snCode,
+                          @RequestParam(required=false) String snCode,
                           @RequestParam(required = false) Long parentSnId,
                           @RequestParam(required = false) String remark,
                           @RequestParam(required = false) Long lotId) {
-        return R.ok(proSnService.createSn(mesWoId, cardId, materialId, snCode, parentSnId, remark, lotId));
+        return R.ok(commandId==null?proSnService.createSn(mesWoId,cardId,materialId,snCode,parentSnId,remark,lotId):proSnService.createSn(commandId,mesWoId,cardId,materialId,snCode,parentSnId,remark,lotId));
     }
 
     /**

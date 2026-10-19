@@ -21,6 +21,7 @@ import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
+import com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
@@ -84,6 +85,9 @@ class PrdWorkOrderServiceImplTest {
     private IBdBomService bomService;
     @Mock
     private IWmStockReservationService stockReservationService;
+
+    @Mock
+    private PrdWorkOrderTrackingPolicyService trackingPolicies;
 
     @InjectMocks
     private PrdWorkOrderServiceImpl workOrderService;

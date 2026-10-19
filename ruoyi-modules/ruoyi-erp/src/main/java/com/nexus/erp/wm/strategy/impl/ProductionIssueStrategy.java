@@ -33,6 +33,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class ProductionIssueStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：生产领料 */
     private static final String TX_TYPE_PRODUCTION_ISSUE = "PRODUCTION_ISSUE";
@@ -88,6 +91,9 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
     public void execute(Object... args) {
         WmProductionIssueLine line = (WmProductionIssueLine) args[0];
         Date now = (Date) args[1];
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+            "WM_PRODUCTION_ISSUE",line.getIssueId(),line.getLineId(),"PRODUCTION_ISSUE",line.getMaterialId(),line.getQuantity(),
+            line.getWarehouseId(),line.getLocationId(),line.getBatchId())))return;
 
         if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("生产领料数量必须大于0");
@@ -133,6 +139,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足");
         }
+        if(serialInventory!=null)serialInventory.bindTrackedLegacyIssue(com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_PRODUCTION_ISSUE",line.getIssueId(),line.getLineId(),"PRODUCTION_ISSUE",line.getMaterialId(),line.getQuantity(),line.getWarehouseId(),line.getLocationId(),line.getBatchId()));
     }
 
     /**
@@ -147,6 +154,13 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
      */
     @Transactional(rollbackFor = Exception.class)
     public void executeAllocated(Long issueId, Long lineId, List<AllocatedStock> stocks, Date now) {
+        if(serialInventory!=null && stocks!=null && !stocks.isEmpty()) {
+            WmMaterialStock selected=stockMapper.selectById(stocks.get(0).getStockId());
+            if(selected==null)throw new ServiceException("倒冲来源库存不存在");
+            BigDecimal total=stocks.stream().map(AllocatedStock::getDeductQty).reduce(BigDecimal.ZERO,BigDecimal::add);
+            if(serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.out("WM_PRODUCTION_ISSUE",issueId,lineId,
+                "PRODUCTION_ISSUE",selected.getMaterialId(),total,selected.getWarehouseId(),null,null)))return;
+        }
         if (stocks == null || stocks.isEmpty()) {
             throw new RuntimeException("生产领料分配明细为空");
         }

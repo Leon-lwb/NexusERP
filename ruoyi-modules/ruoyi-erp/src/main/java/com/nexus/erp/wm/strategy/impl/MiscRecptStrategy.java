@@ -29,6 +29,9 @@ import java.util.Date;
 @Slf4j
 @Component
 public class MiscRecptStrategy extends BaseStockOperationStrategy {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+
 
     /** 事务类型：杂项入库 */
     private static final String TX_TYPE_MISC_IN = "MISC_IN";
@@ -83,6 +86,8 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         WmMiscRecptLine line = (WmMiscRecptLine) args[0];
         WmMiscRecpt recpt = (WmMiscRecpt) args[1];
         Date now = (Date) args[2];
+        if(serialInventory!=null && serialInventory.post(com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+            "WM_MISC_RECPT",recpt.getRecptId(),line.getLineId(),"MISC_RECPT",line.getMaterialId(),line.getQuantity(),recpt.getWarehouseId(),line.getLocationId(),line.getBatchId(),line.getUnitPrice())))return;
 
         if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("杂项入库数量必须大于0");

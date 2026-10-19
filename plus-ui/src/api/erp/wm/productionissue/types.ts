@@ -1,3 +1,5 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 /** 后端十进制数在线协议中可能序列化为字符串，比较前须严格归一。 */
 export type ProductionIssueDecimal = string | number;
 
@@ -11,7 +13,7 @@ export interface ProductionIssueQuery {
   status?: string;
 }
 
-export interface ProductionIssueForm {
+export interface ProductionIssueForm extends TraceDocumentFields {
   issueId?: number;
   issueCode?: string;
   woId?: number;
@@ -33,7 +35,7 @@ export interface ProductionIssueForm {
   wmProductionIssueLineList?: ProductionIssueLineForm[];
 }
 
-export interface ProductionIssueLineForm {
+export interface ProductionIssueLineForm extends TraceDocumentFields {
   lineId?: number;
   issueId?: number;
   materialId?: number;
@@ -74,7 +76,7 @@ export interface ProductionIssueLineForm {
   remark?: string;
 }
 
-export interface ProductionIssueVO {
+export interface ProductionIssueVO extends TraceDocumentFields {
   issueId: number;
   issueCode: string;
   woId: number;
@@ -97,7 +99,7 @@ export interface ProductionIssueVO {
 }
 
 /** 可用库存（ATP）明细，供批次/库位选择与可用量校验 */
-export interface AvailableStockVO {
+export interface AvailableStockVO extends TraceDocumentFields {
   stockId: number;
   materialId: number;
   materialCode: string;

@@ -1,4 +1,7 @@
+import type { CompletionState } from './completion';
 export interface ProWorkOrderVO {
+  /** 当前修订及取消屏障由服务端提供，客户端不从数组猜最新清单。 */
+  completionState?: CompletionState;
   mesWoId: number;
   erpWoId: number;
   woNo: string;

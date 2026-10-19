@@ -9,11 +9,11 @@ export interface MaterialQuery extends PageQuery {
   sourceType?: string;
   status?: number | string;
   /** 仓库ID：仅查询在该仓库有库存记录的物料 */
-  warehouseId?: number;
+  warehouseId?: string | number;
   /** 库区ID：仅查询在该库区有库存记录的物料 */
-  areaId?: number;
+  areaId?: string | number;
   /** 库位ID：仅查询在该库位有库存记录的物料 */
-  locationId?: number;
+  locationId?: string | number;
 }
 
 export interface MaterialVO {
@@ -34,6 +34,11 @@ export interface MaterialVO {
   isPhantom: number;
   isBatchManage: number;
   isSerialManage: number;
+  /** 同一产品 SN 内组件是否允许跨批次消耗。 */
+  allowMixedLot?: boolean;
+  /** 服务端策略版本原值，不作数值计算。 */
+  trackingVersion?: string;
+  trackingStage?: 'AUDIT' | 'STRICT';
   safetyStock: number;
   minStock: number;
   maxStock: number;
@@ -68,6 +73,10 @@ export interface MaterialForm {
   isPhantom?: number;
   isBatchManage?: number;
   isSerialManage?: number;
+  /** 同一产品 SN 内组件是否允许跨批次消耗。 */
+  allowMixedLot?: boolean;
+  trackingVersion?: string;
+  trackingStage?: 'AUDIT' | 'STRICT';
   safetyStock?: number;
   minStock?: number;
   maxStock?: number;

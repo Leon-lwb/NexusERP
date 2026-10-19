@@ -1,0 +1,29 @@
+{
+  "assertions": [
+    "Actual adoptApproved consumes offline APPROVED/version1 row.",
+    "Original archived policy version 7 is activated at current execution time without a current master table.",
+    "Current reader verifies complete group/hash.",
+    "Original adoption request replays with approval APPLIED/version2."
+  ],
+  "boundaries": [
+    "H2 synthetic fixture and actual transaction proxy; no existing database.",
+    "Physical ERP guard and permission authorizer are mocks; this is not an authorization/endpoint integration acceptance.",
+    "JDK21 javac --release17; no Maven or reactor."
+  ],
+  "captured_at": "2026-10-19T04:24:21+08:00",
+  "changed_inputs": [],
+  "command": "python -B target/label-canonical-review-20261019/run-policy-proof.py",
+  "exit_code": 0,
+  "proof_log": "target/label-canonical-review-20261019/policy-proof-tests.log",
+  "proof_log_sha256": "a0775a62232829ae0c2151a7ab311e80abb0e53f3f9ba0dc0e969edca96ef938",
+  "schema_version": 1,
+  "source_sha256": {
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/WorkOrderTrackingPolicySnapshot.java": "3e98750bec7299931fe0273b6b6ba002bc8c99d467a39725e0cf99fdecbc7644",
+    "ruoyi-common/ruoyi-common-trace/src/main/java/com/nexus/common/trace/port/WorkOrderTrackingPolicyPort.java": "0b6e58ca138ef2257e338e1cfe466157520e80271026c8bf994537f5cdda3dc7",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionAuthorizer.java": "04f66ae711dcb6cf67833db222a25d465678f0b346ab3c3196666bbcbec7f438",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionService.java": "d352c1a0bd0981141b47d5f4ee46318048f9909a1fa4c0e3e219d5f0e984dad0",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderTrackingPolicyService.java": "7b9cf75b6f3c9874ddc89f1c39e2940a28d5d86c88564eedb4cf823efe84aaa8",
+    "target/label-canonical-review-20261019/PolicyAdoptionReaderProof.java": "cc8eadf730682919657b2c0ae12fafe4363ad431334a7059214a2a371268f3c1"
+  },
+  "status": "PASS_ISOLATED_ACTUAL_SERVICE_H2_INTEROPERABILITY_ONLY"
+}

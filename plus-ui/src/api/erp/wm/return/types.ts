@@ -1,10 +1,12 @@
+import type { TraceDocumentFields } from '@/api/erp/wm/identity/types';
+
 export interface ReturnQuery extends PageQuery {
   returnNo?: string;
   returnType?: string;
   status?: string;
 }
 
-export interface ReturnLineVO {
+export interface ReturnLineVO extends TraceDocumentFields {
   lineId?: number;
   returnId?: number;
   materialId?: number;
@@ -25,7 +27,7 @@ export interface ReturnLineVO {
   remark?: string;
 }
 
-export interface ReturnVO {
+export interface ReturnVO extends TraceDocumentFields {
   returnId?: number;
   returnNo?: string;
   warehouseId?: number;
@@ -41,7 +43,7 @@ export interface ReturnVO {
   lines?: ReturnLineVO[];
 }
 
-export interface ReturnForm {
+export interface ReturnForm extends TraceDocumentFields {
   returnId?: number;
   warehouseId?: number;
   warehouseCode?: string;

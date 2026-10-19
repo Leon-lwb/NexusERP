@@ -244,4 +244,26 @@ class StationTraceServiceTest {
     private Date date(String s) {
         return new Date(java.sql.Timestamp.valueOf(s).getTime());
     }
+    @Test
+    @SuppressWarnings("unchecked")
+    void unknownTestResultNeverBecomesAPassingQualityFact() {
+        when(proSnMapper.selectOne(any())).thenReturn(sn());
+        when(testRecordMapper.selectList(any())).thenReturn(List.of(test("UNKNOWN-TEST","V",null,date("2026-10-19 00:00:00"))));
+        var result=service.trace("SN-1");
+        var records=(List<Map<String,Object>>)result.get("records");
+        var record=records.stream().filter(r->"TEST".equals(r.get("type"))).findFirst().orElseThrow();
+        assertEquals("UNKNOWN",record.get("result"));
+        var detail=(Map<String,Object>)record.get("detail");var items=(List<Map<String,Object>>)detail.get("items");
+        assertEquals(false,items.get(0).get("pass"));
+    }
+
+    @Test
+    void sourceLimitIsVisibleRatherThanPresentedAsCompleteHistory() {
+        when(proSnMapper.selectOne(any())).thenReturn(sn());
+        when(testRecordMapper.selectCount(any())).thenReturn(201L);
+        var result=service.trace("SN-1");
+        assertEquals(true,result.get("truncated"));
+        assertTrue(((List<?>)result.get("truncatedSources")).contains("TEST"));
+        assertEquals("LEGACY_SN_CODE",result.get("traceScope"));
+    }
 }

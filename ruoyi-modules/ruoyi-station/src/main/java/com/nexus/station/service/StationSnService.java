@@ -42,6 +42,7 @@ public class StationSnService {
 
     private final ProSnMapper proSnMapper;
     private final StationSnBindLogMapper bindLogMapper;
+    private final com.nexus.mes.trace.MesSerialReferenceService serialReferences;
 
     /**
      * 关键件批量绑定(C5): 组件挂到父SN下(parent_sn_id/parent_sn_code)。
@@ -80,7 +81,7 @@ public class StationSnService {
                 throw new ServiceException("组件 SN 不能与父SN相同: " + code);
             }
             // 防环: 父链祖先命中任一待绑组件即拒绝
-            checkCycle(parent, componentCodes, code);
+            checkCycle(parent, component, code);
 
             int rows = proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
                 .set(ProSn::getParentSnId, parent.getSnId())
@@ -125,10 +126,12 @@ public class StationSnService {
         String parentCodeBefore = component.getParentSnCode();
 
         // 1. 解绑
-        proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
+        int unbound=proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
             .set(ProSn::getParentSnId, null)
             .set(ProSn::getParentSnCode, null)
-            .eq(ProSn::getSnId, component.getSnId()));
+            .eq(ProSn::getSnId, component.getSnId())
+            .eq(ProSn::getParentSnId,component.getParentSnId()));
+        if(unbound!=1) throw new ServiceException("组件父SN已并发变更，解绑未生效");
         insertLog("UNBIND", parent, component, null, reason, dto.getOperatorCode());
         log.info("关键件解绑: parent={}, component={}, reason={}", parentCodeBefore, componentCode, reason);
 
@@ -143,6 +146,7 @@ public class StationSnService {
             if (parent == null) {
                 throw new ServiceException("原父SN 不存在: " + parentCodeBefore);
             }
+            checkCycle(parent,newComponent,newCode);
             int rebindRows = proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
                 .set(ProSn::getParentSnId, parent.getSnId())
                 .set(ProSn::getParentSnCode, parent.getSnCode())
@@ -161,8 +165,8 @@ public class StationSnService {
     // ==================== 私有辅助 ====================
 
     private ProSn selectByCode(String snCode) {
-        ProSn sn = proSnMapper.selectOne(Wrappers.<ProSn>lambdaQuery()
-            .eq(ProSn::getSnCode, snCode).last("LIMIT 1"));
+        var reference=serialReferences.resolve(snCode);
+        ProSn sn=reference==null?null:reference.sn();
         if (sn == null) {
             throw new ServiceException("SN不存在: " + snCode);
         }
@@ -180,20 +184,14 @@ public class StationSnService {
      * 防环校验: 从 parent 沿父链向上(上限 MAX_PARENT_DEPTH), 祖先中出现任一待绑组件即拒绝。
      * 绑定后组件位于父链之上, 若祖先含组件则会构成环。
      */
-    private void checkCycle(ProSn parent, Set<String> componentCodes, String currentCode) {
-        List<String> hit = new ArrayList<>();
-        ProSn cursor = parent;
-        for (int depth = 0; depth < MAX_PARENT_DEPTH && cursor != null; depth++) {
-            if (cursor.getParentSnCode() != null && componentCodes.contains(cursor.getParentSnCode())) {
-                hit.add(cursor.getParentSnCode());
-            }
-            cursor = cursor.getParentSnId() == null ? null : proSnMapper.selectById(cursor.getParentSnId());
+    private void checkCycle(ProSn parent, ProSn component, String currentCode) {
+        ProSn cursor=parent;Set<Long> visited=new java.util.HashSet<>();
+        for(int depth=0;cursor!=null && depth<MAX_PARENT_DEPTH;depth++) {
+            if(cursor.getSnId()==null || !visited.add(cursor.getSnId()) || cursor.getSnId().equals(component.getSnId()))throw new ServiceException("防环校验未通过: "+currentCode);
+            Long parentId=cursor.getParentSnId();cursor=parentId==null?null:proSnMapper.selectById(parentId);
+            if(parentId!=null && cursor==null)throw new ServiceException("Parent identity evidence is missing");
         }
-        if (!hit.isEmpty()) {
-            throw new ServiceException(String.format(
-                "防环校验未通过: 组件 %s 位于父SN %s 的祖先链上(%s), 绑定后将形成环",
-                currentCode, parent.getSnCode(), String.join(" <- ", hit)));
-        }
+        if(cursor!=null)throw new ServiceException("Parent identity chain exceeds the verified depth");
     }
 
     private void insertLog(String action, ProSn parent, ProSn component, String oldComponentCode,

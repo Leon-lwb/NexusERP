@@ -63,7 +63,7 @@ public class WmSnController extends BaseController {
     }
 
     /**
-     * 新增序列号
+     * 按调用方commandId统一注册单个正式身份
      */
     @SaCheckPermission("wm:sn:add")
     @Log(title = "序列号管理", businessType = BusinessType.INSERT)
@@ -93,14 +93,13 @@ public class WmSnController extends BaseController {
     }
 
     /**
-     * 批量生成序列号
+     * 按调用方commandId统一注册完整号段，不直接入库
      */
     @SaCheckPermission("wm:sn:add")
     @Log(title = "序列号管理-批量生成", businessType = BusinessType.INSERT)
     @PostMapping("/batchGenerate")
     public R<Void> batchGenerate(@RequestBody WmSnBo bo) {
-        wmSnService.batchGenerate(bo.getMaterialId(), bo.getQuantity(), bo.getBatchId(),
-            bo.getRuleId(), bo.getSourceDocId(), bo.getSourceDocType(), bo.getSourceDocNo());
+        wmSnService.batchGenerate(bo);
         return R.ok();
     }
 

@@ -1,3 +1,4 @@
+import { traceSave, executeTraceDocument } from '@/api/erp/wm/identity/document';
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { ProductionRecptVO, ProductionRecptQuery, ProductionRecptForm } from './types';
@@ -21,7 +22,7 @@ export const addProductionRecpt = (data: ProductionRecptForm) => {
   return request({
     url: '/erp/wm/productionrecpt',
     method: 'post',
-    data
+    data: traceSave(data)
   });
 };
 
@@ -29,7 +30,7 @@ export const updateProductionRecpt = (data: ProductionRecptForm) => {
   return request({
     url: '/erp/wm/productionrecpt',
     method: 'put',
-    data
+    data: traceSave(data)
   });
 };
 
@@ -40,9 +41,10 @@ export const delProductionRecpt = (recptIds: string | number | (string | number)
   });
 };
 
-export const executeProductionRecpt = (recptId: string | number) => {
-  return request({
+export const executeProductionRecpt = (recptId: string | number, data?: Record<string, any>) =>
+  executeTraceDocument({
     url: '/erp/wm/productionrecpt/execute/' + recptId,
-    method: 'put'
+    detailUrl: '/erp/wm/productionrecpt/' + recptId,
+    quantityKey: 'quantity',
+    data
   });
-};

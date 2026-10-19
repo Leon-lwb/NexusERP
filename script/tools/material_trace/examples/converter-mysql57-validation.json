@@ -1,0 +1,416 @@
+{
+  "all_column_read_only_sources": 18,
+  "captured_at": "2026-10-19T04:29:52+08:00",
+  "cases": [
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_00_hex_literals_have_literal_coercibility_and_exact_utf8",
+      "seconds": 0.438,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_01_quantity_apply_conserves_stock_cost_valuation_identities_and_policy",
+      "seconds": 1.703,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_02_batch_to_batch_serial_preserves_real_batch",
+      "seconds": 1.687,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_03_single_piece_legacy_sn_keeps_exact_identity_through_apply_and_revert",
+      "seconds": 2.797,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_04_repeated_apply_has_no_new_business_or_audit",
+      "seconds": 2.0,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_05_changed_source_hash_rolls_back_prepared_audit",
+      "seconds": 1.375,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_06_missing_registered_identity_rejects_without_partial_conversion",
+      "seconds": 1.578,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_07_pending_reserved_counter_is_not_split",
+      "seconds": 1.61,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_08_real_pending_reservation_blocks_even_with_zero_counter",
+      "seconds": 1.625,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_09_whole_material_scope_cannot_omit_a_new_positive_source",
+      "seconds": 1.562,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_10_no_business_revert_and_repeated_revert_preserve_original_audit",
+      "seconds": 2.297,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_11_new_ledger_rejects_old_revert_sql_and_only_outputs_compensation",
+      "seconds": 2.484,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_12_late_unique_constraint_failure_rolls_back_stock_pool_and_audit",
+      "seconds": 1.407,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_13_metadata_stock_ids_need_not_follow_sn_order",
+      "seconds": 2.046,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_14_unicode_quotes_and_control_characters_keep_exact_hashes",
+      "seconds": 1.391,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_15_cross_tenant_target_id_collision_preserves_both_tenants",
+      "seconds": 1.375,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_16_existing_zero_history_peer_joins_the_same_runtime_valuation_pool",
+      "seconds": 2.047,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_17_shared_legacy_sn_requires_review",
+      "seconds": 0.969,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_18_registered_replacements_keep_legacy_blocked",
+      "seconds": 0.922,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_19_stale_apply_rejects_shared_sn_source",
+      "seconds": 1.39,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_20_orphan_in_stock_identity_blocks_conversion",
+      "seconds": 1.86,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_21_new_policy_bank_blocks_old_revert_and_emits_compensation",
+      "seconds": 2.359,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_22_zero_quantity_cost_residue_is_not_hidden",
+      "seconds": 1.578,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_23_orphan_nonzero_pool_requires_review",
+      "seconds": 1.609,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_24_zero_history_pool_survives_apply_revert",
+      "seconds": 2.172,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_25_original_policy_adoption_replays_without_business_writes",
+      "seconds": 1.86,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_26_original_policy_adoption_rejects_changed_work_order",
+      "seconds": 1.312,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_27_strict_constraints_reject_null_tenants_and_replay",
+      "seconds": 1.625,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_28_strict_constraints_stop_before_alter_on_legacy_null",
+      "seconds": 1.328,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_29_strict_constraints_stop_on_old_code_conflict",
+      "seconds": 1.36,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_30_strict_constraints_require_explicit_cleanup_confirmation",
+      "seconds": 1.437,
+      "status": "PASS"
+    },
+    {
+      "name": "converter_mysql57_cases.ConverterCases.test_31_new_barcode_blocks_old_revert_without_rebinding",
+      "seconds": 2.438,
+      "status": "PASS"
+    }
+  ],
+  "container": {
+    "id": "ecc0bff93e5bd8ab032752cd75a34bc0c465a8d4a8440fe6374960e1ff364537",
+    "image": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+    "name": "nexus-mtrace-mysql57-20261018202732-cf09840c1e80",
+    "network": "none",
+    "port_bindings": {},
+    "removed_after_ownership_verification": true,
+    "run_id": "cf09840c1e804b77bd176e8d2d754d6f",
+    "tmpfs": {
+      "/tmp": "rw,nosuid,nodev,size=64m",
+      "/var/lib/mysql": "rw,nosuid,nodev,size=768m"
+    }
+  },
+  "counts": {
+    "executed": 32,
+    "fail": 0,
+    "pass": 32,
+    "skip": 0
+  },
+  "current_inputs_match_final_report": true,
+  "final_report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/final-harness-current-20261019-10/report.json",
+  "final_report_sha256": "ca64dcf32fd2edf326c21cf1c22eeb0e300e62e6faa9250b5c6816b4db7a3f04",
+  "findings_fixed": [
+    "MySQL1267: explicit UTF8 hex literals keep coercibility 4 and exact bytes.",
+    "Compare complete keyed row sets without modifying immutable journal/evidence hashes.",
+    "Reject shared historical qty>1 SN sources; never arbitrarily inherit one unit or leave a zero-stock old SN IN_STOCK.",
+    "Reject inverse IN_STOCK mismatch, zero-quantity cost residue and nonzero orphan valuation pools before conversion.",
+    "Import independent APPROVED adoption evidence only; actual ERP service owns future policy-bank activation."
+  ],
+  "fresh_required_erp_tables_including_conversion_audit": 21,
+  "full_snapshot_tables": 35,
+  "local_date": "2026-10-19",
+  "mysql": {
+    "isolation": "REPEATABLE-READ",
+    "sql_mode": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION",
+    "version": "5.7.44",
+    "version_comment": "MySQL Community Server (GPL)"
+  },
+  "remaining_boundaries": [
+    "Fresh ERP tables extracted from current install DDL; only synthetic seed INSERTs.",
+    "Only generated, UUID/database-bound review SQL is executed by this runner.",
+    "MES is explicitly empty logical fixture data; no cross-datasource atomicity claimed.",
+    "No Java/Spring ERP posting, printer, accounting voucher, real census or existing database verification.",
+    "Late constraint fault injection exists only in this owned temporary schema.",
+    "Only this owned synthetic ERP sandbox; no existing database or service was accessed.",
+    "Strict tenant DDL is an independent cleanup-confirmed phase with implicit commits and an external stop-write requirement.",
+    "Approval import alone leaves historical WO policy UNKNOWN; actual actor, permission and ERP transaction belong to the real service.",
+    "No legacy rollout, cross-database atomicity, real census/signature authenticity, concurrent writer/deadlock/large-data or production acceptance.",
+    "Generic SQL/EXPLAIN matrix is owned by Hume and was not invoked here."
+  ],
+  "runs": [
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 15,
+        "fail": 15,
+        "pass": 0,
+        "skip": 0
+      },
+      "directory": "red-20261019-01",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "Actual MySQL 1267 collation failure reproduced before literal fix.",
+      "owned_container": "nexus-mtrace-mysql57-20261018180103-289c3d072d96",
+      "owned_container_id": "90ca0d21dced54512b6f2435f9e893c4857d9f5edf79ca1958287ceb5ccb97ea",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/red-20261019-01/report.json",
+      "report_sha256": "a51bbd1af6287ef4df4853d27d0edd6e9afc598875cb338406de96e6759e359b"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 16,
+        "fail": 1,
+        "pass": 15,
+        "skip": 0
+      },
+      "directory": "after-literal-20261019-02",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "Literal fix passed; native row order false new-business rejection reproduced.",
+      "owned_container": "nexus-mtrace-mysql57-20261018180335-14e445587093",
+      "owned_container_id": "65d461f6a7cca4c901a06e72ad4d3454094790bef592a86222b5cf380494c921",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/after-literal-20261019-02/report.json",
+      "report_sha256": "ad32566df5e3470b96a2f7fe323b12dcbccd90484cbeb880921f228c12199291"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 17,
+        "fail": 0,
+        "pass": 17,
+        "skip": 0
+      },
+      "directory": "green-20261019-03",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "Historical 17-case snapshot; later shared-SN/adoption semantics supersede this draft.",
+      "owned_container": "nexus-mtrace-mysql57-20261018181037-cf61afa96d94",
+      "owned_container_id": "99b0f8d75c2bc01ecd65f88c1ef6fdbbf5c0b7f9fb76a40f9d35f449647df398",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/green-20261019-03/report.json",
+      "report_sha256": "df59edeb25e38f1d74febf22cf2a3fe0a967c62f0640afa1f9284400b374a8ba"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 20,
+        "fail": 1,
+        "pass": 19,
+        "skip": 0
+      },
+      "directory": "legacy-identity-green-20261019-04",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "One evidence filename exceeded Windows path length; fixture path shortened.",
+      "owned_container": "nexus-mtrace-mysql57-20261018191854-fe8bb9ba16ee",
+      "owned_container_id": "23db271a4f83a2c670949ecfa2562bcbfff4c6cb705f98e309a3ffe26b366aa5",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/legacy-identity-green-20261019-04/report.json",
+      "report_sha256": "724ff4466952b7dc38a8da3b623ca95cb12e5794015ea334dade1d9971624c5d"
+    },
+    {
+      "changed_inputs_during_run": [
+        "script/tools/material_trace/tests_mysql57/harness.py"
+      ],
+      "counts": {
+        "executed": 22,
+        "fail": 1,
+        "pass": 21,
+        "skip": 0
+      },
+      "directory": "policy-bank-inverse-20261019-05",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "One NULL assertion fixed; harness changed during run, not accepted as a freeze.",
+      "owned_container": "nexus-mtrace-mysql57-20261018192754-d181d9f82371",
+      "owned_container_id": "282b7effd52ce0fa19cf4c725d4ee2419ecf2148026ed474e01c0d30fa7a7519",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/policy-bank-inverse-20261019-05/report.json",
+      "report_sha256": "46de49707a40722608a6b08f4b6badc84fe1786c1c40d4d137635dc03be69b44"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 27,
+        "fail": 1,
+        "pass": 26,
+        "skip": 0
+      },
+      "directory": "policy-adoption-pools-20261019-06",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "One fixture assertion incorrectly assumed no preexisting valuation group; preservation checked instead.",
+      "owned_container": "nexus-mtrace-mysql57-20261018194306-a0c1cdb4d10c",
+      "owned_container_id": "6f390053f1fedbaaa8536d6ae4d56cef057fab87074185980c9a6eb977c22c2f",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/policy-adoption-pools-20261019-06/report.json",
+      "report_sha256": "08b8c26e489cc4dbddaab684454973b97d86de0e2310e98e292ece083487a612"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 31,
+        "fail": 0,
+        "pass": 31,
+        "skip": 0
+      },
+      "directory": "final-strict-adoption-20261019-07",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "Historical draft adoption behavior; does not validate final APPROVED-import contract.",
+      "owned_container": "nexus-mtrace-mysql57-20261018194951-4043415715f0",
+      "owned_container_id": "85a23783bc66a7719877ae441610d9b45f5b7372fe2e99f1377aa43067e8faeb",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/final-strict-adoption-20261019-07/report.json",
+      "report_sha256": "37fe5001640768aae95048d9e647f67e855ac5c6f10dd8b9ab6fc8334afd709e"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 32,
+        "fail": 0,
+        "pass": 32,
+        "skip": 0
+      },
+      "directory": "final-approval-barcode-20261019-08",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "Final approval import/barcode cases passed; harness changed after run, superseded by run 09.",
+      "owned_container": "nexus-mtrace-mysql57-20261018200820-c4bbe1efd3c5",
+      "owned_container_id": "fc9088d9d4437b4f5daa5d7ca9f759165deb7d992765f9805cd689d63cdf389b",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/final-approval-barcode-20261019-08/report.json",
+      "report_sha256": "d27f77cc725782b93fe3955a92aa81250471ac12ad21cf977af74b824571a48c"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 32,
+        "fail": 0,
+        "pass": 32,
+        "skip": 0
+      },
+      "directory": "final-transport-freeze-20261019-09",
+      "exact_cid_absent_verified_at": "2026-10-19T04:24:21+08:00",
+      "interpretation": "32-case final contract passed; shared harness changed after execution, superseded by run 10.",
+      "owned_container": "nexus-mtrace-mysql57-20261018201326-902f282c686d",
+      "owned_container_id": "effb38faa1d79241de22803d20c352566d859cd8401fdd715334fa7644314d9f",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/final-transport-freeze-20261019-09/report.json",
+      "report_sha256": "490d6c82720369cd9697fb181d132e7f27d99ee02d7f414b9889923c9422c8de"
+    },
+    {
+      "changed_inputs_during_run": [],
+      "counts": {
+        "executed": 32,
+        "fail": 0,
+        "pass": 32,
+        "skip": 0
+      },
+      "directory": "final-harness-current-20261019-10",
+      "exact_cid_absent_verified_at": "2026-10-19T04:29:52+08:00",
+      "interpretation": "Latest shared harness rerun; final 32 cases pass and all 21 captured input hashes currently match.",
+      "owned_container": "nexus-mtrace-mysql57-20261018202732-cf09840c1e80",
+      "owned_container_id": "ecc0bff93e5bd8ab032752cd75a34bc0c465a8d4a8440fe6374960e1ff364537",
+      "removed_after_ownership_verification": true,
+      "report_path": "script/tools/material_trace/tests_mysql57/results/converter-sql/final-harness-current-20261019-10/report.json",
+      "report_sha256": "ca64dcf32fd2edf326c21cf1c22eeb0e300e62e6faa9250b5c6816b4db7a3f04"
+    }
+  ],
+  "schema_changed_during_final_run": false,
+  "schema_version": 2,
+  "source_sha256": {
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionAuthorizer.java": "04f66ae711dcb6cf67833db222a25d465678f0b346ab3c3196666bbcbec7f438",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderPolicyAdoptionService.java": "d352c1a0bd0981141b47d5f4ee46318048f9909a1fa4c0e3e219d5f0e984dad0",
+    "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/PrdWorkOrderTrackingPolicyService.java": "7b9cf75b6f3c9874ddc89f1c39e2940a28d5d86c88564eedb4cf823efe84aaa8",
+    "script/sql/ry-erp.sql": "e08c873b519880eb8683182101a03bec8e88ea1a408925f97d9f3e7d7f7f9132",
+    "script/sql/update/2026-10-19-material-trace-strict-constraints-erp.sql": "56426d317c8397d066d0fee6003f5138be50f882efc4481b4fda41a0d4dddda4",
+    "script/tools/material_trace/audit.py": "c80eece952a36d5b0a70d9ea282e3d4a39f580d8e5087d8da2b1a08dbdcd0c19",
+    "script/tools/material_trace/cli.py": "2a884bbd71e39dc8123c0152e0f11af71319c2203ed5cf1a14172b3813e4a376",
+    "script/tools/material_trace/core.py": "36e532c41edaa77b96730ca9989cc48e085f9bf3684775c35ea98726751f7f6f",
+    "script/tools/material_trace/metadata.py": "3fb49c3df47f2022684ce83800c820925848783f53c782fc5ec8af900aff8474",
+    "script/tools/material_trace/policy_adoption.py": "67b1f2040637d07d6ec201066a98c7e896a7656e94de0b06ba2fd18c4b94ddd7",
+    "script/tools/material_trace/repair.py": "e71fe2ef6351d37aa1349cc47ec5c41e564a2ee2fbf5195699c836a386cbaa5a",
+    "script/tools/material_trace/schema_contract.py": "5bffa5d36ccd4e0929a07d5129281a239d6f90e184c75162ef207e9ab7b67652",
+    "script/tools/material_trace/sql_writer.py": "5c0cd13dfdb2fbc81fb4ce0d88b61bcbd014c747d5cdb6a14121dd5572b99b40",
+    "script/tools/material_trace/stock_conversion_sql.py": "97c09f81ac16a93128d019a76c77c4c17cf9c058874225e1d30d9b3acd98f290",
+    "script/tools/material_trace/stock_converter.py": "d16f03a57cdd2e510adaddadd32f006a30a464d568741a92762537310e679f5b",
+    "script/tools/material_trace/tests/conversion_fixtures.py": "2e0cc048291fc4ae34a2c3f9ccd72d823d654241653c4fa195dcfee19576a2b1",
+    "script/tools/material_trace/tests/fixtures.py": "8864b7bbc15b0558b9be9744c3e444c3d2b25ba266726c36a724d6c663c13968",
+    "script/tools/material_trace/tests/test_policy_adoption.py": "96e80a521e7d1ea3f06baede2b1202ab7a04342600ff1a70ecf202a14401057b",
+    "script/tools/material_trace/tests_mysql57/converter_mysql57_cases.py": "4b6b652a1ca8d6db61857d5e96ac4aa3eccafe96a543bc83890629070416629f",
+    "script/tools/material_trace/tests_mysql57/converter_mysql57_runner.py": "146f9ab9759e2d9b3ecaf918920bb3adac84b650124782be9c613a40be762f6c",
+    "script/tools/material_trace/tests_mysql57/harness.py": "6babc8750ba8901046fa79716c39bc3067d2dc5c41cb509f21ee50af77b3ed02"
+  },
+  "status": "PASS_OWNED_SYNTHETIC_CONVERTER_APPROVAL_IMPORT_STRICT_SQL_ONLY"
+}

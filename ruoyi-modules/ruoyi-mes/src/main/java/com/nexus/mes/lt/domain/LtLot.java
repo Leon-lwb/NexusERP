@@ -26,6 +26,8 @@ public class LtLot extends TenantEntity {
     /** 批次ID(主键) */
     @TableId(value = "lot_id")
     private Long lotId;
+    private Long erpBatchId;
+    private Long allocationVersion;
 
     /** 批次编码 */
     private String lotCode;

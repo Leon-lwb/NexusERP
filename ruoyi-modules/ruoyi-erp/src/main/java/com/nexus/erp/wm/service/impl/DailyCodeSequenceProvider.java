@@ -1,6 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.constant.TenantConstants;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RAtomicLong;
@@ -23,7 +26,7 @@ import java.util.function.LongSupplier;
  * （uk_batch_code / uk_sn_code 唯一键冲突，sys_oper_log 曾有 Duplicate entry 'B202607060001' 实据）。</p>
  *
  * <p>本提供器把"读缓存 → 初始化(查库最大序号) → 原子自增"放进同一把 Redisson 分布式锁，
- * 双机集群跨实例安全；锁粒度按 seqKey（含日期）隔离，锁内仅做 Redis 读写，不持有数据库事务。</p>
+ * 双机集群跨实例安全；锁粒度按租户和 seqKey（含日期）隔离，缓存未命中时从当前租户的持久化最大值初始化。</p>
  *
  * <p>依赖注入 {@link RedissonClient}（Spring Bean），不触碰 RedisUtils 静态类，便于纯 Mockito 单测。</p>
  */
@@ -45,7 +48,33 @@ public class DailyCodeSequenceProvider {
      * @throws ServiceException 序号起点无效、已无法递增或原子自增结果未前进时抛出
      */
     public long next(String seqKey, LongSupplier maxSeqLoader) {
-        RLock lock = redissonClient.getLock("erp:code:seq:lock:" + seqKey);
+        return reserve(seqKey, 1, maxSeqLoader);
+    }
+
+    /**
+     * 原子预留连续号段，返回首个序号；成功预留的号码不回收。
+     *
+     * <p>租户键不沿用旧的跨租户缓存；首次访问由调用方按当前租户查库初始化。
+     * 在初始化写入和 Redis 增量之前检查整个号段，避免 long 溢出。</p>
+     *
+     * @param seqKey 含日期的逻辑序号键
+     * @param quantity 预留数量，必须为正数
+     * @param maxSeqLoader 当前租户当天持久化最大序号
+     * @return 预留号段的首个序号（闭区间长度为 quantity）
+     */
+    public long reserve(String seqKey, long quantity, LongSupplier maxSeqLoader) {
+        if (quantity <= 0) {
+            throw new ServiceException("序号预留数量必须大于0");
+        }
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            if (TenantHelper.isEnable()) {
+                throw new ServiceException("序号生成缺少租户上下文");
+            }
+            tenantId = TenantConstants.DEFAULT_TENANT_ID;
+        }
+        String tenantKey = seqKey + ":tenant:" + tenantId;
+        RLock lock = redissonClient.getLock("erp:code:seq:lock:" + tenantKey);
         boolean locked = false;
         try {
             locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
@@ -53,21 +82,21 @@ public class DailyCodeSequenceProvider {
                 throw new ServiceException("序号生成繁忙，请稍后重试");
             }
             // Object 型 JSON codec 会将小整数解码为 Integer，泛型 Long 不能约束实际返回类型。
-            RBucket<Object> bucket = redissonClient.getBucket(seqKey);
+            RBucket<Object> bucket = redissonClient.getBucket(tenantKey);
             Object cached = bucket.get();
-            long current;
-            if (cached == null) {
-                current = parseSequence(maxSeqLoader.getAsLong());
-                bucket.set(current, SEQ_TTL);
-            } else {
-                current = parseSequence(cached);
+            long current = parseSequence(cached == null ? maxSeqLoader.getAsLong() : cached);
+            if (quantity > Long.MAX_VALUE - current) {
+                throw new ServiceException("序号号段超出可递增范围，请核实后重试");
             }
-            RAtomicLong atomic = redissonClient.getAtomicLong(seqKey);
-            long next = atomic.incrementAndGet();
-            if (next <= current) {
+            if (cached == null) {
+                bucket.set(current, SEQ_TTL);
+            }
+            RAtomicLong atomic = redissonClient.getAtomicLong(tenantKey);
+            long end = atomic.addAndGet(quantity);
+            if (end != current + quantity) {
                 throw new ServiceException("序号自增结果异常，请核实后重试");
             }
-            return next;
+            return current + 1;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ServiceException("序号生成被中断，请重试");
