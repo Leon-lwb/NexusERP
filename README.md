@@ -121,6 +121,8 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 ### AI PCB 工程与产物预览
 
+**Windows一键启动版**：[Gitee发行版 engineering-connector-v0.1.0](https://gitee.com/NexusERP/nexus-erp/releases/tag/engineering-connector-v0.1.0) · [快速开始](ruoyi-extend/nexus-engineering-connector/desktop/快速开始.md) · [完整使用说明](ruoyi-extend/nexus-engineering-connector/desktop/使用说明.md)。桌面包内置Node.js，支持HTTP/HTTPS，完整解压后双击EXE即可配置和配对。
+
 在 AI 对话中选择已配对的工程设备，检查本地嘉立创 EDA 的连接，或基于模板生成 PCB 草稿。Windows 工程连接器在工程师电脑执行受控动作，将结果回传到 Nexus；任务列表与对话卡片可随时查看进度和结果。
 
 - **本地工程连接**：设备配对、在线状态、连接诊断与版本信息；检查结果独立展示，历史未上报的信息明确标为缺失。
@@ -131,7 +133,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 **本地验证示例**：50 × 35 mm 双层板草稿已通过真实嘉立创客户端生成，7 个文件成功归档，线路、BOM、DRC、三维模型和源工程下载可用。该草稿有 **8 项 DRC 错误、0 项警告**，界面保留“部分成功”和修正提示，不能直接作为生产资料。
 
-功能默认关闭。启用前需配置自己的模型服务、专用私有 OSS、权限与 Windows 连接器，并同时启用后端工程开关和前端 `VITE_APP_ENGINEERING_ENABLED=true`。客户端验证基线为嘉立创 EDA 专业版 4.1.60，实际传输为 `CLI_COMPAT`。安装、配对和测试步骤见[工程连接器使用指南](doc/ai/guides/NexusERP_工程连接器使用指南.md)，实际界面见[工程功能截图](#pcb-工程任务与预览)。
+开发前端及后端dev/local已启用工程开关；生产需显式启用。使用前需配置自己的模型服务、专用私有OSS、权限与Windows连接器，并核对前后端工程开关。客户端验证基线为嘉立创 EDA 专业版 4.1.60，实际传输为 `CLI_COMPAT`。安装、配对和测试步骤见[工程连接器使用指南](doc/ai/guides/NexusERP_工程连接器使用指南.md)，实际界面见[工程功能截图](#pcb-工程任务与预览)。
 
 ### AI 流程编排（AI Flow Orchestration）
 
@@ -624,17 +626,15 @@ mvn -pl ruoyi-admin spring-boot:run -P local "-Dspring-boot.run.profiles=local,s
 
 | 主 SQL | 对应范围 |
 |--------|----------|
-| [ry-vue.sql](script/sql/ry-vue.sql) | 系统库：用户、菜单、权限、AI / Flow / IM、工程任务、签章与自研报表结构及公开种子 |
+| [ry-vue.sql](script/sql/ry-vue.sql) | 系统库：用户、菜单、权限、AI / Flow / IM、工程任务、签章与自研报表结构及本地测试数据 |
 | [ry-erp.sql](script/sql/ry-erp.sql) | ERP 库：基础数据、销售、采购、生产计划、仓储与财务 |
 | [ry-mes.sql](script/sql/ry-mes.sql) | MES 库：制造执行、质量、设备、SOP、DHR 等 |
 | [ry-iot.sql](script/sql/ry-iot.sql) | IoT 库：产品、设备、属性与告警 |
 | [app.sql](script/sql/app.sql) | 移动端相关定义，按部署方案确认适用库与导入顺序 |
 
-**可共享系统库快照（2026-10-17）**：`ry-vue.sql` 已同步当前本机系统库的 **216 张表**，包含工程三表和自研报表 34 表。提供 1,318 条菜单、249 类字典 / 1,038 项字典值、5,112 条行政区划、48 套编号规则，以及默认租户与演示管理员；工作流引擎版本元数据一并保留。演示登录为租户 `000000`、`admin / admin123`，首次登录后应修改密码。
+**最新完整测试备份（2026-10-19）**：当前主SQL分别包含系统216表、ERP 162表、MES 89表和IoT 16表。按所有者要求原样保留本地测试配置与运行数据，四库带日期的压缩文件、SHA-256及恢复说明见[数据库脚本入口](script/sql/README.md)和[完整测试快照](script/sql/snapshots/2026-10-19/README.md)。这些文件未在本次发布中导入任何数据库。
 
-直接导入 [ry-vue.sql](script/sql/ry-vue.sql)，或解压[带日期的压缩备份](script/sql/snapshots/2026-10-17/ry-vue-public-2026-10-17.sql.gz)后导入，二者内容一致，选择一种即可。新库创建、MySQL 排序规则、SHA-256 校验和恢复验证见[快照说明](script/sql/snapshots/2026-10-17/README.md)。
-
-快照提供完整表结构与公开初始化数据，实际用户、模型 / OSS 密钥、设备凭证、聊天、任务、文件和报表运行记录均未复制。新环境需配置自己的外部服务；报表中心可点击“创建基础报表”生成内置模板，工程设备需重新配对，AI 内置工具按需启用。ERP / MES / IoT 等其他数据库仍按上表分别初始化。
+**历史公开初始化快照（2026-10-17）**仍保留：它提供系统库结构与公开初始化种子，可按[历史快照说明](script/sql/snapshots/2026-10-17/README.md)在全新空库使用。它与当前完整测试导出的数据范围和摘要不同，不再与最新 `ry-vue.sql` 等同。配置自己的外部服务后，工程设备需重新配对。
 
 > 主初始化 SQL 含 `DROP TABLE`，**存量环境禁止直接重导**。先核对基线、备份和迁移授权，再按[数据库变更记录](doc/system/数据库增量变更记录.md)处理增量。
 > 2026-10-08 的历史增量清理不代表现有数据库已迁移；后续新增迁移仍需单独核对，不因历史清理授权自动删除或执行。

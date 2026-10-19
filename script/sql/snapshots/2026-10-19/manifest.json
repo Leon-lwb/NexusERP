@@ -1,0 +1,76 @@
+{
+  "snapshotDate": "2026-10-19",
+  "kind": "user-confirmed-local-test-full-exports",
+  "redacted": false,
+  "source": "existing-workspace-sql-files",
+  "databaseConnections": 0,
+  "databaseWrites": 0,
+  "usage": "isolated-new-databases-only",
+  "files": [
+    {
+      "sourcePath": "script/sql/ry-vue.sql",
+      "archive": "ry-vue-local-test-2026-10-19.sql.gz",
+      "rawBytes": 97782964,
+      "rawSha256": "c270264cf5d7bbdbba0eafd2e74af4c4cb2264640aa47a4ac6de8231501b17e9",
+      "gitLfSha256": "098562c73fccfa853d2b56fd8dd993e5d00a7805534052f84ed083b130fc3035",
+      "archiveBytes": 3329733,
+      "archiveSha256": "a57ffd6663a546926a0bfcc7b77a5e4d89d73d657d4fc10312bb88e47c16a84c",
+      "tableCount": 216,
+      "insertStatementCount": 25984,
+      "insertRowCount": 25984,
+      "columnCount": 3130
+    },
+    {
+      "sourcePath": "script/sql/ry-erp.sql",
+      "archive": "ry-erp-local-test-2026-10-19.sql.gz",
+      "rawBytes": 2952976,
+      "rawSha256": "458a191d8fe8e470248e7d158b5d71a0e70903e2ad7878e0bba6939f40cf4991",
+      "gitLfSha256": "72d5ede42b738a382e6b40e5083444509d60ae2d59de579092270bfd6a34d085",
+      "archiveBytes": 268412,
+      "archiveSha256": "46f7fc44d765287a149f9750f7551d8eaec135f01273b4ae864d29baaa749d3a",
+      "tableCount": 162,
+      "insertStatementCount": 7516,
+      "insertRowCount": 7516,
+      "columnCount": 3991
+    },
+    {
+      "sourcePath": "script/sql/ry-mes.sql",
+      "archive": "ry-mes-local-test-2026-10-19.sql.gz",
+      "rawBytes": 898293,
+      "rawSha256": "2f16bf1247622e17223c78a212d11ea48486094998b4dc0b3a7c14b965082165",
+      "gitLfSha256": "39d400daff45056a346b027f7cfe9c45374b7c10dbe1d8571c4ff2cb23743113",
+      "archiveBytes": 93929,
+      "archiveSha256": "e72c49b15e18ae3d8efec8c7221ef6f3e0edfa448e02ab2441e17e475ce49962",
+      "tableCount": 89,
+      "insertStatementCount": 2162,
+      "insertRowCount": 2162,
+      "columnCount": 1884
+    },
+    {
+      "sourcePath": "script/sql/ry-iot.sql",
+      "archive": "ry-iot-local-test-2026-10-19.sql.gz",
+      "rawBytes": 96268,
+      "rawSha256": "ae3e7c936bc233fc69256ff1f212b66bfa846475eefca4dba352942fff476bf9",
+      "gitLfSha256": "ae3e7c936bc233fc69256ff1f212b66bfa846475eefca4dba352942fff476bf9",
+      "archiveBytes": 16452,
+      "archiveSha256": "47ae7c7f56cf543b1823e2e4b6de35b5d514a18a0277ab96158f0c407a64e119",
+      "tableCount": 16,
+      "insertStatementCount": 16,
+      "insertRowCount": 279,
+      "columnCount": 272
+    }
+  ],
+  "staticValidation": {
+    "encoding": "UTF-8",
+    "insertWidthMismatches": 0,
+    "truncatedTableOrInsertStatements": 0,
+    "addedTablesComparedToBa0fdc79": 0,
+    "removedTablesComparedToBa0fdc79": 0,
+    "actualDatabaseRestorePerformed": false,
+    "originalUnicodeReplacementCharacters": {
+      "ry-vue.sql": 20
+    },
+    "iotContainsCreateDatabaseAndUse": true,
+    "mesContainsTwoStoredProceduresWithDelimiterAndDefiner": true
+  }
+}
