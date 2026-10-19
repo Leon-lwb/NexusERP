@@ -8,6 +8,9 @@ spring:
 server:
   address: ${SERVER_ADDRESS:127.0.0.1}
 spring:
+  config:
+    activate:
+      on-profile: local
   datasource:
     dynamic:
       p6spy: false
@@ -19,5 +22,9 @@ flowable:
   database-schema-update: false
 nexus:
   ai:
+    engineering:
+      enabled: true
+      # 与 dev 使用相同私桶契约，禁止回落默认 OSS。
+      oss-config-key: ${NEXUS_ENGINEERING_OSS_CONFIG_KEY:engineering-private}
     mcp:
       allowed-local-endpoints: ''

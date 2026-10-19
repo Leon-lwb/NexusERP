@@ -35,3 +35,16 @@ test('诊断区分CLI桥接版本、未知编辑器版本和原生MCP不支持',
   assert.equal(diagnostic.transportMode, 'CLI_COMPAT');
   assert.equal(diagnostic.diagnosticCode, 'NATIVE_MCP_UNSUPPORTED');
 });
+
+/** 停止不能等EDA心跳诊断的20秒超时，取消信号须传至实际CLI。 */
+test('心跳诊断将停止信号传至CLI调用', async () => {
+  const abort = new AbortController();
+  abort.abort();
+  await assert.rejects(
+    diagnose({ executable: 'fixture' }, async (_executable, _args, _timeout, signal) => {
+      assert.equal(signal, abort.signal);
+      signal.throwIfAborted();
+    }, abort.signal),
+    (error) => error.name === 'AbortError'
+  );
+});

@@ -12,9 +12,7 @@ export async function validateConfig(raw: unknown): Promise<ConnectorConfig> {
   if (typeof v.serverUrl !== 'string') throw new Error('缺少服务端地址');
   const url = new URL(v.serverUrl);
   if (url.username || url.password || url.search || url.hash) throw new Error('服务端地址不能包含凭证、查询或片段');
-  const loopback = ['127.0.0.1', '[::1]', 'localhost'].includes(url.hostname);
-  if (url.protocol !== 'https:' && !(v.development === true && url.protocol === 'http:' && loopback))
-    throw new Error('必须使用HTTPS或显式环回开发地址');
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('服务端地址只支持HTTP或HTTPS');
   if (typeof v.executable !== 'string' || !isAbsolute(v.executable)) throw new Error('执行文件必须是绝对路径');
   let executable: string;
   try {

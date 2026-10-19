@@ -49,8 +49,8 @@ export function runCli(
   });
 }
 /** 诊断连接状态；ok与connected分别记录，不以可执行文件存在认定编辑器可用。 */
-export async function diagnose(config: ConnectorConfig, runner: typeof runCli = runCli) {
-  const result = await runner(config.executable, ['doctor']);
+export async function diagnose(config: ConnectorConfig, runner: typeof runCli = runCli, signal?: AbortSignal) {
+  const result = await runner(config.executable, ['doctor'], 20_000, signal);
   const envelope = JSON.parse(result.stdout);
   if (result.code !== 0 || envelope.ok !== true) throw new Error('嘉立创CLI诊断失败');
   const value = envelope.value ?? {};

@@ -1,11 +1,11 @@
 # Nexus 工程连接器使用指南
 
-> 更新：2026-10-16；范围：嘉立创EDA模板草稿、私有产物、PNG及OBJ查看。
+> 更新：2026-10-19；范围：嘉立创EDA模板草稿、私有产物、PNG及OBJ查看。
 > 关联：[设计](../specs/2026-10-15-ai-嘉立创EDA-PCB草稿生成与产物预览设计规范.md)、[实施计划](../plans/2026-10-16-ai-嘉立创EDA-PCB草稿与产物预览实施计划.md)、[协议](../specs/2026-10-16-ai-工程连接器协议v1.md)、[客户端验证](../plans/2026-10-16-ai-嘉立创EDA-客户端能力验证报告.md)。
 
 ## 1. 使用边界
 
-功能默认关闭。首次启用需在获授权的系统库安装工程三表、菜单和权限，核对Redis与专用私桶；本次开发不自动迁移现有库。新装定义在 `script/sql/ry-vue.sql`，存量增量为 `script/sql/update/2026-10-16-ai-engineering-pcb.sql`，不能把主初始化脚本导入存量库。
+生产仍须显式启用；开发前端和后端dev/local已配置工程开关，其他环境默认关闭。首次使用需在获授权的系统库核对工程三表、菜单和权限，以及Redis与专用私桶；本次开发不自动迁移现有库。新装定义在 `script/sql/ry-vue.sql`，存量增量为 `script/sql/update/2026-10-16-ai-engineering-pcb.sql`，不能把主初始化脚本导入存量库。
 
 服务端显式配置：
 
@@ -25,7 +25,11 @@ nexus:
 
 ## 2. 安装连接器
 
-Windows工程师电脑需Node.js 24 LTS及嘉立创EDA专业版。验证基线为客户端4.1.60；这个版本虽然在帮助中列出MCP，实际启动会返回MCP_NOT_SUPPORTED。本连接器提供本机STDIO MCP桥接，由固定脚本调用官方CLI/API，不需要电脑开放入站端口。
+Windows用户可从[Gitee发行版](https://gitee.com/NexusERP/nexus-erp/releases/tag/engineering-connector-v0.1.0)下载桌面包、校验文件和说明书；逐步操作见[完整桌面使用说明](../../../ruoyi-extend/nexus-engineering-connector/desktop/使用说明.md)。
+
+Windows用户可使用免安装桌面包 `nexus-engineering-connector-0.1.0-win-x64-desktop.zip`。完整解压后双击 `NexusEngineeringConnector.exe`，在界面填写Nexus地址、选择EDA执行文件并用网页配对码绑定设备，然后点击“启动连接器”。后续双击自动启动；关闭窗口收到托盘，托盘可停止或退出。桌面包内置Node.js 24，支持Windows 10 22H2 / Windows 11 x64及.NET Framework 4.8，仍需单独安装嘉立创专业版。配置、加密身份和工程文件保存在 `%LOCALAPPDATA%\Nexus\EngineeringConnector` 下。构建机在连接器目录执行 `npm run package:desktop` 生成ZIP和SHA-256；当前为未签名开发分发，正式签名和目标机器验收另行完成。
+
+命令行方式的Windows工程师电脑需Node.js 24 LTS及嘉立创EDA专业版。验证基线为客户端4.1.60；这个版本虽然在帮助中列出MCP，实际启动会返回MCP_NOT_SUPPORTED。本连接器提供本机STDIO MCP桥接，由固定脚本调用官方CLI/API，不需要电脑开放入站端口。
 
 源码目录为仓库根目录下 `ruoyi-extend/nexus-engineering-connector/`，在该目录执行：
 
@@ -36,7 +40,7 @@ Copy-Item config.example.json config.json
 node dist/cli.js doctor --config config.json
 ```
 
-只编辑 `config.json` 中的Nexus地址、EDA执行文件和专属工作目录。地址使用HTTPS；环回开发HTTP需显式 `development=true`。不在配置中填写浏览器Token、模型Key、设备凭证或任意脚本。
+只编辑 `config.json` 中的Nexus地址、EDA执行文件和专属工作目录。地址直接支持HTTP和HTTPS，包括内网IP和域名，不需要勾选开发选项；旧 `development` 字段继续兼容，但不再决定HTTP是否可用。可填写站点根地址或完整API基地址，连接器只读识别直连、/prod-api、/dev-api前缀后才发送身份。不在配置中填写浏览器Token、模型Key、设备凭证或任意脚本。
 
 也可使用 `npm run package:win` 生成的分发包；解压后配置并执行 `node dist/cli.js`。分发包有SHA-256及逐文件清单，运行目录和凭证不在分发包内。
 
@@ -63,6 +67,8 @@ node dist/cli.js doctor --config config.json
 “打开本地工程”通过设备任务执行，不在浏览器执行磁盘路径。工程保存在连接器专属目录 `tasks/<taskId>/<attempt>/project`，可由工程师在嘉立创继续编辑。派生打开、导出与DRC任务继承该工程引用。
 
 ## 5. 取消、断线与故障
+
+若连接器已识别工程API，但刚生成的配对码仍立即返回 `401 / PAIRING_INVALID`，先核对后端是否包含2026-10-19的配对Redis租户键修复。配对码生成于已登录租户上下文，兑换端尚无租户身份，因此两端必须使用同一全局摘要键；设备归属仍固定为码内的租户和用户，上传票据保留租户隔离。更新并重新启动对应环境的后端后，再生成新码；此前生成的码不迁移，5分钟后自然过期。详见[配对租户键修复记录](../plans/2026-10-19-engineering-pairing-tenant-fix.md)。
 
 - 每台设备串行执行，3秒领取、15秒心跳、90秒租约且30秒续约。
 - 取消在步骤边界生效，不承诺撤销已经提交给编辑器的更改；不强制关闭用户原有会话。

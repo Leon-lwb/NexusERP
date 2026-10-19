@@ -18,7 +18,8 @@ export class CredentialStore {
     if (process.platform !== 'win32') return Promise.reject(new Error('凭证保护仅支持Windows'));
     return new Promise((resolve, reject) => {
       const script = fileURLToPath(new URL('../../scripts/credential-dpapi.ps1', import.meta.url));
-      const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', script, '-Mode', mode], {
+      // 仅本次受控助手使用进程级策略；不修改用户/计算机策略，组策略仍优先。
+      const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-Mode', mode], {
         windowsHide: true,
         shell: false,
         stdio: ['pipe', 'pipe', 'pipe']
@@ -49,13 +50,22 @@ export class CredentialStore {
     });
   }
   /** 加密后原子替换凭证文件。 */
-  async save(identity: SavedIdentity) {
+  async save(identity: SavedIdentity, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     if (!identity.deviceId || !identity.refreshToken) throw new Error('无效设备身份');
     const ciphertext = await this.transform('protect', JSON.stringify(identity));
+    signal?.throwIfAborted();
     await mkdir(this.directory, { recursive: true });
+    signal?.throwIfAborted();
     const temp = this.path + '.tmp';
-    await writeFile(temp, ciphertext, { mode: 0o600 });
-    await rename(temp, this.path);
+    try {
+      await writeFile(temp, ciphertext, { mode: 0o600 });
+      signal?.throwIfAborted();
+      await rename(temp, this.path);
+    } catch (error) {
+      await unlink(temp).catch(() => {});
+      throw error;
+    }
   }
   /** 读取后仅返回当前设备；不存在时返回null，损坏不静默重新绑定。 */
   async load(): Promise<SavedIdentity | null> {

@@ -6,6 +6,7 @@ export interface ConnectorConfig {
   serverUrl: string;
   executable: string;
   workspaceRoot: string;
+  /** 兼容旧配置保留；HTTP地址不再依赖此开关。 */
   development: boolean;
 }
 /** 服务端下发的受控动作，不接受任意代码或本地路径。 */

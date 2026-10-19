@@ -73,3 +73,37 @@ test('响应正文挂起也会超时，不能阻塞修订号队列', async () =>
     clearTimeout(keepAlive);
   }
 });
+
+/** 站点根地址可能返回SPA；探测代理前缀时不能携带配对码或设备凭证。 */
+test('站点返回HTML时识别prod-api，凭证只发送给确认后的接口', async () => {
+  const calls = [];
+  const client = new NexusClient('http://nexus.test', async (url, init) => {
+    calls.push({url, init});
+    if (url === 'http://nexus.test/prod-api/ai/engineering/connector/pair') {
+      const data = init.method === 'GET' ? {code:405} : {code:200,data:{paired:true}};
+      return new Response(JSON.stringify(data), {headers:{'Content-Type':'application/json'}});
+    }
+    return new Response('<!doctype html><html>frontend</html>', {headers:{'Content-Type':'text/html'}});
+  }, {discoverApi:true});
+  client.setAccessToken('synthetic-device-token');
+  assert.deepEqual(await client.request('/connector/pair', {pairingCode:'synthetic-test-code'}), {paired:true});
+  const probes = calls.filter(call => call.init.method === 'GET');
+  assert.equal(probes.length, 2);
+  for (const {init} of probes) {
+    assert.equal(init.body, undefined);
+    assert.equal(new Headers(init.headers).has('X-Nexus-Device-Token'), false);
+  }
+  assert.equal(calls.at(-1).url, 'http://nexus.test/prod-api/ai/engineering/connector/pair');
+  assert.equal(calls.at(-1).init.method, 'POST');
+});
+
+/** 前缀探测也须服从父请求取消和超时，不阻塞桌面停止。 */
+test('接口探测正文挂起仍会被请求时限中止', async () => {
+  const keepAlive = setTimeout(() => {}, 1000);
+  try {
+    const client = new NexusClient('http://nexus.test', async () => ({
+      status:200, headers:new Headers({'Content-Type':'application/json'}), json:()=>new Promise(()=>{})
+    }), {discoverApi:true,requestTimeoutMs:20});
+    await assert.rejects(client.request('/connector/pair',{pairingCode:'synthetic-only'}), error=>error.name==='TimeoutError');
+  } finally {clearTimeout(keepAlive);}
+});

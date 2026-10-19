@@ -1,3 +1,5 @@
+import { resolveEngineeringApiBase } from './server-endpoint.js';
+
 /** 网络异常只保留受限机器错误码，不回显服务端正文或凭证。 */
 export class NexusError extends Error {
   constructor(
@@ -26,13 +28,15 @@ async function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T
 /** 只访问固定Nexus接口，禁止重定向；凭证只保存在内存。 */
 export class NexusClient {
   private accessToken = '';
+  private endpointResolved = false;
+  private endpointDiscovery?: Promise<string>;
   private refreshing?: Promise<void>;
   private refreshHandler?: (signal?: AbortSignal) => Promise<void>;
 
   constructor(
     private base: string,
     private fetcher: typeof fetch = fetch,
-    private options: { requestTimeoutMs?: number; uploadTimeoutMs?: number } = {}
+    private options: { requestTimeoutMs?: number; uploadTimeoutMs?: number; discoverApi?: boolean; onEndpointResolved?: (base: string) => void } = {}
   ) {}
 
   /** 仅401触发一次刷新；共享刷新也受原请求的取消与时限约束。 */
@@ -57,6 +61,17 @@ export class NexusClient {
     const deadline = AbortSignal.timeout(timeout);
     const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
     requestSignal.throwIfAborted();
+    if (this.options.discoverApi && !this.endpointResolved) {
+      if (!this.endpointDiscovery) {
+        this.endpointDiscovery = resolveEngineeringApiBase(this.base, this.fetcher, requestSignal).then((base) => {
+          this.base = base;
+          this.endpointResolved = true;
+          this.options.onEndpointResolved?.(base);
+          return base;
+        }).finally(() => { this.endpointDiscovery = undefined; });
+      }
+      await abortable(this.endpointDiscovery, requestSignal);
+    }
     const headers: Record<string, string> = { ...extraHeaders };
     if (this.accessToken) headers['X-Nexus-Device-Token'] = this.accessToken;
     if (body !== undefined && !form) headers['Content-Type'] = 'application/json';

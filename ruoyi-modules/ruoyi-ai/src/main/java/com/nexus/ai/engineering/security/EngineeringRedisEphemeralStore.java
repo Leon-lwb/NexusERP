@@ -1,5 +1,7 @@
 package com.nexus.ai.engineering.security;
 
+import com.nexus.common.core.constant.GlobalConstants;
+
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,6 +31,9 @@ public class EngineeringRedisEphemeralStore implements EngineeringEphemeralStore
     }
 
     private String key(String purpose, String token) {
-        return "ai:engineering:" + purpose + ":" + EngineeringSecrets.hash(token);
+        // 配对从已登录浏览器流向匿名连接器，两端必须使用相同的全局摘要键。
+        // 所有者由配对负载固定并在兑换时复核；已认证上传票据仍使用租户键。
+        String prefix = "pair".equals(purpose) ? GlobalConstants.GLOBAL_REDIS_KEY : "";
+        return prefix + "ai:engineering:" + purpose + ":" + EngineeringSecrets.hash(token);
     }
 }

@@ -311,3 +311,15 @@ justauth:
       client-id: ${secret.justauth.gitea.client-id:}
       client-secret: ${secret.justauth.gitea.client-secret:}
       redirect-uri: ${justauth.address}/social-callback?source=gitea
+
+--- # 仅 dev 启用工程能力；导入共享配置不会激活 dev。
+spring:
+  config:
+    activate:
+      on-profile: dev
+nexus:
+  ai:
+    engineering:
+      enabled: true
+      # 必须预先配置专用 PRIVATE OSS；缺失或非私有时拒绝启动。
+      oss-config-key: ${NEXUS_ENGINEERING_OSS_CONFIG_KEY:engineering-private}
