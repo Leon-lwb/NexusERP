@@ -108,6 +108,11 @@ public class ImGroupChatService {
         ImMessageTypeHandler handler = messageTypeRegistry.require(bo.getMsgType());
         String content = handler.normalize(bo.getContent());
         String msgType = handler.type();
+        // 上传返回的私有桶 Presigned URL 只有 120 秒；发送前按 object key 重新签发，避免刚发出即 403。
+        String refreshedContent = support.refreshMediaContent(msgType, content);
+        if (refreshedContent != null) {
+            content = refreshedContent;
+        }
         // P1-5: 校验 @ 提及的用户均为该群成员，并序列化为 JSON 字符串
         List<Long> mentionList = normalizeMentionUserIds(bo.getMentionUserIds(), bo.getGroupId(), fromId);
         String mentionUserIdsJson = mentionList.isEmpty() ? null : JsonUtils.toJsonString(mentionList);

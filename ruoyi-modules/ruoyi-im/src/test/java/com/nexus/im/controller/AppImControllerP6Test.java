@@ -82,6 +82,7 @@ class AppImControllerP6Test extends ImUnitTestBase {
     @Mock private ImFavoriteMapper favoriteMapper;
 
     @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
+    @Mock private com.nexus.im.service.impl.support.ImChatSupport chatSupport;
 
     @InjectMocks
     private AppImController controller;

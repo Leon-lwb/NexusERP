@@ -8,6 +8,8 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.oss.core.OssClient;
+import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
@@ -27,10 +29,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.time.Duration;
 
 /**
  * P1-7: IM 聊天共享辅助组件
@@ -54,6 +58,12 @@ public class ImChatSupport {
 
     /** 群名称最大长度上限。 */
     private static final int MAX_GROUP_NAME_LENGTH = 50;
+
+    /** 会话消息中需要按 object key 续签 OSS URL 的类型。 */
+    private static final Set<String> MEDIA_MESSAGE_TYPES = Set.of("image", "file", "voice", "video");
+
+    /** 历史消息重新签发后的可访问时长，避免 120 秒预签名过期。 */
+    private static final Duration MEDIA_URL_TTL = Duration.ofHours(24);
 
     /** 消息表 Mapper。 */
     private final ImMessageMapper imMessageMapper;
@@ -353,6 +363,85 @@ public class ImChatSupport {
     }
 
     /**
+     * 批量续签历史消息里的私有 OSS 媒体地址。
+     * <p>用于 {@code /im/app/messages/sync} 直接返回实体的路径；仅处理 image/file/voice/video，
+     * 且只对当前默认 OSS 桶下的对象重新签发，其他 URL 保持原样。
+     */
+    public void refreshMediaUrls(List<ImMessage> messages) {
+        if (CollUtil.isEmpty(messages)) {
+            return;
+        }
+        for (ImMessage message : messages) {
+            if (message != null) {
+                message.setContent(refreshMediaContent(message.getMsgType(), message.getContent()));
+            }
+        }
+    }
+
+    /**
+     * 刷新单条消息内容中的 OSS 媒体 URL。
+     * <p>图片可能是纯 URL，file/voice/video 可能是 JSON；只替换 URL，不改变其他字段。
+     * OSS 未配置、URL 不属于默认桶或续签失败时原样返回，不能让历史消息加载失败。
+     *
+     * @param msgType 消息类型
+     * @param content 消息原始 content
+     * @return 可访问的 content
+     */
+    public String refreshMediaContent(String msgType, String content) {
+        if (StrUtil.isBlank(content) || !MEDIA_MESSAGE_TYPES.contains(
+            StrUtil.trim(msgType) == null ? "" : StrUtil.trim(msgType).toLowerCase(Locale.ROOT))) {
+            return content;
+        }
+        String value = content.trim();
+        if (!value.startsWith("{")) {
+            return refreshOssUrl(value);
+        }
+        Map<String, Object> media = JsonUtils.parseMap(value);
+        if (media == null) {
+            return content;
+        }
+        for (String field : List.of("url", "fileUrl", "path")) {
+            Object raw = media.get(field);
+            if (!(raw instanceof String) || StrUtil.isBlank((String) raw)) {
+                continue;
+            }
+            String refreshed = refreshOssUrl((String) raw);
+            if (!StrUtil.equals(refreshed, (String) raw)) {
+                media.put(field, refreshed);
+                return JsonUtils.toJsonString(media);
+            }
+        }
+        return content;
+    }
+
+    private String refreshOssUrl(String url) {
+        String raw = StrUtil.trimToEmpty(url);
+        if (!raw.startsWith("http://") && !raw.startsWith("https://")) {
+            return url;
+        }
+        try {
+            OssClient storage = OssFactory.instance();
+            String base = StrUtil.removeSuffix(storage.getUrl(), "/");
+            String prefix = base + "/";
+            if (!raw.startsWith(prefix)) {
+                return url;
+            }
+            String objectKey = raw.substring(prefix.length());
+            int queryIndex = objectKey.indexOf('?');
+            if (queryIndex >= 0) {
+                objectKey = objectKey.substring(0, queryIndex);
+            }
+            if (StrUtil.isBlank(objectKey)) {
+                return url;
+            }
+            return storage.createPresignedGetUrl(objectKey, MEDIA_URL_TTL);
+        } catch (Exception e) {
+            // OSS 异常不能阻断聊天记录展示；保留原 URL，由前端展示失败态。
+            return url;
+        }
+    }
+
+    /**
      * P2-2: 单行基础字段构建（无 SQL，无发送者信息）。
      * <p>被 {@link #buildSenderMessageRow(ImMessage)} 和 {@link #buildSenderMessageRow(ImMessage, Map, Map)} 共用。
      */
@@ -362,7 +451,7 @@ public class ImChatSupport {
         row.put("fromUserId", msg.getFromUserId());
         row.put("toUserId", msg.getToUserId());
         row.put("groupId", msg.getGroupId());
-        row.put("content", msg.getContent());
+        row.put("content", refreshMediaContent(msg.getMsgType(), msg.getContent()));
         row.put("msgType", msg.getMsgType());
         row.put("messageType", msg.getMsgType());
         row.put("isRead", msg.getIsRead());

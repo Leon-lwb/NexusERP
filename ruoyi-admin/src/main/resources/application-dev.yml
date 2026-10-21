@@ -196,7 +196,7 @@ nexus:
 server:
   address: ${SERVER_ADDRESS:127.0.0.1}
 websocket:
-  enabled: ${WEBSOCKET_ENABLED:false}
+  enabled: ${WEBSOCKET_ENABLED:true}
 flowable:
   database-schema-update: false
 management:

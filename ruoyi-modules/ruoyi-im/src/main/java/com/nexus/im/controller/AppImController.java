@@ -34,6 +34,7 @@ import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.im.service.impl.support.ImContactSupport;
 import com.nexus.im.service.impl.support.ImConversationService;
+import com.nexus.im.service.impl.support.ImChatSupport;
 import com.nexus.im.service.impl.support.ImOnlineCache;
 import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.constants.ImPayloadConstants;
@@ -113,6 +114,8 @@ public class AppImController extends BaseController {
     private final ImFavoriteMapper favoriteMapper;
     /** 通讯录聚合辅助组件（部门树/好友列表/备注）。 */
     private final ImContactSupport contactSupport;
+    /** 聊天共享辅助组件（历史消息行构建、媒体 URL 续签等）。 */
+    private final ImChatSupport chatSupport;
     /** 在线状态缓存（心跳维护）。 */
     private final ImOnlineCache onlineCache;
     /** 当前用户隐藏的消息，与共享消息记录分开保存。 */
@@ -928,6 +931,7 @@ public class AppImController extends BaseController {
         boolean hasMore = messages.size() >= 500;
 
         ImSyncResultVo vo = new ImSyncResultVo();
+        chatSupport.refreshMediaUrls(messages);
         vo.setMessages(messages);
         vo.setNewSyncToken(newSyncToken);
         vo.setHasMore(hasMore);

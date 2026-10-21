@@ -70,6 +70,7 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
 
     @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
     @Mock private com.nexus.im.service.impl.support.ImConversationService conversationService;
+    @Mock private com.nexus.im.service.impl.support.ImChatSupport chatSupport;
 
     @InjectMocks
     private AppImController controller;

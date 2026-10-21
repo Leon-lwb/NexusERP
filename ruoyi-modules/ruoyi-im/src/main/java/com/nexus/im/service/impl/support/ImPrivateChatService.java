@@ -87,6 +87,11 @@ public class ImPrivateChatService {
         ImMessageTypeHandler handler = messageTypeRegistry.require(bo.getMsgType());
         String content = handler.normalize(bo.getContent());
         String msgType = handler.type();
+        // 上传返回的私有桶 Presigned URL 只有 120 秒；发送前按 object key 重新签发，避免刚发出即 403。
+        String refreshedContent = support.refreshMediaContent(msgType, content);
+        if (refreshedContent != null) {
+            content = refreshedContent;
+        }
         ImMessage msg = new ImMessage();
         msg.setFromUserId(fromId);
         msg.setToUserId(bo.getToUserId());

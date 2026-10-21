@@ -391,3 +391,8 @@ nexus:
 app:
   auth:
     sms-code-echo: ${APP_SMS_CODE_ECHO:false}
+
+---
+# 高德 Web 服务 Key 仅供后端 POI/逆地理使用，不下发客户端
+amap:
+  web-service-key: ${AMAP_WEB_SERVICE_KEY:}
