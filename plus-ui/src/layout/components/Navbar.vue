@@ -210,7 +210,7 @@ const openAiChat = () => {
 
 /** 打开 Gitee 仓库 */
 const openGitee = () => {
-  window.open('https://gitee.com/WZQAQA/nexus-erp', '_blank', 'noopener,noreferrer');
+  window.open('https://gitee.com/NexusERP/nexus-erp', '_blank', 'noopener,noreferrer');
 };
 
 /** 打开项目文档（public/manual 随前端站点部署，地址需拼接部署上下文路径） */
