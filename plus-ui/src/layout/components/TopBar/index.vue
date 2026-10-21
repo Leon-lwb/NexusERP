@@ -1,110 +1,52 @@
 <template>
-  <el-menu class="topbar-menu" :ellipsis="false" :default-active="activeMenu" :active-text-color="theme" mode="horizontal">
-    <sidebar-item :key="route.path + index" v-for="(route, index) in topMenus" :item="route" :base-path="route.path" />
-
-    <el-sub-menu index="more" class="el-sub-menu__hide-arrow" v-if="moreRoutes.length > 0">
-      <template #title>
-        <span>更多菜单</span>
-      </template>
-      <sidebar-item :key="route.path + index" v-for="(route, index) in moreRoutes" :item="route" :base-path="route.path" />
-    </el-sub-menu>
+  <el-menu
+    ref="menuRef"
+    :popper-class="popupClass"
+    class="topbar-menu"
+    :ellipsis="true"
+    :default-active="activeMenu"
+    :active-text-color="theme"
+    mode="horizontal"
+  >
+    <sidebar-item v-for="item in visibleRoutes" :key="item.path" :item="item" :base-path="item.path" />
   </el-menu>
 </template>
 
 <script setup lang="ts">
-import type { RouteRecordRaw } from 'vue-router';
+import { useHorizontalMenuKeyboard } from '@/composables/useHorizontalMenuKeyboard';
 import SidebarItem from '../Sidebar/SidebarItem.vue';
-import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
 import { usePermissionStore } from '@/store/modules/permission';
 
+const { menuRef, popupClass } = useHorizontalMenuKeyboard();
 const route = useRoute();
-const appStore = useAppStore();
 const themeStore = useThemeStore();
 const permissionStore = usePermissionStore();
-
-const sidebarRouters = computed(() => permissionStore.sidebarRouters);
 const theme = computed(() => themeStore.brandColor);
-const device = computed(() => appStore.device);
-const activeMenu = computed(() => {
-  const { meta, path } = route;
-  if (meta.activeMenu) {
-    return meta.activeMenu;
-  }
-  return path;
-});
-
-const visibleNumber = ref(5);
-const topMenus = computed(() => {
-  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(0, visibleNumber.value) as RouteRecordRaw[];
-});
-const moreRoutes = computed(() => {
-  return permissionStore.sidebarRouters
-    .filter((f) => !f.hidden)
-    .slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value) as RouteRecordRaw[];
-});
-function setVisibleNumber() {
-  let width = document.body.getBoundingClientRect().width;
-  if (width >= 1000) {
-    width -= 500;
-  }
-  visibleNumber.value = Math.floor(width / 3 / 85);
-}
-
-onMounted(() => {
-  window.addEventListener('resize', setVisibleNumber);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', setVisibleNumber);
-});
-
-onMounted(() => {
-  setVisibleNumber();
-});
+const activeMenu = computed(() => route.meta.activeMenu || route.path);
+/** 菜单按真实容器宽度折叠，由 Element Plus 维护溢出项和键盘操作。 */
+const visibleRoutes = computed(() => permissionStore.getSidebarRoutes().filter((item) => !item.hidden));
 </script>
 
-<style lang="scss">
-/* menu item */
-#app .topbar-menu.el-menu--horizontal .el-sub-menu__title,
-#app .topbar-menu.el-menu--horizontal .el-menu-item {
-  padding: 0 10px !important;
-}
-
-.topbar-menu.el-menu--horizontal > .el-menu-item {
-  float: left;
-  height: 50px !important;
-  line-height: 50px !important;
-  color: #303133 !important;
-  padding: 0 5px !important;
-  margin: 0 10px !important;
-}
-
-.el-sub-menu.is-active .svg-icon,
-.el-menu-item.is-active .svg-icon + span,
-.el-sub-menu.is-active .svg-icon + span,
-.el-sub-menu.is-active .el-sub-menu__title span {
-  color: v-bind(theme);
-}
-
-/* sub-menu item */
-.topbar-menu.el-menu--horizontal > .el-sub-menu .el-sub-menu__title {
-  float: left;
-  line-height: 50px !important;
-  color: #303133 !important;
-  margin: 0 15px -3px !important;
-}
-
-/* topbar more arrow */
-.topbar-menu .el-sub-menu .el-sub-menu__icon-arrow {
-  position: static;
-  margin-left: 8px;
-  margin-top: 0px;
-  display: block !important;
-}
-
-/* menu__title el-menu-item */
-.topbar-menu.el-menu--horizontal .el-sub-menu__title,
-.topbar-menu.el-menu--horizontal .el-menu-item {
-  height: 60px;
+<style lang="scss" scoped>
+.topbar-menu {
+  --el-menu-horizontal-height: 50px;
+  width: 100%;
+  min-width: 0;
+  border-bottom: 0;
+  :deep([role='menuitem']:focus-visible) {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -3px;
+  }
+  :deep(.el-menu-item),
+  :deep(.el-sub-menu__title) {
+    height: 50px;
+    line-height: 50px;
+    color: var(--el-text-color-regular);
+  }
+  :deep(.el-menu-item.is-active),
+  :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+    color: var(--el-color-primary);
+  }
 }
 </style>

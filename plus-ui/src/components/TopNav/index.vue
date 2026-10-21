@@ -1,25 +1,22 @@
 <template>
-  <el-menu :default-active="activeMenu" mode="horizontal" :ellipsis="false" @select="handleSelect">
-    <template v-for="(item, index) in topMenus">
-      <el-menu-item v-if="index < visibleNumber" :key="index" :style="{ '--theme': theme }" :index="item.path"
-        ><svg-icon v-if="item.meta && item.meta.icon && item.meta.icon !== '#'" :icon-class="item.meta ? item.meta.icon : ''" />
-        {{ item.meta?.title }}</el-menu-item
-      >
-    </template>
-
-    <!-- 顶部菜单超出数量折叠 -->
-    <el-sub-menu v-if="topMenus.length > visibleNumber" :style="{ '--theme': theme }" index="more">
-      <template #title>更多菜单</template>
-      <template v-for="(item, index) in topMenus">
-        <el-menu-item v-if="index >= visibleNumber" :key="index" :index="item.path"
-          ><svg-icon :icon-class="item.meta ? item.meta.icon : ''" /> {{ item.meta?.title }}</el-menu-item
-        >
-      </template>
-    </el-sub-menu>
+  <el-menu
+    ref="menuRef"
+    :popper-class="popupClass"
+    :default-active="activeMenu"
+    :active-text-color="theme"
+    mode="horizontal"
+    :ellipsis="true"
+    @select="handleSelect"
+  >
+    <el-menu-item v-for="item in topMenus" :key="item.path" :index="item.path">
+      <svg-icon v-if="item.meta?.icon && item.meta.icon !== '#'" :icon-class="item.meta.icon" />
+      <span>{{ item.meta?.title }}</span>
+    </el-menu-item>
   </el-menu>
 </template>
 
 <script setup lang="ts">
+import { useHorizontalMenuKeyboard } from '@/composables/useHorizontalMenuKeyboard';
 import { constantRoutes } from '@/router';
 import { isHttp } from '@/utils/validate';
 import { useAppStore } from '@/store/modules/app';
@@ -27,8 +24,6 @@ import { useThemeStore } from '@/store/modules/theme';
 import { usePermissionStore } from '@/store/modules/permission';
 import { RouteRecordRaw } from 'vue-router';
 
-// 顶部栏初始数
-const visibleNumber = ref<number>(-1);
 // 当前激活菜单的 index
 const currentIndex = ref<string>();
 // 隐藏侧边栏路由
@@ -37,6 +32,7 @@ const hideList = ['/index', '/user/profile'];
 const appStore = useAppStore();
 const themeStore = useThemeStore();
 const permissionStore = usePermissionStore();
+const { menuRef, popupClass } = useHorizontalMenuKeyboard();
 const route = useRoute();
 const router = useRouter();
 
@@ -103,11 +99,6 @@ const activeMenu = computed(() => {
   return activePath;
 });
 
-const setVisibleNumber = () => {
-  const width = document.body.getBoundingClientRect().width / 3;
-  visibleNumber.value = parseInt(String(width / 85));
-};
-
 const handleSelect = (key: string) => {
   currentIndex.value = key;
   const route = routers.value.find((item) => item.path === key);
@@ -147,54 +138,30 @@ const activeRoutes = (key: string) => {
   }
   return routes;
 };
-
-onMounted(() => {
-  window.addEventListener('resize', setVisibleNumber);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', setVisibleNumber);
-});
-
-onMounted(() => {
-  setVisibleNumber();
-});
 </script>
 
-<style lang="scss">
-.topmenu-container.el-menu--horizontal > .el-menu-item {
-  float: left;
-  height: 50px !important;
-  line-height: 50px !important;
-  color: #999093 !important;
-  padding: 0 5px !important;
-  margin: 0 10px !important;
-}
-
-.topmenu-container.el-menu--horizontal > .el-menu-item.is-active,
-.el-menu--horizontal > .el-sub-menu.is-active .el-submenu__title {
-  border-bottom: 2px solid #{'var(--theme)'} !important;
-  color: #303133;
-}
-
-/* sub-menu item */
-.topmenu-container.el-menu--horizontal > .el-sub-menu .el-sub-menu__title {
-  float: left;
-  height: 50px !important;
-  line-height: 50px !important;
-  color: #999093 !important;
-  padding: 0 5px !important;
-  margin: 0 10px !important;
-}
-
-/* 背景色隐藏 */
-.topmenu-container.el-menu--horizontal > .el-menu-item:not(.is-disabled):focus,
-.topmenu-container.el-menu--horizontal > .el-menu-item:not(.is-disabled):hover,
-.topmenu-container.el-menu--horizontal > .el-submenu .el-submenu__title:hover {
-  background-color: #ffffff !important;
-}
-
-/* 图标右间距 */
-.topmenu-container .svg-icon {
-  margin-right: 4px;
+<style lang="scss" scoped>
+.el-menu--horizontal {
+  --el-menu-horizontal-height: 50px;
+  min-width: 0;
+  border-bottom: 0;
+  :deep([role='menuitem']:focus-visible) {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -3px;
+  }
+  :deep(.el-menu-item),
+  :deep(.el-sub-menu__title) {
+    height: 50px;
+    line-height: 50px;
+    padding: 0 12px;
+    color: var(--el-text-color-regular);
+  }
+  :deep(.el-menu-item.is-active),
+  :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+    color: var(--el-color-primary);
+  }
+  :deep(.svg-icon) {
+    margin-right: 6px;
+  }
 }
 </style>
