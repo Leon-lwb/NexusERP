@@ -33,6 +33,6 @@
 - [x] 使用真实组件与合成状态进行浏览器视觉及交互检查，覆盖桌面、375px、深色和高对比度。
 - [x] 审查差异并修复范围内问题；更新此计划的执行结果。
 - [x] 通过用户配置的 gitee-wzqaqa SSH 别名推送 origin/codex/wzq-dev；提交身份已按用户提供的账号邮箱修正。
-- [ ] 创建面向 plus 的 PR：创建页要求浏览器登录，已准备标题与说明，等待用户在内置浏览器登录 WZQAQA。
+- [x] 创建面向 NexusERP/nexus-erp 的 plus 分支的 PR：[!2 优化导航栏与主题布局设置](https://gitee.com/NexusERP/nexus-erp/pulls/2)，来源为 WZQAQA/nexus-erp 的 codex/wzq-dev，当前开启并等待维护者审查/测试。
 
 实施证据：[验证报告](2026-10-21-navbar-theme-ux-verification-report.md)。全量单测存在 5 项可在未修改基线复现的 SQL 断言失败，不将其记为全部通过。
