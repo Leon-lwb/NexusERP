@@ -8,7 +8,6 @@
         <tags-view v-if="needTagsView" />
       </div>
       <app-main />
-      <settings ref="settingRef" />
       <theme-settings ref="themeSettingRef" />
     </div>
   </div>
@@ -16,13 +15,14 @@
 
 <script setup lang="ts">
 import SideBar from './components/Sidebar/index.vue';
-import { AppMain, Navbar, Settings, TagsView, ThemeSettings } from './components';
+import { AppMain, Navbar, TagsView, ThemeSettings } from './components';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import { initWebSocket } from '@/utils/websocket';
 import { initSSE } from '@/utils/sse';
 import { useImStore } from '@/store/modules/im';
+import { usePermissionStore } from '@/store/modules/permission';
 
 const themeStore = useThemeStore();
 const theme = computed(() => themeStore.brandColor);
@@ -35,7 +35,7 @@ const layout = computed(() => themeStore.navType);
 // 根据布局模式判断是否显示侧边栏
 const showSidebar = computed(() => {
   if (sidebar.value.hide) return false;
-  return layout.value === NavTypeEnum.LEFT || layout.value === NavTypeEnum.MIX;
+  return device.value === 'mobile' || layout.value === NavTypeEnum.LEFT || layout.value === NavTypeEnum.MIX;
 });
 
 const classObj = computed(() => ({
@@ -62,19 +62,18 @@ watchEffect(() => {
 
 // 监听导航类型变化，控制侧边栏显示
 watch(
-  () => themeStore.navType,
-  (newType) => {
-    if (newType === NavTypeEnum.TOP) {
-      useAppStore().toggleSideBarHide(true);
-    } else {
-      useAppStore().toggleSideBarHide(false);
+  [() => themeStore.navType, device],
+  ([newType, newDevice]) => {
+    useAppStore().toggleSideBarHide(newType === NavTypeEnum.TOP && newDevice !== 'mobile');
+    if (newDevice === 'mobile' || newType !== NavTypeEnum.MIX) {
+      const permissionStore = usePermissionStore();
+      permissionStore.setSidebarRouters(permissionStore.defaultRoutes as any);
     }
   },
   { immediate: true }
 );
 
 const navbarRef = ref<InstanceType<typeof Navbar>>();
-const settingRef = ref<InstanceType<typeof Settings>>();
 const themeSettingRef = ref<InstanceType<typeof ThemeSettings>>();
 
 onMounted(() => {
@@ -102,7 +101,7 @@ const handleClickOutside = () => {
 };
 
 const setLayout = () => {
-  settingRef.value?.openSetting();
+  themeSettingRef.value?.open('layout');
 };
 
 const setTheme = () => {
