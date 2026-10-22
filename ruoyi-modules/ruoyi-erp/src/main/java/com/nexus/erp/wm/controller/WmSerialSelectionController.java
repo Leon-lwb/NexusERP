@@ -28,6 +28,7 @@ public class WmSerialSelectionController {
                     case "WM_TRANSFER" -> "wm:transfer";
                     case "WM_STOCK_TAKING" -> "wm:stocktaking";
                     case "WM_MATERIAL_RETURN" -> "wm:materialReturn";
+                    case "WM_MATERIAL_HANDOVER" -> "wm:materialHandover";
                     case "SO_RETURN" -> "so:return";
                     case "PU_PURCHASE_RETURN" -> "pu:return";
                     case "PRD_REWORK_ORDER", "PRD_REWORK_ORDER_RECEIVE" -> "prd:rework";

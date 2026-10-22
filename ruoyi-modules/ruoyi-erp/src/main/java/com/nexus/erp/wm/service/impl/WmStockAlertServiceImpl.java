@@ -153,7 +153,8 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
             new LambdaQueryWrapper<BdMaterial>()
                 .eq(BdMaterial::getStatus, 1L)
                 .and(w -> w.gt(BdMaterial::getSafetyStock, BigDecimal.ZERO)
-                    .or().gt(BdMaterial::getMinStock, BigDecimal.ZERO)));
+                    .or().gt(BdMaterial::getMinStock, BigDecimal.ZERO)
+                    .or().gt(BdMaterial::getMaxStock, BigDecimal.ZERO)));
 
         if (materials == null || materials.isEmpty()) {
             log.info("无需要检查的物料");
@@ -247,6 +248,9 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         WmStockAlert existing = baseMapper.selectOne(lqw);
         if (existing != null) {
             existing.setCurrentQty(currentQty);
+            existing.setSafetyStock(safetyStock);
+            existing.setMinStock(minStock);
+            existing.setMaxStock(maxStock);
             existing.setAlertLevel(alertLevel);
             existing.setUpdateTime(now);
             baseMapper.updateById(existing);

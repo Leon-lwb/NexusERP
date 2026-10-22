@@ -101,7 +101,7 @@ public class WmSerialBusinessStore {
                         + " WHERE tenant_id=? AND "
                         + route.headKey()
                         + "=?"
-                        + (Set.of("WM_TRANSFER", "WM_MATERIAL_RETURN", "WM_SUBCONTRACT_ISSUE")
+                        + (Set.of("WM_TRANSFER", "WM_MATERIAL_RETURN", "WM_MATERIAL_HANDOVER", "WM_SUBCONTRACT_ISSUE")
                                         .contains(route.type())
                                 ? ""
                                 : " AND del_flag='0'")

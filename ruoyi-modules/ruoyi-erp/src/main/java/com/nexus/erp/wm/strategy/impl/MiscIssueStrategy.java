@@ -92,16 +92,20 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
     public void execute(Object... args) {
         WmMiscIssueLine line = (WmMiscIssueLine) args[0];
         Date now = (Date) args[1];
+        String sourceType = line.getPostingSourceType() == null ? SOURCE_DOC_TYPE_MISC_ISSUE : line.getPostingSourceType();
+        if (!java.util.Set.of(SOURCE_DOC_TYPE_MISC_ISSUE, "WM_MATERIAL_HANDOVER").contains(sourceType)) {
+            throw new ServiceException("杂项出库来源类型未授权");
+        }
         if (serialInventory != null
                 && serialInventory.post(
                         com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
-                                "WM_MISC_ISSUE",
+                                sourceType,
                                 line.getIssueId(),
                                 line.getLineId(),
-                                "MISC_ISSUE",
+                                "WM_MATERIAL_HANDOVER".equals(sourceType) ? "HANDOVER" : "MISC_ISSUE",
                                 line.getMaterialId(),
                                 line.getQuantity(),
-                                null,
+                                line.getWarehouseId(),
                                 line.getLocationId(),
                                 line.getBatchId()))) {
             return;
@@ -147,7 +151,7 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
                             afterQuantity,
                             now);
             tx.setUnitCost(outUnitCost);
-            tx.setSourceDocType(SOURCE_DOC_TYPE_MISC_ISSUE);
+            tx.setSourceDocType(sourceType);
             tx.setSourceDocId(line.getIssueId());
             tx.setSourceDocLineId(line.getLineId());
             tx.setRemark("杂项出库");
@@ -162,6 +166,7 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
     private List<WmMaterialStock> resolveMiscIssueStocks(WmMiscIssueLine line) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
+        lqw.eq(line.getWarehouseId() != null, WmMaterialStock::getWarehouseId, line.getWarehouseId());
         lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);

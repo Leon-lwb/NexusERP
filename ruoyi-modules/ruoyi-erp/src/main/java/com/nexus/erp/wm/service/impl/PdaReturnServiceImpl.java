@@ -110,7 +110,7 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PdaActionResultVo confirmLine(Long returnId, PdaReturnConfirmBo bo) {
-        WmMaterialReturn head = headOrThrow(returnId);
+        WmMaterialReturn head = headForUpdate(returnId);
         if (WmMaterialReturn.STATUS_COMPLETED.equals(head.getStatus())) {
             return PdaActionResultVo.fail("退料单已完成");
         }
@@ -122,9 +122,18 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
         if (line == null) {
             return PdaActionResultVo.fail("行不属于本退料单");
         }
+        if (!WmMaterialReturn.STATUS_DRAFT.equals(head.getStatus())) {
+            return PdaActionResultVo.fail("单据当前状态不允许核销");
+        }
+        if (bo.getQty() == null || bo.getQty().signum() <= 0 || bo.getQty().stripTrailingZeros().scale() > 4) {
+            return PdaActionResultVo.fail("核销数量必须大于0且最多保留4位小数");
+        }
         BigDecimal actual = line.getActualQty() == null ? BigDecimal.ZERO : line.getActualQty();
         BigDecimal plan = line.getQuantity() == null ? BigDecimal.ZERO : line.getQuantity();
-        if (plan.compareTo(BigDecimal.ZERO) > 0 && actual.add(bo.getQty()).compareTo(plan) > 0) {
+        if (plan.signum() <= 0 || actual.signum() < 0) {
+            return PdaActionResultVo.fail("计划数量或累计数量异常，请先更正单据");
+        }
+        if (actual.add(bo.getQty()).compareTo(plan) > 0) {
             return PdaActionResultVo.fail("累计实退超过计划数量(" + plan + ")");
         }
         line.setActualQty(actual.add(bo.getQty()));
@@ -138,7 +147,7 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PdaActionResultVo finish(Long returnId) {
-        WmMaterialReturn head = headOrThrow(returnId);
+        WmMaterialReturn head = headForUpdate(returnId);
         if (WmMaterialReturn.STATUS_COMPLETED.equals(head.getStatus())) {
             return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED); // 幂等
         }
@@ -146,6 +155,14 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
             return PdaActionResultVo.fail("单据当前状态不允许完成");
         }
         List<WmMaterialReturnLine> lines = linesOf(returnId);
+        for (WmMaterialReturnLine current : lines) {
+            BigDecimal planned = current.getQuantity();
+            BigDecimal actual = current.getActualQty();
+            if (planned == null || planned.signum() <= 0
+                    || (actual != null && (actual.signum() < 0 || actual.compareTo(planned) > 0))) {
+                return PdaActionResultVo.fail("明细数量异常，请先更正单据");
+            }
+        }
         boolean anyActual =
                 lines.stream()
                         .anyMatch(
@@ -178,6 +195,7 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
                 continue; // 报废: 留痕不回库存
             }
             WmMiscRecptLine post = new WmMiscRecptLine();
+            post.setPostingSourceType("WM_MATERIAL_RETURN");
             post.setRecptId(head.getReturnId());
             post.setLineId(line.getLineId());
             post.setMaterialId(line.getMaterialId());
@@ -199,6 +217,16 @@ public class PdaReturnServiceImpl implements IPdaReturnService {
         head.setReturnDate(now);
         returnMapper.updateById(head);
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
+    }
+
+    /** 核销与完成共用单据行锁，跨用户、跨幂等键也只能过账一次。 */
+    private WmMaterialReturn headForUpdate(Long returnId) {
+        WmMaterialReturn head = returnMapper.selectOne(Wrappers.<WmMaterialReturn>lambdaQuery()
+            .eq(WmMaterialReturn::getReturnId, returnId).last("FOR UPDATE"));
+        if (head == null) {
+            throw new ServiceException("退料单不存在");
+        }
+        return head;
     }
 
     private WmMaterialReturn headOrThrow(Long returnId) {

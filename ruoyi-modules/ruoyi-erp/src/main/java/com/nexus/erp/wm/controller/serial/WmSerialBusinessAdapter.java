@@ -51,6 +51,12 @@ public class WmSerialBusinessAdapter {
         final Set<Long> postingGroups = new LinkedHashSet<>();
     }
 
+    /** 审批启动前完成实物校验并提交，避免同步回调等待外层ERP单头锁。 */
+    @Transactional(rollbackFor = Throwable.class)
+    public void prepareSubmission(SerialBusinessRoute route, String uri, JsonNode body) throws Throwable {
+        invoke(route, uri, body, "submit", R::ok);
+    }
+
     @Transactional(rollbackFor = Throwable.class)
     public Object invoke(
             SerialBusinessRoute route,

@@ -113,6 +113,13 @@ public class WmMaterialHandoverController {
             if (toLoc == null) {
                 throw new ServiceException("线边库位不存在: " + line.getToLocationCode());
             }
+            // 租户和审计身份由服务端上下文注入，不能沿用客户端实体字段。
+            line.setTenantId(null);
+            line.setCreateBy(null);
+            line.setCreateDept(null);
+            line.setCreateTime(null);
+            line.setUpdateBy(null);
+            line.setUpdateTime(null);
             line.setLineId(null);
             line.setHandoverId(head.getHandoverId());
             line.setToLocationId(toLoc.getLocationId());

@@ -130,6 +130,7 @@ import {
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -255,7 +256,5 @@ function handleExecute(row: any) {
     .catch(() => {});
 }
 
-onActivated(() => {
-  getList();
-});
+useListRefresh(getList);
 </script>

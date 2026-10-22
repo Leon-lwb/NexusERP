@@ -66,6 +66,7 @@ import { listHandover } from '@/api/erp/wm/handover';
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 import { HANDOVER_STATUS_LABELS, HANDOVER_STATUS_TAG } from './constants';
 
 const router = useRouter();
@@ -109,4 +110,5 @@ function handleAdd() {
 function handleView(row: any) {
   router.push({ path: '/erp/wm/handover/form', query: { id: row.handoverId, action: 'view' } });
 }
+useListRefresh(getList);
 </script>

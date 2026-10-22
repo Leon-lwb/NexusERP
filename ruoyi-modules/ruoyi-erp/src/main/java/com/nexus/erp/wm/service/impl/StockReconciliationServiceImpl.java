@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -122,13 +123,9 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         List<Map<String, Object>> bookQtyList = stockMapper.selectMaps(
             Wrappers.<WmMaterialStock>query()
                 .select("material_id", "SUM(stock_quantity) as total_qty")
-                .eq("frozen_flag", 0)
                 .groupBy("material_id"));
 
-        if (bookQtyList == null || bookQtyList.isEmpty()) {
-            log.info("无库存记录需要校验");
-            return;
-        }
+        if (bookQtyList == null) bookQtyList = List.of();
 
         // 使用SQL聚合查询事务流水（按物料汇总入库和出库）
         List<Map<String, Object>> txList = stockTxMapper.selectMaps(
@@ -150,21 +147,25 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
             }
         }
 
-        List<Long> materialIds = bookQtyList.stream()
-            .map(row -> ((Number) row.get("material_id")).longValue())
-            .collect(Collectors.toList());
+        Map<Long, BigDecimal> bookByMaterial = new HashMap<>();
+        for (Map<String, Object> row : bookQtyList) {
+            bookByMaterial.put(((Number) row.get("material_id")).longValue(), toBigDecimal(row.get("total_qty")));
+        }
+        java.util.Set<Long> allMaterials = new java.util.LinkedHashSet<>(bookByMaterial.keySet());
+        allMaterials.addAll(txInMap.keySet());
+        allMaterials.addAll(txOutMap.keySet());
+        List<Long> materialIds = new ArrayList<>(allMaterials);
         Map<Long, BdMaterial> materialMap = batchLoadMaterials(materialIds);
 
         List<WmStockReconciliation> results = new ArrayList<>();
-        for (Map<String, Object> row : bookQtyList) {
-            Long materialId = ((Number) row.get("material_id")).longValue();
-            BigDecimal bookQty = toBigDecimal(row.get("total_qty"));
+        for (Long materialId : materialIds) {
+            BigDecimal bookQty = bookByMaterial.getOrDefault(materialId, BigDecimal.ZERO);
             BigDecimal txIn = txInMap.getOrDefault(materialId, BigDecimal.ZERO);
             BigDecimal txOut = txOutMap.getOrDefault(materialId, BigDecimal.ZERO);
             BigDecimal txBalance = txIn.subtract(txOut);
             BigDecimal diffQty = bookQty.subtract(txBalance);
 
-            if (diffQty.abs().compareTo(new BigDecimal("0.001")) > 0) {
+            if (diffQty.abs().compareTo(BigDecimal.ZERO) > 0) {
                 WmStockReconciliation recon = new WmStockReconciliation();
                 recon.setMaterialId(materialId);
                 fillMaterialInfo(recon, materialMap.get(materialId));
@@ -188,7 +189,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
     private BigDecimal toBigDecimal(Object value) {
         if (value == null) return BigDecimal.ZERO;
         if (value instanceof BigDecimal) return (BigDecimal) value;
-        if (value instanceof Number) return BigDecimal.valueOf(((Number) value).doubleValue());
+        if (value instanceof Number) return new BigDecimal(value.toString());
         return new BigDecimal(value.toString());
     }
 
@@ -208,8 +209,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
 
         List<WmMaterialStock> stocks = stockMapper.selectList(
             new LambdaQueryWrapper<WmMaterialStock>()
-                .eq(WmMaterialStock::getMaterialId, materialId)
-                .eq(WmMaterialStock::getFrozenFlag, 0L));
+                .eq(WmMaterialStock::getMaterialId, materialId));
 
         BigDecimal bookQty = BigDecimal.ZERO;
         if (stocks != null) {
@@ -247,7 +247,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         recon.setBookQty(bookQty);
         recon.setTxBalance(txBalance);
         recon.setDiffQty(diffQty);
-        recon.setStatus(diffQty.abs().compareTo(new BigDecimal("0.001")) <= 0 ? STATUS_MATCH : STATUS_DIFF);
+        recon.setStatus(diffQty.abs().compareTo(BigDecimal.ZERO) <= 0 ? STATUS_MATCH : STATUS_DIFF);
         recon.setReconTime(now);
         baseMapper.insert(recon);
     }

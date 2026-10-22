@@ -34,6 +34,16 @@ public class WmSerialInventoryService {
         return TraceHashes.fingerprint(ordered);
     }
 
+    /** 交接单的目标由原单行指定，SN选择不能改写该物理去向。 */
+    private static void validateHandoverTargets(WmSerialPostingRequest request, List<SnItem> items) {
+        if (!"WM_MATERIAL_HANDOVER".equals(request.sourceType())) return;
+        need(request.targetLocationId() != null, "交接单缺少真实目标库位");
+        for (SnItem item : items) {
+            need(item.targetLocationId() == null || request.targetLocationId().equals(item.targetLocationId()),
+                "交接SN目标库位与原单据不一致");
+        }
+    }
+
     /**
      * 将来源、方向、数量和策略版本绑定到命令指纹，后续重放必须保持原业务意图。
      *
@@ -86,6 +96,7 @@ public class WmSerialInventoryService {
                         && detailVersion > 0,
                 "命令或明细版本无效");
         TraceRules.validateSerialItems(policy, r.quantity(), items);
+        validateHandoverTargets(r, items);
         String hash = selectionHash(items), fp = fingerprint(r, policyVersion, hash);
         var prior = store.group(r);
         if (prior != null && prior.commandId().equals(commandId)) {
@@ -133,6 +144,7 @@ public class WmSerialInventoryService {
         need(group != null, "STRICT单件物料必须先冻结实际SN明细");
         var items = store.items(group.id());
         TraceRules.validateSerialItems(policy, r.quantity(), items);
+        validateHandoverTargets(r, items);
         String hash = selectionHash(items);
         long proofVersion =
                 "POSTED".equals(group.status())

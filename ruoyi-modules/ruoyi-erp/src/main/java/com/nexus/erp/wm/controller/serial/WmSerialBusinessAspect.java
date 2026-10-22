@@ -52,7 +52,13 @@ public class WmSerialBusinessAspect {
         if (!body.isObject()) {
             throw new ServiceException("原业务请求体必须为对象");
         }
-        return adapter.invoke(route, uri, body, join.getSignature().getName(), join::proceed);
+        String action = join.getSignature().getName();
+        if ("submit".equals(action)
+                && java.util.Set.of("WM_TRANSFER", "WM_STOCK_TAKING").contains(route.type())) {
+            adapter.prepareSubmission(route, uri, body);
+            return join.proceed();
+        }
+        return adapter.invoke(route, uri, body, action, join::proceed);
     }
 
     @Around(

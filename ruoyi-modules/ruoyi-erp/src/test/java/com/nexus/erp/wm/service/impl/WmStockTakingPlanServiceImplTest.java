@@ -156,8 +156,7 @@ class WmStockTakingPlanServiceImplTest {
         plan.setPlanId(6L);
         plan.setStatus("APPROVING");
         when(baseMapper.selectById(6L)).thenReturn(plan);
-        // CAS 白名单只含 GENERATED，APPROVING 时影响 0 行
-        when(baseMapper.update(any(), any())).thenReturn(0);
+        // 服务端在尝试状态抢占之前即拒绝审批中的计划。
 
         assertThrows(RuntimeException.class, () -> service.postAdjustment(6L));
 

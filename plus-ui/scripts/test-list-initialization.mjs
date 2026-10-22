@@ -1,5 +1,5 @@
 /**
- * 四个真实列表页面的生命周期回归：执行真实 Vue / KeepAlive / useCrud。
+ * 真实列表页面的生命周期回归：执行真实 Vue / KeepAlive / useCrud。
  * 仅隔离 API、Element Plus 弹窗和 router；不访问 HTTP 或数据库。
  * Run: node --test --test-concurrency=1 scripts/test-list-initialization.mjs
  */
@@ -16,6 +16,10 @@ import * as Vue from 'vue';
 const require = createRequire(import.meta.url);
 const uiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const pages = [
+  { name: '库存调拨', file: 'erp/wm/transfer', listApi: 'listTransfer', listState: 'transferList', id: 'transferId' },
+  { name: '库存盘点', file: 'erp/wm/stocktaking', listApi: 'listStockTakingPlan', listState: 'planList', id: 'planId' },
+  { name: '生产退料', file: 'erp/wm/return', listApi: 'listReturn', listState: 'returnList', id: 'returnId' },
+  { name: '上料交接', file: 'erp/wm/handover', listApi: 'listHandover', listState: 'handoverList', id: 'handoverId' },
   { name: 'ERP生产工单', file: 'erp/prd/prdwork', listApi: 'listWork', listState: 'workList', id: 'woId' },
   { name: '工艺路线', file: 'erp/bd/routing', listApi: 'listRouting', listState: 'list', id: 'routingId' },
   { name: '物料需求', file: 'erp/prd/requirement', listApi: 'listRequirement', listState: 'requirementList', id: 'requirementId' },

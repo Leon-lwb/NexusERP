@@ -79,7 +79,7 @@ class WmStockReservationServiceImplTest {
         stock.setStockQuantity(new BigDecimal("100"));
         stock.setReservedQuantity(new BigDecimal("40"));
         stock.setVersion(3);
-        when(stockMapper.selectById(9L)).thenReturn(stock);
+        when(stockMapper.selectOne(any())).thenReturn(stock);
         when(stockMapper.releaseReserved(anyLong(), any(), any())).thenReturn(1);
         when(txMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
 
@@ -121,7 +121,7 @@ class WmStockReservationServiceImplTest {
         stock10.setStockQuantity(new BigDecimal("50"));
         stock10.setReservedQuantity(new BigDecimal("50"));
         stock10.setVersion(1);
-        when(stockMapper.selectById(10L)).thenReturn(stock10);
+        when(stockMapper.selectOne(any())).thenReturn(stock10);
         when(stockMapper.releaseReserved(anyLong(), any(), any())).thenReturn(1);
         when(txMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
 

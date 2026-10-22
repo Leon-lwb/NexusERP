@@ -160,6 +160,9 @@ public class WmSerialInventoryRepository {
                                     "recpt_id",
                                     "quantity")),
                     Map.entry(
+                            "WM_MATERIAL_HANDOVER",
+                            new Spec("wm_material_handover", "handover_id", "wm_material_handover_line", "line_id", "handover_id", "actual_qty")),
+                    Map.entry(
                             "WM_TRANSFER",
                             new Spec(
                                     "wm_transfer",
@@ -578,6 +581,7 @@ public class WmSerialInventoryRepository {
                     case "WM_MISC_ISSUE" -> "MISC_ISSUE";
                     case "WM_MISC_RECPT" -> "MISC_RECPT";
                     case "WM_TRANSFER" -> "TRANSFER";
+                    case "WM_MATERIAL_HANDOVER" -> "HANDOVER";
                     case "WM_STOCK_TAKING" -> "COUNT_ADJUST";
                     case "WM_MATERIAL_RETURN" ->
                             "SCRAP".equals(h.get("return_type")) ? "SCRAP" : "RETURN_IN";
@@ -627,6 +631,14 @@ public class WmSerialInventoryRepository {
                                     id(h.get("to_warehouse_id")),
                                     id(h.get("to_area_id")),
                                     id(l.get("to_location_id")));
+        }
+        if ("WM_MATERIAL_HANDOVER".equals(type)) {
+            Long targetLocation = id(l.get("to_location_id"));
+            need(targetLocation != null, "交接单缺少真实目标库位");
+            var target = row("SELECT warehouse_id, area_id FROM wm_storage_location WHERE tenant_id=? AND location_id=? AND del_flag='0' FOR UPDATE", tenant(), targetLocation);
+            r = WmSerialPostingRequest.out(type, source, lineId, tx, material, qty,
+                    id(h.get("warehouse_id")), id(l.get("from_location_id")), batch)
+                .transfer(id(target.get("warehouse_id")), id(target.get("area_id")), targetLocation);
         }
         return r;
     }
@@ -719,6 +731,7 @@ public class WmSerialInventoryRepository {
                     case "WM_TRANSFER" -> Set.of("EXECUTING", "EXECUTED", "COMPLETED");
                     case "WM_STOCK_TAKING" -> Set.of("POSTING", "POSTED");
                     case "WM_MATERIAL_RETURN" -> Set.of("DRAFT", "COMPLETED");
+                    case "WM_MATERIAL_HANDOVER" -> Set.of("DRAFT", "SIGNED");
                     case "SO_RETURN" -> Set.of("RECEIVED");
                     case "PU_PURCHASE_RETURN" -> Set.of("EXECUTED");
                     case "PRD_REWORK_ORDER", "PRD_REWORK_ORDER_RECEIVE" -> Set.of("IN_PROGRESS");
@@ -1001,6 +1014,9 @@ public class WmSerialInventoryRepository {
         Long batch = id(l.get("batch_id"));
         if ("WM_TRANSFER".equals(r.sourceType())) {
             warehouse = id(h.get("from_warehouse_id"));
+            location = id(l.get("from_location_id"));
+        } else if ("WM_MATERIAL_HANDOVER".equals(r.sourceType())) {
+            warehouse = id(h.get("warehouse_id"));
             location = id(l.get("from_location_id"));
         }
         need(
@@ -2337,7 +2353,7 @@ public class WmSerialInventoryRepository {
                 tx,
                 id(g.get("material_id")),
                 decimal(g.get("quantity")),
-                "TRANSFER".equals(tx) ? 0 : direction,
+                Set.of("TRANSFER", "HANDOVER").contains(tx) ? 0 : direction,
                 null,
                 null,
                 null,

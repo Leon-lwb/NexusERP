@@ -83,7 +83,7 @@
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button
-            v-if="scope.row.status !== 'COMPLETED'"
+            v-if="['DRAFT', 'REJECTED', 'GENERATED'].includes(scope.row.status)"
             link
             type="primary"
             icon="Edit"
@@ -91,8 +91,15 @@
             v-hasPermi="['wm:stocktaking:edit']"
             >修改</el-button
           >
-          <el-button v-else link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stocktaking:edit']">盘点</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:stocktaking:remove']">删除</el-button>
+          <el-button
+            v-if="scope.row.status === 'DRAFT'"
+            link
+            type="primary"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['wm:stocktaking:remove']"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -106,6 +113,7 @@ import { listStockTakingPlan, getStockTakingPlan, addStockTakingPlan, updateStoc
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -190,7 +198,5 @@ function handleView(row?: any) {
   router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'view' } });
 }
 
-onActivated(() => {
-  getList();
-});
+useListRefresh(getList);
 </script>

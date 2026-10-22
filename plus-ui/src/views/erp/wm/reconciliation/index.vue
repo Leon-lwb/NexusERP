@@ -45,15 +45,19 @@
 
     <el-table v-loading="loading" :data="reconciliationList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="140" />
-      <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
+      <el-table-column label="物料编码" align="center" prop="materialCode" min-width="180" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.materialCode || `物料ID：${scope.row.materialId}` }}</template>
+      </el-table-column>
+      <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.materialName || '主数据未找到' }}</template>
+      </el-table-column>
       <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
       <el-table-column label="单位" align="center" prop="baseUomName" min-width="80" />
       <el-table-column label="账面库存" align="center" prop="bookQty" min-width="90" />
       <el-table-column label="事务汇总" align="center" prop="txBalance" min-width="90" />
       <el-table-column label="差异数量" align="center" prop="diffQty" min-width="90">
         <template #default="scope">
-          <span :style="{ color: scope.row.diffQty !== 0 ? '#F56C6C' : '#67C23A', fontWeight: 'bold' }">
+          <span :style="{ color: scope.row.status === 'DIFF' ? 'var(--el-color-danger)' : 'var(--el-color-success)', fontWeight: 'bold' }">
             {{ scope.row.diffQty }}
           </span>
         </template>

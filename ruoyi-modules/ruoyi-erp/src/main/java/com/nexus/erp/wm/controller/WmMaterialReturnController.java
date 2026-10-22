@@ -102,6 +102,13 @@ public class WmMaterialReturnController {
 
         List<WmMaterialReturnLine> lines = new ArrayList<>(bo.getLines());
         for (WmMaterialReturnLine line : lines) {
+            // 租户和审计身份由服务端上下文注入，不能沿用客户端实体字段。
+            line.setTenantId(null);
+            line.setCreateBy(null);
+            line.setCreateDept(null);
+            line.setCreateTime(null);
+            line.setUpdateBy(null);
+            line.setUpdateTime(null);
             line.setLineId(null);
             line.setReturnId(head.getReturnId());
             line.setActualQty(null);

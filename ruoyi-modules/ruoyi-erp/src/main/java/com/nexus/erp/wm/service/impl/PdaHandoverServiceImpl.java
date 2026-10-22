@@ -40,12 +40,14 @@ import java.util.List;
  * <p>
  * 流程: PC 建单(DRAFT, 来源工单+源库位→线边库位) → 材料员 PDA 行级核销(累计实交)
  * → 产线操作工 PDA 扫单签收 → 同事务逐行过账(源库位 postMiscIssue 出 + 线边库位 postMiscRecpt 入)。
- * 流水来源沿用杂收发策略固定 sourceDocType, sourceDocId 指向交接单/行(与退料单先例一致)。
+ * 普通数量策略与严格单件路径均保留真实交接单来源，禁止伪装成不存在的杂项单。
  */
 @DS("erp")
 @Service
 @RequiredArgsConstructor
 public class PdaHandoverServiceImpl implements IPdaHandoverService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
 
     private final WmMaterialHandoverMapper handoverMapper;
     private final WmMaterialHandoverLineMapper lineMapper;
@@ -113,7 +115,7 @@ public class PdaHandoverServiceImpl implements IPdaHandoverService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PdaActionResultVo confirmLine(Long handoverId, PdaHandoverConfirmBo bo) {
-        WmMaterialHandover head = headOrThrow(handoverId);
+        WmMaterialHandover head = headForUpdate(handoverId);
         if (WmMaterialHandover.STATUS_SIGNED.equals(head.getStatus())) {
             return PdaActionResultVo.fail("交接单已签收");
         }
@@ -123,9 +125,18 @@ public class PdaHandoverServiceImpl implements IPdaHandoverService {
         if (line == null) {
             return PdaActionResultVo.fail("行不属于本交接单");
         }
+        if (!WmMaterialHandover.STATUS_DRAFT.equals(head.getStatus())) {
+            return PdaActionResultVo.fail("单据当前状态不允许核销");
+        }
+        if (bo.getQty() == null || bo.getQty().signum() <= 0 || bo.getQty().stripTrailingZeros().scale() > 4) {
+            return PdaActionResultVo.fail("核销数量必须大于0且最多保留4位小数");
+        }
         BigDecimal actual = line.getActualQty() == null ? BigDecimal.ZERO : line.getActualQty();
         BigDecimal plan = line.getQuantity() == null ? BigDecimal.ZERO : line.getQuantity();
-        if (plan.compareTo(BigDecimal.ZERO) > 0 && actual.add(bo.getQty()).compareTo(plan) > 0) {
+        if (plan.signum() <= 0 || actual.signum() < 0) {
+            return PdaActionResultVo.fail("计划数量或累计数量异常，请先更正单据");
+        }
+        if (actual.add(bo.getQty()).compareTo(plan) > 0) {
             return PdaActionResultVo.fail("累计实交超过计划数量(" + plan + ")");
         }
         line.setActualQty(actual.add(bo.getQty()));
@@ -139,7 +150,7 @@ public class PdaHandoverServiceImpl implements IPdaHandoverService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PdaActionResultVo sign(Long handoverId) {
-        WmMaterialHandover head = headOrThrow(handoverId);
+        WmMaterialHandover head = headForUpdate(handoverId);
         if (WmMaterialHandover.STATUS_SIGNED.equals(head.getStatus())) {
             return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED); // 幂等
         }
@@ -147,20 +158,34 @@ public class PdaHandoverServiceImpl implements IPdaHandoverService {
             return PdaActionResultVo.fail("单据当前状态不允许签收");
         }
         List<WmMaterialHandoverLine> lines = linesOf(handoverId);
+        for (WmMaterialHandoverLine current : lines) {
+            BigDecimal planned = current.getQuantity();
+            BigDecimal actual = current.getActualQty();
+            if (planned == null || planned.signum() <= 0
+                    || (actual != null && (actual.signum() < 0 || actual.compareTo(planned) > 0))) {
+                return PdaActionResultVo.fail("明细数量异常，请先更正单据");
+            }
+        }
         boolean anyActual = lines.stream()
             .anyMatch(l -> l.getActualQty() != null && l.getActualQty().compareTo(BigDecimal.ZERO) > 0);
         if (!anyActual) {
             return PdaActionResultVo.fail("无实交记录，请先扫码核销");
         }
 
+        if (head.getWarehouseId() == null) return PdaActionResultVo.fail("交接单缺少来源仓库");
         Date now = new Date();
         for (WmMaterialHandoverLine line : lines) {
             BigDecimal qty = line.getActualQty();
             if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
                 continue; // 未核销行留痕不阻塞签收(部分交接)
             }
-            // 出: 源库位 (杂项出库通道, 单据引用指向交接单)
+            if (serialInventory != null && serialInventory.postSource("WM_MATERIAL_HANDOVER", handoverId, line.getLineId())) {
+                continue;
+            }
+            // 出库保留真实交接来源，并限定原单头的来源仓库。
             WmMiscIssueLine out = new WmMiscIssueLine();
+            out.setPostingSourceType("WM_MATERIAL_HANDOVER");
+            out.setWarehouseId(head.getWarehouseId());
             out.setIssueId(head.getHandoverId());
             out.setLineId(line.getLineId());
             out.setMaterialId(line.getMaterialId());
@@ -189,10 +214,12 @@ public class PdaHandoverServiceImpl implements IPdaHandoverService {
             WmMiscRecpt wrapper = new WmMiscRecpt();
             wrapper.setRecptId(head.getHandoverId());
             wrapper.setWarehouseId(toLoc.getWarehouseId());
+            wrapper.setAreaId(toLoc.getAreaId());
             wrapper.setWarehouseCode(toWarehouse != null ? toWarehouse.getWarehouseCode() : null);
             wrapper.setWarehouseName(toWarehouse != null ? toWarehouse.getWarehouseName() : null);
 
             WmMiscRecptLine in = new WmMiscRecptLine();
+            in.setPostingSourceType("WM_MATERIAL_HANDOVER");
             in.setRecptId(head.getHandoverId());
             in.setLineId(line.getLineId());
             in.setMaterialId(line.getMaterialId());
@@ -216,6 +243,16 @@ public class PdaHandoverServiceImpl implements IPdaHandoverService {
         head.setSignTime(now);
         handoverMapper.updateById(head);
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
+    }
+
+    /** 核销与完成共用单据行锁，跨用户、跨幂等键也只能过账一次。 */
+    private WmMaterialHandover headForUpdate(Long handoverId) {
+        WmMaterialHandover head = handoverMapper.selectOne(Wrappers.<WmMaterialHandover>lambdaQuery()
+            .eq(WmMaterialHandover::getHandoverId, handoverId).last("FOR UPDATE"));
+        if (head == null) {
+            throw new ServiceException("交接单不存在");
+        }
+        return head;
     }
 
     private WmMaterialHandover headOrThrow(Long handoverId) {

@@ -21,6 +21,12 @@ import java.math.BigDecimal;
 @TableName("wm_misc_recpt_line")
 public class WmMiscRecptLine extends TenantEntity {
 
+    /** 仅供受控库存入口传递真实来源，不接受客户端输入。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String postingSourceType;
+
+
     /**
      * 行ID
      */

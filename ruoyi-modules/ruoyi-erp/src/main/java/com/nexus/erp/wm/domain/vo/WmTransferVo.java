@@ -44,11 +44,23 @@ public class WmTransferVo implements Serializable {
     @ExcelProperty(value = "来源仓库")
     private String fromWarehouseName;
 
+    private Long fromWarehouseId;
+    private String fromWarehouseCode;
+    private Long fromAreaId;
+    private String fromAreaCode;
+    private String fromAreaName;
+
     /**
      * 目标仓库
      */
     @ExcelProperty(value = "目标仓库")
     private String toWarehouseName;
+
+    private Long toWarehouseId;
+    private String toWarehouseCode;
+    private Long toAreaId;
+    private String toAreaCode;
+    private String toAreaName;
 
     /**
      * 调拨类型

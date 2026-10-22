@@ -78,6 +78,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
                         .eq(WmMaterialStock::getMaterialId, materialId)
                         .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
                         .eq(WmMaterialStock::getFrozenFlag, 0L)
+                        .apply("(expire_date IS NULL OR expire_date >= CURDATE())")
                         .apply("(stock_quantity - reserved_quantity) > 0")
                         .orderByAsc(WmMaterialStock::getExpireDate)
                         .orderByAsc(WmMaterialStock::getRecptDate)
@@ -166,7 +167,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         List<WmMaterialStockTx> txs = txMapper.selectList(wrapper);
 
         // 按库存行聚合净预留额：RESERVE 为正，CONSUME_RESERVE / UNRESERVE 为负
-        java.util.Map<Long, BigDecimal> netByStock = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, BigDecimal> netByStock = new java.util.TreeMap<>();
         for (WmMaterialStockTx tx : txs) {
             if (tx.getMaterialStockId() == null || tx.getTxQuantity() == null) {
                 continue;
@@ -184,29 +185,44 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
                 // 已全部被出库消耗或已释放过 —— 无剩余预留，跳过（不再全额释放他人预留）
                 continue;
             }
-            WmMaterialStock stock = stockMapper.selectById(stockId);
+            // 先按稳定顺序锁真实库存，再做当前读；旧快照的净额不能用于版本重试。
+            WmMaterialStock stock = stockMapper.selectOne(Wrappers.<WmMaterialStock>lambdaQuery()
+                .eq(WmMaterialStock::getStockId, stockId).last("FOR UPDATE"));
             if (stock == null) {
-                continue;
+                throw new com.nexus.common.core.exception.ServiceException("预留库存记录不存在");
             }
-            // 版本冲突/预留不足时重读最新版本重试（最多3次），避免并发下释放被静默跳过导致预留永久卡死
-            int rows = 0;
-            for (int attempt = 0; attempt < 3 && rows == 0; attempt++) {
-                if (attempt > 0) {
-                    stock = stockMapper.selectById(stockId);
-                    if (stock == null) {
-                        break;
-                    }
+            List<WmMaterialStockTx> current = txMapper.selectList(Wrappers.<WmMaterialStockTx>lambdaQuery()
+                .in(WmMaterialStockTx::getTxType, TX_TYPE_RESERVE, TX_TYPE_CONSUME_RESERVE, TX_TYPE_UNRESERVE)
+                .eq(WmMaterialStockTx::getSourceDocType, sourceDocType)
+                .eq(WmMaterialStockTx::getSourceDocId, sourceDocId)
+                .eq(WmMaterialStockTx::getMaterialStockId, stockId)
+                .orderByAsc(WmMaterialStockTx::getTxId).last("FOR UPDATE"));
+            java.util.Map<Long, BigDecimal> currentByLine = new java.util.LinkedHashMap<>();
+            for (WmMaterialStockTx tx : current) {
+                if (!stockId.equals(tx.getMaterialStockId()) || tx.getTxQuantity() == null) continue;
+                currentByLine.merge(tx.getSourceDocLineId(), TX_TYPE_RESERVE.equals(tx.getTxType())
+                    ? tx.getTxQuantity() : tx.getTxQuantity().negate(), BigDecimal::add);
+            }
+            BigDecimal totalRemaining = currentByLine.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (totalRemaining.signum() <= 0) continue;
+            if (currentByLine.values().stream().anyMatch(value -> value.signum() < 0)) {
+                throw new com.nexus.common.core.exception.ServiceException("历史预留释放缺少可核对的来源行，请先核对来源台账");
+            }
+            // 整单释放也按真实来源行逐笔落账，后续按行释放才能得到相同净额。
+            boolean firstLine = true;
+            for (java.util.Map.Entry<Long, BigDecimal> balance : currentByLine.entrySet()) {
+                if (sourceDocLineId != null && !sourceDocLineId.equals(balance.getKey())) continue;
+                BigDecimal amount = balance.getValue();
+                if (amount.signum() <= 0) continue;
+                if (!firstLine) stock = stockMapper.selectOne(Wrappers.<WmMaterialStock>lambdaQuery()
+                    .eq(WmMaterialStock::getStockId, stockId).last("FOR UPDATE"));
+                firstLine = false;
+                if (stock == null || stockMapper.releaseReserved(stock.getStockId(), amount, stock.getVersion()) != 1) {
+                    throw new com.nexus.common.core.exception.ServiceException("释放预留失败，请重新核对来源库存");
                 }
-                rows = stockMapper.releaseReserved(stock.getStockId(), netQty, stock.getVersion());
+                released = released.add(amount);
+                recordStockTx(stock, amount, TX_TYPE_UNRESERVE, sourceDocType, sourceDocId, balance.getKey());
             }
-            if (rows == 0) {
-                // 重试仍失败：库存行被并发操作修改或预留不足，抛异常回滚，禁止静默跳过
-                throw new com.nexus.common.core.exception.ServiceException(
-                        "释放预留失败(并发冲突或预留不足): stockId=" + stockId + ", qty=" + netQty);
-            }
-            released = released.add(netQty);
-            recordStockTx(
-                    stock, netQty, TX_TYPE_UNRESERVE, sourceDocType, sourceDocId, sourceDocLineId);
         }
         log.info("释放预留: source={}/{}, 释放量={}", sourceDocType, sourceDocId, released);
         return released;
@@ -225,7 +241,8 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
                 Wrappers.<WmMaterialStock>lambdaQuery()
                         .eq(WmMaterialStock::getMaterialId, materialId)
                         .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
-                        .eq(WmMaterialStock::getFrozenFlag, 0L);
+                        .eq(WmMaterialStock::getFrozenFlag, 0L)
+                        .apply("(expire_date IS NULL OR expire_date >= CURDATE())");
         List<WmMaterialStock> stocks = stockMapper.selectList(wrapper);
         return stocks.stream()
                 .map(WmMaterialStock::getAvailableQuantity)

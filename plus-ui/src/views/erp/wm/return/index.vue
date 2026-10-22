@@ -72,6 +72,7 @@ import { listReturn } from '@/api/erp/wm/return';
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useListRefresh } from '@/composables/useListRefresh';
 import { RETURN_STATUS_LABELS, RETURN_STATUS_TAG, RETURN_TYPE_LABELS, RETURN_TYPE_TAG } from './constants';
 
 const router = useRouter();
@@ -115,4 +116,5 @@ function handleAdd() {
 function handleView(row: any) {
   router.push({ path: '/erp/wm/return/form', query: { id: row.returnId, action: 'view' } });
 }
+useListRefresh(getList);
 </script>

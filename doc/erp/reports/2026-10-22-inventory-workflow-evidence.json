@@ -1,0 +1,414 @@
+{
+  "date": "2026-10-22",
+  "branch": "plus",
+  "baselineHead": "43ae767a7964045f8c24be86ab26042bbde1bd06",
+  "environment": {
+    "host": "127.0.0.1",
+    "mysqlPort": 3306,
+    "verificationBackend": 18080,
+    "verificationFrontend": 18081,
+    "originalBackendRestarted": false
+  },
+  "records": [
+    {
+      "type": "transfer",
+      "id": "2112935942397456386",
+      "code": "TR202610210001"
+    },
+    {
+      "type": "handover",
+      "id": "2112946441067524098",
+      "code": "HJ202610220001"
+    },
+    {
+      "type": "return",
+      "id": "2112946441390485507",
+      "code": "TL202610220001"
+    },
+    {
+      "type": "stocktaking",
+      "id": "2112949414178852866",
+      "code": "PD202610220001"
+    }
+  ],
+  "heads": [
+    {
+      "kind": "TRANSFER",
+      "id": "2112935942397456386",
+      "code": "TR202610210001",
+      "status": "EXECUTED"
+    },
+    {
+      "kind": "HANDOVER",
+      "id": "2112946441067524098",
+      "code": "HJ202610220001",
+      "status": "SIGNED"
+    },
+    {
+      "kind": "RETURN",
+      "id": "2112946441390485507",
+      "code": "TL202610220001",
+      "status": "COMPLETED"
+    },
+    {
+      "kind": "STOCKTAKING",
+      "id": "2112949414178852866",
+      "code": "PD202610220001",
+      "status": "COMPLETED"
+    }
+  ],
+  "balances": [
+    {
+      "warehouse_id": "1",
+      "area_id": "1",
+      "location_id": "1",
+      "batch_code": "B202610100004",
+      "stock_quantity": "1.0000",
+      "reserved_quantity": "0.0000"
+    },
+    {
+      "warehouse_id": "1",
+      "area_id": "1",
+      "location_id": "1",
+      "batch_code": "B202610100007",
+      "stock_quantity": "4.0000",
+      "reserved_quantity": "0.0000"
+    },
+    {
+      "warehouse_id": "2",
+      "area_id": "5",
+      "location_id": "20",
+      "batch_code": "B202610100007",
+      "stock_quantity": "2.0000",
+      "reserved_quantity": "0.0000"
+    },
+    {
+      "warehouse_id": "2",
+      "area_id": "6",
+      "location_id": "22",
+      "batch_code": "B202610100007",
+      "stock_quantity": "2.0000",
+      "reserved_quantity": "0.0000"
+    }
+  ],
+  "invariant": [
+    {
+      "kind": "BOOK",
+      "quantity": "9.0000"
+    },
+    {
+      "kind": "LEDGER",
+      "quantity": "9.0000"
+    }
+  ],
+  "alerts": [
+    {
+      "id": "2112950580149227522",
+      "material": "交流接触器 25A",
+      "quantity": "3.0000",
+      "safety": "4.0000",
+      "handled": 0,
+      "remark": null
+    },
+    {
+      "id": "2111140110680387586",
+      "material": "交流接触器 25A",
+      "quantity": "3.0000",
+      "safety": "4.0000",
+      "handled": 1,
+      "remark": "已复核账面库存3件、安全库存4件，缺口1件已登记补货跟进。"
+    }
+  ],
+  "reconciliation": {
+    "code": 200,
+    "total": 15,
+    "matched": [
+      {
+        "id": "2112950580342165506",
+        "material": "平垫圈 12 A级 镀锌",
+        "book": "9.0000",
+        "ledger": "9.0000",
+        "difference": "0.0000"
+      }
+    ],
+    "differences": [
+      {
+        "material": "IF20261010004",
+        "name": "电感式接近开关 M12",
+        "book": "9.0000",
+        "ledger": "12.0000",
+        "difference": "-3.0000"
+      },
+      {
+        "material": null,
+        "name": null,
+        "book": "2830.0000",
+        "ledger": "0.0000",
+        "difference": "2830.0000"
+      },
+      {
+        "material": "IF20261010005",
+        "name": "二位五通电磁阀 5V210-08",
+        "book": "15.0000",
+        "ledger": "19.0000",
+        "difference": "-4.0000"
+      },
+      {
+        "material": null,
+        "name": null,
+        "book": "925.0000",
+        "ledger": "0.0000",
+        "difference": "925.0000"
+      },
+      {
+        "material": "IF20261010007",
+        "name": "过滤减压阀 AFR2000",
+        "book": "8.0000",
+        "ledger": "10.0000",
+        "difference": "-2.0000"
+      },
+      {
+        "material": null,
+        "name": null,
+        "book": "2535.0000",
+        "ledger": "0.0000",
+        "difference": "2535.0000"
+      },
+      {
+        "material": "IF20261010003",
+        "name": "同步带 550-5M-15",
+        "book": "14.0000",
+        "ledger": "17.0000",
+        "difference": "-3.0000"
+      },
+      {
+        "material": "IF20261010002",
+        "name": "深沟球轴承 6205-2RS",
+        "book": "17.0000",
+        "ledger": "20.0000",
+        "difference": "-3.0000"
+      },
+      {
+        "material": "IF20261010006",
+        "name": "标准气缸 SC32×100",
+        "book": "6.0000",
+        "ledger": "8.0000",
+        "difference": "-2.0000"
+      },
+      {
+        "material": "IF20261010008",
+        "name": "交流接触器 25A",
+        "book": "3.0000",
+        "ledger": "6.0000",
+        "difference": "-3.0000"
+      },
+      {
+        "material": null,
+        "name": null,
+        "book": "1673.0000",
+        "ledger": "0.0000",
+        "difference": "1673.0000"
+      },
+      {
+        "material": null,
+        "name": null,
+        "book": "1375.0000",
+        "ledger": "0.0000",
+        "difference": "1375.0000"
+      },
+      {
+        "material": null,
+        "name": null,
+        "book": "1990.0000",
+        "ledger": "0.0000",
+        "difference": "1990.0000"
+      },
+      {
+        "material": "IF20261010001",
+        "name": "深沟球轴承 6204-2RS",
+        "book": "21.0000",
+        "ledger": "26.0000",
+        "difference": "-5.0000"
+      }
+    ]
+  },
+  "historicalDifferences": [
+    {
+      "recon_id": "2112950580598018050",
+      "material_id": "9900000001",
+      "material_code": null,
+      "material_name": null,
+      "book_qty": "2830.0000",
+      "tx_balance": "0.0000",
+      "diff_qty": "2830.0000"
+    },
+    {
+      "recon_id": "2112950580598018051",
+      "material_id": "9900000002",
+      "material_code": null,
+      "material_name": null,
+      "book_qty": "925.0000",
+      "tx_balance": "0.0000",
+      "diff_qty": "925.0000"
+    },
+    {
+      "recon_id": "2112950580598018052",
+      "material_id": "9900000003",
+      "material_code": null,
+      "material_name": null,
+      "book_qty": "2535.0000",
+      "tx_balance": "0.0000",
+      "diff_qty": "2535.0000"
+    },
+    {
+      "recon_id": "2112950580535103496",
+      "material_id": "9900000004",
+      "material_code": null,
+      "material_name": null,
+      "book_qty": "1673.0000",
+      "tx_balance": "0.0000",
+      "diff_qty": "1673.0000"
+    },
+    {
+      "recon_id": "2112950580535103497",
+      "material_id": "9900000005",
+      "material_code": null,
+      "material_name": null,
+      "book_qty": "1375.0000",
+      "tx_balance": "0.0000",
+      "diff_qty": "1375.0000"
+    },
+    {
+      "recon_id": "2112950580535103498",
+      "material_id": "9900000006",
+      "material_code": null,
+      "material_name": null,
+      "book_qty": "1990.0000",
+      "tx_balance": "0.0000",
+      "diff_qty": "1990.0000"
+    },
+    {
+      "recon_id": "2112950580535103499",
+      "material_id": "2108783860164546561",
+      "material_code": "IF20261010001",
+      "material_name": "深沟球轴承 6204-2RS",
+      "book_qty": "21.0000",
+      "tx_balance": "26.0000",
+      "diff_qty": "-5.0000"
+    },
+    {
+      "recon_id": "2112950580535103493",
+      "material_id": "2108783863096365058",
+      "material_code": "IF20261010002",
+      "material_name": "深沟球轴承 6205-2RS",
+      "book_qty": "17.0000",
+      "tx_balance": "20.0000",
+      "diff_qty": "-3.0000"
+    },
+    {
+      "recon_id": "2112950580535103492",
+      "material_id": "2108783865059299329",
+      "material_code": "IF20261010003",
+      "material_name": "同步带 550-5M-15",
+      "book_qty": "14.0000",
+      "tx_balance": "17.0000",
+      "diff_qty": "-3.0000"
+    },
+    {
+      "recon_id": "2112950580535103489",
+      "material_id": "2108783866938347521",
+      "material_code": "IF20261010004",
+      "material_name": "电感式接近开关 M12",
+      "book_qty": "9.0000",
+      "tx_balance": "12.0000",
+      "diff_qty": "-3.0000"
+    },
+    {
+      "recon_id": "2112950580535103490",
+      "material_id": "2108783868733509633",
+      "material_code": "IF20261010005",
+      "material_name": "二位五通电磁阀 5V210-08",
+      "book_qty": "15.0000",
+      "tx_balance": "19.0000",
+      "diff_qty": "-4.0000"
+    },
+    {
+      "recon_id": "2112950580535103494",
+      "material_id": "2108783870507700226",
+      "material_code": "IF20261010006",
+      "material_name": "标准气缸 SC32×100",
+      "book_qty": "6.0000",
+      "tx_balance": "8.0000",
+      "diff_qty": "-2.0000"
+    },
+    {
+      "recon_id": "2112950580535103491",
+      "material_id": "2108783872487411714",
+      "material_code": "IF20261010007",
+      "material_name": "过滤减压阀 AFR2000",
+      "book_qty": "8.0000",
+      "tx_balance": "10.0000",
+      "diff_qty": "-2.0000"
+    },
+    {
+      "recon_id": "2112950580535103495",
+      "material_id": "2108783874236436481",
+      "material_code": "IF20261010008",
+      "material_name": "交流接触器 25A",
+      "book_qty": "3.0000",
+      "tx_balance": "6.0000",
+      "diff_qty": "-3.0000"
+    }
+  ],
+  "pcCount": {
+    "code": "PD202610220001",
+    "status": "COMPLETED",
+    "lines": [
+      {
+        "id": "2112950023351177218",
+        "book": "2.0000",
+        "actual": "2.0000",
+        "difference": "0.0000",
+        "status": "BALANCED"
+      }
+    ]
+  },
+  "reservation": {
+    "reserved": "2.0000",
+    "released": "2.0000",
+    "repeatedLineRelease": "0",
+    "remaining": "0.0000"
+  },
+  "validation": {
+    "backend": {
+      "command": "mvn -pl ruoyi-modules/ruoyi-erp -am test -DskipTests=false -Dprofiles.active= -Dtest=Wm*Test,Pda*Test,InventoryMonitoringSafetyTest -Dsurefire.failIfNoSpecifiedTests=false",
+      "tests": 1371,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontendRelated": {
+      "tests": 252,
+      "failures": 0,
+      "skipped": 0
+    },
+    "frontendListLifecycle": {
+      "tests": 24,
+      "failures": 0,
+      "skipped": 0
+    },
+    "typeCheck": "passed",
+    "productionBuild": "passed",
+    "targetedEslint": "passed",
+    "fullFlowUi": {
+      "tests": 436,
+      "passed": 434,
+      "failed": 2,
+      "preexistingFailures": [
+        "拣货规则菜单2621主安装SQL种子缺失",
+        "上架规则菜单2616主安装SQL种子缺失"
+      ]
+    },
+    "finalHandoverSerialVersionHttpCode": 200
+  }
+}

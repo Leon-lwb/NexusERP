@@ -102,13 +102,17 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         WmMiscRecptLine line = (WmMiscRecptLine) args[0];
         WmMiscRecpt recpt = (WmMiscRecpt) args[1];
         Date now = (Date) args[2];
+        String sourceType = line.getPostingSourceType() == null ? SOURCE_DOC_TYPE_MISC_RECPT : line.getPostingSourceType();
+        if (!java.util.Set.of(SOURCE_DOC_TYPE_MISC_RECPT, "WM_MATERIAL_RETURN", "WM_MATERIAL_HANDOVER").contains(sourceType)) {
+            throw new ServiceException("杂项入库来源类型未授权");
+        }
         if (serialInventory != null
                 && serialInventory.post(
                         com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
-                                "WM_MISC_RECPT",
+                                sourceType,
                                 recpt.getRecptId(),
                                 line.getLineId(),
-                                "MISC_RECPT",
+                                "WM_MATERIAL_RETURN".equals(sourceType) ? "RETURN_IN" : "WM_MATERIAL_HANDOVER".equals(sourceType) ? "HANDOVER" : "MISC_RECPT",
                                 line.getMaterialId(),
                                 line.getQuantity(),
                                 recpt.getWarehouseId(),
@@ -188,7 +192,7 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
                         afterQuantity,
                         now);
         tx.setUnitCost(stock.getUnitCost());
-        tx.setSourceDocType(SOURCE_DOC_TYPE_MISC_RECPT);
+        tx.setSourceDocType(sourceType);
         tx.setSourceDocId(line.getRecptId());
         tx.setSourceDocLineId(line.getLineId());
         tx.setRemark("杂项入库");

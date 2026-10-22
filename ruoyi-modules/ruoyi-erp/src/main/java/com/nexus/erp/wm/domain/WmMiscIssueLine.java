@@ -21,6 +21,16 @@ import java.math.BigDecimal;
 @TableName("wm_misc_issue_line")
 public class WmMiscIssueLine extends TenantEntity {
 
+    /** 仅供受控库存入口传递真实来源，不接受客户端输入。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String postingSourceType;
+
+    /** 由原业务单头传入的来源仓库约束。 */
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private Long warehouseId;
+
+
     /**
      * 行ID
      */

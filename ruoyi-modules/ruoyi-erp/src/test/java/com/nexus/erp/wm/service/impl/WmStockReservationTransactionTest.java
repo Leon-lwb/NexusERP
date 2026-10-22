@@ -163,6 +163,66 @@ class WmStockReservationTransactionTest {
         assertEquals(1, transactions.selectList(null).size(), "仅本租户唯一真实库存生成预留流水");
     }
 
+    @Test
+    void expiredStockCannotBePromisedOrReserved() {
+        WmMaterialStock expired = stock(false);
+        expired.setExpireDate(new Date(0));
+        stocks.insert(expired);
+        var service = service(transactions);
+        assertEquals(0, service.checkAvailable(23L, 3L).signum(), "过期库存不计入可承诺量");
+        assertThrows(ServiceException.class, () -> service.reserve(23L, 3L, BigDecimal.ONE, SOURCE, 41L, 42L));
+        assertEquals(new BigDecimal("0.0000"), stocks.selectById(9L).getReservedQuantity());
+        assertTrue(transactions.selectList(null).isEmpty());
+    }
+
+    @Test
+    void concurrentReleaseCannotReleaseAnotherDocumentsReservation() throws Exception {
+        stocks.insert(stock(false));
+        var setupService = service(transactions);
+        setupService.reserve(23L, 3L, new BigDecimal("4"), SOURCE, 41L, 42L);
+        setupService.reserve(23L, 3L, new BigDecimal("4"), SOURCE, 51L, 52L);
+        var oldReads = new java.util.concurrent.CountDownLatch(2);
+        WmMaterialStockMapper stockSpy = spy(stocks);
+        doAnswer(i -> {
+            WmMaterialStock row = stocks.selectById((Long)i.getArgument(0));
+            oldReads.countDown();
+            assertTrue(oldReads.await(3, java.util.concurrent.TimeUnit.SECONDS));
+            return row;
+        }).when(stockSpy).selectById(any());
+        ProxyFactory factory = new ProxyFactory(new WmStockReservationServiceImpl(stockSpy, transactions));
+        factory.setProxyTargetClass(true);
+        factory.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(dataSource), new AnnotationTransactionAttributeSource()));
+        var service = (WmStockReservationServiceImpl) factory.getProxy();
+        var workers = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.concurrent.Callable<BigDecimal> release = () -> {
+                try (MockedStatic<TenantHelper> workerTenant = mockStatic(TenantHelper.class)) {
+                    workerTenant.when(TenantHelper::getTenantId).thenReturn(TENANT);
+                    workerTenant.when(TenantHelper::isEnable).thenReturn(true);
+                    return service.unreserve(SOURCE, 41L, 42L);
+                }
+            };
+            var first = workers.submit(release);
+            var second = workers.submit(release);
+            assertEquals(0, new BigDecimal("4").compareTo(first.get(10, java.util.concurrent.TimeUnit.SECONDS)
+                .add(second.get(10, java.util.concurrent.TimeUnit.SECONDS))), "同一来源并发释放总量只能为4");
+            assertEquals(new BigDecimal("4.0000"), stocks.selectById(9L).getReservedQuantity(), "另一单据预留4件必须保留");
+            assertEquals(1, transactions.selectList(null).stream().filter(tx -> "UNRESERVE".equals(tx.getTxType())).count());
+        } finally { workers.shutdownNow(); }
+    }
+
+    @Test
+    void wholeDocumentReleaseThenLineReleasePreservesOtherDocument() {
+        stocks.insert(stock(false)); var service = service(transactions);
+        service.reserve(23L, 3L, new BigDecimal("4"), SOURCE, 41L, 42L);
+        service.reserve(23L, 3L, new BigDecimal("4"), SOURCE, 51L, 52L);
+        assertEquals(0, new BigDecimal("4").compareTo(service.unreserve(SOURCE, 41L, null)));
+        assertEquals(0, service.unreserve(SOURCE, 41L, 42L).signum(), "整单释放后不能再按行释放其他单据");
+        assertEquals(new BigDecimal("4.0000"), stocks.selectById(9L).getReservedQuantity());
+        var release = transactions.selectList(null).stream().filter(tx -> "UNRESERVE".equals(tx.getTxType())).findFirst().orElseThrow();
+        assertEquals(42L, release.getSourceDocLineId(), "整单释放必须保留实际预留来源行");
+    }
+
     private void seed(String action) {
         WmMaterialStock stock = stock(false);
         if ("UNRESERVE".equals(action)) stock.setReservedQuantity(new BigDecimal("4"));

@@ -72,6 +72,9 @@ public record SerialBusinessRoute(
                             "WmMaterialReturn",
                             "WmMaterialReturnLine"),
                     route(
+                            "WM_MATERIAL_HANDOVER", "handover", "wm_material_handover", "handover_id", "handoverId",
+                            "wm_material_handover_line", "lines", "WmMaterialHandover", "WmMaterialHandoverLine"),
+                    route(
                             "WM_TRANSFER",
                             "transfer",
                             "wm_transfer",
@@ -231,6 +234,7 @@ public record SerialBusinessRoute(
             case "WM_MATERIAL_RECEIVE" -> Set.of("executeReceive", "finish").contains(action);
             case "WM_PRODUCTION_ISSUE" -> Set.of("execute", "pick").contains(action);
             case "WM_MATERIAL_RETURN" -> action.equals("finish");
+            case "WM_MATERIAL_HANDOVER" -> action.equals("sign");
             case "WM_TRANSFER" -> Set.of("execute", "shelf").contains(action);
             case "WM_STOCK_TAKING" -> Set.of("postAdjustment", "post").contains(action);
             case "WM_SALES_ISSUE" -> action.equals("complete");

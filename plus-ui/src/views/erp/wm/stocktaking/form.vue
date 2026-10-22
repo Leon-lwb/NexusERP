@@ -5,11 +5,13 @@
         <div class="card-header">
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">提交审批</el-button>
-            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
-            <el-button type="success" @click="handleGenerateLines" v-if="!isViewMode && !props.disabled && form.planId">生成盘点行</el-button>
-            <el-button type="warning" @click="handlePostAdjustment" v-if="!isViewMode && !props.disabled && form.planId">过账调整</el-button>
+            <el-button type="primary" @click="submitForm" v-if="canSave" :loading="saving">{{ canCount ? '保存实盘数' : '保存' }}</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="canCount && form.selectFlowId">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="['APPROVING', 'APPROVED', 'COMPLETED', 'REJECTED'].includes(form.status)"
+              >查看流程</el-button
+            >
+            <el-button type="success" @click="handleGenerateLines" v-if="canGenerate">生成盘点行</el-button>
+            <el-button type="warning" @click="handlePostAdjustment" v-if="canCount && !form.selectFlowId">过账调整</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
@@ -21,21 +23,15 @@
           <el-col :span="8">
             <el-form-item label="盘点编号" prop="planCode">
               <div style="display: flex; align-items: center; gap: 10px">
-                <el-input v-model="form.planCode" placeholder="请输入盘点编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch
-                  v-model="autoGenFlag"
-                  active-color="#13ce66"
-                  active-text="生成"
-                  @change="handleAutoGenChange"
-                  :disabled="isViewMode || props.disabled"
-                >
+                <el-input v-model="form.planCode" placeholder="请输入盘点编号" :disabled="autoGenFlag || headerDisabled" style="flex: 1" />
+                <el-switch v-model="autoGenFlag" :disabled="headerDisabled" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange">
                 </el-switch>
               </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="盘点名称" prop="planName">
-              <el-input v-model="form.planName" placeholder="请输入盘点名称" />
+              <el-input v-model="form.planName" :disabled="headerDisabled" placeholder="请输入盘点名称" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -43,6 +39,7 @@
               <el-date-picker
                 clearable
                 v-model="form.plannedDate"
+                :disabled="headerDisabled"
                 type="date"
                 value-format="YYYY-MM-DD"
                 placeholder="请选择盘点日期"
@@ -55,32 +52,32 @@
           <el-col :span="8">
             <el-form-item label="盘点方式" prop="countMode">
               <!-- 后端 WmStockTakingPlanBo.countMode（OPEN 明盘 / BLIND 盲盘），PDA 端已按该值分支（FE-ERP-04） -->
-              <el-select v-model="form.countMode" placeholder="请选择盘点方式" style="width: 100%">
+              <el-select v-model="form.countMode" :disabled="headerDisabled" placeholder="请选择盘点方式" style="width: 100%">
                 <el-option v-for="dict in erp_stocktaking_count_mode" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="仓库" prop="warehouseName">
-              <el-input v-model="form.warehouseName" placeholder="请选择仓库" readonly>
+              <el-input v-model="form.warehouseName" :disabled="headerDisabled" placeholder="请选择仓库" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode && !props.disabled" icon="Search" @click="warehouseSelectOpen = true" />
+                  <el-button v-if="!headerDisabled" icon="Search" @click="warehouseSelectOpen = true" />
                 </template>
               </el-input>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="库区" prop="areaName">
-              <el-input v-model="form.areaName" placeholder="请选择库区" readonly>
+              <el-input v-model="form.areaName" :disabled="headerDisabled" placeholder="请选择库区" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode && !props.disabled" icon="Search" @click="areaSelectOpen = true" />
+                  <el-button v-if="!headerDisabled" icon="Search" @click="areaSelectOpen = true" />
                 </template>
               </el-input>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="请输入备注" />
+              <el-input v-model="form.remark" :disabled="headerDisabled" placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -112,9 +109,7 @@
         <el-divider content-position="center">盘点行信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleGenerateLines" v-if="!isViewMode && !props.disabled && form.planId"
-              >生成盘点行</el-button
-            >
+            <el-button type="primary" plain icon="Plus" @click="handleGenerateLines" v-if="canGenerate">生成盘点行</el-button>
           </el-col>
         </el-row>
         <el-table :data="lineList" :row-class-name="rowLineIndex" @selection-change="handleLineSelectionChange">
@@ -152,7 +147,7 @@
           </el-table-column>
           <el-table-column label="实盘数量" prop="actualQuantity" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.actualQuantity" placeholder="实盘数量" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.actualQuantity" placeholder="实盘数量" v-if="canCount" />
               <span v-else>{{ scope.row.actualQuantity }}</span>
             </template>
           </el-table-column>
@@ -163,7 +158,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode && !props.disabled" />
+              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!headerDisabled" />
               <span v-else>{{ scope.row.remark }}</span>
             </template>
           </el-table-column>
@@ -281,7 +276,14 @@ const checkedLines = ref<any[]>([]);
 // 流程相关状态
 const flowOptions = ref<any[]>([]);
 const loadingFlow = ref(false);
-const formDisabled = computed(() => isViewMode.value || props.disabled);
+const saving = ref(false);
+const formDisabled = computed(
+  () => isViewMode.value || props.disabled || ![null, undefined, 'DRAFT', 'REJECTED', 'GENERATED'].includes(form.value.status)
+);
+const headerDisabled = computed(() => formDisabled.value || form.value.status === 'GENERATED');
+const canCount = computed(() => !formDisabled.value && form.value.status === 'GENERATED');
+const canSave = computed(() => !formDisabled.value);
+const canGenerate = computed(() => !formDisabled.value && !!form.value.planId && form.value.status === 'DRAFT');
 
 const warehouseSelectOpen = ref(false);
 const warehouseList = ref([]);
@@ -337,7 +339,7 @@ function reset() {
     areaCode: null,
     areaName: null,
     plannedDate: null,
-    status: null,
+    status: 'DRAFT',
     // 默认明盘（与后端 PdaStocktakingServiceImpl 的默认值 OPEN 一致）
     countMode: 'OPEN',
     remark: null
@@ -355,10 +357,16 @@ function submitForm() {
       }
       form.value.wmStockTakingLineList = lineList.value;
       if (form.value.planId != null) {
-        updateStockTakingPlan(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/inventory/stocktaking');
-        });
+        saving.value = true;
+        updateStockTakingPlan(form.value)
+          .then(() => {
+            proxy.$modal.msgSuccess(canCount.value ? '实盘数量已保存' : '修改成功');
+            if (canCount.value) getInfo(form.value.planId);
+            else router.push('/erp/inventory/stocktaking');
+          })
+          .finally(() => {
+            saving.value = false;
+          });
       } else {
         addStockTakingPlan(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
@@ -398,7 +406,7 @@ function loadFlows() {
 
 /** 仅有一个流程时自动选中 */
 function tryAutoSelect() {
-  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+  if (!headerDisabled.value && !form.value.selectFlowId && flowOptions.value.length === 1) {
     form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
@@ -490,7 +498,11 @@ function handlePostAdjustment() {
   proxy.$modal
     .confirm('确认过账盘点差异调整？')
     .then(() => {
-      postAdjustment(form.value.planId, { ...form.value, wmStockTakingLineList: lineList.value }).then((response) => {
+      form.value.wmStockTakingLineList = lineList.value;
+      return updateStockTakingPlan(form.value);
+    })
+    .then(() => {
+      return postAdjustment(form.value.planId, { ...form.value, wmStockTakingLineList: lineList.value }).then((response) => {
         showTraceSubmission(proxy.$modal, response, '过账成功');
         getInfo(form.value.planId);
       });

@@ -49,6 +49,9 @@ public class WmTransferServiceImpl implements IWmTransferService {
     private final WmTransferMapper baseMapper;
     /** 行数据访问映射器（Mapper） */
     private final WmTransferLineMapper lineMapper;
+    private final com.nexus.erp.wm.mapper.WmStorageLocationMapper locationMapper;
+    private final com.nexus.erp.wm.mapper.WmWarehouseMapper warehouseMapper;
+    private final com.nexus.erp.wm.mapper.WmStorageAreaMapper areaMapper;
     /** 库存操作业务服务，提供库存操作相关能力 */
     private final WmStockOperationServiceImpl stockOperationService;
 
@@ -104,6 +107,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
+        normalizeLocations(entity, bo.getWmTransferLineList());
         if (StringUtils.isBlank(entity.getTransferNo())) {
             entity.setTransferNo(wm.autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
         }
@@ -138,6 +142,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
             throw new com.nexus.common.core.exception.ServiceException("当前状态不允许修改，只有草稿状态才能修改！");
         }
         entity.setStatus(existing.getStatus());
+        normalizeLocations(entity, bo.getWmTransferLineList());
         deleteLinesByTransferId(entity.getTransferId());
         if (bo.getWmTransferLineList() != null) {
             for (WmTransferLine line : bo.getWmTransferLineList()) {
@@ -222,6 +227,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
             }
         }
 
+        normalizeLocations(transfer, lines);
         for (WmTransferLine line : lines) {
             // 从调拨单头填充仓库维度（行表无仓库字段，跨仓调拨时用于正确扣减/建立目标库存维度）
             line.setFromWarehouseId(transfer.getFromWarehouseId());
@@ -230,9 +236,6 @@ public class WmTransferServiceImpl implements IWmTransferService {
             line.setToWarehouseId(transfer.getToWarehouseId());
             line.setToWarehouseCode(transfer.getToWarehouseCode());
             line.setToWarehouseName(transfer.getToWarehouseName());
-            line.setToAreaId(transfer.getToAreaId());
-            line.setToAreaCode(transfer.getToAreaCode());
-            line.setToAreaName(transfer.getToAreaName());
             stockOperationService.postTransfer(line);
         }
 
@@ -240,6 +243,60 @@ public class WmTransferServiceImpl implements IWmTransferService {
         transfer.setExecuteDate(new Date());
         baseMapper.updateById(transfer);
         log.info("调拨单执行完成, transferId={}", transferId);
+    }
+
+    /** 编码输入在服务端解析；库位、库区和仓库的归属均来自本租户主数据。 */
+    private void normalizeLocations(WmTransfer head, List<WmTransferLine> lines) {
+        if (lines == null || lines.isEmpty()) throw new com.nexus.common.core.exception.ServiceException("调拨单至少需要一条明细");
+        for (WmTransferLine line : lines) {
+            if (line.getMaterialId() == null || line.getQuantity() == null || line.getQuantity().signum() <= 0
+                    || line.getQuantity().stripTrailingZeros().scale() > 4) {
+                throw new com.nexus.common.core.exception.ServiceException("调拨物料不能为空，数量必须大于0且最多4位小数");
+            }
+        }
+        var fromWarehouse = warehouseMapper.selectById(head.getFromWarehouseId());
+        var toWarehouse = warehouseMapper.selectById(head.getToWarehouseId());
+        if (fromWarehouse == null || toWarehouse == null
+                || !Long.valueOf(1L).equals(fromWarehouse.getStatus()) || !Long.valueOf(1L).equals(toWarehouse.getStatus())) {
+            throw new com.nexus.common.core.exception.ServiceException("来源和目标仓库必须真实存在且已启用");
+        }
+        head.setFromWarehouseCode(fromWarehouse.getWarehouseCode()); head.setFromWarehouseName(fromWarehouse.getWarehouseName());
+        head.setToWarehouseCode(toWarehouse.getWarehouseCode()); head.setToWarehouseName(toWarehouse.getWarehouseName());
+        BigDecimal total = BigDecimal.ZERO;
+        for (WmTransferLine line : lines) {
+            var from = resolveLocation(line.getFromLocationId(), line.getFromLocationCode(), head.getFromWarehouseId(), "来源");
+            var to = resolveLocation(line.getToLocationId(), line.getToLocationCode(), head.getToWarehouseId(), "目标");
+            if (from.getLocationId().equals(to.getLocationId())) throw new com.nexus.common.core.exception.ServiceException("来源与目标库位不能相同");
+            if (head.getFromAreaId() != null && !head.getFromAreaId().equals(from.getAreaId())
+                    || head.getToAreaId() != null && !head.getToAreaId().equals(to.getAreaId())) {
+                throw new com.nexus.common.core.exception.ServiceException("调拨库位不属于指定库区");
+            }
+            var area = to.getAreaId() == null ? null : areaMapper.selectById(to.getAreaId());
+            if (area == null) throw new com.nexus.common.core.exception.ServiceException("目标库区不存在");
+            line.setFromLocationId(from.getLocationId()); line.setFromLocationCode(from.getLocationCode()); line.setFromLocationName(from.getLocationName());
+            line.setToLocationId(to.getLocationId()); line.setToLocationCode(to.getLocationCode()); line.setToLocationName(to.getLocationName());
+            line.setToAreaId(area.getAreaId()); line.setToAreaCode(area.getAreaCode()); line.setToAreaName(area.getAreaName());
+            line.setTenantId(null);
+            total = total.add(line.getQuantity());
+        }
+        head.setTotalQuantity(total);
+    }
+
+    private com.nexus.erp.wm.domain.WmStorageLocation resolveLocation(Long id, String code, Long warehouseId, String label) {
+        var location = id != null ? locationMapper.selectById(id)
+            : StringUtils.isBlank(code) ? null : locationMapper.selectOne(Wrappers.<com.nexus.erp.wm.domain.WmStorageLocation>lambdaQuery()
+                .eq(com.nexus.erp.wm.domain.WmStorageLocation::getWarehouseId, warehouseId)
+                .eq(com.nexus.erp.wm.domain.WmStorageLocation::getLocationCode, code));
+        if (location == null || !java.util.Objects.equals(warehouseId, location.getWarehouseId())) {
+            throw new com.nexus.common.core.exception.ServiceException(label + "库位不存在或不属于指定仓库");
+        }
+        if (!Long.valueOf(1L).equals(location.getEnableFlag()) || Long.valueOf(1L).equals(location.getFrozenFlag())) {
+            throw new com.nexus.common.core.exception.ServiceException(label + "库位未启用或已冻结");
+        }
+        if (StringUtils.isNotBlank(code) && !code.equals(location.getLocationCode())) {
+            throw new com.nexus.common.core.exception.ServiceException(label + "库位编码与ID不一致");
+        }
+        return location;
     }
 
     // ==================== Flowable 工作流集成 ====================

@@ -143,6 +143,9 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         if (existing == null) {
             throw new com.nexus.common.core.exception.ServiceException("盘点计划不存在");
         }
+        if (STATUS_GENERATED.equals(existing.getStatus())) {
+            return saveGeneratedCounts(existing.getPlanId(), bo.getWmStockTakingLineList());
+        }
         if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
             throw new com.nexus.common.core.exception.ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
         }
@@ -257,12 +260,16 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             throw new RuntimeException("盘点计划不存在");
         }
 
-        // 幂等/并发防护：仅未过账（GENERATED/APPROVING）的计划允许过账，条件更新抢占，防止双通道重复过账
+        if (!STATUS_GENERATED.equals(plan.getStatus()) || plan.getSelectFlowId() != null) {
+            throw new com.nexus.common.core.exception.ServiceException("仅未配置审批流程的已生成计划可手工过账；审批计划须审批通过后过账");
+        }
+
+        // 手工过账只接受无审批流程的GENERATED，不能抢占审批中的计划。
         int claimed = baseMapper.update(null,
             Wrappers.<WmStockTakingPlan>lambdaUpdate()
                 .set(WmStockTakingPlan::getStatus, "POSTING")
                 .eq(WmStockTakingPlan::getPlanId, planId)
-                .in(WmStockTakingPlan::getStatus, "GENERATED", STATUS_APPROVING));
+                .eq(WmStockTakingPlan::getStatus, STATUS_GENERATED));
         if (claimed == 0) {
             throw new RuntimeException("盘点计划已过账或状态不允许过账");
         }
@@ -305,6 +312,43 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         log.info("盘点计划 {} 差异过账完成", planId);
     }
 
+    /** 已生成计划只更新实盘数；服务端账面快照、行ID和库存维度不可由PC重建。 */
+    private int saveGeneratedCounts(Long planId, List<WmStockTakingLine> requested) {
+        WmStockTakingPlan locked = baseMapper.selectOne(Wrappers.<WmStockTakingPlan>lambdaQuery()
+            .eq(WmStockTakingPlan::getPlanId, planId).last("FOR UPDATE"));
+        if (locked == null || !STATUS_GENERATED.equals(locked.getStatus())) {
+            throw new com.nexus.common.core.exception.ServiceException("盘点状态已变化，请重新读取");
+        }
+        List<WmStockTakingLine> persisted = lineMapper.selectList(Wrappers.<WmStockTakingLine>lambdaQuery()
+            .eq(WmStockTakingLine::getPlanId, planId));
+        if (requested == null || requested.isEmpty() || requested.size() != persisted.size()) {
+            throw new com.nexus.common.core.exception.ServiceException("实盘明细必须完整且与原计划一致");
+        }
+        Map<Long, WmStockTakingLine> originals = new HashMap<>();
+        for (WmStockTakingLine row : persisted) originals.put(row.getLineId(), row);
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (WmStockTakingLine input : requested) {
+            if (input == null || input.getLineId() == null || !seen.add(input.getLineId())
+                    || !originals.containsKey(input.getLineId())
+                    || input.getPlanId() != null && !planId.equals(input.getPlanId())) {
+                throw new com.nexus.common.core.exception.ServiceException("实盘行重复或不属于当前盘点计划");
+            }
+            BigDecimal actual = input.getActualQuantity();
+            if (actual == null || actual.signum() < 0 || actual.stripTrailingZeros().scale() > 4) {
+                throw new com.nexus.common.core.exception.ServiceException("实盘数量必须非负且最多4位小数");
+            }
+        }
+        for (WmStockTakingLine input : requested) {
+            WmStockTakingLine original = originals.get(input.getLineId());
+            WmStockTakingLine patch = new WmStockTakingLine();
+            patch.setLineId(original.getLineId());
+            patch.setActualQuantity(input.getActualQuantity());
+            patch.setDifferenceQuantity(input.getActualQuantity().subtract(original.getBookQuantity() == null ? BigDecimal.ZERO : original.getBookQuantity()));
+            if (lineMapper.updateById(patch) != 1) throw new com.nexus.common.core.exception.ServiceException("盘点行保存失败");
+        }
+        return requested.size();
+    }
+
     // ==================== Flowable 工作流集成 ====================
 
     /**
@@ -322,6 +366,11 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         if (plan == null) {
             throw new RuntimeException("盘点计划不存在");
         }
+        if (!STATUS_GENERATED.equals(plan.getStatus())) {
+            throw new com.nexus.common.core.exception.ServiceException("只有已生成并完成实盘录入的计划才能提交审批");
+        }
+        assertAllLinesCounted(lineMapper.selectList(Wrappers.<WmStockTakingLine>lambdaQuery()
+            .eq(WmStockTakingLine::getPlanId, planId)));
         if (StringUtils.isBlank(selectFlowId)) {
             if (plan.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(plan.getSelectFlowId());

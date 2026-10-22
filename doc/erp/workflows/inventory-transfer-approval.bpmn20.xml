@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:flowable="http://flowable.org/bpmn" targetNamespace="http://flowable.org/bpmn" exporter="flowable-modeler" exporterVersion="1.0.0">
+  <process id="BusinessProcess_WmTransfer" name="库存调拨审批流程" isExecutable="true" flowable:processStatus="RUNNING">
+    <startEvent id="startEvent" name="开始" flowable:formKey="key_2058471891064217602">
+      <extensionElements />
+    </startEvent>
+    <userTask id="warehouseManagerApproval" name="调拨申请" flowable:dataType="INITIATOR" flowable:assignee="${initiator}" flowable:text="流程发起人">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler">false</modeler:initiator-can-complete>
+      </extensionElements>
+      <outgoing>Flow_12nt3wm</outgoing>
+    </userTask>
+    <endEvent id="endEvent" name="结束">
+      <incoming>Flow_02dz3bs</incoming>
+    </endEvent>
+    <sequenceFlow id="flow1" name="提交" sourceRef="startEvent" targetRef="warehouseManagerApproval" />
+    <userTask id="Activity_0u37jca" name="仓库主管审批" flowable:dataType="INITIATOR" flowable:assignee="${initiator}" flowable:text="流程发起人">
+      <incoming>Flow_12nt3wm</incoming>
+      <outgoing>Flow_02dz3bs</outgoing>
+    </userTask>
+    <sequenceFlow id="Flow_12nt3wm" name="审批" sourceRef="warehouseManagerApproval" targetRef="Activity_0u37jca" />
+    <sequenceFlow id="Flow_02dz3bs" name="通过" sourceRef="Activity_0u37jca" targetRef="endEvent" />
+  </process>
+  <bpmndi:BPMNDiagram xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="BPMNDiagram">
+    <bpmndi:BPMNPlane bpmnElement="BusinessProcess_WmTransfer">
+      <bpmndi:BPMNEdge id="edge-flow1" bpmnElement="flow1">
+        <di:waypoint x="136" y="198" />
+        <di:waypoint x="240" y="195" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12nt3wm_di" bpmnElement="Flow_12nt3wm">
+        <di:waypoint x="360" y="195" />
+        <di:waypoint x="470" y="195" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="404" y="177" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02dz3bs_di" bpmnElement="Flow_02dz3bs">
+        <di:waypoint x="570" y="195" />
+        <di:waypoint x="651" y="195" />
+        <di:waypoint x="651" y="198" />
+        <di:waypoint x="732" y="198" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="655" y="194" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="shape-startEvent" bpmnElement="startEvent">
+        <dc:Bounds x="100" y="180" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="107" y="216" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-warehouseManagerApproval" bpmnElement="warehouseManagerApproval">
+        <dc:Bounds x="240" y="160" width="120" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0u37jca_di" bpmnElement="Activity_0u37jca">
+        <dc:Bounds x="470" y="155" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-endEvent" bpmnElement="endEvent">
+        <dc:Bounds x="732" y="180" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="739" y="216" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
