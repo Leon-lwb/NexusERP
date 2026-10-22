@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadEngineeringModule, loadEngineeringUI, mountEngineeringUI, engineeringUIEnvironment, deferred } from './engineering-test-utils.mjs';
 const e = await loadEngineeringModule('src/components/ai/engineering/engineering-events.ts');
+const { createAiChatStream } = await loadEngineeringModule('src/utils/ai-chat-stream.ts');
 const state = { sessionId: '9223372036854775807', requestId: 'req-current' };
 const event = {
   type: 'AI_ENGINEERING_TASK',
@@ -120,51 +121,77 @@ test('工程通知丢失时，AI_DONE仍通过任务接口恢复真实卡片', a
 });
 
 for (const relative of ['src/views/ai/assistant/index.vue', 'src/components/ai/AiChatDrawer.vue']) {
-  test(`${relative} 切换会话后迟到的发送回执不能改变当前会话`, async () => {
-    const { readFile } = await import('node:fs/promises');
-    const { parse } = await import('@vue/compiler-sfc');
-    const ts = await import('typescript');
-    const { descriptor } = parse(await readFile(new URL('../' + relative, import.meta.url), 'utf8'));
-    const source = ts.createSourceFile(relative, descriptor.scriptSetup.content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-    const method = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === 'sendMessage');
-    const code = ts.transpileModule(method.getText(source), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
-    const pending = deferred();
-    const session = { value: '11' };
-    const epoch = { value: 0 };
-    const context = {
-      inputText: { value: '生成工程草稿' },
-      loading: { value: false },
-      thinking: { value: false },
-      messages: { value: [] },
-      currentSessionId: session,
-      sessionId: session,
-      chatEpoch: epoch,
-      engineering: { prepare: () => ({ engineeringDeviceId: '1', engineeringRequestId: 'req-a' }), sent: () => {} },
-      prepareChatKnowledgeRequest: () => ({}),
-      chatMode: { value: 'auto' },
-      selectedKnowledgeId: { value: '' },
-      knowledgeOptions: { value: [] },
-      knowledgeLoading: { value: false },
-      knowledgeLoadError: { value: '' },
-      canListKnowledge: { value: true },
-      proxy: { $modal: { msgWarning: () => {} } },
-      nextTick: async () => {},
-      scrollToBottom: () => {},
-      sendAiMessage: () => pending.promise,
-      selectedModel: { value: '' },
-      enableThinking: { value: false },
-      enableWebSearch: { value: false },
-      selectedToolIds: { value: [] }
-    };
-    const send = new Function(...Object.keys(context), code + '\nreturn sendMessage;')(...Object.values(context));
-    const request = send();
-    await Promise.resolve();
-    session.value = '12';
-    epoch.value++;
-    pending.resolve({ data: '11' });
-    await request;
-    assert.equal(session.value, '12');
-  });
+  for (const outcome of ['success', 'failure']) {
+    test(`${relative} 切换会话后迟到的发送回执 ${outcome} 不能改变当前会话或工程请求`, async () => {
+      const { readFile } = await import('node:fs/promises');
+      const { parse } = await import('@vue/compiler-sfc');
+      const ts = await import('typescript');
+      const { descriptor } = parse(await readFile(new URL('../' + relative, import.meta.url), 'utf8'));
+      const source = ts.createSourceFile(relative, descriptor.scriptSetup.content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+      const method = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === 'sendMessage');
+      const code = ts.transpileModule(method.getText(source), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+      const pending = deferred();
+      const session = { value: '11' };
+      const epoch = { value: 0 };
+      const requests = [];
+      let engineeringSent = 0;
+      const context = {
+        canSend: { value: true },
+        chatStream: createAiChatStream(),
+        inputText: { value: '生成工程草稿' },
+        loading: { value: false },
+        thinking: { value: false },
+        messages: { value: [] },
+        currentSessionId: session,
+        sessionId: session,
+        chatEpoch: epoch,
+        engineering: {
+          prepare: () => ({ engineeringDeviceId: '1', engineeringRequestId: 'req-a' }),
+          sent: () => {
+            engineeringSent++;
+          }
+        },
+        prepareChatKnowledgeRequest: () => ({}),
+        chatMode: { value: 'auto' },
+        selectedKnowledgeId: { value: '' },
+        knowledgeOptions: { value: [] },
+        knowledgeLoading: { value: false },
+        knowledgeLoadError: { value: '' },
+        canListKnowledge: { value: true },
+        proxy: { $modal: { msgWarning: () => {} } },
+        nextTick: async () => {},
+        scrollToBottom: () => {},
+        sendAiMessage: (payload) => {
+          requests.push(payload);
+          return pending.promise;
+        },
+        selectedModel: { value: '' },
+        enableThinking: { value: false },
+        enableWebSearch: { value: false },
+        selectedToolIds: { value: [] }
+      };
+      const send = new Function(...Object.keys(context), code + '\nreturn sendMessage;')(...Object.values(context));
+      const request = send();
+      await Promise.resolve();
+      assert.equal(requests.length, 1, 'the real send function must reach HTTP before switching');
+      assert.equal(requests[0].engineeringDeviceId, '1');
+      assert.equal(requests[0].engineeringRequestId, 'req-a');
+      assert.equal(requests[0].sessionId, '11');
+      assert.match(requests[0].clientRequestId, /^[0-9a-f-]{36}$/i);
+      session.value = '12';
+      epoch.value++;
+      context.chatStream.reset();
+      context.messages.value = [{ role: 'assistant', content: 'current session B' }];
+      context.loading.value = false;
+      if (outcome === 'success') pending.resolve({ data: '11' });
+      else pending.reject(new Error('late request failure'));
+      await request;
+      assert.equal(session.value, '12');
+      assert.equal(engineeringSent, 0, 'a stale ACK cannot complete the current engineering request');
+      assert.deepEqual(context.messages.value, [{ role: 'assistant', content: 'current session B' }]);
+      assert.equal(context.loading.value, false);
+    });
+  }
 }
 
 test('实际控制器仅接受当前类型化回执，成功文字不能伪造工程状态', async () => {

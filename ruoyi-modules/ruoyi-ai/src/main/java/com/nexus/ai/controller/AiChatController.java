@@ -51,6 +51,7 @@ public class AiChatController {
      * @param request 聊天请求
      * @return 操作结果（含 sessionId）
      */
+    @SaCheckPermission("ai:assistant:send")
     @PostMapping("/send")
     public R<Long> send(@RequestBody(required = false) AiChatRequest request) {
         String content = request == null ? null : request.getContent();
@@ -60,6 +61,9 @@ public class AiChatController {
         }
         if (content.length() > CONTENT_MAX_LENGTH) {
             return R.fail(400, "消息内容不能超过2000个字符");
+        }
+        if (!AiChatRequest.validClientRequestId(request.getClientRequestId())) {
+            return R.fail(400, "请求关联标识格式不正确");
         }
         Long sessionId = aiServiceFacade.chat(request);
         if (sessionId == null) {
@@ -74,6 +78,7 @@ public class AiChatController {
      * @param sessionId 会话ID
      * @return 消息列表
      */
+    @SaCheckPermission("ai:assistant:query")
     @GetMapping("/history/{sessionId}")
     public R<List<AiMessage>> history(@PathVariable Long sessionId) {
         // 校验会话归属：只能查看自己的会话消息
@@ -95,6 +100,7 @@ public class AiChatController {
      *
      * @return 会话列表
      */
+    @SaCheckPermission("ai:assistant:query")
     @GetMapping("/sessions")
     public R<List<AiSession>> sessions() {
         Long userId = LoginHelper.getUserId();
@@ -108,6 +114,7 @@ public class AiChatController {
      * @param ids 会话ID数组
      * @return 操作结果
      */
+    @SaCheckPermission("ai:assistant:remove")
     @DeleteMapping("/session/{ids}")
     public R<Void> deleteSession(@PathVariable Long[] ids) {
         // 校验会话归属：只能删除自己的会话
@@ -128,6 +135,7 @@ public class AiChatController {
      * @param session 会话信息（含 id 和 title）
      * @return 操作结果
      */
+    @SaCheckPermission("ai:assistant:send")
     @PutMapping("/session")
     public R<Void> renameSession(@RequestBody AiSession session) {
         if (session.getId() == null || session.getTitle() == null || session.getTitle().isBlank()) {
@@ -150,6 +158,7 @@ public class AiChatController {
      * @param feedback  反馈类型：LIKE / DISLIKE / NONE（取消反馈）
      * @return 操作结果
      */
+    @SaCheckPermission("ai:assistant:send")
     @PutMapping("/message/{messageId}/feedback")
     public R<Void> feedback(@PathVariable Long messageId, @RequestParam String feedback) {
         if (!"LIKE".equals(feedback) && !"DISLIKE".equals(feedback) && !"NONE".equals(feedback)) {
@@ -179,6 +188,7 @@ public class AiChatController {
      * @param messageId 消息ID
      * @return 操作结果
      */
+    @SaCheckPermission("ai:assistant:remove")
     @DeleteMapping("/message/{messageId}")
     public R<Void> deleteMessage(@PathVariable Long messageId) {
         // 校验消息归属：只能删除自己会话中的消息
@@ -202,6 +212,7 @@ public class AiChatController {
      * @param sessionId 会话ID
      * @return Token 用量信息
      */
+    @SaCheckPermission("ai:assistant:query")
     @GetMapping("/token-usage/{sessionId}")
     public R<Map<String, Object>> getTokenUsage(@PathVariable Long sessionId) {
         Long userId = LoginHelper.getUserId();

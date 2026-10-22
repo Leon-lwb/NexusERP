@@ -11,6 +11,43 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
  * 保存当前页面或测试的fileCache状态。
  */
 const fileCache = new Map();
+
+/** 仅解析安装契约用到的建表结构；IF NOT EXISTS 不改变表和列的含义。 */
+function tableDefinitions(schema) {
+  return new Map(
+    [...schema.matchAll(/^CREATE TABLE(?: IF NOT EXISTS)?\s+`([^`]+)`\s*\(([\s\S]*?)\)\s*ENGINE\b/gim)].map((match) => [match[1], match[2]])
+  );
+}
+
+function tableColumns(body) {
+  return sqlList(body).flatMap((definition) => {
+    const column = /^`([^`]+)`\s+/.exec(definition);
+    return column ? [column[1]] : [];
+  });
+}
+
+/** UNIQUE KEY 与 UNIQUE INDEX 等价，但唯一性及有序键列必须一致。 */
+function tableIndexes(body) {
+  const indexes = new Map();
+  const columns = tableColumns(body);
+  for (const definition of sqlList(body)) {
+    if (!/^(?:PRIMARY|UNIQUE|KEY|INDEX)\b/i.test(definition)) continue;
+    const match = /^(PRIMARY\s+KEY|UNIQUE\s+(?:KEY|INDEX)|KEY|INDEX)\s*(?:`([^`]+)`)?\s*\(([\s\S]*)\)(?:\s+USING\s+\w+)?$/i.exec(definition);
+    assert.ok(match, '索引声明必须能完整解析');
+    const name = match[2] || 'PRIMARY';
+    assert.equal(indexes.has(name), false, `索引名称不得重复：${name}`);
+    const keyColumns = sqlList(match[3]).map((column) => {
+      const identifier = /^(?:`([^`]+)`|(\w+))(?:\s+(?:ASC|DESC))?$/i.exec(column);
+      assert.ok(identifier, `索引 ${name} 必须使用完整列，不能借前缀或表达式冒充`);
+      const field = identifier[1] || identifier[2];
+      assert.ok(columns.includes(field), `索引 ${name} 引用了未声明列 ${field}`);
+      return field;
+    });
+    indexes.set(name, { unique: /^(?:PRIMARY|UNIQUE)\b/i.test(match[1]), columns: keyColumns });
+  }
+  return indexes;
+}
+
 /** 读取并检查当前租户私有产物。 */
 const read = (path) => {
   if (!fileCache.has(path)) fileCache.set(path, readFileSync(resolve(root, path), 'utf8'));
@@ -62,8 +99,12 @@ test('new-install schema removes only unused report product tables', () => {
 });
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('nine report core tables have mandatory tenant ownership and version/task constraints', () => {
-  const schema = read('script/sql/ry-vue.sql');
-  const tables = new Map([...schema.matchAll(/CREATE TABLE(?: IF NOT EXISTS)?\s+`(rpt_[^`]+)`\s*\(([\s\S]*?)\) ENGINE/g)].map((x) => [x[1], x[2]]));
+  assertCoreTables(read('script/sql/ry-vue.sql'));
+});
+
+/** 同一语义契约用于安装文件与合成语法、负例夹具，不执行 SQL。 */
+function assertCoreTables(schema) {
+  const tables = tableDefinitions(schema);
   const expected = [
     'rpt_catalog',
     'rpt_definition',
@@ -77,11 +118,15 @@ test('nine report core tables have mandatory tenant ownership and version/task c
   ];
   assert.equal(expected.filter((name) => tables.has(name)).length, 9);
   for (const name of expected) assert.match(tables.get(name) || '', /`tenant_id`[^,\n]*NOT NULL/, name);
-  assert.match(tables.get('rpt_definition'), /draft_revision/);
-  assert.match(tables.get('rpt_version'), /UNIQUE KEY/);
-  assert.match(tables.get('rpt_export_job'), /idempotency_key/);
-  assert.match(tables.get('rpt_export_job'), /lease_until/);
-});
+  assert.ok(tableColumns(tables.get('rpt_definition')).includes('draft_revision'));
+  assert.ok(
+    [...tableIndexes(tables.get('rpt_version')).values()].some(
+      (index) => index.unique && JSON.stringify(index.columns) === JSON.stringify(['tenant_id', 'report_id', 'version_no'])
+    ),
+    '报表版本必须按租户、报表及版本号唯一，不能由无关索引替代'
+  );
+  for (const column of ['idempotency_key', 'lease_until']) assert.ok(tableColumns(tables.get('rpt_export_job')).includes(column), column);
+}
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('authorized update drops only the explicit unused Jimu table list', () => {
   const path = 'script/sql/update/2026-10-14-report-p0.sql';
@@ -102,7 +147,7 @@ const knownLegacyMenuIds = ['3020', '3021', '3022', '2053846181246812161'];
  */
 const updatePath = 'script/sql/update/2026-10-14-report-p0.sql';
 /** 提供报表 `sqlList` 操作入口。 */
-const sqlList = (text) => {
+function sqlList(text) {
   const values = [];
   let start = 0,
     depth = 0,
@@ -127,36 +172,64 @@ const sqlList = (text) => {
       start = i + 1;
     }
   }
+  assert.equal(quoted, false, 'SQL 列表中的字符串必须闭合');
+  assert.equal(depth, 0, 'SQL 列表中的括号必须配对');
   values.push(text.slice(start).trim());
   return values;
-};
+}
 /** 提供报表 `sqlLiteral` 操作入口。 */
-const sqlLiteral = (text) => (text === 'NULL' ? null : text.startsWith("'") ? text.slice(1, -1).replace(/''/g, "'") : text);
-/** 提供报表 `seedRows` 操作入口。 */
-const seedRows = (schema, table) => {
+function sqlLiteral(text) {
+  if (text.toUpperCase() === 'NULL') return null;
+  if (!text.startsWith("'")) return text;
+  return text.slice(1, -1).replace(/''|\\([\s\S])/g, (escaped, character) => {
+    if (escaped === "''") return "'";
+    return { '0': '\0', b: '\b', n: '\n', r: '\r', t: '\t', Z: '\x1a' }[character] ?? character;
+  });
+}
+
+/** 显式列按列名映射；完整 VALUES 行只能使用实际建表列序，拒绝猜测或截断。 */
+function seedRows(schema, table) {
+  const body = tableDefinitions(schema).get(table);
+  const declaredColumns = body ? tableColumns(body) : null;
   const rows = [];
-  let columns;
-  for (const source of schema.split(/\r?\n/)) {
-    let line = source;
-    if (line.startsWith('INSERT INTO ' + String.fromCharCode(96) + table + String.fromCharCode(96))) {
-      const header = line.match(/^INSERT INTO .+? \((.*?)\) VALUES\s*(.*)$/);
-      assert.ok(header, 'seed INSERT has explicit columns');
-      columns = sqlList(header[1]).map((x) => x.replace(/\x60/g, ''));
-      line = header[2];
-      if (!line) continue;
-    } else if (!columns) continue;
-    const row = line.match(/^\((.*)\)[,;]$/);
-    if (!row) {
-      columns = undefined;
-      continue;
+  const statements = new RegExp(
+    '^INSERT\\s+INTO\\s+`?' + table + "`?\\s*(?:\\(([^)]*)\\))?\\s*VALUES\\s*((?:'(?:''|\\\\.|[^'\\\\])*'|[^';])*);",
+    'gmi'
+  );
+  for (const statement of schema.matchAll(statements)) {
+    const columns = statement[1]
+      ? sqlList(statement[1]).map((column) => {
+          const name = /^(?:`([^`]+)`|(\w+))$/.exec(column);
+          assert.ok(name, `${table} 显式列名必须完整解析`);
+          return name[1] || name[2];
+        })
+      : declaredColumns;
+    assert.ok(columns?.length, `${table} 完整 VALUES 行必须有实际建表列序`);
+    assert.equal(new Set(columns).size, columns.length, `${table} 显式列不得重复`);
+    if (declaredColumns) for (const column of columns) assert.ok(declaredColumns.includes(column), `${table} 未声明列 ${column}`);
+    const tuplePattern = /\((?:'(?:''|\\.|[^'\\])*'|[^'()])*\)/g;
+    const tuples = [...statement[2].matchAll(tuplePattern)];
+    assert.ok(tuples.length > 0, `${table} VALUES 必须包含数据行`);
+    let previousEnd = 0;
+    for (const [index, tuple] of tuples.entries()) {
+      const separator = statement[2].slice(previousEnd, tuple.index).trim();
+      assert.ok(separator === (index === 0 ? '' : ','), `${table} VALUES 行间必须使用单个逗号，不得残留表达式`);
+      previousEnd = tuple.index + tuple[0].length;
     }
-    const values = sqlList(row[1]).map(sqlLiteral);
-    rows.push(Object.fromEntries(columns.map((column, i) => [column, values[i]])));
-    if (line.endsWith(';')) columns = undefined;
+    assert.ok(statement[2].slice(previousEnd).trim() === '', `${table} VALUES 结尾不得残留逗号或表达式`);
+    for (const tuple of tuples) {
+      const literals = sqlList(tuple[0].slice(1, -1));
+      assert.equal(literals.length, columns.length, `${table} 行值数量必须与列数量一致`);
+      assert.ok(
+        literals.every((literal) => /^(?:NULL|-?\d+(?:\.\d+)?|'(?:''|\\.|[^'\\])*')$/i.test(literal)),
+        `${table} 种子值只能使用受支持的字面量`
+      );
+      rows.push(Object.fromEntries(columns.map((column, index) => [column, sqlLiteral(literals[index])])));
+    }
   }
   return rows;
-};
-/** 提供报表 `nativeMenus` 操作入口。 */
+}
+/** 解析已授权迁移中的具名列 SELECT 种子，仅读取元数据。 */
 const nativeMenus = (sql) =>
   [...sql.matchAll(/^INSERT INTO sys_menu \((.*?)\) SELECT (.*?) FROM DUAL /gm)].map((match) => {
     const values = sqlList(match[2]).map(sqlLiteral);
@@ -263,8 +336,22 @@ const fixture = (menu_ids, menus = []) => ({ menus, grants: [], packages: [{ pac
 
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('bootstrap has one native report root and no legacy relative routes, URL menus or references', () => {
-  const schema = read('script/sql/ry-vue.sql');
+  assertFreshMenus(read('script/sql/ry-vue.sql'));
+});
+
+/** 同一语义契约用于安装文件与合成语法、负例夹具，不执行 SQL。 */
+function assertFreshMenus(
+  schema,
+  expectedMenus = [...nativeMenus(read(updatePath)), ...nativeMenus(read('script/sql/update/2026-10-15-report-e2-e7.sql'))]
+) {
   const menus = [...seedRows(schema, 'sys_menu'), ...nativeMenus(schema)];
+  assert.equal(new Set(menus.map((menu) => menu.menu_id)).size, menus.length, '菜单 ID 必须唯一');
+  for (const expected of expectedMenus) {
+    const actual = menus.find((menu) => menu.menu_id === expected.menu_id);
+    assert.ok(actual, `缺少原生报表菜单 ${expected.menu_id}`);
+    for (const field of ['parent_id', 'path', 'component', 'menu_type', 'perms'])
+      assert.equal(actual[field], expected[field], `菜单 ${expected.menu_id} 的 ${field} 必须保留实际契约`);
+  }
   assert.deepEqual(
     menus.filter((menu) => menu.parent_id === '0' && menu.path === 'report').map((menu) => menu.menu_id),
     ['23000']
@@ -274,11 +361,15 @@ test('bootstrap has one native report root and no legacy relative routes, URL me
     assert.equal(['reportDesign', 'reportDashboard'].includes(menu.path), false, 'legacy relative route');
     assert.equal(legacyUrl(menu.path), false, 'legacy URL menu ID ' + menu.menu_id);
   }
-  for (const grant of seedRows(schema, 'sys_role_menu')) assert.equal(knownLegacyMenuIds.includes(grant.menu_id), false, 'legacy role reference');
+  for (const grant of seedRows(schema, 'sys_role_menu')) {
+    assert.ok(Object.hasOwn(grant, 'menu_id'), '角色菜单种子必须保留 menu_id 列');
+    assert.equal(knownLegacyMenuIds.includes(grant.menu_id), false, 'legacy role reference');
+  }
   for (const entry of seedRows(schema, 'sys_tenant_package')) {
+    assert.ok(Object.hasOwn(entry, 'menu_ids'), '租户套餐种子必须保留 menu_ids 列');
     for (const id of (entry.menu_ids || '').split(',')) assert.equal(knownLegacyMenuIds.includes(id.trim()), false, 'legacy package reference');
   }
-});
+}
 /** 验证当前测试标题所声明的报表行为，使用隔离合成数据。 */
 test('updater removes the old relative menu tree while preserving native and ERP/MES report menus', () => {
   const keep = [sampleMenu('23000', 'report'), sampleMenu('4001', '/erp/report/stock'), sampleMenu('4002', '/mes/report/quality')];
@@ -355,13 +446,23 @@ test('package cleanup preserves lists beyond GROUP_CONCAT default and sequence 1
 
 /** 扩展DDL与主安装一致，所有新资源、执行和容量记录都有隔离或全局命名策略。 */
 test('E2 to E7 extension tables and native menus match fresh install', () => {
-  const schema = read('script/sql/ry-vue.sql'),
-    increment = read('script/sql/update/2026-10-15-report-e2-e7.sql');
+  assertExtensions(read('script/sql/ry-vue.sql'), read('script/sql/update/2026-10-15-report-e2-e7.sql'));
+});
+
+/** 同一语义契约用于安装文件与合成语法、负例夹具，不执行 SQL。 */
+function assertExtensions(schema, increment) {
   const names = [...increment.matchAll(/CREATE TABLE IF NOT EXISTS `([^`]+)`/g)].map((match) => match[1]);
   assert.equal(names.length, 25);
+  const installedTables = tableDefinitions(schema);
+  const expectedTables = tableDefinitions(increment);
   for (const name of names) {
-    assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS `' + name + '`'), name);
-    assert.ok(increment.includes(name));
+    const installed = installedTables.get(name);
+    const expected = expectedTables.get(name);
+    assert.ok(installed, `安装 SQL 缺少扩展表 ${name}`);
+    assert.deepEqual(tableColumns(installed).sort(), tableColumns(expected).sort(), `${name} 列集合必须与增量一致`);
+    const installedIndexes = tableIndexes(installed);
+    for (const [indexName, index] of tableIndexes(expected))
+      assert.deepEqual(installedIndexes.get(indexName), index, `${name}.${indexName} 的唯一性及键列必须与增量一致`);
   }
   assert.doesNotMatch(increment, /DROP TABLE|DROP DATABASE|DELETE FROM/i);
   for (const path of ['query', 'pivot', 'assets', 'batch', 'dashboard', 'subscription', 'delivery']) {
@@ -371,4 +472,152 @@ test('E2 to E7 extension tables and native menus match fresh install', () => {
   assert.match(increment, /uk_rpt_subscription_occurrence/);
   assert.match(increment, /uk_rpt_delivery_execution/);
   assert.match(increment, /idx_rpt_manifest_recovery/);
+}
+
+/** 合成数据只保留本契约用到的字段，涵盖当前导出及历史显式列种子。 */
+const menuFixtureColumns = ['menu_id', 'menu_name', 'parent_id', 'path', 'component', 'menu_type', 'perms'];
+const expectedFixtureMenus = [
+  { menu_id: '23000', parent_id: '0', path: 'report', component: null, menu_type: 'M', perms: null },
+  { menu_id: '23001', parent_id: '23000', path: 'definition', component: 'report/definition/index', menu_type: 'C', perms: 'report:definition:list' }
+];
+function menuFixture(explicit = true) {
+  const header = (table, columns) => `INSERT INTO \`${table}\`${explicit ? ` (${columns.map((column) => `\`${column}\``).join(',')})` : ''} VALUES\n`;
+  return [
+    'CREATE TABLE `sys_menu` (`menu_id` bigint, `menu_name` varchar(50), `parent_id` bigint, `path` varchar(200), `component` varchar(255), `menu_type` char(1), `perms` varchar(100)) ENGINE=InnoDB;',
+    header('sys_menu', menuFixtureColumns) +
+      "(23000,'native',0,'report',NULL,'M',NULL),\n(23001,'definition',23000,'definition','report/definition/index','C','report:definition:list');",
+    'CREATE TABLE `sys_role_menu` (`role_id` bigint, `menu_id` bigint) ENGINE=InnoDB;',
+    header('sys_role_menu', ['role_id', 'menu_id']) + '(7,23000);',
+    'CREATE TABLE `sys_tenant_package` (`package_id` bigint, `menu_ids` varchar(3000)) ENGINE=InnoDB;',
+    header('sys_tenant_package', ['package_id', 'menu_ids']) + "(1,'23000,23001');"
+  ].join('\n');
+}
+
+function coreFixture(indexKeyword = 'KEY', ifNotExists = false) {
+  return ['rpt_catalog', 'rpt_definition', 'rpt_version', 'rpt_dataset', 'rpt_dataset_version', 'rpt_acl', 'rpt_run', 'rpt_export_job', 'rpt_audit']
+    .map((name) => {
+      const fields = ['`tenant_id` varchar(20) NOT NULL'];
+      if (name === 'rpt_definition') fields.push('`draft_revision` bigint NOT NULL');
+      if (name === 'rpt_version')
+        fields.push(
+          '`report_id` bigint NOT NULL',
+          '`version_no` int NOT NULL',
+          `UNIQUE ${indexKeyword} \`uk_report_version\` (\`tenant_id\`,\`report_id\`,\`version_no\`)`
+        );
+      if (name === 'rpt_export_job') fields.push('`idempotency_key` varchar(80) NOT NULL', '`lease_until` datetime NULL');
+      return `CREATE TABLE ${ifNotExists ? 'IF NOT EXISTS ' : ''}\`${name}\` (${fields.join(',')}) ENGINE=InnoDB;`;
+    })
+    .join('\n');
+}
+
+test('schema parser accepts UNIQUE KEY/INDEX and optional fresh-install IF NOT EXISTS without changing constraints', () => {
+  for (const keyword of ['KEY', 'INDEX']) for (const conditional of [false, true]) assertCoreTables(coreFixture(keyword, conditional));
+});
+
+test('version uniqueness must cover tenant/report/version, not a nonunique or unrelated key', () => {
+  const schema = coreFixture();
+  for (const mutation of [
+    schema.replace('UNIQUE KEY', 'KEY'),
+    schema.replace('(`tenant_id`,`report_id`,`version_no`)', '(`report_id`,`version_no`)'),
+    schema.replace('(`tenant_id`,`report_id`,`version_no`)', '(`tenant_id`,`report_id`)')
+  ])
+    assert.throws(() => assertCoreTables(mutation), assert.AssertionError);
+});
+
+test('SQL compatibility cannot hide nullable tenant ownership or missing revision/task columns', () => {
+  const schema = coreFixture();
+  for (const mutation of [
+    schema.replace('`tenant_id` varchar(20) NOT NULL', '`tenant_id` varchar(20) NULL'),
+    schema.replace('`draft_revision`', '`wrong_revision`'),
+    schema.replace('`idempotency_key`', '`wrong_request_key`'),
+    schema.replace('`lease_until`', '`wrong_lease`')
+  ])
+    assert.throws(() => assertCoreTables(mutation), assert.AssertionError);
+});
+
+test('VALUES parser maps full rows and reordered explicit-column rows to declared table columns', () => {
+  const schema = menuFixture(false);
+  const columns = '`path`,`menu_id`,`parent_id`,`menu_name`,`component`,`menu_type`,`perms`';
+  const explicit = schema.replace(
+    /INSERT INTO `sys_menu` VALUES[\s\S]*?;(?=\nCREATE TABLE)/,
+    `INSERT INTO \`sys_menu\` (${columns}) VALUES\n('report',23000,0,'native',NULL,'M',NULL),\n('definition',23001,23000,'definition','report/definition/index','C','report:definition:list');`
+  );
+  assert.deepEqual(seedRows(schema, 'sys_menu'), seedRows(explicit, 'sys_menu'));
+  assert.equal(seedRows(schema, 'sys_menu').length, 2);
+  assertFreshMenus(schema, expectedFixtureMenus);
+  assertFreshMenus(explicit, expectedFixtureMenus);
+});
+
+test('VALUES parser preserves quoted commas, semicolons, parentheses and escaped apostrophes', () => {
+  const schema =
+    'CREATE TABLE `sys_menu` (`menu_id` bigint, `menu_name` varchar(80)) ENGINE=InnoDB;\n' +
+    "INSERT INTO `sys_menu` VALUES (23000,'a, b; (c) and ''quoted'''),(23001,'a\\'b');";
+  assert.deepEqual(seedRows(schema, 'sys_menu'), [
+    { menu_id: '23000', menu_name: "a, b; (c) and 'quoted'" },
+    { menu_id: '23001', menu_name: "a'b" }
+  ]);
+});
+
+test('VALUES parser rejects unknown/duplicate columns, wrong row widths and missing implicit table order', () => {
+  const schema = menuFixture();
+  const rows = 'INSERT INTO `sys_menu` VALUES (23000,0);';
+  for (const mutation of [
+    schema.replace('(`menu_id`,`menu_name`', '(`wrong_id`,`menu_name`'),
+    schema.replace('(`menu_id`,`menu_name`', '(`menu_id`,`menu_id`'),
+    schema.replace("(23000,'native',0,'report',NULL,'M',NULL)", "(23000,'native',0,'report',NULL,'M')"),
+    rows,
+    schema.replace('NULL),\n(23001', 'NULL),,\n(23001')
+  ])
+    assert.throws(() => seedRows(mutation, 'sys_menu'), assert.AssertionError);
+});
+
+test('fresh native menu contract retains parent/path/component relationships and uniqueness', () => {
+  const schema = menuFixture();
+  assertFreshMenus(schema, expectedFixtureMenus);
+  for (const mutation of [
+    schema.replace("23000,'native',0", "23000,'native',7"),
+    schema.replace("23001,'definition',23000", "23001,'definition',7"),
+    schema.replace("'report/definition/index'", "'report/Definition/index'"),
+    schema +
+      "\nINSERT INTO `sys_menu` (`menu_id`,`menu_name`,`parent_id`,`path`,`component`,`menu_type`,`perms`) VALUES\n(23001,'duplicate',23000,'definition','report/definition/index','C','report:definition:list');"
+  ])
+    assert.throws(() => assertFreshMenus(mutation, expectedFixtureMenus), assert.AssertionError);
+});
+
+test('legacy menu, URL, role and tenant-package references remain forbidden in fresh installation', () => {
+  const schema = menuFixture();
+  for (const mutation of [
+    schema.replace("23001,'definition'", "3020,'definition'"),
+    schema.replace("'definition','report/definition/index'", "'/jmreport/list','report/definition/index'"),
+    schema.replace('(7,23000)', '(7,3020)'),
+    schema.replace("(1,'23000,23001')", "(1,'23000,3020,23001')")
+  ])
+    assert.throws(() => assertFreshMenus(mutation, expectedFixtureMenus), assert.AssertionError);
+});
+
+test('extension fresh definitions accept equivalent CREATE and UNIQUE syntax while retaining declared columns and indexes', () => {
+  const increment = read('script/sql/update/2026-10-15-report-e2-e7.sql');
+  const currentStyle = increment.replaceAll('CREATE TABLE IF NOT EXISTS', 'CREATE TABLE').replaceAll('UNIQUE KEY', 'UNIQUE INDEX');
+  assertExtensions(currentStyle, increment);
+  assertExtensions(increment, increment);
+});
+
+test('extension equivalence rejects missing tables, wrong column sets or weakened unique indexes', () => {
+  const increment = read('script/sql/update/2026-10-15-report-e2-e7.sql');
+  for (const mutation of [
+    increment.replace('CREATE TABLE IF NOT EXISTS `rpt_query_definition`', 'CREATE TABLE IF NOT EXISTS `wrong_query_definition`'),
+    increment.replace('`tenant_id` varchar(20) NOT NULL', '`wrong_tenant` varchar(20) NOT NULL'),
+    increment.replace('UNIQUE KEY `uk_rpt_subscription_occurrence`', 'KEY `uk_rpt_subscription_occurrence`'),
+    increment.replace('(`tenant_id`,`execution_id`)', '(`execution_id`)')
+  ]) {
+    assert.ok(mutation !== increment, 'negative fixture must perform a real mutation');
+    assert.throws(() => assertExtensions(mutation, increment), assert.AssertionError);
+  }
+});
+
+test('format compatibility never permits destructive changes in the additive E2-E7 migration', () => {
+  const increment = read('script/sql/update/2026-10-15-report-e2-e7.sql');
+  for (const unsafe of ['DROP TABLE `rpt_delivery`;', 'DROP DATABASE example;', 'DELETE FROM rpt_delivery;']) {
+    assert.throws(() => assertExtensions(increment, increment + '\n' + unsafe), assert.AssertionError);
+  }
 });

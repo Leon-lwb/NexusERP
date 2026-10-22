@@ -27868,15 +27868,18 @@ INSERT INTO `sys_menu` VALUES (1721, '模型新增', 1702, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (1722, '模型修改', 1702, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1723, '模型删除', 1702, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1724, '模型测试', 1702, 5, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:test', '#', 103, 1, '2026-08-28 23:33:54', NULL, NULL, '模型连通性测试');
+INSERT INTO `sys_menu` VALUES (1725, '模型导出', 1702, 6, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:export', '#', 103, 1, '2026-10-22 00:00:00', NULL, NULL, 'AI 第一阶段：模型导出权限');
 INSERT INTO `sys_menu` VALUES (1730, '厂商查询', 1703, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1731, '厂商新增', 1703, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1732, '厂商修改', 1703, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1733, '厂商删除', 1703, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1734, '厂商导出', 1703, 5, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:export', '#', 103, 1, '2026-10-22 00:00:00', NULL, NULL, 'AI 第一阶段：厂商导出权限');
 INSERT INTO `sys_menu` VALUES (1740, '知识库查询', 1704, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1741, '知识库新增', 1704, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1742, '知识库修改', 1704, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1743, '知识库删除', 1704, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1744, '重建向量索引', 1704, 5, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:rebuild', '#', 103, 1, '2026-08-28 23:33:54', NULL, NULL, '知识库向量索引重建');
+INSERT INTO `sys_menu` VALUES (1745, '知识库导出', 1704, 9, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:export', '#', 103, 1, '2026-10-22 00:00:00', NULL, NULL, 'AI 第一阶段：知识库导出权限');
 INSERT INTO `sys_menu` VALUES (1750, '工具查询', 1705, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:query', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1751, '工具新增', 1705, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:add', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1752, '工具修改', 1705, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:edit', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
@@ -27926,6 +27929,7 @@ INSERT INTO `sys_menu` VALUES (1839, '实例详情', 1833, 2, 'detail', 'ai/flow
 INSERT INTO `sys_menu` VALUES (1840, '运行历史列表', 1833, 1, 'index', 'ai/flow/monitor/index', NULL, 1, 0, 'C', '0', '0', 'ai:flow:list', 'monitor', 103, 1, '2026-08-06 23:53:30', NULL, NULL, '运行历史列表页');
 INSERT INTO `sys_menu` VALUES (1841, '参数设置', 1707, 3, 'aiConfig', 'ai/config/index', NULL, 1, 0, 'C', '0', '0', 'ai:config:list', 'edit', 103, 1, '2026-09-07 23:55:47', 1, '2026-09-08 22:48:15', 'AI运行参数设置页(SQL安全/向量存储/联网搜索/流程编排/知识图谱)');
 INSERT INTO `sys_menu` VALUES (1842, '参数修改', 1841, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:config:edit', '#', 103, 1, '2026-09-07 23:55:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1843, '流程查询', 1831, 6, '', '', '', 1, 0, 'F', '0', '0', 'ai:flow:query', '#', 103, 1, '2026-10-22 00:00:00', NULL, NULL, 'AI 第一阶段：流程详情及版本查询权限');
 INSERT INTO `sys_menu` VALUES (1850, '工业决策中心', 1700, 7, 'decision', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'data-analysis', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '工业交付风险决策目录');
 INSERT INTO `sys_menu` VALUES (1851, '交付风险看板', 1850, 1, 'index', 'ai/decision/index', NULL, 1, 0, 'C', '0', '0', 'ai:decision:query', 'warning', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '工业交付风险看板');
 INSERT INTO `sys_menu` VALUES (1852, '决策运行详情', 1850, 2, 'detail', 'ai/decision/detail', NULL, 1, 0, 'C', '1', '0', 'ai:decision:query', 'document', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '隐藏详情路由');

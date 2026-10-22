@@ -52,7 +52,7 @@ public class DashScopeServiceProvider implements ChatServiceProvider {
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
         // 注意：QwenChatModelBuilder 未提供 timeout 选项（langchain4j-community-dashscope
-        // 1.18.0-beta28），超时由其内部 HTTP 客户端默认值决定；与
+        // 1.22.0-beta32），超时由其内部 HTTP 客户端默认值决定；与
         // AbstractOpenAiCompatibleProvider 的 180s 显式超时不同，此处无法配置
         return QwenChatModel.builder()
             .apiKey(config.getApiKey())

@@ -166,10 +166,10 @@
             :rows="3"
             :placeholder="modePlaceholder"
             @keydown.enter.exact.prevent="sendMessage"
-            :disabled="loading"
+            :disabled="loading || !canSend"
           />
           <div class="input-actions">
-            <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading"> 发送 </el-button>
+            <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" :disabled="!canSend"> 发送 </el-button>
             <el-button @click="clearMessages"> 清空对话 </el-button>
           </div>
         </div>
@@ -260,6 +260,7 @@ import {
 import { getAvailableMcpTools } from '@/api/ai/mcpTool';
 import { listKnowledge } from '@/api/ai/knowledge';
 import { checkPermi } from '@/utils/permission';
+import { createAiChatStream, normalizeAiChatId } from '@/utils/ai-chat-stream';
 import { chatKnowledgeChoices, prepareChatKnowledgeRequest, type ChatKnowledgeChoice } from './knowledgeSelection';
 import { formatToolDuration } from './toolDuration';
 import { marked } from 'marked';
@@ -309,6 +310,9 @@ const sessions = ref<AiSession[]>([]);
 const currentSessionId = ref<string | null>(null);
 /** 会话切换后拒绝旧请求的迟到回执。 */
 const chatEpoch = ref(0);
+const chatStream = createAiChatStream();
+const canSend = computed(() => checkPermi(['ai:assistant:send']));
+const canQuery = computed(() => checkPermi(['ai:assistant:query']));
 const engineering = useEngineeringChat(currentSessionId);
 const chatMode = ref('auto');
 /** 只使用已授权列表中的明确知识库，不自动选首项或回退跨库检索。 */
@@ -404,7 +408,8 @@ function clearAssistantThinking() {
 
 function onAiSseMessage(event: Event) {
   const detail = (event as CustomEvent).detail;
-  if (!detail) return;
+  if (!chatStream.accept(detail)) return;
+  currentSessionId.value = chatStream.sessionId;
 
   switch (detail.type) {
     case 'AI_THINKING':
@@ -426,7 +431,6 @@ function onAiSseMessage(event: Event) {
       clearAssistantThinking();
       // Agent 模式完整替换
       thinking.value = false;
-      loading.value = false;
       const lastMsg = messages.value[messages.value.length - 1];
       if (lastMsg && lastMsg.role === 'assistant') {
         lastMsg.content = detail.content;
@@ -436,6 +440,11 @@ function onAiSseMessage(event: Event) {
       nextTick(() => scrollToBottom());
       break;
     case 'AI_DONE':
+      if (detail.messageId) {
+        const completed = messages.value[messages.value.length - 1];
+        if (completed?.role === 'assistant') completed.id = detail.messageId;
+        else messages.value.push({ role: 'assistant', content: '', id: detail.messageId });
+      }
       clearAssistantThinking();
       thinking.value = false;
       loading.value = false;
@@ -468,7 +477,6 @@ function onAiSseMessage(event: Event) {
       } else {
         messages.value.push({ role: 'assistant', content: imgMd.trim() });
       }
-      loading.value = false;
       nextTick(() => scrollToBottom());
       break;
     }
@@ -598,6 +606,10 @@ function scrollToBottom() {
 
 /** 加载会话列表 */
 async function loadSessions() {
+  if (!canQuery.value) {
+    sessions.value = [];
+    return;
+  }
   sessionLoading.value = true;
   try {
     const res = await getChatSessions();
@@ -613,14 +625,17 @@ async function loadSessions() {
 
 /** 切换会话 */
 async function switchSession(sessionId: number | string) {
-  const normalizedSessionId = String(sessionId);
-  if (currentSessionId.value === normalizedSessionId) return;
-  chatEpoch.value++;
+  const normalizedSessionId = normalizeAiChatId(sessionId);
+  if (!canQuery.value || !normalizedSessionId || currentSessionId.value === normalizedSessionId) return;
+  const epoch = ++chatEpoch.value;
+  chatStream.reset();
+  thinking.value = false;
   currentSessionId.value = normalizedSessionId;
   messages.value = [];
   loading.value = true;
   try {
-    const res = await getChatHistory(sessionId as any);
+    const res = await getChatHistory(normalizedSessionId);
+    if (epoch !== chatEpoch.value) return;
     // 兼容多种响应格式：R.ok(data)、{ rows: [...] }、直接数组
     let history: AiMessageDto[] = [];
     if (Array.isArray(res)) {
@@ -641,16 +656,18 @@ async function switchSession(sessionId: number | string) {
     }));
     nextTick(() => scrollToBottom());
   } catch (e: any) {
+    if (epoch !== chatEpoch.value) return;
     console.error('[AI] 加载聊天历史失败', e);
     proxy?.$modal.msgError('加载聊天历史失败: ' + (e.message || e));
   } finally {
-    loading.value = false;
+    if (epoch === chatEpoch.value) loading.value = false;
   }
 }
 
 /** 新建会话 */
 function newSession() {
   chatEpoch.value++;
+  chatStream.reset();
   currentSessionId.value = null;
   messages.value = [];
   thinking.value = false;
@@ -660,7 +677,7 @@ function newSession() {
 /** 发送消息 */
 async function sendMessage() {
   const text = inputText.value.trim();
-  if (!text || loading.value) return;
+  if (!text || loading.value || !canSend.value) return;
 
   const knowledgeRequest = prepareChatKnowledgeRequest(chatMode.value, selectedKnowledgeId.value, knowledgeOptions.value, {
     loading: knowledgeLoading.value,
@@ -675,18 +692,20 @@ async function sendMessage() {
   const epoch = chatEpoch.value;
   const requestSessionId = currentSessionId.value;
   const engineeringFields = engineering.prepare(text);
+  const clientRequestId = chatStream.begin(requestSessionId);
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
 
   await nextTick();
   scrollToBottom();
-  if (epoch !== chatEpoch.value) return;
+  if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId)) return;
 
   try {
     const res = await sendAiMessage({
       ...engineeringFields,
       content: text,
+      clientRequestId,
       sessionId: requestSessionId ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
       knowledgeId: knowledgeRequest.knowledgeId,
@@ -696,14 +715,16 @@ async function sendMessage() {
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
     });
     // 后端返回 sessionId（新会话时为新 ID）
-    if (epoch !== chatEpoch.value) return;
-    const sid = res?.data ?? res;
-    if (sid && (typeof sid === 'string' || (typeof sid === 'number' && Number.isSafeInteger(sid)))) {
-      currentSessionId.value = String(sid);
-      engineering.sent();
+    if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId)) return;
+    if (!chatStream.ack(clientRequestId, res?.data ?? res)) {
+      throw new Error('AI 会话回执无效或与当前请求不一致');
     }
+    currentSessionId.value = chatStream.sessionId;
+    engineering.sent();
   } catch (e: any) {
-    if (epoch !== chatEpoch.value) return;
+    if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId) || !loading.value) return;
+    chatStream.reset();
+    clearAssistantThinking();
     if (engineeringFields.engineeringRequestId) inputText.value = text;
     loading.value = false;
     thinking.value = false;
@@ -743,6 +764,8 @@ function sendQuick(tip: string) {
 
 /** 清空当前对话 */
 function clearMessages() {
+  chatEpoch.value++;
+  chatStream.reset();
   messages.value = [];
   thinking.value = false;
   loading.value = false;
@@ -907,6 +930,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   chatEpoch.value++;
+  chatStream.reset();
   knowledgeRequestVersion++;
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   window.removeEventListener('click', onGlobalClick);

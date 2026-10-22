@@ -27,6 +27,8 @@ export interface AiMessage {
  */
 export function sendAiMessage(data: {
   sessionId?: number | string;
+  /** PC 在发送前生成，仅用于本次 SSE 关联，不是业务幂等键。 */
+  clientRequestId?: string;
   content: string;
   model?: string;
   mode?: string;

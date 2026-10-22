@@ -1,3 +1,4 @@
+import { createUnitTestPlan } from './unit-test-plan.mjs';
 /** 流程显示的现行契约回归；旧草稿和已退役迁移不作为标准入口依赖。 */
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -108,7 +109,8 @@ test('instance DTO accepts DECISION without changing the wire values', () => {
 });
 test('regression is registered in the normal unit entry', () => {
   const scripts = JSON.parse(source('package.json')).scripts;
-  assert.match(scripts['test:unit'], /test:full-flow-ui/);
+  assert.equal(scripts['test:unit'], 'node scripts/unit-test-entry.mjs');
+  assert.ok(createUnitTestPlan().some((step) => step.npmScript === 'test:full-flow-ui'));
   assert.ok(scripts['test:full-flow-ui'].split(/\s+/).includes('scripts/test-flow-trigger-current-contract.mjs'));
 });
 

@@ -23,6 +23,12 @@
             <artifactId>ruoyi-common-ai</artifactId>
         </dependency>
 
+        <!-- 复用服务端业务授权与固定实体目录。 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-report</artifactId>
+        </dependency>
+
         <!-- 共享流程节点运行时间线类型，不引入 ruoyi-flow 运行时依赖。 -->
         <dependency>
             <groupId>com.nexus</groupId>

@@ -32,7 +32,7 @@ public abstract class AbstractOpenAiCompatibleProvider implements ChatServicePro
 
     /**
      * HTTP 读超时（秒）。
-     * <p>langchain4j-open-ai 1.18 默认 readTimeout=60s，对中转站长输出场景偏短（idle 60s 触发 HttpTimeoutException）。
+     * <p>SDK 默认 readTimeout=60s，对中转站长输出场景偏短（idle 60s 触发 HttpTimeoutException）。
      * 提到 180s 给上游足够时间回流首 token；流式启用后中转站持续回字节，几乎不会触达此上限。</p>
      */
     protected static final int HTTP_TIMEOUT_SECONDS = 180;

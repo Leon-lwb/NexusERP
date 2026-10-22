@@ -1,3 +1,4 @@
+import { createUnitTestPlan } from './unit-test-plan.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -14,7 +15,8 @@ function registeredTests(command) {
   return new Set(files);
 }
 test('full-flow UI regressions are included in the standard unit command', () => {
-  assert.match(scripts['test:unit'], /npm run test:full-flow-ui/);
+  assert.equal(scripts['test:unit'], 'node scripts/unit-test-entry.mjs');
+  assert.ok(createUnitTestPlan().some((step) => step.npmScript === 'test:full-flow-ui'));
 });
 test('all new UI regression suites are registered and run serially', () => {
   const command = scripts['test:full-flow-ui'];

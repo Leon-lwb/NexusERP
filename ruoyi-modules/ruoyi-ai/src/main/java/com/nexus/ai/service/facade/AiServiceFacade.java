@@ -1,5 +1,6 @@
 package com.nexus.ai.service.facade;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.agent.McpDocumentAgent;
@@ -161,6 +162,11 @@ public class AiServiceFacade {
      * @return 会话ID
      */
     public Long chat(AiChatRequest request) {
+        // 内部调用同样先授权，防止绕过Web层后读取模型或产生计费与持久化副作用。
+        StpUtil.checkPermission("ai:assistant:send");
+        if (request == null || !AiChatRequest.validClientRequestId(request.getClientRequestId())) {
+            throw new ServiceException("请求关联标识格式不正确", 400);
+        }
         Long userId = LoginHelper.getUserId();
         String tenantIdStr = LoginHelper.getTenantId();
 
@@ -288,7 +294,7 @@ public class AiServiceFacade {
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
                                      Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
         invokeWithStreaming(modelConfig, request, userId, sessionId, tenantId, userName, tenantIdStr,
-            new AiChatSseLifecycle(userId, sessionId));
+            new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId()));
     }
 
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
@@ -309,7 +315,7 @@ public class AiServiceFacade {
     /** 知识库增强与普通对话共用流式回调及唯一终态，避免收尾行为分叉。 */
     private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
                                Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
         try {
             StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
             MessageWindowChatMemory memory = MessageWindowChatMemory.builder().id(sessionId).maxMessages(20)
@@ -383,7 +389,7 @@ public class AiServiceFacade {
     /** 提交失败也通过同一生命周期收尾，避免线程池拒绝后客户端永久等待。 */
     private boolean submit(AiChatSseLifecycle lifecycle, Runnable task) {
         try {
-            CompletableFuture.runAsync(task, aiExecutor);
+            CompletableFuture.runAsync(() -> lifecycle.run(task), aiExecutor);
             return true;
         } catch (Exception error) {
             lifecycle.fail(error);
@@ -400,7 +406,7 @@ public class AiServiceFacade {
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
                                  Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
         try {
             runAgent(modelConfig, request, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
         } catch (Exception error) {
@@ -501,7 +507,7 @@ public class AiServiceFacade {
             .build();
 
         String executionAgentName = directBulkQuery ? "ErpQueryAgent" : "SupervisorAgent";
-        AiSseMessageHelper.sendThinking(userId);
+        lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
 
         // 创建 OutputChannel 用于流式推送
         String requestId = lifecycle.requestId();
@@ -746,6 +752,7 @@ public class AiServiceFacade {
         // 异步线程（Agent 闭包）恢复租户上下文，避免 ai_message insert 时 tenant_id 落 0
         TenantHelper.dynamic(tenantIdStr, () -> {
             aiMessageMapper.insert(aiMsg);
+            AiChatSseLifecycle.persistedMessage(sessionId, aiMsg.getId());
         });
         // Agent 模式的日统计已由 AiChatModelListener 处理，无需重复
     }
@@ -791,6 +798,7 @@ public class AiServiceFacade {
         // 异步线程（流式回调 I/O 线程）恢复租户上下文，避免 ai_message insert 时 tenant_id 落 0
         TenantHelper.dynamic(tenantIdStr, () -> {
             aiMessageMapper.insert(aiMsg);
+            AiChatSseLifecycle.persistedMessage(sessionId, aiMsg.getId());
         });
 
         // 流式/RAG 路径日统计：listener.onResponse 在 OkHttp I/O 线程读不到 AiRequestContext（InheritableThreadLocal
@@ -987,7 +995,7 @@ public class AiServiceFacade {
      */
     private void invokeWithWebSearchStreaming(AiModel modelConfig, AiChatRequest request,
                                               Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
         lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
 
         submit(lifecycle, () -> {
@@ -1039,12 +1047,12 @@ public class AiServiceFacade {
      */
     private void invokeWithWebSearch(AiModel modelConfig, AiChatRequest request,
                                       Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId);
+        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
         submit(lifecycle, () -> {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,
                     modelConfig.getId(), modelConfig.getModelName());
-                AiSseMessageHelper.sendThinking(userId);
+                lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
 
                 ChatModel agentModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
                 WebSearchAgent agent = AgenticServices.agentBuilder(WebSearchAgent.class)

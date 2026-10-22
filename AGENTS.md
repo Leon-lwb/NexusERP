@@ -284,7 +284,7 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 | Excel | FastExcel (阿里巴巴 EasyExcel 分支) |
 | API 加密 | 动态 AES + RSA (每次请求生成唯一 AES 密钥，用 RSA 加密) |
 | XSS 防护 | 自定义过滤器 (可配置排除 URL) |
-| AI 框架 | LangChain4j 1.18.0 + LangChain4j Agentic 1.18.0-beta28 (Supervisor Agent 编排) |
+| AI 框架 | LangChain4j 1.22.0 + LangChain4j Agentic 1.22.0-beta32 (Supervisor Agent 编排) |
 | AI 模型接入 | OpenAI 兼容接口 (DeepSeek/通义千问/智谱/Ollama)，ChatModelFactory 动态构建+缓存 |
 | 视觉识别 | 独立 Vision 服务 (HTTP，`nexus.vision` 配置)，VisionClient 封装人脸/OCR/探活 |
 | SSE 推送 | Redis Pub/Sub + Server-Sent Events (AI 回复、IoT 实时数据) |

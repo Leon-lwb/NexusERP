@@ -1,3 +1,4 @@
+import { createUnitTestPlan } from './unit-test-plan.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -14,7 +15,11 @@ const suites = [
 ];
 
 test('仓储写安全回归必须由标准单测入口执行而非只写临时命令', () => {
-  assert.match(scripts['test:unit'], /npm run test:full-flow-ui/, '标准单测必须包含全流程回归入口');
+  assert.equal(scripts['test:unit'], 'node scripts/unit-test-entry.mjs');
+  assert.ok(
+    createUnitTestPlan().some((step) => step.npmScript === 'test:full-flow-ui'),
+    '标准单测必须包含全流程回归入口'
+  );
   assert.ok(registered.has(suites[0]), '接线回归本身必须挂入标准入口');
 });
 

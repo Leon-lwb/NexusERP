@@ -294,6 +294,7 @@ public class AiSseMessageHelper {
             if (content != null) {
                 payload.put("content", content);
             }
+            AiChatEventContext.enrich(userId, type, payload);
             String json = MAPPER.writeValueAsString(payload);
 
             SseMessageDto dto = new SseMessageDto();

@@ -51,12 +51,12 @@
           :rows="2"
           :placeholder="modePlaceholder"
           @keydown.enter.exact.prevent="sendMessage"
-          :disabled="loading"
+          :disabled="loading || !canSend"
         />
         <div class="input-actions">
           <DeepThinking v-model="enableThinking" />
           <WebSearchToggle v-model="enableWebSearch" />
-          <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" style="flex: 1"> 发送 </el-button>
+          <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" :disabled="!canSend" style="flex: 1"> 发送 </el-button>
           <el-button @click="newChat" :icon="RefreshRight" />
         </div>
       </div>
@@ -65,9 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue';
 import { sendAiMessage } from '@/api/ai/chat';
+import { checkPermi } from '@/utils/permission';
+import { createAiChatStream } from '@/utils/ai-chat-stream';
 import { marked } from 'marked';
 import { createAiRenderer, sanitizeHtml, sanitizeOption } from '@/utils/aiRenderers';
 import DeepThinking from '@/components/ai/DeepThinking.vue';
@@ -89,6 +91,7 @@ const loadEcharts = () => (echartsModulePromise ??= import('echarts'));
 const mountedCharts: Array<{ chart: { resize: () => void; dispose: () => void }; ro: ResizeObserver }> = [];
 
 interface ChatMessage {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
@@ -106,12 +109,28 @@ const messageListRef = ref<HTMLElement>();
 const sessionId = ref<string | null>(null);
 /** 会话切换后拒绝旧请求的迟到回执。 */
 const chatEpoch = ref(0);
+const chatStream = createAiChatStream();
+const canSend = computed(() => checkPermi(['ai:assistant:send']));
 const engineering = useEngineeringChat(sessionId, visible);
 const chatMode = ref('auto');
 const enableThinking = ref(false);
 const enableWebSearch = ref(false);
 /** 选中模型名称（为空使用默认模型），ModelSelect 组件会预选默认模型 */
 const selectedModel = ref('');
+
+// 抽屉可由关闭按钮、遮罩或 v-model 隐藏，均同步停止接收旧流。
+watch(
+  visible,
+  (shown) => {
+    if (!shown) {
+      chatEpoch.value++;
+      chatStream.reset();
+      thinking.value = false;
+      loading.value = false;
+    }
+  },
+  { flush: 'sync' }
+);
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
@@ -129,7 +148,8 @@ const modePlaceholder = computed(() => {
 
 function onAiSseMessage(event: Event) {
   const detail = (event as CustomEvent).detail;
-  if (!detail) return;
+  if (!chatStream.accept(detail)) return;
+  sessionId.value = chatStream.sessionId;
 
   switch (detail.type) {
     case 'AI_THINKING':
@@ -148,7 +168,6 @@ function onAiSseMessage(event: Event) {
       break;
     case 'AI_CONTENT':
       thinking.value = false;
-      loading.value = false;
       const lastMsg = messages.value[messages.value.length - 1];
       if (lastMsg && lastMsg.role === 'assistant') {
         lastMsg.content = detail.content;
@@ -158,6 +177,11 @@ function onAiSseMessage(event: Event) {
       nextTick(() => scrollToBottom());
       break;
     case 'AI_DONE':
+      if (detail.messageId) {
+        const completed = messages.value[messages.value.length - 1];
+        if (completed?.role === 'assistant') completed.id = detail.messageId;
+        else messages.value.push({ role: 'assistant', content: '', id: detail.messageId });
+      }
       thinking.value = false;
       loading.value = false;
       // 扫描并挂载 ECharts 容器
@@ -188,7 +212,6 @@ function onAiSseMessage(event: Event) {
       } else {
         messages.value.push({ role: 'assistant', content: imgMd.trim() });
       }
-      loading.value = false;
       nextTick(() => scrollToBottom());
       break;
     }
@@ -263,37 +286,40 @@ function scrollToBottom() {
 
 async function sendMessage() {
   const text = inputText.value.trim();
-  if (!text || loading.value) return;
+  if (!text || loading.value || !canSend.value) return;
 
   const epoch = chatEpoch.value;
   const requestSessionId = sessionId.value;
   const engineeringFields = engineering.prepare(text);
+  const clientRequestId = chatStream.begin(requestSessionId);
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
 
   await nextTick();
   scrollToBottom();
-  if (epoch !== chatEpoch.value) return;
+  if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId)) return;
 
   try {
     const res = await sendAiMessage({
       ...engineeringFields,
       content: text,
+      clientRequestId,
       sessionId: requestSessionId ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
       model: selectedModel.value || undefined,
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined
     });
-    if (epoch !== chatEpoch.value) return;
-    const sid = res?.data ?? res;
-    if (sid && (typeof sid === 'string' || (typeof sid === 'number' && Number.isSafeInteger(sid)))) {
-      sessionId.value = String(sid);
-      engineering.sent();
+    if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId)) return;
+    if (!chatStream.ack(clientRequestId, res?.data ?? res)) {
+      throw new Error('AI 会话回执无效或与当前请求不一致');
     }
+    sessionId.value = chatStream.sessionId;
+    engineering.sent();
   } catch (e: any) {
-    if (epoch !== chatEpoch.value) return;
+    if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId) || !loading.value) return;
+    chatStream.reset();
     if (engineeringFields.engineeringRequestId) inputText.value = text;
     loading.value = false;
     thinking.value = false;
@@ -303,6 +329,7 @@ async function sendMessage() {
 
 function newChat() {
   chatEpoch.value++;
+  chatStream.reset();
   sessionId.value = null;
   messages.value = [];
   thinking.value = false;
@@ -330,6 +357,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   chatEpoch.value++;
+  chatStream.reset();
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   // 释放图表与尺寸观察者：本组件全局常驻，多轮对话会持续累积实例
   mountedCharts.forEach(({ chart, ro }) => {

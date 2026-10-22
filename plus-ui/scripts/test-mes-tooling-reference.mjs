@@ -1,3 +1,4 @@
+import { createUnitTestPlan } from './unit-test-plan.mjs';
 /** MES 工装关联显示回归：禁止列表页回退展示 19 位工装 ID。 */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -49,7 +50,8 @@ for (const page of ['maintenance-plan', 'maintenance-record', 'usage-record']) {
 
 test('标准前端单测命令包含工装引用回归', () => {
   const pkg = JSON.parse(read('package.json'));
-  assert.match(pkg.scripts['test:unit'], /test-mes-tooling-reference\.mjs/);
+  assert.equal(pkg.scripts['test:unit'], 'node scripts/unit-test-entry.mjs');
+  assert.ok(createUnitTestPlan().some((step) => step.args?.includes('scripts/test-mes-tooling-reference.mjs')));
 });
 
 test('保养记录作为不可篡改追溯台账时不暴露编辑删除入口', () => {

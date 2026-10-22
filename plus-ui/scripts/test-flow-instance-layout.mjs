@@ -1,3 +1,4 @@
+import { createUnitTestPlan } from './unit-test-plan.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -204,6 +205,7 @@ test('the actual readonly FlowCanvas is bound to the viewport-fitting ref', () =
 
 test('the history-layout regression is executed by the standard unit entry', () => {
   const { scripts } = JSON.parse(source('package.json'));
-  assert.match(scripts['test:unit'], /npm run test:full-flow-ui/);
+  assert.equal(scripts['test:unit'], 'node scripts/unit-test-entry.mjs');
+  assert.ok(createUnitTestPlan().some((step) => step.npmScript === 'test:full-flow-ui'));
   assert.match(scripts['test:full-flow-ui'], /node --test[^&]*scripts\/test-flow-instance-layout\.mjs/);
 });

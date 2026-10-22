@@ -1,3 +1,4 @@
+import { createUnitTestPlan } from '../../../../scripts/unit-test-plan.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -116,14 +117,12 @@ test('权限输入框接入 perms 字段校验，保留 100 字符上限并说�
   assert.match(descriptor.template.content, /pu:order:terms:add/);
 });
 
-// 读取真实 npm scripts，仅解析仓库现有显式 && 链，不执行 shell 或递归启动测试。
+// 标准入口核对实际结构化计划；full-flow 子命令仍核对显式串行清单，不执行 shell 或递归启动测试。
 const { scripts } = JSON.parse(readFileSync(new URL('../../../../package.json', import.meta.url), 'utf8'));
 const permissionSuite = 'src/views/system/menu/permission-validation.test.mjs';
-function calledScripts(command) {
-  return command.split(/\s*&&\s*/).flatMap((part) => {
-    const match = /^npm(?:\.cmd)? run ([\w:-]+)$/.exec(part.trim());
-    return match ? [match[1]] : [];
-  });
+function calledScripts(command, plan = createUnitTestPlan()) {
+  if (command !== 'node scripts/unit-test-entry.mjs') return [];
+  return plan.filter((step) => typeof step.npmScript === 'string').map((step) => step.npmScript);
 }
 function registeredSerialSuites(command) {
   const prefix = 'node --test --test-concurrency=1 ';
@@ -134,6 +133,7 @@ function registeredSerialSuites(command) {
 }
 
 test('默认 unit 链实际调用 full-flow UI 回归', () => {
+  assert.equal(scripts['test:unit'], 'node scripts/unit-test-entry.mjs');
   assert.ok(calledScripts(scripts['test:unit']).includes('test:full-flow-ui'));
 });
 
@@ -147,8 +147,13 @@ test('只 echo 权限套件文件名不能伪装成测试接线', () => {
 });
 
 test('只 echo npm run 调用不能伪装成默认链可达', () => {
-  const fake = scripts['test:unit'].replace('npm run test:full-flow-ui', 'echo npm run test:full-flow-ui');
-  assert.equal(calledScripts(fake).includes('test:full-flow-ui'), false);
+  const fake = createUnitTestPlan().map((step) =>
+    step.npmScript === 'test:full-flow-ui'
+      ? { name: 'echo npm run test:full-flow-ui', args: ['-e', 'console.log("npm run test:full-flow-ui")'] }
+      : step
+  );
+  assert.equal(calledScripts(scripts['test:unit'], fake).includes('test:full-flow-ui'), false);
+  assert.equal(calledScripts(`echo ${scripts['test:unit']}`).includes('test:full-flow-ui'), false);
 });
 
 const hundredCharacterPermission = 'system:user:' + 'a'.repeat(88);

@@ -14,7 +14,7 @@ import java.time.Duration;
 
 /**
  * OpenAI Responses 协议策略（OPENAI_RESPONSES，/v1/responses 新一代接口）
- * <p>langchain4j-open-ai 1.18 自带 OpenAiResponsesChatModel / OpenAiResponsesStreamingChatModel，
+ * <p>langchain4j-open-ai 自带 OpenAiResponsesChatModel / OpenAiResponsesStreamingChatModel，
  * 适用 OpenAI 官方 Responses 接口及兼容该协议的中转站（如 OpenCode Go 的 Responses 端点），
  * baseUrl 取 ai_provider.api_host（与 Chat Completions 协议同源）。</p>
  * <p>构建参数对齐 {@link AbstractOpenAiCompatibleProvider}：请求级 maxOutputTokens 封顶、

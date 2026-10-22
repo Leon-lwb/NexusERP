@@ -23,6 +23,14 @@ public class AiChatRequest implements Serializable {
     /** 会话ID（新会话传 null） */
     private Long sessionId;
 
+    /** PC在发送前生成的请求关联标识；只用于事件隔离，不作为身份或业务幂等凭据。 */
+    private String clientRequestId;
+
+    /** 校验可选关联标识，兼容未升级客户端，拒绝空白、控制符与超长输入。 */
+    public static boolean validClientRequestId(String value) {
+        return value == null || value.matches("[A-Za-z0-9][A-Za-z0-9_-]{15,79}");
+    }
+
     /** 消息内容 */
     private String content;
 

@@ -145,7 +145,7 @@ class AiServiceFacadeTerminalTest {
 
     @Test
     void invalidSessionSendHasExplicitNotFoundMeaning() {
-        try (var login = mockStatic(LoginHelper.class)) {
+        try (var login = mockStatic(LoginHelper.class); var permissions = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
             login.when(LoginHelper::getUserId).thenReturn(7L);
             when(dep(IAiModelService.class).selectDefaultModel()).thenReturn(model);
             request.setSessionId(9007199254740993L);
@@ -158,7 +158,7 @@ class AiServiceFacadeTerminalTest {
 
     @Test
     void sameUserIdFromAnotherTenantCannotAppendToForeignSession() {
-        try (var login = mockStatic(LoginHelper.class)) {
+        try (var login = mockStatic(LoginHelper.class); var permissions = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
             login.when(LoginHelper::getUserId).thenReturn(7L);
             login.when(LoginHelper::getTenantId).thenReturn("000007");
             when(dep(IAiModelService.class).selectDefaultModel()).thenReturn(model);

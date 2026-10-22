@@ -2,6 +2,7 @@ package com.nexus.ai.service.query;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.ai.config.AiProperties;
+import com.nexus.common.report.ReportActor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,10 @@ public class ErpTableSchemaManager {
     @Autowired
     /** AI 配置属性，动态读取允许的表名前缀（「AI 参数设置」页可改，实时生效） */
     private AiProperties aiProperties;
+
+    @Autowired
+    /** 统一查询授权；缓存只保存私有原始结构，对外读取时重新解析身份与字段。 */
+    private ErpQueryAuthorizationGuard authorization;
 
     /** 表结构缓存 (表名 -> 表结构) */
     private final Map<String, TableStructure> schemaCache = new ConcurrentHashMap<>();
@@ -102,6 +107,8 @@ public class ErpTableSchemaManager {
      * 刷新单个表的结构缓存
      */
     public void refreshTableSchema(String tableName) {
+        var actor = authorization.currentActor();
+        if (!authorization.canReadTable(actor, tableName)) throw new IllegalArgumentException("当前身份无权查询此业务表结构");
         try {
             TableStructure schema = loadTableSchema(tableName);
             if (schema != null) {
@@ -119,8 +126,7 @@ public class ErpTableSchemaManager {
      * 获取所有缓存的表结构
      */
     public List<TableStructure> getAllTableSchemas() {
-        ensureInitialized();
-        return new ArrayList<>(schemaCache.values());
+        return authorizedSchemas();
     }
 
     /**
@@ -130,8 +136,11 @@ public class ErpTableSchemaManager {
      * @return 表结构，如果不存在返回 null
      */
     public TableStructure getTableSchema(String tableName) {
+        var actor = authorization.currentActor();
+        if (!authorization.canReadTable(actor, tableName)) return null;
         ensureInitialized();
-        return schemaCache.get(tableName);
+        var raw = schemaCache.get(tableName);
+        return raw == null ? null : projectSchema(raw, actor);
     }
 
     /**
@@ -141,8 +150,7 @@ public class ErpTableSchemaManager {
      * @return 核心表 Schema 摘要文本
      */
     public String getCoreSchemaSummary() {
-        ensureInitialized();
-        return schemaCache.values().stream()
+        return authorizedSchemas().stream()
             .filter(t -> t.getTableName().startsWith("bd_")
                 || t.getTableName().startsWith("so_")
                 || t.getTableName().startsWith("pu_"))
@@ -155,8 +163,7 @@ public class ErpTableSchemaManager {
      * 获取所有表的简要列表（表名: 注释）
      */
     public String getAllTablesSummary() {
-        ensureInitialized();
-        return schemaCache.values().stream()
+        return authorizedSchemas().stream()
             .sorted((a, b) -> a.getTableName().compareTo(b.getTableName()))
             .map(t -> "- " + t.getTableName() + ": " + t.getTableComment())
             .collect(Collectors.joining("\n"));
@@ -173,6 +180,74 @@ public class ErpTableSchemaManager {
      * 获取缓存的表数量
      */
     public int getTableCount() {
+        return authorizedSchemas().size();
+    }
+
+    /** 每个对外入口先重读授权，再按当前身份建立独立快照，不改写启动缓存。 */
+    private List<TableStructure> authorizedSchemas() {
+        var actor = authorization.currentActor();
+        ensureInitialized();
+        return schemaCache.values().stream()
+            .filter(raw -> authorization.canReadTable(actor, raw.getTableName()))
+            .map(raw -> projectSchema(raw, actor))
+            .sorted(Comparator.comparing(TableStructure::getTableName)).toList();
+    }
+
+    private TableStructure projectSchema(TableStructure raw, ReportActor actor) {
+        var projected = new TableStructure();
+        projected.setTableName(raw.getTableName());
+        if (actor.superAdmin()) {
+            projected.setTableComment(raw.getTableComment());
+            projected.setPrimaryKey(raw.getPrimaryKey());
+            projected.setPrimaryKeyColumns(new ArrayList<>(raw.getPrimaryKeyColumns()));
+            projected.setDdl(raw.getDdl());
+            List<ColumnInfo> columns = new ArrayList<>();
+            for (var source : raw.getColumns()) {
+                var column = new ColumnInfo();
+                column.setColumnName(source.getColumnName());
+                column.setColumnType(source.getColumnType());
+                column.setColumnComment(source.getColumnComment());
+                column.setPrimaryKey(source.isPrimaryKey());
+                column.setNullable(source.isNullable());
+                column.setDefaultValue(source.getDefaultValue());
+                column.setEnumValues(source.getEnumValues());
+                columns.add(column);
+            }
+            projected.setColumns(columns);
+            projected.setForeignKeys(raw.getForeignKeys().stream().map(source -> {
+                var relation = new ForeignKeyRelation();
+                relation.setColumnName(source.getColumnName());
+                relation.setReferencedTable(source.getReferencedTable());
+                relation.setReferencedColumn(source.getReferencedColumn());
+                return relation;
+            }).collect(Collectors.toCollection(ArrayList::new)));
+            return projected;
+        }
+        var entity = authorization.metadataEntity(actor, raw.getTableName());
+        projected.setTableComment(entity.label());
+        Set<String> physicalColumns = raw.getColumns().stream().map(ColumnInfo::getColumnName)
+            .map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        List<ColumnInfo> columns = new ArrayList<>();
+        for (var field : entity.fields()) {
+            if (!physicalColumns.contains(field.column().toLowerCase(Locale.ROOT))) continue;
+            var column = new ColumnInfo();
+            column.setColumnName(field.column());
+            column.setColumnType(field.type().name());
+            column.setColumnComment(field.label());
+            column.setPrimaryKey(field.column().equals(entity.key()));
+            columns.add(column);
+        }
+        projected.setColumns(columns);
+        if (columns.stream().anyMatch(ColumnInfo::isPrimaryKey)) {
+            projected.setPrimaryKey(entity.key());
+            projected.setPrimaryKeyColumns(List.of(entity.key()));
+        }
+        // 原始注释、默认值、枚举、DDL 和外键均可能包含目录外字段，只返回可信目录信息。
+        return projected;
+    }
+
+    /** 仅供同包启动日志使用；用户、工具及提示词只能调用已过滤的公开计数。 */
+    int cachedTableCount() {
         return schemaCache.size();
     }
 
@@ -378,11 +453,10 @@ public class ErpTableSchemaManager {
      * @return 全量表结构摘要文本
      */
     public String getFullSchemaSummary() {
-        ensureInitialized();
-        return schemaCache.values().stream()
+        return authorizedSchemas().stream()
             .filter(t -> aiProperties.getAllowedTablePrefixes().stream().anyMatch(t.getTableName()::startsWith))
             .sorted(Comparator.comparing(TableStructure::getTableName))
-            .map(this::formatEnhancedTableSummary)
+            .map(this::formatAuthorizedTableSummary)
             .collect(Collectors.joining("\n\n"));
     }
 
@@ -455,6 +529,8 @@ public class ErpTableSchemaManager {
      * @return 优先级（未在映射中的表默认返回 AUXILIARY）
      */
     public TablePriority getTablePriority(String tableName) {
+        var actor = authorization.currentActor();
+        if (!authorization.canReadTable(actor, tableName)) throw new IllegalArgumentException("当前身份无权查询此业务表结构");
         return TABLE_PRIORITY_MAP.getOrDefault(tableName, TablePriority.AUXILIARY);
     }
 
@@ -473,9 +549,7 @@ public class ErpTableSchemaManager {
      * @return 裁剪后的 Schema 摘要文本
      */
     public String getOptimizedSchemaSummary(int maxChars) {
-        ensureInitialized();
-
-        List<TableStructure> allTables = schemaCache.values().stream()
+        List<TableStructure> allTables = authorizedSchemas().stream()
             .filter(t -> aiProperties.getAllowedTablePrefixes().stream().anyMatch(t.getTableName()::startsWith))
             .sorted(Comparator.comparing(TableStructure::getTableName))
             .collect(Collectors.toList());
@@ -486,7 +560,7 @@ public class ErpTableSchemaManager {
         List<TableStructure> auxiliaryTables = new ArrayList<>();
 
         for (TableStructure table : allTables) {
-            switch (getTablePriority(table.getTableName())) {
+            switch (TABLE_PRIORITY_MAP.getOrDefault(table.getTableName(), TablePriority.AUXILIARY)) {
                 case CORE -> coreTables.add(table);
                 case IMPORTANT -> importantTables.add(table);
                 case AUXILIARY -> auxiliaryTables.add(table);
@@ -498,7 +572,7 @@ public class ErpTableSchemaManager {
 
         // 1. 输出 CORE 表完整摘要
         for (TableStructure table : coreTables) {
-            String summary = formatEnhancedTableSummary(table);
+            String summary = formatAuthorizedTableSummary(table);
             if (sb.length() + summary.length() + 2 <= maxChars) {
                 if (sb.length() > 0) {
                     sb.append("\n\n");
@@ -517,7 +591,7 @@ public class ErpTableSchemaManager {
 
         // 2. 输出 IMPORTANT 表（空间允许时完整，否则简要）
         for (TableStructure table : importantTables) {
-            String summary = formatEnhancedTableSummary(table);
+            String summary = formatAuthorizedTableSummary(table);
             String brief = formatBriefTableSummary(table);
             String toAppend = (remaining >= summary.length() + 2) ? summary : brief;
 
@@ -565,6 +639,13 @@ public class ErpTableSchemaManager {
      * @return 增强版摘要文本
      */
     public String formatEnhancedTableSummary(TableStructure table) {
+        // 不信任调用方保留的旧快照或原始对象；撤权后必须重新过滤。
+        var safe = getTableSchema(table == null ? null : table.getTableName());
+        if (safe == null) throw new IllegalArgumentException("当前身份无权查询此业务表结构");
+        return formatAuthorizedTableSummary(safe);
+    }
+
+    private String formatAuthorizedTableSummary(TableStructure table) {
         StringBuilder sb = new StringBuilder();
         sb.append(table.getTableName());
         if (table.getTableComment() != null && !table.getTableComment().isEmpty()) {

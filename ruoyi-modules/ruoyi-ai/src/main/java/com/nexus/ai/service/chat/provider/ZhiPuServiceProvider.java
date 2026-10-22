@@ -40,7 +40,7 @@ public class ZhiPuServiceProvider implements ChatServiceProvider {
 
     @Override
     public StreamingChatModel buildStreamingChatModel(AiModel config, AiChatRequest request) {
-        // 智谱用 .model() 而非 .modelName()；智谱 builder 无 maxTokens 方法，仅设 temperature
+        // 智谱使用单数 maxToken；现有策略未映射模型/请求上限，本轮保持原行为。
         double temperature = config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7;
         return ZhipuAiStreamingChatModel.builder()
             .apiKey(config.getApiKey())
@@ -52,7 +52,7 @@ public class ZhiPuServiceProvider implements ChatServiceProvider {
 
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
-        // 智谱用 .model() 而非 .modelName()；智谱 builder 无 maxTokens 方法
+        // 智谱使用单数 maxToken；现有策略未映射模型上限，本轮保持原行为。
         return ZhipuAiChatModel.builder()
             .apiKey(config.getApiKey())
             .model(config.getModelName())

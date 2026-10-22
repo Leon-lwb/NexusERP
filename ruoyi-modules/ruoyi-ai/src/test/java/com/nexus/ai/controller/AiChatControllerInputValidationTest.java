@@ -49,6 +49,15 @@ class AiChatControllerInputValidationTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"", "short", "has spaces in request id", "request-id-with-\\n-control", "\"quoted-request-id-value\""})
+    void invalidClientCorrelationNeverInvokesModel(String clientRequestId) throws Exception {
+        String body = new ObjectMapper().writeValueAsString(java.util.Map.of("content", "hello", "clientRequestId", clientRequestId));
+        mvc.perform(post("/ai/chat/send").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(jsonPath("$.code").value(400));
+        verifyNoInteractions(facade, messages, sessions);
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"中", "😀"})
     void oversizedContentIsRejectedWithoutInvokingFacade(String character) throws Exception {
         String body = new ObjectMapper().writeValueAsString(Collections.singletonMap("content", character.repeat(2001)));

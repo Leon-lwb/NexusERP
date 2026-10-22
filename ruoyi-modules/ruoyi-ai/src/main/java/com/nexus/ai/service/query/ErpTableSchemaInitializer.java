@@ -31,7 +31,7 @@ public class ErpTableSchemaInitializer {
         log.info("[SchemaInitializer] 应用启动完成，开始初始化 ERP 表结构缓存...");
         try {
             erpTableSchemaManager.initializeSchema();
-            int tableCount = erpTableSchemaManager.getTableCount();
+            int tableCount = erpTableSchemaManager.cachedTableCount();
             log.info("[SchemaInitializer] ERP 表结构缓存初始化完成，共加载 {} 张表", tableCount);
         } catch (Exception e) {
             log.error("[SchemaInitializer] ERP 表结构缓存初始化失败", e);
