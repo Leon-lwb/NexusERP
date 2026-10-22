@@ -87,6 +87,11 @@ const flowOptions = ref<Array<{ flowName: string; id: number | string }>>([]);
 
 /** 实例状态标签映射 */
 const statusMap: Record<string, { label: string; type: string }> = {
+  QUEUED: { label: '排队中', type: 'info' },
+  WAITING: { label: '等待唤醒', type: 'info' },
+  STOP_REQUESTED: { label: '正在停止', type: 'warning' },
+  RECOVERY_REQUIRED: { label: '待人工核对', type: 'danger' },
+  CANCELLED: { label: '已取消', type: 'info' },
   RUNNING: { label: '运行中', type: 'warning' },
   SUCCEEDED: { label: '成功', type: 'success' },
   FAILED: { label: '失败', type: 'danger' },
@@ -98,7 +103,7 @@ let refreshTimer: number | null = null;
 
 function startRefreshIfRunning() {
   stopRefresh();
-  const hasRunning = rows.value.some((r) => r.status === 'RUNNING');
+  const hasRunning = rows.value.some((r) => ['QUEUED', 'RUNNING', 'WAITING', 'STOP_REQUESTED'].includes(r.status));
   if (hasRunning) {
     refreshTimer = window.setInterval(() => {
       listInstance({ ...query, pageNum: 1, pageSize: query.pageSize })
@@ -106,7 +111,7 @@ function startRefreshIfRunning() {
           rows.value = res.rows ?? [];
           total.value = res.total ?? 0;
           // 没有运行中实例后停止轮询
-          if (!rows.value.some((r) => r.status === 'RUNNING')) stopRefresh();
+          if (!rows.value.some((r) => ['QUEUED', 'RUNNING', 'WAITING', 'STOP_REQUESTED'].includes(r.status))) stopRefresh();
         })
         .catch(() => stopRefresh());
     }, 3000);
@@ -188,7 +193,10 @@ onBeforeUnmount(stopRefresh);
         <el-col :span="6">
           <el-form-item label="状态" prop="status">
             <el-select v-model="query.status" placeholder="请选择状态" clearable style="width: 100%" @change="handleQuery">
-              <el-option label="运行中" value="RUNNING" />
+              <el-option label="排队中" value="QUEUED" /><el-option label="运行中" value="RUNNING" /><el-option
+                label="等待唤醒"
+                value="WAITING"
+              /><el-option label="正在停止" value="STOP_REQUESTED" /><el-option label="待人工核对" value="RECOVERY_REQUIRED" />
               <el-option label="成功" value="SUCCEEDED" />
               <el-option label="失败" value="FAILED" />
               <el-option label="已停止" value="STOPPED" />

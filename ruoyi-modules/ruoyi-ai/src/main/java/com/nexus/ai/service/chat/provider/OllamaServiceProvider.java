@@ -3,12 +3,15 @@ package com.nexus.ai.service.chat.provider;
 import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -55,12 +58,13 @@ public class OllamaServiceProvider implements ChatServiceProvider {
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
         return OllamaChatModel.builder()
-            .baseUrl(config.getApiHost())
-            .modelName(config.getModelName())
-            .temperature(temperature)
-            .numPredict(config.getMaxTokens())
-            .timeout(Duration.ofSeconds(OLLAMA_TIMEOUT_SECONDS))
-            .listeners(chatModelListeners)
-            .build();
+                .baseUrl(config.getApiHost())
+                .modelName(config.getModelName())
+                .maxRetries(0)
+                .temperature(temperature)
+                .numPredict(config.getMaxTokens())
+                .timeout(Duration.ofSeconds(OLLAMA_TIMEOUT_SECONDS))
+                .listeners(chatModelListeners)
+                .build();
     }
 }

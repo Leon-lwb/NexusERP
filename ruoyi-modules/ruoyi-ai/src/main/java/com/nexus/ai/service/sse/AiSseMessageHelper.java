@@ -1,11 +1,14 @@
 package com.nexus.ai.service.sse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.engineering.domain.EngineeringTaskVo;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
+
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -89,6 +92,11 @@ public class AiSseMessageHelper {
      *
      * @param userId 目标用户ID
      */
+    /** 保留普通聊天信封和序号，取消进度与取消确认分别推送。 */
+    public static void sendCancellation(Long userId, boolean confirmed) {
+        send(userId, confirmed ? "AI_CANCELLED" : "AI_CANCEL_REQUESTED", "");
+    }
+
     public static void sendDone(Long userId) {
         send(userId, TYPE_DONE, null);
     }
@@ -271,11 +279,16 @@ public class AiSseMessageHelper {
     }
 
     /** 只根据真实工程任务回执发送卡片；模型文本、虚构ID和自行拼接的URL不能触发此事件。 */
-    public static void sendEngineeringTask(Long userId,com.nexus.ai.engineering.domain.EngineeringTaskVo task) {
+    public static void sendEngineeringTask(Long userId, EngineeringTaskVo task) {
         try {
-            Map<String,Object> payload=new java.util.LinkedHashMap<>();
-            payload.put("taskId",task.taskId());payload.put("state",task.state());payload.put("action",task.action());
-            payload.put("deviceId",task.deviceId());payload.put("sessionId",task.sessionId());payload.put("requestId",task.requestId());payload.put("previewPath",task.previewPath());
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("taskId", task.taskId());
+            payload.put("state", task.state());
+            payload.put("action", task.action());
+            payload.put("deviceId", task.deviceId());
+            payload.put("sessionId", task.sessionId());
+            payload.put("requestId", task.requestId());
+            payload.put("previewPath", task.previewPath());
             send(userId,"AI_ENGINEERING_TASK",MAPPER.writeValueAsString(payload));
         } catch(Exception e) {log.warn("发送工程任务卡片失败，可通过会话任务列表恢复");}
     }
@@ -300,7 +313,16 @@ public class AiSseMessageHelper {
             SseMessageDto dto = new SseMessageDto();
             dto.setUserIds(List.of(userId));
             dto.setMessage(json);
-            SseMessageUtils.publishMessage(dto);
+            AiChatEventContext.publish(
+                    () -> {
+                        try {
+                            SseMessageUtils.publishMessage(dto);
+                        } catch (RuntimeException delivery) {
+                            log.warn(
+                                    "AI事件交付失败，结果以持久化状态为准 cause={}",
+                                    delivery.getClass().getSimpleName());
+                        }
+                    });
         } catch (Exception e) {
             log.error("发送 AI SSE 消息失败, userId={}, type={}", userId, type, e);
         }

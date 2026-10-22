@@ -1,13 +1,15 @@
 package com.nexus.flow.node.logic;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
 import com.nexus.flow.expr.FlowConditionEvaluator;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,6 +24,10 @@ import java.util.Map;
  */
 @Component
 public class IfNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -43,12 +49,13 @@ public class IfNodeProvider implements FlowNodeProvider {
     @Override
     public List<NodeParamSchema> getParamSchemas() {
         NodeParamSchema logic = new NodeParamSchema("logic", "组合逻辑", "options", "AND", true);
-        logic.setOptions(List.of(
-            java.util.Map.of("name", "AND（全部满足）", "value", "AND"),
-            java.util.Map.of("name", "OR（任一满足）", "value", "OR")
-        ));
+        logic.setOptions(
+                List.of(
+                        Map.of("name", "AND（全部满足）", "value", "AND"),
+                        Map.of("name", "OR（任一满足）", "value", "OR")));
         // conditions 条件列表：前端按 conditionList 渲染行编辑（变量 + 运算符 + 值）
-        NodeParamSchema conditions = new NodeParamSchema("conditions", "条件列表", "conditionList", true);
+        NodeParamSchema conditions =
+                new NodeParamSchema("conditions", "条件列表", "conditionList", true);
         conditions.setDefaultValue("[{\"variable\":\"\",\"operator\":\"EQ\",\"value\":\"\"}]");
         conditions.setAttrs(Map.of("operators", OPERATORS));
         return List.of(logic, conditions);
@@ -56,7 +63,9 @@ public class IfNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("conditions") == null || !config.get("conditions").isArray()) {
+        if (config == null
+                || config.get("conditions") == null
+                || !config.get("conditions").isArray()) {
             throw new IllegalArgumentException("IF 节点缺少 conditions 配置");
         }
         ArrayNode conditions = (ArrayNode) config.get("conditions");
@@ -69,7 +78,8 @@ public class IfNodeProvider implements FlowNodeProvider {
             }
             String operator = c.get("operator") == null ? "" : c.get("operator").asText();
             if (!OPERATORS.contains(operator.toUpperCase())) {
-                throw new IllegalArgumentException("IF 节点条件使用了不支持的操作符: " + operator + "（支持: " + OPERATORS + "）");
+                throw new IllegalArgumentException(
+                        "IF 节点条件使用了不支持的操作符: " + operator + "（支持: " + OPERATORS + "）");
             }
         }
     }
@@ -77,7 +87,10 @@ public class IfNodeProvider implements FlowNodeProvider {
     @Override
     public JsonNode execute(FlowExecutionContext ctx) {
         JsonNode config = ctx.getConfig();
-        String logic = config.has("logic") && !config.get("logic").isNull() ? config.get("logic").asText() : "AND";
+        String logic =
+                config.has("logic") && !config.get("logic").isNull()
+                        ? config.get("logic").asText()
+                        : "AND";
         ArrayNode conditions = (ArrayNode) config.get("conditions");
 
         List<FlowConditionEvaluator.Condition> conditionList = new ArrayList<>();

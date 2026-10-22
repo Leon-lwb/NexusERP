@@ -193,4 +193,58 @@ public final class AiRequestContext {
     public static Long getLastModelId() {
         return LAST_MODEL_ID.get();
     }
+
+    /** 完整业务快照，包含知识库和最后用量；不携带登录Token。 */
+    public record Snapshot(
+            String tenant,
+            Long user,
+            String userName,
+            Long session,
+            Long model,
+            String modelName,
+            Long knowledge,
+            Integer input,
+            Integer output,
+            Long lastModel) {}
+
+    public static Snapshot capture() {
+        return new Snapshot(
+                TENANT_ID.get(),
+                USER_ID.get(),
+                USER_NAME.get(),
+                SESSION_ID.get(),
+                MODEL_ID.get(),
+                MODEL_NAME.get(),
+                KNOWLEDGE_ID.get(),
+                LAST_INPUT_TOKENS.get(),
+                LAST_OUTPUT_TOKENS.get(),
+                LAST_MODEL_ID.get());
+    }
+
+    public static Snapshot trusted(
+            String tenant,
+            Long user,
+            String name,
+            Long session,
+            Long model,
+            String modelName,
+            Long knowledge) {
+        return new Snapshot(
+                tenant, user, name, session, model, modelName, knowledge, null, null, null);
+    }
+
+    public static void restore(Snapshot snapshot) {
+        clear();
+        if (snapshot == null) return;
+        TENANT_ID.set(snapshot.tenant());
+        USER_ID.set(snapshot.user());
+        USER_NAME.set(snapshot.userName());
+        SESSION_ID.set(snapshot.session());
+        MODEL_ID.set(snapshot.model());
+        MODEL_NAME.set(snapshot.modelName());
+        KNOWLEDGE_ID.set(snapshot.knowledge());
+        LAST_INPUT_TOKENS.set(snapshot.input());
+        LAST_OUTPUT_TOKENS.set(snapshot.output());
+        LAST_MODEL_ID.set(snapshot.lastModel());
+    }
 }

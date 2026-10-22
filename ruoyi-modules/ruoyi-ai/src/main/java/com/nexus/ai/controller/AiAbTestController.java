@@ -1,6 +1,11 @@
 package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.ai.service.chat.ChatModelFactory;
+import com.nexus.ai.service.governance.AiAbRunService;
 import com.nexus.common.ai.domain.entity.AiAbTest;
 import com.nexus.common.ai.domain.entity.AiAbTestResult;
 import com.nexus.common.ai.domain.vo.AiAbTestVo;
@@ -8,23 +13,21 @@ import com.nexus.common.ai.mapper.AiAbTestMapper;
 import com.nexus.common.ai.mapper.AiAbTestResultMapper;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.domain.R;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mybatis.core.page.PageQuery;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.ai.service.chat.ChatModelFactory;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.response.ChatResponse;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 
 /**
@@ -39,6 +42,8 @@ import java.util.concurrent.Executor;
 @RestController
 @RequestMapping("/ai/ab-test")
 public class AiAbTestController {
+    @Autowired
+    private AiAbRunService runs;
 
     /** A/B 测试主表 Mapper，负责测试配置读写。 */
     private final AiAbTestMapper abTestMapper;
@@ -50,6 +55,16 @@ public class AiAbTestController {
     private final ChatModelFactory chatModelFactory;
     /** AI 专用线程池，用于异步执行 A/B 测试避免阻塞请求线程。 */
     private final Executor aiExecutor;
+
+    private static AiAbTest editable(AiAbTest source) {
+        AiAbTest clean = new AiAbTest();
+        clean.setTestName(source.getTestName());
+        clean.setDescription(source.getDescription());
+        clean.setModelAId(source.getModelAId());
+        clean.setModelBId(source.getModelBId());
+        clean.setTestQuestions(source.getTestQuestions());
+        return clean;
+    }
 
     /**
      * 查询 A/B 测试列表
@@ -91,8 +106,10 @@ public class AiAbTestController {
     @SaCheckPermission("ai:abtest:add")
     @PostMapping
     public R<Void> add(@RequestBody AiAbTest test) {
-        test.setStatus("PENDING");
-        abTestMapper.insert(test);
+        AiAbTest clean = editable(test);
+        clean.setTenantId(LoginHelper.getTenantId());
+        clean.setStatus("PENDING");
+        abTestMapper.insert(clean);
         return R.ok();
     }
 
@@ -109,10 +126,13 @@ public class AiAbTestController {
         if (existing == null) {
             return R.fail("测试不存在");
         }
-        if ("RUNNING".equals(existing.getStatus())) {
+        if ("RUNNING".equals(existing.getStatus())
+                || runs.hasUnconfirmed(LoginHelper.getTenantId(), existing.getId())) {
             return R.fail("测试正在执行中，无法修改");
         }
-        abTestMapper.updateById(test);
+        AiAbTest clean = editable(test);
+        clean.setId(existing.getId());
+        abTestMapper.updateById(clean);
         return R.ok();
     }
 
@@ -127,7 +147,9 @@ public class AiAbTestController {
     public R<Void> remove(@PathVariable Long[] ids) {
         for (Long id : ids) {
             AiAbTest existing = abTestMapper.selectById(id);
-            if (existing != null && "RUNNING".equals(existing.getStatus())) {
+            if (existing != null
+                    && ("RUNNING".equals(existing.getStatus())
+                            || runs.hasUnconfirmed(LoginHelper.getTenantId(), id))) {
                 return R.fail("测试 " + id + " 正在执行中，无法删除");
             }
             // 删除关联的测试结果
@@ -147,34 +169,12 @@ public class AiAbTestController {
     @SaCheckPermission("ai:abtest:edit")
     @PostMapping("/execute/{id}")
     public R<Void> execute(@PathVariable Long id) {
-        AiAbTest test = abTestMapper.selectById(id);
-        if (test == null) {
-            return R.fail("测试不存在");
-        }
-        if ("RUNNING".equals(test.getStatus())) {
-            return R.fail("测试正在执行中，请勿重复执行");
-        }
-
-        // 更新状态为执行中
-        test.setStatus("RUNNING");
-        abTestMapper.updateById(test);
-
-        // 异步执行
-        // 请求线程捕获租户上下文，异步线程内 TenantHelper.dynamic 恢复，避免 ab_test_result/ab_test 写库时 tenant_id 落 0
-        final String tenantIdStr = TenantHelper.getTenantId();
-        CompletableFuture.runAsync(() -> {
-            TenantHelper.dynamic(tenantIdStr, () -> {
-                try {
-                    executeTestInternal(test);
-                } catch (Exception e) {
-                    log.error("[A/B测试] 执行失败: testId={}", id, e);
-                    test.setStatus("COMPLETED");
-                    test.setResultSummary("{\"error\":\"" + e.getMessage() + "\"}");
-                    abTestMapper.updateById(test);
-                }
-            });
-        }, aiExecutor);
-
+        if (!runs.enabled()) return R.fail(503, "A/B批次执行未启用，请先完成第二阶段数据库迁移");
+        runs.start(
+                LoginHelper.getTenantId(),
+                LoginHelper.getUserId(),
+                id,
+                UUID.randomUUID().toString());
         return R.ok();
     }
 
@@ -238,10 +238,12 @@ public class AiAbTestController {
         }
 
         // 计算模型A和模型B的指标
-        Map<String, Object> report = new java.util.LinkedHashMap<>();
+        Map<String, Object> report = new LinkedHashMap<>();
         report.put("testId", testId);
         report.put("testName", test.getTestName());
-        report.put("totalQuestions", results.stream().map(AiAbTestResult::getQuestion).distinct().count());
+        report.put(
+                "totalQuestions",
+                results.stream().map(AiAbTestResult::getQuestion).distinct().count());
 
         // 模型A指标
         List<AiAbTestResult> modelAResults = results.stream()
@@ -259,89 +261,10 @@ public class AiAbTestController {
     // ==================== 私有方法 ====================
 
     /**
-     * 执行 A/B 测试内部逻辑
-     * <p>对每个问题分别用两个模型生成回答</p>
-     */
-    private void executeTestInternal(AiAbTest test) {
-        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        List<String> questions;
-        try {
-            questions = mapper.readValue(test.getTestQuestions(),
-                mapper.getTypeFactory().constructCollectionType(List.class, String.class));
-        } catch (Exception e) {
-            throw new RuntimeException("解析测试问题失败: " + e.getMessage(), e);
-        }
-
-        ChatModel modelA = chatModelFactory.getChatModel(test.getModelAId());
-        ChatModel modelB = chatModelFactory.getChatModel(test.getModelBId());
-
-        String modelAName = aiModelService.selectById(test.getModelAId()).getDisplayName();
-        String modelBName = aiModelService.selectById(test.getModelBId()).getDisplayName();
-
-        for (String question : questions) {
-            // 模型A
-            executeSingleQuestion(test.getId(), question, test.getModelAId(), modelAName, modelA);
-            // 模型B
-            executeSingleQuestion(test.getId(), question, test.getModelBId(), modelBName, modelB);
-        }
-
-        // 更新测试状态为完成
-        test.setStatus("COMPLETED");
-        abTestMapper.updateById(test);
-    }
-
-    /**
-     * 用指定模型执行单个问题
-     */
-    private void executeSingleQuestion(Long testId, String question, Long modelId,
-                                        String modelName, ChatModel chatModel) {
-        AiAbTestResult result = new AiAbTestResult();
-        result.setTestId(testId);
-        result.setQuestion(question);
-        result.setModelId(modelId);
-        result.setModelName(modelName);
-
-        try {
-            long startTime = System.currentTimeMillis();
-            ChatResponse response = chatModel.chat(UserMessage.from(question));
-            long latency = System.currentTimeMillis() - startTime;
-
-            result.setResponse(response.aiMessage().text());
-            result.setLatencyMs((int) latency);
-            if (response.tokenUsage() != null) {
-                result.setTokenUsage(response.tokenUsage().totalTokenCount());
-            }
-        } catch (Exception e) {
-            log.error("[A/B测试] 模型 {} 回答失败: {}", modelName, e.getMessage());
-            result.setResponse("执行失败: " + e.getMessage());
-        }
-
-        abTestResultMapper.insert(result);
-    }
-
-    /**
-     * 填充模型名称
-     */
-    private void fillModelNames(AiAbTestVo vo) {
-        if (vo.getModelAId() != null) {
-            var model = aiModelService.selectById(vo.getModelAId());
-            if (model != null) {
-                vo.setModelAName(model.getDisplayName());
-            }
-        }
-        if (vo.getModelBId() != null) {
-            var model = aiModelService.selectById(vo.getModelBId());
-            if (model != null) {
-                vo.setModelBName(model.getDisplayName());
-            }
-        }
-    }
-
-    /**
      * 构建单个模型的报告指标
      */
     private Map<String, Object> buildModelReport(List<AiAbTestResult> results) {
-        Map<String, Object> report = new java.util.LinkedHashMap<>();
+        Map<String, Object> report = new LinkedHashMap<>();
         if (results.isEmpty()) {
             report.put("count", 0);
             return report;
@@ -371,5 +294,20 @@ public class AiAbTestController {
         }
 
         return report;
+    }
+
+    private void fillModelNames(AiAbTestVo vo) {
+        if (vo.getModelAId() != null) {
+            var model = aiModelService.selectById(vo.getModelAId());
+            if (model != null) {
+                vo.setModelAName(model.getDisplayName());
+            }
+        }
+        if (vo.getModelBId() != null) {
+            var model = aiModelService.selectById(vo.getModelBId());
+            if (model != null) {
+                vo.setModelBName(model.getDisplayName());
+            }
+        }
     }
 }

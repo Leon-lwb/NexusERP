@@ -1,7 +1,7 @@
 package com.nexus.ai.service.token;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.domain.entity.AiTokenUsage;
@@ -10,15 +10,18 @@ import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiModelMapper;
 import com.nexus.common.ai.mapper.AiTokenUsageMapper;
 import com.nexus.common.ai.service.IAiTokenUsageService;
-import com.nexus.common.satoken.utils.LoginHelper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -56,18 +59,17 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
         }
         long totalTokens = inputTokens + outputTokens;
         aiTokenUsageMapper.upsertDailyUsage(
-            com.baomidou.mybatisplus.core.toolkit.IdWorker.getId(),
-            tenantId,
-            userId,
-            userName,
-            modelId,
-            modelName,
-            LocalDate.now(),
-            inputTokens,
-            outputTokens,
-            totalTokens,
-            cost != null ? cost : BigDecimal.ZERO
-        );
+                IdWorker.getId(),
+                tenantId,
+                userId,
+                userName,
+                modelId,
+                modelName,
+                LocalDate.now(),
+                inputTokens,
+                outputTokens,
+                totalTokens,
+                cost != null ? cost : BigDecimal.ZERO);
     }
 
     /**
@@ -82,10 +84,10 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
         // 查询时间范围内的消息（有 token_usage 且有 modelId 的 ASSISTANT 消息）
         LambdaQueryWrapper<AiMessage> query = new LambdaQueryWrapper<>();
         query.eq(AiMessage::getRole, "ASSISTANT")
-            .isNotNull(AiMessage::getTokenUsage)
-            .isNotNull(AiMessage::getModelId)
-            .ge(AiMessage::getCreateTime, java.sql.Date.valueOf(startDate))
-            .le(AiMessage::getCreateTime, java.sql.Date.valueOf(endDate.plusDays(1)));
+                .isNotNull(AiMessage::getTokenUsage)
+                .isNotNull(AiMessage::getModelId)
+                .ge(AiMessage::getCreateTime, Date.valueOf(startDate))
+                .le(AiMessage::getCreateTime, Date.valueOf(endDate.plusDays(1)));
         List<AiMessage> messages = aiMessageMapper.selectList(query);
 
         if (messages.isEmpty()) {
@@ -96,14 +98,21 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
         // 按 (sessionId) 分组获取 userId（通过 ai_session 关联）
         // 简化实现：按日期+模型聚合，userId 从 session 获取
         // 由于回填是批量操作，按 (modelId, date) 聚合，userId 设为消息的 createBy
-        Map<String, List<AiMessage>> grouped = messages.stream()
-            .collect(Collectors.groupingBy(m -> {
-                LocalDate date = m.getCreateTime().toInstant()
-                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-                Long modelId = m.getModelId();
-                Long userId = m.getCreateBy() != null ? m.getCreateBy() : 0L;
-                return userId + "_" + modelId + "_" + date;
-            }));
+        Map<String, List<AiMessage>> grouped =
+                messages.stream()
+                        .collect(
+                                Collectors.groupingBy(
+                                        m -> {
+                                            LocalDate date =
+                                                    m.getCreateTime()
+                                                            .toInstant()
+                                                            .atZone(ZoneId.systemDefault())
+                                                            .toLocalDate();
+                                            Long modelId = m.getModelId();
+                                            Long userId =
+                                                    m.getCreateBy() != null ? m.getCreateBy() : 0L;
+                                            return userId + "_" + modelId + "_" + date;
+                                        }));
 
         for (Map.Entry<String, List<AiMessage>> entry : grouped.entrySet()) {
             String[] parts = entry.getKey().split("_");
@@ -126,7 +135,8 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
             if (existing == null) {
                 AiModel model = aiModelMapper.selectById(modelId);
                 String modelName = model != null ? model.getModelName() : "unknown";
-                BigDecimal cost = calculateCost(modelId, (int) totalTokens, 0);
+                // 历史记录没有价格快照，回填仅补Token，不能按当前价格伪造历史费用。
+                BigDecimal cost = BigDecimal.ZERO;
 
                 AiTokenUsage usage = new AiTokenUsage();
                 usage.setTenantId(group.get(0).getTenantId());
@@ -178,12 +188,20 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
         for (Map.Entry<LocalDate, List<AiTokenUsage>> entry : byDate.entrySet()) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("date", entry.getKey().toString());
-            row.put("totalTokens", entry.getValue().stream().mapToLong(AiTokenUsage::getTotalTokens).sum());
-            row.put("totalInputTokens", entry.getValue().stream().mapToLong(AiTokenUsage::getTotalInputTokens).sum());
-            row.put("totalOutputTokens", entry.getValue().stream().mapToLong(AiTokenUsage::getTotalOutputTokens).sum());
+            row.put(
+                    "totalTokens",
+                    entry.getValue().stream().mapToLong(AiTokenUsage::getTotalTokens).sum());
+            row.put(
+                    "totalInputTokens",
+                    entry.getValue().stream().mapToLong(AiTokenUsage::getTotalInputTokens).sum());
+            row.put(
+                    "totalOutputTokens",
+                    entry.getValue().stream().mapToLong(AiTokenUsage::getTotalOutputTokens).sum());
             row.put("totalCost", entry.getValue().stream().map(AiTokenUsage::getTotalCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
-            row.put("requestCount", entry.getValue().stream().mapToInt(AiTokenUsage::getRequestCount).sum());
+            row.put(
+                    "requestCount",
+                    entry.getValue().stream().mapToInt(AiTokenUsage::getRequestCount).sum());
             result.add(row);
         }
         return result;
@@ -206,15 +224,20 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("modelId", entry.getKey());
             row.put("modelName", entry.getValue().get(0).getModelName());
-            row.put("totalTokens", entry.getValue().stream().mapToLong(AiTokenUsage::getTotalTokens).sum());
+            row.put(
+                    "totalTokens",
+                    entry.getValue().stream().mapToLong(AiTokenUsage::getTotalTokens).sum());
             row.put("totalCost", entry.getValue().stream().map(AiTokenUsage::getTotalCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
-            row.put("requestCount", entry.getValue().stream().mapToInt(AiTokenUsage::getRequestCount).sum());
+            row.put(
+                    "requestCount",
+                    entry.getValue().stream().mapToInt(AiTokenUsage::getRequestCount).sum());
             result.add(row);
         }
 
         // 按 totalTokens 降序
-        result.sort((a, b) -> Long.compare((long) b.get("totalTokens"), (long) a.get("totalTokens")));
+        result.sort(
+                (a, b) -> Long.compare((long) b.get("totalTokens"), (long) a.get("totalTokens")));
         return result;
     }
 
@@ -235,14 +258,19 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("userId", entry.getKey());
             row.put("userName", entry.getValue().get(0).getUserName());
-            row.put("totalTokens", entry.getValue().stream().mapToLong(AiTokenUsage::getTotalTokens).sum());
+            row.put(
+                    "totalTokens",
+                    entry.getValue().stream().mapToLong(AiTokenUsage::getTotalTokens).sum());
             row.put("totalCost", entry.getValue().stream().map(AiTokenUsage::getTotalCost)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
-            row.put("requestCount", entry.getValue().stream().mapToInt(AiTokenUsage::getRequestCount).sum());
+            row.put(
+                    "requestCount",
+                    entry.getValue().stream().mapToInt(AiTokenUsage::getRequestCount).sum());
             result.add(row);
         }
 
-        result.sort((a, b) -> Long.compare((long) b.get("totalTokens"), (long) a.get("totalTokens")));
+        result.sort(
+                (a, b) -> Long.compare((long) b.get("totalTokens"), (long) a.get("totalTokens")));
         return result;
     }
 

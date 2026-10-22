@@ -1,11 +1,13 @@
 package com.nexus.flow.node.control;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,6 +21,10 @@ import java.util.List;
  */
 @Component
 public class WaitNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -41,7 +47,9 @@ public class WaitNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || !config.has("waitSeconds") || !config.get("waitSeconds").canConvertToInt()) {
+        if (config == null
+                || !config.has("waitSeconds")
+                || !config.get("waitSeconds").canConvertToInt()) {
             throw new IllegalArgumentException("延迟节点缺少 waitSeconds 配置");
         }
         int seconds = config.get("waitSeconds").asInt();

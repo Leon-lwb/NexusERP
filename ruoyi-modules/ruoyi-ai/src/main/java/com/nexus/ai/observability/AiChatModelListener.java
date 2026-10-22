@@ -1,16 +1,19 @@
 package com.nexus.ai.observability;
 
 import com.nexus.ai.context.AiRequestContext;
-import com.nexus.common.ai.domain.entity.AiMessage;
+import com.nexus.ai.service.governance.AiGovernanceProperties;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiTokenUsageService;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
 import dev.langchain4j.model.chat.listener.ChatModelResponseContext;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 
@@ -30,6 +33,8 @@ import java.math.BigDecimal;
 @Slf4j
 @RequiredArgsConstructor
 public class AiChatModelListener implements ChatModelListener {
+    @Autowired(required = false)
+    private AiGovernanceProperties governance;
 
     /** 聊天消息表 Mapper，用于更新消息的 Token 明细。 */
     private final AiMessageMapper aiMessageMapper;
@@ -57,6 +62,7 @@ public class AiChatModelListener implements ChatModelListener {
      */
     @Override
     public void onResponse(ChatModelResponseContext responseContext) {
+        if (governance != null && governance.isEnabled()) return;
         var chatResponse = responseContext.chatResponse();
         var provider = responseContext.modelProvider();
 
@@ -79,11 +85,19 @@ public class AiChatModelListener implements ChatModelListener {
             int outputTokens = usage.outputTokenCount() != null ? usage.outputTokenCount() : 0;
             int totalTokens = inputTokens + outputTokens;
 
-            log.info("[ChatModel] 响应: inputTokens={}, outputTokens={}, totalTokens={}, provider={}, sessionId={}",
-                inputTokens, outputTokens, totalTokens, provider, sessionId);
+            log.info(
+                    "[ChatModel] 响应: inputTokens={}, outputTokens={}, totalTokens={}, provider={},"
+                            + " sessionId={}",
+                    inputTokens,
+                    outputTokens,
+                    totalTokens,
+                    provider,
+                    sessionId);
 
             // 1. 暂存 token 用量到 AiRequestContext（供 Agent 模式的 saveAiMessage 读取）
             AiRequestContext.setLastTokenUsage(inputTokens, outputTokens, modelId);
+
+            if (governance != null && governance.isEnabled()) return;
 
             // 2. 更新日统计（Agent 模式在同一线程，AiRequestContext 可用）
             if (userId != null && modelId != null) {
@@ -98,11 +112,6 @@ public class AiChatModelListener implements ChatModelListener {
                 }
             }
 
-            // 3. 更新 ai_message 的 token 明细（仅流式/RAG 模式需要，
-            //    Agent 模式由 saveAiMessageWithTokens 直接写入）
-            if (sessionId != null) {
-                updateLatestAssistantMessage(sessionId, modelId, inputTokens, outputTokens, totalTokens);
-            }
         } else {
             log.info("[ChatModel] 响应: provider={}, tokenUsage=null", provider);
         }
@@ -121,31 +130,4 @@ public class AiChatModelListener implements ChatModelListener {
             error.getMessage(), provider);
     }
 
-    /**
-     * 更新会话中最近一条 ASSISTANT 消息的 Token 明细
-     *
-     * @param sessionId    会话ID
-     * @param modelId      模型ID
-     * @param inputTokens  输入 Token 数
-     * @param outputTokens 输出 Token 数
-     * @param totalTokens  总 Token 数
-     */
-    private void updateLatestAssistantMessage(Long sessionId, Long modelId,
-                                               int inputTokens, int outputTokens, int totalTokens) {
-        try {
-            LambdaUpdateWrapper<AiMessage> update = new LambdaUpdateWrapper<>();
-            update.eq(AiMessage::getSessionId, sessionId)
-                .eq(AiMessage::getRole, "ASSISTANT")
-                .isNull(AiMessage::getTokenUsage)
-                .orderByDesc(AiMessage::getCreateTime)
-                .last("LIMIT 1")
-                .set(AiMessage::getModelId, modelId)
-                .set(AiMessage::getInputTokens, inputTokens)
-                .set(AiMessage::getOutputTokens, outputTokens)
-                .set(AiMessage::getTokenUsage, (long) totalTokens);
-            aiMessageMapper.update(null, update);
-        } catch (Exception e) {
-            log.warn("[ChatModel] 更新消息 Token 明细失败: sessionId={}, error={}", sessionId, e.getMessage());
-        }
-    }
 }

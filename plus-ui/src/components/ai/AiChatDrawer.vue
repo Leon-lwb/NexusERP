@@ -57,6 +57,7 @@
           <DeepThinking v-model="enableThinking" />
           <WebSearchToggle v-model="enableWebSearch" />
           <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" :disabled="!canSend" style="flex: 1"> 发送 </el-button>
+          <AiRequestCancel :request-id="managedRequestId" :loading="loading" :state="cancelStatus" @state="onCancelState" />
           <el-button @click="newChat" :icon="RefreshRight" />
         </div>
       </div>
@@ -65,6 +66,8 @@
 </template>
 
 <script setup lang="ts">
+import AiRequestCancel from '@/components/ai/AiRequestCancel.vue';
+import type { AiChatRequestReceipt } from '@/api/ai/chat';
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue';
 import { sendAiMessage } from '@/api/ai/chat';
@@ -109,6 +112,8 @@ const messageListRef = ref<HTMLElement>();
 const sessionId = ref<string | null>(null);
 /** 会话切换后拒绝旧请求的迟到回执。 */
 const chatEpoch = ref(0);
+const managedRequestId = ref<string | null>(null);
+const cancelStatus = ref('');
 const chatStream = createAiChatStream();
 const canSend = computed(() => checkPermi(['ai:assistant:send']));
 const engineering = useEngineeringChat(sessionId, visible);
@@ -125,6 +130,8 @@ watch(
     if (!shown) {
       chatEpoch.value++;
       chatStream.reset();
+      managedRequestId.value = null;
+      cancelStatus.value = '';
       thinking.value = false;
       loading.value = false;
     }
@@ -189,6 +196,20 @@ function onAiSseMessage(event: Event) {
         void mountEchartsContainers();
       });
       break;
+    case 'AI_CANCEL_REQUESTED':
+      cancelStatus.value = 'CANCEL_REQUESTED';
+      break;
+    case 'AI_CANCELLED': {
+      const partial = messages.value[messages.value.length - 1];
+      if (partial?.role === 'assistant') {
+        partial.content += '\n\n[已取消]';
+        if (detail.messageId) partial.id = detail.messageId;
+      } else messages.value.push({ role: 'assistant', content: '[已取消]', id: detail.messageId });
+      cancelStatus.value = 'CANCELLED';
+      loading.value = false;
+      thinking.value = false;
+      break;
+    }
     case 'AI_ERROR':
       thinking.value = false;
       loading.value = false;
@@ -284,6 +305,23 @@ function scrollToBottom() {
   }
 }
 
+/** 轮询回执只作用于仍在当前组件中的同一请求。 */
+function onCancelState(receipt: AiChatRequestReceipt) {
+  if (!managedRequestId.value || receipt.requestId !== managedRequestId.value) return;
+  cancelStatus.value = receipt.status;
+  if (['SUCCEEDED', 'FAILED', 'CANCELLED', 'RECOVERY_REQUIRED'].includes(receipt.status)) {
+    loading.value = false;
+    thinking.value = false;
+    if (receipt.status !== 'SUCCEEDED') {
+      const label = receipt.status === 'CANCELLED' ? '[已取消]' : receipt.status === 'RECOVERY_REQUIRED' ? '[结果待核对]' : '[执行失败]';
+      const last = messages.value[messages.value.length - 1];
+      if (last?.role === 'assistant') {
+        if (!last.content.endsWith(label)) last.content += '\n\n' + label;
+        if (receipt.messageId) last.id = receipt.messageId;
+      } else messages.value.push({ role: 'assistant', content: label, id: receipt.messageId });
+    }
+  }
+}
 async function sendMessage() {
   const text = inputText.value.trim();
   if (!text || loading.value || !canSend.value) return;
@@ -292,6 +330,8 @@ async function sendMessage() {
   const requestSessionId = sessionId.value;
   const engineeringFields = engineering.prepare(text);
   const clientRequestId = chatStream.begin(requestSessionId);
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
@@ -316,10 +356,13 @@ async function sendMessage() {
       throw new Error('AI 会话回执无效或与当前请求不一致');
     }
     sessionId.value = chatStream.sessionId;
+    managedRequestId.value = res.requestReceipt?.requestId ?? null;
     engineering.sent();
   } catch (e: any) {
     if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId) || !loading.value) return;
     chatStream.reset();
+    managedRequestId.value = null;
+    cancelStatus.value = '';
     if (engineeringFields.engineeringRequestId) inputText.value = text;
     loading.value = false;
     thinking.value = false;
@@ -330,6 +373,8 @@ async function sendMessage() {
 function newChat() {
   chatEpoch.value++;
   chatStream.reset();
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   sessionId.value = null;
   messages.value = [];
   thinking.value = false;
@@ -358,6 +403,8 @@ onMounted(() => {
 onUnmounted(() => {
   chatEpoch.value++;
   chatStream.reset();
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   // 释放图表与尺寸观察者：本组件全局常驻，多轮对话会持续累积实例
   mountedCharts.forEach(({ chart, ro }) => {

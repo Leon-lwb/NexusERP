@@ -1,12 +1,15 @@
 package com.nexus.flow.node.control;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
+import com.nexus.flow.model.FlowEdgeDef;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,6 +25,10 @@ import java.util.Map;
  */
 @Component
 public class AggregateNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -37,7 +44,8 @@ public class AggregateNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
-        NodeParamSchema mode = new NodeParamSchema("mode", "聚合方式", "options", "ALL_UPSTREAM", false);
+        NodeParamSchema mode =
+                new NodeParamSchema("mode", "聚合方式", "options", "ALL_UPSTREAM", false);
         mode.setOptions(List.of(Map.of("name", "全部上游（收集直接上游每轮输出）", "value", "ALL_UPSTREAM")));
         return List.of(mode);
     }
@@ -55,7 +63,7 @@ public class AggregateNodeProvider implements FlowNodeProvider {
         ArrayNode items = MAPPER.createArrayNode();
         ObjectNode sources = MAPPER.createObjectNode();
         // 遍历直接上游，收集其批次历史输出（无历史 → 空数组）
-        for (com.nexus.flow.model.FlowEdgeDef edge : ctx.getGraph().getInEdges(ctx.getNodeId())) {
+        for (FlowEdgeDef edge : ctx.getGraph().getInEdges(ctx.getNodeId())) {
             // 上游是 split 循环节点时：收集其循环体尾节点的输出（loop 返回边 source，在 split 的入边中）——
             // 语义对齐 n8n：聚合的是"每轮循环处理结果"，split 自身的 done 空批输出不进入
             String collectFrom = edge.getSource();

@@ -2,7 +2,6 @@ package com.nexus.flow.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -126,10 +125,12 @@ public class FlowGraph {
                 throw new IllegalArgumentException("边 " + def.getId() + " 缺少 source/target");
             }
             if (!nodes.containsKey(def.getSource())) {
-                throw new IllegalArgumentException("边 " + def.getId() + " 引用了不存在的源节点: " + def.getSource());
+                throw new IllegalArgumentException(
+                        "边 " + def.getId() + " 引用了不存在的源节点: " + def.getSource());
             }
             if (!nodes.containsKey(def.getTarget())) {
-                throw new IllegalArgumentException("边 " + def.getId() + " 引用了不存在的目标节点: " + def.getTarget());
+                throw new IllegalArgumentException(
+                        "边 " + def.getId() + " 引用了不存在的目标节点: " + def.getTarget());
             }
             edges.put(def.getId(), def);
         }
@@ -148,7 +149,8 @@ public class FlowGraph {
         }
         for (FlowNodeDef node : nodes.values()) {
             if (!typeValidator.test(node.getType())) {
-                throw new IllegalArgumentException("未注册的节点类型: " + node.getType() + "（节点 " + node.getId() + "）");
+                throw new IllegalArgumentException(
+                        "未注册的节点类型: " + node.getType() + "（节点 " + node.getId() + "）");
             }
         }
     }
@@ -344,6 +346,31 @@ public class FlowGraph {
      *
      * @return 循环体节点ID集合
      */
+
+    /** 实际循环归属用于稳定操作键；不同独立循环的游标不能互相影响。 */
+    public String loopOwner(String nodeId) {
+        String owner = null;
+        for (FlowEdgeDef returning : edges.values()) {
+            if (!returning.isLoopEdge()) continue;
+            String anchor = returning.getTarget();
+            Set<String> seen = new HashSet<>();
+            Deque<String> pending = new ArrayDeque<>();
+            pending.push(anchor);
+            while (!pending.isEmpty()) {
+                String next = pending.pop();
+                if (!seen.add(next)) continue;
+                for (FlowEdgeDef edge : getOutEdges(next))
+                    if (!edge.isLoopEdge() && !edge.isDoneBranch()) pending.push(edge.getTarget());
+            }
+            if (seen.contains(nodeId)) {
+                if (owner != null && !owner.equals(anchor))
+                    throw new IllegalStateException("节点属于多个循环，无法确定操作键");
+                owner = anchor;
+            }
+        }
+        return owner;
+    }
+
     public Set<String> getLoopBodyNodes() {
         return loopBodyNodes;
     }

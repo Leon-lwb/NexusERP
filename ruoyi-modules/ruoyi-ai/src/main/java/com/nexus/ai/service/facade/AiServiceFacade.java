@@ -1,68 +1,95 @@
 package com.nexus.ai.service.facade;
 
 import cn.dev33.satoken.stp.StpUtil;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.agent.McpDocumentAgent;
 import com.nexus.ai.agent.WebSearchAgent;
+import com.nexus.ai.context.AiBusinessContextScope;
 import com.nexus.ai.context.AiRequestContext;
+import com.nexus.ai.context.AiToolInvocationGuard;
 import com.nexus.ai.context.SearchSourceHolder;
+import com.nexus.ai.engineering.service.EngineeringAgentFactory;
+import com.nexus.ai.engineering.service.EngineeringToolContext;
 import com.nexus.ai.mcp.service.ToolProviderFactory;
+import com.nexus.ai.observability.AgentStreamHelper;
 import com.nexus.ai.observability.AiAgentListener;
 import com.nexus.ai.observability.AiToolExecutedListener;
-import com.nexus.ai.observability.AgentStreamHelper;
 import com.nexus.ai.observability.OutputChannel;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.chat.PersistentChatMemoryStore;
+import com.nexus.ai.service.governance.AiChatExecutionService;
+import com.nexus.ai.service.governance.AiGovernanceProperties;
 import com.nexus.ai.service.prompt.PromptTemplateService;
 import com.nexus.ai.service.rag.RetrieverService;
-import com.nexus.ai.service.sse.AiSseMessageHelper;
 import com.nexus.ai.service.sse.AiChatSseLifecycle;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.ai.service.sse.AiSseMessageHelper;
 import com.nexus.ai.tool.WebSearchTool;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.domain.entity.AiSession;
+import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.dto.AiChatRequest;
+import com.nexus.common.ai.governance.AiCallContext;
+import com.nexus.common.ai.governance.AiInvocationScope;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiSessionMapper;
 import com.nexus.common.ai.mapper.AiToolMapper;
-import com.nexus.common.ai.domain.entity.AiTool;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiTokenUsageService;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.service.tool.ToolProviderRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.ai.domain.entity.AiMessage 和
+// dev.langchain4j.data.message.AiMessage，后者保留全限定名以区分。
 
 /**
  * AI 服务门面
- * <p>统一入口：智能路由普通流式对话 / RAG 增强对话 / Agent 编排</p>
- * <p>路由规则：数据查询关键词 → Agent 模式；knowledgeId 或知识检索关键词 → RAG 模式；其他 → 普通流式</p>
- * <p>Agent 模式支持流式推送：通过 OutputChannel 跨线程事件总线 + SSE 实时推送工具调用过程</p>
+ *
+ * <p>统一入口：智能路由普通流式对话 / RAG 增强对话 / Agent 编排
+ *
+ * <p>路由规则：数据查询关键词 → Agent 模式；knowledgeId 或知识检索关键词 → RAG 模式；其他 → 普通流式
+ *
+ * <p>Agent 模式支持流式推送：通过 OutputChannel 跨线程事件总线 + SSE 实时推送工具调用过程
  *
  * @author NexusERP
  * @since 1.0.0
@@ -71,6 +98,19 @@ import java.util.concurrent.Executor;
 @Service
 @RequiredArgsConstructor
 public class AiServiceFacade {
+    @Autowired(required = false)
+    @Qualifier("aiEventExecutor")
+    private Executor eventExecutor;
+
+    @Autowired(required = false)
+    @Qualifier("aiChatExecutor")
+    private Executor governedChatExecutor;
+
+    @Autowired(required = false)
+    private AiChatExecutionService governedRequests;
+
+    @Autowired(required = false)
+    private AiGovernanceProperties governance;
 
     /** ChatModel 工厂，构建并缓存流式与 Agent 用 ChatModel */
     private final ChatModelFactory chatModelFactory;
@@ -104,8 +144,8 @@ public class AiServiceFacade {
     private final AiToolMapper aiToolMapper;
 
     /** 工程功能显式启用时才装配；普通路由无需工程表或私有桶。 */
-    @org.springframework.beans.factory.annotation.Autowired(required=false)
-    private com.nexus.ai.engineering.service.EngineeringAgentFactory engineeringAgentFactory;
+    @Autowired(required = false)
+    private EngineeringAgentFactory engineeringAgentFactory;
 
     /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */
     private static final ObjectMapper DRAIN_MAPPER = new ObjectMapper();
@@ -182,9 +222,16 @@ public class AiServiceFacade {
             return null;
         }
         // 打印实际解析到的模型配置，便于排查"切换模型是否生效"：apiHost 即实际调用 endpoint
-        log.info("[AI对话] 模型解析 modelId={}, modelName={}, providerType={}, apiHost={}, mode={}, thinking={}, webSearch={}",
-            modelConfig.getId(), modelConfig.getModelName(), modelConfig.getProviderType(), modelConfig.getApiHost(),
-            request.getMode(), request.getEnableThinking(), request.getEnableWebSearch());
+        log.info(
+                "[AI对话] 模型解析 modelId={}, modelName={}, providerType={}, apiHost={}, mode={},"
+                        + " thinking={}, webSearch={}",
+                modelConfig.getId(),
+                modelConfig.getModelName(),
+                modelConfig.getProviderType(),
+                modelConfig.getApiHost(),
+                request.getMode(),
+                request.getEnableThinking(),
+                request.getEnableWebSearch());
 
         // 2. 创建或复用会话
         Long sessionId = request.getSessionId();
@@ -199,8 +246,9 @@ public class AiServiceFacade {
         } else {
             // 越权防护：复用会话时必须校验会话归属当前用户，防止向他人会话注入消息并窃取历史上下文
             AiSession existing = aiSessionMapper.selectById(sessionId);
-            if (existing == null || !userId.equals(existing.getUserId())
-                || !java.util.Objects.equals(tenantIdStr, existing.getTenantId())) {
+            if (existing == null
+                    || !userId.equals(existing.getUserId())
+                    || !Objects.equals(tenantIdStr, existing.getTenantId())) {
                 throw new ServiceException("会话不存在或无权访问该会话", 404);
             }
         }
@@ -224,6 +272,47 @@ public class AiServiceFacade {
         final Long finalSessionId = sessionId;
         final String finalUserName = userName;
 
+        AiChatExecutionService.Managed managed = null;
+        request.setExecutionRequestId(null);
+        if (governedRequests != null && governedRequests.enabled()) {
+            managed =
+                    governedRequests.prepare(
+                            tenantIdStr,
+                            userId,
+                            finalUserName,
+                            sessionId,
+                            modelConfig.getId(),
+                            request.getClientRequestId());
+            request.setExecutionRequestId(managed.id());
+        } else if (governance != null && governance.isEnabled())
+            request.setExecutionRequestId(UUID.randomUUID().toString());
+        try (var business =
+                        AiBusinessContextScope.open(
+                                AiRequestContext.trusted(
+                                        tenantIdStr,
+                                        userId,
+                                        finalUserName,
+                                        sessionId,
+                                        modelConfig.getId(),
+                                        modelConfig.getModelName(),
+                                        request.getKnowledgeId()));
+                var invocation =
+                        managed != null
+                                ? managed.open()
+                                : governance != null && governance.isEnabled()
+                                        ? AiInvocationScope.open(
+                                                new AiCallContext(
+                                                        tenantIdStr,
+                                                        userId,
+                                                        finalUserName,
+                                                        request.getExecutionRequestId(),
+                                                        sessionId,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        "CHAT"),
+                                                () -> {})
+                                        : null) {
         // 5. 智能路由：显式行为开关优先，其次前端显式指定模式，最后关键词自动判断
 
         // 工程只在显式设备与工程动作意图共同成立时进入独立角色；普通库存/MCP/RAG路由沿用原语义。
@@ -286,6 +375,33 @@ public class AiServiceFacade {
         }
 
         return sessionId;
+        }
+    }
+
+    /** 新请求接口返回持久化身份，旧chat返回类型保持不变。 */
+    public Map<String, Object> chatRequest(AiChatRequest request) {
+        if (governedRequests == null || !governedRequests.enabled())
+            throw new ServiceException("持久化聊天未启用", 503);
+        Long session = chat(request);
+        if (session == null || request.getExecutionRequestId() == null)
+            throw new ServiceException("未创建聊天请求", 503);
+        return governedRequests.status(
+                LoginHelper.getTenantId(),
+                LoginHelper.getUserId(),
+                request.getExecutionRequestId());
+    }
+
+    private AiChatSseLifecycle lifecycle(AiChatRequest request, Long userId, Long sessionId) {
+        var managed =
+                governedRequests == null || request.getExecutionRequestId() == null
+                        ? null
+                        : governedRequests.local(request.getExecutionRequestId());
+        return new AiChatSseLifecycle(
+                userId,
+                sessionId,
+                request.getClientRequestId(),
+                request.getExecutionRequestId(),
+                managed);
     }
 
     /**
@@ -293,8 +409,15 @@ public class AiServiceFacade {
      */
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
                                      Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        invokeWithStreaming(modelConfig, request, userId, sessionId, tenantId, userName, tenantIdStr,
-            new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId()));
+        invokeWithStreaming(
+                modelConfig,
+                request,
+                userId,
+                sessionId,
+                tenantId,
+                userName,
+                tenantIdStr,
+                lifecycle(request, userId, sessionId));
     }
 
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
@@ -315,7 +438,7 @@ public class AiServiceFacade {
     /** 知识库增强与普通对话共用流式回调及唯一终态，避免收尾行为分叉。 */
     private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
                                Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
+        AiChatSseLifecycle lifecycle = lifecycle(request, userId, sessionId);
         try {
             StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
             MessageWindowChatMemory memory = MessageWindowChatMemory.builder().id(sessionId).maxMessages(20)
@@ -327,13 +450,13 @@ public class AiServiceFacade {
             boolean replaced = false;
             String injectedQuery = buildInjectedPrompt(request, augmentedQuery);
             for (int i = allMessages.size() - 1; i >= 0; i--) {
-                if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage) {
-                    allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(injectedQuery));
+                if (allMessages.get(i) instanceof UserMessage) {
+                    allMessages.set(i, UserMessage.from(injectedQuery));
                     replaced = true;
                     break;
                 }
             }
-            if (!replaced) allMessages.add(dev.langchain4j.data.message.UserMessage.from(injectedQuery));
+            if (!replaced) allMessages.add(UserMessage.from(injectedQuery));
             streamResponse(streamingModel, allMessages, modelConfig, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
         } catch (Exception error) {
             lifecycle.fail(error);
@@ -347,52 +470,103 @@ public class AiServiceFacade {
         lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
         StringBuffer fullContent = new StringBuffer();
         StringBuffer fullThinking = new StringBuffer();
-        submit(lifecycle, () -> {
-            try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId, modelConfig.getId(), modelConfig.getModelName());
-                streamingModel.chat(ChatRequest.builder().messages(allMessages).build(), new StreamingChatResponseHandler() {
-                    @Override
-                    public void onPartialResponse(String token) {
-                        lifecycle.progress(() -> {
-                            fullContent.append(token);
-                            AiSseMessageHelper.sendContentIncrement(userId, token);
-                        });
-                    }
+        submit(
+                lifecycle,
+                () -> {
+                    try {
+                        AiRequestContext.set(
+                                tenantId,
+                                userId,
+                                userName,
+                                sessionId,
+                                modelConfig.getId(),
+                                modelConfig.getModelName());
+                        streamingModel.chat(
+                                ChatRequest.builder().messages(allMessages).build(),
+                                new StreamingChatResponseHandler() {
+                                    @Override
+                                    public void onPartialResponse(String token) {
+                                        lifecycle.progress(
+                                                () -> {
+                                                    fullContent.append(token);
+                                                    lifecycle.partial(fullContent.toString());
+                                                    AiSseMessageHelper.sendContentIncrement(
+                                                            userId, token);
+                                                });
+                                    }
 
-                    @Override
-                    public void onPartialThinking(dev.langchain4j.model.chat.response.PartialThinking thinking) {
-                        if (thinking == null || thinking.text() == null) return;
-                        lifecycle.progress(() -> {
-                            fullThinking.append(thinking.text());
-                            AiSseMessageHelper.sendThinkingToken(userId, thinking.text());
-                        });
-                    }
+                                    @Override
+                                    public void onPartialThinking(PartialThinking thinking) {
+                                        if (thinking == null || thinking.text() == null) return;
+                                        lifecycle.progress(
+                                                () -> {
+                                                    fullThinking.append(thinking.text());
+                                                    AiSseMessageHelper.sendThinkingToken(
+                                                            userId, thinking.text());
+                                                });
+                                    }
 
-                    @Override
-                    public void onCompleteResponse(ChatResponse response) {
-                        lifecycle.complete(() -> saveAiMessageWithTokens(sessionId, fullContent.toString(), modelConfig.getId(),
-                            response, tenantId, userId, userName, modelConfig.getModelName(),
-                            fullThinking.isEmpty() ? null : fullThinking.toString(), tenantIdStr));
-                    }
+                                    @Override
+                                    public void onCompleteResponse(ChatResponse response) {
+                                        lifecycle.complete(
+                                                () ->
+                                                        saveAiMessageWithTokens(
+                                                                sessionId,
+                                                                fullContent.toString(),
+                                                                modelConfig.getId(),
+                                                                response,
+                                                                tenantId,
+                                                                userId,
+                                                                userName,
+                                                                modelConfig.getModelName(),
+                                                                fullThinking.isEmpty()
+                                                                        ? null
+                                                                        : fullThinking.toString(),
+                                                                tenantIdStr));
+                                    }
 
-                    @Override
-                    public void onError(Throwable error) { lifecycle.fail(error); }
+                                    @Override
+                                    public void onError(Throwable error) {
+                                        lifecycle.fail(error);
+                                    }
+                                });
+                    } catch (Exception error) {
+                        lifecycle.fail(error);
+                    } finally {
+                        AiRequestContext.clear();
+                    }
                 });
-            } catch (Exception error) {
-                lifecycle.fail(error);
-            } finally {
-                AiRequestContext.clear();
-            }
-        });
     }
 
     /** 提交失败也通过同一生命周期收尾，避免线程池拒绝后客户端永久等待。 */
     private boolean submit(AiChatSseLifecycle lifecycle, Runnable task) {
         try {
-            CompletableFuture.runAsync(() -> lifecycle.run(task), aiExecutor);
+            CompletableFuture.runAsync(
+                    () -> lifecycle.run(task),
+                    governance != null && governance.chatActive() && governedChatExecutor != null
+                            ? governedChatExecutor
+                            : aiExecutor);
             return true;
         } catch (Exception error) {
             lifecycle.fail(error);
+            return false;
+        }
+    }
+
+    private boolean submitObserver(AiChatSseLifecycle lifecycle, Runnable task) {
+        if (!lifecycle.persistent()) return submit(lifecycle, task);
+        try {
+            CompletableFuture.runAsync(
+                            () -> lifecycle.observe(task),
+                            eventExecutor == null ? aiExecutor : eventExecutor)
+                    .exceptionally(
+                            error -> {
+                                lifecycle.eventFailure(error);
+                                return null;
+                            });
+            return true;
+        } catch (RuntimeException error) {
+            lifecycle.eventFailure(error);
             return false;
         }
     }
@@ -406,7 +580,7 @@ public class AiServiceFacade {
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
                                  Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
+        AiChatSseLifecycle lifecycle = lifecycle(request, userId, sessionId);
         try {
             runAgent(modelConfig, request, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
         } catch (Exception error) {
@@ -417,19 +591,26 @@ public class AiServiceFacade {
     private void runAgent(AiModel modelConfig, AiChatRequest request,
                           Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr,
                           AiChatSseLifecycle lifecycle) {
-        final com.nexus.ai.engineering.service.EngineeringToolContext.Context engineeringContext =
-            engineeringAgentFactory == null ? null : engineeringAgentFactory.capture(request, userId, sessionId, tenantId);
+        final EngineeringToolContext.Context engineeringContext =
+                engineeringAgentFactory == null
+                        ? null
+                        : engineeringAgentFactory.capture(request, userId, sessionId, tenantId);
 
         // Agent 模式使用低 temperature（0.1），提高 SQL 生成准确性
-        ChatModel chatModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
+        ChatModel chatModel =
+                (request.getMaxOutputTokens() == null
+                        ? chatModelFactory.getAgentChatModel(modelConfig.getId())
+                        : chatModelFactory.getAgentChatModel(modelConfig.getId(), request));
 
         // 加载历史消息，构建带上下文的查询（避免多轮对话丢失上下文）
         List<ChatMessage> history = persistentChatMemoryStore.getMessages(sessionId);
         String contextualQuery = buildContextualQuery(history, request.getContent());
 
         // 动态加载已启用的工具（差异化注入：QueryAgent 需要 QUERY+ALL，ReportAgent 只需要 ALL）
-        List<Object> queryTools = toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("QUERY,ALL");
-        List<Object> reportTools = toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("ALL");
+        List<Object> queryTools =
+                toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("QUERY,ALL");
+        List<Object> reportTools =
+                toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("ALL");
 
         // 会话级 MCP 工具选择：优先使用请求中的 enabledToolIds，其次使用会话保存的配置
         McpDocumentCapability mcpCapability = resolveMcpDocumentCapability(request, sessionId);
@@ -457,10 +638,28 @@ public class AiServiceFacade {
         enhancedSb.append("【用户问题】\n").append(contextualQuery);
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
         boolean directBulkQuery = engineeringContext == null && isDirectBulkDataQuery(request.getContent());
-        ChatModel queryModel = isPureDataQuery(request.getContent()) ? new CompleteAnswerChatModel(chatModel,
-            chatModelFactory.getStreamingChatModel(modelConfig.getId(), request),
-            token -> lifecycle.progress(() -> AiSseMessageHelper.sendContentIncrement(userId, token)),
-            token -> lifecycle.progress(() -> AiSseMessageHelper.sendThinkingToken(userId, token))) : chatModel;
+        StringBuffer visibleAgentContent = new StringBuffer();
+        ChatModel queryModel =
+                isPureDataQuery(request.getContent())
+                        ? new CompleteAnswerChatModel(
+                                chatModel,
+                                chatModelFactory.getStreamingChatModel(
+                                        modelConfig.getId(), request),
+                                token ->
+                                        lifecycle.progress(
+                                                () -> {
+                                                    visibleAgentContent.append(token);
+                                                    lifecycle.partial(
+                                                            visibleAgentContent.toString());
+                                                    AiSseMessageHelper.sendContentIncrement(
+                                                            userId, token);
+                                                }),
+                                token ->
+                                        lifecycle.progress(
+                                                () ->
+                                                        AiSseMessageHelper.sendThinkingToken(
+                                                                userId, token)))
+                        : chatModel;
         var queryAgentBuilder = AgenticServices.agentBuilder(ErpQueryAgent.class)
             .chatModel(queryModel);
         if (!queryTools.isEmpty()) {
@@ -495,7 +694,8 @@ public class AiServiceFacade {
         }
         if (engineeringContext != null) {
             subAgents.add(engineeringAgentFactory.build(chatModel, engineeringContext));
-            enhancedSb.insert(0, "【受控工程能力】本次请求已绑定设备，只能由工程角色调用easyeda_具名任务工具。工具返回任务派发回执，不能宣称编辑器已经完成设计。\n\n");
+            enhancedSb.insert(
+                    0, "【受控工程能力】本次请求已绑定设备，只能由工程角色调用easyeda_具名任务工具。工具返回任务派发回执，不能宣称编辑器已经完成设计。\n\n");
         }
         final String enhancedQuery = enhancedSb.toString();
         // 增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数。
@@ -513,97 +713,163 @@ public class AiServiceFacade {
         String requestId = lifecycle.requestId();
         OutputChannel channel = OutputChannel.create(requestId);
 
-        if (!submit(lifecycle, () -> {
-            try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId,
-                    modelConfig.getId(), modelConfig.getModelName());
-                // 设置当前知识库ID，供 KnowledgeGraphTool 限定图谱范围
-                AiRequestContext.setKnowledgeId(request.getKnowledgeId());
-                com.nexus.ai.engineering.service.EngineeringToolContext.set(engineeringContext);
-                // 设置 ThreadLocal OutputChannel，使 AiToolExecutedListener 能推送事件
-                AiToolExecutedListener.setChannel(channel);
+        if (!submit(
+                lifecycle,
+                () -> {
+                    try {
+                        AiRequestContext.set(
+                                tenantId,
+                                userId,
+                                userName,
+                                sessionId,
+                                modelConfig.getId(),
+                                modelConfig.getModelName());
+                        // 设置当前知识库ID，供 KnowledgeGraphTool 限定图谱范围
+                        AiRequestContext.setKnowledgeId(request.getKnowledgeId());
+                        EngineeringToolContext.set(engineeringContext);
+                        // 设置 ThreadLocal OutputChannel，使 AiToolExecutedListener 能推送事件
+                        AiToolExecutedListener.setChannel(channel);
 
-                long startTime = System.currentTimeMillis();
-                aiAgentListener.onAgentStart(executionAgentName, enhancedQuery);
+                        long startTime = System.currentTimeMillis();
+                        aiAgentListener.onAgentStart(executionAgentName, enhancedQuery);
 
-                // 推送 Agent 开始思考
-                AgentStreamHelper.sendThinking(channel, executionAgentName, "开始分析您的问题...");
+                        // 推送 Agent 开始思考
+                        AgentStreamHelper.sendThinking(channel, executionAgentName, "开始分析您的问题...");
 
-                String rawResult = directBulkQuery ? queryAgent.query(enhancedQuery) : supervisor.invoke(enhancedQuery);
-                // 资料证据闸门继续校验真实模型结果，工程角色不能绕过既有MCP读取证据。
-                mcpCapability.requireSuccessfulResult(rawResult);
-                final String result = engineeringContext == null ? rawResult
-                    : engineeringAgentFactory.verifiedResult(engineeringContext, rawResult);
+                        String rawResult =
+                                directBulkQuery
+                                        ? queryAgent.query(enhancedQuery)
+                                        : supervisor.invoke(enhancedQuery);
+                        // 资料证据闸门继续校验真实模型结果，工程角色不能绕过既有MCP读取证据。
+                        mcpCapability.requireSuccessfulResult(rawResult);
+                        final String result =
+                                engineeringContext == null
+                                        ? rawResult
+                                        : engineeringAgentFactory.verifiedResult(
+                                                engineeringContext, rawResult);
 
-                long duration = System.currentTimeMillis() - startTime;
-                aiAgentListener.onAgentComplete(executionAgentName, duration, 0);
+                        long duration = System.currentTimeMillis() - startTime;
+                        aiAgentListener.onAgentComplete(executionAgentName, duration, 0);
 
-                if (lifecycle.complete(() -> {
-                    saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
-                    AiSseMessageHelper.sendContent(userId, result);
+                        if (lifecycle.complete(
+                                () -> {
+                                    saveAiMessageFromContext(
+                                            sessionId,
+                                            result,
+                                            tenantId,
+                                            userId,
+                                            userName,
+                                            modelConfig.getModelName(),
+                                            tenantIdStr);
+                                    AiSseMessageHelper.sendContent(userId, result);
+                                })) {
+                            channel.complete();
+                        } else {
+                            channel.completeWithError(lifecycle.failure());
+                        }
+                    } catch (Exception e) {
+                        lifecycle.fail(e);
+                        aiAgentListener.onAgentError(
+                                executionAgentName, AiChatSseLifecycle.ERROR_MESSAGE);
+                        channel.completeWithError(e);
+                    } finally {
+                        AiToolExecutedListener.clearChannel();
+                        EngineeringToolContext.clear();
+                        AiRequestContext.clear();
+                        OutputChannel.remove(requestId);
+                    }
                 })) {
-                    channel.complete();
-                } else {
-                    channel.completeWithError(lifecycle.failure());
-                }
-            } catch (Exception e) {
-                lifecycle.fail(e);
-                aiAgentListener.onAgentError(executionAgentName, AiChatSseLifecycle.ERROR_MESSAGE);
-                channel.completeWithError(e);
-            } finally {
-                AiToolExecutedListener.clearChannel();
-                com.nexus.ai.engineering.service.EngineeringToolContext.clear();
-                AiRequestContext.clear();
-                OutputChannel.remove(requestId);
-            }
-        })) {
             channel.completeWithError(lifecycle.failure());
             OutputChannel.remove(requestId);
             return;
         }
 
-        // 异步消费 OutputChannel 事件，根据事件类型路由到对应的 SSE 推送方法
-        if (!submit(lifecycle, () -> {
-            try {
-                channel.drain(eventJson -> {
+        // 事件交付不是生产任务，拒绝不能确认仍在运行的生产者已取消。
+        if (!submitObserver(
+                lifecycle,
+                () -> {
                     try {
-                        JsonNode node = DRAIN_MAPPER.readTree(eventJson);
-                        String eventType = node.has("type") ? node.get("type").asText() : "";
+                        channel.drain(
+                                eventJson -> {
+                                    try {
+                                        JsonNode node = DRAIN_MAPPER.readTree(eventJson);
+                                        String eventType =
+                                                node.has("type") ? node.get("type").asText() : "";
 
-                        switch (eventType) {
-                            case "TOOL_START" -> {
-                                String toolName = node.has("toolName") ? node.get("toolName").asText() : "unknown";
-                                String args = node.has("arguments") ? node.get("arguments").asText() : "";
-                                lifecycle.progress(() -> AiSseMessageHelper.sendToolStart(userId, toolName, args));
-                            }
-                            case "TOOL_END" -> {
-                                String toolName = node.has("toolName") ? node.get("toolName").asText() : "unknown";
-                                long dur = node.has("duration") ? node.get("duration").asLong() : 0;
-                                String summary = node.has("resultSummary") ? node.get("resultSummary").asText() : "";
-                                lifecycle.progress(() -> AiSseMessageHelper.sendToolEnd(userId, toolName, dur, summary));
-                            }
-                            case "THINKING" -> {
-                                String agentName = node.has("agentName") ? node.get("agentName").asText() : "Agent";
-                                String message = node.has("message") ? node.get("message").asText() : "";
-                                lifecycle.progress(() -> AiSseMessageHelper.sendAgentThinking(userId, agentName, message));
-                            }
-                            case "ERROR" -> {
-                                String errorMsg = node.has("error") ? node.get("error").asText() : "未知错误";
-                                lifecycle.fail(new IllegalStateException(errorMsg));
-                            }
-                            default -> log.warn("[Agent] 未知 OutputChannel 事件类型: {}", eventType);
-                        }
+                                        switch (eventType) {
+                                            case "TOOL_START" -> {
+                                                String toolName =
+                                                        node.has("toolName")
+                                                                ? node.get("toolName").asText()
+                                                                : "unknown";
+                                                String args =
+                                                        node.has("arguments")
+                                                                ? node.get("arguments").asText()
+                                                                : "";
+                                                lifecycle.progress(
+                                                        () ->
+                                                                AiSseMessageHelper.sendToolStart(
+                                                                        userId, toolName, args));
+                                            }
+                                            case "TOOL_END" -> {
+                                                String toolName =
+                                                        node.has("toolName")
+                                                                ? node.get("toolName").asText()
+                                                                : "unknown";
+                                                long dur =
+                                                        node.has("duration")
+                                                                ? node.get("duration").asLong()
+                                                                : 0;
+                                                String summary =
+                                                        node.has("resultSummary")
+                                                                ? node.get("resultSummary").asText()
+                                                                : "";
+                                                lifecycle.progress(
+                                                        () ->
+                                                                AiSseMessageHelper.sendToolEnd(
+                                                                        userId, toolName, dur,
+                                                                        summary));
+                                            }
+                                            case "THINKING" -> {
+                                                String agentName =
+                                                        node.has("agentName")
+                                                                ? node.get("agentName").asText()
+                                                                : "Agent";
+                                                String message =
+                                                        node.has("message")
+                                                                ? node.get("message").asText()
+                                                                : "";
+                                                lifecycle.progress(
+                                                        () ->
+                                                                AiSseMessageHelper
+                                                                        .sendAgentThinking(
+                                                                                userId, agentName,
+                                                                                message));
+                                            }
+                                            case "ERROR" -> {
+                                                String errorMsg =
+                                                        node.has("error")
+                                                                ? node.get("error").asText()
+                                                                : "未知错误";
+                                                lifecycle.eventFailure(
+                                                        new IllegalStateException(errorMsg));
+                                            }
+                                            default ->
+                                                    log.warn(
+                                                            "[Agent] 未知 OutputChannel 事件类型: {}",
+                                                            eventType);
+                                        }
+                                    } catch (Exception e) {
+                                        log.warn("[Agent] 解析事件失败 requestId={}", requestId, e);
+                                    }
+                                });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.warn("[Agent] OutputChannel drain 被中断");
                     } catch (Exception e) {
-                        log.warn("[Agent] 解析事件失败 requestId={}", requestId, e);
+                        log.debug("[Agent] 事件通道收尾 requestId={}", requestId, e);
                     }
-                });
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("[Agent] OutputChannel drain 被中断");
-            } catch (Exception e) {
-                log.debug("[Agent] 事件通道收尾 requestId={}", requestId, e);
-            }
-        })) {
+                })) {
             channel.completeWithError(lifecycle.failure());
             OutputChannel.remove(requestId);
         }
@@ -677,7 +943,7 @@ public class AiServiceFacade {
      * @return 文本字符数
      */
     private int getMessageTextLength(ChatMessage msg) {
-        if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+        if (msg instanceof UserMessage um) {
             return um.singleText().length();
         } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
             return am.text() != null ? am.text().length() : 0;
@@ -693,13 +959,20 @@ public class AiServiceFacade {
      * @param maxLength 单条消息最大字符数
      */
     private void appendMessage(StringBuilder sb, ChatMessage msg, int maxLength) {
-        if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+        if (msg instanceof UserMessage um) {
             String text = um.singleText();
-            sb.append("用户：").append(text.length() > maxLength ? text.substring(0, maxLength) + "..." : text).append("\n");
+            sb.append("用户：")
+                    .append(text.length() > maxLength ? text.substring(0, maxLength) + "..." : text)
+                    .append("\n");
         } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
             String text = am.text();
             if (text != null) {
-                sb.append("AI：").append(text.length() > maxLength ? text.substring(0, maxLength) + "..." : text).append("\n");
+                sb.append("AI：")
+                        .append(
+                                text.length() > maxLength
+                                        ? text.substring(0, maxLength) + "..."
+                                        : text)
+                        .append("\n");
             }
         }
     }
@@ -750,10 +1023,13 @@ public class AiServiceFacade {
         }
 
         // 异步线程（Agent 闭包）恢复租户上下文，避免 ai_message insert 时 tenant_id 落 0
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            aiMessageMapper.insert(aiMsg);
-            AiChatSseLifecycle.persistedMessage(sessionId, aiMsg.getId());
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    if (!AiChatSseLifecycle.persistAssistantMessage(aiMsg))
+                        aiMessageMapper.insert(aiMsg);
+                    AiChatSseLifecycle.persistedMessage(sessionId, aiMsg.getId());
+                });
         // Agent 模式的日统计已由 AiChatModelListener 处理，无需重复
     }
 
@@ -796,17 +1072,25 @@ public class AiServiceFacade {
         }
 
         // 异步线程（流式回调 I/O 线程）恢复租户上下文，避免 ai_message insert 时 tenant_id 落 0
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            aiMessageMapper.insert(aiMsg);
-            AiChatSseLifecycle.persistedMessage(sessionId, aiMsg.getId());
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    if (!AiChatSseLifecycle.persistAssistantMessage(aiMsg))
+                        aiMessageMapper.insert(aiMsg);
+                    AiChatSseLifecycle.persistedMessage(sessionId, aiMsg.getId());
+                });
 
-        // 流式/RAG 路径日统计：listener.onResponse 在 OkHttp I/O 线程读不到 AiRequestContext（InheritableThreadLocal
+        // 流式/RAG 路径日统计：listener.onResponse 在 OkHttp I/O 线程读不到
+        // AiRequestContext（InheritableThreadLocal
         // 不跨线程池），日统计不会被写入；此处已持有闭包上下文 + token 用量，补写日统计。
         // Agent 路径走 saveAiMessageFromContext，listener 在 aiExecutor 线程同步执行已写日统计，不双计。
-        if (userId != null && modelId != null && (inputTokens > 0 || outputTokens > 0)) {
+        if ((governance == null || !governance.isEnabled())
+                && userId != null
+                && modelId != null
+                && (inputTokens > 0 || outputTokens > 0)) {
             try {
-                java.math.BigDecimal cost = aiTokenUsageService.calculateCost(modelId, inputTokens, outputTokens);
+                BigDecimal cost =
+                        aiTokenUsageService.calculateCost(modelId, inputTokens, outputTokens);
                 aiTokenUsageService.incrementDailyUsage(tenantId, userId,
                     userName != null ? userName : String.valueOf(userId),
                     modelId, modelName != null ? modelName : "unknown",
@@ -857,8 +1141,8 @@ public class AiServiceFacade {
         } else {
             source = toolProviderFactory.getAllEnabledMcpToolProviders();
         }
-        ToolProviderRequest discoveryRequest = new ToolProviderRequest(sessionId,
-            dev.langchain4j.data.message.UserMessage.from(request.getContent()));
+        ToolProviderRequest discoveryRequest =
+                new ToolProviderRequest(sessionId, UserMessage.from(request.getContent()));
         return McpDocumentCapability.prepare(source, discoveryRequest, documentRequest);
     }
 
@@ -891,9 +1175,8 @@ public class AiServiceFacade {
     private void saveEnabledToolIdsToSession(Long sessionId, List<Long> toolIds) {
         AiSession update = new AiSession();
         update.setId(sessionId);
-        update.setEnabledToolIds(toolIds.stream()
-            .map(String::valueOf)
-            .collect(java.util.stream.Collectors.joining(",")));
+        update.setEnabledToolIds(
+                toolIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
         aiSessionMapper.updateById(update);
     }
 
@@ -936,7 +1219,7 @@ public class AiServiceFacade {
     /** 纯 ERP 查询可推送查询 Agent 的真实正文；资料证据和组合工具任务仍保留原协调边界。 */
     static boolean isPureDataQuery(String input) {
         if (!containsDataQueryKeywords(input) || McpDocumentCapability.isDocumentQuestion(input)) return false;
-        String lower = input.toLowerCase(java.util.Locale.ROOT);
+        String lower = input.toLowerCase(Locale.ROOT);
         return Set.of("报表", "图表", "柱状", "饼图", "折线", "可视化", "echarts", "mcp", "工具", "联网", "知识库")
             .stream().noneMatch(lower::contains);
     }
@@ -944,7 +1227,7 @@ public class AiServiceFacade {
     /** 纯批量业务明细直接由查询 Agent 交付，避免长正文再次进入调度 JSON。 */
     static boolean isDirectBulkDataQuery(String input) {
         if (!isPureDataQuery(input)) return false;
-        String lower = input.toLowerCase(java.util.Locale.ROOT);
+        String lower = input.toLowerCase(Locale.ROOT);
         return Set.of("全部", "所有", "全量", "逐条", "每条", "批量", "完整列出")
             .stream().anyMatch(lower::contains);
     }
@@ -995,51 +1278,75 @@ public class AiServiceFacade {
      */
     private void invokeWithWebSearchStreaming(AiModel modelConfig, AiChatRequest request,
                                               Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
+        AiChatSseLifecycle lifecycle = lifecycle(request, userId, sessionId);
         lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
 
-        submit(lifecycle, () -> {
-            try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId,
-                    modelConfig.getId(), modelConfig.getModelName());
+        submit(
+                lifecycle,
+                () -> {
+                    try {
+                        AiRequestContext.set(
+                                tenantId,
+                                userId,
+                                userName,
+                                sessionId,
+                                modelConfig.getId(),
+                                modelConfig.getModelName());
 
-                // 1. 同步检索（纯 HTTP 调 Tavily/Bing，无 LLM；期间收集来源到 SearchSourceHolder）
-                String searchResult;
-                try {
-                    searchResult = webSearchTool.webSearch(request.getContent());
-                } catch (Exception e) {
-                    log.warn("[AI] 联网搜索检索失败，降级为普通流式回答 requestId={}", lifecycle.requestId(), e);
-                    searchResult = null;
-                }
+                        // 1. 同步检索（纯 HTTP 调 Tavily/Bing，无 LLM；期间收集来源到 SearchSourceHolder）
+                        String searchResult;
+                        try {
+                            AiInvocationScope.checkActive();
+                            searchResult = webSearchTool.webSearch(request.getContent());
+                        } catch (Exception e) {
+                            log.warn(
+                                    "[AI] 联网搜索检索失败，降级为普通流式回答 requestId={}",
+                                    lifecycle.requestId(),
+                                    e);
+                            searchResult = null;
+                        }
 
-                // 2. 构造增强提示词：业务上下文 + 检索结果 + 原始问题（与 buildInjectedPrompt 的结构保持一致）
-                String enhancedContent;
-                if (searchResult != null && !searchResult.contains("联网搜索未配置或未启用") && !searchResult.contains("搜索失败")) {
-                    log.info("[AI] 联网搜索完成，检索结果长度={}字符，注入增强提示词后流式生成", searchResult.length());
-                    pushWebSearchSources(userId);
-                    enhancedContent = "以下是与用户问题相关的联网搜索结果（供参考，回答时请注明信息来源链接）：\n\n"
-                        + searchResult + "\n\n【用户问题】\n" + request.getContent();
-                } else {
-                    // 未配置 Key 或检索失败时降级，提示词保持原样（模型会自行说明无法联网）
-                    log.info("[AI] 联网搜索不可用（{}），降级为普通流式回答", searchResult);
-                    enhancedContent = request.getContent();
-                }
+                        // 2. 构造增强提示词：业务上下文 + 检索结果 + 原始问题（与 buildInjectedPrompt 的结构保持一致）
+                        String enhancedContent;
+                        if (searchResult != null
+                                && !searchResult.contains("联网搜索未配置或未启用")
+                                && !searchResult.contains("搜索失败")) {
+                            log.info("[AI] 联网搜索完成，检索结果长度={}字符，注入增强提示词后流式生成", searchResult.length());
+                            pushWebSearchSources(userId);
+                            enhancedContent =
+                                    "以下是与用户问题相关的联网搜索结果（供参考，回答时请注明信息来源链接）：\n\n"
+                                            + searchResult
+                                            + "\n\n【用户问题】\n"
+                                            + request.getContent();
+                        } else {
+                            // 未配置 Key 或检索失败时降级，提示词保持原样（模型会自行说明无法联网）
+                            log.info("[AI] 联网搜索不可用（{}），降级为普通流式回答", searchResult);
+                            enhancedContent = request.getContent();
+                        }
 
-                // 3. 替换请求 content 为增强提示词（业务上下文经 invokeWithStreaming 内的
-                // injectContextIntoLastUserMessage 继续注入），走流式生成
-                AiChatRequest enhancedRequest = new AiChatRequest();
-                enhancedRequest.setContent(enhancedContent);
-                enhancedRequest.setContext(request.getContext());
-                enhancedRequest.setEnableThinking(request.getEnableThinking());
-                invokeWithStreaming(modelConfig, enhancedRequest, userId, sessionId, tenantId, userName, tenantIdStr, lifecycle);
-            } catch (Exception e) {
-                lifecycle.fail(e);
-            } finally {
-                SearchSourceHolder.clear();
-                // invokeWithStreaming 异步派发后即可清理（上下文已在其闭包内重新设置）
-                AiRequestContext.clear();
-            }
-        });
+                        // 3. 替换请求 content 为增强提示词（业务上下文经 invokeWithStreaming 内的
+                        // injectContextIntoLastUserMessage 继续注入），走流式生成
+                        AiChatRequest enhancedRequest = new AiChatRequest();
+                        enhancedRequest.setContent(enhancedContent);
+                        enhancedRequest.setContext(request.getContext());
+                        enhancedRequest.setEnableThinking(request.getEnableThinking());
+                        invokeWithStreaming(
+                                modelConfig,
+                                enhancedRequest,
+                                userId,
+                                sessionId,
+                                tenantId,
+                                userName,
+                                tenantIdStr,
+                                lifecycle);
+                    } catch (Exception e) {
+                        lifecycle.fail(e);
+                    } finally {
+                        SearchSourceHolder.clear();
+                        // invokeWithStreaming 异步派发后即可清理（上下文已在其闭包内重新设置）
+                        AiRequestContext.clear();
+                    }
+                });
     }
 
     /**
@@ -1047,35 +1354,53 @@ public class AiServiceFacade {
      */
     private void invokeWithWebSearch(AiModel modelConfig, AiChatRequest request,
                                       Long userId, Long sessionId, String tenantId, String userName, String tenantIdStr) {
-        AiChatSseLifecycle lifecycle = new AiChatSseLifecycle(userId, sessionId, request.getClientRequestId());
-        submit(lifecycle, () -> {
-            try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId,
-                    modelConfig.getId(), modelConfig.getModelName());
-                lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
+        AiChatSseLifecycle lifecycle = lifecycle(request, userId, sessionId);
+        submit(
+                lifecycle,
+                () -> {
+                    try {
+                        AiRequestContext.set(
+                                tenantId,
+                                userId,
+                                userName,
+                                sessionId,
+                                modelConfig.getId(),
+                                modelConfig.getModelName());
+                        lifecycle.progress(() -> AiSseMessageHelper.sendThinking(userId));
 
-                ChatModel agentModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
-                WebSearchAgent agent = AgenticServices.agentBuilder(WebSearchAgent.class)
-                    .chatModel(agentModel)
-                    .tools(webSearchTool)
-                    .build();
+                        ChatModel agentModel =
+                                chatModelFactory.getAgentChatModel(modelConfig.getId(), request);
+                        WebSearchAgent agent =
+                                AgenticServices.agentBuilder(WebSearchAgent.class)
+                                        .chatModel(agentModel)
+                                        .tools(AiToolInvocationGuard.wrap(webSearchTool))
+                                        .build();
 
-                String result = agent.search(buildInjectedPrompt(request, request.getContent()));
+                        String result =
+                                agent.search(buildInjectedPrompt(request, request.getContent()));
 
-                // 推送搜索来源卡片（从 SearchSourceHolder 取出本次搜索的来源）
-                pushWebSearchSources(userId);
+                        // 推送搜索来源卡片（从 SearchSourceHolder 取出本次搜索的来源）
+                        pushWebSearchSources(userId);
 
-                lifecycle.complete(() -> {
-                    saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
-                    AiSseMessageHelper.sendContent(userId, result);
+                        lifecycle.complete(
+                                () -> {
+                                    saveAiMessageFromContext(
+                                            sessionId,
+                                            result,
+                                            tenantId,
+                                            userId,
+                                            userName,
+                                            modelConfig.getModelName(),
+                                            tenantIdStr);
+                                    AiSseMessageHelper.sendContent(userId, result);
+                                });
+                    } catch (Exception e) {
+                        lifecycle.fail(e);
+                    } finally {
+                        SearchSourceHolder.clear();
+                        AiRequestContext.clear();
+                    }
                 });
-            } catch (Exception e) {
-                lifecycle.fail(e);
-            } finally {
-                SearchSourceHolder.clear();
-                AiRequestContext.clear();
-            }
-        });
     }
 
     /**
@@ -1146,17 +1471,21 @@ public class AiServiceFacade {
         }
         boolean replaced = false;
         for (int i = allMessages.size() - 1; i >= 0; i--) {
-            if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage userMsg) {
+            if (allMessages.get(i) instanceof UserMessage userMsg) {
                 String injected = "【业务上下文】\n" + truncateContext(ctx)
                     + "\n\n【用户问题】\n" + userMsg.singleText();
-                allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(injected));
+                allMessages.set(i, UserMessage.from(injected));
                 replaced = true;
                 break;
             }
         }
         if (!replaced) {
-            allMessages.add(dev.langchain4j.data.message.UserMessage.from(
-                "【业务上下文】\n" + truncateContext(ctx) + "\n\n【用户问题】\n" + request.getContent()));
+            allMessages.add(
+                    UserMessage.from(
+                            "【业务上下文】\n"
+                                    + truncateContext(ctx)
+                                    + "\n\n【用户问题】\n"
+                                    + request.getContent()));
         }
     }
 }

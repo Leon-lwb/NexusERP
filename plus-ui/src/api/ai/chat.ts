@@ -17,6 +17,8 @@ export interface AiMessage {
   content: string;
   /** 推理过程内容（enableThinking 时存） */
   thinkingContent?: string;
+  executionRequestId?: string;
+  completionStatus?: string;
   createTime: string;
 }
 
@@ -25,7 +27,7 @@ export interface AiMessage {
  * @param data 聊天请求数据
  * @returns 会话ID
  */
-export function sendAiMessage(data: {
+export async function sendAiMessage(data: {
   sessionId?: number | string;
   /** PC 在发送前生成，仅用于本次 SSE 关联，不是业务幂等键。 */
   clientRequestId?: string;
@@ -45,11 +47,12 @@ export function sendAiMessage(data: {
   /** 同一条工程请求的 UUID，网络重试复用以避免重复改图。 */
   engineeringRequestId?: string;
 }) {
-  return request({
-    url: '/ai/chat/send',
-    method: 'post',
-    data
-  });
+  const persistent = await getAiChatCapabilities();
+  const response = await request({ url: persistent ? '/ai/chat/requests' : '/ai/chat/send', method: 'post', data });
+  if (!persistent) return { data: response?.data ?? response, requestReceipt: undefined as AiChatRequestReceipt | undefined };
+  const receipt = (response?.data ?? response) as AiChatRequestReceipt;
+  if (!receipt || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(receipt.requestId)) throw new Error('AI请求回执无效');
+  return { data: receipt.sessionId, requestReceipt: receipt };
 }
 
 /**
@@ -130,4 +133,33 @@ export function getTokenUsage(sessionId: number | string) {
     url: `/ai/chat/token-usage/${sessionId}`,
     method: 'get'
   });
+}
+
+/** 持久化请求的权威状态；取消受理与停止确认分开。 */
+export interface AiChatRequestReceipt {
+  requestId: string;
+  sessionId: string;
+  status: string;
+  messageId?: string;
+}
+let requestCapabilities: Promise<boolean> | null = null;
+/** 同一页面生命周期只探测一次；v2发送失败绝不回退重发旧接口。 */
+export function getAiChatCapabilities(): Promise<boolean> {
+  if (!requestCapabilities)
+    requestCapabilities = request({ url: '/ai/chat/capabilities', method: 'get' })
+      .then((response) => Boolean((response?.data ?? response)?.persistentRequests))
+      .catch((error) => {
+        if (error?.response?.status === 404) return false;
+        requestCapabilities = null;
+        throw error;
+      });
+  return requestCapabilities;
+}
+export async function cancelAiChatRequest(requestId: string): Promise<AiChatRequestReceipt> {
+  const response = await request({ url: '/ai/chat/requests/' + encodeURIComponent(requestId) + '/cancel', method: 'post' });
+  return (response?.data ?? response) as AiChatRequestReceipt;
+}
+export async function getAiChatRequest(requestId: string): Promise<AiChatRequestReceipt> {
+  const response = await request({ url: '/ai/chat/requests/' + encodeURIComponent(requestId), method: 'get' });
+  return (response?.data ?? response) as AiChatRequestReceipt;
 }

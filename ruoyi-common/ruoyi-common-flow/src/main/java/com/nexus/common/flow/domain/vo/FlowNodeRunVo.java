@@ -2,8 +2,11 @@ package com.nexus.common.flow.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+
 import com.nexus.common.flow.domain.entity.FlowNodeRun;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import lombok.Data;
 
 import java.io.Serial;
@@ -48,7 +51,7 @@ public class FlowNodeRunVo implements Serializable {
     @ExcelProperty(value = "节点类型")
     private String nodeType;
 
-    /** 状态: PENDING/RUNNING/SUCCEEDED/FAILED/SKIPPED */
+    /** 状态: PENDING/RUNNING/SUCCEEDED/FAILED/SKIPPED/CANCELLED/RECOVERY_REQUIRED */
     @ExcelProperty(value = "状态")
     private String status;
 

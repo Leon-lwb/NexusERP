@@ -51,7 +51,7 @@ const runInput = ref(localStorage.getItem('aiFlowTestInput') ?? '{}');
 const runOutput = ref('');
 const runError = ref('');
 /** 运行状态（面板展示：标签/耗时/节点统计/最终输出） */
-const runStatus = ref<'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'STOPPED' | null>(null);
+const runStatus = ref<'QUEUED' | 'RUNNING' | 'WAITING' | 'STOP_REQUESTED' | 'RECOVERY_REQUIRED' | 'SUCCEEDED' | 'FAILED' | 'STOPPED' | null>(null);
 const runDuration = ref<number | null>(null);
 const runStats = ref<{ success: number; total: number } | null>(null);
 const runFinalOutput = ref<string>('');
@@ -62,7 +62,16 @@ let lastSseTime = 0;
 
 /** 运行状态标签 */
 const runStatusLabel = computed(() => {
-  const m: Record<string, string> = { RUNNING: '运行中', SUCCEEDED: '成功', FAILED: '失败', STOPPED: '已停止' };
+  const m: Record<string, string> = {
+    QUEUED: '排队中',
+    RUNNING: '运行中',
+    WAITING: '等待唤醒',
+    STOP_REQUESTED: '正在停止',
+    RECOVERY_REQUIRED: '待人工核对',
+    SUCCEEDED: '成功',
+    FAILED: '失败',
+    STOPPED: '已停止'
+  };
   return runStatus.value ? (m[runStatus.value] ?? runStatus.value) : '';
 });
 
@@ -471,8 +480,9 @@ function startPolling() {
     try {
       const res = await getInstance(store.currentInstanceId);
       const inst = res.data;
-      if (inst && inst.status !== 'RUNNING') {
-        applyInstanceResult(inst);
+      if (inst) {
+        runStatus.value = inst.status;
+        if (!['QUEUED', 'RUNNING', 'WAITING', 'STOP_REQUESTED'].includes(inst.status)) applyInstanceResult(inst);
       }
     } catch {
       // 轮询异常忽略（SSE 正常时轮询仅兜底）
@@ -482,6 +492,11 @@ function startPolling() {
 
 /** 应用实例终态结果（SSE AI_FLOW_STATUS 与轮询共用；终态为准） */
 async function applyInstanceResult(inst: any) {
+  if (['QUEUED', 'RUNNING', 'WAITING', 'STOP_REQUESTED'].includes(inst.status)) {
+    runStatus.value = inst.status;
+    startPolling();
+    return;
+  }
   clearTimers();
   running.value = false;
   runStatus.value = inst.status;
@@ -496,6 +511,9 @@ async function applyInstanceResult(inst: any) {
   } else if (inst.status === 'FAILED') {
     runError.value = inst.errorMsg ?? '流程执行失败';
     ElMessage.error('流程执行失败: ' + (inst.errorMsg ?? ''));
+  } else if (inst.status === 'RECOVERY_REQUIRED') {
+    runError.value = inst.errorMsg ?? '执行结果待人工核对';
+    ElMessage.warning('执行结果待人工核对');
   } else if (inst.status === 'STOPPED') {
     runOutput.value = '流程已停止';
     ElMessage.info('流程已停止');
@@ -559,7 +577,10 @@ function onSseMessage(e: Event) {
     if (detail.type === 'AI_FLOW_NODE_START') {
       store.setNodeStatus(payload.nodeId, 'RUNNING');
     } else if (detail.type === 'AI_FLOW_NODE_END') {
-      store.setNodeStatus(payload.nodeId, payload.status === 'SUCCEEDED' ? 'SUCCEEDED' : 'FAILED');
+      store.setNodeStatus(
+        payload.nodeId,
+        ['SUCCEEDED', 'FAILED', 'SKIPPED', 'CANCELLED', 'RECOVERY_REQUIRED'].includes(payload.status) ? payload.status : 'FAILED'
+      );
       // 节点输出摘要（后端 500 字符截断），显示在节点卡片底部
       if (payload.status === 'SUCCEEDED' && payload.outputSummary) {
         store.setNodeSummary(payload.nodeId, String(payload.outputSummary));
@@ -1033,7 +1054,7 @@ onBeforeUnmount(() => {
         <el-tag size="small" :type="runTagType">{{ runStatusLabel }}</el-tag>
         <span v-if="runDuration !== null" class="flow-designer__run-sub">耗时 {{ fmtDuration(runDuration) }}</span>
         <span v-if="runStats" class="flow-designer__run-sub">节点 {{ runStats.success }}/{{ runStats.total }} 成功</span>
-        <el-button v-if="runStatus !== 'RUNNING'" link type="primary" size="small" @click="viewDetail"> 查看详情 </el-button>
+        <el-button v-if="!running" link type="primary" size="small" @click="viewDetail"> 查看详情 </el-button>
       </div>
       <div v-if="runOutput" class="flow-designer__run-result">✅ {{ runOutput }}</div>
       <div v-if="runError" class="flow-designer__run-error">❌ {{ runError }}</div>

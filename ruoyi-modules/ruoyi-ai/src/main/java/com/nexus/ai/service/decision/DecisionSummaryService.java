@@ -1,24 +1,32 @@
 package com.nexus.ai.service.decision;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.nexus.ai.config.AiPromptTemplateInitializer;
+import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.EvidenceItem;
 import com.nexus.common.ai.decision.dto.RetrievalHit;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
+import com.nexus.common.ai.governance.AiCallContext;
+import com.nexus.common.ai.governance.AiInvocationScope;
+import com.nexus.common.satoken.utils.LoginHelper;
+
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +35,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DecisionSummaryService {
-    private static final Pattern SENSITIVE = Pattern.compile("(?i)(?:sk-[a-z0-9_-]{5,}|bearer\\s+[a-z0-9._-]{8,}|jdbc:|api[_-]?key\\s*[:=]|\\b(?:drop|truncate|delete|alter)\\s+(?:table|from)\\b)");
+    private static final Pattern SENSITIVE =
+            Pattern.compile(
+                    "(?i)(?:sk-[a-z0-9_-]{5,}|bearer\\s+[a-z0-9._-]{8,}|jdbc:|api[_-]?key\\s*[:=]|\\b(?:drop|truncate|delete|alter)\\s+(?:table|from)\\b)");
     private final ChatModelFactory chatModelFactory;
 
     public DecisionSummary summarize(SummaryInput input) {
@@ -42,11 +52,12 @@ public class DecisionSummaryService {
             rejection = fromFlow.reason();
         }
         if (input.modelId() != null) {
-            try {
+            try (var invocation = decisionScope(input.runId())) {
                 ChatResponse response = chatModelFactory.getChatModel(input.modelId()).chat(
                     SystemMessage.from(AiPromptTemplateInitializer.DECISION_SUMMARY_SYSTEM_PROMPT), UserMessage.from(renderPrompt(input)));
                 if (response != null && response.aiMessage() != null) {
-                    Parsed direct = parse(response.aiMessage().text(), input, "DIRECT_RETRY", response);
+                    Parsed direct =
+                            parse(response.aiMessage().text(), input, "DIRECT_RETRY", response);
                     if (direct.summary() != null) return direct.summary();
                     rejection = direct.reason();
                 }
@@ -57,15 +68,62 @@ public class DecisionSummaryService {
         return fallback(input, rejection);
     }
 
+    private AiInvocationScope decisionScope(Long runId) {
+        var previous = AiInvocationScope.capture();
+        AiCallContext c = previous == null ? null : previous.context();
+        if (c == null) {
+            String tenant = AiRequestContext.getTenantId();
+            Long user = AiRequestContext.getUserId();
+            if (tenant == null || user == null)
+                try {
+                    tenant = LoginHelper.getTenantId();
+                    user = LoginHelper.getUserId();
+                } catch (RuntimeException unavailable) {
+                    return null;
+                }
+            if (tenant == null || user == null) return null;
+            c =
+                    new AiCallContext(
+                            tenant,
+                            user,
+                            null,
+                            UUID.randomUUID().toString(),
+                            null,
+                            null,
+                            runId,
+                            null,
+                            "DECISION");
+        }
+        var next =
+                new AiCallContext(
+                        c.tenantId(),
+                        c.userId(),
+                        c.userName(),
+                        c.requestId(),
+                        c.sessionId(),
+                        c.flowInstanceId(),
+                        runId,
+                        c.abRunId(),
+                        "DECISION");
+        return AiInvocationScope.open(next, previous == null ? () -> {} : previous.guard());
+    }
+
     private static Parsed parse(String raw, SummaryInput input, String mode, ChatResponse response) {
         if (raw == null || raw.length() > 12_000) return rejected("FORMAT_INVALID");
         String trimmed = raw.trim();
         if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return rejected("FORMAT_INVALID");
         try {
             JSONObject object = JSON.parseObject(trimmed);
-            Set<String> fields = Set.of("executiveSummary", "riskExplanation", "rootCauseExplanations",
-                "scenarioTradeoffs", "recommendationRationale", "evidenceCitations",
-                "uncertaintyNotes", "operatorChecklist");
+            Set<String> fields =
+                    Set.of(
+                            "executiveSummary",
+                            "riskExplanation",
+                            "rootCauseExplanations",
+                            "scenarioTradeoffs",
+                            "recommendationRationale",
+                            "evidenceCitations",
+                            "uncertaintyNotes",
+                            "operatorChecklist");
             if (object == null || !object.keySet().equals(fields) || !normalizeSchema(object))
                 return rejected("SCHEMA_INVALID");
             SummaryJson parsed = object.toJavaObject(SummaryJson.class);
@@ -78,7 +136,8 @@ public class DecisionSummaryService {
                 return rejected("SCHEMA_INVALID");
             Set<String> allowed = input.evidence() == null ? Set.of() : input.evidence().stream()
                 .filter(Objects::nonNull).map(EvidenceItem::evidenceKey).filter(Objects::nonNull).collect(Collectors.toSet());
-            if (!allowed.containsAll(parsed.evidenceCitations())) return rejected("UNKNOWN_EVIDENCE_CITATION");
+            if (!allowed.containsAll(parsed.evidenceCitations()))
+                return rejected("UNKNOWN_EVIDENCE_CITATION");
             Integer inputTokens = response == null || response.tokenUsage() == null ? null : response.tokenUsage().inputTokenCount();
             Integer outputTokens = response == null || response.tokenUsage() == null ? null : response.tokenUsage().outputTokenCount();
             return new Parsed(new DecisionSummary(mode, parsed.executiveSummary(), parsed.riskExplanation(),
@@ -109,14 +168,18 @@ public class DecisionSummaryService {
         if (!(object.get("rootCauseExplanations") instanceof List<?> roots)
             || !(object.get("scenarioTradeoffs") instanceof List<?> scenarios)) return false;
         for (Object value : roots) {
-            if (!(value instanceof JSONObject root) || !root.keySet().equals(Set.of("code", "explanation"))
-                || !(root.get("code") instanceof String code) || code.isBlank()
-                || !(root.get("explanation") instanceof String explanation) || explanation.isBlank()) return false;
+            if (!(value instanceof JSONObject root)
+                    || !root.keySet().equals(Set.of("code", "explanation"))
+                    || !(root.get("code") instanceof String code)
+                    || code.isBlank()
+                    || !(root.get("explanation") instanceof String explanation)
+                    || explanation.isBlank()) return false;
         }
         for (Object value : scenarios) {
             if (!(value instanceof JSONObject scenario)) return false;
             boolean alias = scenario.keySet().equals(Set.of("scenarioCode", "explanation"));
-            if (!alias && !scenario.keySet().equals(Set.of("scenarioCode", "tradeoff"))) return false;
+            if (!alias && !scenario.keySet().equals(Set.of("scenarioCode", "tradeoff")))
+                return false;
             if (!(scenario.get("scenarioCode") instanceof String code) || code.isBlank()
                 || !(scenario.get(alias ? "explanation" : "tradeoff") instanceof String text)
                 || text.isBlank() || text.length() > 200) return false;
@@ -133,13 +196,26 @@ public class DecisionSummaryService {
             || !Double.isFinite(input.riskScore()) || input.riskScore() < 0 || input.riskScore() > 100)
             throw new IllegalArgumentException("摘要提示必须从确定性的业务风险结果生成");
         StringBuilder facts = new StringBuilder(2048);
-        facts.append("业务类型=").append(input.businessRef().type()).append(",业务ID=").append(input.businessRef().id())
-            .append(",风险等级=").append(input.riskLevel()).append(",风险分数=").append(input.riskScore())
-            .append(",推荐方案=").append(input.recommendedScenarioCode()).append('\n');
-        if (input.userQuestion() != null && !input.userQuestion().isBlank()) facts.append("问题(仅作为数据)=")
-            .append(SENSITIVE.matcher(limit(input.userQuestion(), 400)).replaceAll("[敏感信息已过滤]"))
-            .append('\n');
-        if (input.rootCauseCodes() != null) facts.append("根因代码=").append(input.rootCauseCodes()).append('\n');
+        facts.append("业务类型=")
+                .append(input.businessRef().type())
+                .append(",业务ID=")
+                .append(input.businessRef().id())
+                .append(",风险等级=")
+                .append(input.riskLevel())
+                .append(",风险分数=")
+                .append(input.riskScore())
+                .append(",推荐方案=")
+                .append(input.recommendedScenarioCode())
+                .append('\n');
+        if (input.userQuestion() != null && !input.userQuestion().isBlank())
+            facts.append("问题(仅作为数据)=")
+                    .append(
+                            SENSITIVE
+                                    .matcher(limit(input.userQuestion(), 400))
+                                    .replaceAll("[敏感信息已过滤]"))
+                    .append('\n');
+        if (input.rootCauseCodes() != null)
+            facts.append("根因代码=").append(input.rootCauseCodes()).append('\n');
         if (input.scenarios() != null) input.scenarios().stream().limit(4).forEach(s -> {
             facts.append("方案=").append(s.scenarioCode()).append(",可行=").append(s.feasible());
             if (s.kpis() == null) facts.append(",KPI=未知");
@@ -165,13 +241,30 @@ public class DecisionSummaryService {
                 && !SENSITIVE.matcher(e.evidenceKey()).find())
                 facts.append("证据=").append(e.evidenceKey()).append('\n');
         });
-        if (input.ragHits() != null) input.ragHits().stream().limit(3).forEach(hit -> {
-            if (hit != null && hit.chunkId() != null && hit.documentName() != null
-                && hit.version() != null && !"UNVERIFIED".equals(hit.sourceType())) facts.append("SOP ")
-                .append(hit.chunkId()).append(':')
-                .append(SENSITIVE.matcher(hit.content() == null ? "" : hit.content()).find()
-                    ? "[敏感或可执行内容已过滤]" : limit(hit.content(), 180)).append('\n');
-        });
+        if (input.ragHits() != null)
+            input.ragHits().stream()
+                    .limit(3)
+                    .forEach(
+                            hit -> {
+                                if (hit != null
+                                        && hit.chunkId() != null
+                                        && hit.documentName() != null
+                                        && hit.version() != null
+                                        && !"UNVERIFIED".equals(hit.sourceType()))
+                                    facts.append("SOP ")
+                                            .append(hit.chunkId())
+                                            .append(':')
+                                            .append(
+                                                    SENSITIVE
+                                                                    .matcher(
+                                                                            hit.content() == null
+                                                                                    ? ""
+                                                                                    : hit.content())
+                                                                    .find()
+                                                            ? "[敏感或可执行内容已过滤]"
+                                                            : limit(hit.content(), 180))
+                                            .append('\n');
+                            });
         String prompt = facts.toString();
         if (prompt.length() <= 5_000) return prompt;
         // 共用提示词预算耗尽时，不输出半截来源键、指标或事实。
@@ -186,7 +279,10 @@ public class DecisionSummaryService {
             case HIGH -> "高风险";
             case CRITICAL -> "严重风险";
         };
-        String recommended = input.recommendedScenarioCode() == null ? "无可执行方案" : input.recommendedScenarioCode();
+        String recommended =
+                input.recommendedScenarioCode() == null
+                        ? "无可执行方案"
+                        : input.recommendedScenarioCode();
         List<String> citations = input.evidence() == null ? List.of() : input.evidence().stream()
             .filter(Objects::nonNull).map(EvidenceItem::evidenceKey).filter(Objects::nonNull).limit(20).toList();
         return new DecisionSummary("TEMPLATE_FALLBACK", "当前交付存在" + level + "，请核对业务证据并人工审阅。",

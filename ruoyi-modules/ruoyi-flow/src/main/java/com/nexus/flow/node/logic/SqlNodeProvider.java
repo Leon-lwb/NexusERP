@@ -1,7 +1,4 @@
 package com.nexus.flow.node.logic;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,11 +6,17 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.nexus.ai.config.AiProperties;
-import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.ai.service.query.ErpQueryService;
 import com.nexus.ai.service.query.SqlSafetyValidator;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.flow.state.FlowTemplateRenderer;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -32,6 +35,10 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class SqlNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     /** JavaScript 安全整数上限；超出范围的动态整数必须以字符串输出，避免前端精度丢失。 */
     private static final BigInteger JS_MAX_SAFE_INTEGER = BigInteger.valueOf(9007199254740991L);
@@ -62,7 +69,9 @@ public class SqlNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("sqlTemplate") == null || config.get("sqlTemplate").asText().isBlank()) {
+        if (config == null
+                || config.get("sqlTemplate") == null
+                || config.get("sqlTemplate").asText().isBlank()) {
             throw new IllegalArgumentException("SQL 节点缺少 sqlTemplate 配置");
         }
     }
@@ -92,7 +101,8 @@ public class SqlNodeProvider implements FlowNodeProvider {
         String label = "节点 " + ctx.getNodeName();
 
         // 渲染模板变量（如 SELECT * FROM wm_material_stock WHERE material_code = '{{input.code}}'）
-        String rawSql = FlowTemplateRenderer.render(sqlTemplate, ctx.getState(), label + " 的 sqlTemplate");
+        String rawSql =
+                FlowTemplateRenderer.render(sqlTemplate, ctx.getState(), label + " 的 sqlTemplate");
 
         // 安全校验 + 净化（SELECT 白名单/关键词黑名单/表名白名单/租户注入/LIMIT/EXPLAIN）
         // 显式传租户：节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达

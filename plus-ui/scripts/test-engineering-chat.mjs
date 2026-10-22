@@ -137,6 +137,9 @@ for (const relative of ['src/views/ai/assistant/index.vue', 'src/components/ai/A
       let engineeringSent = 0;
       const context = {
         canSend: { value: true },
+        managedRequestId: { value: '' },
+        cancelStatus: { value: '' },
+        chatRequestsEnabled: { value: false },
         chatStream: createAiChatStream(),
         inputText: { value: '生成工程草稿' },
         loading: { value: false },

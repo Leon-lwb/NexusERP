@@ -20,13 +20,13 @@
       </el-table-column>
       <el-table-column label="状态" prop="status" width="100" align="center">
         <template #default="scope">
-          <dict-tag :options="ai_ab_test_status" :value="scope.row.status" />
+          <span>{{ abStatusLabels[scope.row.status] ?? scope.row.status }}</span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" prop="createTime" width="170" />
-      <el-table-column label="操作" width="250" align="center" fixed="right">
+      <el-table-column label="操作" width="340" align="center" fixed="right">
         <template #default="scope">
-          <el-button v-if="scope.row.status === 'PENDING'" link type="success" @click="handleExecute(scope.row)">执行</el-button>
+          <el-button v-hasPermi="['ai:abtest:query']" link type="primary" @click="openRuns(scope.row)">运行批次</el-button>
           <el-button link type="primary" @click="handleViewResults(scope.row)">查看结果</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status !== 'RUNNING'">修改</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== 'RUNNING'">删除</el-button>
@@ -34,6 +34,7 @@
       </el-table-column>
     </el-table>
 
+    <AiAbRunPanel v-model="runPanelVisible" :definition-id="runDefinitionId" @changed="getList" />
     <!-- 分页 -->
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
@@ -47,10 +48,14 @@
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="可选" />
         </el-form-item>
         <el-form-item label="模型A" prop="modelAId">
-          <el-input v-model="form.modelAId" placeholder="模型ID" style="width: 100%" />
+          <el-select v-model="form.modelAId" filterable placeholder="选择启用的文本对话模型" style="width: 100%"
+            ><el-option v-for="model in modelOptions" :key="model.id" :label="model.displayName || model.modelName" :value="String(model.id)"
+          /></el-select>
         </el-form-item>
         <el-form-item label="模型B" prop="modelBId">
-          <el-input v-model="form.modelBId" placeholder="模型ID" style="width: 100%" />
+          <el-select v-model="form.modelBId" filterable placeholder="选择启用的文本对话模型" style="width: 100%"
+            ><el-option v-for="model in modelOptions" :key="model.id" :label="model.displayName || model.modelName" :value="String(model.id)"
+          /></el-select>
         </el-form-item>
         <el-form-item label="测试问题" prop="testQuestions">
           <el-input v-model="form.testQuestions" type="textarea" :rows="6" placeholder='JSON数组，如：["查询库存","销售趋势"]' />
@@ -64,7 +69,7 @@
       </template>
     </el-dialog>
 
-    <!-- 结果对比对话框 -->
+    <!-- 历史结果对比，新的逐题结果在运行批次中查看。 -->
     <el-dialog title="测试结果对比" v-model="resultDialogVisible" width="960px" append-to-body>
       <div v-for="(group, idx) in resultGroups" :key="idx" class="result-group">
         <h4>问题 {{ idx + 1 }}：{{ group.question }}</h4>
@@ -92,14 +97,36 @@
 </template>
 
 <script setup lang="ts" name="AiAbTest">
+import AiAbRunPanel from '@/components/ai/AiAbRunPanel.vue';
+import { listModelOptions } from '@/api/ai/model';
 import { listAbTest, getAbTest, addAbTest, updateAbTest, delAbTest, executeAbTest, getAbTestResults, scoreAbTestResult } from '@/api/ai/abTest';
 import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { ai_ab_test_status } = toRefs<any>(proxy?.useDict('ai_ab_test_status'));
+const abStatusLabels: Record<string, string> = {
+  PENDING: '待执行',
+  RUNNING: '运行中',
+  COMPLETED: '历史完成',
+  SUCCEEDED: '成功',
+  PARTIAL_SUCCESS: '部分成功',
+  FAILED: '失败',
+  CANCEL_REQUESTED: '正在取消',
+  CANCELLED: '已取消',
+  RECOVERY_REQUIRED: '结果待核对'
+};
 
 const abTestRef = ref<ElFormInstance>();
 const resultDialogVisible = ref(false);
+const runPanelVisible = ref(false);
+const runDefinitionId = ref<string | null>(null);
+const modelOptions = ref<Array<{ id: string | number; displayName?: string; modelName: string }>>([]);
+function openRuns(row: any) {
+  runDefinitionId.value = String(row.id);
+  runPanelVisible.value = true;
+}
+void listModelOptions('TEXT,VISION', 'TEXT', 'TEXT').then((response) => {
+  modelOptions.value = response?.data ?? response ?? [];
+});
 const resultList = ref<any[]>([]);
 
 const queryParams = ref({

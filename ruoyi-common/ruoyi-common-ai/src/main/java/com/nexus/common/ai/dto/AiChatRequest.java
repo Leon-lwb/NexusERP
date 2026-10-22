@@ -1,5 +1,7 @@
 package com.nexus.common.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 
 import java.io.Serial;
@@ -16,6 +18,9 @@ import java.util.List;
  */
 @Data
 public class AiChatRequest implements Serializable {
+    /** 服务端执行身份，不从JSON请求绑定。 */
+    @JsonIgnore
+    private String executionRequestId;
 
     @Serial
     private static final long serialVersionUID = 1L;

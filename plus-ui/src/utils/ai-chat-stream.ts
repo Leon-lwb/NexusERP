@@ -15,6 +15,8 @@ const chatTypes = new Set([
   'AI_CONTENT',
   'AI_DONE',
   'AI_ERROR',
+  'AI_CANCEL_REQUESTED',
+  'AI_CANCELLED',
   'AI_CHART',
   'AI_IMAGE',
   'AI_WEB_SEARCH',
@@ -37,7 +39,7 @@ export function normalizeAiChatId(value: unknown): string | null {
 }
 
 /** getRandomValues 在非 HTTPS 内网也可用，避免依赖仅安全上下文支持的 randomUUID。 */
-function clientNonce(): string {
+export function createAiClientRequestId(): string {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
@@ -53,6 +55,7 @@ export function createAiChatStream() {
     sessionId: string | null;
     sequence: number;
     terminal: boolean;
+    cancelling: boolean;
   } | null = null;
 
   return {
@@ -60,8 +63,8 @@ export function createAiChatStream() {
     begin(sessionId: unknown = null): string {
       const normalized = sessionId == null ? null : normalizeAiChatId(sessionId);
       if (sessionId != null && !normalized) throw new Error('无效的 AI 会话 ID');
-      const nonce = clientNonce();
-      active = { clientRequestId: nonce, requestId: null, sessionId: normalized, sequence: 0, terminal: false };
+      const nonce = createAiClientRequestId();
+      active = { clientRequestId: nonce, requestId: null, sessionId: normalized, sequence: 0, terminal: false, cancelling: false };
       return nonce;
     },
 
@@ -70,19 +73,22 @@ export function createAiChatStream() {
       if (!active || active.terminal || !event || typeof event !== 'object') return false;
       const detail = event as Partial<AiChatStreamEvent>;
       if (!chatTypes.has(detail.type) || detail.clientRequestId !== active.clientRequestId) return false;
+      if (active.cancelling && !['AI_CANCEL_REQUESTED', 'AI_CANCELLED', 'AI_DONE', 'AI_ERROR'].includes(detail.type)) return false;
       if (typeof detail.requestId !== 'string' || !uuidPattern.test(detail.requestId)) return false;
       if (typeof detail.sessionId !== 'string' || !normalizeAiChatId(detail.sessionId)) return false;
       if (detail.messageId !== undefined && (typeof detail.messageId !== 'string' || !normalizeAiChatId(detail.messageId))) return false;
       if (!Number.isSafeInteger(detail.sequence) || detail.sequence <= active.sequence) return false;
       // 正文/过程载荷必须为字符串；无正文的思考状态及完成事件仍可省略 content。
-      const contentOptional = detail.type === 'AI_THINKING' || detail.type === 'AI_DONE';
+      const contentOptional =
+        detail.type === 'AI_THINKING' || detail.type === 'AI_DONE' || detail.type === 'AI_CANCEL_REQUESTED' || detail.type === 'AI_CANCELLED';
       if (typeof detail.content !== 'string' && !(contentOptional && detail.content == null)) return false;
       if (active.requestId && active.requestId !== detail.requestId) return false;
       if (active.sessionId && active.sessionId !== detail.sessionId) return false;
       active.requestId = detail.requestId;
       active.sessionId = detail.sessionId;
       active.sequence = detail.sequence;
-      active.terminal = detail.type === 'AI_DONE' || detail.type === 'AI_ERROR';
+      if (detail.type === 'AI_CANCEL_REQUESTED') active.cancelling = true;
+      active.terminal = detail.type === 'AI_DONE' || detail.type === 'AI_ERROR' || detail.type === 'AI_CANCELLED';
       return true;
     },
 

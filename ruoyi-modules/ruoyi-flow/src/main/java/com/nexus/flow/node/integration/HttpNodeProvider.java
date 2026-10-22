@@ -1,13 +1,21 @@
 package com.nexus.flow.node.integration;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
+
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.Method;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.ai.tool.WebSearchTool;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
 import com.nexus.flow.state.FlowTemplateRenderer;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
@@ -15,18 +23,41 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * HTTP 请求节点执行器
- * <p>调用外部 HTTP API（GET/POST/PUT/DELETE/PATCH），URL/请求头/请求体支持 {{path}} 模板渲染。
- * 内置 SSRF 防护（复用 {@link com.nexus.ai.tool.WebSearchTool} 的 sanitizeUrl 模式，拒绝内网/保留地址）</p>
+ *
+ * <p>调用外部 HTTP API（GET/POST/PUT/DELETE/PATCH），URL/请求头/请求体支持 {{path}} 模板渲染。 内置 SSRF 防护（复用 {@link
+ * WebSearchTool} 的 sanitizeUrl 模式，拒绝内网/保留地址）
  *
  * @author NexusERP
  */
 @Slf4j
 @Component
 public class HttpNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return config != null
+                        && config.path("idempotencySupported").asBoolean(false)
+                        && validIdempotencyHeader(config.path("idempotencyHeader").asText())
+                ? FlowReplayPolicy.IDEMPOTENT
+                : FlowReplayPolicy.NON_REPLAYABLE;
+    }
+
+    private static boolean validIdempotencyHeader(String name) {
+        return name.matches("[A-Za-z][A-Za-z0-9-]{0,63}")
+                && !Set.of(
+                                "authorization",
+                                "proxy-authorization",
+                                "cookie",
+                                "host",
+                                "connection",
+                                "content-length")
+                        .contains(name.toLowerCase(Locale.ROOT));
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -56,12 +87,15 @@ public class HttpNodeProvider implements FlowNodeProvider {
         NodeParamSchema headers = new NodeParamSchema("headers", "请求头", "json", "", false);
         headers.setEditor("keyvalue");
         return List.of(
-            method,
-            new NodeParamSchema("url", "请求 URL", "string", "", true),
-            headers,
-            new NodeParamSchema("body", "请求体", "textarea", "", false),
-            new NodeParamSchema("timeoutSeconds", "超时(秒)", "number", "15", false)
-        );
+                method,
+                new NodeParamSchema("url", "请求 URL", "string", "", true),
+                headers,
+                new NodeParamSchema(
+                        "idempotencySupported", "远端已确认支持幂等键", "boolean", "false", false),
+                new NodeParamSchema(
+                        "idempotencyHeader", "幂等请求头", "string", "Idempotency-Key", false),
+                new NodeParamSchema("body", "请求体", "textarea", "", false),
+                new NodeParamSchema("timeoutSeconds", "超时(秒)", "number", "15", false));
     }
 
     @Override
@@ -81,8 +115,10 @@ public class HttpNodeProvider implements FlowNodeProvider {
         JsonNode config = ctx.getConfig();
         String method = config.has("method") && !config.get("method").isNull()
             ? config.get("method").asText().toUpperCase() : "GET";
-        int timeoutSeconds = config.has("timeoutSeconds") && config.get("timeoutSeconds").canConvertToInt()
-            ? Math.max(1, Math.min(config.get("timeoutSeconds").asInt(), 120)) : 15;
+        int timeoutSeconds =
+                config.has("timeoutSeconds") && config.get("timeoutSeconds").canConvertToInt()
+                        ? Math.max(1, Math.min(config.get("timeoutSeconds").asInt(), 120))
+                        : 15;
 
         // 渲染模板变量
         String url = FlowTemplateRenderer.render(config.get("url").asText(), ctx.getState(),
@@ -96,13 +132,15 @@ public class HttpNodeProvider implements FlowNodeProvider {
         // SSRF 防护（对齐 WebSearchTool.sanitizeUrl，仅 http/https + 拒绝内网/保留地址）
         String safeUrl = sanitizeUrl(url);
         if (safeUrl == null) {
-            throw new IllegalArgumentException("URL 不合法或指向禁止访问的地址（仅允许 http/https，且禁止内网/环回/链路本地地址）: " + url);
+            throw new IllegalArgumentException(
+                    "URL 不合法或指向禁止访问的地址（仅允许 http/https，且禁止内网/环回/链路本地地址）: " + url);
         }
 
         // 构建请求
-        cn.hutool.http.HttpRequest request = new cn.hutool.http.HttpRequest(safeUrl)
-            .method(cn.hutool.http.Method.valueOf(method))
-            .timeout(timeoutSeconds * 1000);
+        HttpRequest request =
+                new HttpRequest(safeUrl)
+                        .method(Method.valueOf(method))
+                        .timeout(timeoutSeconds * 1000);
 
         // 请求头（JSON 对象，值支持 {{}} 渲染）
         JsonNode headers = config.get("headers");
@@ -110,9 +148,14 @@ public class HttpNodeProvider implements FlowNodeProvider {
             var it = headers.fields();
             while (it.hasNext()) {
                 var entry = it.next();
-                request.header(entry.getKey(), FlowTemplateRenderer.render(
-                    entry.getValue() == null || entry.getValue().isNull() ? "" : entry.getValue().asText(),
-                    ctx.getState(), "节点 " + ctx.getNodeName() + " 的 headers." + entry.getKey()));
+                request.header(
+                        entry.getKey(),
+                        FlowTemplateRenderer.render(
+                                entry.getValue() == null || entry.getValue().isNull()
+                                        ? ""
+                                        : entry.getValue().asText(),
+                                ctx.getState(),
+                                "节点 " + ctx.getNodeName() + " 的 headers." + entry.getKey()));
             }
         }
         if (body != null && !body.isBlank()) {
@@ -120,7 +163,13 @@ public class HttpNodeProvider implements FlowNodeProvider {
         }
 
         log.info("[Flow] HTTP 节点 {} 请求: {} {}", ctx.getNodeName(), method, safeUrl);
-        cn.hutool.http.HttpResponse response = request.execute();
+        if (config.path("idempotencySupported").asBoolean(false)) {
+            String header = config.path("idempotencyHeader").asText("Idempotency-Key");
+            if (!validIdempotencyHeader(header) || ctx.getExecutionKey() == null)
+                throw new IllegalArgumentException("幂等调用需要受治理执行和有效请求头");
+            request.header(header, ctx.getExecutionKey());
+        }
+        HttpResponse response = request.execute();
         String responseBody = response.body();
         if (responseBody == null) {
             responseBody = "";

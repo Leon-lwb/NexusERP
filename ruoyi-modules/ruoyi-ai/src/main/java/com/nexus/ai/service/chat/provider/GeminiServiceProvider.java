@@ -3,12 +3,15 @@ package com.nexus.ai.service.chat.provider;
 import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiStreamingChatModel;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -64,14 +67,16 @@ public class GeminiServiceProvider implements ChatServiceProvider {
 
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
-        GoogleAiGeminiChatModel.GoogleAiGeminiChatModelBuilder builder = GoogleAiGeminiChatModel.builder()
-            .apiKey(config.getApiKey())
-            .modelName(config.getModelName())
-            .temperature(temperature)
-            .maxOutputTokens(sanitizeMaxTokens(config.getMaxTokens()))
-            .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
-            .returnThinking(true)
-            .listeners(chatModelListeners);
+        GoogleAiGeminiChatModel.GoogleAiGeminiChatModelBuilder builder =
+                GoogleAiGeminiChatModel.builder()
+                        .apiKey(config.getApiKey())
+                        .modelName(config.getModelName())
+                        .maxRetries(0)
+                        .temperature(temperature)
+                        .maxOutputTokens(sanitizeMaxTokens(config.getMaxTokens()))
+                        .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
+                        .returnThinking(true)
+                        .listeners(chatModelListeners);
         if (config.getApiHost() != null && !config.getApiHost().isBlank()) {
             builder.baseUrl(normalizeBaseUrl(config.getApiHost()));
         }

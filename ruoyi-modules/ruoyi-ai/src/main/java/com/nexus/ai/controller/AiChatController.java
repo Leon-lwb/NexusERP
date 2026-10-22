@@ -1,7 +1,11 @@
 package com.nexus.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.nexus.ai.service.facade.AiServiceFacade;
+import com.nexus.ai.service.governance.AiChatExecutionService;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
@@ -9,14 +13,21 @@ import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiSessionService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.satoken.utils.LoginHelper;
-import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.nexus.ai.service.facade.AiServiceFacade;
+
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +47,9 @@ public class AiChatController {
 
     /** 与 App 消息输入组件的默认上限一致，原始正文保留以供完成回填匹配。 */
     private static final int CONTENT_MAX_LENGTH = 2000;
+
+    @Autowired(required = false)
+    private AiChatExecutionService governedRequests;
 
     /** AI 对话门面，封装发送消息、流式回复与 SSE 推送的完整链路。 */
     private final AiServiceFacade aiServiceFacade;
@@ -92,6 +106,8 @@ public class AiChatController {
                 .eq(AiMessage::getSessionId, sessionId)
                 .orderByAsc(AiMessage::getCreateTime)
         );
+        if (governedRequests != null)
+            governedRequests.enrichHistory(LoginHelper.getTenantId(), userId, sessionId, messages);
         return R.ok(messages);
     }
 
@@ -232,7 +248,7 @@ public class AiChatController {
             .mapToInt(m -> m.getTokenUsage().intValue())
             .sum();
 
-        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        Map<String, Object> result = new LinkedHashMap<>();
         result.put("sessionId", sessionId);
         result.put("totalTokens", totalTokens);
         result.put("messageCount", messages.size());
@@ -275,12 +291,16 @@ public class AiChatController {
         // 写入响应流
         try {
             response.setContentType("text/markdown;charset=utf-8");
-            response.setHeader("Content-Disposition",
-                "attachment;filename=" + java.net.URLEncoder.encode(
-                    (session.getTitle() != null ? session.getTitle() : "AI对话") + ".md", "UTF-8"));
+            response.setHeader(
+                    "Content-Disposition",
+                    "attachment;filename="
+                            + URLEncoder.encode(
+                                    (session.getTitle() != null ? session.getTitle() : "AI对话")
+                                            + ".md",
+                                    "UTF-8"));
             response.getWriter().write(markdown);
             response.getWriter().flush();
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             log.error("导出会话失败: sessionId={}", sessionId, e);
         }
     }
@@ -300,9 +320,14 @@ public class AiChatController {
      */
     private String formatSessionToMarkdown(AiSession session, List<AiMessage> messages) {
         StringBuilder sb = new StringBuilder();
-        sb.append("# ").append(session.getTitle() != null ? session.getTitle() : "AI 对话记录").append("\n\n");
-        sb.append("> 导出时间：").append(java.time.LocalDateTime.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+        sb.append("# ")
+                .append(session.getTitle() != null ? session.getTitle() : "AI 对话记录")
+                .append("\n\n");
+        sb.append("> 导出时间：")
+                .append(
+                        LocalDateTime.now()
+                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .append("\n");
         if (session.getModelName() != null) {
             sb.append("> 模型：").append(session.getModelName()).append("\n");
         }

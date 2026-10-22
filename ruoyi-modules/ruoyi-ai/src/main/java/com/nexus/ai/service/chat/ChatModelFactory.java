@@ -1,15 +1,22 @@
 package com.nexus.ai.service.chat;
 
-import com.nexus.ai.service.chat.provider.ChatServiceProviderFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.nexus.ai.service.chat.provider.ChatServiceProvider;
+import com.nexus.ai.service.chat.provider.ChatServiceProviderFactory;
+import com.nexus.ai.service.governance.AiGovernedModels;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.service.IAiModelService;
+
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
@@ -39,6 +46,9 @@ public class ChatModelFactory {
     /** 协议策略工厂，按 apiProtocol（缺省按厂商默认协议）路由到对应构建实现。 */
     private final ChatServiceProviderFactory providerFactory;
 
+    @Autowired(required = false)
+    private AiGovernedModels governedModels;
+
     /** 同步模型缓存（key = modelId）。有界 + 1h 访问过期，防止模型实例（持 OkHttp 连接池/线程）无限堆积。 */
     private final Cache<Long, ChatModel> chatModelCache = Caffeine.newBuilder()
         .maximumSize(16)
@@ -67,13 +77,43 @@ public class ChatModelFactory {
      * @return ChatModel 实例
      */
     public ChatModel getChatModel(Long modelId) {
-        return chatModelCache.get(modelId, id -> {
-            AiModel config = aiModelService.selectModelById(id);
-            if (config == null) {
-                throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
-            }
-            return providerFactory.get(config).buildChatModel(config, defaultTemperature(config));
-        });
+        return chatModelCache.get(
+                modelId,
+                id -> {
+                    AiModel config = aiModelService.selectModelById(id);
+                    if (config == null) {
+                        throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
+                    }
+                    ChatModel raw =
+                            providerFactory
+                                    .get(config)
+                                    .buildChatModel(config, defaultTemperature(config));
+                    return governedModels == null ? raw : governedModels.chat(raw, config);
+                });
+    }
+
+    /** 请求上限参与同步模型的实际构造；不复用其他上限的实例。 */
+    public ChatModel getChatModel(Long modelId, AiChatRequest request) {
+        return requestedModel(modelId, request, null);
+    }
+
+    public ChatModel getAgentChatModel(Long modelId, AiChatRequest request) {
+        return requestedModel(modelId, request, AGENT_TEMPERATURE);
+    }
+
+    private ChatModel requestedModel(Long modelId, AiChatRequest request, Double temperature) {
+        AiModel config = aiModelService.selectModelById(modelId);
+        if (config == null) throw new IllegalArgumentException("未找到模型配置");
+        AiModel effective = new AiModel();
+        BeanUtils.copyProperties(config, effective);
+        effective.setMaxTokens(ChatServiceProvider.outputLimit(config, request));
+        ChatModel raw =
+                providerFactory
+                        .get(effective)
+                        .buildChatModel(
+                                effective,
+                                temperature == null ? defaultTemperature(effective) : temperature);
+        return governedModels == null ? raw : governedModels.chat(raw, effective);
     }
 
     /**
@@ -88,14 +128,23 @@ public class ChatModelFactory {
         boolean thinking = request != null && Boolean.TRUE.equals(request.getEnableThinking());
         // maxOutputTokens 参与缓存 key：请求级输出封顶会体现在构建出的实例上，混用会串限
         Integer maxTokens = request != null ? request.getMaxOutputTokens() : null;
-        String key = modelId + ":" + (thinking ? "T" : "F") + (maxTokens == null ? "" : ":M" + maxTokens);
-        return streamingModelCache.get(key, k -> {
-            AiModel config = aiModelService.selectModelById(modelId);
-            if (config == null) {
-                throw new IllegalArgumentException("未找到模型配置，modelId=" + modelId);
-            }
-            return providerFactory.get(config).buildStreamingChatModel(config, request);
-        });
+        String key =
+                modelId
+                        + ":"
+                        + (thinking ? "T" : "F")
+                        + (maxTokens == null ? "" : ":M" + maxTokens);
+        return streamingModelCache.get(
+                key,
+                k -> {
+                    AiModel config = aiModelService.selectModelById(modelId);
+                    if (config == null) {
+                        throw new IllegalArgumentException("未找到模型配置，modelId=" + modelId);
+                    }
+                    ChatServiceProvider.outputLimit(config, request);
+                    StreamingChatModel raw =
+                            providerFactory.get(config).buildStreamingChatModel(config, request);
+                    return governedModels == null ? raw : governedModels.streaming(raw, config);
+                });
     }
 
     /**
@@ -115,13 +164,17 @@ public class ChatModelFactory {
      * @return ChatModel 实例（temperature=0.1）
      */
     public ChatModel getAgentChatModel(Long modelId) {
-        return agentModelCache.get(modelId, id -> {
-            AiModel config = aiModelService.selectModelById(id);
-            if (config == null) {
-                throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
-            }
-            return providerFactory.get(config).buildChatModel(config, AGENT_TEMPERATURE);
-        });
+        return agentModelCache.get(
+                modelId,
+                id -> {
+                    AiModel config = aiModelService.selectModelById(id);
+                    if (config == null) {
+                        throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
+                    }
+                    ChatModel raw =
+                            providerFactory.get(config).buildChatModel(config, AGENT_TEMPERATURE);
+                    return governedModels == null ? raw : governedModels.chat(raw, config);
+                });
     }
 
     /**

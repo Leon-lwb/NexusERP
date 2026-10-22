@@ -1,5 +1,13 @@
 <template>
   <div class="app-container">
+    <AiGovernancePanel />
+    <el-divider>历史日统计（旧口径）</el-divider>
+    <el-alert
+      title="历史日统计缺少币种与计价快照，仅保留历史估值，不作为准确账单。新调用请查看上方台账。"
+      type="info"
+      :closable="false"
+      class="mb-4"
+    />
     <!-- 筛选栏 -->
     <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="80px" class="list-search">
       <el-row :gutter="16">
@@ -54,7 +62,7 @@
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover">
-          <el-statistic title="总成本（元）" :value="overview.totalCost" :precision="4" />
+          <el-statistic title="历史成本估值" :value="overview.totalCost" :precision="4" />
         </el-card>
       </el-col>
     </el-row>
@@ -67,10 +75,10 @@
       <div ref="tokenTrendChartRef" style="height: 320px"></div>
     </el-card>
 
-    <!-- 成本趋势（独立图表，避免与 Token 数值差异过大） -->
+    <!-- 历史估值趋势（独立图表，避免与 Token 数值差异过大） -->
     <el-card shadow="never" class="mb-4">
       <template #header>
-        <span>成本趋势</span>
+        <span>历史估值趋势</span>
       </template>
       <div ref="costTrendChartRef" style="height: 260px"></div>
     </el-card>
@@ -89,7 +97,7 @@
                 {{ Number(row.totalTokens).toLocaleString() }}
               </template>
             </el-table-column>
-            <el-table-column prop="totalCost" label="成本（元）" width="120">
+            <el-table-column prop="totalCost" label="历史成本估值" width="120">
               <template #default="{ row }">
                 {{ Number(row.totalCost || 0).toFixed(4) }}
               </template>
@@ -110,7 +118,7 @@
                 {{ Number(row.totalTokens).toLocaleString() }}
               </template>
             </el-table-column>
-            <el-table-column prop="totalCost" label="成本（元）" width="120">
+            <el-table-column prop="totalCost" label="历史成本估值" width="120">
               <template #default="{ row }">
                 {{ Number(row.totalCost || 0).toFixed(4) }}
               </template>
@@ -149,7 +157,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="requestCount" label="请求次数" width="100" />
-        <el-table-column prop="totalCost" label="成本（元）" width="120">
+        <el-table-column prop="totalCost" label="历史成本估值" width="120">
           <template #default="{ row }">
             {{ Number(row.totalCost || 0).toFixed(4) }}
           </template>
@@ -165,6 +173,7 @@
 </template>
 
 <script setup lang="ts" name="AiTokenUsage">
+import AiGovernancePanel from '@/components/ai/AiGovernancePanel.vue';
 import { getTokenUsageSummary, getTokenUsageTrend, getModelRanking, getUserRanking, backfillTokenUsage } from '@/api/ai/tokenUsage';
 import { listModel } from '@/api/ai/model';
 import * as echarts from 'echarts';
@@ -332,7 +341,7 @@ function renderTokenTrendChart(data: any[]) {
   ); // true = not merge, replace
 }
 
-/** 渲染成本趋势图表（独立图表，单 Y 轴） */
+/** 渲染历史估值趋势图表（独立图表，单 Y 轴） */
 function renderCostTrendChart(data: any[]) {
   if (!costTrendChartRef.value) return;
   if (!costTrendChart) {
@@ -342,7 +351,7 @@ function renderCostTrendChart(data: any[]) {
   costTrendChart.setOption(
     {
       tooltip: { trigger: 'axis' },
-      legend: { data: ['成本（元）'], top: 0 },
+      legend: { data: ['历史成本估值'], top: 0 },
       grid: { left: 60, right: 30, top: 40, bottom: 30 },
       xAxis: {
         type: 'category',
@@ -351,12 +360,12 @@ function renderCostTrendChart(data: any[]) {
       },
       yAxis: {
         type: 'value',
-        name: '成本（元）',
+        name: '历史成本估值',
         axisLabel: { formatter: (v: number) => v.toFixed(4) }
       },
       series: [
         {
-          name: '成本（元）',
+          name: '历史成本估值',
           type: 'bar',
           data: data.map((d: any) => Number(d.totalCost) || 0),
           barWidth: isSinglePoint ? '30%' : '40%',

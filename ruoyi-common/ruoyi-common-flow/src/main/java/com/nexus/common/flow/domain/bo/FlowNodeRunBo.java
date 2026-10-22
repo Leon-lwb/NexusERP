@@ -2,7 +2,9 @@ package com.nexus.common.flow.domain.bo;
 
 import com.nexus.common.flow.domain.entity.FlowNodeRun;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -36,7 +38,7 @@ public class FlowNodeRunBo extends BaseEntity {
     /** 节点类型: LLM/AGENT/RAG/IF/CODE */
     private String nodeType;
 
-    /** 状态: PENDING/RUNNING/SUCCEEDED/FAILED/SKIPPED */
+    /** 状态: PENDING/RUNNING/SUCCEEDED/FAILED/SKIPPED/CANCELLED/RECOVERY_REQUIRED */
     private String status;
 
     /** 输入(JSON, 渲染后的最终入参) */

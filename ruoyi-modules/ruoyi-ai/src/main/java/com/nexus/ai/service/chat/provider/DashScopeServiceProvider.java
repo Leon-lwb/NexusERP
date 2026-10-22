@@ -3,12 +3,15 @@ package com.nexus.ai.service.chat.provider;
 import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -41,12 +44,12 @@ public class DashScopeServiceProvider implements ChatServiceProvider {
     public StreamingChatModel buildStreamingChatModel(AiModel config, AiChatRequest request) {
         float temperature = config.getTemperature() != null ? config.getTemperature().floatValue() : 0.7f;
         return QwenStreamingChatModel.builder()
-            .apiKey(config.getApiKey())
-            .modelName(config.getModelName())
-            .temperature(temperature)
-            .maxTokens(config.getMaxTokens())
-            .listeners(chatModelListeners)
-            .build();
+                .apiKey(config.getApiKey())
+                .modelName(config.getModelName())
+                .temperature(temperature)
+                .maxTokens(ChatServiceProvider.outputLimit(config, request))
+                .listeners(chatModelListeners)
+                .build();
     }
 
     @Override

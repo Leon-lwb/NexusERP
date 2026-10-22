@@ -1,9 +1,18 @@
 package com.nexus.ai.mcp.service;
 
+import com.nexus.ai.context.AiToolInvocationGuard;
 import com.nexus.ai.tool.BuiltinToolRegistry;
+
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.invocation.InvocationContext;
+import dev.langchain4j.service.tool.ToolExecutionResult;
+import dev.langchain4j.service.tool.ToolExecutor;
 import dev.langchain4j.service.tool.ToolProvider;
+import dev.langchain4j.service.tool.ToolProviderResult;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -36,7 +45,7 @@ public class ToolProviderFactory {
      * <p>这些对象包含 @Tool 注解的方法，可直接用于 AgenticServices.tools()</p>
      */
     public List<Object> getAllEnabledBuiltinToolObjects() {
-        return builtinToolRegistry.getEnabledBuiltinToolObjects();
+        return guardObjects(builtinToolRegistry.getEnabledBuiltinToolObjects());
     }
 
     /**
@@ -50,7 +59,8 @@ public class ToolProviderFactory {
      * @return 匹配类别的已启用工具对象列表
      */
     public List<Object> getEnabledBuiltinToolObjectsByCategories(String categories) {
-        return builtinToolRegistry.getEnabledBuiltinToolObjectsByCategories(categories);
+        return guardObjects(
+                builtinToolRegistry.getEnabledBuiltinToolObjectsByCategories(categories));
     }
 
     /**
@@ -58,7 +68,7 @@ public class ToolProviderFactory {
      * <p>用于 AgenticServices.toolProvider() 注入</p>
      */
     public ToolProvider getAllEnabledMcpToolProviders() {
-        return mcpClientManager.getAllEnabledToolProviders();
+        return guard(mcpClientManager.getAllEnabledToolProviders());
     }
 
     /**
@@ -68,7 +78,7 @@ public class ToolProviderFactory {
      * @return MCP ToolProvider，无匹配时返回 null
      */
     public ToolProvider getMcpToolProvidersByNames(List<String> toolNames) {
-        return mcpClientManager.getToolProvidersByNames(toolNames);
+        return guard(mcpClientManager.getToolProvidersByNames(toolNames));
     }
 
     /**
@@ -79,6 +89,39 @@ public class ToolProviderFactory {
      * @return MCP ToolProvider，无匹配时返回 null
      */
     public ToolProvider getMcpToolProvidersByIds(List<Long> toolIds) {
-        return mcpClientManager.getToolProvidersByIds(toolIds);
+        return guard(mcpClientManager.getToolProvidersByIds(toolIds));
+    }
+
+    /** 捕获构建Agent时的请求身份，SDK在工作线程执行工具时仍先核对取消状态。 */
+    public List<Object> guardObjects(List<Object> objects) {
+        return objects.stream().map(AiToolInvocationGuard::wrap).toList();
+    }
+
+    private ToolProvider guard(ToolProvider provider) {
+        if (provider == null) return null;
+        var captured = AiToolInvocationGuard.capture();
+        return request -> {
+            var snapshot = captured;
+            var provided = snapshot.call(() -> provider.provideTools(request));
+            if (provided == null) return null;
+            var result = ToolProviderResult.builder();
+            for (var tool : provided.aiServiceTools()) {
+                var delegate = tool.toolExecutor();
+                var guarded =
+                        new ToolExecutor() {
+                            public String execute(ToolExecutionRequest call, Object memory) {
+                                return snapshot.call(() -> delegate.execute(call, memory));
+                            }
+
+                            public ToolExecutionResult executeWithContext(
+                                    ToolExecutionRequest call, InvocationContext context) {
+                                return snapshot.call(
+                                        () -> delegate.executeWithContext(call, context));
+                            }
+                        };
+                result.add(tool.toBuilder().toolExecutor(guarded).build());
+            }
+            return result.build();
+        };
     }
 }

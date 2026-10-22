@@ -3,12 +3,15 @@ package com.nexus.ai.service.chat.provider;
 import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.community.model.zhipu.ZhipuAiChatModel;
 import dev.langchain4j.community.model.zhipu.ZhipuAiStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -40,24 +43,27 @@ public class ZhiPuServiceProvider implements ChatServiceProvider {
 
     @Override
     public StreamingChatModel buildStreamingChatModel(AiModel config, AiChatRequest request) {
-        // 智谱使用单数 maxToken；现有策略未映射模型/请求上限，本轮保持原行为。
-        double temperature = config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7;
+        // 请求级上限在SDK构造时落实。
+        double temperature =
+                config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7;
         return ZhipuAiStreamingChatModel.builder()
-            .apiKey(config.getApiKey())
-            .model(config.getModelName())
-            .temperature(temperature)
-            .listeners(chatModelListeners)
-            .build();
+                .apiKey(config.getApiKey())
+                .model(config.getModelName())
+                .maxToken(ChatServiceProvider.outputLimit(config, request))
+                .temperature(temperature)
+                .listeners(chatModelListeners)
+                .build();
     }
 
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
-        // 智谱使用单数 maxToken；现有策略未映射模型上限，本轮保持原行为。
+        // 同步路径同样落实模型输出上限。
         return ZhipuAiChatModel.builder()
-            .apiKey(config.getApiKey())
-            .model(config.getModelName())
-            .temperature(temperature)
-            .listeners(chatModelListeners)
-            .build();
+                .apiKey(config.getApiKey())
+                .model(config.getModelName())
+                .maxToken(ChatServiceProvider.outputLimit(config, null))
+                .temperature(temperature)
+                .listeners(chatModelListeners)
+                .build();
     }
 }

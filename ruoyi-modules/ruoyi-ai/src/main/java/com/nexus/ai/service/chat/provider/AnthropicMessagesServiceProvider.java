@@ -3,12 +3,15 @@ package com.nexus.ai.service.chat.provider;
 import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -71,15 +74,16 @@ public class AnthropicMessagesServiceProvider implements ChatServiceProvider {
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
         return AnthropicChatModel.builder()
-            .baseUrl(normalizeBaseUrl(config.getApiHost()))
-            .apiKey(config.getApiKey())
-            .modelName(config.getModelName())
-            .temperature(temperature)
-            .maxTokens(sanitizeMaxTokens(config.getMaxTokens()))
-            .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
-            .returnThinking(true)
-            .listeners(chatModelListeners)
-            .build();
+                .baseUrl(normalizeBaseUrl(config.getApiHost()))
+                .apiKey(config.getApiKey())
+                .modelName(config.getModelName())
+                .maxRetries(0)
+                .temperature(temperature)
+                .maxTokens(sanitizeMaxTokens(config.getMaxTokens()))
+                .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
+                .returnThinking(true)
+                .listeners(chatModelListeners)
+                .build();
     }
 
     /**

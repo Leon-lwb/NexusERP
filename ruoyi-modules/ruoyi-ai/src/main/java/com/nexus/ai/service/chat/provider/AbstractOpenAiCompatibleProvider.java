@@ -2,11 +2,13 @@ package com.nexus.ai.service.chat.provider;
 
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Duration;
@@ -59,16 +61,17 @@ public abstract class AbstractOpenAiCompatibleProvider implements ChatServicePro
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
         return OpenAiChatModel.builder()
-            .baseUrl(normalizeBaseUrl(config.getApiHost()))
-            .apiKey(config.getApiKey())
-            .modelName(config.getModelName())
-            .temperature(temperature)
-            .maxTokens(sanitizeMaxTokens(config.getMaxTokens()))
-            // 与流式构建器同一超时纪律：默认 60s 对图片复核（base64 多图入参）等
-            // 长交互偏短，统一提到 180s，避免视觉/复核链路无谓超时
-            .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
-            .listeners(chatModelListeners)
-            .build();
+                .baseUrl(normalizeBaseUrl(config.getApiHost()))
+                .apiKey(config.getApiKey())
+                .modelName(config.getModelName())
+                .maxRetries(0)
+                .temperature(temperature)
+                .maxTokens(sanitizeMaxTokens(config.getMaxTokens()))
+                // 与流式构建器同一超时纪律：默认 60s 对图片复核（base64 多图入参）等
+                // 长交互偏短，统一提到 180s，避免视觉/复核链路无谓超时
+                .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
+                .listeners(chatModelListeners)
+                .build();
     }
 
     /**

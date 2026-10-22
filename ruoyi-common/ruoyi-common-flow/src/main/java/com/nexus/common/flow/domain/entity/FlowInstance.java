@@ -3,6 +3,7 @@ package com.nexus.common.flow.domain.entity;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -43,7 +44,7 @@ public class FlowInstance extends TenantEntity {
     /** 启动时画布配置快照（续跑 retry 用——config 变更后重跑语义不漂移） */
     private String configSnapshot;
 
-    /** 状态: RUNNING/SUCCEEDED/FAILED/STOPPED */
+    /** 状态: QUEUED/RUNNING/WAITING/STOP_REQUESTED/SUCCEEDED/FAILED/STOPPED/RECOVERY_REQUIRED */
     private String status;
 
     /** 错误信息 */

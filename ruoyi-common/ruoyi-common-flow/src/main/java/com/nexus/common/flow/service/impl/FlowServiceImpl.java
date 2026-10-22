@@ -3,19 +3,23 @@ package com.nexus.common.flow.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.nexus.common.flow.domain.bo.FlowBo;
-import com.nexus.common.flow.domain.entity.Flow;
-import com.nexus.common.flow.domain.entity.FlowInstance;
-import com.nexus.common.flow.domain.vo.FlowVo;
-import com.nexus.common.flow.mapper.FlowInstanceMapper;
-import com.nexus.common.flow.mapper.FlowMapper;
-import com.nexus.common.flow.service.IFlowService;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.flow.domain.bo.FlowBo;
+import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.common.flow.domain.entity.FlowInstance;
+import com.nexus.common.flow.domain.entity.FlowVersion;
+import com.nexus.common.flow.domain.vo.FlowVo;
+import com.nexus.common.flow.mapper.FlowInstanceMapper;
+import com.nexus.common.flow.mapper.FlowMapper;
+import com.nexus.common.flow.mapper.FlowVersionMapper;
+import com.nexus.common.flow.service.IFlowService;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +36,7 @@ public class FlowServiceImpl implements IFlowService {
 
     private final FlowMapper baseMapper;
     private final FlowInstanceMapper FlowInstanceMapper;
-    private final com.nexus.common.flow.mapper.FlowVersionMapper FlowVersionMapper;
+    private final FlowVersionMapper FlowVersionMapper;
 
     /**
      * 分页查询流程列表
@@ -179,11 +183,17 @@ public class FlowServiceImpl implements IFlowService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long id : ids) {
-            Long running = FlowInstanceMapper.selectCount(
-                new LambdaQueryWrapper<FlowInstance>()
-                    .eq(FlowInstance::getFlowId, id)
-                    .eq(FlowInstance::getStatus, "RUNNING")
-            );
+            Long running =
+                    FlowInstanceMapper.selectCount(
+                            new LambdaQueryWrapper<FlowInstance>()
+                                    .eq(FlowInstance::getFlowId, id)
+                                    .in(
+                                            FlowInstance::getStatus,
+                                            "QUEUED",
+                                            "RUNNING",
+                                            "WAITING",
+                                            "STOP_REQUESTED",
+                                            "RECOVERY_REQUIRED"));
             if (running != null && running > 0) {
                 throw new ServiceException("流程存在运行中的实例，无法删除");
             }
@@ -217,7 +227,7 @@ public class FlowServiceImpl implements IFlowService {
         int rows = baseMapper.updateById(update);
 
         // 发布时落版本快照（版本历史/恢复/只读预览数据源）
-        com.nexus.common.flow.domain.entity.FlowVersion version = new com.nexus.common.flow.domain.entity.FlowVersion();
+        FlowVersion version = new FlowVersion();
         version.setFlowId(id);
         version.setFlowVersion(newVersion);
         version.setFlowName(flow.getFlowName());

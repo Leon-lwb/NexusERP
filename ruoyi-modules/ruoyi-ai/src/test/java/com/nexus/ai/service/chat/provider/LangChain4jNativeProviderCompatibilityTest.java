@@ -1,5 +1,9 @@
 package com.nexus.ai.service.chat.provider;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.alibaba.dashscope.aigc.generation.Generation;
 import com.alibaba.dashscope.aigc.generation.GenerationParam;
 import com.alibaba.dashscope.aigc.generation.GenerationResult;
@@ -10,6 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
+
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
@@ -36,6 +41,7 @@ import dev.langchain4j.model.chat.response.CompleteToolCall;
 import dev.langchain4j.model.chat.response.PartialToolCall;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.output.FinishReason;
+
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -46,10 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /** 通过生产策略构造真实原生适配器，只替换底层传输，验证 beta32 映射且不访问厂商网络。 */
 @Timeout(10)
@@ -233,8 +235,7 @@ class LangChain4jNativeProviderCompatibilityTest {
         }
 
         private Integer configuredCap() {
-            // beta32 智谱 SDK 支持 maxToken，但当前生产策略未设置；请求级覆盖另有真实传输断言。
-            return this == DASHSCOPE_NATIVE ? CONFIGURED_CAP : null;
+            return CONFIGURED_CAP;
         }
     }
 
@@ -281,14 +282,19 @@ class LangChain4jNativeProviderCompatibilityTest {
         private final CompletableFuture<ChatResponse> completed = new CompletableFuture<>();
         private final CompletableFuture<Throwable> failed = new CompletableFuture<>();
 
-        @Override public void onPartialResponse(String value) { text.add(value); }
-        @Override public void onPartialToolCall(PartialToolCall value) { partialTools.add(value); }
-        @Override public void onCompleteToolCall(CompleteToolCall value) { completeTools.add(value); }
-        @Override public void onCompleteResponse(ChatResponse value) {
+        @Override
+        public void onPartialResponse(String value) { text.add(value); }
+        @Override
+        public void onPartialToolCall(PartialToolCall value) { partialTools.add(value); }
+        @Override
+        public void onCompleteToolCall(CompleteToolCall value) { completeTools.add(value); }
+        @Override
+        public void onCompleteResponse(ChatResponse value) {
             terminals.add("complete");
             completed.complete(value);
         }
-        @Override public void onError(Throwable error) {
+        @Override
+        public void onError(Throwable error) {
             terminals.add("error");
             failed.complete(error);
         }
@@ -428,12 +434,25 @@ class LangChain4jNativeProviderCompatibilityTest {
                 }
                 assertEquals(streaming, body.get("stream").getAsBoolean());
                 assertEquals(temperature, body.get("temperature").getAsDouble(), 0.000001);
-                assertEquals(QUESTION, body.getAsJsonArray("messages").get(0).getAsJsonObject().get("content").getAsString());
+                assertEquals(
+                        QUESTION,
+                        body.getAsJsonArray("messages")
+                                .get(0)
+                                .getAsJsonObject()
+                                .get("content")
+                                .getAsString());
                 if (tools) {
                     assertEquals(1, body.getAsJsonArray("tools").size());
-                    var function = body.getAsJsonArray("tools").get(0).getAsJsonObject().getAsJsonObject("function");
+                    var function =
+                            body.getAsJsonArray("tools")
+                                    .get(0)
+                                    .getAsJsonObject()
+                                    .getAsJsonObject("function");
                     assertEquals(TOOL_NAME, function.get("name").getAsString());
-                    assertTrue(function.getAsJsonObject("parameters").getAsJsonObject("properties").has("warehouse"));
+                    assertTrue(
+                            function.getAsJsonObject("parameters")
+                                    .getAsJsonObject("properties")
+                                    .has("warehouse"));
                 }
                 if (streaming) {
                     verify(http).execute(any(HttpRequest.class), any(ServerSentEventListener.class));

@@ -75,3 +75,77 @@ export function getAbTestReport(testId: number) {
     method: 'get'
   });
 }
+
+/** 冻结运行批次，与历史测试结果分别读取。 */
+export interface AiAbRun {
+  runId: string;
+  definitionId: string;
+  executionId: string;
+  testName: string;
+  status: string;
+  createdAt: string;
+}
+export interface AiAbRunItem {
+  itemId: string;
+  questionIndex: number;
+  modelSlot: 'A' | 'B';
+  modelName: string;
+  question: string;
+  response?: string;
+  status: string;
+  latencyMs?: string;
+  score?: number;
+}
+export interface AiAbRunReport {
+  models: Array<{
+    modelSlot: string;
+    totalQuestions: string;
+    succeeded: string;
+    failed: string;
+    unconfirmed: string;
+    averageLatencyMs?: string;
+    averageScore?: string;
+  }>;
+  costs: Array<{
+    modelSlot: string;
+    currency: string;
+    knownCost: string;
+    unknownCalls: string;
+    callCount: string;
+    inputTokens: string;
+    outputTokens: string;
+  }>;
+}
+export async function getAbRunCapabilities() {
+  const response = await request({ url: '/ai/ab-test/capabilities', method: 'get' });
+  return response?.data ?? response;
+}
+export async function listAbRuns(definitionId: string): Promise<AiAbRun[]> {
+  const response = await request({ url: '/ai/ab-test/runs', method: 'get', params: { definitionId } });
+  return (response?.data ?? response) as AiAbRun[];
+}
+export async function startAbRun(definitionId: string, startKey: string): Promise<AiAbRun> {
+  const response = await request({ url: '/ai/ab-test/' + encodeURIComponent(definitionId) + '/runs', method: 'post', data: { startKey } });
+  return (response?.data ?? response) as AiAbRun;
+}
+export async function getAbRunItems(runId: string): Promise<AiAbRunItem[]> {
+  const response = await request({ url: '/ai/ab-test/runs/' + encodeURIComponent(runId) + '/items', method: 'get' });
+  return (response?.data ?? response) as AiAbRunItem[];
+}
+export async function getAbRunReport(runId: string): Promise<AiAbRunReport> {
+  const response = await request({ url: '/ai/ab-test/runs/' + encodeURIComponent(runId) + '/report', method: 'get' });
+  return (response?.data ?? response) as AiAbRunReport;
+}
+export function cancelAbRun(runId: string) {
+  return request({ url: '/ai/ab-test/runs/' + encodeURIComponent(runId) + '/cancel', method: 'post' });
+}
+export function resumeAbRun(runId: string) {
+  return request({ url: '/ai/ab-test/runs/' + encodeURIComponent(runId) + '/resume', method: 'post' });
+}
+export function scoreAbRunItem(runId: string, itemId: string, score: number) {
+  return request({
+    url: '/ai/ab-test/runs/' + encodeURIComponent(runId) + '/items/' + encodeURIComponent(itemId) + '/score',
+    method: 'put',
+    params: { score }
+  });
+}

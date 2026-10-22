@@ -1,18 +1,28 @@
 package com.nexus.ai.tool;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.SearchSourceHolder;
+import com.nexus.common.ai.governance.AiInvocationScope;
+
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -33,6 +43,7 @@ public class WebSearchTool {
 
     @Tool("联网搜索最新信息，返回相关网页摘要和链接")
     public String webSearch(@P("搜索关键词") String query) {
+        AiInvocationScope.checkActive();
         AiProperties.WebSearchConfig config = aiProperties.getWebSearch();
         if (!config.isEnabled() || config.getApiKey() == null || config.getApiKey().isBlank()) {
             return "联网搜索未配置或未启用，请在 nexus.ai.web-search 中配置搜索 API Key";
@@ -52,6 +63,7 @@ public class WebSearchTool {
 
     @Tool("抓取指定URL的网页正文内容")
     public String crawlWebpage(@P("网页URL") String url) {
+        AiInvocationScope.checkActive();
         // SSRF 防护：校验 URL 协议与目标地址，禁止访问内网/环回/链路本地地址
         String safeUrl = sanitizeUrl(url);
         if (safeUrl == null) {
@@ -132,18 +144,19 @@ public class WebSearchTool {
             "search_depth", "basic"
         );
 
-        cn.hutool.http.HttpResponse resp = cn.hutool.http.HttpRequest.post("https://api.tavily.com/search")
-            .header("Content-Type", "application/json")
-            .body(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(bodyMap), "application/json")
-            .timeout(config.getTimeoutMs())
-            .execute();
+        HttpResponse resp =
+                HttpRequest.post("https://api.tavily.com/search")
+                        .header("Content-Type", "application/json")
+                        .body(new ObjectMapper().writeValueAsString(bodyMap), "application/json")
+                        .timeout(config.getTimeoutMs())
+                        .execute();
 
         if (!resp.isOk()) {
             throw new IllegalArgumentException("Tavily API 调用失败: HTTP " + resp.getStatus());
         }
 
         // 解析 results[].title/url/content，并同步收集来源卡片（供 SSE AI_WEB_SEARCH 推送）
-        var root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(resp.body());
+        var root = new ObjectMapper().readTree(resp.body());
         var results = root.path("results");
         StringBuilder sb = new StringBuilder();
         if (results.isArray()) {
@@ -164,18 +177,19 @@ public class WebSearchTool {
      * Bing 搜索（GET https://api.bing.microsoft.com/v7.0/search）
      */
     private String searchByBing(String query, AiProperties.WebSearchConfig config) throws Exception {
-        cn.hutool.http.HttpResponse resp = cn.hutool.http.HttpRequest
-            .get("https://api.bing.microsoft.com/v7.0/search?q=" +
-                java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8))
-            .header("Ocp-Apim-Subscription-Key", config.getApiKey())
-            .timeout(config.getTimeoutMs())
-            .execute();
+        HttpResponse resp =
+                HttpRequest.get(
+                                "https://api.bing.microsoft.com/v7.0/search?q="
+                                        + URLEncoder.encode(query, StandardCharsets.UTF_8))
+                        .header("Ocp-Apim-Subscription-Key", config.getApiKey())
+                        .timeout(config.getTimeoutMs())
+                        .execute();
 
         if (!resp.isOk()) {
             throw new IllegalArgumentException("Bing API 调用失败: HTTP " + resp.getStatus());
         }
 
-        var root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(resp.body());
+        var root = new ObjectMapper().readTree(resp.body());
         var webPages = root.path("webPages").path("value");
         StringBuilder sb = new StringBuilder();
         if (webPages.isArray()) {

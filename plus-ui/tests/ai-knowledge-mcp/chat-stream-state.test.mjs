@@ -494,3 +494,20 @@ for (const relative of components) {
     assert.equal(state.loading.value, false);
   });
 }
+
+for (const relative of components) {
+  test(relative + ' keeps partial text while cancellation is pending and confirms one cancelled terminal', async () => {
+    const state = chat(relative);
+    const request = await state.start();
+    state.event(request, 'AI_CONTENT_INCREMENT', '部分正文', 1);
+    state.event(request, 'AI_CANCEL_REQUESTED', '', 2);
+    assert.equal(state.loading.value, true);
+    state.event(request, 'AI_CONTENT_INCREMENT', '迟到正文', 3);
+    assert.equal(state.messages.value.at(-1).content, '部分正文');
+    state.event(request, 'AI_CANCELLED', '', 4, { messageId });
+    assert.equal(state.loading.value, false);
+    assert.match(state.messages.value.at(-1).content, /部分正文[\s\S]*已取消/);
+    state.event(request, 'AI_DONE', undefined, 5, { messageId });
+    assert.equal(state.loading.value, false);
+  });
+}

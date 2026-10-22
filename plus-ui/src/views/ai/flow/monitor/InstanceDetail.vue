@@ -28,6 +28,11 @@ const retrying = ref(false);
 
 /** 实例状态映射 */
 const statusMap: Record<string, { label: string; type: string }> = {
+  QUEUED: { label: '排队中', type: 'info' },
+  WAITING: { label: '等待唤醒', type: 'info' },
+  STOP_REQUESTED: { label: '正在停止', type: 'warning' },
+  RECOVERY_REQUIRED: { label: '待人工核对', type: 'danger' },
+  CANCELLED: { label: '已取消', type: 'info' },
   RUNNING: { label: '运行中', type: 'warning' },
   SUCCEEDED: { label: '成功', type: 'success' },
   FAILED: { label: '失败', type: 'danger' },
@@ -251,7 +256,13 @@ onMounted(async () => {
             {{ formatDuration(instance.durationMs) }} · 节点 {{ instance.nodeSuccess ?? 0 }}/{{ instance.nodeTotal ?? 0 }}
           </span>
         </div>
-        <el-button v-if="playSequence.length && instance.status !== 'RUNNING'" type="primary" plain size="small" @click="toggleReplay">
+        <el-button
+          v-if="playSequence.length && !['QUEUED', 'RUNNING', 'WAITING', 'STOP_REQUESTED'].includes(instance.status)"
+          type="primary"
+          plain
+          size="small"
+          @click="toggleReplay"
+        >
           {{ playing ? `⏸ 停止重放 (${playProgress}/${playSequence.length})` : '▶ 时间线重放' }}
         </el-button>
         <el-button v-if="canRetry" type="warning" plain size="small" :loading="retrying" @click="retry">续跑（从失败节点重跑）</el-button>

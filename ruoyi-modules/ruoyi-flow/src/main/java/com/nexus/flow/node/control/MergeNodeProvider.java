@@ -1,12 +1,14 @@
 package com.nexus.flow.node.control;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
 import com.nexus.flow.model.FlowEdgeDef;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,6 +23,10 @@ import java.util.List;
  */
 @Component
 public class MergeNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 

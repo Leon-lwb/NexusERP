@@ -1,11 +1,16 @@
 package com.nexus.ai.service.rag;
 
+import com.nexus.ai.service.governance.AiGovernedModels;
 import com.nexus.ai.service.rag.embedding.EmbeddingProviderFactory;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.service.IAiModelService;
+
 import dev.langchain4j.model.embedding.EmbeddingModel;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class EmbeddingService {
+    @Autowired(required = false)
+    private AiGovernedModels governedModels;
+
+    private EmbeddingModel governed(AiModel config) {
+        EmbeddingModel raw = embeddingProviderFactory.build(config);
+        return governedModels == null ? raw : governedModels.embedding(raw, config);
+    }
 
     /** AI 模型业务服务，按 ID/名称加载 Embedding 模型配置。 */
     private final IAiModelService aiModelService;
@@ -55,10 +67,12 @@ public class EmbeddingService {
      * @return EmbeddingModel 实例
      */
     public EmbeddingModel getEmbeddingModel(Long modelId) {
-        return embeddingModelCache.computeIfAbsent(modelId, id -> {
-            AiModel config = aiModelService.selectModelById(id);
-            return embeddingProviderFactory.build(config);
-        });
+        return embeddingModelCache.computeIfAbsent(
+                modelId,
+                id -> {
+                    AiModel config = aiModelService.selectModelById(id);
+                    return governed(config);
+                });
     }
 
     /**
@@ -75,9 +89,10 @@ public class EmbeddingService {
             throw new IllegalStateException("Embedding 模型 '" + modelName + "' 不存在，请检查模型配置");
         }
         if (!"EMBEDDING".equals(config.getModelType())) {
-            throw new IllegalStateException("模型 '" + modelName + "' 类型为 " + config.getModelType() + "，不是 EMBEDDING 类型");
+            throw new IllegalStateException(
+                    "模型 '" + modelName + "' 类型为 " + config.getModelType() + "，不是 EMBEDDING 类型");
         }
-        return embeddingModelCache.computeIfAbsent(config.getId(), id -> embeddingProviderFactory.build(config));
+        return embeddingModelCache.computeIfAbsent(config.getId(), id -> governed(config));
     }
 
     /**

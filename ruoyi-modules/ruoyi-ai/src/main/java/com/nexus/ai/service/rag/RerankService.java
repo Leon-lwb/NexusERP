@@ -5,10 +5,14 @@ import com.nexus.ai.service.rag.rerank.RerankProvider;
 import com.nexus.ai.service.rag.rerank.RerankProviderFactory;
 import com.nexus.ai.service.rag.rerank.RerankResult;
 import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.governance.AiInvocationScope;
 import com.nexus.common.ai.service.IAiModelService;
+
 import dev.langchain4j.model.chat.ChatModel;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -79,7 +83,9 @@ public class RerankService {
                     if (provider != null) {
                         return rerankWithApi(provider, query, candidates, topN, rerankModel);
                     }
-                    log.warn("[Rerank] 未找到 providerType={} 的专用 Rerank 实现，回退 LLM", rerankModel.getProviderType());
+                    log.warn(
+                            "[Rerank] 未找到 providerType={} 的专用 Rerank 实现，回退 LLM",
+                            rerankModel.getProviderType());
                 }
             } catch (Exception e) {
                 log.warn("[Rerank] 专用 Rerank API 调用失败，回退 LLM: {}", e.getMessage());
@@ -130,27 +136,44 @@ public class RerankService {
      * @return 按原始顺序排列的已打分片段列表
      */
     private List<ScoredChunk> parallelScore(ChatModel chatModel, String query, List<String> candidates) {
+        var invocation = AiInvocationScope.capture();
         List<CompletableFuture<ScoredChunk>> futures = new ArrayList<>();
         AtomicInteger indexCounter = new AtomicInteger(0);
 
         for (String chunk : candidates) {
             int index = indexCounter.getAndIncrement();
-            futures.add(CompletableFuture.supplyAsync(() -> {
-                try {
-                    String prompt = buildRerankPrompt(query, chunk);
-                    String response = chatModel.chat(prompt);
-                    double score = parseScore(response);
-                    log.debug("[Rerank] chunk[{}] score={}", index, score);
-                    return new ScoredChunk(chunk, score, index);
-                } catch (Exception e) {
-                    log.warn("[Rerank] chunk[{}] 打分失败: {}", index, e.getMessage());
-                    return new ScoredChunk(chunk, 0.0, index);
-                }
-            }, aiExecutor).orTimeout(SCORE_TIMEOUT_SECONDS, TimeUnit.SECONDS) // Java 9+ API，项目 Java 17+ 无影响
-                .exceptionally(e -> {
-                    log.warn("[Rerank] chunk[{}] 超时或异常: {}", index, e.getMessage());
-                    return new ScoredChunk(candidates.get(index), 0.0, index);
-                }));
+            futures.add(
+                    CompletableFuture.supplyAsync(
+                                    () -> {
+                                        try (var scope =
+                                                invocation == null
+                                                        ? null
+                                                        : AiInvocationScope.open(invocation)) {
+                                            String prompt = buildRerankPrompt(query, chunk);
+                                            String response = chatModel.chat(prompt);
+                                            double score = parseScore(response);
+                                            log.debug("[Rerank] chunk[{}] score={}", index, score);
+                                            return new ScoredChunk(chunk, score, index);
+                                        } catch (Exception e) {
+                                            log.warn(
+                                                    "[Rerank] chunk[{}] 打分失败: {}",
+                                                    index,
+                                                    e.getMessage());
+                                            return new ScoredChunk(chunk, 0.0, index);
+                                        }
+                                    },
+                                    aiExecutor)
+                            .orTimeout(
+                                    SCORE_TIMEOUT_SECONDS,
+                                    TimeUnit.SECONDS) // Java 9+ API，项目 Java 17+ 无影响
+                            .exceptionally(
+                                    e -> {
+                                        log.warn(
+                                                "[Rerank] chunk[{}] 超时或异常: {}",
+                                                index,
+                                                e.getMessage());
+                                        return new ScoredChunk(candidates.get(index), 0.0, index);
+                                    }));
         }
 
         // 等待所有打分完成
@@ -176,7 +199,10 @@ public class RerankService {
             try {
                 return chatModelFactory.getChatModel(modelId);
             } catch (Exception e) {
-                log.warn("[Rerank] 指定的 Rerank 模型不可用 (modelId={})，回退到默认模型: {}", modelId, e.getMessage());
+                log.warn(
+                        "[Rerank] 指定的 Rerank 模型不可用 (modelId={})，回退到默认模型: {}",
+                        modelId,
+                        e.getMessage());
             }
         }
         // 回退到默认模型
@@ -198,13 +224,16 @@ public class RerankService {
     private String buildRerankPrompt(String query, String chunk) {
         String truncatedChunk = chunk.length() > MAX_CHUNK_LENGTH
             ? chunk.substring(0, MAX_CHUNK_LENGTH) : chunk;
-        return String.format("""
-            Query: %s
-            Document: %s
+        return String.format(
+                """
+                Query: %s
+                Document: %s
 
-            On a scale of 0 to 10, how relevant is the document to the query?
-            Reply with only a number (0-10), nothing else.
-            Score:""", query, truncatedChunk);
+                On a scale of 0 to 10, how relevant is the document to the query?
+                Reply with only a number (0-10), nothing else.
+                Score:\
+                """,
+                query, truncatedChunk);
     }
 
     /**

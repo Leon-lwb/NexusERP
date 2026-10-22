@@ -1,7 +1,9 @@
 package com.nexus.flow.node;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.nexus.flow.model.FlowGraph;
 import com.nexus.flow.state.FlowState;
+
 import lombok.Data;
 
 /**
@@ -12,6 +14,8 @@ import lombok.Data;
  */
 @Data
 public class FlowExecutionContext {
+    /** 同一节点/批次重试与接管保持稳定的外部幂等键。 */
+    private String executionKey;
 
     /** 当前节点ID */
     private String nodeId;
@@ -41,5 +45,5 @@ public class FlowExecutionContext {
     private String tenantId;
 
     /** 流程图模型（merge 节点收集上游输出用） */
-    private com.nexus.flow.model.FlowGraph graph;
+    private FlowGraph graph;
 }

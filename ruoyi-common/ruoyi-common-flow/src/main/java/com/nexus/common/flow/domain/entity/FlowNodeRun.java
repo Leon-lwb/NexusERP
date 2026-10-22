@@ -3,6 +3,7 @@ package com.nexus.common.flow.domain.entity;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -37,7 +38,7 @@ public class FlowNodeRun extends TenantEntity {
     /** 节点类型: LLM/AGENT/RAG/IF/CODE */
     private String nodeType;
 
-    /** 状态: PENDING/RUNNING/SUCCEEDED/FAILED/SKIPPED */
+    /** 状态: PENDING/RUNNING/SUCCEEDED/FAILED/SKIPPED/CANCELLED/RECOVERY_REQUIRED */
     private String status;
 
     /** 输入(JSON, 渲染后的最终入参) */

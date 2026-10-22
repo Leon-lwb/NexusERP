@@ -91,6 +91,9 @@
                 <div v-if="msg.role === 'assistant' && msg.content" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
                 <div v-else-if="msg.role === 'user'">{{ msg.content }}</div>
               </div>
+              <el-tag v-if="msg.completionStatus && msg.completionStatus !== 'SUCCEEDED'" size="small" type="info">{{
+                completionLabels[msg.completionStatus] ?? msg.completionStatus
+              }}</el-tag>
               <!-- 反馈按钮（仅 AI 消息且有内容时显示） -->
               <div v-if="msg.role === 'assistant' && msg.content && !msg.content.startsWith('[错误]')" class="message-feedback">
                 <span
@@ -170,6 +173,7 @@
           />
           <div class="input-actions">
             <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" :disabled="!canSend"> 发送 </el-button>
+            <AiRequestCancel :request-id="managedRequestId" :loading="loading" :state="cancelStatus" @state="onCancelState" />
             <el-button @click="clearMessages"> 清空对话 </el-button>
           </div>
         </div>
@@ -228,6 +232,8 @@
 </template>
 
 <script setup lang="ts">
+import AiRequestCancel from '@/components/ai/AiRequestCancel.vue';
+import type { AiChatRequestReceipt } from '@/api/ai/chat';
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, getCurrentInstance, type Component } from 'vue';
 import {
   Promotion,
@@ -298,6 +304,7 @@ interface ChatMessage {
   /** 联网搜索来源卡片 */
   webSources?: Array<{ title: string; url: string }>;
   feedback?: string; // LIKE / DISLIKE
+  completionStatus?: string;
 }
 
 const inputText = ref('');
@@ -310,6 +317,14 @@ const sessions = ref<AiSession[]>([]);
 const currentSessionId = ref<string | null>(null);
 /** 会话切换后拒绝旧请求的迟到回执。 */
 const chatEpoch = ref(0);
+const completionLabels: Record<string, string> = {
+  CANCELLED: '已取消',
+  FAILED: '执行失败',
+  RECOVERY_REQUIRED: '结果待核对',
+  CANCEL_REQUESTED: '正在取消'
+};
+const managedRequestId = ref<string | null>(null);
+const cancelStatus = ref('');
 const chatStream = createAiChatStream();
 const canSend = computed(() => checkPermi(['ai:assistant:send']));
 const canQuery = computed(() => checkPermi(['ai:assistant:query']));
@@ -453,6 +468,20 @@ function onAiSseMessage(event: Event) {
       // 扫描并挂载 ECharts 容器
       nextTick(() => mountEchartsContainers());
       break;
+    case 'AI_CANCEL_REQUESTED':
+      cancelStatus.value = 'CANCEL_REQUESTED';
+      break;
+    case 'AI_CANCELLED': {
+      const partial = messages.value[messages.value.length - 1];
+      if (partial?.role === 'assistant') {
+        partial.content += '\n\n[已取消]';
+        if (detail.messageId) partial.id = detail.messageId;
+      } else messages.value.push({ role: 'assistant', content: '[已取消]', id: detail.messageId });
+      cancelStatus.value = 'CANCELLED';
+      loading.value = false;
+      thinking.value = false;
+      break;
+    }
     case 'AI_ERROR':
       clearAssistantThinking();
       thinking.value = false;
@@ -629,6 +658,8 @@ async function switchSession(sessionId: number | string) {
   if (!canQuery.value || !normalizedSessionId || currentSessionId.value === normalizedSessionId) return;
   const epoch = ++chatEpoch.value;
   chatStream.reset();
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   thinking.value = false;
   currentSessionId.value = normalizedSessionId;
   messages.value = [];
@@ -652,7 +683,8 @@ async function switchSession(sessionId: number | string) {
       role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
       content: m.content,
       reasoning: (m as any).thinkingContent,
-      feedback: (m as any).feedback
+      feedback: (m as any).feedback,
+      completionStatus: m.completionStatus
     }));
     nextTick(() => scrollToBottom());
   } catch (e: any) {
@@ -668,6 +700,8 @@ async function switchSession(sessionId: number | string) {
 function newSession() {
   chatEpoch.value++;
   chatStream.reset();
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   currentSessionId.value = null;
   messages.value = [];
   thinking.value = false;
@@ -675,6 +709,23 @@ function newSession() {
 }
 
 /** 发送消息 */
+/** 轮询回执只作用于仍在当前组件中的同一请求。 */
+function onCancelState(receipt: AiChatRequestReceipt) {
+  if (!managedRequestId.value || receipt.requestId !== managedRequestId.value) return;
+  cancelStatus.value = receipt.status;
+  if (['SUCCEEDED', 'FAILED', 'CANCELLED', 'RECOVERY_REQUIRED'].includes(receipt.status)) {
+    loading.value = false;
+    thinking.value = false;
+    if (receipt.status !== 'SUCCEEDED') {
+      const label = receipt.status === 'CANCELLED' ? '[已取消]' : receipt.status === 'RECOVERY_REQUIRED' ? '[结果待核对]' : '[执行失败]';
+      const last = messages.value[messages.value.length - 1];
+      if (last?.role === 'assistant') {
+        if (!last.content.endsWith(label)) last.content += '\n\n' + label;
+        if (receipt.messageId) last.id = receipt.messageId;
+      } else messages.value.push({ role: 'assistant', content: label, id: receipt.messageId });
+    }
+  }
+}
 async function sendMessage() {
   const text = inputText.value.trim();
   if (!text || loading.value || !canSend.value) return;
@@ -693,6 +744,8 @@ async function sendMessage() {
   const requestSessionId = currentSessionId.value;
   const engineeringFields = engineering.prepare(text);
   const clientRequestId = chatStream.begin(requestSessionId);
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
   loading.value = true;
@@ -720,10 +773,13 @@ async function sendMessage() {
       throw new Error('AI 会话回执无效或与当前请求不一致');
     }
     currentSessionId.value = chatStream.sessionId;
+    managedRequestId.value = res.requestReceipt?.requestId ?? null;
     engineering.sent();
   } catch (e: any) {
     if (epoch !== chatEpoch.value || !chatStream.isCurrent(clientRequestId) || !loading.value) return;
     chatStream.reset();
+    managedRequestId.value = null;
+    cancelStatus.value = '';
     clearAssistantThinking();
     if (engineeringFields.engineeringRequestId) inputText.value = text;
     loading.value = false;
@@ -766,6 +822,8 @@ function sendQuick(tip: string) {
 function clearMessages() {
   chatEpoch.value++;
   chatStream.reset();
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   messages.value = [];
   thinking.value = false;
   loading.value = false;
@@ -931,6 +989,8 @@ onMounted(() => {
 onUnmounted(() => {
   chatEpoch.value++;
   chatStream.reset();
+  managedRequestId.value = null;
+  cancelStatus.value = '';
   knowledgeRequestVersion++;
   window.removeEventListener('ai-sse-message', onAiSseMessage);
   window.removeEventListener('click', onGlobalClick);

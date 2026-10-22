@@ -12,7 +12,7 @@ import { computed, ref } from 'vue';
 export interface FlowNodeData {
   label: string;
   type: string;
-  status?: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED';
+  status?: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED' | 'CANCELLED' | 'RECOVERY_REQUIRED';
   config?: Record<string, unknown>;
   onError?: 'STOP' | 'CONTINUE';
   retryOnFail?: boolean;

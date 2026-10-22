@@ -1,6 +1,7 @@
 package com.nexus.flow.node;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
 
 import java.util.List;
 
@@ -12,6 +13,10 @@ import java.util.List;
  * @author NexusERP
  */
 public interface FlowNodeProvider {
+    /** 默认不能重放未知外部副作用；提供者须显式声明安全或幂等能力。 */
+    default FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.NON_REPLAYABLE;
+    }
 
     /**
      * 节点类型标识: llm/agent/rag/if/code

@@ -2,7 +2,9 @@ package com.nexus.common.flow.domain.bo;
 
 import com.nexus.common.flow.domain.entity.FlowInstance;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -39,7 +41,7 @@ public class FlowInstanceBo extends BaseEntity {
     /** 输出(JSON, 末节点输出) */
     private String outputJson;
 
-    /** 状态: RUNNING/SUCCEEDED/FAILED/STOPPED */
+    /** 状态: QUEUED/RUNNING/WAITING/STOP_REQUESTED/SUCCEEDED/FAILED/STOPPED/RECOVERY_REQUIRED */
     private String status;
 
     /** 错误信息 */

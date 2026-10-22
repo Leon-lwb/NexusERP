@@ -5,6 +5,7 @@ import static com.nexus.common.ai.engineering.EngineeringException.require;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.ai.agent.EngineeringAgent;
+import com.nexus.ai.context.AiToolInvocationGuard;
 import com.nexus.ai.engineering.config.EngineeringProperties;
 import com.nexus.ai.engineering.security.EngineeringAccess;
 import com.nexus.ai.tool.EasyedaEngineeringTool;
@@ -96,7 +97,7 @@ public class EngineeringAgentFactory {
         access.requireActor(context.actor(), "ai:engineering:task", true);
         return AgenticServices.agentBuilder(EngineeringAgent.class)
                 .chatModel(model)
-                .tools(tool.withContext(context))
+                .tools(AiToolInvocationGuard.wrap(tool.withContext(context)))
                 .systemMessage(
                         EngineeringAgent.INSTRUCTIONS
                                 + "\n已审核模板目录：\n"

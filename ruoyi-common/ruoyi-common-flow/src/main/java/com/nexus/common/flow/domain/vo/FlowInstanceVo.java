@@ -2,8 +2,11 @@ package com.nexus.common.flow.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+
 import com.nexus.common.flow.domain.entity.FlowInstance;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import lombok.Data;
 
 import java.io.Serial;
@@ -57,7 +60,7 @@ public class FlowInstanceVo implements Serializable {
     /** 输出(JSON, 末节点输出) */
     private String outputJson;
 
-    /** 状态: RUNNING/SUCCEEDED/FAILED/STOPPED */
+    /** 状态: QUEUED/RUNNING/WAITING/STOP_REQUESTED/SUCCEEDED/FAILED/STOPPED/RECOVERY_REQUIRED */
     @ExcelProperty(value = "状态")
     private String status;
 

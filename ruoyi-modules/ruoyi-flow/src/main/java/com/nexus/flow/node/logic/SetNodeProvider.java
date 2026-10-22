@@ -1,16 +1,17 @@
 package com.nexus.flow.node.logic;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
 import com.nexus.flow.state.FlowTemplateRenderer;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +24,10 @@ import java.util.Map;
  */
 @Component
 public class SetNodeProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -45,7 +50,9 @@ public class SetNodeProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("variables") == null || !config.get("variables").isObject()) {
+        if (config == null
+                || config.get("variables") == null
+                || !config.get("variables").isObject()) {
             throw new IllegalArgumentException("变量节点缺少 variables 配置");
         }
     }
@@ -60,9 +67,11 @@ public class SetNodeProvider implements FlowNodeProvider {
         Iterator<Map.Entry<String, JsonNode>> fields = variables.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> e = fields.next();
-            String value = e.getValue() == null || e.getValue().isNull() ? "" : e.getValue().asText();
+            String value =
+                    e.getValue() == null || e.getValue().isNull() ? "" : e.getValue().asText();
             // 渲染 {{}} 模板；非模板纯文本原样保留
-            String rendered = FlowTemplateRenderer.render(value, ctx.getState(), label + " 的 " + e.getKey());
+            String rendered =
+                    FlowTemplateRenderer.render(value, ctx.getState(), label + " 的 " + e.getKey());
             output.put(e.getKey(), rendered);
         }
         return output;

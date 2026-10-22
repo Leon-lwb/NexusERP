@@ -1,8 +1,10 @@
 package com.nexus.common.ai.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -46,6 +48,13 @@ public class AiMessage extends BaseEntity {
 
     /** 输出 Token 数 */
     private Integer outputTokens;
+
+    /** 服务端持久化请求关联与完成状态，历史展示使用，不写入消息表。 */
+    @TableField(exist = false)
+    private String executionRequestId;
+
+    @TableField(exist = false)
+    private String completionStatus;
 
     /** 用户反馈: LIKE/DISLIKE */
     private String feedback;

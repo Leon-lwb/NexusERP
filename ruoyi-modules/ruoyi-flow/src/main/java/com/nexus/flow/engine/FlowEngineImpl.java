@@ -1,10 +1,21 @@
 package com.nexus.flow.engine;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
+import com.nexus.ai.service.sse.AiSseMessageHelper;
+import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.common.flow.domain.entity.FlowInstance;
+import com.nexus.common.flow.domain.entity.FlowNodeRun;
+import com.nexus.common.flow.mapper.FlowInstanceMapper;
+import com.nexus.common.flow.mapper.FlowMapper;
+import com.nexus.common.flow.mapper.FlowNodeRunMapper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.flow.adapter.DecisionFlowAccessGuard;
 import com.nexus.flow.model.FlowEdgeDef;
 import com.nexus.flow.model.FlowGraph;
 import com.nexus.flow.model.FlowNodeDef;
@@ -12,28 +23,44 @@ import com.nexus.flow.node.FlowExecutionContext;
 import com.nexus.flow.node.FlowNodeProvider;
 import com.nexus.flow.node.FlowNodeRegistry;
 import com.nexus.flow.state.FlowState;
-import com.nexus.ai.service.sse.AiSseMessageHelper;
-import com.nexus.common.flow.domain.entity.Flow;
-import com.nexus.common.flow.domain.entity.FlowInstance;
-import com.nexus.common.flow.domain.entity.FlowNodeRun;
-import com.nexus.common.flow.mapper.FlowInstanceMapper;
-import com.nexus.common.flow.mapper.FlowNodeRunMapper;
-import com.nexus.common.tenant.helper.TenantHelper;
+
+import jakarta.annotation.PostConstruct;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * AI 流程执行引擎实现
@@ -49,6 +76,112 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 @RequiredArgsConstructor
 public class FlowEngineImpl implements FlowEngine {
+    @Autowired(required = false)
+    private FlowExecutionGovernance governance;
+
+    @Autowired(required = false)
+    @Qualifier("flowNodeExecutor")
+    private ExecutorService nodeExecutor;
+
+    private static final ExecutorService TEST_NODE_EXECUTOR =
+            new ThreadPoolExecutor(
+                    4,
+                    16,
+                    30,
+                    TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<>(128),
+                    task -> {
+                        Thread thread = new Thread(task, "flow-node-fallback");
+                        thread.setDaemon(true);
+                        return thread;
+                    },
+                    new ThreadPoolExecutor.AbortPolicy());
+
+    @PostConstruct
+    void registerRecovery() {
+        if (governance != null) governance.setRunner(this::resumeGoverned);
+    }
+
+    void resumeGoverned(FlowExecutionGovernance.Recovery recovery) {
+        var snapshot = recovery.snapshot();
+        Flow flow = new Flow();
+        flow.setId(snapshot.flowId());
+        flow.setVersion(snapshot.version());
+        flow.setFlowKey(snapshot.flowKey());
+        flow.setConfigJson(snapshot.config());
+        flow.setMaxRetry(snapshot.maxRetry());
+        FlowGraph graph = validatedGraph(flow);
+        stopRegistry.register(recovery.instanceId());
+        seqMap.put(recovery.instanceId(), new AtomicLong(governance.eventBase()));
+        if (snapshot.destinationNodeId() == null)
+            runFlow(
+                    flow,
+                    graph,
+                    recovery.instanceId(),
+                    snapshot.input(),
+                    recovery.tenant(),
+                    recovery.user(),
+                    snapshot.userName());
+        else {
+            Set<String> closure = new LinkedHashSet<>();
+            var stack = new ArrayDeque<String>();
+            stack.push(snapshot.destinationNodeId());
+            while (!stack.isEmpty()) {
+                String id = stack.pop();
+                if (closure.add(id))
+                    for (var edge : graph.getInEdges(id))
+                        if (!edge.isLoopEdge()) stack.push(edge.getSource());
+            }
+            runFlowToNode(
+                    flow,
+                    graph,
+                    recovery.instanceId(),
+                    snapshot.input(),
+                    recovery.tenant(),
+                    recovery.user(),
+                    snapshot.userName(),
+                    snapshot.destinationNodeId(),
+                    closure);
+        }
+    }
+
+    private void restoreGoverned(
+            FlowState state,
+            Map<String, Integer> remaining,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> runs,
+            Set<String> succeeded,
+            AtomicInteger executed) {
+        if (governance == null || !governance.attached() || governance.restored() == null) return;
+        var checkpoint = governance.restored();
+        state.getRoot().removeAll();
+        state.getRoot().setAll(checkpoint.state().deepCopy());
+        remaining.clear();
+        remaining.putAll(checkpoint.remaining());
+        queue.clear();
+        queue.addAll(checkpoint.queue());
+        runs.clear();
+        runs.putAll(checkpoint.nodeRuns());
+        succeeded.clear();
+        succeeded.addAll(checkpoint.succeeded());
+        executed.set(checkpoint.executed());
+    }
+
+    private int writeNodeProjection(FlowNodeRun node) {
+        if (governance != null && governance.attached()) {
+            governance.updateNode(node);
+            return 1;
+        }
+        return nodeRunMapper.updateById(node);
+    }
+
+    private int writeInstanceProjection(FlowInstance instance) {
+        if (governance != null && governance.attached()) {
+            governance.commitInstance(instance);
+            return 1;
+        }
+        return instanceMapper.updateById(instance);
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -56,18 +189,18 @@ public class FlowEngineImpl implements FlowEngine {
     private final FlowStopRegistry stopRegistry;
     private final FlowInstanceMapper instanceMapper;
     private final FlowNodeRunMapper nodeRunMapper;
-    private final com.nexus.common.flow.mapper.FlowMapper flowMapper;
-    private final com.nexus.ai.config.AiProperties aiProperties;
+    private final FlowMapper flowMapper;
+    private final AiProperties aiProperties;
 
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
 
     /** 并行波次执行专用线程池（独立于 aiExecutor，防 CallerRunsPolicy 死锁） */
     @Qualifier("flowExecutor")
-    private final java.util.concurrent.ExecutorService flowExecutor;
+    private final ExecutorService flowExecutor;
 
     /** 实例内事件序号（SSE 防乱序，对齐 n8n nodeEventSequence） */
-    private final Map<Long, AtomicLong> seqMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<Long, AtomicLong> seqMap = new ConcurrentHashMap<>();
 
     @Override
     public Long start(Flow flow, JsonNode input, String triggerType,
@@ -78,7 +211,7 @@ public class FlowEngineImpl implements FlowEngine {
             if (flow.getFlowKey() == null || !flow.getFlowKey().startsWith("system_delivery_risk_"))
                 throw new IllegalArgumentException("决策执行必须使用持久化的系统流程");
         } else {
-            com.nexus.flow.adapter.DecisionFlowAccessGuard.requireGeneral(flow);
+            DecisionFlowAccessGuard.requireGeneral(flow);
         }
         // 1. 建实例（RUNNING）落库
         FlowInstance instance = new FlowInstance();
@@ -101,7 +234,32 @@ public class FlowEngineImpl implements FlowEngine {
 
         // 4. 异步执行
         final Long userIdF = userId;
-        aiExecutor.execute(() -> runFlow(flow, graph, instanceId, input, tenantIdStr, userIdF, userName));
+        if (governance != null && governance.enabled())
+            governance.launch(
+                    flow,
+                    instanceId,
+                    input,
+                    tenantIdStr,
+                    userIdF,
+                    userName,
+                    () -> runFlow(flow, graph, instanceId, input, tenantIdStr, userIdF, userName));
+        else
+            try {
+                aiExecutor.execute(
+                        () ->
+                                runFlow(
+                                        flow,
+                                        graph,
+                                        instanceId,
+                                        input,
+                                        tenantIdStr,
+                                        userIdF,
+                                        userName));
+            } catch (RejectedExecutionException busy) {
+                finishInstanceOnError(instanceId, flow.getId(), busy, tenantIdStr, userIdF);
+                stopRegistry.unregister(instanceId);
+                throw busy;
+            }
         return instanceId;
     }
 
@@ -123,7 +281,7 @@ public class FlowEngineImpl implements FlowEngine {
                             String tenantIdStr, Long userId, String userName, String destinationNodeId) {
         // 1. 解析图 + 校验 + 目标节点存在性（先于建实例，避免非法请求留孤儿 RUNNING 实例）
         FlowGraph graph = validatedGraph(flow);
-        com.nexus.flow.adapter.DecisionFlowAccessGuard.requireGeneral(flow);
+        DecisionFlowAccessGuard.requireGeneral(flow);
         if (!graph.getNodes().containsKey(destinationNodeId)) {
             throw new IllegalArgumentException("目标节点不存在: " + destinationNodeId);
         }
@@ -144,8 +302,8 @@ public class FlowEngineImpl implements FlowEngine {
         });
 
         // 3. 计算可执行闭包：目标节点 + 全部传递上游（沿入边回溯）
-        Set<String> closure = new java.util.LinkedHashSet<>();
-        java.util.ArrayDeque<String> stack = new java.util.ArrayDeque<>();
+        Set<String> closure = new LinkedHashSet<>();
+        ArrayDeque<String> stack = new ArrayDeque<>();
         stack.push(destinationNodeId);
         while (!stack.isEmpty()) {
             String id = stack.pop();
@@ -165,8 +323,46 @@ public class FlowEngineImpl implements FlowEngine {
 
         // 5. 异步执行（仅闭包子图）
         final Long userIdF = userId;
-        aiExecutor.execute(() -> runFlowToNode(flow, graph, instanceId, input, tenantIdStr, userIdF,
-            userName, destinationNodeId, closure));
+        if (governance != null && governance.enabled())
+            governance.launch(
+                    flow,
+                    instanceId,
+                    input,
+                    tenantIdStr,
+                    userIdF,
+                    userName,
+                    destinationNodeId,
+                    null,
+                    () ->
+                            runFlowToNode(
+                                    flow,
+                                    graph,
+                                    instanceId,
+                                    input,
+                                    tenantIdStr,
+                                    userIdF,
+                                    userName,
+                                    destinationNodeId,
+                                    closure));
+        else
+            try {
+                aiExecutor.execute(
+                        () ->
+                                runFlowToNode(
+                                        flow,
+                                        graph,
+                                        instanceId,
+                                        input,
+                                        tenantIdStr,
+                                        userIdF,
+                                        userName,
+                                        destinationNodeId,
+                                        closure));
+            } catch (RejectedExecutionException busy) {
+                finishInstanceOnError(instanceId, flow.getId(), busy, tenantIdStr, userIdF);
+                stopRegistry.unregister(instanceId);
+                throw busy;
+            }
         return instanceId;
     }
 
@@ -179,9 +375,11 @@ public class FlowEngineImpl implements FlowEngine {
                                String tenantIdStr, Long userId, String userName,
                                String destinationNodeId, Set<String> closure) {
         AiRequestContext.set(tenantIdStr, userId, userName, null, null, null);
+        if (governance != null && governance.attached())
+            seqMap.put(instanceId, new AtomicLong(governance.eventBase()));
         try {
             // 闭包子图入度（以闭包内入边为准）
-            Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
+            Map<String, Integer> enqueued = new ConcurrentHashMap<>();
             for (String id : closure) {
                 int deg = 0;
                 for (FlowEdgeDef edge : graph.getInEdges(id)) {
@@ -192,25 +390,27 @@ public class FlowEngineImpl implements FlowEngine {
                 enqueued.put(id, deg);
             }
             // 就绪队列：闭包内入度 0 的节点
-            java.util.concurrent.BlockingQueue<String> queue = new java.util.concurrent.LinkedBlockingQueue<>();
+            BlockingQueue<String> queue = new LinkedBlockingQueue<>();
             for (var e : enqueued.entrySet()) {
                 if (e.getValue() == 0) {
                     queue.add(e.getKey());
                 }
             }
 
-            Map<String, FlowNodeRun> nodeRuns = new java.util.concurrent.ConcurrentHashMap<>();
-            Set<String> succeededNodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+            Map<String, FlowNodeRun> nodeRuns = new ConcurrentHashMap<>();
+            Set<String> succeededNodes = ConcurrentHashMap.newKeySet();
             FlowState state = new FlowState(input);
 
-            java.util.concurrent.atomic.AtomicBoolean stoppedHolder = new java.util.concurrent.atomic.AtomicBoolean(false);
-            java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder = new java.util.concurrent.atomic.AtomicReference<>();
+            AtomicBoolean stoppedHolder = new AtomicBoolean(false);
+            AtomicReference<Throwable> errorHolder = new AtomicReference<>();
             AtomicInteger executedCount = new AtomicInteger(0);
 
             // 执行次数护栏（防拓扑缺陷死循环，对齐全量执行的 maxExecutions 语义）。
             // 需按节点级重试上限放大：retryOnFail 节点单次执行最多 retryMaxTries(2-5) 次尝试。
             int retryFactor = flow.getMaxRetry() == null ? 1 : flow.getMaxRetry() + 1;
             int maxClosureExecutions = closure.size() * retryFactor + 1;
+
+            restoreGoverned(state, enqueued, queue, nodeRuns, succeededNodes, executedCount);
 
             // 串行执行闭包；目标节点执行后即停
             while (!queue.isEmpty()) {
@@ -221,12 +421,24 @@ public class FlowEngineImpl implements FlowEngine {
                 if (executedCount.get() >= maxClosureExecutions) {
                     throw new IllegalStateException("部分执行超出闭包执行次数上限 " + maxClosureExecutions);
                 }
+                if (governance != null && governance.attached() && queue.peek() != null)
+                    governance.beforeNode(
+                            graph.getNode(queue.peek()),
+                            state,
+                            enqueued,
+                            queue,
+                            nodeRuns,
+                            succeededNodes,
+                            executedCount.get());
                 String nodeId = queue.poll();
                 if (nodeId == null) {
                     break;
                 }
                 boolean ok = executeClosureNode(nodeId, graph, instanceId, state, enqueued, queue,
                     nodeRuns, succeededNodes, flow, executedCount, tenantIdStr, userId, errorHolder, closure);
+                if (governance != null && governance.attached() && ok)
+                    governance.afterStep(
+                            state, enqueued, queue, nodeRuns, succeededNodes, executedCount.get());
                 if (!ok || nodeId.equals(destinationNodeId)) {
                     break;
                 }
@@ -270,13 +482,18 @@ public class FlowEngineImpl implements FlowEngine {
                     inst.setOutputJson(destRun.getOutputJson());
                 } else {
                     inst.setStatus("FAILED");
-                    inst.setErrorMsg(destRun != null && destRun.getErrorMsg() != null ? destRun.getErrorMsg() : "目标节点未成功执行");
+                    inst.setErrorMsg(
+                            destRun != null && destRun.getErrorMsg() != null
+                                    ? destRun.getErrorMsg()
+                                    : "目标节点未成功执行");
                 }
             }
-            TenantHelper.dynamic(tenantIdStr, () -> {
-                instanceMapper.updateById(inst);
-                return null;
-            });
+            TenantHelper.dynamic(
+                    tenantIdStr,
+                    () -> {
+                        writeInstanceProjection(inst);
+                        return null;
+                    });
             Map<String, Object> payload = new HashMap<>();
             payload.put("instanceId", instanceId);
             payload.put("flowId", flow.getId());
@@ -287,6 +504,8 @@ public class FlowEngineImpl implements FlowEngine {
             }
             payload.put("durationMs", inst.getDurationMs());
             AiSseMessageHelper.sendFlowStatus(userId, payload);
+        } catch (FlowExecutionGovernance.Suspended waiting) {
+            // 部分图等待同样由恢复扫描器唤醒。
         } catch (Throwable e) {
             log.error("[Flow] 部分执行异常 instanceId={} dest={}", instanceId, destinationNodeId, e);
             finishInstanceOnError(instanceId, flow.getId(), e, tenantIdStr, userId);
@@ -299,21 +518,30 @@ public class FlowEngineImpl implements FlowEngine {
 
     /**
      * 闭包内节点执行 + 扇出（仅入队闭包内目标）
-     * <p>复用 executeNodeAndFanOut 的执行逻辑，但 fanOut 用闭包受限版本，避免闭包外节点被调度。</p>
+     *
+     * <p>复用 executeNodeAndFanOut 的执行逻辑，但 fanOut 用闭包受限版本，避免闭包外节点被调度。
      */
-    private boolean executeClosureNode(String nodeId, FlowGraph graph, Long instanceId, FlowState state,
-                                       Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                                       Map<String, FlowNodeRun> nodeRuns, Set<String> succeededNodes,
-                                       Flow flow, AtomicInteger executedCount,
-                                       String tenantIdStr, Long userId,
-                                       java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder,
-                                       Set<String> closure) {
+    private boolean executeClosureNode(
+            String nodeId,
+            FlowGraph graph,
+            Long instanceId,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Set<String> succeededNodes,
+            Flow flow,
+            AtomicInteger executedCount,
+            String tenantIdStr,
+            Long userId,
+            AtomicReference<Throwable> errorHolder,
+            Set<String> closure) {
         FlowNodeDef nodeDef = graph.getNode(nodeId);
         FlowNodeProvider provider = nodeRegistry.getProvider(nodeDef.getType());
         if (provider == null) {
             throw new IllegalStateException("未注册的节点类型: " + nodeDef.getType());
         }
-        int batchIndex = readBatchIndex(state, nodeId);
+        int batchIndex = readBatchIndex(state, nodeId, graph);
         FlowNodeRun nodeRun = createNodeRun(instanceId, flow.getId(), nodeDef, batchIndex, tenantIdStr);
         nodeRuns.put(nodeId, nodeRun);
         sendNodeStart(instanceId, nodeDef, nodeRun, userId);
@@ -335,7 +563,7 @@ public class FlowEngineImpl implements FlowEngine {
             handleNodeFailure(nodeRun, nodeDef, e, tenantIdStr);
             sendNodeEnd(instanceId, nodeDef, nodeRun, null, userId);
             if ("CONTINUE".equals(nodeDef.getOnError())) {
-                com.fasterxml.jackson.databind.node.ObjectNode passthrough = MAPPER.createObjectNode();
+                ObjectNode passthrough = MAPPER.createObjectNode();
                 passthrough.put("passthrough", true);
                 passthrough.put("error", e.getMessage());
                 nodeRun.setOutputJson(passthrough.toString());
@@ -345,7 +573,7 @@ public class FlowEngineImpl implements FlowEngine {
                 fanOutClosure(graph, nodeId, true, state, enqueued, queue, closure);
                 return true;
             } else if ("ERROR_PORT".equals(nodeDef.getOnError())) {
-                com.fasterxml.jackson.databind.node.ObjectNode errorOutput = MAPPER.createObjectNode();
+                ObjectNode errorOutput = MAPPER.createObjectNode();
                 errorOutput.put("error", safeMessage(e));
                 errorOutput.put("nodeName", nodeDef.getName());
                 errorOutput.put("nodeId", nodeDef.getId());
@@ -355,21 +583,24 @@ public class FlowEngineImpl implements FlowEngine {
                     fanOutClosureError(graph, nodeId, enqueued, queue, closure);
                     return true;
                 }
-                errorHolder.set(e);
+                recordFailure(errorHolder, e);
                 return false;
             } else {
-                errorHolder.set(e);
+                recordFailure(errorHolder, e);
                 return false;
             }
         }
     }
 
-    /**
-     * 闭包受限扇出：只对闭包内目标递减入度并入队（闭包外直接忽略）
-     */
-    private void fanOutClosure(FlowGraph graph, String nodeId, boolean ifResult, FlowState state,
-                               Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                               Set<String> closure) {
+    /** 闭包受限扇出：只对闭包内目标递减入度并入队（闭包外直接忽略） */
+    private void fanOutClosure(
+            FlowGraph graph,
+            String nodeId,
+            boolean ifResult,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Set<String> closure) {
         for (FlowEdgeDef edge : graph.getOutEdges(nodeId)) {
             if (edge.isLoopEdge()) {
                 if (closure.contains(edge.getTarget())) {
@@ -397,12 +628,13 @@ public class FlowEngineImpl implements FlowEngine {
         }
     }
 
-    /**
-     * 闭包受限错误分支扇出
-     */
-    private void fanOutClosureError(FlowGraph graph, String nodeId,
-                                    Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                                    Set<String> closure) {
+    /** 闭包受限错误分支扇出 */
+    private void fanOutClosureError(
+            FlowGraph graph,
+            String nodeId,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Set<String> closure) {
         for (FlowEdgeDef edge : graph.getOutEdges(nodeId)) {
             if (!edge.isErrorBranch()) {
                 continue;
@@ -420,6 +652,8 @@ public class FlowEngineImpl implements FlowEngine {
 
     @Override
     public boolean stop(Long instanceId) {
+        if (governance != null && governance.enabled())
+            return governance.stop(TenantHelper.getTenantId(), instanceId);
         return stopRegistry.requestStop(instanceId);
     }
 
@@ -430,16 +664,17 @@ public class FlowEngineImpl implements FlowEngine {
         if (instance == null) {
             throw new IllegalArgumentException("实例不存在: " + instanceId);
         }
-        if (com.nexus.flow.adapter.DecisionFlowAccessGuard.protectedConfig(instance.getConfigSnapshot()))
+        if (DecisionFlowAccessGuard.protectedConfig(instance.getConfigSnapshot()))
             throw new IllegalArgumentException("工业决策流程不允许通过通用入口续跑");
         if (!"FAILED".equals(instance.getStatus()) && !"STOPPED".equals(instance.getStatus())) {
-            throw new IllegalArgumentException("仅 FAILED/STOPPED 状态的实例可续跑（当前: " + instance.getStatus() + "）");
+            throw new IllegalArgumentException(
+                    "仅 FAILED/STOPPED 状态的实例可续跑（当前: " + instance.getStatus() + "）");
         }
 
         // 2. 取配置（对齐 n8n：优先当前流程配置——用户修复后 retry 生效；无当前配置时降级快照）
         //    快照仍保留在实例上供审计，续跑执行用当前配置（n8n retry 语义）
         Flow current = TenantHelper.dynamic(tenantIdStr, () -> flowMapper.selectById(instance.getFlowId()));
-        if (com.nexus.flow.adapter.DecisionFlowAccessGuard.protectedFlow(current))
+        if (DecisionFlowAccessGuard.protectedFlow(current))
             throw new IllegalArgumentException("工业决策流程必须由受控入口重试");
         String configJson = current != null ? current.getConfigJson() : null;
         if (configJson == null || configJson.isBlank()) {
@@ -450,23 +685,44 @@ public class FlowEngineImpl implements FlowEngine {
             throw new IllegalArgumentException("无法获取流程配置（当前配置与快照均缺失）");
         }
 
+        if (governance != null && governance.enabled()) {
+            if (current == null) throw new IllegalArgumentException("新配置重试需要仍存在的流程定义");
+            Long next =
+                    start(
+                            current,
+                            parseInput(instance.getInputJson()),
+                            "RETRY",
+                            tenantIdStr,
+                            userId,
+                            null);
+            governance.linkRetry(tenantIdStr, next, instanceId);
+            return next;
+        }
         // 3. 解析图 + 校验
         FlowGraph graph = FlowGraph.parse(configJson);
         graph.validate(nodeRegistry::contains);
 
         // 3.5 循环场景（含 split 锚点）：MVP 整批重跑——删除全部 node_run 后从起点重跑
         if (!graph.getLoopBodyNodes().isEmpty()) {
-            TenantHelper.dynamic(tenantIdStr, () ->
-                nodeRunMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FlowNodeRun>()
-                    .eq(FlowNodeRun::getInstanceId, instanceId)));
-            return rerunFromStart(instanceId, graph, configJson, tenantIdStr, userId);
+            if (current == null) throw new IllegalArgumentException("循环重试需要可用的流程定义");
+            return start(
+                    current,
+                    parseInput(instance.getInputJson()),
+                    "RETRY",
+                    tenantIdStr,
+                    userId,
+                    null);
         }
 
         // 4. 取节点运行记录（按 start_time 升序）
-        List<FlowNodeRun> runs = TenantHelper.dynamic(tenantIdStr,
-            () -> nodeRunMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FlowNodeRun>()
-                .eq(FlowNodeRun::getInstanceId, instanceId)
-                .orderByAsc(FlowNodeRun::getStartTime)));
+        List<FlowNodeRun> runs =
+                TenantHelper.dynamic(
+                        tenantIdStr,
+                        () ->
+                                nodeRunMapper.selectList(
+                                        new LambdaQueryWrapper<FlowNodeRun>()
+                                                .eq(FlowNodeRun::getInstanceId, instanceId)
+                                                .orderByAsc(FlowNodeRun::getStartTime)));
         if (runs == null || runs.isEmpty()) {
             throw new IllegalArgumentException("实例没有节点运行记录，无法续跑");
         }
@@ -488,30 +744,54 @@ public class FlowEngineImpl implements FlowEngine {
 
         // 6. 删除 FAILED/SKIPPED 的 node_run 行（重跑重新生成）；SUCCEEDED 且 batch < 失败批次的保留
         final Date resumeStartTime = resumePoint.getStartTime() == null ? new Date(0) : resumePoint.getStartTime();
-        int deleted = TenantHelper.dynamic(tenantIdStr, () ->
-            nodeRunMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FlowNodeRun>()
-                .eq(FlowNodeRun::getInstanceId, instanceId)
-                .and(w -> w.eq(FlowNodeRun::getStatus, "FAILED")
-                    .or().eq(FlowNodeRun::getStatus, "SKIPPED"))
-                .or(w -> w.eq(FlowNodeRun::getInstanceId, instanceId)
-                    .eq(FlowNodeRun::getBatchIndex, resumeBatch)
-                    .gt(FlowNodeRun::getStartTime, resumeStartTime))));
+        int deleted =
+                TenantHelper.dynamic(
+                        tenantIdStr,
+                        () ->
+                                nodeRunMapper.delete(
+                                        new LambdaQueryWrapper<FlowNodeRun>()
+                                                .eq(FlowNodeRun::getInstanceId, instanceId)
+                                                .and(
+                                                        w ->
+                                                                w.eq(
+                                                                                FlowNodeRun
+                                                                                        ::getStatus,
+                                                                                "FAILED")
+                                                                        .or()
+                                                                        .eq(
+                                                                                FlowNodeRun
+                                                                                        ::getStatus,
+                                                                                "SKIPPED"))
+                                                .or(
+                                                        w ->
+                                                                w.eq(
+                                                                                FlowNodeRun
+                                                                                        ::getInstanceId,
+                                                                                instanceId)
+                                                                        .eq(
+                                                                                FlowNodeRun
+                                                                                        ::getBatchIndex,
+                                                                                resumeBatch)
+                                                                        .gt(
+                                                                                FlowNodeRun
+                                                                                        ::getStartTime,
+                                                                                resumeStartTime))));
         log.info("[Flow] 实例 {} 续跑: 清理 {} 条失败/跳过记录", instanceId, deleted);
 
         // 7. 重建调度簿记 + 状态
         // 动态入度
-        Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
+        Map<String, Integer> enqueued = new ConcurrentHashMap<>();
         for (String id : graph.getNodes().keySet()) {
             enqueued.put(id, graph.getInDegree(id));
         }
         // 就绪队列
-        java.util.concurrent.BlockingQueue<String> queue = new java.util.concurrent.LinkedBlockingQueue<>();
+        BlockingQueue<String> queue = new LinkedBlockingQueue<>();
         for (String startId : graph.getStartNodeIds()) {
             queue.add(startId);
         }
         // 节点运行记录缓存（预载 SUCCEEDED 行；SKIPPED 守卫自动生效）
-        Map<String, FlowNodeRun> nodeRuns = new java.util.concurrent.ConcurrentHashMap<>();
-        Set<String> succeededNodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        Map<String, FlowNodeRun> nodeRuns = new ConcurrentHashMap<>();
+        Set<String> succeededNodes = ConcurrentHashMap.newKeySet();
         // 流程状态（从 SUCCEEDED 快照重建）
         FlowState state = new FlowState(parseInput(instance.getInputJson()));
         for (FlowNodeRun run : runs) {
@@ -617,16 +897,16 @@ public class FlowEngineImpl implements FlowEngine {
         });
 
         // 重建调度簿记（空状态，从起点开始）
-        Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
+        Map<String, Integer> enqueued = new ConcurrentHashMap<>();
         for (String id : graph.getNodes().keySet()) {
             enqueued.put(id, graph.getInDegree(id));
         }
-        java.util.concurrent.BlockingQueue<String> queue = new java.util.concurrent.LinkedBlockingQueue<>();
+        BlockingQueue<String> queue = new LinkedBlockingQueue<>();
         for (String startId : graph.getStartNodeIds()) {
             queue.add(startId);
         }
-        Map<String, FlowNodeRun> nodeRuns = new java.util.concurrent.ConcurrentHashMap<>();
-        Set<String> succeededNodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        Map<String, FlowNodeRun> nodeRuns = new ConcurrentHashMap<>();
+        Set<String> succeededNodes = ConcurrentHashMap.newKeySet();
 
         // 重建入参
         FlowInstance instance = TenantHelper.dynamic(tenantIdStr, () -> instanceMapper.selectById(instanceId));
@@ -642,45 +922,87 @@ public class FlowEngineImpl implements FlowEngine {
         return instanceId;
     }
 
-    /**
-     * 异步续跑执行（复用 runFlow 主流程）
-     */
-    private void asyncResume(Long instanceId, FlowGraph graph, String configJson,
-                             String tenantIdStr, Long userId, FlowState state,
-                             Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                             Map<String, FlowNodeRun> nodeRuns, Set<String> succeededNodes) {
+    /** 异步续跑执行（复用 runFlow 主流程） */
+    private void asyncResume(
+            Long instanceId,
+            FlowGraph graph,
+            String configJson,
+            String tenantIdStr,
+            Long userId,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Set<String> succeededNodes) {
         Flow flowDef = new Flow();
         flowDef.setId(instanceId);
         flowDef.setConfigJson(configJson);
         flowDef.setMaxRetry(1);
         final Long userIdF = userId;
-        aiExecutor.execute(() -> {
-            try {
-                AiRequestContext.set(tenantIdStr, userIdF, null, null, null, null);
-                java.util.concurrent.atomic.AtomicBoolean stoppedHolder = new java.util.concurrent.atomic.AtomicBoolean(false);
-                java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder = new java.util.concurrent.atomic.AtomicReference<>();
-                // 循环场景强制串行
-                boolean parallel = aiProperties.getFlow().isParallel() && graph.getLoopBodyNodes().isEmpty();
-                if (parallel) {
-                    runFlowParallel(graph, instanceId, state, enqueued, queue, nodeRuns,
-                        succeededNodes, flowDef, 100_000, new AtomicInteger(0), tenantIdStr, userIdF, null,
-                        stoppedHolder, errorHolder);
-                } else {
-                    runFlowSerial(graph, instanceId, state, enqueued, queue, nodeRuns,
-                        succeededNodes, flowDef, 100_000, new AtomicInteger(0), tenantIdStr, userIdF, null,
-                        stoppedHolder, errorHolder);
-                }
-                finishInstance(instanceId, flowDef.getId(), state, stoppedHolder.get(), errorHolder.get(),
-                    nodeRuns, graph.getNodeCount(), tenantIdStr, userIdF);
-            } catch (Throwable e) {
-                log.error("[Flow] 续跑异常 instanceId={}", instanceId, e);
-                finishInstanceOnError(instanceId, flowDef.getId(), e, tenantIdStr, userIdF);
-            } finally {
-                stopRegistry.unregister(instanceId);
-                seqMap.remove(instanceId);
-                AiRequestContext.clear();
-            }
-        });
+        aiExecutor.execute(
+                () -> {
+                    try {
+                        AiRequestContext.set(tenantIdStr, userIdF, null, null, null, null);
+                        AtomicBoolean stoppedHolder = new AtomicBoolean(false);
+                        AtomicReference<Throwable> errorHolder = new AtomicReference<>();
+                        // 循环场景强制串行
+                        boolean parallel =
+                                aiProperties.getFlow().isParallel()
+                                        && graph.getLoopBodyNodes().isEmpty();
+                        if (parallel) {
+                            runFlowParallel(
+                                    graph,
+                                    instanceId,
+                                    state,
+                                    enqueued,
+                                    queue,
+                                    nodeRuns,
+                                    succeededNodes,
+                                    flowDef,
+                                    100_000,
+                                    new AtomicInteger(0),
+                                    tenantIdStr,
+                                    userIdF,
+                                    null,
+                                    stoppedHolder,
+                                    errorHolder);
+                        } else {
+                            runFlowSerial(
+                                    graph,
+                                    instanceId,
+                                    state,
+                                    enqueued,
+                                    queue,
+                                    nodeRuns,
+                                    succeededNodes,
+                                    flowDef,
+                                    100_000,
+                                    new AtomicInteger(0),
+                                    tenantIdStr,
+                                    userIdF,
+                                    null,
+                                    stoppedHolder,
+                                    errorHolder);
+                        }
+                        finishInstance(
+                                instanceId,
+                                flowDef.getId(),
+                                state,
+                                stoppedHolder.get(),
+                                errorHolder.get(),
+                                nodeRuns,
+                                graph.getNodeCount(),
+                                tenantIdStr,
+                                userIdF);
+                    } catch (Throwable e) {
+                        log.error("[Flow] 续跑异常 instanceId={}", instanceId, e);
+                        finishInstanceOnError(instanceId, flowDef.getId(), e, tenantIdStr, userIdF);
+                    } finally {
+                        stopRegistry.unregister(instanceId);
+                        seqMap.remove(instanceId);
+                        AiRequestContext.clear();
+                    }
+                });
     }
 
     /**
@@ -708,13 +1030,13 @@ public class FlowEngineImpl implements FlowEngine {
         AiRequestContext.set(tenantIdStr, userId, userName, null, null, null);
         try {
             // 动态入度（初始化为静态入度；fanOut 时递减，为 0 时入队）
-            Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
+            Map<String, Integer> enqueued = new ConcurrentHashMap<>();
             for (String id : graph.getNodes().keySet()) {
                 enqueued.put(id, graph.getInDegree(id));
             }
 
             // 就绪队列（入度 0 起点；并发安全容器供并行模式使用）
-            java.util.concurrent.BlockingQueue<String> queue = new java.util.concurrent.LinkedBlockingQueue<>();
+            BlockingQueue<String> queue = new LinkedBlockingQueue<>();
             for (String startId : graph.getStartNodeIds()) {
                 queue.add(startId);
             }
@@ -728,20 +1050,26 @@ public class FlowEngineImpl implements FlowEngine {
             AtomicInteger executedCount = new AtomicInteger(0);
 
             // 节点运行记录缓存（nodeId -> FlowNodeRun，用于状态落库）
-            Map<String, FlowNodeRun> nodeRuns = new java.util.concurrent.ConcurrentHashMap<>();
+            Map<String, FlowNodeRun> nodeRuns = new ConcurrentHashMap<>();
 
             // 已成功节点（用于输出）
-            Set<String> succeededNodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+            Set<String> succeededNodes = ConcurrentHashMap.newKeySet();
 
             // 流程状态
             FlowState state = new FlowState(input);
 
+            restoreGoverned(state, enqueued, queue, nodeRuns, succeededNodes, executedCount);
+
             // 并行开关：含循环的图强制串行（波次语义与循环 tick 纠缠）
-            boolean parallel = aiProperties.getFlow().isParallel() && loopBodyCount == 0;
+            boolean parallel =
+                    (governance != null && governance.attached()
+                                    ? governance.parallel(aiProperties.getFlow().isParallel())
+                                    : aiProperties.getFlow().isParallel())
+                            && loopBodyCount == 0;
 
             // 执行结果 holder（stopped 由执行器置位，供 finishInstance 判定终态）
-            java.util.concurrent.atomic.AtomicBoolean stoppedHolder = new java.util.concurrent.atomic.AtomicBoolean(false);
-            java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder = new java.util.concurrent.atomic.AtomicReference<>();
+            AtomicBoolean stoppedHolder = new AtomicBoolean(false);
+            AtomicReference<Throwable> errorHolder = new AtomicReference<>();
 
             if (parallel) {
                 runFlowParallel(graph, instanceId, state, enqueued, queue, nodeRuns,
@@ -757,6 +1085,8 @@ public class FlowEngineImpl implements FlowEngine {
             finishInstance(instanceId, flow.getId(), state, stoppedHolder.get(), errorHolder.get(),
                 nodeRuns, graph.getNodeCount(), tenantIdStr, userId);
 
+        } catch (FlowExecutionGovernance.Suspended waiting) {
+            // 已持久化等待并释放租约，不能写失败终态。
         } catch (Throwable e) {
             log.error("[Flow] 流程执行异常 instanceId={}", instanceId, e);
             finishInstanceOnError(instanceId, flow.getId(), e, tenantIdStr, userId);
@@ -767,16 +1097,23 @@ public class FlowEngineImpl implements FlowEngine {
         }
     }
 
-    /**
-     * 串行执行（原主循环，行为不变）
-     */
-    private void runFlowSerial(FlowGraph graph, Long instanceId, FlowState state,
-                               Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                               Map<String, FlowNodeRun> nodeRuns, Set<String> succeededNodes,
-                               Flow flow, int maxExecutions, AtomicInteger executedCount,
-                               String tenantIdStr, Long userId, String userName,
-                               java.util.concurrent.atomic.AtomicBoolean stoppedHolder,
-                               java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder) {
+    /** 串行执行（原主循环，行为不变） */
+    private void runFlowSerial(
+            FlowGraph graph,
+            Long instanceId,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Set<String> succeededNodes,
+            Flow flow,
+            int maxExecutions,
+            AtomicInteger executedCount,
+            String tenantIdStr,
+            Long userId,
+            String userName,
+            AtomicBoolean stoppedHolder,
+            AtomicReference<Throwable> errorHolder) {
         while (!queue.isEmpty()) {
             // 停止检查（协作式，节点边界）
             if (stopRegistry.isStopped(instanceId)) {
@@ -788,28 +1125,47 @@ public class FlowEngineImpl implements FlowEngine {
             if (executedCount.get() >= maxExecutions) {
                 throw new IllegalStateException("节点执行次数超过上限 " + maxExecutions + "，疑似拓扑缺陷或死循环");
             }
+            if (governance != null && governance.attached())
+                governance.beforeNode(
+                        graph.getNode(queue.peek()),
+                        state,
+                        enqueued,
+                        queue,
+                        nodeRuns,
+                        succeededNodes,
+                        executedCount.get());
             String nodeId = queue.poll();
             if (nodeId == null) {
                 break;
             }
             boolean continueFlow = executeNodeAndFanOut(nodeId, graph, instanceId, state, enqueued, queue,
                 nodeRuns, succeededNodes, flow, executedCount, tenantIdStr, userId, errorHolder);
+            if (governance != null && governance.attached() && continueFlow)
+                governance.afterStep(
+                        state, enqueued, queue, nodeRuns, succeededNodes, executedCount.get());
             if (!continueFlow) {
                 break;
             }
         }
     }
 
-    /**
-     * 并行波次执行：每波整队取出，并行执行后等待整波完成，再处理下一波
-     */
-    private void runFlowParallel(FlowGraph graph, Long instanceId, FlowState state,
-                                 Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                                 Map<String, FlowNodeRun> nodeRuns, Set<String> succeededNodes,
-                                 Flow flow, int maxExecutions, AtomicInteger executedCount,
-                                 String tenantIdStr, Long userId, String userName,
-                                 java.util.concurrent.atomic.AtomicBoolean stoppedHolder,
-                                 java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder) {
+    /** 并行波次执行：每波整队取出，并行执行后等待整波完成，再处理下一波 */
+    private void runFlowParallel(
+            FlowGraph graph,
+            Long instanceId,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Set<String> succeededNodes,
+            Flow flow,
+            int maxExecutions,
+            AtomicInteger executedCount,
+            String tenantIdStr,
+            Long userId,
+            String userName,
+            AtomicBoolean stoppedHolder,
+            AtomicReference<Throwable> errorHolder) {
         while (true) {
             // 停止检查
             if (stopRegistry.isStopped(instanceId)) {
@@ -817,45 +1173,98 @@ public class FlowEngineImpl implements FlowEngine {
                 markAllRemainingSkipped(graph, nodeRuns, instanceId, flow.getId(), tenantIdStr);
                 return;
             }
+            if (governance != null && governance.attached())
+                governance.prepareWave(
+                        graph,
+                        state,
+                        enqueued,
+                        queue,
+                        nodeRuns,
+                        succeededNodes,
+                        executedCount.get());
             // 取整波
-            java.util.List<String> wave = new ArrayList<>();
+            List<String> wave = new ArrayList<>();
             queue.drainTo(wave);
             if (wave.isEmpty()) {
                 break;
             }
+            if (governance != null && governance.attached())
+                governance.beforeWave(
+                        wave,
+                        state,
+                        enqueued,
+                        queue,
+                        nodeRuns,
+                        succeededNodes,
+                        executedCount.get());
             // 护栏
             if (executedCount.get() >= maxExecutions) {
                 throw new IllegalStateException("节点执行次数超过上限 " + maxExecutions + "，疑似拓扑缺陷或死循环");
             }
             // 并行提交本波（flowExecutor 独立池，任务排队不拒绝，避免 await 死锁）
-            java.util.List<java.util.concurrent.Future<Boolean>> futures = new ArrayList<>();
+            List<Future<Boolean>> futures = new ArrayList<>();
             for (String nodeId : wave) {
-                futures.add(((java.util.concurrent.ExecutorService) flowExecutor).submit(() ->
-                    executeNodeAndFanOut(nodeId, graph, instanceId, state, enqueued, queue,
-                        nodeRuns, succeededNodes, flow, executedCount, tenantIdStr, userId, errorHolder)));
+                Callable<Boolean> action =
+                        () ->
+                                executeNodeAndFanOut(
+                                        nodeId,
+                                        graph,
+                                        instanceId,
+                                        state,
+                                        enqueued,
+                                        queue,
+                                        nodeRuns,
+                                        succeededNodes,
+                                        flow,
+                                        executedCount,
+                                        tenantIdStr,
+                                        userId,
+                                        errorHolder);
+                if (governance != null && governance.attached()) {
+                    var result = new FutureTask<Boolean>(action);
+                    try {
+                        flowExecutor.execute(governance.wrap(result));
+                    } catch (RejectedExecutionException rejected) {
+                        if (!futures.isEmpty())
+                            throw new FlowExecutionGovernance.RecoveryRequired(
+                                    "部分并行分支已提交，队列拒绝后的执行结果须核对");
+                        throw rejected;
+                    }
+                    futures.add(result);
+                } else futures.add(flowExecutor.submit(action));
             }
             // 等待整波完成
             boolean waveContinue = true;
-            for (java.util.concurrent.Future<Boolean> f : futures) {
+            for (Future<Boolean> f : futures) {
                 try {
                     boolean nodeContinue = f.get(600, TimeUnit.SECONDS);
                     if (!nodeContinue) {
                         waveContinue = false;
                     }
-                } catch (java.util.concurrent.TimeoutException e) {
+                } catch (TimeoutException e) {
                     log.error("[Flow] 并行波次执行超时 instanceId={}", instanceId);
-                    errorHolder.set(new IllegalStateException("并行节点执行超时"));
+                    f.cancel(true);
+                    recordFailure(
+                            errorHolder,
+                            new FlowExecutionGovernance.RecoveryRequired("并行节点尚未确认退出"));
                     waveContinue = false;
-                } catch (java.util.concurrent.ExecutionException e) {
+                } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
-                    errorHolder.set(cause != null ? cause : e);
+                    recordFailure(errorHolder, cause != null ? cause : e);
                     waveContinue = false;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    errorHolder.set(e);
+                    recordFailure(
+                            errorHolder,
+                            governance != null && governance.attached()
+                                    ? new FlowExecutionGovernance.RecoveryRequired("并行协调中断，节点退出待核对")
+                                    : e);
                     waveContinue = false;
                 }
             }
+            if (governance != null && governance.attached() && waveContinue)
+                governance.afterWave(
+                        state, enqueued, queue, nodeRuns, succeededNodes, executedCount.get());
             if (!waveContinue) {
                 // STOP 失败或异常：剩余节点 SKIPPED（executeNodeAndFanOut 已标记未执行部分）
                 break;
@@ -868,12 +1277,20 @@ public class FlowEngineImpl implements FlowEngine {
      *
      * @return false 表示应立即终止（STOP 失败 / 停止请求）
      */
-    private boolean executeNodeAndFanOut(String nodeId, FlowGraph graph, Long instanceId, FlowState state,
-                                         Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                                         Map<String, FlowNodeRun> nodeRuns, Set<String> succeededNodes,
-                                         Flow flow, AtomicInteger executedCount,
-                                         String tenantIdStr, Long userId,
-                                         java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder) {
+    private boolean executeNodeAndFanOut(
+            String nodeId,
+            FlowGraph graph,
+            Long instanceId,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Set<String> succeededNodes,
+            Flow flow,
+            AtomicInteger executedCount,
+            String tenantIdStr,
+            Long userId,
+            AtomicReference<Throwable> errorHolder) {
         FlowNodeDef nodeDef = graph.getNode(nodeId);
         FlowNodeProvider provider = nodeRegistry.getProvider(nodeDef.getType());
         if (provider == null) {
@@ -881,7 +1298,7 @@ public class FlowEngineImpl implements FlowEngine {
         }
 
         // 建节点运行记录（RUNNING）；循环场景读 loops 状态取批次索引
-        int batchIndex = readBatchIndex(state, nodeId);
+        int batchIndex = readBatchIndex(state, nodeId, graph);
         FlowNodeRun nodeRun = createNodeRun(instanceId, flow.getId(), nodeDef, batchIndex, tenantIdStr);
         nodeRuns.put(nodeId, nodeRun);
         sendNodeStart(instanceId, nodeDef, nodeRun, userId);
@@ -915,7 +1332,7 @@ public class FlowEngineImpl implements FlowEngine {
 
             if ("CONTINUE".equals(nodeDef.getOnError())) {
                 // onError=CONTINUE: 输入透传作为输出（对齐 n8n continueRegularOutput），流程继续
-                com.fasterxml.jackson.databind.node.ObjectNode passthrough = MAPPER.createObjectNode();
+                ObjectNode passthrough = MAPPER.createObjectNode();
                 passthrough.put("passthrough", true);
                 passthrough.put("error", e.getMessage());
                 nodeRun.setOutputJson(passthrough.toString());
@@ -925,8 +1342,9 @@ public class FlowEngineImpl implements FlowEngine {
                 fanOut(graph, nodeId, true, state, enqueued, queue, nodeRuns, instanceId, flow.getId(), tenantIdStr);
                 return true; // 透传后不视为流程失败
             } else if ("ERROR_PORT".equals(nodeDef.getOnError())) {
-                // onError=ERROR_PORT: 节点 FAILED（保留真实状态），错误对象写入 state，fanOut 只走 error 出边（对齐 n8n continueErrorOutput）
-                com.fasterxml.jackson.databind.node.ObjectNode errorOutput = MAPPER.createObjectNode();
+                // onError=ERROR_PORT: 节点 FAILED（保留真实状态），错误对象写入 state，fanOut 只走 error 出边（对齐 n8n
+                // continueErrorOutput）
+                ObjectNode errorOutput = MAPPER.createObjectNode();
                 errorOutput.put("error", safeMessage(e));
                 errorOutput.put("nodeName", nodeDef.getName());
                 errorOutput.put("nodeId", nodeDef.getId());
@@ -940,12 +1358,12 @@ public class FlowEngineImpl implements FlowEngine {
                     return true; // 错误分支已消费，流程继续
                 }
                 // 无 error 出边 → 降级 STOP
-                errorHolder.set(e);
+                recordFailure(errorHolder, e);
                 markAllRemainingSkipped(graph, nodeRuns, instanceId, flow.getId(), tenantIdStr);
                 return false;
             } else {
                 // STOP: 记录失败原因 + 未执行的全部节点标记 SKIPPED（含尚未入队的下游）
-                errorHolder.set(e);
+                recordFailure(errorHolder, e);
                 markAllRemainingSkipped(graph, nodeRuns, instanceId, flow.getId(), tenantIdStr);
                 return false;
             }
@@ -964,13 +1382,15 @@ public class FlowEngineImpl implements FlowEngine {
         }
         AiRequestContext.set(tenantId, ctx.getUserId(), userName, null, null, null);
         try {
-            return TenantHelper.dynamic(tenantId, () -> {
-                try {
-                    return provider.execute(ctx);
-                } catch (Exception e) {
-                    throw new java.util.concurrent.CompletionException(e);
-                }
-            });
+            return TenantHelper.dynamic(
+                    tenantId,
+                    () -> {
+                        try {
+                            return provider.execute(ctx);
+                        } catch (Exception e) {
+                            throw new CompletionException(e);
+                        }
+                    });
         } finally {
             AiRequestContext.clear();
         }
@@ -1007,15 +1427,49 @@ public class FlowEngineImpl implements FlowEngine {
 
                 // 在真正执行节点的工作线程绑定身份；线程创建时继承的上下文可能来自其他请求。
                 // 此调用链仅显式提供租户与用户ID，用户名保持未知，不能采信并行调度线程继承的旧名称。
-                java.util.concurrent.Future<JsonNode> future = java.util.concurrent.CompletableFuture
-                    .supplyAsync(() -> executeNodeInRequestScope(provider, ctx, null));
-                return future.get(timeoutSeconds, TimeUnit.SECONDS);
-            } catch (java.util.concurrent.TimeoutException e) {
-                lastError = new IllegalStateException("节点 " + nodeName + " 执行超时（" + timeoutSeconds + "s）");
-            } catch (java.util.concurrent.ExecutionException e) {
+                if (governance != null && governance.attached()) {
+                    FlowState child;
+                    ObjectNode before;
+                    synchronized (state) {
+                        before = state.getRoot().deepCopy();
+                        child = new FlowState(state.getInput());
+                        child.getRoot().removeAll();
+                        child.getRoot().setAll(before.deepCopy());
+                    }
+                    ctx.setState(child);
+                    ctx.setExecutionKey(
+                            governance.executionKey(
+                                    nodeDef.getId(),
+                                    readBatchIndex(state, nodeDef.getId(), graph)));
+                    JsonNode result =
+                            governance.execute(
+                                    provider,
+                                    ctx,
+                                    () -> executeNodeInRequestScope(provider, ctx, null),
+                                    TimeUnit.SECONDS.toMillis(timeoutSeconds));
+                    governance.check();
+                    synchronized (state) {
+                        mergeNodeState(before, child.getRoot(), state.getRoot());
+                    }
+                    return result;
+                }
+                Future<JsonNode> future =
+                        (nodeExecutor == null ? TEST_NODE_EXECUTOR : nodeExecutor)
+                                .submit(() -> executeNodeInRequestScope(provider, ctx, null));
+                try {
+                    return future.get(timeoutSeconds, TimeUnit.SECONDS);
+                } catch (TimeoutException timeout) {
+                    future.cancel(true);
+                    throw timeout;
+                }
+            } catch (TimeoutException e) {
+                lastError =
+                        new IllegalStateException(
+                                "节点 " + nodeName + " 执行超时（" + timeoutSeconds + "s）");
+            } catch (ExecutionException e) {
                 // 解包 CompletableFuture 的 CompletionException 嵌套，取底层 cause（否则 message 为 null 导致错误信息丢失）
                 Throwable cause = e.getCause();
-                while (cause instanceof java.util.concurrent.CompletionException ce && ce.getCause() != null) {
+                while (cause instanceof CompletionException ce && ce.getCause() != null) {
                     cause = ce.getCause();
                 }
                 lastError = cause instanceof Exception ex ? ex : new Exception(cause);
@@ -1036,17 +1490,26 @@ public class FlowEngineImpl implements FlowEngine {
 
     /**
      * 扇出下游：按边类型路由
+     *
      * <ul>
-     *   <li>loop 返回边 → 读 split 锚点 output.done：false 重新入队锚点 / true 忽略</li>
-     *   <li>split 锚点出边 → loop/main 仅 !done 时触发（体内边直入队），loop/done 仅 done 时触发（普通入度）</li>
-     *   <li>循环体内边（非 split 出边）→ 直接入队下游（线性链每轮唯一触发，不走入度）</li>
-     *   <li>IF 分支边 → 按 ifResult 选边，未选中走 SKIPPED 传播</li>
-     *   <li>其余普通边 → 入度递减，归零入队</li>
+     *   <li>loop 返回边 → 读 split 锚点 output.done：false 重新入队锚点 / true 忽略
+     *   <li>split 锚点出边 → loop/main 仅 !done 时触发（体内边直入队），loop/done 仅 done 时触发（普通入度）
+     *   <li>循环体内边（非 split 出边）→ 直接入队下游（线性链每轮唯一触发，不走入度）
+     *   <li>IF 分支边 → 按 ifResult 选边，未选中走 SKIPPED 传播
+     *   <li>其余普通边 → 入度递减，归零入队
      * </ul>
      */
-    private void fanOut(FlowGraph graph, String nodeId, boolean ifResult, FlowState state,
-                        Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                        Map<String, FlowNodeRun> nodeRuns, Long instanceId, Long flowId, String tenantIdStr) {
+    private void fanOut(
+            FlowGraph graph,
+            String nodeId,
+            boolean ifResult,
+            FlowState state,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Long instanceId,
+            Long flowId,
+            String tenantIdStr) {
         boolean isSplit = "split".equals(graph.getNode(nodeId).getType());
         JsonNode splitOutput = null;
         boolean splitDone = false;
@@ -1056,7 +1519,10 @@ public class FlowEngineImpl implements FlowEngine {
             } catch (IllegalArgumentException ignore) {
                 // 忽略
             }
-            splitDone = splitOutput != null && splitOutput.has("done") && splitOutput.get("done").asBoolean();
+            splitDone =
+                    splitOutput != null
+                            && splitOutput.has("done")
+                            && splitOutput.get("done").asBoolean();
         }
 
         List<FlowEdgeDef> outEdges = graph.getOutEdges(nodeId);
@@ -1069,7 +1535,10 @@ public class FlowEngineImpl implements FlowEngine {
                 } catch (IllegalArgumentException ignore) {
                     // split 未执行（不应发生），忽略
                 }
-                boolean done = anchorOutput != null && anchorOutput.has("done") && anchorOutput.get("done").asBoolean();
+                boolean done =
+                        anchorOutput != null
+                                && anchorOutput.has("done")
+                                && anchorOutput.get("done").asBoolean();
                 if (!done) {
                     queue.add(edge.getTarget()); // 重新入队 split 锚点取下一批
                 }
@@ -1124,11 +1593,18 @@ public class FlowEngineImpl implements FlowEngine {
 
     /**
      * 错误分支扇出（ERROR_PORT 节点失败后）
-     * <p>只递减 isErrorBranch() 出边下游入度；其余出边（main/true/false）的目标标记 SKIPPED</p>
+     *
+     * <p>只递减 isErrorBranch() 出边下游入度；其余出边（main/true/false）的目标标记 SKIPPED
      */
-    private void fanOutErrorBranch(FlowGraph graph, String nodeId,
-                                   Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                                   Map<String, FlowNodeRun> nodeRuns, Long instanceId, Long flowId, String tenantIdStr) {
+    private void fanOutErrorBranch(
+            FlowGraph graph,
+            String nodeId,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Long instanceId,
+            Long flowId,
+            String tenantIdStr) {
         List<FlowEdgeDef> outEdges = graph.getOutEdges(nodeId);
         for (FlowEdgeDef edge : outEdges) {
             if (edge.isErrorBranch()) {
@@ -1147,13 +1623,19 @@ public class FlowEngineImpl implements FlowEngine {
 
     /**
      * 标记分支未命中的下游节点为 SKIPPED（传入度簿记传播）
-     * <p>语义：SKIPPED 节点视为"已结束无输出"——递减下游入度；归零时：
-     * 下游为 merge → 入队真执行（只收集已到达的输入，对齐 n8n 空分支合并）；
-     * 下游非 merge → 递归 SKIPPED（跳过链整段灰化）</p>
+     *
+     * <p>语义：SKIPPED 节点视为"已结束无输出"——递减下游入度；归零时： 下游为 merge → 入队真执行（只收集已到达的输入，对齐 n8n 空分支合并）； 下游非 merge
+     * → 递归 SKIPPED（跳过链整段灰化）
      */
-    private void markBranchSkipped(String nodeId, FlowGraph graph,
-                                   Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
-                                   Map<String, FlowNodeRun> nodeRuns, Long instanceId, Long flowId, String tenantIdStr) {
+    private void markBranchSkipped(
+            String nodeId,
+            FlowGraph graph,
+            Map<String, Integer> enqueued,
+            BlockingQueue<String> queue,
+            Map<String, FlowNodeRun> nodeRuns,
+            Long instanceId,
+            Long flowId,
+            String tenantIdStr) {
         if (nodeRuns.containsKey(nodeId)) {
             return;
         }
@@ -1164,10 +1646,12 @@ public class FlowEngineImpl implements FlowEngine {
         nodeRun.setStartTime(new Date());
         nodeRun.setEndTime(new Date());
         nodeRun.setDurationMs(0L);
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            nodeRunMapper.updateById(nodeRun);
-            return null;
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    writeNodeProjection(nodeRun);
+                    return null;
+                });
         nodeRuns.put(nodeId, nodeRun);
         // 递减下游入度（SKIPPED 参与簿记，保证 merge 等汇聚节点能归零入队）
         for (FlowEdgeDef edge : graph.getOutEdges(nodeId)) {
@@ -1202,10 +1686,12 @@ public class FlowEngineImpl implements FlowEngine {
             nodeRun.setStartTime(new Date());
             nodeRun.setEndTime(new Date());
             nodeRun.setDurationMs(0L);
-            TenantHelper.dynamic(tenantIdStr, () -> {
-                nodeRunMapper.updateById(nodeRun);
-                return null;
-            });
+            TenantHelper.dynamic(
+                    tenantIdStr,
+                    () -> {
+                        writeNodeProjection(nodeRun);
+                        return null;
+                    });
             nodeRuns.put(nodeId, nodeRun);
         }
     }
@@ -1230,10 +1716,12 @@ public class FlowEngineImpl implements FlowEngine {
             nodeRun.setStartTime(new Date());
             nodeRun.setEndTime(new Date());
             nodeRun.setDurationMs(0L);
-            TenantHelper.dynamic(tenantIdStr, () -> {
-                nodeRunMapper.updateById(nodeRun);
-                return null;
-            });
+            TenantHelper.dynamic(
+                    tenantIdStr,
+                    () -> {
+                        writeNodeProjection(nodeRun);
+                        return null;
+                    });
             nodeRuns.put(nodeId, nodeRun);
         }
     }
@@ -1251,11 +1739,18 @@ public class FlowEngineImpl implements FlowEngine {
         if (nodeRun.getStartTime() != null) {
             nodeRun.setDurationMs(System.currentTimeMillis() - nodeRun.getStartTime().getTime());
         }
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            nodeRunMapper.updateById(nodeRun);
-            return null;
-        });
-        log.warn("[Flow] 节点 {} ({}) 执行失败: {}", nodeDef.getId(), nodeDef.getName(), e.getMessage(), e);
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    writeNodeProjection(nodeRun);
+                    return null;
+                });
+        log.warn(
+                "[Flow] 节点 {} ({}) 执行失败: {}",
+                nodeDef.getId(),
+                nodeDef.getName(),
+                e.getMessage(),
+                e);
         return e;
     }
 
@@ -1316,10 +1811,14 @@ public class FlowEngineImpl implements FlowEngine {
         nodeRun.setRetryCount(0);
         nodeRun.setBatchIndex(batchIndex);
         nodeRun.setStartTime(new Date());
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            nodeRunMapper.insert(nodeRun);
-            return null;
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    if (governance != null && governance.attached())
+                        governance.createNode(() -> nodeRunMapper.insert(nodeRun));
+                    else nodeRunMapper.insert(nodeRun);
+                    return null;
+                });
         return nodeRun;
     }
 
@@ -1331,10 +1830,12 @@ public class FlowEngineImpl implements FlowEngine {
         if (nodeRun.getStartTime() != null) {
             nodeRun.setDurationMs(System.currentTimeMillis() - nodeRun.getStartTime().getTime());
         }
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            nodeRunMapper.updateById(nodeRun);
-            return null;
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    writeNodeProjection(nodeRun);
+                    return null;
+                });
     }
 
     /**
@@ -1365,20 +1866,28 @@ public class FlowEngineImpl implements FlowEngine {
         instance.setNodeSuccess(success);
         instance.setNodeFailed(failed);
 
-        if (stopped) {
+        if (flowError instanceof FlowExecutionGovernance.RecoveryRequired) {
+            instance.setStatus("RECOVERY_REQUIRED");
+            instance.setErrorMsg(truncate(safeMessage(flowError), 2000));
+        } else if (stopped) {
             instance.setStatus("STOPPED");
             instance.setErrorMsg("用户请求停止");
         } else if (flowError != null) {
-            instance.setStatus("FAILED");
+            instance.setStatus(
+                    flowError instanceof FlowExecutionGovernance.RecoveryRequired
+                            ? "RECOVERY_REQUIRED"
+                            : "FAILED");
             instance.setErrorMsg(truncate(safeMessage(flowError), 2000));
         } else {
             instance.setStatus("SUCCEEDED");
             instance.setOutputJson(state.getFinalOutput().toString());
         }
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            instanceMapper.updateById(instance);
-            return null;
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    writeInstanceProjection(instance);
+                    return null;
+                });
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("instanceId", instanceId);
@@ -1398,17 +1907,22 @@ public class FlowEngineImpl implements FlowEngine {
     private void finishInstanceOnError(Long instanceId, Long flowId, Throwable e, String tenantIdStr, Long userId) {
         FlowInstance instance = new FlowInstance();
         instance.setId(instanceId);
-        instance.setStatus("FAILED");
+        instance.setStatus(
+                e instanceof FlowExecutionGovernance.RecoveryRequired
+                        ? "RECOVERY_REQUIRED"
+                        : "FAILED");
         instance.setErrorMsg(truncate(safeMessage(e), 2000));
         instance.setEndTime(new Date());
-        TenantHelper.dynamic(tenantIdStr, () -> {
-            instanceMapper.updateById(instance);
-            return null;
-        });
+        TenantHelper.dynamic(
+                tenantIdStr,
+                () -> {
+                    writeInstanceProjection(instance);
+                    return null;
+                });
         Map<String, Object> payload = new HashMap<>();
         payload.put("instanceId", instanceId);
         payload.put("flowId", flowId);
-        payload.put("status", "FAILED");
+        payload.put("status", instance.getStatus());
         payload.put("errorMsg", truncate(safeMessage(e), 2000));
         payload.put("seq", nextSeq(instanceId));
         AiSseMessageHelper.sendFlowStatus(userId, payload);
@@ -1446,34 +1960,20 @@ public class FlowEngineImpl implements FlowEngine {
         return seq == null ? 0 : seq.incrementAndGet();
     }
 
-    /**
-     * 读取节点所属循环批次索引（split 场景：该节点上游 split 的当前 index；非循环返回 0）
-     */
-    private int readBatchIndex(FlowState state, String nodeId) {
-        JsonNode loops = state.getRoot().get("loops");
-        if (loops == null || !loops.isObject() || loops.isEmpty()) {
-            return 0;
-        }
-        // 取最大的 拆分索引 作为批次（循环体线性链，当前轮的 拆分索引 即本轮批次）
-        int maxIndex = 0;
-        var it = loops.fields();
-        while (it.hasNext()) {
-            JsonNode loopState = it.next().getValue();
-            if (loopState != null && loopState.has("index")) {
-                int idx = loopState.get("index").asInt();
-                if (idx > maxIndex) {
-                    maxIndex = idx;
-                }
-            }
-        }
-        // 节点自身是 split 时：createNodeRun 在 execute 之前调用，此时 loops.index 为
-        // 上一轮执行写回的 nextIndex（即本轮 index，split 每次执行后 +1；done 轮不 +1）
-        JsonNode self = loops.get(nodeId);
-        if (self != null && self.has("index")) {
-            int selfIdx = self.get("index").asInt();
-            return Math.max(0, selfIdx); // 上一轮写回的 nextIndex 即本轮 index（勿再 -1）
-        }
-        return Math.max(0, maxIndex - 1);
+    /** 读取节点所属循环批次索引（split 场景：该节点上游 split 的当前 index；非循环返回 0） */
+    private int readBatchIndex(FlowState state, String nodeId, FlowGraph graph) {
+        JsonNode loops = state.getRoot().path("loops");
+        if (loops.has(nodeId)) return Math.max(0, loops.path(nodeId).path("index").asInt());
+        String anchor = graph.loopOwner(nodeId);
+        return anchor == null ? 0 : Math.max(0, loops.path(anchor).path("index").asInt() - 1);
+    }
+
+    static void recordFailure(AtomicReference<Throwable> errors, Throwable error) {
+        errors.getAndUpdate(
+                previous ->
+                        previous instanceof FlowExecutionGovernance.RecoveryRequired
+                                ? previous
+                                : error);
     }
 
     private String truncate(String text, int maxLen) {
@@ -1500,5 +2000,24 @@ public class FlowEngineImpl implements FlowEngine {
             return e.getClass().getSimpleName();
         }
         return msg;
+    }
+
+    /** 只合并节点实际改动，保留并行兄弟节点已提交的状态。 */
+    private static void mergeNodeState(ObjectNode before, ObjectNode after, ObjectNode target) {
+        var fields = after.fields();
+        while (fields.hasNext()) {
+            var field = fields.next();
+            JsonNode old = before.get(field.getKey()), value = field.getValue();
+            if (Objects.equals(old, value)) continue;
+            if (old instanceof ObjectNode a
+                    && value instanceof ObjectNode b
+                    && target.get(field.getKey()) instanceof ObjectNode c) mergeNodeState(a, b, c);
+            else target.set(field.getKey(), value.deepCopy());
+        }
+        var names = before.fieldNames();
+        while (names.hasNext()) {
+            String key = names.next();
+            if (!after.has(key)) target.remove(key);
+        }
     }
 }

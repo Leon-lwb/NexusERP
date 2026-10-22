@@ -1,13 +1,15 @@
 package com.nexus.flow.node.control;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.flow.execution.FlowReplayPolicy;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
 import com.nexus.flow.state.FlowTemplateRenderer;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -24,6 +26,10 @@ import java.util.List;
  */
 @Component
 public class SplitInBatchesProvider implements FlowNodeProvider {
+    @Override
+    public FlowReplayPolicy replayPolicy(JsonNode config) {
+        return FlowReplayPolicy.SAFE;
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -50,7 +56,9 @@ public class SplitInBatchesProvider implements FlowNodeProvider {
 
     @Override
     public void validateConfig(JsonNode config) {
-        if (config == null || config.get("arrayPath") == null || config.get("arrayPath").asText().isBlank()) {
+        if (config == null
+                || config.get("arrayPath") == null
+                || config.get("arrayPath").asText().isBlank()) {
             throw new IllegalArgumentException("循环节点缺少 arrayPath 配置");
         }
         if (config.has("batchSize") && config.get("batchSize").canConvertToInt()) {
@@ -70,7 +78,8 @@ public class SplitInBatchesProvider implements FlowNodeProvider {
         String label = "节点 " + ctx.getNodeName();
 
         // 渲染数组路径（支持 {{}} 模板）
-        String resolvedPath = FlowTemplateRenderer.render(arrayPath, ctx.getState(), label + " 的 arrayPath");
+        String resolvedPath =
+                FlowTemplateRenderer.render(arrayPath, ctx.getState(), label + " 的 arrayPath");
         // 取数组（缺失/非数组 → 空数组直接 done）
         ArrayNode items = MAPPER.createArrayNode();
         try {
@@ -95,7 +104,8 @@ public class SplitInBatchesProvider implements FlowNodeProvider {
             }
         }
         if (index >= MAX_ITERATIONS) {
-            throw new IllegalStateException("循环节点 " + ctx.getNodeName() + " 迭代次数超过上限 " + MAX_ITERATIONS);
+            throw new IllegalStateException(
+                    "循环节点 " + ctx.getNodeName() + " 迭代次数超过上限 " + MAX_ITERATIONS);
         }
 
         // 切当前批
@@ -111,7 +121,12 @@ public class SplitInBatchesProvider implements FlowNodeProvider {
         int nextIndex = done ? index : index + 1;
 
         // 写回迭代状态
-        ObjectNode loopState = (ObjectNode) ctx.getState().getRoot().withObject("/loops").withObject("/" + ctx.getNodeId());
+        ObjectNode loopState =
+                (ObjectNode)
+                        ctx.getState()
+                                .getRoot()
+                                .withObject("/loops")
+                                .withObject("/" + ctx.getNodeId());
         loopState.put("index", nextIndex);
         loopState.put("total", total);
 
