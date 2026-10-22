@@ -1,14 +1,24 @@
 package com.nexus.ai.service.decision;
 
+import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("dev")
 class DecisionPolicyGuardServiceTest {
@@ -28,8 +38,9 @@ class DecisionPolicyGuardServiceTest {
     }
 
     @Test void policyAcceptsCompleteV2ButRejectsOldPurchaseSchema() {
-        var payload = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(10L,
-            DecisionPurchaseProposalServiceTest.contract(100L, 200L));
+        var payload =
+                DecisionPurchaseContractCodec.toPayload(
+                        10L, DecisionPurchaseProposalServiceTest.contract(100L, 200L));
         var complete = Map.<String, Object>of("actionType", "CREATE_PURCHASE_REQUISITION_DRAFT",
             "approvalRequired", true, "payload", payload);
         assertTrue(service.validateActions(List.of(complete)).passed(), "完整新版合同应接入精确白名单");
@@ -37,7 +48,8 @@ class DecisionPolicyGuardServiceTest {
             "payload", Map.of("runId", "10", "requiredDate", "2026-10-03", "materialLines",
                 List.of(Map.of("materialId", "100", "gap", "3", "requiredDate", "2026-10-03"))));
         assertFalse(service.validateActions(List.of(old)).passed(), "旧缺口结构不能继续通过采购策略");
-        var forged = new java.util.LinkedHashMap<>(payload); forged.put("verified", true);
+        var forged = new LinkedHashMap<>(payload);
+        forged.put("verified", true);
         assertFalse(service.validateActions(List.of(Map.of("actionType", "CREATE_PURCHASE_REQUISITION_DRAFT",
             "approvalRequired", true, "payload", forged))).passed(), "白名单不能放宽任意核验旗号");
     }
@@ -45,8 +57,8 @@ class DecisionPolicyGuardServiceTest {
     @Test void policyRejectsPurchaseKeyThatDoesNotMatchTheUniqueHelper() {
         var target = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11");
         var contract = DecisionPurchaseProposalServiceTest.contract(100L, 200L);
-        var payload = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(10L, contract);
-        var key = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.idempotencyKey("000001", 10L, target, contract);
+        var payload = DecisionPurchaseContractCodec.toPayload(10L, contract);
+        var key = DecisionPurchaseContractCodec.idempotencyKey("000001", 10L, target, contract);
         var action = new DecisionActionProposal(null, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
             "采购草稿", "真实来源", target, payload, DecisionRiskLevel.HIGH, true, "pu:requisition:add",
             key, "purchaseRequisitionDraft", 1, List.of());
@@ -54,8 +66,8 @@ class DecisionPolicyGuardServiceTest {
         var result = new DecisionResult(10L, target, scored.riskScore(), scored.riskLevel(), scored.confidenceLevel(),
             scored.rootCauseCodes(), scored.baselineKpis(), scored.scenarios(), scored.recommendedScenarioCode(),
             scored.narrative(), scored.evidence(), List.of(action), scored.warnings());
-        try (var tenant = org.mockito.Mockito.mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getDynamic).thenReturn("000001");
+        try (var tenant = Mockito.mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getDynamic).thenReturn("000001");
             assertTrue(service.validate(result, narrative("请人工审批", null), List.of(action)).passed(),
                 "真实新版键必须由同一个公共 helper 核对");
             var changed = new DecisionActionProposal(null, action.actionType(), action.title(), action.displayReason(),
@@ -109,7 +121,7 @@ class DecisionPolicyGuardServiceTest {
     }
 
     @Test void templateFallbackCanPassGuardWithoutClaimingAlreadyExecuted() {
-        var factory = org.mockito.Mockito.mock(com.nexus.ai.service.chat.ChatModelFactory.class);
+        var factory = Mockito.mock(ChatModelFactory.class);
         var summary = new DecisionSummaryService(factory).summarize(
             new DecisionSummaryService.SummaryInput(10L, ref, DecisionRiskLevel.HIGH, 55,
                 List.of("SCHEDULE_DELAY"), result(List.of()).scenarios(), "APS_CR", List.of(),
@@ -170,10 +182,28 @@ class DecisionPolicyGuardServiceTest {
     }
 
     @Test void serverGeneratedDraftPassesGuardWhenApprovedAndScoped() {
-        var input = new DecisionActionProposalService.ProposalInput(10L, "000000", ref,
-            DecisionRiskLevel.HIGH, Set.of("MATERIAL_SHORTAGE"), "APS_CR", false,
-            List.of(Map.of("materialId", "100", "gap", "10", "requiredDate", "2026-09-30")),
-            1L, List.of(), java.time.LocalDate.of(2026, 9, 26), 30, null);
+        var input =
+                new DecisionActionProposalService.ProposalInput(
+                        10L,
+                        "000000",
+                        ref,
+                        DecisionRiskLevel.HIGH,
+                        Set.of("MATERIAL_SHORTAGE"),
+                        "APS_CR",
+                        false,
+                        List.of(
+                                Map.of(
+                                        "materialId",
+                                        "100",
+                                        "gap",
+                                        "10",
+                                        "requiredDate",
+                                        "2026-09-30")),
+                        1L,
+                        List.of(),
+                        LocalDate.of(2026, 9, 26),
+                        30,
+                        null);
         var actions = new DecisionActionProposalService().propose(input);
         var verdict = service.validate(result(List.of()), narrative("需要人工审批采购草稿", null), actions);
         assertTrue(verdict.passed(), () -> verdict.violations().toString());
@@ -205,11 +235,30 @@ class DecisionPolicyGuardServiceTest {
     }
 
     @Test void fullServerGeneratedActionBundleMatchesGuardWhitelists() {
-        var input = new DecisionActionProposalService.ProposalInput(10L, "000000", ref,
-            DecisionRiskLevel.HIGH, Set.of("MATERIAL_SHORTAGE", "PURCHASE_DELAY", "SCHEDULE_DELAY"),
-            "APS_CR_EXPEDITE", true, List.of(Map.of("materialId", "100", "gap", "10",
-                "requiredDate", "2026-09-30", "purchaseLineId", "500")),
-            1L, List.of("11"), java.time.LocalDate.of(2026, 9, 26), 30, null);
+        var input =
+                new DecisionActionProposalService.ProposalInput(
+                        10L,
+                        "000000",
+                        ref,
+                        DecisionRiskLevel.HIGH,
+                        Set.of("MATERIAL_SHORTAGE", "PURCHASE_DELAY", "SCHEDULE_DELAY"),
+                        "APS_CR_EXPEDITE",
+                        true,
+                        List.of(
+                                Map.of(
+                                        "materialId",
+                                        "100",
+                                        "gap",
+                                        "10",
+                                        "requiredDate",
+                                        "2026-09-30",
+                                        "purchaseLineId",
+                                        "500")),
+                        1L,
+                        List.of("11"),
+                        LocalDate.of(2026, 9, 26),
+                        30,
+                        null);
         var actions = new DecisionActionProposalService().propose(input);
         var verdict = service.validate(result(List.of()), narrative("请人工审阅并决定是否创建草稿", null), actions);
         assertTrue(verdict.passed(), () -> verdict.violations().toString());

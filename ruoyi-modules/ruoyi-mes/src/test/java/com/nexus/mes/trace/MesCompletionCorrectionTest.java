@@ -1,10 +1,22 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.trace.*;
+
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class MesCompletionCorrectionTest {
     MesTraceBusinessTest f;
@@ -244,17 +256,16 @@ class MesCompletionCorrectionTest {
     @Test
     void simultaneousCorrectionsWithTheSameExpectedVersionOnlyApplyOnce() throws Exception {
         cancel();
-        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
-        var start = new java.util.concurrent.CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        var start = new CountDownLatch(1);
         try {
-            var futures = new ArrayList<java.util.concurrent.Future<Boolean>>();
+            var futures = new ArrayList<Future<Boolean>>();
             for (int i = 0; i < 2; i++) {
                 String command = "race-" + i;
                 futures.add(
                         pool.submit(
                                 () -> {
-                                    com.baomidou.dynamic.datasource.toolkit
-                                            .DynamicDataSourceContextHolder.push("mes");
+                                    DynamicDataSourceContextHolder.push("mes");
                                     try {
                                         start.await();
                                         apply(
@@ -267,15 +278,14 @@ class MesCompletionCorrectionTest {
                                     } catch (RuntimeException expected) {
                                         return false;
                                     } finally {
-                                        com.baomidou.dynamic.datasource.toolkit
-                                                .DynamicDataSourceContextHolder.clear();
+                                        DynamicDataSourceContextHolder.clear();
                                     }
                                 }));
             }
             start.countDown();
             int applied = 0;
             for (var future : futures) {
-                if (future.get(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                if (future.get(10, TimeUnit.SECONDS)) {
                     applied++;
                 }
             }
@@ -360,14 +370,13 @@ class MesCompletionCorrectionTest {
         var correction =
                 correction("frozen-policy-fix", 1, new BigDecimal("2"), new BigDecimal("2"));
         var corrected = apply(correction);
-        var unknown = new java.util.concurrent.atomic.AtomicBoolean();
-        var reads = new java.util.concurrent.atomic.AtomicInteger();
+        var unknown = new AtomicBoolean();
+        var reads = new AtomicInteger();
         var prepared = MesFrozenPolicyTestSupport.prepared(f, f.mixed, unknown, reads);
-        org.springframework.test.util.ReflectionTestUtils.setField(
-                f.manifests, "preparedPolicies", prepared);
-        org.mockito.Mockito.when(f.policies.policy("000001", 100L))
+        ReflectionTestUtils.setField(f.manifests, "preparedPolicies", prepared);
+        Mockito.when(f.policies.policy("000001", 100L))
                 .thenReturn(new TrackingPolicy(false, false, true, 99L, TrackingStage.STRICT));
-        org.mockito.Mockito.clearInvocations(f.policies);
+        Mockito.clearInvocations(f.policies);
         var revised =
                 f.inTx(
                         () ->
@@ -404,18 +413,17 @@ class MesCompletionCorrectionTest {
         assertEquals(0, revised.scrapQty().compareTo(replay.scrapQty()));
         assertEquals(corrected, f.inTx(() -> f.materials.correct(correction, null)));
         assertEquals(1, reads.get());
-        org.mockito.Mockito.verifyNoInteractions(f.policies);
+        Mockito.verifyNoInteractions(f.policies);
         assertEquals("CANCELLED", f.manifests.manifest("000001", old.manifestId(), 1).status());
     }
 
     @Test
     void unknownReleaseBlocksNewRefreezeBeforeCreatingItsCommand() {
         cancel();
-        var unknown = new java.util.concurrent.atomic.AtomicBoolean(true);
-        var reads = new java.util.concurrent.atomic.AtomicInteger();
+        var unknown = new AtomicBoolean(true);
+        var reads = new AtomicInteger();
         var prepared = MesFrozenPolicyTestSupport.prepared(f, f.mixed, unknown, reads);
-        org.springframework.test.util.ReflectionTestUtils.setField(
-                f.manifests, "preparedPolicies", prepared);
+        ReflectionTestUtils.setField(f.manifests, "preparedPolicies", prepared);
         assertThrows(
                 RuntimeException.class,
                 () ->

@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.core.config.GlobalConfig;
@@ -7,39 +11,63 @@ import com.baomidou.mybatisplus.core.injector.DefaultSqlInjector;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.toolkit.GlobalConfigUtils;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
+import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.wm.controller.WmMaterialHandoverController;
+import com.nexus.erp.wm.controller.WmMaterialReturnController;
+import com.nexus.erp.wm.controller.serial.WmSerialBusinessAdapter;
+import com.nexus.erp.wm.controller.serial.WmSerialBusinessAspect;
+import com.nexus.erp.wm.controller.serial.WmSerialBusinessStore;
 import com.nexus.erp.wm.domain.*;
+import com.nexus.erp.wm.domain.bo.WmMaterialHandoverBo;
+import com.nexus.erp.wm.domain.bo.WmMaterialReturnBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaHandoverConfirmBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaReturnConfirmBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.mapper.*;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.WmSerialInventoryRepository;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
+import com.nexus.erp.wm.service.WmSerialSelectionService;
+import com.nexus.erp.wm.strategy.impl.MiscIssueStrategy;
+import com.nexus.erp.wm.strategy.impl.MiscRecptStrategy;
+import com.nexus.erp.wm.trace.ErpTraceContext;
+import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.service.IWfProcessService;
+import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.StringValue;
+
 import org.apache.ibatis.logging.nologging.NoLoggingImpl;
 import org.apache.ibatis.mapping.Environment;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
+import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /** 真实Mapper、租户插件及事务；库存网关用同事务效果表记录，不连接业务数据库。 */
 class PdaMaterialMovementSafetyTest {
@@ -69,15 +97,32 @@ class PdaMaterialMovementSafetyTest {
         GlobalConfigUtils.setGlobalConfig(config, global);
         MybatisPlusInterceptor plugin = new MybatisPlusInterceptor();
         plugin.addInnerInterceptor(new TenantLineInnerInterceptor(new TenantLineHandler() {
-            @Override public Expression getTenantId() { return new StringValue("000000"); }
+            @Override
+            public Expression getTenantId() { return new StringValue("000000"); }
         }));
         config.addInterceptor(plugin);
-        for (Class<?> mapper : List.of(WmMaterialReturnMapper.class, WmMaterialReturnLineMapper.class,
-                WmMaterialHandoverMapper.class, WmMaterialHandoverLineMapper.class,
-                WmStorageLocationMapper.class, WmWarehouseMapper.class, WmMaterialStockMapper.class, WmMaterialStockTxMapper.class, com.nexus.erp.bd.mapper.BdMaterialMapper.class)) config.addMapper(mapper);
-        for (Class<?> entity : List.of(WmMaterialReturn.class, WmMaterialReturnLine.class,
-                WmMaterialHandover.class, WmMaterialHandoverLine.class, WmStorageLocation.class,
-                WmWarehouse.class, WmMaterialStock.class, WmMaterialStockTx.class, com.nexus.erp.bd.domain.BdMaterial.class)) createTable(entity);
+        for (Class<?> mapper :
+                List.of(
+                        WmMaterialReturnMapper.class,
+                        WmMaterialReturnLineMapper.class,
+                        WmMaterialHandoverMapper.class,
+                        WmMaterialHandoverLineMapper.class,
+                        WmStorageLocationMapper.class,
+                        WmWarehouseMapper.class,
+                        WmMaterialStockMapper.class,
+                        WmMaterialStockTxMapper.class,
+                        BdMaterialMapper.class)) config.addMapper(mapper);
+        for (Class<?> entity :
+                List.of(
+                        WmMaterialReturn.class,
+                        WmMaterialReturnLine.class,
+                        WmMaterialHandover.class,
+                        WmMaterialHandoverLine.class,
+                        WmStorageLocation.class,
+                        WmWarehouse.class,
+                        WmMaterialStock.class,
+                        WmMaterialStockTx.class,
+                        BdMaterial.class)) createTable(entity);
         sessions = new SqlSessionTemplate(new MybatisSqlSessionFactoryBuilder().build(config));
         returns = sessions.getMapper(WmMaterialReturnMapper.class);
         returnLines = sessions.getMapper(WmMaterialReturnLineMapper.class);
@@ -167,15 +212,15 @@ class PdaMaterialMovementSafetyTest {
         assertEquals("DRAFT", jdbc.queryForObject("SELECT status FROM " + ("RETURN".equals(kind) ? "wm_material_return WHERE return_id=11" : "wm_material_handover WHERE handover_id=11"), String.class));
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void handoverBindsSourceWarehouseAndPreservesTargetArea() {
         seed("HANDOVER", "2", "1");
         assertTrue(proxy(new PdaHandoverServiceImpl(handovers, handoverLines, posting, locations, warehouses)).sign(11L).getOk());
-        var outgoing = org.mockito.ArgumentCaptor.forClass(WmMiscIssueLine.class);
+        var outgoing = ArgumentCaptor.forClass(WmMiscIssueLine.class);
         verify(posting).postMiscIssue(outgoing.capture(), any());
-        var json = new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(outgoing.getValue());
+        var json = new ObjectMapper().valueToTree(outgoing.getValue());
         assertEquals(1L, json.path("warehouseId").asLong(), "交接出库只能分配单头指定仓库，不能按全仓FIFO扣库存");
-        var incoming = org.mockito.ArgumentCaptor.forClass(WmMiscRecpt.class);
+        var incoming = ArgumentCaptor.forClass(WmMiscRecpt.class);
         verify(posting).postMiscRecpt(any(), incoming.capture(), any());
         assertEquals(5L, incoming.getValue().getAreaId(), "线边库存必须保留真实目标库区");
     }
@@ -184,28 +229,40 @@ class PdaMaterialMovementSafetyTest {
     void realStrategiesAndSerialAspectUseActualMovementSourceWithoutSyntheticMiscRows(String kind) {
         var stocks = sessions.getMapper(WmMaterialStockMapper.class);
         var txs = sessions.getMapper(WmMaterialStockTxMapper.class);
-        var materials = sessions.getMapper(com.nexus.erp.bd.mapper.BdMaterialMapper.class);
-        var material = new com.nexus.erp.bd.domain.BdMaterial(); material.setMaterialId(23L); material.setStatus(1L); material.setIsBatchManage(0L); material.setIsSerialManage(0L); material.setTrackingStage("AUDIT"); material.setTrackingVersion(1L); materials.insert(material);
+        var materials = sessions.getMapper(BdMaterialMapper.class);
+        var material = new BdMaterial();
+        material.setMaterialId(23L);
+        material.setStatus(1L);
+        material.setIsBatchManage(0L);
+        material.setIsSerialManage(0L);
+        material.setTrackingStage("AUDIT");
+        material.setTrackingVersion(1L);
+        materials.insert(material);
         WmMaterialStock stock = new WmMaterialStock(); stock.setStockId(9L); stock.setMaterialId(23L); stock.setWarehouseId(1L); stock.setLocationId(1L); stock.setStockQuantity(new BigDecimal("4")); stock.setReservedQuantity(BigDecimal.ZERO); stock.setFrozenFlag(0L); stock.setVersion(0); stocks.insert(stock);
         seed(kind, "2", "1");
-        var context = mock(com.nexus.erp.wm.trace.ErpTraceContext.class); when(context.tenant()).thenReturn("000000");
-        var json = new com.fasterxml.jackson.databind.ObjectMapper();
-        var repository = new com.nexus.erp.wm.service.WmSerialInventoryRepository(jdbc, stocks, txs, context, json);
-        var serialTarget = new com.nexus.erp.wm.service.WmSerialInventoryService(repository);
-        var selections = new com.nexus.erp.wm.service.WmSerialSelectionService(repository, serialTarget);
-        var store = new com.nexus.erp.wm.controller.serial.WmSerialBusinessStore(jdbc, repository, selections);
-        var adapter = new com.nexus.erp.wm.controller.serial.WmSerialBusinessAdapter(store);
-        var aspect = new com.nexus.erp.wm.controller.serial.WmSerialBusinessAspect(adapter, json);
-        var serialFactory = new org.springframework.aop.aspectj.annotation.AspectJProxyFactory(serialTarget); serialFactory.setProxyTargetClass(true); serialFactory.addAspect(aspect);
-        var serial = (com.nexus.erp.wm.service.WmSerialInventoryService)serialFactory.getProxy();
-        var valuation = mock(com.nexus.erp.wm.service.IInventoryValuationService.class); when(valuation.issueStockCost(any(), any())).thenReturn(BigDecimal.ZERO);
-        var in = new com.nexus.erp.wm.strategy.impl.MiscRecptStrategy(txs, stocks, valuation, materials);
-        var out = new com.nexus.erp.wm.strategy.impl.MiscIssueStrategy(txs, stocks, valuation);
-        org.springframework.test.util.ReflectionTestUtils.setField(in, "serialInventory", serial);
-        org.springframework.test.util.ReflectionTestUtils.setField(out, "serialInventory", serial);
+        var context = mock(ErpTraceContext.class);
+        when(context.tenant()).thenReturn("000000");
+        var json = new ObjectMapper();
+        var repository = new WmSerialInventoryRepository(jdbc, stocks, txs, context, json);
+        var serialTarget = new WmSerialInventoryService(repository);
+        var selections = new WmSerialSelectionService(repository, serialTarget);
+        var store = new WmSerialBusinessStore(jdbc, repository, selections);
+        var adapter = new WmSerialBusinessAdapter(store);
+        var aspect = new WmSerialBusinessAspect(adapter, json);
+        var serialFactory = new AspectJProxyFactory(serialTarget);
+        serialFactory.setProxyTargetClass(true);
+        serialFactory.addAspect(aspect);
+        var serial = (WmSerialInventoryService) serialFactory.getProxy();
+        var valuation = mock(IInventoryValuationService.class);
+        when(valuation.issueStockCost(any(), any())).thenReturn(BigDecimal.ZERO);
+        var in = new MiscRecptStrategy(txs, stocks, valuation, materials);
+        var out = new MiscIssueStrategy(txs, stocks, valuation);
+        ReflectionTestUtils.setField(in, "serialInventory", serial);
+        ReflectionTestUtils.setField(out, "serialInventory", serial);
         doAnswer(i -> { in.execute(i.getArgument(0), i.getArgument(1), i.getArgument(2)); return null; }).when(posting).postMiscRecpt(any(), any(), any());
         doAnswer(i -> { out.execute(i.getArgument(0), i.getArgument(1)); return null; }).when(posting).postMiscIssue(any(), any());
-        var returnTarget = new PdaReturnServiceImpl(returns, returnLines, posting); org.springframework.test.util.ReflectionTestUtils.setField(returnTarget, "serialInventory", serial);
+        var returnTarget = new PdaReturnServiceImpl(returns, returnLines, posting);
+        ReflectionTestUtils.setField(returnTarget, "serialInventory", serial);
         assertDoesNotThrow(() -> assertTrue(("RETURN".equals(kind) ? proxy(returnTarget).finish(11L) : proxy(new PdaHandoverServiceImpl(handovers, handoverLines, posting, locations, warehouses)).sign(11L)).getOk()), "真实SN适配不能把退料或交接ID当成不存在的杂项单");
         var ledger = txs.selectList(null); assertEquals("RETURN".equals(kind) ? 1 : 2, ledger.size());
         assertTrue(ledger.stream().allMatch(tx -> ("WM_MATERIAL_" + kind).equals(tx.getSourceDocType()) && Long.valueOf(11).equals(tx.getSourceDocId())));
@@ -214,18 +271,33 @@ class PdaMaterialMovementSafetyTest {
 
     @ParameterizedTest @ValueSource(strings = {"RETURN", "HANDOVER"})
     void pcCreateCannotAssignLinesToAnotherTenantOrForgeCreator(String kind) {
-        var code = mock(com.nexus.system.strategy.AutoCodeUtil.class); when(code.genSerialCode(any(), any())).thenReturn("DOC202610220001");
-        var helper = new WmServiceHelper(code, mock(com.nexus.workflow.service.IWfProcessService.class), mock(com.nexus.workflow.service.impl.WfMyBusinessServiceImpl.class), mock(com.nexus.common.flowable.helper.FlowableProcInsIdHelper.class));
+        var code = mock(AutoCodeUtil.class);
+        when(code.genSerialCode(any(), any())).thenReturn("DOC202610220001");
+        var helper =
+                new WmServiceHelper(
+                        code,
+                        mock(IWfProcessService.class),
+                        mock(WfMyBusinessServiceImpl.class),
+                        mock(FlowableProcInsIdHelper.class));
         Long id;
         String table;
         if ("RETURN".equals(kind)) {
-            var bo = new com.nexus.erp.wm.domain.bo.WmMaterialReturnBo(); bo.setWarehouseId(2L); bo.setWarehouseCode("WH002"); bo.setReturnType("GOOD");
+            var bo = new WmMaterialReturnBo();
+            bo.setWarehouseId(2L);
+            bo.setWarehouseCode("WH002");
+            bo.setReturnType("GOOD");
             var line = new WmMaterialReturnLine(); line.setTenantId("000001"); line.setCreateBy(9999L); line.setMaterialId(23L); line.setLocationId(20L); line.setQuantity(BigDecimal.ONE); bo.setLines(List.of(line));
-            new com.nexus.erp.wm.controller.WmMaterialReturnController(returns, returnLines, helper).add(bo); id = line.getLineId(); table = "wm_material_return_line";
+            new WmMaterialReturnController(returns, returnLines, helper).add(bo);
+            id = line.getLineId();
+            table = "wm_material_return_line";
         } else {
-            var bo = new com.nexus.erp.wm.domain.bo.WmMaterialHandoverBo(); bo.setWarehouseId(1L); bo.setWarehouseCode("WH001");
+            var bo = new WmMaterialHandoverBo();
+            bo.setWarehouseId(1L);
+            bo.setWarehouseCode("WH001");
             var line = new WmMaterialHandoverLine(); line.setTenantId("000001"); line.setCreateBy(9999L); line.setMaterialId(23L); line.setToLocationId(20L); line.setQuantity(BigDecimal.ONE); bo.setLines(List.of(line));
-            new com.nexus.erp.wm.controller.WmMaterialHandoverController(handovers, handoverLines, locations, helper).add(bo); id = line.getLineId(); table = "wm_material_handover_line";
+            new WmMaterialHandoverController(handovers, handoverLines, locations, helper).add(bo);
+            id = line.getLineId();
+            table = "wm_material_handover_line";
         }
         assertEquals("000000", jdbc.queryForObject("SELECT tenant_id FROM " + table + " WHERE line_id=?", String.class, id), "请求体tenantId不能越出租户边界");
         assertNotEquals(9999L, jdbc.queryForObject("SELECT create_by FROM " + table + " WHERE line_id=?", Long.class, id), "审计身份不能由客户端伪造");

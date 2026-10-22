@@ -1,18 +1,23 @@
 package com.nexus.erp.wm.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.*;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.sql.*;
+import java.util.List;
 import java.util.Map;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class ErpTraceContextTest {
     DynamicRoutingDataSource routing;
@@ -71,17 +76,14 @@ class ErpTraceContextTest {
 
     @Test
     void aTenantWithNulPaddingCannotAliasARealTenantInLegacyBinaryJoins() {
-        try (var tenants = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            tenants.when(com.nexus.common.tenant.helper.TenantHelper::isEnable).thenReturn(true);
+        try (var tenants = mockStatic(TenantHelper.class)) {
+            tenants.when(TenantHelper::isEnable).thenReturn(true);
             for (String tenant :
-                    java.util.List.of(
-                            "000001" + Character.toString(0), "T1", " 000001", "000001 ")) {
-                tenants.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId)
-                        .thenReturn(tenant);
+                    List.of("000001" + Character.toString(0), "T1", " 000001", "000001 ")) {
+                tenants.when(TenantHelper::getTenantId).thenReturn(tenant);
                 assertThrows(RuntimeException.class, context::tenant);
             }
-            tenants.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId)
-                    .thenReturn("000001");
+            tenants.when(TenantHelper::getTenantId).thenReturn("000001");
             assertEquals("000001", context.tenant());
         }
     }

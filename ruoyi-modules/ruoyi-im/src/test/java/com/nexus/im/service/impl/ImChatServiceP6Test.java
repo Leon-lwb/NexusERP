@@ -1,7 +1,15 @@
 package com.nexus.im.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.core.domain.R;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.bo.ImGroupSendBo;
@@ -23,6 +31,7 @@ import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,15 +42,8 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * P6-G1: 引用消息字段填充测试（B3 回归守护）。
@@ -67,19 +69,31 @@ import static org.mockito.Mockito.when;
  */
 class ImChatServiceP6Test extends ImUnitTestBase {
 
-    @Mock private ImMessageMapper imMessageMapper;
-    @Mock private ImGroupMapper imGroupMapper;
-    @Mock private ImGroupMemberMapper imGroupMemberMapper;
-    @Mock private ISysUserService sysUserService;
-    @Mock private ISysUserNotificationService sysUserNotificationService;
-    @Mock private ImRealtimePush imRealtimePush;
-    @Mock private ImMessageTypeRegistry messageTypeRegistry;
-    @Mock private ImChatSupport support;
-    @Mock private ImConversationCache conversationCache;
-    @Mock private ImMetrics imMetrics;
+    @Mock
+    private ImMessageMapper imMessageMapper;
+    @Mock
+    private ImGroupMapper imGroupMapper;
+    @Mock
+    private ImGroupMemberMapper imGroupMemberMapper;
+    @Mock
+    private ISysUserService sysUserService;
+    @Mock
+    private ISysUserNotificationService sysUserNotificationService;
+    @Mock
+    private ImRealtimePush imRealtimePush;
+    @Mock
+    private ImMessageTypeRegistry messageTypeRegistry;
+    @Mock
+    private ImChatSupport support;
+    @Mock
+    private ImConversationCache conversationCache;
+    @Mock
+    private ImMetrics imMetrics;
 
-    @InjectMocks private ImPrivateChatService imPrivateChatService;
-    @InjectMocks private ImGroupChatService imGroupChatService;
+    @InjectMocks
+    private ImPrivateChatService imPrivateChatService;
+    @InjectMocks
+    private ImGroupChatService imGroupChatService;
 
     /**
      * mockStatic ImEnvelopeHelper：让 ImEnvelopeHelper.imMessage(...) 用真实 ObjectMapper 序列化 payload。
@@ -121,19 +135,22 @@ class ImChatServiceP6Test extends ImUnitTestBase {
 
         // mockStatic ImEnvelopeHelper — 用真实 ObjectMapper 序列化
         envelopeHelperMock = Mockito.mockStatic(ImEnvelopeHelper.class);
-        envelopeHelperMock.when(() -> ImEnvelopeHelper.imMessage(any())).thenAnswer(inv -> {
-            java.util.Map<String, Object> payload = inv.getArgument(0);
-            java.util.Map<String, Object> root = new java.util.LinkedHashMap<>();
-            root.put("v", "1");
-            root.put("type", "IM_MESSAGE");
-            root.put("ts", System.currentTimeMillis());
-            root.put("payload", payload);
-            try {
-                return objectMapper.writeValueAsString(root);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        envelopeHelperMock
+                .when(() -> ImEnvelopeHelper.imMessage(any()))
+                .thenAnswer(
+                        inv -> {
+                            Map<String, Object> payload = inv.getArgument(0);
+                            Map<String, Object> root = new LinkedHashMap<>();
+                            root.put("v", "1");
+                            root.put("type", "IM_MESSAGE");
+                            root.put("ts", System.currentTimeMillis());
+                            root.put("payload", payload);
+                            try {
+                                return objectMapper.writeValueAsString(root);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
     }
 
     @AfterEach

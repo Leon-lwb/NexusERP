@@ -5,6 +5,7 @@ import static com.nexus.common.ai.engineering.EngineeringException.require;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nexus.ai.engineering.config.EngineeringProperties;
 import com.nexus.ai.engineering.domain.*;
 import com.nexus.ai.engineering.security.*;
@@ -12,6 +13,7 @@ import com.nexus.common.ai.domain.entity.*;
 import com.nexus.common.ai.engineering.*;
 import com.nexus.common.ai.mapper.AiSessionMapper;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
@@ -217,10 +220,9 @@ public class EngineeringTaskService {
                         422,
                         "INVALID_REQUEST",
                         "板尺寸必须使用有限精度十进制字符串");
-                var number = new java.math.BigDecimal(raw.toString());
+                var number = new BigDecimal(raw.toString());
                 require(
-                        number.signum() > 0
-                                && number.compareTo(new java.math.BigDecimal("1000")) <= 0,
+                        number.signum() > 0 && number.compareTo(new BigDecimal("1000")) <= 0,
                         422,
                         "INVALID_REQUEST",
                         "板尺寸超出允许范围");
@@ -856,9 +858,7 @@ public class EngineeringTaskService {
                         now());
         int changed = 0;
         for (var candidate : candidates)
-            changed +=
-                    com.nexus.common.tenant.helper.TenantHelper.dynamic(
-                            candidate.getTenantId(), () -> expire(candidate));
+            changed += TenantHelper.dynamic(candidate.getTenantId(), () -> expire(candidate));
         return changed;
     }
 
@@ -1005,8 +1005,8 @@ public class EngineeringTaskService {
             String stage,
             String message,
             EngineeringTaskReceipt receipt,
-            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-            EngineeringConnectionDiagnostic connectionDiagnostic) {
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+                    EngineeringConnectionDiagnostic connectionDiagnostic) {
         public Journal(int sequence, String digest, String stage, String message, EngineeringTaskReceipt receipt) {
             this(sequence, digest, stage, message, receipt, null);
         }

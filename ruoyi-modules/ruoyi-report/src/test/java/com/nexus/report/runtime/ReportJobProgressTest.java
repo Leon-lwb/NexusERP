@@ -8,6 +8,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
 
@@ -110,7 +111,7 @@ class ReportJobProgressTest {
                                 state.equals("FAILED") ? "XLSX_EXPORT_FAILED" : null));
                 f.jdbc.update(
                         "UPDATE rpt_export_job SET expires_at=? WHERE job_id=?",
-                        java.sql.Timestamp.from(Instant.now().minusSeconds(1)),
+                        Timestamp.from(Instant.now().minusSeconds(1)),
                         Long.valueOf(job.id()));
                 assertTrue(f.store.tryExpireJob(f.store.job("A", job.id()).orElseThrow()));
                 var expired = f.store.job("A", job.id()).orElseThrow();

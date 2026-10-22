@@ -1,13 +1,15 @@
 package com.nexus.runtime.attestation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import javax.tools.ToolProvider;
-import java.io.File;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPairGenerator;
 import java.security.Signature;
 import java.util.ArrayList;
@@ -18,7 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import static org.junit.jupiter.api.Assertions.*;
+
+import javax.tools.ToolProvider;
 
 /** 真正无端口子 JVM；测试根只进入测试 premain，绝不触碰固定生产信任路径。 */
 class PremainIntegrationTest {
@@ -181,7 +184,7 @@ class PremainIntegrationTest {
         String result = run("normal", "normal", "-Dspring.devtools.restart.enabled=true"); assertTrue(result.contains("category=ATTESTATION_LAUNCH_MODE_UNSUPPORTED"), result);
     }
     @Test void modifiedArtifactIsRejectedBeforeAClassWitnessIsIssued() throws Exception {
-        Files.write(app, new byte[] {1}, java.nio.file.StandardOpenOption.APPEND);
+        Files.write(app, new byte[] {1}, StandardOpenOption.APPEND);
         String result = run("normal", "normal"); assertTrue(result.contains("category=ATTESTATION_RELEASE_INPUT_CHANGED"), result);
     }
     @Test void additionalActualJavaAgentIsRejectedBeforeWitnessActivation() throws Exception {

@@ -4,6 +4,8 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -11,14 +13,14 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
-import com.nexus.mes.flash.domain.FlashRecord;
 import com.nexus.mes.flash.domain.Firmware;
+import com.nexus.mes.flash.domain.FlashRecord;
 import com.nexus.mes.flash.domain.MesContentFile;
 import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.domain.bo.FlashRecordBo;
 import com.nexus.mes.flash.domain.vo.FlashRecordVo;
-import com.nexus.mes.flash.mapper.FlashRecordMapper;
 import com.nexus.mes.flash.mapper.FirmwareMapper;
+import com.nexus.mes.flash.mapper.FlashRecordMapper;
 import com.nexus.mes.flash.mapper.MesContentFileMapper;
 import com.nexus.mes.flash.mapper.MesFlashTypeMapper;
 import com.nexus.mes.flash.provider.FlashContent;
@@ -35,11 +37,11 @@ import com.nexus.mes.pro.domain.vo.ProSnVo;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,8 +50,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * MES固件刷写记录 Service 业务层实现
@@ -340,7 +346,8 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
             return new ArrayList<>();
         }
         // SN 去重工单(mesWoId)
-        List<Long> woIds = snList.stream().map(ProSn::getMesWoId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<Long> woIds =
+                snList.stream().map(ProSn::getMesWoId).filter(Objects::nonNull).distinct().toList();
         if (woIds.isEmpty()) {
             return new ArrayList<>();
         }
@@ -356,11 +363,11 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
             return new ArrayList<>();
         }
         // 按 mesWoId 分组工序绑定, 便于按 SN 的工单定位
-        Map<Long, List<ProWorkOrderStep>> stepsByWo = flashSteps.stream()
-            .collect(java.util.stream.Collectors.groupingBy(ProWorkOrderStep::getMesWoId));
+        Map<Long, List<ProWorkOrderStep>> stepsByWo =
+                flashSteps.stream().collect(Collectors.groupingBy(ProWorkOrderStep::getMesWoId));
         // 预加载固件/配置文件版本(按 contentRefId 批量查, 减少N+1)
-        java.util.Set<Long> firmwareIds = new java.util.HashSet<>();
-        java.util.Set<Long> contentFileIds = new java.util.HashSet<>();
+        Set<Long> firmwareIds = new HashSet<>();
+        Set<Long> contentFileIds = new HashSet<>();
         for (ProWorkOrderStep s : flashSteps) {
             for (Map<String, Object> b : parseStationBindings(s)) {
                 Object refId = b.get("contentRefId");
@@ -374,12 +381,22 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
                 }
             }
         }
-        Map<Long, Firmware> firmwareMap = firmwareIds.isEmpty() ? Map.of() :
-            firmwareMapper.selectBatchIds(firmwareIds).stream()
-                .collect(java.util.stream.Collectors.toMap(Firmware::getFirmwareId, f -> f, (a, b) -> a));
-        Map<Long, MesContentFile> contentFileMap = contentFileIds.isEmpty() ? Map.of() :
-            contentFileMapper.selectBatchIds(contentFileIds).stream()
-                .collect(java.util.stream.Collectors.toMap(MesContentFile::getContentFileId, c -> c, (a, b) -> a));
+        Map<Long, Firmware> firmwareMap =
+                firmwareIds.isEmpty()
+                        ? Map.of()
+                        : firmwareMapper.selectBatchIds(firmwareIds).stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                Firmware::getFirmwareId, f -> f, (a, b) -> a));
+        Map<Long, MesContentFile> contentFileMap =
+                contentFileIds.isEmpty()
+                        ? Map.of()
+                        : contentFileMapper.selectBatchIds(contentFileIds).stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                MesContentFile::getContentFileId,
+                                                c -> c,
+                                                (a, b) -> a));
         // 3. 逐 SN × 绑定项组装待刷行
         List<Map<String, Object>> pending = new ArrayList<>();
         for (ProSn sn : snList) {
@@ -496,16 +513,30 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         ProWorkOrderStep curStep = flashSteps.stream()
             .filter(s -> s.getSequenceNum().equals(curSeqFinal)).findFirst().orElse(null);
         if (curStep == null) {
-            throw new ServiceException("SN当前工序非刷写工序, 禁止刷写: snCode=" + sn.getSnCode()
-                + " 当前工序序号=" + curSeq + ", 刷写工序序号=" + flashSteps.stream().map(s -> s.getSequenceNum().toString()).collect(java.util.stream.Collectors.joining(",")));
+            throw new ServiceException(
+                    "SN当前工序非刷写工序, 禁止刷写: snCode="
+                            + sn.getSnCode()
+                            + " 当前工序序号="
+                            + curSeq
+                            + ", 刷写工序序号="
+                            + flashSteps.stream()
+                                    .map(s -> s.getSequenceNum().toString())
+                                    .collect(Collectors.joining(",")));
         }
         // 该工序须绑定当前刷写类型(content_ref 或 step_flash_config 含 typeCode)
         List<Map<String, Object>> bindings = parseStationBindings(curStep);
         boolean matched = bindings.stream().anyMatch(b -> typeCode.equals(b.get("flashTypeCode"))
             && (contentRefId == null || contentRefId.equals(b.get("contentRefId"))));
         if (!matched) {
-            throw new ServiceException("当前刷写类型[" + typeCode + "]未绑定在该SN工序, 工序[" + curStep.getProcessName()
-                + "]绑定的刷写类型: " + bindings.stream().map(b -> (String) b.get("flashTypeCode")).collect(java.util.stream.Collectors.joining(",")));
+            throw new ServiceException(
+                    "当前刷写类型["
+                            + typeCode
+                            + "]未绑定在该SN工序, 工序["
+                            + curStep.getProcessName()
+                            + "]绑定的刷写类型: "
+                            + bindings.stream()
+                                    .map(b -> (String) b.get("flashTypeCode"))
+                                    .collect(Collectors.joining(",")));
         }
     }
 
@@ -663,11 +694,17 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         if (typeCodes.isEmpty()) {
             return bindings;
         }
-        Map<String, String> gateByType = mesFlashTypeMapper.selectList(Wrappers.<MesFlashType>lambdaQuery()
-                .in(MesFlashType::getTypeCode, typeCodes))
-            .stream()
-            .collect(java.util.stream.Collectors.toMap(MesFlashType::getTypeCode,
-                t -> t.getGateEnabled() == null ? "" : t.getGateEnabled(), (a, b) -> a));
+        Map<String, String> gateByType =
+                mesFlashTypeMapper
+                        .selectList(
+                                Wrappers.<MesFlashType>lambdaQuery()
+                                        .in(MesFlashType::getTypeCode, typeCodes))
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        MesFlashType::getTypeCode,
+                                        t -> t.getGateEnabled() == null ? "" : t.getGateEnabled(),
+                                        (a, b) -> a));
         return bindings.stream()
             .filter(b -> !"0".equals(gateByType.get((String) b.get("flashTypeCode"))))
             .toList();

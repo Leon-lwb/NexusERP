@@ -2,15 +2,19 @@ package com.nexus.mes.pro.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
+
 import com.nexus.mes.pro.domain.ProWorkOrder;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES工单视图对象 pro_work_order
@@ -23,12 +27,11 @@ import java.util.List;
 @AutoMapper(target = ProWorkOrder.class)
 public class ProWorkOrderVo implements Serializable {
 
-    /**
-     * 已核实的当前完工清单和取消修订状态；无清单与未知证据严格区分。
-     */
-    private java.util.Map<String, Object> completionState;
+    /** 已核实的当前完工清单和取消修订状态；无清单与未知证据严格区分。 */
+    private Map<String, Object> completionState;
 
-    @Serial private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * MES工单ID

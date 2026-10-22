@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.erp.wm.barcode.BarcodeGenerator;
@@ -10,6 +14,8 @@ import com.nexus.erp.wm.domain.WmBarcodeConfig;
 import com.nexus.erp.wm.mapper.WmBarcodeConfigMapper;
 import com.nexus.erp.wm.mapper.WmBarcodeMapper;
 import com.nexus.erp.wm.service.impl.WmBarcodeServiceImpl;
+import com.nexus.erp.wm.trace.WmBarcodeIdentityGuard;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -22,10 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 /**
  * 条码生成：生成的条码实例必须携带 snId（问题①回归）
  */
@@ -33,14 +35,20 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class WmBarcodeServiceImplTest {
 
-    @Mock private WmBarcodeMapper baseMapper;
-    @Mock private WmBarcodeConfigMapper barcodeConfigMapper;
-    @Mock private BarcodeGenerator barcodeGenerator;
-    @Mock private BarcodeSequenceProvider barcodeSequenceProvider;
+    @Mock
+    private WmBarcodeMapper baseMapper;
+    @Mock
+    private WmBarcodeConfigMapper barcodeConfigMapper;
+    @Mock
+    private BarcodeGenerator barcodeGenerator;
+    @Mock
+    private BarcodeSequenceProvider barcodeSequenceProvider;
 
-    @Mock private com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
+    @Mock
+    private WmBarcodeIdentityGuard identities;
 
-    @InjectMocks private WmBarcodeServiceImpl wmBarcodeService;
+    @InjectMocks
+    private WmBarcodeServiceImpl wmBarcodeService;
 
     /**
      * 预热 MyBatis-Plus Lambda 缓存。

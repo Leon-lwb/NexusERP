@@ -27,8 +27,10 @@ import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqOeeService;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -37,11 +39,11 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -103,7 +105,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
         BigDecimal totalRun = sum(list, EqOeeRecordVo::getRunMinutes);
         BigDecimal totalDown = sum(list, EqOeeRecordVo::getDowntimeMinutes);
         int totalFault = list.stream().mapToInt(r -> r.getFaultCount() == null ? 0 : r.getFaultCount()).sum();
-        long eqCount = list.stream().map(EqOeeRecordVo::getEquipmentId).filter(java.util.Objects::nonNull).distinct().count();
+        long eqCount =
+                list.stream()
+                        .map(EqOeeRecordVo::getEquipmentId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .count();
         BigDecimal avgAvail = totalPlanned.compareTo(BigDecimal.ZERO) > 0
             ? totalRun.divide(totalPlanned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         vo.setAvgAvailability(avgAvail);
@@ -523,7 +530,10 @@ public class EqOeeServiceImpl implements IEqOeeService {
     }
 
     private BigDecimal sum(List<EqOeeRecordVo> list, Function<EqOeeRecordVo, BigDecimal> getter) {
-        return list.stream().map(getter).filter(java.util.Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return list.stream()
+                .map(getter)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private LocalDate toLocalDate(Date date) {

@@ -1,5 +1,9 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor;
@@ -22,6 +26,8 @@ import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProFlowCardService;
 import com.nexus.mes.pro.service.IProSnService;
 import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesSerialReferenceService;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationPassReportDto;
@@ -29,6 +35,7 @@ import com.nexus.station.mapper.StationDeviceMapper;
 import com.nexus.station.mapper.StationPassGuardMapper;
 import com.nexus.station.mapper.StationReportMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
@@ -57,12 +64,9 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 单件报工经真实动态数据源/事务代理执行，私有 H2 仅承载事务，业务 Mapper 均为替身。
@@ -80,21 +84,36 @@ class StationProgressCurrentReadTest {
     private static final StationPassService.OperatorInfo OPERATOR =
             new StationPassService.OperatorInfo(105L, "EMP-1", "操作员");
 
-    @Mock private StationReportMapper reportMapper;
-    @Mock private StationSchWorkerMapper schWorkerMapper;
-    @Mock private StationDeviceMapper deviceMapper;
-    @Mock private ProSnMapper proSnMapper;
-    @Mock private ProFlowCardMapper flowCardMapper;
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private TestRecordMapper testRecordMapper;
-    @Mock private IProFlowCardService flowCardService;
-    @Mock private IProSnService proSnService;
-    @Mock private NcrOrderMapper ncrOrderMapper;
-    @Mock private StationPassGuardMapper guard;
-    @Mock private ProWorkOrderStepProgressService progressService;
-    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks private StationPassService target;
+    @Mock
+    private StationReportMapper reportMapper;
+    @Mock
+    private StationSchWorkerMapper schWorkerMapper;
+    @Mock
+    private StationDeviceMapper deviceMapper;
+    @Mock
+    private ProSnMapper proSnMapper;
+    @Mock
+    private ProFlowCardMapper flowCardMapper;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private TestRecordMapper testRecordMapper;
+    @Mock
+    private IProFlowCardService flowCardService;
+    @Mock
+    private IProSnService proSnService;
+    @Mock
+    private NcrOrderMapper ncrOrderMapper;
+    @Mock
+    private StationPassGuardMapper guard;
+    @Mock
+    private ProWorkOrderStepProgressService progressService;
+    @Mock
+    private MesSerialReferenceService serialReferences;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
+    @InjectMocks
+    private StationPassService target;
 
     private StationPassService service;
     private MockedStatic<TenantHelper> tenant;
@@ -127,9 +146,7 @@ class StationProgressCurrentReadTest {
     void setUp() {
         lenient()
                 .when(serialReferences.submissionStatus(any()))
-                .thenReturn(
-                        java.util.Map.of(
-                                "submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
+                .thenReturn(Map.of("submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
         assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
         dataSource = new JdbcDataSource();
         dataSource.setURL("jdbc:h2:mem:station_current_read_" + UUID.randomUUID());
@@ -194,7 +211,7 @@ class StationProgressCurrentReadTest {
                 .when(serialReferences.resolve(SN))
                 .thenAnswer(
                         invocation ->
-                                new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                new MesSerialReferenceService.Resolved(
                                         TENANT, 10001L, 1L, SN, SN, sn.getMaterialId(), sn));
         lenient().when(progressService.lockForSn(SN)).thenReturn(WORK_ORDER_ID);
         lenient().when(guard.lockSn(TENANT, SN)).thenAnswer(invocation -> List.of(sn));

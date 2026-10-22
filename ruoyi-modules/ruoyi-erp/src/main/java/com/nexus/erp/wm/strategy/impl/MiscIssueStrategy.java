@@ -2,21 +2,28 @@ package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmMiscIssueLine;
-import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.service.IInventoryValuationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 杂项出库策略
@@ -29,8 +36,8 @@ import java.util.List;
 @Slf4j
 @Component
 public class MiscIssueStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：杂项出库
@@ -52,21 +59,19 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
      */
     private final WmMaterialStockMapper stockMapper;
 
-    /**
-     * 库存计价服务(F3-a:出库按移动平均结转成本)
-     */
-    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+    /** 库存计价服务(F3-a:出库按移动平均结转成本) */
+    private final IInventoryValuationService valuationService;
 
     /**
      * 构造杂项出库策略实例
      *
      * @param stockTxMapper 库存事务Mapper
-     * @param stockMapper   库存Mapper
+     * @param stockMapper 库存Mapper
      */
     public MiscIssueStrategy(
             WmMaterialStockTxMapper stockTxMapper,
             WmMaterialStockMapper stockMapper,
-            com.nexus.erp.wm.service.IInventoryValuationService valuationService) {
+            IInventoryValuationService valuationService) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.valuationService = valuationService;
@@ -93,16 +98,18 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
         WmMiscIssueLine line = (WmMiscIssueLine) args[0];
         Date now = (Date) args[1];
         String sourceType = line.getPostingSourceType() == null ? SOURCE_DOC_TYPE_MISC_ISSUE : line.getPostingSourceType();
-        if (!java.util.Set.of(SOURCE_DOC_TYPE_MISC_ISSUE, "WM_MATERIAL_HANDOVER").contains(sourceType)) {
+        if (!Set.of(SOURCE_DOC_TYPE_MISC_ISSUE, "WM_MATERIAL_HANDOVER").contains(sourceType)) {
             throw new ServiceException("杂项出库来源类型未授权");
         }
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                        WmSerialPostingRequest.out(
                                 sourceType,
                                 line.getIssueId(),
                                 line.getLineId(),
-                                "WM_MATERIAL_HANDOVER".equals(sourceType) ? "HANDOVER" : "MISC_ISSUE",
+                                "WM_MATERIAL_HANDOVER".equals(sourceType)
+                                        ? "HANDOVER"
+                                        : "MISC_ISSUE",
                                 line.getMaterialId(),
                                 line.getQuantity(),
                                 line.getWarehouseId(),

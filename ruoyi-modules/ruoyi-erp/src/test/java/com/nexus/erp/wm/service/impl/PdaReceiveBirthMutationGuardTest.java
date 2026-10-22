@@ -1,7 +1,12 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -12,11 +17,12 @@ import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.*;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
+import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
+import com.nexus.erp.wm.service.PdaReceiveShelfAllocationService;
 import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
-import com.nexus.erp.wm.service.PdaReceiveShelfAllocationService;
-import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,14 +39,11 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 /** 实际 PDA 服务及真实冻结守卫回归；Spring 事务代理使用连接替身，不连接真实数据库。 */
 class PdaReceiveBirthMutationGuardTest {
@@ -110,13 +113,22 @@ class PdaReceiveBirthMutationGuardTest {
         when(details.selectOne(any())).thenReturn(allocation);
         when(details.selectList(any())).thenReturn(List.of(allocation));
         when(details.updateById(any(WmMaterialReceiveDetail.class))).thenReturn(1);
-        when(details.update(any(), any())).thenAnswer(i -> {
-            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
-            com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<?> update = i.getArgument(1);
-            assertThat(update.getSqlSet()).contains("location_id", "location_code")
-                .doesNotContain("quantity", "receive_id", "line_id", "material_id");
-            allocation.setLocationId(7L); allocation.setLocationCode("A-01"); return 1;
-        });
+        when(details.update(any(), any()))
+                .thenAnswer(
+                        i -> {
+                            assertThat(
+                                            TransactionSynchronizationManager
+                                                    .isActualTransactionActive())
+                                    .isTrue();
+                            LambdaUpdateWrapper<?> update = i.getArgument(1);
+                            assertThat(update.getSqlSet())
+                                    .contains("location_id", "location_code")
+                                    .doesNotContain(
+                                            "quantity", "receive_id", "line_id", "material_id");
+                            allocation.setLocationId(7L);
+                            allocation.setLocationCode("A-01");
+                            return 1;
+                        });
         when(details.insert(any(WmMaterialReceiveDetail.class))).thenReturn(1);
         when(lines.update(any(), any())).thenReturn(1);
         when(frozen.discoverDetailIdentity(TENANT, 901L)).thenReturn(identity(101L, 701L));
@@ -131,7 +143,8 @@ class PdaReceiveBirthMutationGuardTest {
         });
     }
 
-    @SuppressWarnings("unchecked") private <T> T transactional(T bean) {
+    @SuppressWarnings("unchecked")
+    private <T> T transactional(T bean) {
         ProxyFactory proxy = new ProxyFactory(bean); proxy.setProxyTargetClass(true);
         proxy.addAdvice(new TransactionInterceptor(transactions, new AnnotationTransactionAttributeSource()));
         return (T) proxy.getProxy();

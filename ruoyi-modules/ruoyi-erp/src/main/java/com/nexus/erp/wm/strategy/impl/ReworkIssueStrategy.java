@@ -1,7 +1,6 @@
 package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
@@ -10,10 +9,16 @@ import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.ReworkStockMessage;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,8 +37,8 @@ import java.util.List;
 @Slf4j
 @Component
 public class ReworkIssueStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：返工领料
@@ -107,7 +112,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
 
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                        WmSerialPostingRequest.out(
                                 "PRD_REWORK_ORDER",
                                 reworkId,
                                 null,

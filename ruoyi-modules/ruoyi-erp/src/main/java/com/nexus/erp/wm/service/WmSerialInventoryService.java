@@ -1,19 +1,23 @@
 package com.nexus.erp.wm.service;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.erp.wm.domain.*;
+
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
-import org.springframework.beans.BeanUtils;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
-import java.math.*;
-import java.util.*;
 
-/**
- * 仅在ERP本地事务中冻结并执行单件事实；AUDIT由调用方显式进入原版本适配器。
- */
+import java.math.*;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
+
+/** 仅在ERP本地事务中冻结并执行单件事实；AUDIT由调用方显式进入原版本适配器。 */
 @Service
 @DS("erp")
 public class WmSerialInventoryService {
@@ -261,7 +265,7 @@ public class WmSerialInventoryService {
                         "COUNT_ADJUST".equals(r.txType())
                                 || stock.getExpireDate() == null
                                 || !stock.getExpireDate()
-                                        .before(java.sql.Date.valueOf(java.time.LocalDate.now())),
+                                        .before(java.sql.Date.valueOf(LocalDate.now())),
                         "SN库存已过期");
                 store.validateStockSource(r, stock);
                 store.validateOutgoingOrigin(r, item, stock);
@@ -459,7 +463,7 @@ public class WmSerialInventoryService {
                                                 + "\",\"identityVersion\":\""
                                                 + store.identityVersion(f.getSnId())
                                                 + "\"}")
-                        .collect(java.util.stream.Collectors.joining(","));
+                        .collect(Collectors.joining(","));
         payload = payload.substring(0, payload.length() - 1) + ",\"items\":[" + children + "]}";
         store.enqueue(group.id(), payload, TraceHashes.sha256(payload));
         return true;

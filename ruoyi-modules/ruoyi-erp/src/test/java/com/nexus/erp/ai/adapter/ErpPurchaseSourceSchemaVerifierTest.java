@@ -1,15 +1,20 @@
 package com.nexus.erp.ai.adapter;
 
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper;
-import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper.TableEngine;
-import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper.NativeQuantityColumn;
-import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
-import org.junit.jupiter.api.Test;
-import java.math.BigDecimal;
-import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper;
+import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper.NativeQuantityColumn;
+import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper.TableEngine;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
+import org.apache.ibatis.session.Configuration;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /** 未联网的元数据反例；不将建库脚本的InnoDB声明当成当前实际表已核验。 */
 class ErpPurchaseSourceSchemaVerifierTest {
@@ -83,17 +88,20 @@ class ErpPurchaseSourceSchemaVerifierTest {
         assertThrows(ServiceException.class,verifier::requireTransactionalSources);verify(mapper,never()).selectTableEngines();
     }
     @Test void actualDefinitionSqlReferencesEveryCertifiedTableWithoutBusinessRows() {
-        var c=new org.apache.ibatis.session.Configuration();c.addMapper(ErpPurchaseSourceSchemaMapper.class);
+        var c = new Configuration();
+        c.addMapper(ErpPurchaseSourceSchemaMapper.class);
         var ms=c.getMappedStatement(ErpPurchaseSourceSchemaMapper.class.getName()+".pinTableDefinitions");
         String sql=ms.getBoundSql(null).getSql().toLowerCase(Locale.ROOT);
-        var found=new HashSet<String>();var matches=java.util.regex.Pattern.compile("from ([a-z_]+) where 1=0").matcher(sql);
+        var found = new HashSet<String>();
+        var matches = Pattern.compile("from ([a-z_]+) where 1=0").matcher(sql);
         while(matches.find()) assertTrue(found.add(matches.group(1)));
         assertEquals(ErpPurchaseSourceSchemaVerifier.TABLES,found);assertTrue(ms.isFlushCacheRequired());assertFalse(ms.isUseCache());
         assertFalse(sql.contains("join")||sql.contains("select *")||sql.contains("#{")||sql.contains("insert")||sql.contains("update"));
     }
 
     @Test void definitionPinMustBypassServerCacheNotOnlyMyBatisCache() {
-        var c=new org.apache.ibatis.session.Configuration();c.addMapper(ErpPurchaseSourceSchemaMapper.class);
+        var c = new Configuration();
+        c.addMapper(ErpPurchaseSourceSchemaMapper.class);
         var ms=c.getMappedStatement(ErpPurchaseSourceSchemaMapper.class.getName()+".pinTableDefinitions");
         String sql=ms.getBoundSql(null).getSql().strip().toLowerCase(Locale.ROOT);
         // MySQL 5.7 只允许 UNION 首个 SELECT 指定 SQL_NO_CACHE；不改会话/全局缓存变量。

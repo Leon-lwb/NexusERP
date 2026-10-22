@@ -3,10 +3,11 @@ package com.nexus.ai.service.decision;
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.dto.DecisionPurchaseContractV2;
-import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -67,7 +69,7 @@ public class DecisionActionProposalService {
             actions.add(build(input, DecisionActionType.SEND_EXPEDITE_NOTICE, "通知采购负责人核实到货承诺",
                 Map.of("runId", String.valueOf(input.runId()), "purchaseLineIds", purchaseLineIds)));
         }
-        if (contracts == null || contracts.stream().anyMatch(java.util.Objects::isNull))
+        if (contracts == null || contracts.stream().anyMatch(Objects::isNull))
             throw new IllegalArgumentException("冻结采购合同集合不可为空或包含空行");
         if (!contracts.isEmpty() && (target.type() != DecisionBusinessType.WORK_ORDER
             || !input.rootCauses().contains("MATERIAL_SHORTAGE")))

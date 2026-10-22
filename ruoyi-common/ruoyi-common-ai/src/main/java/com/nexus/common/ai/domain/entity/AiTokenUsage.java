@@ -2,12 +2,14 @@ package com.nexus.common.ai.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * AI Token 用量日统计实体
@@ -61,8 +63,8 @@ public class AiTokenUsage implements Serializable {
     private BigDecimal totalCost;
 
     /** 创建时间 */
-    private java.time.LocalDateTime createTime;
+    private LocalDateTime createTime;
 
     /** 更新时间 */
-    private java.time.LocalDateTime updateTime;
+    private LocalDateTime updateTime;
 }

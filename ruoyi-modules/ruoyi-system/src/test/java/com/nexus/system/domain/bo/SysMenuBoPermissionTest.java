@@ -1,10 +1,16 @@
 package com.nexus.system.domain.bo;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.nexus.common.core.constant.RegexConstants;
+
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import jakarta.validation.constraints.Pattern;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -12,13 +18,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+// 同名类型说明：本文件同时使用 jakarta.validation.constraints.Pattern 和 java.util.regex.Pattern，后者保留全限定名以区分。
 
-/**
- * 离线验证菜单 API 实际使用的权限约束，不启动 Spring、服务或数据库。
- */
+/** 离线验证菜单 API 实际使用的权限约束，不启动 Spring、服务或数据库。 */
 class SysMenuBoPermissionTest {
 
     private static ValidatorFactory factory;

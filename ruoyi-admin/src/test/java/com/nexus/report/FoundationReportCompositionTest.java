@@ -15,13 +15,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.*;
 
+import javax.sql.DataSource;
+
 /** 在应用组合层验证ERP、MES目录与报表模板完全匹配，无需连接实际业务库。 */
 class FoundationReportCompositionTest {
     /** 严格的一版编译器。 */
     private final ReportCompiler compiler = new ReportCompiler(new ObjectMapper());
 
     /** 用于装配构造的只读入口，本测试不调用取数。 */
-    private final JdbcTemplate jdbc = new JdbcTemplate(mock(javax.sql.DataSource.class));
+    private final JdbcTemplate jdbc = new JdbcTemplate(mock(DataSource.class));
 
     /**
      * 加载应用装配的14类固定代码数据集。

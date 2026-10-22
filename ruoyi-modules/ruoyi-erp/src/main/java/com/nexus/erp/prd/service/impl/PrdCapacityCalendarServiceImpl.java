@@ -2,8 +2,8 @@ package com.nexus.erp.prd.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -21,22 +21,25 @@ import com.nexus.erp.sch.domain.SchPlan;
 import com.nexus.erp.sch.domain.SchShift;
 import com.nexus.erp.sch.mapper.SchPlanMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Time;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Objects;
 
 /**
@@ -425,8 +428,9 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     private static final long DAY_SECONDS = 24L * 60 * 60;
 
     private LocalTime shiftTime(Date time) {
-        return time instanceof java.sql.Time sqlTime ? sqlTime.toLocalTime()
-            : Instant.ofEpochMilli(time.getTime()).atZone(BUSINESS_ZONE).toLocalTime();
+        return time instanceof Time sqlTime
+                ? sqlTime.toLocalTime()
+                : Instant.ofEpochMilli(time.getTime()).atZone(BUSINESS_ZONE).toLocalTime();
     }
 
     private BigDecimal calculateShiftAvailableHours(SchShift shift) {

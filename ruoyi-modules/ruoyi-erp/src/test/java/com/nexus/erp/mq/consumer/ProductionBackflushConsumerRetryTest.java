@@ -1,32 +1,35 @@
 package com.nexus.erp.mq.consumer;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import cn.hutool.extra.spring.SpringUtil;
+
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.prd.service.ProductionCompletionPostingService;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
+import com.nexus.erp.prd.service.ProductionCompletionPostingService;
 import com.nexus.erp.prd.service.impl.PrdBackflushServiceImpl;
 import com.nexus.erp.wm.domain.vo.PutawayLocation;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.IWmProductionRecptService;
 import com.rabbitmq.client.Channel;
-import cn.hutool.extra.spring.SpringUtil;
-import org.redisson.api.RedissonClient;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 完工失败重投不能被提前占用的缓存键冒充成功；仅使用内存缓存语义桩。 */
 class ProductionBackflushConsumerRetryTest {
@@ -54,15 +57,31 @@ class ProductionBackflushConsumerRetryTest {
         ProductionCompletionPostingService posting = mock(ProductionCompletionPostingService.class);
         consumer = new ProductionBackflushConsumer(posting);
         // 此类仅验消费模板重试/ACK边界；持久验账与实际代理事务在 prd 专门测试。
-        doAnswer(inv -> {
-            ProductionCompleteMessage m = inv.getArgument(0);
-            backflush.backflushOnCompletion(m.getWoId(), m.getCompletionQty());
-            PutawayLocation target = putaway.resolvePutaway(m.getMaterialId(), m.getCompletionQty());
-            receipt.createAndExecute(m.getWoId(), m.getWoNo(), m.getMaterialId(), m.getMaterialCode(), m.getMaterialName(),
-                null, m.getCompletionQty(), target.getWarehouseId(), target.getWarehouseCode(), target.getWarehouseName(),
-                target.getLocationId(), target.getLocationCode(), target.getLocationName(), new java.util.Date());
-            return null;
-        }).when(posting).postCompletion(any());
+        doAnswer(
+                        inv -> {
+                            ProductionCompleteMessage m = inv.getArgument(0);
+                            backflush.backflushOnCompletion(m.getWoId(), m.getCompletionQty());
+                            PutawayLocation target =
+                                    putaway.resolvePutaway(m.getMaterialId(), m.getCompletionQty());
+                            receipt.createAndExecute(
+                                    m.getWoId(),
+                                    m.getWoNo(),
+                                    m.getMaterialId(),
+                                    m.getMaterialCode(),
+                                    m.getMaterialName(),
+                                    null,
+                                    m.getCompletionQty(),
+                                    target.getWarehouseId(),
+                                    target.getWarehouseCode(),
+                                    target.getWarehouseName(),
+                                    target.getLocationId(),
+                                    target.getLocationCode(),
+                                    target.getLocationName(),
+                                    new Date());
+                            return null;
+                        })
+                .when(posting)
+                .postCompletion(any());
         message = new ProductionCompleteMessage();
         message.setMessageId("completion-retry");
         message.setTenantId(7L);

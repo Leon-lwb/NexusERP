@@ -1,17 +1,21 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionResult;
+import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.EvidenceItem;
 import com.nexus.common.ai.decision.dto.RetrievalHit;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("dev")
 class DecisionEvidenceServiceTest {
@@ -74,10 +78,21 @@ class DecisionEvidenceServiceTest {
     @Test
     void numericEvidenceForOneScenarioDoesNotProveDifferentScenarioKpis() {
         var baseline = DecisionTestFixtures.kpis(1, 3, 0);
-        var other = new com.nexus.common.ai.decision.dto.DecisionKpiSet(1, 1, 3, 3,
-            baseline.makespanDate(), 0, BigDecimal.valueOf(5), null,
-            baseline.maxResourceUtilization(), 0, 0, BigDecimal.ZERO);
-        List<EvidenceItem> provided = new java.util.ArrayList<>();
+        var other =
+                new DecisionKpiSet(
+                        1,
+                        1,
+                        3,
+                        3,
+                        baseline.makespanDate(),
+                        0,
+                        BigDecimal.valueOf(5),
+                        null,
+                        baseline.maxResourceUtilization(),
+                        0,
+                        0,
+                        BigDecimal.ZERO);
+        List<EvidenceItem> provided = new ArrayList<>();
         provided.add(scoped("RISK", "risk_score", "50"));
         provided.add(scoped("APS_EDD", "impacted_order_count", "1"));
         provided.add(scoped("APS_EDD", "delayed_work_order_count", "1"));
@@ -99,7 +114,7 @@ class DecisionEvidenceServiceTest {
     @Test
     void scenarioEvidenceKeysMustNameEachNumericalFactTheyClaimToSupport() {
         var kpi = DecisionTestFixtures.kpis(1, 3, 0);
-        List<EvidenceItem> evidence = new java.util.ArrayList<>();
+        List<EvidenceItem> evidence = new ArrayList<>();
         evidence.add(scoped("RISK", "risk_score", "50"));
         for (String metric : List.of("impacted_order_count", "delayed_work_order_count",
             "total_tardiness_days", "max_tardiness_days", "shortage_material_count",
@@ -120,10 +135,22 @@ class DecisionEvidenceServiceTest {
 
         List<String> keys = service.normalize(evidence).stream()
             .filter(item -> "APS_EDD".equals(item.sourceCode())).map(EvidenceItem::evidenceKey).toList();
-        var bound = new com.nexus.common.ai.decision.dto.DecisionScenario(unbound.scenarioCode(),
-            unbound.scenarioName(), unbound.strategy(), unbound.feasible(), unbound.infeasibleReasons(),
-            unbound.kpis(), unbound.objectiveScore(), unbound.rank(), unbound.overrides(), keys,
-            unbound.schedulePreview(), unbound.inputHash(), unbound.delayedOrders(), unbound.bottleneckResources());
+        var bound =
+                new DecisionScenario(
+                        unbound.scenarioCode(),
+                        unbound.scenarioName(),
+                        unbound.strategy(),
+                        unbound.feasible(),
+                        unbound.infeasibleReasons(),
+                        unbound.kpis(),
+                        unbound.objectiveScore(),
+                        unbound.rank(),
+                        unbound.overrides(),
+                        keys,
+                        unbound.schedulePreview(),
+                        unbound.inputHash(),
+                        unbound.delayedOrders(),
+                        unbound.bottleneckResources());
         DecisionResult valid = new DecisionResult(10L, null, 50, null, "HIGH", List.of(),
             null, List.of(bound), null, null, evidence, List.of(), List.of());
         assertDoesNotThrow(() -> service.assertNumericEvidenceCoverage(valid));
@@ -166,10 +193,22 @@ class DecisionEvidenceServiceTest {
     @Test
     void shortageRatioCannotBorrowRawAggregateEvidence() {
         // 相同数值的原始跨单位聚合，不是无量纲比例的来源证据。
-        var k = new com.nexus.common.ai.decision.dto.DecisionKpiSet(1, 1, 3, 3,
-            "2026-10-01", 0, BigDecimal.ZERO, null, BigDecimal.valueOf(80), 0, 0,
-            BigDecimal.ZERO, new BigDecimal("0.25"));
-        var provided = new java.util.ArrayList<EvidenceItem>();
+        var k =
+                new DecisionKpiSet(
+                        1,
+                        1,
+                        3,
+                        3,
+                        "2026-10-01",
+                        0,
+                        BigDecimal.ZERO,
+                        null,
+                        BigDecimal.valueOf(80),
+                        0,
+                        0,
+                        BigDecimal.ZERO,
+                        new BigDecimal("0.25"));
+        var provided = new ArrayList<EvidenceItem>();
         provided.add(scoped("RISK", "risk_score", "50"));
         for (String metric : List.of("impacted_order_count", "delayed_work_order_count",
             "total_tardiness_days", "max_tardiness_days", "shortage_material_count",
@@ -184,10 +223,25 @@ class DecisionEvidenceServiceTest {
             provided.add(scoped("APS_CR", metric, value));
         }
         var original = DecisionTestFixtures.scenario("APS_CR", true, k, 0);
-        var scenario = new com.nexus.common.ai.decision.dto.DecisionScenario("APS_CR", "CR", "CR", true,
-            List.of(), k, BigDecimal.ZERO, 1, original.overrides(), service.normalize(provided).stream()
-                .filter(e -> "APS_CR".equals(e.sourceCode())).map(EvidenceItem::evidenceKey).toList(),
-            List.of(), original.inputHash(), List.of(), List.of());
+        var scenario =
+                new DecisionScenario(
+                        "APS_CR",
+                        "CR",
+                        "CR",
+                        true,
+                        List.of(),
+                        k,
+                        BigDecimal.ZERO,
+                        1,
+                        original.overrides(),
+                        service.normalize(provided).stream()
+                                .filter(e -> "APS_CR".equals(e.sourceCode()))
+                                .map(EvidenceItem::evidenceKey)
+                                .toList(),
+                        List.of(),
+                        original.inputHash(),
+                        List.of(),
+                        List.of());
         var result = new DecisionResult(10L, null, 50, null, "HIGH", List.of(), null,
             List.of(scenario), null, null, provided, List.of(), List.of());
         assertThrows(IllegalArgumentException.class, () -> service.assertNumericEvidenceCoverage(result));

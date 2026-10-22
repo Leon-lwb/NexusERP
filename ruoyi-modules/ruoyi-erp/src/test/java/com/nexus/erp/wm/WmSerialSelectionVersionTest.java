@@ -1,24 +1,28 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.trace.*;
+import com.nexus.erp.wm.controller.WmSerialDetailAdvice;
+import com.nexus.erp.wm.controller.serial.WmSerialBusinessStore;
 import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.bo.WmSerialSelectionBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaIssueDetailVo;
 import com.nexus.erp.wm.service.*;
-import com.nexus.erp.wm.controller.WmSerialDetailAdvice;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
-import org.springframework.http.server.*;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import java.net.URI;
+import org.springframework.http.server.*;
+
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class WmSerialSelectionVersionTest {
     @Test
@@ -51,11 +55,11 @@ class WmSerialSelectionVersionTest {
 
     @Test
     void actualPdaDetailReceivesOpaqueSourceVersionAndServerPolicyWithoutIdTruncation() {
-        var selections = mock(com.nexus.erp.wm.controller.serial.WmSerialBusinessStore.class);
+        var selections = mock(WmSerialBusinessStore.class);
         TrackingPolicy policy = new TrackingPolicy(false, true, true, 7L, TrackingStage.STRICT);
         when(selections.detail("WM_PRODUCTION_ISSUE", 9007199254740993L, 9007199254740995L))
                 .thenReturn(
-                        new com.nexus.erp.wm.controller.serial.WmSerialBusinessStore.Detail(
+                        new WmSerialBusinessStore.Detail(
                                 "a".repeat(64), "2", policy, List.of(), "EMPTY", List.of()));
         ObjectMapper app = new ObjectMapper();
         app.registerModule(

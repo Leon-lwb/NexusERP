@@ -3,9 +3,13 @@ package com.nexus.erp.wm.trace;
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.trace.MaterialTraceEvent;
 import com.nexus.common.trace.port.TraceEventHandler;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -55,9 +59,7 @@ public class ErpProcessTraceEventHandler implements TraceEventHandler {
         if ("SN_SCRAPPED".equals(event.eventType())) {
             long identity;
             try {
-                identity =
-                        new java.math.BigDecimal(payload.path("identityId").asText())
-                                .longValueExact();
+                identity = new BigDecimal(payload.path("identityId").asText()).longValueExact();
             } catch (Exception e) {
                 throw new IllegalArgumentException("在制报废缺少正式身份");
             }

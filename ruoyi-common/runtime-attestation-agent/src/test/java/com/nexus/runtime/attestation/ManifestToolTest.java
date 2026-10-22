@@ -1,18 +1,27 @@
 package com.nexus.runtime.attestation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
+import java.security.KeyPairGenerator;
+import java.security.Signature;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.stream.Collectors;
 
 /** 此处校验发布输入，不把 jar 内容当成已加载字节。 */
 class ManifestToolTest {
@@ -67,7 +76,7 @@ class ManifestToolTest {
     }
     @Test void procurementPublicationCannotSignAnOldBoundaryMissingNewBornAndReadbackClasses() throws Exception {
         Path app = jar(directory.resolve("app.jar"), Map.of("fixture/Main.class", new byte[] {1})); Path agent = agent();
-        java.lang.reflect.Method method;
+        Method method;
         try { method = Class.forName("com.nexus.runtime.attestation.ReleaseManifestTool").getDeclaredMethod("createProcurementV2", String.class, String.class, Path.class, List.class); }
         catch (NoSuchMethodException missing) { throw new AssertionError("发布工具必须强制核对 Born V2 类覆盖", missing); }
         var error = assertThrows(InvocationTargetException.class, () -> method.invoke(null, "a".repeat(40), "fixture.Main", agent, List.of(app)));
@@ -79,12 +88,14 @@ class ManifestToolTest {
         try { boundary = Class.forName("com.nexus.runtime.attestation.ProcurementRuntimeBoundary"); }
         catch (ClassNotFoundException missing) { throw new AssertionError("缺少签名发布与 system 共享的 V2 类集", missing); }
         @SuppressWarnings("unchecked") List<String> required = (List<String>) boundary.getField("REQUIRED_CLASSES").get(null);
-        Map<String, byte[]> entries = new java.util.TreeMap<>(); entries.put("fixture/Main.class", new byte[] {1});
+        Map<String, byte[]> entries = new TreeMap<>();
+        entries.put("fixture/Main.class", new byte[] {1});
         for (String name : required) entries.put(name.replace('.', '/') + ".class", new byte[] {2});
         Path app = jar(directory.resolve("app.jar"), entries); Path agent = agent();
         var method = Class.forName("com.nexus.runtime.attestation.ReleaseManifestTool").getDeclaredMethod("createProcurementV2", String.class, String.class, Path.class, List.class);
         byte[] content = (byte[]) method.invoke(null, "a".repeat(40), "fixture.Main", agent, List.of(app));
-        var root = java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair(); var signer = java.security.Signature.getInstance("Ed25519");
+        var root = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+        var signer = Signature.getInstance("Ed25519");
         signer.initSign(root.getPrivate()); signer.update(content); var release = ReleaseManifest.verify(content, signer.sign(), root.getPublic());
         assertEquals("PROCUREMENT_RECEIPT_IQC_BIRTH_V2", release.getClass().getDeclaredMethod("boundaryContract").invoke(release));
         assertTrue(release.classes().keySet().containsAll(required));
@@ -101,10 +112,12 @@ class ManifestToolTest {
     }
 
     @Test void actualSigningCliUsesOnlyExplicitExistingKeyAndNeverOverwritesOrInstallsTrust() throws Exception {
-        Map<String, byte[]> entries = new java.util.TreeMap<>(); entries.put("fixture/Main.class", new byte[] {1});
+        Map<String, byte[]> entries = new TreeMap<>();
+        entries.put("fixture/Main.class", new byte[] {1});
         for (String name : ProcurementRuntimeBoundary.REQUIRED_CLASSES) entries.put(name.replace('.', '/') + ".class", new byte[] {2});
         Path app = jar(directory.resolve("app.jar"), entries); Path agent = agent();
-        var root = java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair(); Path key = directory.resolve("private-fixture-key.der");
+        var root = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+        Path key = directory.resolve("private-fixture-key.der");
         Files.write(key, root.getPrivate().getEncoded()); Path output = Files.createDirectory(directory.resolve("signed"));
         String core = Path.of(ReleaseManifestTool.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();
         List<String> command = List.of(Path.of(System.getProperty("java.home"), "bin", "java").toString(), "-cp", core, ReleaseManifestTool.class.getName(),
@@ -116,7 +129,7 @@ class ManifestToolTest {
         signing.environment().put("JDK_JAVA_OPTIONS", "-Dfile.encoding=UTF-8");
         Process child = signing.start();
         try {
-            assertTrue(child.waitFor(30, java.util.concurrent.TimeUnit.SECONDS));
+            assertTrue(child.waitFor(30, TimeUnit.SECONDS));
             String stdout = new String(child.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             String stderr = new String(child.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(0, child.exitValue());
@@ -130,7 +143,7 @@ class ManifestToolTest {
         assertEquals(ProcurementRuntimeBoundary.VERSION, verified.boundaryContract());
         Process repeated = isolatedSigningProcess(command).start();
         try {
-            assertTrue(repeated.waitFor(30, java.util.concurrent.TimeUnit.SECONDS));
+            assertTrue(repeated.waitFor(30, TimeUnit.SECONDS));
             String stdout = new String(repeated.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             String stderr = new String(repeated.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(2, repeated.exitValue());
@@ -141,9 +154,10 @@ class ManifestToolTest {
         assertArrayEquals(detached, Files.readAllBytes(output.resolve("release.sig")));
         assertArrayEquals(root.getPrivate().getEncoded(), Files.readAllBytes(key));
         try (var files = Files.list(output)) {
-            assertEquals(java.util.Set.of("release.manifest", "release.sig"),
-                files.map(path -> path.getFileName().toString()).collect(java.util.stream.Collectors.toSet()),
-                "工具只输出清单与分离签名，不安装根或输出私钥");
+            assertEquals(
+                    Set.of("release.manifest", "release.sig"),
+                    files.map(path -> path.getFileName().toString()).collect(Collectors.toSet()),
+                    "工具只输出清单与分离签名，不安装根或输出私钥");
         }
     }
 

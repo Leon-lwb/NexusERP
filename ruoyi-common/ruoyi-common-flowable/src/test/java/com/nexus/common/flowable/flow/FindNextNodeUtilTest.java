@@ -1,6 +1,9 @@
 package com.nexus.common.flowable.flow;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.flowable.bpmn.model.ExclusiveGateway;
+import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.SequenceFlow;
 import org.flowable.bpmn.model.UserTask;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +15,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * FindNextNodeUtil 网关条件表达式求值与流程图遍历单元测试。
@@ -142,8 +143,7 @@ class FindNextNodeUtilTest {
         ba.setTargetFlowElement(gwA);
         gwB.setOutgoingFlows(new ArrayList<>(Arrays.asList(ba)));
 
-        Collection<org.flowable.bpmn.model.FlowElement> elements =
-            Arrays.asList(gwA, gwB);
+        Collection<FlowElement> elements = Arrays.asList(gwA, gwB);
 
         List<UserTask> nextUser = new ArrayList<>();
         assertDoesNotThrow(() ->
@@ -163,8 +163,7 @@ class FindNextNodeUtilTest {
         f1.setTargetFlowElement(task);
         gw.setOutgoingFlows(new ArrayList<>(Arrays.asList(f1)));
         // getFlowElementById 从集合按 ID 查找下一节点
-        Collection<org.flowable.bpmn.model.FlowElement> elements =
-            Arrays.asList(gw, task);
+        Collection<FlowElement> elements = Arrays.asList(gw, task);
 
         List<UserTask> nextUser = new ArrayList<>();
         FindNextNodeUtil.next(elements, gw, vars("approved", true), nextUser);
@@ -191,8 +190,7 @@ class FindNextNodeUtilTest {
         toReject.setTargetFlowElement(reject);
         gw.setOutgoingFlows(new ArrayList<>(Arrays.asList(toApprove, toReject)));
 
-        Collection<org.flowable.bpmn.model.FlowElement> elements =
-            Arrays.asList(gw, approve, reject);
+        Collection<FlowElement> elements = Arrays.asList(gw, approve, reject);
 
         List<UserTask> nextUser = new ArrayList<>();
         FindNextNodeUtil.next(elements, gw, vars("approved", false), nextUser);

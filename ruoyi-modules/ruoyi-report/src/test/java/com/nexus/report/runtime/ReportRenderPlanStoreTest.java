@@ -2,7 +2,11 @@ package com.nexus.report.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.nexus.common.report.*;
 import com.nexus.report.domain.*;
 import com.nexus.report.engine.*;
@@ -11,6 +15,7 @@ import com.nexus.report.storage.LocalReportArtifactStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.util.*;
@@ -348,10 +353,10 @@ class ReportRenderPlanStoreTest {
     void cancellationDuringSerializationKeepsItsOriginalError() throws Exception {
         try (var artifacts = artifacts()) {
             var cancellation = new ReportCancellation();
-            var module = new com.fasterxml.jackson.databind.module.SimpleModule();
+            var module = new SimpleModule();
             module.addSerializer(
                     RenderPlan.class,
-                    new com.fasterxml.jackson.databind.JsonSerializer<RenderPlan>() {
+                    new JsonSerializer<RenderPlan>() {
                         /**
                          * 完成 {@code serialize} 对应的报表处理。
                          *
@@ -362,9 +367,9 @@ class ReportRenderPlanStoreTest {
                         @Override
                         public void serialize(
                                 RenderPlan value,
-                                com.fasterxml.jackson.core.JsonGenerator generator,
-                                com.fasterxml.jackson.databind.SerializerProvider provider)
-                                throws java.io.IOException {
+                                JsonGenerator generator,
+                                SerializerProvider provider)
+                                throws IOException {
                             cancellation.cancel("CANCELLED");
                             generator.writeString("data".repeat(10000));
                         }

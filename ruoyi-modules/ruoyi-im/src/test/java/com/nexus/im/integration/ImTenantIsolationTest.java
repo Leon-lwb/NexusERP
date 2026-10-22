@@ -1,5 +1,13 @@
 package com.nexus.im.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -15,28 +23,22 @@ import com.nexus.im.push.ImMetrics;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.im.service.impl.support.ImChatSupport;
-import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.service.impl.support.ImConversationCache;
 import com.nexus.im.service.impl.support.ImGroupChatService;
+import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.service.impl.support.ImPrivateChatService;
+import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
 import com.nexus.system.service.ISysUserService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P5-5: 多租户隔离验证测试。
@@ -64,19 +66,32 @@ import static org.mockito.Mockito.when;
 @DisplayName("P5-5: 多租户隔离验证（应用层守护）")
 class ImTenantIsolationTest extends ImUnitTestBase {
 
-    @Mock private ISysUserService sysUserService;
-    @Mock private ISysOssService sysOssService;
-    @Mock private SysUserMapper sysUserMapper;
-    @Mock private ImMessageMapper imMessageMapper;
-    @Mock private ImGroupMapper imGroupMapper;
-    @Mock private ImGroupMemberMapper imGroupMemberMapper;
-    @Mock private SysUserNotificationMapper notificationMapper;
-    @Mock private ImRealtimePush imRealtimePush;
-    @Mock private ImMessageTypeRegistry messageTypeRegistry;
-    @Mock private ImConversationCache conversationCache;
-    @Mock private ISysUserNotificationService sysUserNotificationService;
-    @Mock private ImMetrics imMetrics;
-    @Mock private ImMessageVisibility visibility;
+    @Mock
+    private ISysUserService sysUserService;
+    @Mock
+    private ISysOssService sysOssService;
+    @Mock
+    private SysUserMapper sysUserMapper;
+    @Mock
+    private ImMessageMapper imMessageMapper;
+    @Mock
+    private ImGroupMapper imGroupMapper;
+    @Mock
+    private ImGroupMemberMapper imGroupMemberMapper;
+    @Mock
+    private SysUserNotificationMapper notificationMapper;
+    @Mock
+    private ImRealtimePush imRealtimePush;
+    @Mock
+    private ImMessageTypeRegistry messageTypeRegistry;
+    @Mock
+    private ImConversationCache conversationCache;
+    @Mock
+    private ISysUserNotificationService sysUserNotificationService;
+    @Mock
+    private ImMetrics imMetrics;
+    @Mock
+    private ImMessageVisibility visibility;
 
     private ImChatSupport support;
     private ImPrivateChatService privateChatService;
@@ -183,7 +198,7 @@ class ImTenantIsolationTest extends ImUnitTestBase {
         // 跨租户时 isGroupMember 的 selectCount 受多租户插件过滤返回 0 → false
         when(imGroupMemberMapper.selectCount(any())).thenReturn(0L);
 
-        PageQuery pageQuery = com.nexus.im.support.ImTestFixture.pageQuery(20, 1);
+        PageQuery pageQuery = ImTestFixture.pageQuery(20, 1);
         assertThatThrownBy(() -> groupChatService.groupHistory(GROUP_B, pageQuery))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("无权查看");
@@ -203,7 +218,7 @@ class ImTenantIsolationTest extends ImUnitTestBase {
         // 同租户群存在，但当前用户不是成员（isGroupMember 返回 false）
         when(imGroupMemberMapper.selectCount(any())).thenReturn(0L);
 
-        PageQuery pageQuery = com.nexus.im.support.ImTestFixture.pageQuery(20, 1);
+        PageQuery pageQuery = ImTestFixture.pageQuery(20, 1);
         assertThatThrownBy(() -> groupChatService.groupHistory(GROUP_A, pageQuery))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("无权查看");

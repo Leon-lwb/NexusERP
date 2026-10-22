@@ -1,9 +1,16 @@
 package com.nexus.mes.trace;
 
-import com.nexus.common.trace.*;
-import org.junit.jupiter.api.*;
-import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.nexus.common.trace.*;
+import com.nexus.common.trace.port.TraceSourceVerificationPort;
+
+import org.junit.jupiter.api.*;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 class MesCompletionCancellationTest {
     MesTraceBusinessTest f;
@@ -311,10 +318,10 @@ class MesCompletionCancellationTest {
                         Integer.class));
         assertEquals(
                 0,
-                java.math.BigDecimal.ONE.compareTo(
+                BigDecimal.ONE.compareTo(
                         f.jdbc.queryForObject(
                                 "SELECT completed_qty FROM pro_work_order WHERE mes_wo_id=10",
-                                java.math.BigDecimal.class)));
+                                BigDecimal.class)));
         var replay =
                 f.inTx(
                         () ->
@@ -505,18 +512,16 @@ class MesCompletionCancellationTest {
     @Test
     void cancellationPayloadIsExactlyTheCommonDtoAndRetainsOwnerOutboxHeaders() {
         pending();
-        var verifier =
-                org.mockito.Mockito.mock(
-                        com.nexus.common.trace.port.TraceSourceVerificationPort.class);
-        org.mockito.Mockito.when(verifier.sourceModule()).thenReturn("MES");
-        org.mockito.Mockito.doAnswer(
+        var verifier = Mockito.mock(TraceSourceVerificationPort.class);
+        Mockito.when(verifier.sourceModule()).thenReturn("MES");
+        Mockito.doAnswer(
                         call -> {
                             MaterialTraceEvent supplied = call.getArgument(0);
                             assertEquals(event(supplied.eventId()), supplied);
                             return null;
                         })
                 .when(verifier)
-                .verify(org.mockito.ArgumentMatchers.any());
+                .verify(ArgumentMatchers.any());
         var proof = CompletionCancellationProof.verify(request, f.json, verifier);
         assertEquals(event(originalEventId), proof.originalEvent());
         assertEquals(1, proof.request().revision());

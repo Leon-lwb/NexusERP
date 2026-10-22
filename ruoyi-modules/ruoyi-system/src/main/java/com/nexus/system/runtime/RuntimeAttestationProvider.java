@@ -1,17 +1,19 @@
 package com.nexus.system.runtime;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.satoken.utils.LoginHelper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -19,6 +21,8 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+
+import javax.sql.DataSource;
 
 /** 认证后绑定真实 premain 加载见证；独占链不能认证时保持 NONE，绝不授权业务写入。 */
 @Component
@@ -109,8 +113,10 @@ public final class RuntimeAttestationProvider {
     }
 
     public static String sha256(String value) {
-        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); }
-        catch (java.security.NoSuchAlgorithmException unavailable) { throw new IllegalStateException("ATTESTATION_DIGEST_UNAVAILABLE"); }
+        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException unavailable) {
+            throw new IllegalStateException("ATTESTATION_DIGEST_UNAVAILABLE");
+        }
     }
 
     private String randomDigest() {

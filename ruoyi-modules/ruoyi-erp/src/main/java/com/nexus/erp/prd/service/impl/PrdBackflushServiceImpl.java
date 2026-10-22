@@ -19,9 +19,13 @@ import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
 import com.nexus.erp.wm.service.IPickingResolutionService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +34,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 生产倒冲服务实现
@@ -41,8 +46,8 @@ import java.util.List;
 @DS("erp")
 @Service
 public class PrdBackflushServiceImpl {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     private final PrdWorkOrderMapper workOrderMapper;
     private final PrdMaterialRequirementMapper requirementMapper;
@@ -62,17 +67,15 @@ public class PrdBackflushServiceImpl {
      */
     @Transactional(rollbackFor = Exception.class)
     public void backflushOnCompletion(Long woId, BigDecimal completionQty) {
-        backflushInternal(woId, completionQty, java.util.Set.of());
+        backflushInternal(woId, completionQty, Set.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void backflushFromManifest(
-            Long woId, BigDecimal quantity, java.util.Set<Long> actualMaterials) {
+    public void backflushFromManifest(Long woId, BigDecimal quantity, Set<Long> actualMaterials) {
         backflushInternal(woId, quantity, actualMaterials);
     }
 
-    private void backflushInternal(
-            Long woId, BigDecimal completionQty, java.util.Set<Long> actualMaterials) {
+    private void backflushInternal(Long woId, BigDecimal completionQty, Set<Long> actualMaterials) {
         if (woId == null
                 || completionQty == null
                 || completionQty.compareTo(BigDecimal.ZERO) <= 0) {

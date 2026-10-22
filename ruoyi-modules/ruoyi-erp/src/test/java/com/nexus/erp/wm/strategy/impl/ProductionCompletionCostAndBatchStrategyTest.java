@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.strategy.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -16,6 +20,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmStorageAreaMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
+
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -25,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
@@ -44,10 +50,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 成品入库成本与批次收量回归：运行真实策略，使用内存账本和真实 Spring 事务代理。
@@ -108,26 +110,40 @@ class ProductionCompletionCostAndBatchStrategyTest {
         stockMapper = mock(WmMaterialStockMapper.class);
         txMapper = mock(WmMaterialStockTxMapper.class);
         // 按名称记录新增方法，保证原实现能编译并暴露真实成本及收量断言失败。
-        batchMapper = mock(WmBatchMapper.class, invocation -> {
-            if (!BATCH_METHOD.equals(invocation.getMethod().getName())) {
-                return org.mockito.Answers.RETURNS_DEFAULTS.answer(invocation);
-            }
-            BatchCall call = new BatchCall(invocation.getArgument(0), invocation.getArgument(1),
-                invocation.getArgument(2), invocation.getArgument(3), invocation.getArgument(4));
-            batchCalls.add(call);
-            if (batchFailure != null) throw batchFailure;
-            if (batchRows != 1) return batchRows;
-            BatchState batch = ledger.batches.get(call.batchId());
-            if (batch == null || !Objects.equals(batch.materialId(), call.materialId())
-                || !Objects.equals(batch.tenantId(), call.tenantId()) || !"PRD_WORK_ORDER".equals(batch.sourceType())
-                || !Objects.equals(batch.sourceId(), call.woId()) || !"0".equals(batch.deleted())
-                || call.quantity().signum() <= 0) {
-                return 0;
-            }
-            BigDecimal received = batch.received() == null ? BigDecimal.ZERO : batch.received();
-            ledger.batches.put(call.batchId(), batch.withReceived(received.add(call.quantity())));
-            return 1;
-        });
+        batchMapper =
+                mock(
+                        WmBatchMapper.class,
+                        invocation -> {
+                            if (!BATCH_METHOD.equals(invocation.getMethod().getName())) {
+                                return Answers.RETURNS_DEFAULTS.answer(invocation);
+                            }
+                            BatchCall call =
+                                    new BatchCall(
+                                            invocation.getArgument(0),
+                                            invocation.getArgument(1),
+                                            invocation.getArgument(2),
+                                            invocation.getArgument(3),
+                                            invocation.getArgument(4));
+                            batchCalls.add(call);
+                            if (batchFailure != null) throw batchFailure;
+                            if (batchRows != 1) return batchRows;
+                            BatchState batch = ledger.batches.get(call.batchId());
+                            if (batch == null
+                                    || !Objects.equals(batch.materialId(), call.materialId())
+                                    || !Objects.equals(batch.tenantId(), call.tenantId())
+                                    || !"PRD_WORK_ORDER".equals(batch.sourceType())
+                                    || !Objects.equals(batch.sourceId(), call.woId())
+                                    || !"0".equals(batch.deleted())
+                                    || call.quantity().signum() <= 0) {
+                                return 0;
+                            }
+                            BigDecimal received =
+                                    batch.received() == null ? BigDecimal.ZERO : batch.received();
+                            ledger.batches.put(
+                                    call.batchId(),
+                                    batch.withReceived(received.add(call.quantity())));
+                            return 1;
+                        });
         when(materialMapper.selectById(anyLong())).thenAnswer(invocation -> material);
         when(txMapper.selectCount(any(Wrapper.class))).thenAnswer(invocation ->
             postedCount != null ? postedCount : (long) ledger.transactions.size());
@@ -600,9 +616,13 @@ class ProductionCompletionCostAndBatchStrategyTest {
         private int commits;
 
         SnapshotTransactionManager(Ledger ledger) { this.ledger = ledger; }
-        @Override protected Object doGetTransaction() { return new Object(); }
-        @Override protected void doBegin(Object transaction, TransactionDefinition definition) { before = ledger.snapshot(); }
-        @Override protected void doCommit(DefaultTransactionStatus status) { commits++; }
-        @Override protected void doRollback(DefaultTransactionStatus status) { ledger.restore(before); rollbacks++; }
+        @Override
+        protected Object doGetTransaction() { return new Object(); }
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) { before = ledger.snapshot(); }
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) { commits++; }
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) { ledger.restore(before); rollbacks++; }
     }
 }

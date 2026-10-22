@@ -1,6 +1,7 @@
 package com.nexus.erp.wm.barcode;
 
-import java.time.LocalDate;
+import org.springframework.stereotype.Component;
+
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -8,10 +9,9 @@ import java.util.Date;
 /**
  * 条码生成器
  *
- * 支持前缀 + 日期 + 流水号的条码格式。
- * 流水号通过外部序列提供者获取，支持数据库序列、Redis等分布式方案。
+ * <p>支持前缀 + 日期 + 流水号的条码格式。 流水号通过外部序列提供者获取，支持数据库序列、Redis等分布式方案。
  */
-@org.springframework.stereotype.Component
+@Component
 public class BarcodeGenerator {
 
     /**

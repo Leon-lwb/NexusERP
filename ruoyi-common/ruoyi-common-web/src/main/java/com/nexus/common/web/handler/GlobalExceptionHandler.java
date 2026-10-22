@@ -2,17 +2,21 @@ package com.nexus.common.web.handler;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpStatus;
+
 import com.fasterxml.jackson.core.JsonParseException;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.exception.SseException;
 import com.nexus.common.core.exception.base.BaseException;
 import com.nexus.common.core.utils.StreamUtils;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.annotation.Order;
@@ -32,6 +36,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.io.IOException;
+
+// 同名类型说明：本文件同时使用 cn.hutool.http.HttpStatus 和 org.springframework.http.HttpStatus，后者保留全限定名以区分。
 
 /**
  * 全局异常处理器

@@ -2,7 +2,8 @@ package com.nexus.erp.fin.fa.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.fin.fa.domain.FaDepreciation;
+import com.nexus.erp.fin.fa.domain.FaAsset;
+import com.nexus.erp.fin.fa.domain.FaAssetCategory;
 import com.nexus.erp.fin.fa.domain.bo.FaDepreciationRunBo;
 import com.nexus.erp.fin.fa.domain.vo.FaDepreciationVo;
 
@@ -36,10 +37,7 @@ public interface IFaDepreciationService {
      */
     int runDepreciation(Long periodId);
 
-    /**
-     * 计算单资产某期间应计提折旧额(直线/双倍余额/年数总和,含双倍余额后段转直线)
-     */
-    BigDecimal calcMonthlyDepreciation(com.nexus.erp.fin.fa.domain.FaAsset asset,
-                                       com.nexus.erp.fin.fa.domain.FaAssetCategory category,
-                                       long monthsInService);
+    /** 计算单资产某期间应计提折旧额(直线/双倍余额/年数总和,含双倍余额后段转直线) */
+    BigDecimal calcMonthlyDepreciation(
+            FaAsset asset, FaAssetCategory category, long monthsInService);
 }

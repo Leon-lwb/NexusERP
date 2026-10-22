@@ -8,13 +8,18 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
+import com.nexus.common.redis.utils.SchedulerFallbackUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mapper.MesSysTenantMapper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -44,23 +49,23 @@ import java.util.List;
 public class EquipmentStatusSyncTask {
 
     /**
-     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
-     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位， 避免同一任务被 SnailJob 与
+     * {@code @Scheduled} 双重调度。
      */
-    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    @Value("${snail-job.enabled:false}")
     private boolean snailJobEnabled;
 
     /**
      * 本地 {@code @Scheduled} 兜底入口（MES-EQ-01）。
-     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
-     * {@link #jobExecute}，设备掉线/恢复状态永不回写看板。cron 与 {@code sj_job} 种子一致
-     * （每 1 分钟，避开整点第 7 秒）。任务体是 CAS 条件更新（{@code WHERE status IN(NORMAL,OFFLINE)}）
-     * 本身幂等，另由 Lock4j 按任务名加分布式锁，多实例下仅一个节点执行。</p>
+     *
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调 {@link
+     * #jobExecute}，设备掉线/恢复状态永不回写看板。cron 与 {@code sj_job} 种子一致 （每 1 分钟，避开整点第 7 秒）。任务体是 CAS
+     * 条件更新（{@code WHERE status IN(NORMAL,OFFLINE)}） 本身幂等，另由 Lock4j 按任务名加分布式锁，多实例下仅一个节点执行。
      */
-    @org.springframework.scheduling.annotation.Scheduled(cron = "7 */1 * * * ?")
+    @Scheduled(cron = "7 */1 * * * ?")
     public void scheduledExecute() {
-        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
-            snailJobEnabled, "equipmentStatusSyncTask", 120000L, () -> jobExecute(null));
+        SchedulerFallbackUtils.runIfFallbackEnabled(
+                snailJobEnabled, "equipmentStatusSyncTask", 120000L, () -> jobExecute(null));
     }
 
     /** IoT 侧在线状态值 */

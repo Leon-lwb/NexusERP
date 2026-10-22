@@ -1,7 +1,25 @@
 package com.nexus.erp.so;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -33,6 +51,7 @@ import com.nexus.erp.so.service.impl.SoSalesOrderHeaderServiceImpl;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmTransfer;
 import com.nexus.erp.wm.domain.WmTransferLine;
+import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmTransferLineMapper;
 import com.nexus.erp.wm.mapper.WmTransferMapper;
@@ -42,7 +61,9 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,23 +84,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 销售订单 Service 单元测试（批次 0 回归基线）。
@@ -196,7 +200,8 @@ class SoSalesOrderHeaderServiceImplTest {
     @Test
     void fulfill_rejectsOqcNullStatusEvenWhenForced() {
         when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED));
-        when(soSalesOrderLineMapper.selectList(any())).thenReturn(java.util.List.of(line(1L, "10", "10", null)));
+        when(soSalesOrderLineMapper.selectList(any()))
+                .thenReturn(List.of(line(1L, "10", "10", null)));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> headerService.fulfill(1L, true));
 
@@ -208,7 +213,8 @@ class SoSalesOrderHeaderServiceImplTest {
     @Test
     void fulfill_rejectsOqcPendingEvenWhenForced() {
         when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED));
-        when(soSalesOrderLineMapper.selectList(any())).thenReturn(java.util.List.of(line(1L, "10", "10", "PENDING")));
+        when(soSalesOrderLineMapper.selectList(any()))
+                .thenReturn(List.of(line(1L, "10", "10", "PENDING")));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> headerService.fulfill(1L, true));
 
@@ -1400,8 +1406,8 @@ class SoSalesOrderHeaderServiceImplTest {
     }
 
     /** 构造仓库 */
-    private com.nexus.erp.wm.domain.WmWarehouse warehouse(Long id, String name, String code) {
-        com.nexus.erp.wm.domain.WmWarehouse w = new com.nexus.erp.wm.domain.WmWarehouse();
+    private WmWarehouse warehouse(Long id, String name, String code) {
+        WmWarehouse w = new WmWarehouse();
         w.setWarehouseId(id);
         w.setWarehouseName(name);
         w.setWarehouseCode(code);

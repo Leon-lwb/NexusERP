@@ -9,11 +9,13 @@ import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.sql.Date;
 import java.util.List;
 
 /** PDA 生产领料专属当前读；不改共享映射器，所有锁均参与原 ERP 事务。 */
@@ -23,7 +25,7 @@ public interface PdaIssueSourceMapper {
     /** 在当前 ERP 事务连接上读取数据库日期，效期门禁不得依赖 JVM 时区下的当日。 */
     @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @Select("SELECT CURDATE()")
-    java.sql.Date currentDatabaseDate();
+    Date currentDatabaseDate();
 
     /** 先锁有效单头，同一领料单的扫码写入在此串行。 */
     @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)

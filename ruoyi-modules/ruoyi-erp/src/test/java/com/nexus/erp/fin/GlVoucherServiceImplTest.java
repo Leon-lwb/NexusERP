@@ -1,7 +1,19 @@
 package com.nexus.erp.fin;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -11,6 +23,7 @@ import com.nexus.erp.fin.gl.domain.GlAccount;
 import com.nexus.erp.fin.gl.domain.GlPeriod;
 import com.nexus.erp.fin.gl.domain.GlVoucher;
 import com.nexus.erp.fin.gl.domain.GlVoucherLine;
+import com.nexus.erp.fin.gl.domain.bo.GlVoucherBo;
 import com.nexus.erp.fin.gl.mapper.GlAccountMapper;
 import com.nexus.erp.fin.gl.mapper.GlPeriodMapper;
 import com.nexus.erp.fin.gl.mapper.GlVoucherLineMapper;
@@ -19,7 +32,9 @@ import com.nexus.erp.fin.gl.service.IGlAccountBalanceService;
 import com.nexus.erp.fin.gl.service.IGlPeriodService;
 import com.nexus.erp.fin.gl.service.VoucherBuildRequest;
 import com.nexus.erp.fin.gl.service.impl.GlVoucherServiceImpl;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,18 +48,8 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * GL 凭证引擎单元测试 —— 聚焦「红字/红冲凭证的负数分录」这一 Q7 修复。
@@ -234,9 +239,7 @@ class GlVoucherServiceImplTest {
     @Test
     void insertByBo_rejectsNegativeAmounts() {
         GlVoucherBoHolder holder = new GlVoucherBoHolder();
-        com.nexus.erp.fin.gl.domain.bo.GlVoucherBo bo = holder.bo(List.of(
-            line(1L, "-100.00", null),
-            line(1L, null, "-100.00")));
+        GlVoucherBo bo = holder.bo(List.of(line(1L, "-100.00", null), line(1L, null, "-100.00")));
         // 注：负数校验在查科目之前就抛异常，无需 stub accountMapper
 
         ServiceException ex = assertThrows(ServiceException.class, () -> voucherService.insertByBo(bo));
@@ -255,7 +258,7 @@ class GlVoucherServiceImplTest {
         red.setStatus(GlConstants.VOUCHER_STATUS_DRAFT);
         red.setVoucherSource(GlConstants.SOURCE_SO_INVOICE);
         red.setVersion(1);
-        red.setVoucherDate(new java.util.Date());
+        red.setVoucherDate(new Date());
         when(baseMapper.selectById(7L)).thenReturn(red);
         when(lineMapper.selectList(any())).thenReturn(List.of(
             line(1L, "-678.00", null),
@@ -282,7 +285,7 @@ class GlVoucherServiceImplTest {
         manual.setStatus(GlConstants.VOUCHER_STATUS_DRAFT);
         manual.setVoucherSource(GlConstants.SOURCE_MANUAL);
         manual.setVersion(1);
-        manual.setVoucherDate(new java.util.Date());
+        manual.setVoucherDate(new Date());
         when(baseMapper.selectById(7L)).thenReturn(manual);
         when(lineMapper.selectList(any())).thenReturn(List.of(
             line(1L, "-100.00", null),
@@ -344,11 +347,11 @@ class GlVoucherServiceImplTest {
 
     /** 便于构造 GlVoucherBo 的小工具（避免测试类里到处 new） */
     private static final class GlVoucherBoHolder {
-        com.nexus.erp.fin.gl.domain.bo.GlVoucherBo bo(List<GlVoucherLine> lines) {
-            com.nexus.erp.fin.gl.domain.bo.GlVoucherBo b = new com.nexus.erp.fin.gl.domain.bo.GlVoucherBo();
+        GlVoucherBo bo(List<GlVoucherLine> lines) {
+            GlVoucherBo b = new GlVoucherBo();
             b.setVoucherLineList(lines);
             b.setVoucherWord("J");
-            b.setVoucherDate(new java.util.Date());
+            b.setVoucherDate(new Date());
             return b;
         }
     }

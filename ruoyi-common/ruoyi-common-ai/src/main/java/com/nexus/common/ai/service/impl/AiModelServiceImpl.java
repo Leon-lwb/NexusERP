@@ -7,10 +7,10 @@ import com.nexus.common.ai.domain.bo.AiModelBo;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.domain.entity.AiProvider;
 import com.nexus.common.ai.domain.vo.AiModelVo;
-import com.nexus.common.ai.mapper.AiModelMapper;
-import com.nexus.common.ai.mapper.AiProviderMapper;
 import com.nexus.common.ai.enums.AiModelCapabilityEnum;
 import com.nexus.common.ai.enums.AiModelTypeEnum;
+import com.nexus.common.ai.mapper.AiModelMapper;
+import com.nexus.common.ai.mapper.AiProviderMapper;
 import com.nexus.common.ai.service.AiApiKeyDecryptor;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.exception.ServiceException;
@@ -18,8 +18,11 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.jasypt.encryption.StringEncryptor;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -314,10 +317,8 @@ public class AiModelServiceImpl implements IAiModelService {
         }
     }
 
-    /**
-     * AI 模型配置变更事件（用于通知缓存清除等后续操作）
-     */
-    public static class AiModelChangeEvent extends org.springframework.context.ApplicationEvent {
+    /** AI 模型配置变更事件（用于通知缓存清除等后续操作） */
+    public static class AiModelChangeEvent extends ApplicationEvent {
         private final Long modelId;
 
         public AiModelChangeEvent(Object source, Long modelId) {

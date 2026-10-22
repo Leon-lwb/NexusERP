@@ -9,6 +9,7 @@ import com.nexus.report.runtime.RuntimeReviewFixture;
 import com.nexus.report.storage.*;
 
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.*;
 import org.apache.pdfbox.pdmodel.common.*;
 import org.apache.pdfbox.pdmodel.font.*;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -172,7 +174,7 @@ class ReportBatchPdfTest {
             String batch = successful(fixture, 1, 0);
             var job = fixture.runtime.runtime.job(fixture.runtime.owner,
                     fixture.service.items(fixture.runtime.owner, batch).get(0).jobId());
-            byte[] broken = "%PDF-1.7\ncorrupt".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+            byte[] broken = "%PDF-1.7\ncorrupt".getBytes(StandardCharsets.US_ASCII);
             Files.write(fixture.runtime.artifacts.read("A", job.file()), broken);
             fixture.runtime.jdbc.update("UPDATE rpt_export_job SET file_size=?", broken.length);
             var artifacts = new ReportBatchArtifacts(fixture.runtime.artifacts, true);
@@ -222,7 +224,7 @@ class ReportBatchPdfTest {
             var path = fixture.runtime.artifacts.read("A", job.file());
             var modified = new ByteArrayOutputStream();
             try (var pdf = Loader.loadPDF(Files.readAllBytes(path))) {
-                pdf.getPages().getCOSObject().setInt(org.apache.pdfbox.cos.COSName.COUNT, 1);
+                pdf.getPages().getCOSObject().setInt(COSName.COUNT, 1);
                 pdf.save(modified);
             }
             Files.write(path, modified.toByteArray());

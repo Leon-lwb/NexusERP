@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 
 import com.nexus.common.core.domain.R;
 import com.nexus.common.report.*;
+import com.nexus.report.domain.ReportFault;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.query.*;
 
@@ -122,7 +123,7 @@ public class ReportQueryController {
     @PutMapping("/{id}")
     public R<ReportResourceStore.Draft> save(
             @PathVariable String id, @RequestBody DraftRequest body) {
-        if (body.revision() == null) throw com.nexus.report.domain.ReportFault.invalid("保存缺少修订");
+        if (body.revision() == null) throw ReportFault.invalid("保存缺少修订");
         return R.ok(
                 service.save(actors.current(), id, body.revision(), body.title(), body.model()));
     }

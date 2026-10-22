@@ -1,16 +1,17 @@
 package com.nexus.flow.node.integration;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.factory.OssFactory;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.flow.state.FlowTemplateRenderer;
+
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -84,7 +85,12 @@ public class OssNodeProvider implements FlowNodeProvider {
                 ? FlowTemplateRenderer.render(config.get("content").asText(), ctx.getState(), label + " 的 content")
                 : "";
             byte[] data = content.getBytes(StandardCharsets.UTF_8);
-            var result = client.upload(new java.io.ByteArrayInputStream(data), fileName, (long) data.length, "text/plain");
+            var result =
+                    client.upload(
+                            new ByteArrayInputStream(data),
+                            fileName,
+                            (long) data.length,
+                            "text/plain");
             output.put("success", true);
             output.put("fileName", fileName);
             if (result != null && result.getUrl() != null) {

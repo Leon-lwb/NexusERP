@@ -1,12 +1,15 @@
 package com.nexus.mes.flash.domain.vo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
 import com.nexus.mes.flash.domain.TestItem;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * MES测试项标准视图对象 mes_test_item
@@ -64,5 +67,5 @@ public class TestItemVo implements Serializable {
     private String remark;
 
     /** 创建时间 */
-    private java.util.Date createTime;
+    private Date createTime;
 }

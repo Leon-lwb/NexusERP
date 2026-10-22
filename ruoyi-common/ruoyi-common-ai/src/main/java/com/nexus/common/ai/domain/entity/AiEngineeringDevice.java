@@ -2,10 +2,12 @@ package com.nexus.common.ai.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nexus.common.tenant.core.TenantEntity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -28,11 +30,10 @@ public class AiEngineeringDevice extends TenantEntity {
     private String status;
 
     /** 访问凭证摘要。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude private String accessHash;
+    @JsonIgnore @ToString.Exclude private String accessHash;
 
     /** 刷新凭证摘要。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude
-    private String refreshHash;
+    @JsonIgnore @ToString.Exclude private String refreshHash;
 
     /** 凭证代数。 */
     private Long generation;
@@ -44,8 +45,7 @@ public class AiEngineeringDevice extends TenantEntity {
     private LocalDateTime refreshExpiresAt;
 
     /** 配对时认证状态内部摘要。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude
-    private String credentialFingerprint;
+    @JsonIgnore @ToString.Exclude private String credentialFingerprint;
 
     /** 设备实际能力与版本。 */
     private String capabilities;

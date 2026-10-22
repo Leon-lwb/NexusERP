@@ -1,5 +1,9 @@
 package com.nexus.ai.service.rag;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -20,6 +24,7 @@ import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.factory.OssFactory;
+
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.logging.nologging.NoLoggingImpl;
 import org.apache.ibatis.mapping.BoundSql;
@@ -40,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
 
 import java.io.ByteArrayInputStream;
@@ -63,10 +69,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 知识处理认领的真实 JDBC 行为刻画：真实服务构造条件，生产 Mapper 注入 SQL，H2 决定影响行数。
@@ -223,7 +225,8 @@ class KnowledgeProcessServiceJdbcClaimTest {
         verify(worker.chunks).insert(any(AiKnowledgeChunk.class));
         verify(worker.vectors).storeChunks(eq(KNOWLEDGE_ID), anyList(), eq("fixture-embedding"));
         verify(worker.vectors, times(worker.retry ? 1 : 0)).deleteByDocumentId(DOCUMENT_ID, KNOWLEDGE_ID);
-        verify(worker.chunks, times(worker.retry ? 1 : 0)).delete(org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
+        verify(worker.chunks, times(worker.retry ? 1 : 0))
+                .delete(ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
     }
 
     private enum SourceChange { TENANT, KNOWLEDGE, PROCESSING, COMPLETED }
@@ -300,10 +303,12 @@ class KnowledgeProcessServiceJdbcClaimTest {
             when(oss.getObjectContent(FILE_PATH)).thenAnswer(call ->
                 new ByteArrayInputStream(CONTENT.getBytes(StandardCharsets.UTF_8)));
             when(parser.parse(any(InputStream.class), eq(FILE_NAME))).thenReturn(CONTENT);
-            when(chunks.delete(org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any())).thenAnswer(call -> {
-                fixture.chunkSources.remove(OLD_SOURCE);
-                return 1;
-            });
+            when(chunks.delete(ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any()))
+                    .thenAnswer(
+                            call -> {
+                                fixture.chunkSources.remove(OLD_SOURCE);
+                                return 1;
+                            });
             when(chunks.insert(any(AiKnowledgeChunk.class))).thenAnswer(call -> {
                 AiKnowledgeChunk chunk = call.getArgument(0);
                 assertEquals(TENANT, chunk.getTenantId());

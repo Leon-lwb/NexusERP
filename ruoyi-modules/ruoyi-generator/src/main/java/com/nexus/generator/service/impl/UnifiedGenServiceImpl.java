@@ -6,9 +6,6 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -21,12 +18,18 @@ import com.nexus.generator.mapper.GenTableDesignMapper;
 import com.nexus.generator.mapper.GenTableMapper;
 import com.nexus.generator.service.IGenTableService;
 import com.nexus.generator.service.IUnifiedGenService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -1171,9 +1174,10 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
 
     private String extractCreateTableName(String sqlStmt) {
         if (StringUtils.isBlank(sqlStmt)) return null;
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile(
-                "(?i)create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:`([^`]+)`|([a-zA-Z0-9_]+))");
-        java.util.regex.Matcher m = p.matcher(sqlStmt);
+        Pattern p =
+                Pattern.compile(
+                        "(?i)create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:`([^`]+)`|([a-zA-Z0-9_]+))");
+        Matcher m = p.matcher(sqlStmt);
         if (m.find()) {
             String g1 = m.group(1);
             String g2 = m.group(2);

@@ -1,6 +1,8 @@
 package com.nexus.common.sign.service;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.sign.domain.vo.EsSignDocumentVo;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -27,29 +29,27 @@ public interface IESSignDocumentService {
     /**
      * 上传/登记待签文档正文（PDF）。
      *
-     * <p><b>为什么是 multipart 直传，而不是「前端先传 OSS，再提交 ossId」：</b></p>
-     * <ul>
-     *   <li><b>校验不可能被绕过</b>：字节在同一次请求里被服务端读到并当场验魔数，
-     *       不存在「先落了一个任意格式的对象、再事后登记」的时间窗；</li>
-     *   <li><b>不把别人的对象登记成自己的合同</b>：{@code ossId} 是全局自增的，
-     *       任何登录用户都能通过既有 OSS 上传接口拿到 ossId。若凭 ossId 登记，
-     *       调用方只需猜/换一个数字就能把别的租户/别人的对象挂到自己的业务单据上；</li>
-     *   <li>一次往返完成，前端不用先调 OSS 再调签章。</li>
-     * </ul>
-     * <p>字段名沿用本仓库既有的 multipart 约定 {@code file}（与
-     * {@code SysOssController}/{@code CvDetectController} 一致）。</p>
+     * <p><b>为什么是 multipart 直传，而不是「前端先传 OSS，再提交 ossId」：</b>
      *
-     * <p><b>服务端准入（全部排在第一次写入之前，被拒绝的请求天然什么都不写）：</b>
-     * 文件名非空且以 {@code .pdf} 结尾 → 声明的内容类型若为具体类型必须是 PDF →
-     * 读到的字节数不超过 10MB → 字节头必须是 {@code %PDF-} →
-     * 能被 PDFBox 解析出页数。任何一条不过都抛 {@code ServiceException}，绝不降级登记。</p>
+     * <ul>
+     *   <li><b>校验不可能被绕过</b>：字节在同一次请求里被服务端读到并当场验魔数， 不存在「先落了一个任意格式的对象、再事后登记」的时间窗；
+     *   <li><b>不把别人的对象登记成自己的合同</b>：{@code ossId} 是全局自增的， 任何登录用户都能通过既有 OSS 上传接口拿到 ossId。若凭 ossId 登记，
+     *       调用方只需猜/换一个数字就能把别的租户/别人的对象挂到自己的业务单据上；
+     *   <li>一次往返完成，前端不用先调 OSS 再调签章。
+     * </ul>
+     *
+     * <p>字段名沿用本仓库既有的 multipart 约定 {@code file}（与 {@code SysOssController}/{@code
+     * CvDetectController} 一致）。
+     *
+     * <p><b>服务端准入（全部排在第一次写入之前，被拒绝的请求天然什么都不写）：</b> 文件名非空且以 {@code .pdf} 结尾 → 声明的内容类型若为具体类型必须是 PDF →
+     * 读到的字节数不超过 10MB → 字节头必须是 {@code %PDF-} → 能被 PDFBox 解析出页数。任何一条不过都抛 {@code
+     * ServiceException}，绝不降级登记。
      *
      * @param bizType 业务类型（必填，见 {@code SignBizType}）
-     * @param bizId   业务单据ID（必填）
-     * @param file    上传的 PDF 文件（multipart 字段名 {@code file}）
+     * @param bizId 业务单据ID（必填）
+     * @param file 上传的 PDF 文件（multipart 字段名 {@code file}）
      * @return 新登记的文档ID（{@code es_sign_document.doc_id}）
-     * @throws com.nexus.common.core.exception.ServiceException 入参/文件不合法、
-     *         取不到换版锁、对象存储 SPI 缺失
+     * @throws ServiceException 入参/文件不合法、 取不到换版锁、对象存储 SPI 缺失
      */
     Long uploadDocument(String bizType, Long bizId, MultipartFile file);
 
@@ -76,7 +76,7 @@ public interface IESSignDocumentService {
      *
      * @param docId 文档ID
      * @return 文档详情
-     * @throws com.nexus.common.core.exception.ServiceException 文档不存在（含已逻辑删除）
+     * @throws ServiceException 文档不存在（含已逻辑删除）
      */
     EsSignDocumentVo getByDocId(Long docId);
 }

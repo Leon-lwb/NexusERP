@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -13,6 +17,7 @@ import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.*;
 import com.nexus.erp.wm.service.impl.WmProductionRecptServiceImpl;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
@@ -21,14 +26,12 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.time.LocalDate;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 /** 运行真实入口、真实守卫和 Spring 事务代理的内存落账/回滚正控；不冒充真实 MySQL 锁验收。 */
 class WmProductionRecptTransactionTest {
@@ -88,7 +91,7 @@ class WmProductionRecptTransactionTest {
         when(source.lockTransactions("000000",201L)).thenAnswer(call->new ArrayList<>(transactions));
         when(source.approvedReportedQuantity("000000",201L)).thenReturn(d("0"));
         when(source.lockStock("000000",601L)).thenReturn(stock); when(source.lockBatch("000000",401L)).thenReturn(batch);
-        when(source.databaseDate()).thenReturn(java.time.LocalDate.now().toString());
+        when(source.databaseDate()).thenReturn(LocalDate.now().toString());
         when(source.lockMaterial("000000",301L)).thenReturn(new WmProductionRecptGuardMapper.MaterialSource(301L,wo.getMaterialCode(),
             "连接组件","M12","1","0",26L,"件",26L,1L,d("1"),0,"1","0","Q-UNIT-26",new Date(),d("3.89")));
         when(source.lockStorage("000000",3L,28L)).thenReturn(new WmProductionRecptGuardMapper.StorageSource(3L,"WH003","成品仓",

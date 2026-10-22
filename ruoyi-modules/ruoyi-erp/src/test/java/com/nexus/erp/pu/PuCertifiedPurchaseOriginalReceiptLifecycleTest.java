@@ -1,18 +1,22 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.pu.domain.*;
-import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
-import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
-import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.Operation;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeanUtils;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.*;
+import static com.nexus.erp.pu.PuCertifiedPurchaseLifecycleServiceTest.hash;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static com.nexus.erp.pu.PuCertifiedPurchaseLifecycleServiceTest.hash;
+
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.pu.domain.*;
+import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
+import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeanUtils;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
 
 /** 整单部分履约必须覆盖未收货来源行；只使用离线物理替身和真实生命周期服务。 */
 class PuCertifiedPurchaseOriginalReceiptLifecycleTest {
@@ -28,9 +32,13 @@ class PuCertifiedPurchaseOriginalReceiptLifecycleTest {
     @Test void fullReceiptHeaderCannotHideAnUnfulfilledSecondLine() throws Exception {
         try(var f=new PuCertifiedPurchaseOriginalReceiptTest.Fixture()) {
             var current=twoLines(f,"RECEIVED");f.clearWrites();
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                ()->f.physical.service.verifyOriginalCreationLocked("000001",201L,f.key,current),
-                "整单已收货必须有全部行的物理履约证据");f.assertNoWrites();
+            assertThrows(
+                    ServiceException.class,
+                    () ->
+                            f.physical.service.verifyOriginalCreationLocked(
+                                    "000001", 201L, f.key, current),
+                    "整单已收货必须有全部行的物理履约证据");
+            f.assertNoWrites();
         }
     }
     private static PuCertifiedPurchaseResult twoLines(PuCertifiedPurchaseOriginalReceiptTest.Fixture f,String status) {

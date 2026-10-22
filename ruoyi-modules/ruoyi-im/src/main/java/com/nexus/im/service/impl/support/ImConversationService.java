@@ -1,6 +1,7 @@
 package com.nexus.im.service.impl.support;
 
 import cn.hutool.core.util.StrUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -15,15 +16,19 @@ import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.system.domain.vo.SysUserVo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -86,19 +91,20 @@ public class ImConversationService {
         // P6-B1: 合并当前用户的会话配置（置顶/免打扰）
         applyConversationSettings(me, list);
         // P6-B1: 排序：置顶在前（按 pinnedAt 倒序），非置顶按 lastTime 倒序
-        list.sort((a, b) -> {
-            int pa = a.getIsPinned() == null ? 0 : a.getIsPinned();
-            int pb = b.getIsPinned() == null ? 0 : b.getIsPinned();
-            if (pa != pb) return pb - pa;
-            if (pa == 1) {
-                java.util.Date da = a.getPinnedAt() == null ? new java.util.Date(0) : a.getPinnedAt();
-                java.util.Date db = b.getPinnedAt() == null ? new java.util.Date(0) : b.getPinnedAt();
-                return db.compareTo(da);
-            }
-            java.util.Date da = a.getLastTime() == null ? new java.util.Date(0) : a.getLastTime();
-            java.util.Date db = b.getLastTime() == null ? new java.util.Date(0) : b.getLastTime();
-            return db.compareTo(da);
-        });
+        list.sort(
+                (a, b) -> {
+                    int pa = a.getIsPinned() == null ? 0 : a.getIsPinned();
+                    int pb = b.getIsPinned() == null ? 0 : b.getIsPinned();
+                    if (pa != pb) return pb - pa;
+                    if (pa == 1) {
+                        Date da = a.getPinnedAt() == null ? new Date(0) : a.getPinnedAt();
+                        Date db = b.getPinnedAt() == null ? new Date(0) : b.getPinnedAt();
+                        return db.compareTo(da);
+                    }
+                    Date da = a.getLastTime() == null ? new Date(0) : a.getLastTime();
+                    Date db = b.getLastTime() == null ? new Date(0) : b.getLastTime();
+                    return db.compareTo(da);
+                });
         // P4-2: 回填缓存
         conversationCache.put(list);
         return list;
@@ -109,8 +115,16 @@ public class ImConversationService {
         if (cached.stream().noneMatch(c -> "GROUP".equals(c.getChatType()))) {
             return cached;
         }
-        List<Long> memberships = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
-            .eq(ImGroupMember::getUserId, me)).stream().map(ImGroupMember::getGroupId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<Long> memberships =
+                imGroupMemberMapper
+                        .selectList(
+                                new LambdaQueryWrapper<ImGroupMember>()
+                                        .eq(ImGroupMember::getUserId, me))
+                        .stream()
+                        .map(ImGroupMember::getGroupId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
         Set<String> accessible = new LinkedHashSet<>();
         if (!memberships.isEmpty()) {
             imGroupMapper.selectByIds(memberships).stream().filter(g -> "0".equals(g.getStatus()))
@@ -386,9 +400,10 @@ public class ImConversationService {
 
     /**
      * P6-B1: 失效当前用户的会话列表缓存。
+     *
      * <p>供 AppImController 在置顶/免打扰配置变更后调用，避免 60s TTL 内返回旧数据。
      */
-    public void evictConversationCacheForUsers(java.util.Collection<Long> userIds) {
+    public void evictConversationCacheForUsers(Collection<Long> userIds) {
         conversationCache.evictUsers(userIds);
     }
 

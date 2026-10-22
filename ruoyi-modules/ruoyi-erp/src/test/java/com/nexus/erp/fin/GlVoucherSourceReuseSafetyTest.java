@@ -1,5 +1,9 @@
 package com.nexus.erp.fin;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -10,16 +14,16 @@ import com.nexus.erp.fin.gl.domain.vo.GlVoucherVo;
 import com.nexus.erp.fin.gl.mapper.*;
 import com.nexus.erp.fin.gl.service.*;
 import com.nexus.erp.fin.gl.service.impl.GlVoucherServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+
 import java.util.List;
 import java.util.Locale;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /** 来源状态回归：不访问真实数据库，不以返回任意既有凭证冒充成功。 */
 @Tag("dev")
@@ -67,7 +71,7 @@ class GlVoucherSourceReuseSafetyTest {
     void uniquePostedSourceIsReusedWithLockedCurrentRead() {
         existing(GlConstants.VOUCHER_STATUS_POSTED, false);
         assertEquals(7L, service.createAndPost(request).getVoucherId(), "唯一已过账来源才可认领");
-        var captor = org.mockito.ArgumentCaptor.forClass(Wrapper.class);
+        var captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(mapper).selectList(captor.capture());
         String sql = captor.getValue().getSqlSegment().toUpperCase(Locale.ROOT);
         assertTrue(sql.contains("LIMIT 2 FOR UPDATE"), "来源当前读必须锁定且保留第二条以识别重复");

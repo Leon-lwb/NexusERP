@@ -1,10 +1,22 @@
 package com.nexus.iot.device.group.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
-import io.github.linpeilie.Converter;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.group.domain.IotDeviceGroup;
@@ -14,6 +26,8 @@ import com.nexus.iot.device.group.domain.IotDeviceTagRel;
 import com.nexus.iot.device.group.domain.bo.IotDeviceGroupAssignBo;
 import com.nexus.iot.device.group.domain.bo.IotDeviceGroupBo;
 import com.nexus.iot.device.group.domain.bo.IotDeviceTagBindBo;
+import com.nexus.iot.device.group.domain.bo.IotDeviceTagBo;
+import com.nexus.iot.device.group.domain.vo.IotDeviceGroupVo;
 import com.nexus.iot.device.group.mapper.IotDeviceGroupMapper;
 import com.nexus.iot.device.group.mapper.IotDeviceGroupRelMapper;
 import com.nexus.iot.device.group.mapper.IotDeviceTagMapper;
@@ -21,6 +35,9 @@ import com.nexus.iot.device.group.mapper.IotDeviceTagRelMapper;
 import com.nexus.iot.device.group.service.impl.IotDeviceGroupServiceImpl;
 import com.nexus.iot.device.group.service.impl.IotDeviceTagServiceImpl;
 import com.nexus.iot.device.mapper.IotDeviceMapper;
+
+import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,23 +47,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.Map;
 
 /**
  * IoT 设备分组 / 标签 服务单元测试（§4#2 功能缺失清单）。
@@ -111,15 +112,16 @@ class IotDeviceGroupTagServiceTest {
                 g.setStatus(bo.getStatus());
                 return g;
             });
-        when(converter.convert(any(com.nexus.iot.device.group.domain.bo.IotDeviceTagBo.class), eq(IotDeviceTag.class)))
-            .thenAnswer(inv -> {
-                com.nexus.iot.device.group.domain.bo.IotDeviceTagBo bo = inv.getArgument(0);
-                IotDeviceTag t = new IotDeviceTag();
-                t.setTagId(bo.getTagId());
-                t.setTagName(bo.getTagName());
-                t.setTagColor(bo.getTagColor());
-                return t;
-            });
+        when(converter.convert(any(IotDeviceTagBo.class), eq(IotDeviceTag.class)))
+                .thenAnswer(
+                        inv -> {
+                            IotDeviceTagBo bo = inv.getArgument(0);
+                            IotDeviceTag t = new IotDeviceTag();
+                            t.setTagId(bo.getTagId());
+                            t.setTagName(bo.getTagName());
+                            t.setTagColor(bo.getTagColor());
+                            return t;
+                        });
     }
 
     @AfterEach
@@ -371,14 +373,13 @@ class IotDeviceGroupTagServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void selectList_fillsDeviceCount() {
-        com.nexus.iot.device.group.domain.vo.IotDeviceGroupVo vo =
-            new com.nexus.iot.device.group.domain.vo.IotDeviceGroupVo();
+        IotDeviceGroupVo vo = new IotDeviceGroupVo();
         vo.setGroupId(100L);
         when(groupMapper.selectVoList(any())).thenReturn(List.of(vo));
         when(groupRelMapper.countDevicesByGroupIds(eq(TENANT), any()))
-            .thenReturn(List.of(java.util.Map.of("groupId", 100L, "deviceCount", 5L)));
+                .thenReturn(List.of(Map.of("groupId", 100L, "deviceCount", 5L)));
 
-        List<com.nexus.iot.device.group.domain.vo.IotDeviceGroupVo> list = groupService.selectList(new IotDeviceGroupBo());
+        List<IotDeviceGroupVo> list = groupService.selectList(new IotDeviceGroupBo());
 
         assertEquals(1, list.size());
         assertEquals(5L, list.get(0).getDeviceCount());

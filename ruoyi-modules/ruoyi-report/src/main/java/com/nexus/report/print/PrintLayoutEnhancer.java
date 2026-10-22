@@ -6,8 +6,11 @@ import com.nexus.report.engine.*;
 
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /** 第二版分组、重复页脚与媒体都落入同一份服务器坐标计划。 */
 public final class PrintLayoutEnhancer {
@@ -225,7 +228,7 @@ public final class PrintLayoutEnhancer {
             return new Grouped(
                     rows,
                     Collections.nCopies(rows.size(), "DETAIL"),
-                    java.util.stream.IntStream.range(0, rows.size()).boxed().toList());
+                    IntStream.range(0, rows.size()).boxed().toList());
         var buckets = new LinkedHashMap<List<TypedValue>, List<Integer>>();
         for (int i = 0; i < rows.size(); i++) {
             var row = rows.get(i);
@@ -280,9 +283,8 @@ public final class PrintLayoutEnhancer {
                                                                                                     : entry.getValue()
                                                                                                             .displayText()))
                                                                     .collect(
-                                                                            java.util.stream
-                                                                                    .Collectors
-                                                                                    .joining("，"));
+                                                                            Collectors.joining(
+                                                                                    "，"));
                                                     return value.label()
                                                             + (keys.isEmpty()
                                                                     ? ""
@@ -292,7 +294,7 @@ public final class PrintLayoutEnhancer {
                                                                     ? "（空）"
                                                                     : value.value().value());
                                                 })
-                                        .collect(java.util.stream.Collectors.joining("；"));
+                                        .collect(Collectors.joining("；"));
                 subtotal.put(
                         report.dsl().columns().get(0).field(),
                         TypedValue.of(ValueType.STRING, text));
@@ -452,7 +454,7 @@ public final class PrintLayoutEnhancer {
     private static String checksum(byte[] bytes) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
-        } catch (java.security.NoSuchAlgorithmException impossible) {
+        } catch (NoSuchAlgorithmException impossible) {
             throw new IllegalStateException(impossible);
         }
     }

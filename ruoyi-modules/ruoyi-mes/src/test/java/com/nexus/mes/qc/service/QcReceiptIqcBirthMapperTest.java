@@ -1,16 +1,28 @@
 package com.nexus.mes.qc.service;
 
+import static org.assertj.core.api.Assertions.*;
+
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper;
+import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper;
+
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.session.Configuration;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
-import static org.assertj.core.api.Assertions.*;
 
 class QcReceiptIqcBirthMapperTest {
     Configuration configuration() { var config = new Configuration(); config.addMapper(QcReceiptIqcBirthMapper.class); return config; }
@@ -19,7 +31,8 @@ class QcReceiptIqcBirthMapperTest {
             .getBoundSql(Map.of("tenantId","000007","inspectionId",501L,"receiveId",101L,"materialId",201L)).getSql();
     }
     @Test void catalogProofMustBeRequeriedRatherThanReusingMybatisLocalOrSecondLevelCache() {
-        for (Class<?> mapper : List.of(QcReceiptIqcBirthMapper.class, com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper.class)) {
+        for (Class<?> mapper :
+                List.of(QcReceiptIqcBirthMapper.class, QcReceiptIqcEvidenceMapper.class)) {
             var config = new Configuration(); config.addMapper(mapper);
             for (String name : List.of("selectNativeColumns", "selectNativeIndexes")) {
                 var statement = config.getMappedStatement(mapper.getName()+"."+name);
@@ -32,7 +45,10 @@ class QcReceiptIqcBirthMapperTest {
         for (String name : List.of("selectNativeColumns", "selectNativeIndexes")) {
             String sql = sql(config, name); assertThat(sql).contains("DATABASE()", "information_schema.", "qc_receipt_iqc_birth");
             assertThat(CCJSqlParserUtil.parse(sql)).isNotNull();
-            var ignore = QcReceiptIqcBirthMapper.class.getMethod(name).getAnnotation(com.baomidou.mybatisplus.annotation.InterceptorIgnore.class);
+            var ignore =
+                    QcReceiptIqcBirthMapper.class
+                            .getMethod(name)
+                            .getAnnotation(InterceptorIgnore.class);
             assertThat(ignore).isNotNull(); assertThat(ignore.tenantLine()).isEqualTo("true");
         }
         assertThat(sql(config,"selectNativeColumns")).contains("DATETIME_PRECISION", "t.ENGINE");
@@ -62,8 +78,8 @@ class QcReceiptIqcBirthMapperTest {
         assertThat(binding).contains("base_uom_id", "quantity_scale", "quantity", "receipt_scope_sha256", "birth_sha256",
             "captured_at", "bound_at", "binding_sha256", "receive_code", "material_code", "material_name", "vendor_id", "vendor_name");
         for (var method : QcReceiptIqcBirthMapper.class.getMethods()) {
-            assertThat(method.getAnnotation(org.apache.ibatis.annotations.Update.class)).isNull();
-            assertThat(method.getAnnotation(org.apache.ibatis.annotations.Delete.class)).isNull();
+            assertThat(method.getAnnotation(Update.class)).isNull();
+            assertThat(method.getAnnotation(Delete.class)).isNull();
         }
     }
     /** MySQL 转储会省略默认 RESTRICT，兼容等价语法但仍拒绝级联和可置空引用。 */
@@ -79,11 +95,16 @@ class QcReceiptIqcBirthMapperTest {
         String reference = "  CONSTRAINT `fk_native_iqc_birth` FOREIGN KEY (`iqc_id`) REFERENCES `qc_iqc` (`iqc_id`)";
         for (String rules : List.of(" ON DELETE CASCADE", " ON UPDATE CASCADE", " ON DELETE SET NULL",
                 " ON UPDATE SET DEFAULT", " ON DELETE RESTRICT ON DELETE RESTRICT")) {
-            org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
-                () -> assertRestrictiveBirthForeignKey(reference + rules));
+            Assertions.assertThrows(
+                    AssertionError.class,
+                    () -> assertRestrictiveBirthForeignKey(reference + rules));
         }
-        org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
-            () -> assertRestrictiveBirthForeignKey(reference.replace("REFERENCES `qc_iqc`", "REFERENCES `wrong_parent`")));
+        Assertions.assertThrows(
+                AssertionError.class,
+                () ->
+                        assertRestrictiveBirthForeignKey(
+                                reference.replace(
+                                        "REFERENCES `qc_iqc`", "REFERENCES `wrong_parent`")));
     }
 
     /** 只规范化外键规则，不改变数量精度、三条永久唯一键或来源列的断言。 */
@@ -91,11 +112,16 @@ class QcReceiptIqcBirthMapperTest {
         var matcher = Pattern.compile("(?im)^\\s*CONSTRAINT\\s+`fk_native_iqc_birth`\\s+FOREIGN KEY\\s*\\(`iqc_id`\\)\\s*REFERENCES\\s+`qc_iqc`\\s*\\(`iqc_id`\\)([^\\r\\n]*)$")
             .matcher(ddl);
         assertThat(matcher.find()).as("必须保留IQC永久出生外键身份").isTrue();
-        String rules = matcher.group(1).replaceFirst(",\\s*$", "").trim().replaceAll("\\s+", " ").toUpperCase(java.util.Locale.ROOT);
+        String rules =
+                matcher.group(1)
+                        .replaceFirst(",\\s*$", "")
+                        .trim()
+                        .replaceAll("\\s+", " ")
+                        .toUpperCase(Locale.ROOT);
         assertThat(rules.matches("(?:ON (?:DELETE|UPDATE) (?:RESTRICT|NO ACTION)(?: |$))*"))
             .as("外键仅允许显式或默认RESTRICT/NO ACTION").isTrue();
         var actions = Pattern.compile("ON (DELETE|UPDATE) (?:RESTRICT|NO ACTION)").matcher(rules);
-        java.util.Set<String> seen = new java.util.HashSet<>();
+        Set<String> seen = new HashSet<>();
         while (actions.find()) assertThat(seen.add(actions.group(1))).as("禁止重复或冲突的外键规则").isTrue();
     }
 

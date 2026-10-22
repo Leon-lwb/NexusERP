@@ -1,25 +1,26 @@
 package com.nexus.ai.service.decision;
 
+import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionResult;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.EvidenceItem;
 import com.nexus.common.core.exception.ServiceException;
 
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * 从独立重读的 ERP 快照重建数值事实，不使用流程或模型标记。
- */
-@org.springframework.stereotype.Component
+/** 从独立重读的 ERP 快照重建数值事实，不使用流程或模型标记。 */
+@Component
 public class DecisionSourceFactVerifier {
     public List<EvidenceItem> numericFacts(Long runId, DeliveryContextSnapshot snapshot) {
         if (snapshot == null || snapshot.rootBusinessRef() == null || snapshot.snapshotHash() == null
@@ -176,14 +177,14 @@ public class DecisionSourceFactVerifier {
     }
 
     /** 新比例必须绑定同运行、同窗口内的全部需求及单位；旧结论不在读路径升级。 */
-    public void assertShortageBasis(Long runId, com.nexus.common.ai.decision.dto.DecisionKpiSet k,
-                                   DeliveryContextSnapshot snapshot) {
+    public void assertShortageBasis(
+            Long runId, DecisionKpiSet k, DeliveryContextSnapshot snapshot) {
         assertShortageBasis(runId, k, snapshot, 0);
     }
 
     /** horizonDays 必须由服务端读取运行冻结配置，不能取自 basis 或客户端。 */
-    public void assertShortageBasis(Long runId, com.nexus.common.ai.decision.dto.DecisionKpiSet k,
-                                   DeliveryContextSnapshot snapshot, int horizonDays) {
+    public void assertShortageBasis(
+            Long runId, DecisionKpiSet k, DeliveryContextSnapshot snapshot, int horizonDays) {
         if (k == null || k.shortageGapRatio() == null) return;
         if (horizonDays < 1 || horizonDays > 90 || snapshot == null || snapshot.snapshotAt() == null)
             throw new ServiceException("新缺口比例缺少可信的服务端冻结窗口");

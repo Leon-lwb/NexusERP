@@ -1,17 +1,44 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.pu.mapper.ErpPurchaseInventorySourceMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseInventorySourceMapper.DatabaseClock;
 import com.nexus.erp.pu.mapper.ErpPurchaseInventorySourceMapper.QuantityColumn;
+import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper;
+import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.zaxxer.hikari.HikariDataSource;
+
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
+import org.apache.ibatis.executor.result.ResultMapException;
 import org.apache.ibatis.executor.resultset.DefaultResultSetHandler;
 import org.apache.ibatis.mapping.BoundSql;
+import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.LocalCacheScope;
 import org.apache.ibatis.session.RowBounds;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
+import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.apache.ibatis.type.BooleanTypeHandler;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -19,31 +46,36 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.stubbing.Answer;
+import org.mybatis.spring.SqlSessionHolder;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 使用真实 MyBatis 注解解析、动态参数绑定及结果处理器验证 SQL 合同。
@@ -101,9 +133,11 @@ class ErpPurchaseInventoryMapperSqlContractTest {
 
     @Test
     void schemaQueryCannotReceiveBusinessTenantColumnAndMapperIsDiscoverable() throws NoSuchMethodException {
-        assertNotNull(ErpPurchaseInventorySourceMapper.class.getAnnotation(org.apache.ibatis.annotations.Mapper.class));
-        var ignore = ErpPurchaseInventorySourceMapper.class.getMethod("selectQuantityColumns")
-            .getAnnotation(com.baomidou.mybatisplus.annotation.InterceptorIgnore.class);
+        assertNotNull(ErpPurchaseInventorySourceMapper.class.getAnnotation(Mapper.class));
+        var ignore =
+                ErpPurchaseInventorySourceMapper.class
+                        .getMethod("selectQuantityColumns")
+                        .getAnnotation(InterceptorIgnore.class);
         assertNotNull(ignore, "实际元数据表没有 tenant_id，必须仅对此无业务行查询忽略租户插件");
         assertEquals("true", ignore.tenantLine());
     }
@@ -153,12 +187,12 @@ class ErpPurchaseInventoryMapperSqlContractTest {
     void actualMaterialSqlNullCannotBecomeKnownBaseUnitSafetyOrStatus(boolean callSettersOnNulls)
         throws SQLException {
         Configuration configuration = nullMappingConfiguration(callSettersOnNulls);
-        var initial = new com.nexus.erp.bd.domain.BdMaterial();
+        var initial = new BdMaterial();
         assertNull(initial.getBaseUomId()); assertNull(initial.getSafetyStock()); assertNull(initial.getStatus());
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
         values.put("materialId", 139L);
         for (String column : List.of("tenantId", "baseUomId", "safetyStock", "status", "delFlag")) values.put(column, null);
-        var actual = (com.nexus.erp.bd.domain.BdMaterial) mapped(configuration, "lockMaterial", values);
+        var actual = (BdMaterial) mapped(configuration, "lockMaterial", values);
         assertEquals(139L, actual.getMaterialId());
         assertAll(() -> assertNull(actual.getTenantId()), () -> assertNull(actual.getBaseUomId()),
             () -> assertNull(actual.getSafetyStock()), () -> assertNull(actual.getStatus()),
@@ -203,13 +237,13 @@ class ErpPurchaseInventoryMapperSqlContractTest {
         BdUnitOfMeasure unit = (BdUnitOfMeasure) mapped(configuration, "lockUnit", values);
         assertEquals(0, unit.getQuantityScale());
         values.clear(); values.put("materialId", 139L); values.put("safetyStock", new BigDecimal("0.0000"));
-        var material = (com.nexus.erp.bd.domain.BdMaterial) mapped(configuration, "lockMaterial", values);
+        var material = (BdMaterial) mapped(configuration, "lockMaterial", values);
         assertEquals(new BigDecimal("0.0000"), material.getSafetyStock());
     }
 
     /** 使用项目实际的 MyBatis-Plus 配置类；不要求通过修改全局配置保留未知值。 */
     private static Configuration nullMappingConfiguration(boolean callSettersOnNulls) {
-        Configuration configuration = new com.baomidou.mybatisplus.core.MybatisConfiguration();
+        Configuration configuration = new MybatisConfiguration();
         assertFalse(configuration.isCallSettersOnNulls(), "实际默认开关为 false");
         configuration.setCallSettersOnNulls(callSettersOnNulls);
         configuration.setMapUnderscoreToCamelCase(true);
@@ -265,8 +299,10 @@ class ErpPurchaseInventoryMapperSqlContractTest {
         Configuration configuration = configuration();
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
         values.put("stockId", 91L); values.put("expireDateEpochMillis", new BigDecimal(raw));
-        var failure = assertThrows(org.apache.ibatis.executor.result.ResultMapException.class,
-            () -> mapped(configuration, "lockStocks", values));
+        var failure =
+                assertThrows(
+                        ResultMapException.class,
+                        () -> mapped(configuration, "lockStocks", values));
         assertInstanceOf(SQLException.class, failure.getCause());
     }
 
@@ -275,7 +311,7 @@ class ErpPurchaseInventoryMapperSqlContractTest {
     void sameSessionClockRefreshMustExecuteJdbcTwiceAndReturnLaterTime() throws SQLException {
         JdbcSourceFixture f = new JdbcSourceFixture();
         try (var session = f.rawSession()) {
-            assertEquals(org.apache.ibatis.session.LocalCacheScope.SESSION, session.getConfiguration().getLocalCacheScope());
+            assertEquals(LocalCacheScope.SESSION, session.getConfiguration().getLocalCacheScope());
             var mapper = session.getMapper(ErpPurchaseInventorySourceMapper.class);
             DatabaseClock first = mapper.selectDatabaseClock();
             f.databaseNow = JdbcSourceFixture.NOW.plusSeconds(2);
@@ -292,9 +328,13 @@ class ErpPurchaseInventoryMapperSqlContractTest {
         JdbcSourceFixture f = new JdbcSourceFixture();
         MappedStatement original = statement(f.configuration, "selectDatabaseClock");
         String id = PREFIX + "clockWithoutFlushControl";
-        f.configuration.addMappedStatement(new MappedStatement.Builder(f.configuration, id, original.getSqlSource(),
-            org.apache.ibatis.mapping.SqlCommandType.SELECT).resultMaps(original.getResultMaps())
-            .useCache(false).flushCacheRequired(false).build());
+        f.configuration.addMappedStatement(
+                new MappedStatement.Builder(
+                                f.configuration, id, original.getSqlSource(), SqlCommandType.SELECT)
+                        .resultMaps(original.getResultMaps())
+                        .useCache(false)
+                        .flushCacheRequired(false)
+                        .build());
         try (var session = f.rawSession()) {
             DatabaseClock first = session.selectOne(id);
             f.databaseNow = JdbcSourceFixture.NOW.plusSeconds(2);
@@ -317,8 +357,8 @@ class ErpPurchaseInventoryMapperSqlContractTest {
             MappedStatement mapped = statement(f.configuration, method);
             assertTrue(mapped.isFlushCacheRequired(), "需在查询前清理一级缓存");
             assertFalse(mapped.isUseCache(), "不将当前读交给二级缓存");
-            assertEquals(org.apache.ibatis.session.LocalCacheScope.SESSION, f.configuration.getLocalCacheScope(),
-                "产品修复不得改全局缓存范围");
+            assertEquals(
+                    LocalCacheScope.SESSION, f.configuration.getLocalCacheScope(), "产品修复不得改全局缓存范围");
         }
     }
 
@@ -328,15 +368,22 @@ class ErpPurchaseInventoryMapperSqlContractTest {
         JdbcSourceFixture f = new JdbcSourceFixture();
         f.advanceDuringStockLock = true;
         f.expiresAt = JdbcSourceFixture.NOW.plusSeconds(1);
-        AtomicReference<com.nexus.common.core.exception.ServiceException> original = new AtomicReference<>();
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> f.inOwnedTransaction(() -> {
-            try {
-                return f.verifier().verifyLocked(JdbcSourceFixture.TENANT, JdbcSourceFixture.MATERIAL);
-            } catch (com.nexus.common.core.exception.ServiceException rejected) {
-                original.set(rejected);
-                throw rejected;
-            }
-        }));
+        AtomicReference<ServiceException> original = new AtomicReference<>();
+        assertThrows(
+                ServiceException.class,
+                () ->
+                        f.inOwnedTransaction(
+                                () -> {
+                                    try {
+                                        return f.verifier()
+                                                .verifyLocked(
+                                                        JdbcSourceFixture.TENANT,
+                                                        JdbcSourceFixture.MATERIAL);
+                                    } catch (ServiceException rejected) {
+                                        original.set(rejected);
+                                        throw rejected;
+                                    }
+                                }));
         assertNotNull(original.get(), "必须由真实库存认证器拒绝，不把入口/基础设施错误当成过期证明；回调进入="
             + f.callbackEntered + "，内部失败=" + f.callbackFailure);
         assertTrue(original.get().getMessage().contains("过期"), original.get().getMessage());
@@ -373,16 +420,15 @@ class ErpPurchaseInventoryMapperSqlContractTest {
     private static final class JdbcSourceFixture {
         static final String TENANT = "jdbc-cache-tenant";
         static final Long MATERIAL = 139L;
-        static final java.time.Instant NOW = java.time.Instant.parse("2026-10-02T02:03:04.123456Z");
+        static final Instant NOW = Instant.parse("2026-10-02T02:03:04.123456Z");
         final Connection connection;
-        final com.baomidou.dynamic.datasource.DynamicRoutingDataSource routing;
+        final DynamicRoutingDataSource routing;
         final Configuration configuration;
-        final org.apache.ibatis.session.SqlSessionFactory factory;
+        final SqlSessionFactory factory;
         final Map<String, Integer> jdbcCounts = new LinkedHashMap<>();
-        final java.util.Set<org.apache.ibatis.session.SqlSession> observedSessions = java.util.Collections
-            .newSetFromMap(new java.util.IdentityHashMap<>());
-        java.time.Instant databaseNow = NOW;
-        java.time.Instant expiresAt = NOW.plusSeconds(3600);
+        final Set<SqlSession> observedSessions = Collections.newSetFromMap(new IdentityHashMap<>());
+        Instant databaseNow = NOW;
+        Instant expiresAt = NOW.plusSeconds(3600);
         boolean advanceDuringStockLock;
         boolean callbackEntered;
         Throwable callbackFailure;
@@ -402,66 +448,71 @@ class ErpPurchaseInventoryMapperSqlContractTest {
             doAnswer(i -> { readOnly.set(i.getArgument(0)); return null; }).when(connection).setReadOnly(anyBoolean());
             doAnswer(i -> { isolation.set(i.getArgument(0)); return null; }).when(connection).setTransactionIsolation(anyInt());
             when(connection.getMetaData()).thenReturn(mock(DatabaseMetaData.class));
-            var erp = mock(com.zaxxer.hikari.HikariDataSource.class);
-            var master = mock(com.zaxxer.hikari.HikariDataSource.class);
+            var erp = mock(HikariDataSource.class);
+            var master = mock(HikariDataSource.class);
             when(erp.getConnection()).thenReturn(connection);
-            routing = new com.baomidou.dynamic.datasource.DynamicRoutingDataSource(List.of());
+            routing = new DynamicRoutingDataSource(List.of());
             routing.setPrimary("master"); routing.setStrict(true);
             routing.addDataSource("master", master); routing.addDataSource("erp", erp);
-            configuration = new Configuration(new org.apache.ibatis.mapping.Environment("离线真实执行器",
-                new org.mybatis.spring.transaction.SpringManagedTransactionFactory(), routing));
+            configuration =
+                    new Configuration(
+                            new Environment(
+                                    "离线真实执行器", new SpringManagedTransactionFactory(), routing));
             configuration.setMapUnderscoreToCamelCase(true);
             configuration.addMapper(ErpPurchaseInventorySourceMapper.class);
-            configuration.addMapper(com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.class);
-            configuration.addMapper(com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper.class);
-            factory = new org.apache.ibatis.session.defaults.DefaultSqlSessionFactory(configuration);
+            configuration.addMapper(PuRequirementCompetitionPoolMapper.class);
+            configuration.addMapper(PuRequirementMaterialGuardMapper.class);
+            factory = new DefaultSqlSessionFactory(configuration);
             when(connection.prepareStatement(anyString())).thenAnswer(i -> prepared(i.getArgument(0)));
         }
 
-        org.apache.ibatis.session.SqlSession rawSession() {
-            configuration.setEnvironment(new org.apache.ibatis.mapping.Environment("离线会话缓存对照",
-                new org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory(), routing));
-            return factory.openSession(org.apache.ibatis.session.ExecutorType.SIMPLE, connection);
+        SqlSession rawSession() {
+            configuration.setEnvironment(
+                    new Environment("离线会话缓存对照", new JdbcTransactionFactory(), routing));
+            return factory.openSession(ExecutorType.SIMPLE, connection);
         }
 
         ErpPurchaseInventorySourceVerifier verifier() {
-            var template = new org.mybatis.spring.SqlSessionTemplate(factory);
-            return new ErpPurchaseInventorySourceVerifier(template.getMapper(ErpPurchaseInventorySourceMapper.class),
-                new com.nexus.erp.pu.service.PuRequirementErpTransactionQualification(factory));
+            var template = new SqlSessionTemplate(factory);
+            return new ErpPurchaseInventorySourceVerifier(
+                    template.getMapper(ErpPurchaseInventorySourceMapper.class),
+                    new PuRequirementErpTransactionQualification(factory));
         }
 
         <T> T inOwnedTransaction(Supplier<T> callback) throws SQLException {
             // 只读夹具显式回滚；结果仅用于事务外断言，绝不将回滚后的快照当采购授权。
             RuntimeException rollbackMarker = new RuntimeException("离线来源夹具完成后主动回滚");
             AtomicReference<T> observed = new AtomicReference<>();
-            try (var tenant = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-                tenant.when(com.nexus.common.tenant.helper.TenantHelper::isEnable).thenReturn(true);
-                tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn(TENANT);
+            try (var tenant = mockStatic(TenantHelper.class)) {
+                tenant.when(TenantHelper::isEnable).thenReturn(true);
+                tenant.when(TenantHelper::getTenantId).thenReturn(TENANT);
                 try {
-                    new com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor(factory)
-                        .executeRepeatableRead(TENANT, () -> {
-                            callbackEntered = true;
-                            try {
-                                T value = callback.get();
-                                observed.set(value);
-                                throw rollbackMarker;
-                            } catch (RuntimeException | Error failure) {
-                                callbackFailure = failure;
-                                throw failure;
-                            }
-                        });
+                    new PuRequirementErpTransactionExecutor(factory)
+                            .executeRepeatableRead(
+                                    TENANT,
+                                    () -> {
+                                        callbackEntered = true;
+                                        try {
+                                            T value = callback.get();
+                                            observed.set(value);
+                                            throw rollbackMarker;
+                                        } catch (RuntimeException | Error failure) {
+                                            callbackFailure = failure;
+                                            throw failure;
+                                        }
+                                    });
                     throw new AssertionError("夹具主动回滚必须由真实专属入口拒绝提交");
-                } catch (com.nexus.common.core.exception.ServiceException rejected) {
+                } catch (ServiceException rejected) {
                     if (callbackFailure != rollbackMarker) throw rejected;
                     verify(connection).rollback();
                     verify(connection, never()).commit();
                     return observed.get();
                 }
             } finally {
-                assertTrue(org.springframework.transaction.support.TransactionSynchronizationManager.getResourceMap().isEmpty());
-                assertFalse(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive());
-                assertFalse(org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive());
-                assertNull(com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.peek());
+                assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
+                assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
+                assertFalse(TransactionSynchronizationManager.isSynchronizationActive());
+                assertNull(DynamicDataSourceContextHolder.peek());
             }
         }
 
@@ -497,14 +548,19 @@ class ErpPurchaseInventoryMapperSqlContractTest {
             when(statement.getConnection()).thenReturn(connection);
             when(statement.getUpdateCount()).thenReturn(-1);
             when(statement.getResultSet()).thenAnswer(i -> result.get());
-            when(statement.execute()).thenAnswer(i -> {
-                jdbcCounts.merge(method, 1, Integer::sum);
-                Object held = org.springframework.transaction.support.TransactionSynchronizationManager.getResource(factory);
-                if (held instanceof org.mybatis.spring.SqlSessionHolder holder) observedSessions.add(holder.getSqlSession());
-                if (method.equals("lockStocks") && advanceDuringStockLock) databaseNow = NOW.plusSeconds(2);
-                result.set(rows(rowsFor(method)));
-                return true;
-            });
+            when(statement.execute())
+                    .thenAnswer(
+                            i -> {
+                                jdbcCounts.merge(method, 1, Integer::sum);
+                                Object held =
+                                        TransactionSynchronizationManager.getResource(factory);
+                                if (held instanceof SqlSessionHolder holder)
+                                    observedSessions.add(holder.getSqlSession());
+                                if (method.equals("lockStocks") && advanceDuringStockLock)
+                                    databaseNow = NOW.plusSeconds(2);
+                                result.set(rows(rowsFor(method)));
+                                return true;
+                            });
             return statement;
         }
 
@@ -534,11 +590,13 @@ class ErpPurchaseInventoryMapperSqlContractTest {
             };
         }
 
-        static BigDecimal epoch(java.time.Instant value) {
+        static BigDecimal epoch(Instant value) {
             return BigDecimal.valueOf(value.getEpochSecond()).add(BigDecimal.valueOf(value.getNano(), 9));
         }
 
-        private static BigDecimal millis(java.time.Instant value) { return BigDecimal.valueOf(value.toEpochMilli()); }
+        private static BigDecimal millis(Instant value) {
+            return BigDecimal.valueOf(value.toEpochMilli());
+        }
 
         private static LinkedHashMap<String, Object> row(Object... cells) {
             var result = new LinkedHashMap<String, Object>();
@@ -566,18 +624,28 @@ class ErpPurchaseInventoryMapperSqlContractTest {
             AtomicBoolean wasNull = new AtomicBoolean();
             when(result.getMetaData()).thenReturn(metadata);
             when(result.next()).thenAnswer(i -> index.incrementAndGet() < data.size());
-            org.mockito.stubbing.Answer<Object> read = i -> {
-                Object key = i.getArgument(0);
-                String column = key instanceof Integer ? columns.get((Integer) key - 1) : key.toString();
-                Object value = data.get(index.get()).get(column); wasNull.set(value == null);
-                return switch (i.getMethod().getName()) {
-                    case "getString" -> value == null ? null : value.toString();
-                    case "getLong" -> value == null ? 0L : ((Number) value).longValue();
-                    case "getInt" -> value == null ? 0 : ((Number) value).intValue();
-                    case "getBigDecimal" -> value == null ? null : value instanceof BigDecimal ? value : new BigDecimal(value.toString());
-                    default -> value;
-                };
-            };
+            Answer<Object> read =
+                    i -> {
+                        Object key = i.getArgument(0);
+                        String column =
+                                key instanceof Integer
+                                        ? columns.get((Integer) key - 1)
+                                        : key.toString();
+                        Object value = data.get(index.get()).get(column);
+                        wasNull.set(value == null);
+                        return switch (i.getMethod().getName()) {
+                            case "getString" -> value == null ? null : value.toString();
+                            case "getLong" -> value == null ? 0L : ((Number) value).longValue();
+                            case "getInt" -> value == null ? 0 : ((Number) value).intValue();
+                            case "getBigDecimal" ->
+                                    value == null
+                                            ? null
+                                            : value instanceof BigDecimal
+                                                    ? value
+                                                    : new BigDecimal(value.toString());
+                            default -> value;
+                        };
+                    };
             when(result.getString(anyString())).thenAnswer(read); when(result.getString(anyInt())).thenAnswer(read);
             when(result.getLong(anyString())).thenAnswer(read); when(result.getLong(anyInt())).thenAnswer(read);
             when(result.getInt(anyString())).thenAnswer(read); when(result.getInt(anyInt())).thenAnswer(read);
@@ -627,18 +695,28 @@ class ErpPurchaseInventoryMapperSqlContractTest {
         when(result.getMetaData()).thenReturn(metadata);
         when(result.next()).thenReturn(true, false);
         AtomicBoolean wasNull = new AtomicBoolean();
-        org.mockito.stubbing.Answer<Object> read = i -> {
-            Object key = i.getArgument(0);
-            String column = key instanceof Integer ? columns.get((Integer) key - 1) : key.toString();
-            Object value = values.get(column); wasNull.set(value == null);
-            return switch (i.getMethod().getName()) {
-                case "getString" -> value == null ? null : value.toString();
-                case "getLong" -> value == null ? 0L : ((Number) value).longValue();
-                case "getInt" -> value == null ? 0 : ((Number) value).intValue();
-                case "getBigDecimal" -> value == null ? null : value instanceof BigDecimal ? value : new BigDecimal(value.toString());
-                default -> value;
-            };
-        };
+        Answer<Object> read =
+                i -> {
+                    Object key = i.getArgument(0);
+                    String column =
+                            key instanceof Integer
+                                    ? columns.get((Integer) key - 1)
+                                    : key.toString();
+                    Object value = values.get(column);
+                    wasNull.set(value == null);
+                    return switch (i.getMethod().getName()) {
+                        case "getString" -> value == null ? null : value.toString();
+                        case "getLong" -> value == null ? 0L : ((Number) value).longValue();
+                        case "getInt" -> value == null ? 0 : ((Number) value).intValue();
+                        case "getBigDecimal" ->
+                                value == null
+                                        ? null
+                                        : value instanceof BigDecimal
+                                                ? value
+                                                : new BigDecimal(value.toString());
+                        default -> value;
+                    };
+                };
         when(result.getLong(anyString())).thenAnswer(read); when(result.getLong(anyInt())).thenAnswer(read);
         when(result.getInt(anyString())).thenAnswer(read); when(result.getInt(anyInt())).thenAnswer(read);
         when(result.getString(anyString())).thenAnswer(read); when(result.getString(anyInt())).thenAnswer(read);

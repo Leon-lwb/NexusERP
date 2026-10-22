@@ -1,15 +1,18 @@
 package com.nexus.erp.wm.service.impl;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.PurchaseReceiveWritebackMessage;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 仓储模块MQ消息发送服务
@@ -32,11 +35,14 @@ public class WmMqSendService {
 
     /** 精确过账提交后同步获得主库可靠消息生产器接受；不在 ERP 事务内调用。 */
     public void sendCertifiedPurchaseReceiveWriteback(Long receiveId, String tenantId) {
-        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
-            || org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()
-            || !org.springframework.transaction.support.TransactionSynchronizationManager.getResourceMap().isEmpty()
-            || receiveId == null || receiveId <= 0 || tenantId == null || !tenantId.matches("[0-9]{6,20}")) {
-            throw new com.nexus.common.core.exception.ServiceException("精确入库通知必须在提交后以明确租户发送");
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()
+                || !TransactionSynchronizationManager.getResourceMap().isEmpty()
+                || receiveId == null
+                || receiveId <= 0
+                || tenantId == null
+                || !tenantId.matches("[0-9]{6,20}")) {
+            throw new ServiceException("精确入库通知必须在提交后以明确租户发送");
         }
         PurchaseReceiveWritebackMessage message = new PurchaseReceiveWritebackMessage();
         message.setReceiveId(receiveId);
@@ -47,7 +53,7 @@ public class WmMqSendService {
             messageProducer.sendDurable(ExchangeConstants.TOPIC_EXCHANGE,
                 RoutingKeyConstants.PURCHASE_RECEIVE_WRITEBACK, message);
         } catch (RuntimeException failure) {
-            throw new com.nexus.common.core.exception.ServiceException("采购收货通知尚未获得可靠生产器接受，可重试恢复");
+            throw new ServiceException("采购收货通知尚未获得可靠生产器接受，可重试恢复");
         } finally {
             DynamicDataSourceContextHolder.poll();
         }

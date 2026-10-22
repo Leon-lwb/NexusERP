@@ -1,16 +1,25 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.*;
+import com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper;
+
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /** 独立保护合同：无头标记不是历史证明；command / ledger / 当前行身份都必须检查。 */
 class PuCertifiedPurchaseDocumentGuardTest {
@@ -22,24 +31,47 @@ class PuCertifiedPurchaseDocumentGuardTest {
             f.legacyOrder(20L);
             PuPurchaseOrderLine original=new PuPurchaseOrderLine();original.setLineId(21L);original.setOrderId(20L);original.setMaterialId(501L);
             f.stub("lockOrderLine",original,21L);
-            f.stub("lockReturnOrderIdentity",new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(TENANT,20L),20L);
-            f.stub("lockReturnOrderLineIdentity",new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(TENANT,21L,20L,501L),21L);
+            f.stub(
+                    "lockReturnOrderIdentity",
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(TENANT, 20L),
+                    20L);
+            f.stub(
+                    "lockReturnOrderLineIdentity",
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(
+                            TENANT, 21L, 20L, 501L),
+                    21L);
             PuPurchaseReturnLine candidate=new PuPurchaseReturnLine();candidate.setOrderLineId(21L);candidate.setMaterialId(501L);
             assertDoesNotThrow(()->f.call("requireLegacyReturnInput",20L,List.of(candidate)));
             f.mapperMethod("lockReturnOrderIdentity").invoke(verify(f.mapper),TENANT,20L);
             f.mapperMethod("lockReturnOrderLineIdentity").invoke(verify(f.mapper),TENANT,21L);
         }
     }
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings={"head-tenant","line-tenant","line-parent","line-material","missing-head","missing-line"})
-    void unknownOrContradictoryNativeReturnOwnershipMustRejectBeforeWriting(String corruption) throws Exception {
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "head-tenant",
+                "line-tenant",
+                "line-parent",
+                "line-material",
+                "missing-head",
+                "missing-line"
+            })
+    void unknownOrContradictoryNativeReturnOwnershipMustRejectBeforeWriting(String corruption)
+            throws Exception {
         try(Fixture f=new Fixture()) {
             f.legacyOrder(20L);
             PuPurchaseOrderLine original=new PuPurchaseOrderLine();original.setLineId(21L);original.setOrderId(20L);original.setMaterialId(501L);
             f.stub("lockOrderLine",original,21L);
-            var head=new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity("head-tenant".equals(corruption)?"other":TENANT,20L);
-            var line=new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(
-                "line-tenant".equals(corruption)?"other":TENANT,21L,"line-parent".equals(corruption)?30L:20L,"line-material".equals(corruption)?999L:501L);
+            var head =
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(
+                            "head-tenant".equals(corruption) ? "other" : TENANT, 20L);
+            var line =
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(
+                            "line-tenant".equals(corruption) ? "other" : TENANT,
+                            21L,
+                            "line-parent".equals(corruption) ? 30L : 20L,
+                            "line-material".equals(corruption) ? 999L : 501L);
             f.stub("lockReturnOrderIdentity","missing-head".equals(corruption)?null:head,20L);
             f.stub("lockReturnOrderLineIdentity","missing-line".equals(corruption)?null:line,21L);
             PuPurchaseReturnLine candidate=new PuPurchaseReturnLine();candidate.setOrderLineId(21L);candidate.setMaterialId(501L);
@@ -52,8 +84,15 @@ class PuCertifiedPurchaseDocumentGuardTest {
             f.legacyOrder(20L);f.legacyOrder(30L);
             PuPurchaseOrderLine original=new PuPurchaseOrderLine();original.setLineId(31L);original.setOrderId(30L);original.setMaterialId(501L);
             f.stub("lockOrderLine",original,31L);
-            f.stub("lockReturnOrderIdentity",new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(TENANT,20L),20L);
-            f.stub("lockReturnOrderLineIdentity",new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(TENANT,31L,30L,501L),31L);
+            f.stub(
+                    "lockReturnOrderIdentity",
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(TENANT, 20L),
+                    20L);
+            f.stub(
+                    "lockReturnOrderLineIdentity",
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(
+                            TENANT, 31L, 30L, 501L),
+                    31L);
             PuPurchaseReturnLine candidate=new PuPurchaseReturnLine();candidate.setOrderLineId(31L);candidate.setMaterialId(501L);
             f.rejected("requireLegacyReturnInput",20L,List.of(candidate));
             f.mapperMethod("lockReturnOrderLineIdentity").invoke(verify(f.mapper),TENANT,31L);
@@ -65,8 +104,15 @@ class PuCertifiedPurchaseDocumentGuardTest {
             f.legacyOrder(20L);
             PuPurchaseOrderLine original=new PuPurchaseOrderLine();original.setLineId(21L);original.setOrderId(20L);original.setMaterialId(501L);
             f.stub("lockOrderLine",original,21L);
-            f.stub("lockReturnOrderIdentity",new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(TENANT,20L),20L);
-            f.stub("lockReturnOrderLineIdentity",new com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(TENANT,21L,20L,501L),21L);
+            f.stub(
+                    "lockReturnOrderIdentity",
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderIdentity(TENANT, 20L),
+                    20L);
+            f.stub(
+                    "lockReturnOrderLineIdentity",
+                    new PuCertifiedPurchaseDocumentGuardMapper.ReturnOrderLineIdentity(
+                            TENANT, 21L, 20L, 501L),
+                    21L);
             PuPurchaseReturnLine candidate=new PuPurchaseReturnLine();candidate.setOrderLineId(21L);candidate.setMaterialId(999L);
             f.rejected("requireLegacyReturnInput",20L,List.of(candidate));
             f.mapperMethod("lockReturnOrderLineIdentity").invoke(verify(f.mapper),TENANT,21L);
@@ -253,7 +299,7 @@ class PuCertifiedPurchaseDocumentGuardTest {
     void mapperEvidenceReadsAreTenantScopedCurrentUncachedAndNeverWriteOrHideDeletedEvidence() throws Exception {
         Class<?> type = requiredClass("com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper");
         for (Method method : type.getDeclaredMethods()) {
-            var select = method.getAnnotation(org.apache.ibatis.annotations.Select.class);
+            var select = method.getAnnotation(Select.class);
             assertNotNull(select, method.getName());
             String sql = String.join(" ", select.value()).toLowerCase();
             assertTrue(sql.startsWith("select "), sql);
@@ -262,10 +308,10 @@ class PuCertifiedPurchaseDocumentGuardTest {
             assertTrue(sql.contains("for update"), sql);
             assertFalse(sql.contains("del_flag ="), sql);
             assertFalse(sql.contains("del_flag="), sql);
-            var options = method.getAnnotation(org.apache.ibatis.annotations.Options.class);
+            var options = method.getAnnotation(Options.class);
             assertNotNull(options, method.getName());
             assertFalse(options.useCache());
-            assertEquals(org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE, options.flushCache());
+            assertEquals(Options.FlushCachePolicy.TRUE, options.flushCache());
         }
     }
 
@@ -310,14 +356,21 @@ class PuCertifiedPurchaseDocumentGuardTest {
             stub("lockRequisitionLines", List.of(), id);
         }
         Object call(String name, Object... args) throws Throwable {
-            Method method = java.util.Arrays.stream(guard.getClass().getMethods())
-                .filter(m -> m.getName().equals(name) && m.getParameterCount() == args.length).findFirst().orElseThrow();
+            Method method =
+                    Arrays.stream(guard.getClass().getMethods())
+                            .filter(
+                                    m ->
+                                            m.getName().equals(name)
+                                                    && m.getParameterCount() == args.length)
+                            .findFirst()
+                            .orElseThrow();
             try { return method.invoke(guard, args); }
             catch (InvocationTargetException error) { throw error.getTargetException(); }
         }
         ServiceException rejected(String name, Object... args) {
             return assertThrows(ServiceException.class, () -> call(name, args));
         }
-        @Override public void close() { tenant.close(); }
+        @Override
+        public void close() { tenant.close(); }
     }
 }

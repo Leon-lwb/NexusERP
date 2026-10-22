@@ -1,5 +1,8 @@
 package com.nexus.erp.wm.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
@@ -11,6 +14,7 @@ import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.*;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -24,28 +28,30 @@ import org.springframework.aop.Advisor;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.annotation.*;
+import org.springframework.core.SpringVersion;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.*;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.io.PrintWriter;
 import java.nio.file.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
-/**
- * 仅由专用容器runner启用的真实MySQL 5.7/Spring代理验证；不读取应用数据源配置。
- */
+// 同名类型说明：本文件同时使用 org.springframework.context.annotation.Configuration 和
+// org.apache.ibatis.session.Configuration，后者保留全限定名以区分。
+
+/** 仅由专用容器runner启用的真实MySQL 5.7/Spring代理验证；不读取应用数据源配置。 */
 @EnabledIfEnvironmentVariable(named = "NEXUS_REGISTRY_MYSQL57_TOKEN", matches = "[0-9a-f]{32}")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ErpSerialIdentityMysql57IT {
@@ -73,8 +79,8 @@ class ErpSerialIdentityMysql57IT {
         var listener = new SummaryGeneratingListener();
         LauncherFactory.create().execute(request, listener);
         var summary = listener.getSummary();
-        summary.printTo(new java.io.PrintWriter(System.out, true));
-        summary.printFailuresTo(new java.io.PrintWriter(System.out, true));
+        summary.printTo(new PrintWriter(System.out, true));
+        summary.printFailuresTo(new PrintWriter(System.out, true));
         summary.getFailures().forEach(f -> f.getException().printStackTrace(System.out));
         var evidence = new LinkedHashMap<String, Object>();
         evidence.put("testsFound", summary.getTestsFoundCount());
@@ -128,7 +134,7 @@ class ErpSerialIdentityMysql57IT {
         assertTrue(version.startsWith("5.7."));
         RUNTIME.put("mysqlVersion", version);
         RUNTIME.put("javaVersion", System.getProperty("java.version"));
-        RUNTIME.put("springVersion", org.springframework.core.SpringVersion.getVersion());
+        RUNTIME.put("springVersion", SpringVersion.getVersion());
         try (var connection =
                 first.getBean(DynamicRoutingDataSource.class)
                         .getDataSources()
@@ -539,7 +545,7 @@ class ErpSerialIdentityMysql57IT {
     @Order(11)
     void actualSpringNeverPropagationRejectsAnOuterBusinessTransaction() {
         assertThrows(
-                org.springframework.transaction.IllegalTransactionStateException.class,
+                IllegalTransactionStateException.class,
                 () ->
                         tenant(
                                 () -> {

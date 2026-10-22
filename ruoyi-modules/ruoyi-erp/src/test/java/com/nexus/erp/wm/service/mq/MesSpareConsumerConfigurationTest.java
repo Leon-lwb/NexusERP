@@ -1,17 +1,21 @@
 package com.nexus.erp.wm.service.mq;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.rabbitmq.client.Channel;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.amqp.core.Message;
-import com.rabbitmq.client.Channel;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 仅涉及 AOP 和 AMQP 消息；不启动连接工厂、消息代理、数据库或服务。 */
 @Tag("dev")
@@ -47,10 +51,12 @@ class MesSpareConsumerConfigurationTest {
 
     @Test
     void listenerFactoryIsNamedAndScopedWithoutReplacingGlobalFactory() throws Exception {
-        var method = MesSpareConsumerConfiguration.class.getMethod("containerFactory",
-            org.springframework.amqp.rabbit.connection.ConnectionFactory.class,
-            org.springframework.amqp.support.converter.MessageConverter.class,
-            org.springframework.retry.interceptor.RetryOperationsInterceptor.class);
+        var method =
+                MesSpareConsumerConfiguration.class.getMethod(
+                        "containerFactory",
+                        ConnectionFactory.class,
+                        MessageConverter.class,
+                        RetryOperationsInterceptor.class);
         assertTrue(List.of(method.getAnnotation(Bean.class).value()).contains("mesSpareRabbitListenerContainerFactory"));
         assertFalse(List.of(method.getAnnotation(Bean.class).value()).contains("rabbitListenerContainerFactory"));
     }

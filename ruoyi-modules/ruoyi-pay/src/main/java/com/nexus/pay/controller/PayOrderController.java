@@ -1,10 +1,7 @@
 package com.nexus.pay.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
@@ -16,6 +13,14 @@ import com.nexus.pay.domain.PayOrder;
 import com.nexus.pay.domain.bo.PayOrderBo;
 import com.nexus.pay.domain.vo.PayOrderVo;
 import com.nexus.pay.service.IPayOrderService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 订单Controller
@@ -97,7 +103,7 @@ public class PayOrderController extends BaseController {
     @PostMapping
     public R<PayOrder> add(@Validated @RequestBody PayOrderBo bo) {
         PayOrder payOrder = new PayOrder();
-        payOrder.setOrderNumber(java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 20));
+        payOrder.setOrderNumber(UUID.randomUUID().toString().replace("-", "").substring(0, 20));
         payOrder.setOrderContent(bo.getOrderContent());
         payOrder.setTotalAmount(bo.getTotalAmount());
         payOrder.setActualAmount(bo.getActualAmount() != null ? bo.getActualAmount() : bo.getTotalAmount());

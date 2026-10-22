@@ -1,5 +1,11 @@
 package com.nexus.erp.mq.consumer;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import cn.hutool.extra.spring.SpringUtil;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -8,23 +14,25 @@ import com.nexus.erp.mq.message.PurchaseReceiveWritebackMessage;
 import com.nexus.erp.pu.service.IPuPurchaseReceiveWritebackService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
 import com.rabbitmq.client.Channel;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 /** 真实强类型投递边界；Redis 传输状态绝不等于认证回执。 */
 class PurchaseReceiveWritebackConsumerTest {
-    @org.junit.jupiter.api.BeforeAll static void initializeRedisFacadeWithoutAServer() throws Exception {
-        try(var spring=mockStatic(cn.hutool.extra.spring.SpringUtil.class)) {
-            spring.when(()->cn.hutool.extra.spring.SpringUtil.getBean(org.redisson.api.RedissonClient.class))
-                .thenReturn(mock(org.redisson.api.RedissonClient.class));
+    @BeforeAll
+    static void initializeRedisFacadeWithoutAServer() throws Exception {
+        try (var spring = mockStatic(SpringUtil.class)) {
+            spring.when(() -> SpringUtil.getBean(RedissonClient.class))
+                    .thenReturn(mock(RedissonClient.class));
             Class.forName(RedisUtils.class.getName(),true,RedisUtils.class.getClassLoader());
         }
     }

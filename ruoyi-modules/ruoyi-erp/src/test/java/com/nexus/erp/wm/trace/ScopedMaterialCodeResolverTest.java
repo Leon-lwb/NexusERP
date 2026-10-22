@@ -1,14 +1,19 @@
 package com.nexus.erp.wm.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.stp.StpUtil;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.SerialVisibilityPort;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
+
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 class ScopedMaterialCodeResolverTest {
     @Test
@@ -37,8 +42,7 @@ class ScopedMaterialCodeResolverTest {
                                     core,
                                     documents,
                                     provider,
-                                    new StructuredLabelResolver(
-                                            new com.fasterxml.jackson.databind.ObjectMapper()))
+                                    new StructuredLabelResolver(new ObjectMapper()))
                             .resolve("000001", request, Set.of(CodeObjectType.SN));
             assertEquals(ResolveStatus.RESOLVED, result.status());
             assertEquals(2L, result.identityId());
@@ -86,8 +90,7 @@ class ScopedMaterialCodeResolverTest {
                                     core,
                                     documents,
                                     provider,
-                                    new StructuredLabelResolver(
-                                            new com.fasterxml.jackson.databind.ObjectMapper()))
+                                    new StructuredLabelResolver(new ObjectMapper()))
                             .resolve(
                                     "000001",
                                     new CodeResolveRequest(
@@ -132,8 +135,7 @@ class ScopedMaterialCodeResolverTest {
                                     core,
                                     documents,
                                     provider,
-                                    new StructuredLabelResolver(
-                                            new com.fasterxml.jackson.databind.ObjectMapper()))
+                                    new StructuredLabelResolver(new ObjectMapper()))
                             .resolve(
                                     "000001",
                                     new CodeResolveRequest(
@@ -173,8 +175,7 @@ class ScopedMaterialCodeResolverTest {
                                     core,
                                     documents,
                                     provider,
-                                    new StructuredLabelResolver(
-                                            new com.fasterxml.jackson.databind.ObjectMapper()))
+                                    new StructuredLabelResolver(new ObjectMapper()))
                             .resolve(
                                     "000001",
                                     new CodeResolveRequest(

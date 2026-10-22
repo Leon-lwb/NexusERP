@@ -5,6 +5,7 @@ import static com.nexus.report.mapper.ReportStoreFixture.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.nexus.report.domain.ReportFault;
+import com.nexus.report.domain.ReportRecords;
 import com.nexus.report.domain.ReportRecords.Dataset;
 import com.nexus.report.domain.ReportRecords.ExportJob;
 
@@ -223,11 +224,7 @@ class ReportStoreConcurrencyTest {
                                         "{}",
                                         "same-hash",
                                         dataset.publishedVersion()));
-        assertEquals(
-                1,
-                outcomes.stream()
-                        .filter(com.nexus.report.domain.ReportRecords.Version.class::isInstance)
-                        .count());
+        assertEquals(1, outcomes.stream().filter(ReportRecords.Version.class::isInstance).count());
         assertEquals(
                 1,
                 outcomes.stream()

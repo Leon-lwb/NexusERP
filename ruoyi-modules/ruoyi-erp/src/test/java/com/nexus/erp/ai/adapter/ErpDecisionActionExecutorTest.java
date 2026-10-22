@@ -1,5 +1,19 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -20,38 +34,27 @@ import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseRequisitionVo;
 import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /** ERP 决策动作结构化幂等、验证与原子补偿测试。 */
 @ExtendWith(MockitoExtension.class)
@@ -78,9 +81,9 @@ class ErpDecisionActionExecutorTest {
     @Mock
     private DecisionPurchaseDraftEnricher purchaseEnricher;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void permitIndependentlyTestedMetadataInExecutorUnitTests() {
-        org.mockito.Mockito.lenient().when(purchaseEnricher.matchesPersisted(any(), any())).thenReturn(true);
+        Mockito.lenient().when(purchaseEnricher.matchesPersisted(any(), any())).thenReturn(true);
     }
 
     @InjectMocks
@@ -118,8 +121,7 @@ class ErpDecisionActionExecutorTest {
     void directErpExecuteRequiresSourceGateBeforeCreatingPurchaseDraft() {
         var action = purchaseAction(purchasePayload());
         var actor = purchaseActor();
-        org.mockito.Mockito.doThrow(new ServiceException("采购来源未核验"))
-            .when(purchaseGate).require(action, actor);
+        Mockito.doThrow(new ServiceException("采购来源未核验")).when(purchaseGate).require(action, actor);
         assertThrows(ServiceException.class, () -> executor.execute(action, actor));
         verify(purchaseGate).require(action, actor);
         verifyNoInteractions(purchaseRequisitionService, purchaseEnricher);
@@ -183,7 +185,7 @@ class ErpDecisionActionExecutorTest {
         assertEquals(7L, bo.getValue().getUpdateBy());
         assertEquals(7L, bo.getValue().getApplicantId());
         assertEquals("tester", bo.getValue().getApplicantName());
-        assertEquals(java.sql.Date.valueOf("2026-09-30"), bo.getValue().getRequiredDate());
+        assertEquals(Date.valueOf("2026-09-30"), bo.getValue().getRequiredDate());
         PuPurchaseRequisitionLine line = bo.getValue().getPuPurchaseRequisitionLineList().get(0);
         assertEquals(RUN_ID, line.getSourceId());
         assertEquals("AI_DECISION", line.getSourceType());
@@ -465,7 +467,7 @@ class ErpDecisionActionExecutorTest {
         PuPurchaseRequisitionVo provenanceChanged = purchaseVo();
         provenanceChanged.setDecisionActionId(999L);
         PuPurchaseRequisitionVo headerChanged = purchaseVo();
-        headerChanged.setRequiredDate(java.sql.Date.valueOf("2026-10-01"));
+        headerChanged.setRequiredDate(Date.valueOf("2026-10-01"));
         PuPurchaseRequisitionVo lineChanged = purchaseVo();
         lineChanged.getPuPurchaseRequisitionLineList().get(0).setShortageQuantity(new BigDecimal("6"));
         when(purchaseRequisitionService.selectById(7001L))
@@ -641,7 +643,7 @@ class ErpDecisionActionExecutorTest {
         vo.setRequisitionName("AI交付风险建议-SO-42");
         vo.setApplicantId(7L);
         vo.setApplicantName("tester");
-        vo.setRequiredDate(java.sql.Date.valueOf("2026-09-30"));
+        vo.setRequiredDate(Date.valueOf("2026-09-30"));
         vo.setSourceType("AI_DECISION");
         vo.setStatus("DRAFT");
         vo.setDecisionRunId(RUN_ID);
@@ -654,7 +656,7 @@ class ErpDecisionActionExecutorTest {
         line.setMaterialName("物料101");
         line.setApplyQuantity(new BigDecimal("5.0000"));
         line.setShortageQuantity(new BigDecimal("5.0000"));
-        line.setRequiredDate(java.sql.Date.valueOf("2026-09-28"));
+        line.setRequiredDate(Date.valueOf("2026-09-28"));
         line.setSourceType("AI_DECISION");
         line.setSourceId(RUN_ID);
         vo.setPuPurchaseRequisitionLineList(List.of(line));
@@ -667,7 +669,7 @@ class ErpDecisionActionExecutorTest {
         plan.setPlanNo("APS202609240001");
         plan.setPlanName("AI交付风险方案-" + scenario);
         plan.setWorkshopId(21L);
-        plan.setStartDate(java.sql.Date.valueOf("2026-09-24"));
+        plan.setStartDate(Date.valueOf("2026-09-24"));
         plan.setHorizonDays(30);
         plan.setStrategy(strategy);
         plan.setStatus("COMPLETED");

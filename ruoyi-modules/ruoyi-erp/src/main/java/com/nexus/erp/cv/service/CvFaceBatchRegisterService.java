@@ -1,8 +1,10 @@
 package com.nexus.erp.cv.service;
 
 import cn.hutool.core.io.IoUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.domain.FaceDtos.RegisterResult;
 import com.nexus.common.cv.exception.VisionException;
@@ -15,12 +17,13 @@ import com.nexus.system.domain.SysUser;
 import com.nexus.system.domain.vo.SysOssVo;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -70,11 +73,11 @@ public class CvFaceBatchRegisterService {
         List<SysUser> users;
         DynamicDataSourceContextHolder.push("master");
         try {
-            users = sysUserMapper.selectList(
-                com.baomidou.mybatisplus.core.toolkit.Wrappers.<SysUser>lambdaQuery()
-                    .isNotNull(SysUser::getAvatar)
-                    .last("LIMIT " + Math.max(1, Math.min(limit, 500)))
-            );
+            users =
+                    sysUserMapper.selectList(
+                            Wrappers.<SysUser>lambdaQuery()
+                                    .isNotNull(SysUser::getAvatar)
+                                    .last("LIMIT " + Math.max(1, Math.min(limit, 500))));
         } finally {
             DynamicDataSourceContextHolder.poll();
         }
@@ -86,11 +89,11 @@ public class CvFaceBatchRegisterService {
         }
         for (SysUser user : users) {
             // 按 userId 找对应工人,取工号
-            SchWorker worker = workerMapper.selectOne(
-                com.baomidou.mybatisplus.core.toolkit.Wrappers.<SchWorker>lambdaQuery()
-                    .eq(SchWorker::getUserId, user.getUserId())
-                    .last("LIMIT 1")
-            );
+            SchWorker worker =
+                    workerMapper.selectOne(
+                            Wrappers.<SchWorker>lambdaQuery()
+                                    .eq(SchWorker::getUserId, user.getUserId())
+                                    .last("LIMIT 1"));
             if (worker == null || worker.getEmployeeId() == null) {
                 log.warn("[cv] 批量注册跳过: userId={} 无对应工人或未填工号", user.getUserId());
                 summary.getFailed().add(CvBatchRegisterResultVo.FailedItem.of(

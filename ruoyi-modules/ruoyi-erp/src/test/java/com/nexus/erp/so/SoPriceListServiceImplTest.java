@@ -1,7 +1,19 @@
 package com.nexus.erp.so;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,7 +29,9 @@ import com.nexus.erp.so.mapper.SoPriceListLineMapper;
 import com.nexus.erp.so.mapper.SoPriceListMapper;
 import com.nexus.erp.so.service.impl.SoPriceListServiceImpl;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,20 +42,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 销售价目表 Service 单元测试（批次 3 / T3.1c）。
@@ -157,7 +161,7 @@ class SoPriceListServiceImplTest {
         TableDataInfo<SoPriceListVo> result = priceListService.selectPageList(new SoPriceListBo(), new PageQuery(10, 1));
 
         assertNull(result.getRows().get(0).getClientName());
-        verify(bdClientMapper, org.mockito.Mockito.never()).selectList(any());
+        verify(bdClientMapper, Mockito.never()).selectList(any());
     }
 
     /** 详情同样回填客户名称 */

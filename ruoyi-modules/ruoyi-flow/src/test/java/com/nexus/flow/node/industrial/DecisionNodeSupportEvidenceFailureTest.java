@@ -1,5 +1,10 @@
 package com.nexus.flow.node.industrial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import cn.hutool.extra.spring.SpringUtil;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.service.decision.DecisionPersistenceService;
 import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
@@ -7,13 +12,14 @@ import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.flow.node.FlowExecutionContext;
 import com.nexus.flow.state.FlowState;
+
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
+
 import java.util.Set;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class DecisionNodeSupportEvidenceFailureTest {
     private final DecisionPersistenceService store = mock(DecisionPersistenceService.class);
@@ -21,13 +27,14 @@ class DecisionNodeSupportEvidenceFailureTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final DecisionNodeSupport support = spy(new DecisionNodeSupport(store, mock(IndustrialDecisionDataPort.class), mapper, events));
     private final FlowExecutionContext ctx = new FlowExecutionContext();
-    private MockedStatic<cn.hutool.extra.spring.SpringUtil> spring;
+    private MockedStatic<SpringUtil> spring;
+
     @BeforeEach void setup() throws Exception {
         ctx.setTenantId("tenant-A"); ctx.setNodeId("rank"); ctx.setNodeName("rank");
         ctx.setState(new FlowState(mapper.readTree("{\"runId\":\"21\"}")));
         doReturn(new DecisionActor("tenant-A", 7L, "trusted", Set.of("ai:decision:run"))).when(support).actor(ctx);
-        spring = mockStatic(cn.hutool.extra.spring.SpringUtil.class);
-        spring.when(() -> com.nexus.common.core.utils.SpringUtils.getProperty("tenant.enable")).thenReturn("false");
+        spring = mockStatic(SpringUtil.class);
+        spring.when(() -> SpringUtils.getProperty("tenant.enable")).thenReturn("false");
     }
     @AfterEach void close() { spring.close(); }
 

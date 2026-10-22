@@ -1,5 +1,17 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
@@ -13,6 +25,7 @@ import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.mapper.StationDeviceMapper;
 import com.nexus.system.domain.vo.SysOssVo;
 import com.nexus.system.service.ISysOssService;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,24 +34,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 
 /**
  * StationSopService 单元测试 — 工位 SOP 下发/版本比对/下载解析(C16-C18)。
@@ -107,7 +108,7 @@ class StationSopServiceTest {
         assertEquals("PDF", ((Map<?, ?>) docs.get(0)).get("fileType"));
         // 逐文档登记查阅留痕
         ArgumentCaptor<SopViewLog> logCaptor = ArgumentCaptor.forClass(SopViewLog.class);
-        verify(viewLogMapper, org.mockito.Mockito.times(2)).insert(logCaptor.capture());
+        verify(viewLogMapper, Mockito.times(2)).insert(logCaptor.capture());
         assertEquals("张明", logCaptor.getAllValues().get(0).getViewerName());
         assertEquals("192.168.1.7", logCaptor.getAllValues().get(0).getIpAddress());
     }

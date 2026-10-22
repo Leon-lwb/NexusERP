@@ -2,53 +2,56 @@ package com.nexus.im.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.hutool.core.util.StrUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
-import lombok.RequiredArgsConstructor;
-import com.nexus.common.core.domain.R;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.im.constants.ImPayloadConstants;
 import com.nexus.im.domain.*;
-import com.nexus.im.domain.bo.ImGroupCreateBo;
-import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.bo.AppImGroupMemberAddBo;
+import com.nexus.im.domain.bo.ImGroupCreateBo;
 import com.nexus.im.domain.bo.ImGroupSendBo;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
 import com.nexus.im.domain.bo.ImTypingBo;
 import com.nexus.im.domain.vo.ImContactDeptVo;
 import com.nexus.im.domain.vo.ImConversationVo;
 import com.nexus.im.domain.vo.ImFriendVo;
-import com.nexus.im.domain.vo.ImSyncResultVo;
 import com.nexus.im.domain.vo.ImSearchResultVo;
+import com.nexus.im.domain.vo.ImSyncResultVo;
 import com.nexus.im.mapper.*;
 import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImChatSupport;
 import com.nexus.im.service.impl.support.ImContactSupport;
 import com.nexus.im.service.impl.support.ImConversationService;
-import com.nexus.im.service.impl.support.ImChatSupport;
-import com.nexus.im.service.impl.support.ImOnlineCache;
 import com.nexus.im.service.impl.support.ImMessageVisibility;
-import com.nexus.im.constants.ImPayloadConstants;
+import com.nexus.im.service.impl.support.ImOnlineCache;
 import com.nexus.system.domain.SysUser;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -1302,7 +1305,7 @@ public class AppImController extends BaseController {
             .eq(SysUserNotification::getCategory, ImPayloadConstants.CATEGORY_IM_GROUP)
             .eq(SysUserNotification::getRefType, "im_message")
             .in(SysUserNotification::getRefId, groupMessageIds));
-        com.nexus.im.service.impl.support.ImChatSupport.applyGroupReadState(messages, notices);
+        ImChatSupport.applyGroupReadState(messages, notices);
     }
 
     private List<Long> activeGroupIds(Long userId) {
@@ -1390,7 +1393,7 @@ public class AppImController extends BaseController {
         ImConversationSetting update = new ImConversationSetting();
         update.setId(s.getId());
         update.setIsPinned(pinned ? 1 : 0);
-        update.setPinnedAt(pinned ? new java.util.Date() : null);
+        update.setPinnedAt(pinned ? new Date() : null);
         conversationSettingMapper.updateById(update);
         conversationService.evictConversationCache();
         return R.ok();

@@ -1,18 +1,21 @@
 package com.nexus.runtime.attestation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.Signature;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import static org.junit.jupiter.api.Assertions.*;
 
 /** JVM 标志只作为必要限制；这些测试不宣称能够枚举所有 transformer。 */
 class RestrictedLaunchTest {
@@ -54,7 +57,12 @@ class RestrictedLaunchTest {
     }
     @Test void looseExtraOrDuplicateClasspathAndUnapprovedApplicationArgumentsAreRejected() {
         String app = directory.resolve("app.jar").toString();
-        for (String classpath : List.of(directory.toString(), app + java.io.File.pathSeparator + directory, app + java.io.File.pathSeparator + app)) rejects(allowed(), Map.of(), classpath, "fixture.Main");
+        for (String classpath :
+                List.of(
+                        directory.toString(),
+                        app + File.pathSeparator + directory,
+                        app + File.pathSeparator + app))
+            rejects(allowed(), Map.of(), classpath, "fixture.Main");
         rejects(allowed(), Map.of(), app, "fixture.Main --spring.config.location=private");
     }
 }

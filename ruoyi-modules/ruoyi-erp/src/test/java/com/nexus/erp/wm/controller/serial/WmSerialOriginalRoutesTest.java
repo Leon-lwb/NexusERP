@@ -1,17 +1,24 @@
 package com.nexus.erp.wm.controller.serial;
 
-import com.nexus.erp.wm.controller.WmSerialDetailAdvice;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.nexus.erp.prd.controller.PrdReworkOrderController;
+import com.nexus.erp.prd.service.IPrdReworkOrderService;
+import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.service.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import java.util.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 每项经过实际controller和原URL，验证不同端点并非只有新freeze URL可用。
@@ -101,7 +108,7 @@ class WmSerialOriginalRoutesTest {
                         call -> {
                             if (call.getMethod().getName().equals(action)) {
                                 f.version = "opaque:after-original-write";
-                                return com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo.ok();
+                                return PdaActionResultVo.ok();
                             }
                             return RETURNS_DEFAULTS.answer(call);
                         });
@@ -157,7 +164,7 @@ class WmSerialOriginalRoutesTest {
                         serviceClass,
                         call ->
                                 call.getMethod().getName().equals(action) && module.endsWith("/app")
-                                        ? com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo.ok()
+                                        ? PdaActionResultVo.ok()
                                         : RETURNS_DEFAULTS.answer(call));
         String controllerPackage =
                 "com.nexus.erp."
@@ -206,10 +213,8 @@ class WmSerialOriginalRoutesTest {
             throws Exception {
         var f = new SerialAdapterFixture();
         String serviceModule = module.split("/")[0];
-        var executions = new java.util.concurrent.atomic.AtomicInteger();
-        var core =
-                org.springframework.test.util.AopTestUtils
-                        .<WmSerialInventoryService>getUltimateTargetObject(f.inventory);
+        var executions = new AtomicInteger();
+        var core = AopTestUtils.<WmSerialInventoryService>getUltimateTargetObject(f.inventory);
         when(core.post(any()))
                 .thenAnswer(
                         call -> {
@@ -238,9 +243,7 @@ class WmSerialOriginalRoutesTest {
                                 executions.incrementAndGet();
                                 long line = SerialBusinessRoute.ofType(type).whole() ? 0L : 11L;
                                 f.inventory.post(f.request(type, 10L, line));
-                                return module.endsWith("/app")
-                                        ? com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo.ok()
-                                        : null;
+                                return module.endsWith("/app") ? PdaActionResultVo.ok() : null;
                             }
                             return RETURNS_DEFAULTS.answer(call);
                         });
@@ -280,12 +283,9 @@ class WmSerialOriginalRoutesTest {
     @Test
     void reworkCompletionWithoutStockEffectKeepsItsOriginalStateTransition() throws Exception {
         var f = new SerialAdapterFixture();
-        var service = mock(com.nexus.erp.prd.service.IPrdReworkOrderService.class);
+        var service = mock(IPrdReworkOrderService.class);
         var mvc =
-                MockMvcBuilders.standaloneSetup(
-                                f.proxy(
-                                        new com.nexus.erp.prd.controller.PrdReworkOrderController(
-                                                service)))
+                MockMvcBuilders.standaloneSetup(f.proxy(new PrdReworkOrderController(service)))
                         .addFilters(new WmSerialPayloadFilter(f.json))
                         .build();
         mvc.perform(

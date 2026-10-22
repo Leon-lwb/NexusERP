@@ -1,7 +1,9 @@
 package com.nexus.erp.wm.service;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.common.constant.ProcessConstants;
@@ -9,11 +11,14 @@ import com.nexus.common.flowable.common.enums.ProcessStatus;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.wm.mapper.WmCertifiedWarehouseReadMapper;
+
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.util.*;
 
 /**
@@ -26,12 +31,27 @@ public class WmCertifiedWarehouseReadService {
     /** 当前身份来自既有仓储 authorizer 的真实边界；部门未知可读，不额外要求 writer 身份。 */
     public record Context(String domain,String tenantId,String userId,String username,String deptId,String databaseDate,
                           boolean createAllowed,boolean submitAllowed,boolean shelfAllowed,boolean executeAllowed) { }
+
     /** 原生完整仓储头/行/分配与不可编辑来源摘要；不是客户端写证书。 */
-    public record Detail(String domain,String kind,String documentId,String protection,boolean sourceComplete,String flowState,
-                         Map<String,Object> order,List<Map<String,Object>> orderLines,@com.fasterxml.jackson.annotation.JsonProperty("native") Map<String,Object> nativeDocument,
-                         List<Map<String,Object>> lines,List<Map<String,Object>> details,List<Map<String,Object>> creations,
-                         Map<String,Object> posting,List<Map<String,Object>> orderSources,List<Map<String,Object>> approvals,
-                         Map<String,Object> workflow,List<Map<String,Object>> iqcEvidence,List<Map<String,Object>> births) {
+    public record Detail(
+            String domain,
+            String kind,
+            String documentId,
+            String protection,
+            boolean sourceComplete,
+            String flowState,
+            Map<String, Object> order,
+            List<Map<String, Object>> orderLines,
+            @JsonProperty("native") Map<String, Object> nativeDocument,
+            List<Map<String, Object>> lines,
+            List<Map<String, Object>> details,
+            List<Map<String, Object>> creations,
+            Map<String, Object> posting,
+            List<Map<String, Object>> orderSources,
+            List<Map<String, Object>> approvals,
+            Map<String, Object> workflow,
+            List<Map<String, Object>> iqcEvidence,
+            List<Map<String, Object>> births) {
         /** JSON 使用 native 与前端原生快照契约一致，不改通用 VO。 */
         Detail flow(String state,Map<String,Object> proof) { return new Detail(domain,kind,documentId,protection,sourceComplete,state,order,orderLines,nativeDocument,lines,details,creations,posting,orderSources,approvals,proof,iqcEvidence,births); }
     }
@@ -45,11 +65,16 @@ public class WmCertifiedWarehouseReadService {
         WmCertifiedArrivalWorkflowPort arrivalWorkflow,RuntimeService runtime,HistoryService history,TaskService tasks) {
         this.mapper=mapper;this.authorizer=authorizer;this.arrivalWorkflow=arrivalWorkflow;this.runtime=runtime;this.history=history;this.tasks=tasks;
     }
-    @DS("erp") public Context arrivalContext() { return context("arrivalnotice",actor("arrivalnotice")); }
-    @DS("erp") public Context receiveContext() { return context("receive",actor("receive")); }
-    @DS("erp") public Detail arrivalOrder(Long id) { return orderDetail("arrivalnotice",actor("arrivalnotice"),id); }
-    @DS("erp") public Detail receiveOrder(Long id) { return orderDetail("receive",actor("receive"),id); }
-    @DS("erp") public Detail arrivalDetail(Long id) {
+    @DS("erp")
+    public Context arrivalContext() { return context("arrivalnotice",actor("arrivalnotice")); }
+    @DS("erp")
+    public Context receiveContext() { return context("receive",actor("receive")); }
+    @DS("erp")
+    public Detail arrivalOrder(Long id) { return orderDetail("arrivalnotice",actor("arrivalnotice"),id); }
+    @DS("erp")
+    public Detail receiveOrder(Long id) { return orderDetail("receive",actor("receive"),id); }
+    @DS("erp")
+    public Detail arrivalDetail(Long id) {
         DecisionActor actor=actor("arrivalnotice");require(positive(id));String t=actor.tenantId();
         Map<String,Object> head=row(mapper.notice(t,id));require(identity(head,t,"noticeId",id));
         List<Map<String,Object>> lines=rows(mapper.noticeLines(t,id)),created=rows(mapper.noticeCreations(t,id));
@@ -65,7 +90,8 @@ public class WmCertifiedWarehouseReadService {
             &&same(c,"vendorId",head,"vendorId")&&same(c,"noticeCode",head,"noticeCode")&&same(c,"materialId",l,"materialId")&&same(c,"baseUomId",l,"baseUomId")&&decimalEqual(c.get("quantity"),l.get("quantity"))&&positive(number(c,"actorId"))&&digest(c.get("requestHash"))&&text(c.get("requestKey"))&&"0".equals(l.get("delFlag"))&&sourceLine(c,origin)&&same(c,"noticeName",head,"noticeName")&&same(c,"arrivalDate",head,"arrivalDate"); }
         return new Detail("arrivalnotice","NOTICE",id.toString(),protection,complete,"UNKNOWN",origin.order(),origin.orderLines(),head,lines,List.of(),created,null,origin.orderSources(),origin.approvals(),Map.of(),List.of(),List.of());
     }
-    @DS("erp") public Detail receiveDetail(Long id) {
+    @DS("erp")
+    public Detail receiveDetail(Long id) {
         DecisionActor actor=actor("receive");require(positive(id));String t=actor.tenantId();
         Map<String,Object> head=row(mapper.receive(t,id));require(identity(head,t,"receiveId",id));
         List<Map<String,Object>> evidence=rows(mapper.iqcEvidence(t,id)),births=rows(mapper.births(t,id));
@@ -86,7 +112,8 @@ public class WmCertifiedWarehouseReadService {
         return new Detail("receive","RECEIVE",id.toString(),protection,complete,"UNKNOWN",origin.order(),origin.orderLines(),head,lines,details,created,posting,origin.orderSources(),origin.approvals(),Map.of(),evidence,births);
     }
     /** controller 先结束 ERP public 方法，再进入 master；不存在同类切库/锁定读取。 */
-    @DS("master") public Detail withWorkflow(Detail detail) {
+    @DS("master")
+    public Detail withWorkflow(Detail detail) {
         require(detail!=null&&Set.of("arrivalnotice","receive").contains(detail.domain()));DecisionActor actor=actor(detail.domain());
         if(!"CERTIFIED".equals(detail.protection())||detail.nativeDocument()==null)return detail;
         require(actor.tenantId().equals(detail.nativeDocument().get("tenantId")));
@@ -162,7 +189,8 @@ public class WmCertifiedWarehouseReadService {
         if(result.containsKey("shelfTimeExact"))result.put("shelfTime",result.remove("shelfTimeExact"));
         if(result.containsKey("inspectedExact"))result.put("inspectedQuantity",result.remove("inspectedExact"));
         if(result.containsKey("quantityExact"))result.put("quantity",result.remove("quantityExact"));
-        if(result.containsKey("arrivalDate")&&result.get("arrivalDate") instanceof java.sql.Date date)result.put("arrivalDate",date.toString());
+        if (result.containsKey("arrivalDate") && result.get("arrivalDate") instanceof Date date)
+            result.put("arrivalDate", date.toString());
         return Collections.unmodifiableMap(result);
     }
     private static List<Map<String,Object>> rows(List<Map<String,Object>> raw) {require(raw!=null);return raw.stream().map(value->{require(value!=null);return row(value);}).toList();}

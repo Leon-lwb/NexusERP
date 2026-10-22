@@ -2,8 +2,12 @@ package com.nexus.mes.trace;
 
 import com.nexus.common.trace.MaterialTraceEvent;
 import com.nexus.common.trace.port.TraceEventHandler;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
+
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 /**
@@ -55,7 +59,7 @@ public class MesTraceEventHandler implements TraceEventHandler {
         }
         business.applyErpEvent(event);
         var proof = (MesErpSourceReader.VerifiedEvent) prepared;
-        var result = new java.util.LinkedHashMap<String, Object>();
+        var result = new LinkedHashMap<String, Object>();
         result.put("sourceEventId", event.eventId());
         result.put("applied", true);
         result.put("verifiedSource", "ERP_OUTBOX");

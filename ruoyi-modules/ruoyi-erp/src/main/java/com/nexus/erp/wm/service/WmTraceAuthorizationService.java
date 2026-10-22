@@ -1,17 +1,22 @@
 package com.nexus.erp.wm.service;
 
+import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
+
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.trace.*;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.wm.domain.*;
 import com.nexus.erp.wm.domain.bo.WmTraceAuthorizationBo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.alibaba.fastjson2.JSON;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
 
 /**
  * 实际ERP来源授权：先锁原工单/需求/库存，持久化授权，最后同事务冻结可投递事件。
@@ -153,7 +158,7 @@ public class WmTraceAuthorizationService {
 
     private Authorization originalLot(
             WmTraceAuthorizationBo command,
-            com.nexus.erp.prd.domain.PrdWorkOrder wo,
+            PrdWorkOrder wo,
             TrackingPolicy policy,
             Map<String, Object> event) {
         String text = event.get("payload").toString();

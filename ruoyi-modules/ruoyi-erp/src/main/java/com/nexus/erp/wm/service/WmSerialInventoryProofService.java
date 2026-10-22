@@ -1,12 +1,17 @@
 package com.nexus.erp.wm.service;
 
+import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.erp.wm.domain.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
+import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
 
 /**
  * v2历史证明适配器；任何混合版本、额外流水或缺项都失败，完全不读取SN当前余额。
@@ -24,8 +29,7 @@ public class WmSerialInventoryProofService {
         need(g != null && "POSTED".equals(g.status()), "单件过账组缺失或未完成");
         var items = store.items(g.id());
         need(
-                !items.isEmpty()
-                        && r.quantity().compareTo(java.math.BigDecimal.valueOf(items.size())) == 0,
+                !items.isEmpty() && r.quantity().compareTo(BigDecimal.valueOf(items.size())) == 0,
                 "单件原冻结明细不守恒");
         need(
                 new WmSerialInventoryService(store).selectionHash(items).equals(g.contentHash()),

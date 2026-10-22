@@ -3,13 +3,13 @@ package com.nexus.ai.service.rag;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.service.kg.GraphStoreStrategy;
+import com.nexus.common.ai.decision.dto.RetrievalHit;
+import com.nexus.common.ai.domain.entity.AiKgEntity;
+import com.nexus.common.ai.domain.entity.AiKgRelation;
 import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.domain.entity.AiKnowledgeDocument;
-import com.nexus.common.ai.decision.dto.RetrievalHit;
 import com.nexus.common.ai.domain.entity.AiKnowledgeGraph;
-import com.nexus.common.ai.domain.entity.AiKgEntity;
-import com.nexus.common.ai.domain.entity.AiKgRelation;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
 import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
@@ -17,14 +17,18 @@ import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -74,17 +78,19 @@ public class RetrieverService {
 
     /**
      * 检索与查询相关的知识片段（指定知识库，支持参数覆盖）
-     * <p>用于检索测试面板，允许临时覆盖知识库配置参数</p>
-     * <p>入口门：向量索引非 READY（REBUILDING/FAILED）的知识库直接拒绝检索——
-     * 该入口同时承接对话 RAG（{@code AiServiceFacade.augmentPrompt}）与
-     * 检索测试面板（{@code AiKnowledgeController.retrieval}）。</p>
+     *
+     * <p>用于检索测试面板，允许临时覆盖知识库配置参数
+     *
+     * <p>入口门：向量索引非 READY（REBUILDING/FAILED）的知识库直接拒绝检索—— 该入口同时承接对话 RAG（{@code
+     * AiServiceFacade.augmentPrompt}）与 检索测试面板（{@code AiKnowledgeController.retrieval}）。
      *
      * @param knowledgeId 知识库ID
-     * @param query       查询文本
-     * @param overrides   覆盖参数（topK/threshold/enableRerank/rerankModel/enableHybrid/hybridAlpha），可为 null
+     * @param query 查询文本
+     * @param overrides 覆盖参数（topK/threshold/enableRerank/rerankModel/enableHybrid/hybridAlpha），可为
+     *     null
      * @return 相关片段内容列表
      */
-    public List<String> retrieve(Long knowledgeId, String query, java.util.Map<String, Object> overrides) {
+    public List<String> retrieve(Long knowledgeId, String query, Map<String, Object> overrides) {
         return retrieveHits(knowledgeId, query, overrides).stream().map(RetrievalHit::content).toList();
     }
 
@@ -183,12 +189,13 @@ public class RetrieverService {
 
     /**
      * 应用参数覆盖到知识库配置
-     * <p>用于检索测试面板，临时覆盖知识库的默认配置参数</p>
      *
-     * @param config    知识库配置实体
+     * <p>用于检索测试面板，临时覆盖知识库的默认配置参数
+     *
+     * @param config 知识库配置实体
      * @param overrides 覆盖参数 Map
      */
-    private void applyOverrides(AiKnowledge config, java.util.Map<String, Object> overrides) {
+    private void applyOverrides(AiKnowledge config, Map<String, Object> overrides) {
         if (overrides.containsKey("topK") && overrides.get("topK") != null) {
             config.setRetrieveLimit(Integer.valueOf(overrides.get("topK").toString()));
         }

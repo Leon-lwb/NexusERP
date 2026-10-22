@@ -9,6 +9,7 @@ import com.nexus.report.service.ReportDefinitionService;
 
 import org.springframework.jdbc.core.*;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
@@ -113,8 +114,7 @@ public class ReportResourceStore {
             JdbcTemplate jdbc, PlatformTransactionManager manager, JdbcReportStore acl) {
         this.jdbc = jdbc;
         transaction = new TransactionTemplate(manager);
-        transaction.setIsolationLevel(
-                org.springframework.transaction.TransactionDefinition.ISOLATION_READ_COMMITTED);
+        transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         transaction.setTimeout(10);
         this.acl = acl;
     }

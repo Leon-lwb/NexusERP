@@ -1,15 +1,22 @@
 package com.nexus.web.service;
 
-import com.nexus.common.trace.TracePage;
-import com.nexus.mes.integration.trace.MesIdentityTraceReader;
-import com.nexus.web.service.MaterialIdentityTraceService;
-import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.nexus.common.trace.TracePage;
+import com.nexus.mes.integration.trace.MesIdentityTraceReader;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 模拟两次读取之间合法提交的在制组件分配，验证分页召回不遗漏交接中的关系。
@@ -46,18 +53,14 @@ class RecallAllocationHandoffIndependentReviewTest {
             doAnswer(
                             call -> {
                                 assertTrue(
-                                        org.springframework.transaction.support
-                                                .TransactionSynchronizationManager
+                                        TransactionSynchronizationManager
                                                 .isActualTransactionActive());
                                 assertTrue(
-                                        org.springframework.transaction.support
-                                                .TransactionSynchronizationManager
+                                        TransactionSynchronizationManager
                                                 .isCurrentTransactionReadOnly());
                                 assertEquals(
-                                        org.springframework.transaction.TransactionDefinition
-                                                .ISOLATION_REPEATABLE_READ,
-                                        org.springframework.transaction.support
-                                                .TransactionSynchronizationManager
+                                        TransactionDefinition.ISOLATION_REPEATABLE_READ,
+                                        TransactionSynchronizationManager
                                                 .getCurrentTransactionIsolationLevel());
                                 @SuppressWarnings("unchecked")
                                 TracePage<Long> before = (TracePage<Long>) call.callRealMethod();
@@ -67,21 +70,18 @@ class RecallAllocationHandoffIndependentReviewTest {
                                                     tx ->
                                                             f.mes.update(
                                                                     "INSERT INTO lt_sn_consumption"
-                                                                        + " VALUES(1002,'000001',1001,1,13,1,102,'CONSUME')"));
+                                                                            + " VALUES(1002,'000001',1001,1,13,1,102,'CONSUME')"));
                                 }
                                 return before;
                             })
                     .when(port)
                     .affectedByBatch("000001", 23L, 0, 500);
-            var transaction =
-                    new org.springframework.transaction.interceptor.TransactionInterceptor();
+            var transaction = new TransactionInterceptor();
             transaction.setTransactionManager(
                     new DataSourceTransactionManager(
                             Objects.requireNonNull(f.mes.getDataSource())));
-            transaction.setTransactionAttributeSource(
-                    new org.springframework.transaction.annotation
-                            .AnnotationTransactionAttributeSource());
-            var proxy = new org.springframework.aop.framework.ProxyFactory(port);
+            transaction.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+            var proxy = new ProxyFactory(port);
             proxy.setProxyTargetClass(true);
             proxy.addAdvice(transaction);
             var result =
@@ -114,8 +114,7 @@ class RecallAllocationHandoffIndependentReviewTest {
                 new TransactionTemplate(
                         new DataSourceTransactionManager(
                                 Objects.requireNonNull(fixture.mes.getDataSource())));
-        tx.setPropagationBehavior(
-                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return tx;
     }
 }

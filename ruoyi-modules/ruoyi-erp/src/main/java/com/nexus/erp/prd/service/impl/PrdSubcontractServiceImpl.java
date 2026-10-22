@@ -4,8 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -18,10 +16,15 @@ import com.nexus.erp.prd.domain.vo.PrdSubcontractVo;
 import com.nexus.erp.prd.mapper.PrdSubcontractMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdSubcontractService;
+import com.nexus.system.strategy.AutoCodeUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -41,7 +44,7 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
 
     private final PrdSubcontractMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
-    private final com.nexus.system.strategy.AutoCodeUtil autoCodeUtil;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询委外订单列表
@@ -111,7 +114,7 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         } catch (Exception e) {
             log.warn("委外单号编码规则 PRD_SUBCONTRACT_CODE 生成失败, 回退本地生成: {}", e.getMessage());
         }
-        String date = new java.text.SimpleDateFormat("yyyyMMdd").format(new Date());
+        String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
         Long count = baseMapper.selectCount(Wrappers.<PrdSubcontract>lambdaQuery()
             .likeRight(PrdSubcontract::getSubcontractNo, "SC" + date));
         int seq = (count == null ? 0 : count.intValue()) + 1;
@@ -329,7 +332,7 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         return logs;
     }
 
-    private void addLog(List<Map<String, Object>> logs, String operation, java.util.Date time) {
+    private void addLog(List<Map<String, Object>> logs, String operation, Date time) {
         if (time == null) {
             return;
         }

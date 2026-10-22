@@ -3,8 +3,11 @@ package com.nexus.erp.wm.mapper;
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.nexus.common.mq.iqc.IqcNativeSchema.Column;
 import com.nexus.common.mq.iqc.IqcNativeSchema.IndexPart;
+
 import lombok.Data;
+
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -16,9 +19,10 @@ import java.util.List;
 /** 仅访问 ERP，按显式租户范围锁定读取；IQC 证据仅允许插入。 */
 public interface WmReceiptIqcEvidenceMapper {
     /** 已核实归属的 ERP 或 MES 连接上的原生引擎和列定义。 */
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
-    @Select("""
+    @Select(
+            """
         SELECT c.TABLE_NAME AS table_name, t.ENGINE AS engine, c.COLUMN_NAME AS column_name,
                c.DATA_TYPE AS data_type, c.NUMERIC_PRECISION AS numeric_precision,
                c.NUMERIC_SCALE AS numeric_scale, c.IS_NULLABLE AS is_nullable
@@ -30,9 +34,10 @@ public interface WmReceiptIqcEvidenceMapper {
     List<Column> selectNativeColumns();
 
     /** 读取完整的永久索引组成部分，不根据当前记录数推断唯一性。 */
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
-    @Select("""
+    @Select(
+            """
         SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name, NON_UNIQUE AS non_unique,
                SEQ_IN_INDEX AS seq_in_index, COLUMN_NAME AS column_name,
                SUB_PART AS sub_part, INDEX_TYPE AS index_type
@@ -43,9 +48,10 @@ public interface WmReceiptIqcEvidenceMapper {
     List<IndexPart> selectNativeIndexes();
 
     /** 已核实归属的 ERP 或 MES 连接上的原生引擎和列定义。 */
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
-    @Select("""
+    @Select(
+            """
         SELECT c.TABLE_NAME AS table_name, t.ENGINE AS engine, c.COLUMN_NAME AS column_name,
                c.DATA_TYPE AS data_type, c.NUMERIC_PRECISION AS numeric_precision,
                c.NUMERIC_SCALE AS numeric_scale, c.IS_NULLABLE AS is_nullable
@@ -57,9 +63,10 @@ public interface WmReceiptIqcEvidenceMapper {
     List<Column> selectIsolationColumns();
 
     /** 读取完整的永久索引组成部分，不根据当前记录数推断唯一性。 */
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
-    @Select("""
+    @Select(
+            """
         SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name, NON_UNIQUE AS non_unique,
                SEQ_IN_INDEX AS seq_in_index, COLUMN_NAME AS column_name,
                SUB_PART AS sub_part, INDEX_TYPE AS index_type

@@ -1,6 +1,15 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.lenient;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
@@ -17,27 +26,24 @@ import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class ErpMrpSnapshotSourceVerifierTest {
@@ -45,11 +51,16 @@ class ErpMrpSnapshotSourceVerifierTest {
     private static final String TENANT = "000000";
     private static final LocalDate DAY = LocalDate.of(2026, 9, 30);
 
-    @Mock private PrdMaterialRequirementDetailMapper detailMapper;
-    @Mock private PrdMaterialRequirementMapper requirementMapper;
-    @Mock private PrdWorkOrderMapper workOrderMapper;
-    @Mock private BdMaterialMapper materialMapper;
-    @Mock private BdUnitOfMeasureMapper uomMapper;
+    @Mock
+    private PrdMaterialRequirementDetailMapper detailMapper;
+    @Mock
+    private PrdMaterialRequirementMapper requirementMapper;
+    @Mock
+    private PrdWorkOrderMapper workOrderMapper;
+    @Mock
+    private BdMaterialMapper materialMapper;
+    @Mock
+    private BdUnitOfMeasureMapper uomMapper;
 
     private ErpMrpSnapshotSourceVerifier verifier;
     private PrdMaterialRequirementDetail first;
@@ -194,9 +205,9 @@ class ErpMrpSnapshotSourceVerifierTest {
         first.setMaterialId(502L);
         assertRejected();
         first.setMaterialId(501L);
-        first.setRequiredDate(java.sql.Date.valueOf(DAY.plusDays(1)));
+        first.setRequiredDate(Date.valueOf(DAY.plusDays(1)));
         assertRejected();
-        first.setRequiredDate(java.sql.Date.valueOf(DAY));
+        first.setRequiredDate(Date.valueOf(DAY));
         header.setTenantId("other");
         assertRejected();
         header.setTenantId(TENANT);
@@ -211,13 +222,15 @@ class ErpMrpSnapshotSourceVerifierTest {
     void detailReadExplicitlyExcludesDeletedRowsAndOtherTenants() {
         verifier.verify(snapshot(fact(901L, "8")), actor());
         @SuppressWarnings("unchecked")
-        org.mockito.ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<PrdMaterialRequirementDetail>>
-            captor = org.mockito.ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.Wrapper.class);
-        org.mockito.Mockito.verify(detailMapper).selectList(captor.capture());
+        ArgumentCaptor<Wrapper<PrdMaterialRequirementDetail>> captor =
+                ArgumentCaptor.forClass(Wrapper.class);
+        Mockito.verify(detailMapper).selectList(captor.capture());
         String sql = captor.getValue().getSqlSegment();
         assertTrue(sql.contains("detail_id") && sql.contains("tenant_id") && sql.contains("del_flag"), sql);
-        assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) captor.getValue())
-            .getParamNameValuePairs().containsValue(TENANT));
+        assertTrue(
+                ((AbstractWrapper<?, ?, ?>) captor.getValue())
+                        .getParamNameValuePairs()
+                        .containsValue(TENANT));
     }
 
     @Test
@@ -243,7 +256,7 @@ class ErpMrpSnapshotSourceVerifierTest {
         detail.setTenantId(TENANT);
         detail.setRequirementId(301L);
         detail.setMaterialId(501L);
-        detail.setRequiredDate(java.sql.Date.valueOf(DAY));
+        detail.setRequiredDate(Date.valueOf(DAY));
         detail.setRequiredQuantity(new BigDecimal(required));
         detail.setIssuedQuantity(new BigDecimal(issued));
         detail.setUnit(unit);

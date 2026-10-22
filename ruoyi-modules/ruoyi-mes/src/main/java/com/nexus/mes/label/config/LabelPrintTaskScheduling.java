@@ -4,13 +4,17 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mapper.MesSysTenantMapper;
 import com.nexus.mes.label.service.LabelPrintDispatcher;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+
+import java.util.List;
 
 /**
  * 独立双线程调度器轮询已提交MES任务；多节点由数据库领取CAS协调，不依赖外部调度或Redis。
@@ -61,7 +65,7 @@ public class LabelPrintTaskScheduling {
     }
 
     private void eachTenant(Runnable operation) {
-        java.util.List<String> ids;
+        List<String> ids;
         DynamicDataSourceContextHolder.push("master");
         try {
             ids = tenants.selectAllTenantIds();

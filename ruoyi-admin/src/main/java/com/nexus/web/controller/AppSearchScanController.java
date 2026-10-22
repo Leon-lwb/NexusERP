@@ -2,7 +2,9 @@ package com.nexus.web.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.hutool.core.util.StrUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
 import com.nexus.erp.bd.domain.BdMaterial;
@@ -17,8 +19,10 @@ import com.nexus.erp.wm.domain.WmBarcode;
 import com.nexus.erp.wm.domain.WmSn;
 import com.nexus.erp.wm.mapper.WmBarcodeMapper;
 import com.nexus.erp.wm.mapper.WmSnMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -327,10 +331,10 @@ public class AppSearchScanController {
 
     /**
      * 只取首条（避免 selectOne 在多命中时抛 TooManyResultsException）。
+     *
      * <p>使用分页 limit 1，不拼接原生 SQL 片段。
      */
-    private <T> T selectFirst(LambdaQueryWrapper<T> wrapper,
-                              com.baomidou.mybatisplus.core.mapper.BaseMapper<T> mapper) {
+    private <T> T selectFirst(LambdaQueryWrapper<T> wrapper, BaseMapper<T> mapper) {
         Page<T> page = mapper.selectPage(new Page<>(1, 1), wrapper);
         List<T> records = page.getRecords();
         return records == null || records.isEmpty() ? null : records.get(0);

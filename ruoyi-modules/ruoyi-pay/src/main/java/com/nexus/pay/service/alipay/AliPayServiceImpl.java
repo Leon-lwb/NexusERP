@@ -4,20 +4,24 @@ import com.alipay.easysdk.factory.Factory;
 import com.alipay.easysdk.kernel.Config;
 import com.alipay.easysdk.payment.common.models.AlipayTradeRefundResponse;
 import com.alipay.easysdk.payment.facetoface.models.AlipayTradePrecreateResponse;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.pay.domain.PayOrder;
-import com.nexus.pay.service.IPayOrderService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.domain.PayReceivedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.pay.domain.PayOrder;
+import com.nexus.pay.service.IPayOrderService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -146,8 +150,9 @@ public class AliPayServiceImpl implements IAliPayService {
                     return "success";
                 }
                 // 金额校验：回调金额必须与本地订单金额一致，防止金额篡改
-                if (totalAmount != null && payOrder.getActualAmount() != null
-                        && new java.math.BigDecimal(totalAmount).compareTo(payOrder.getActualAmount()) != 0) {
+                if (totalAmount != null
+                        && payOrder.getActualAmount() != null
+                        && new BigDecimal(totalAmount).compareTo(payOrder.getActualAmount()) != 0) {
                     log.error("支付宝回调金额不一致: 回调={}, 订单={}, orderNumber={}",
                             totalAmount, payOrder.getActualAmount(), orderNumber);
                     return "fail";

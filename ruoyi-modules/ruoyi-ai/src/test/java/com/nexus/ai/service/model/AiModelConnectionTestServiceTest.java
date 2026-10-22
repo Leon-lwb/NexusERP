@@ -1,14 +1,24 @@
 package com.nexus.ai.service.model;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.nexus.ai.domain.dto.AiModelTestResult;
 import com.nexus.ai.service.rag.rerank.RerankResult;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.core.exception.ServiceException;
+
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -24,13 +34,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 模型连接测试服务单元测试（纯 Java 构造服务，操作桩注入，无网络无 Spring 上下文）
@@ -116,7 +119,7 @@ class AiModelConnectionTestServiceTest {
         assertNotNull(chat.messagesSeen);
         assertEquals(1, chat.messagesSeen.size());
         UserMessage userMessage = (UserMessage) chat.messagesSeen.get(0);
-        List<dev.langchain4j.data.message.Content> contents = userMessage.contents();
+        List<Content> contents = userMessage.contents();
         assertTrue(contents.stream().anyMatch(TextContent.class::isInstance),
             "视觉连接测试消息应包含文本内容");
         assertTrue(contents.stream().anyMatch(ImageContent.class::isInstance),

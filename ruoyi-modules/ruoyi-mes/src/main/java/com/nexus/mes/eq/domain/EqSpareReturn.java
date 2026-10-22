@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.tenant.core.TenantEntity;
+import com.nexus.mes.eq.service.IEqSparePartService;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,14 +14,11 @@ import java.util.Date;
 
 /**
  * MES备件退库单头对象 eq_spare_return（MES-EQ-04 收口 / 审计 §4 第 7 项）
- * <p>
- * 退库 = 备件从现场回到仓库（ERP 侧按<b>入库方向</b>过账）。单据生命周期：
- * {@code DRAFT}（草稿，可改可删）→ {@code CONFIRMED}（已确认，逐行调
- * {@link com.nexus.mes.eq.service.IEqSparePartService#stockTransaction} 以 {@code TXN_RETURN} 过账）；
- * 另有 {@code CANCELLED} 终态。
- * <p>
- * 确认用 CAS（{@code status = 'DRAFT'} 条件更新）保证并发/重复确认只过账一次，明细行见
- * {@link EqSpareReturnLine}。
+ *
+ * <p>退库 = 备件从现场回到仓库（ERP 侧按<b>入库方向</b>过账）。单据生命周期： {@code DRAFT}（草稿，可改可删）→ {@code CONFIRMED}（已确认，逐行调
+ * {@link IEqSparePartService#stockTransaction} 以 {@code TXN_RETURN} 过账）； 另有 {@code CANCELLED} 终态。
+ *
+ * <p>确认用 CAS（{@code status = 'DRAFT'} 条件更新）保证并发/重复确认只过账一次，明细行见 {@link EqSpareReturnLine}。
  *
  * @author Nexus
  */

@@ -1,13 +1,16 @@
 package com.nexus.erp.bd.domain;
 
 import cn.idev.excel.annotation.ExcelProperty;
+
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.tenant.core.TenantEntity;
 
 import java.math.BigDecimal;
 
@@ -114,11 +117,8 @@ public class BdMaterial extends TenantEntity {
      */
     private Integer allowMixedLot;
 
-    /**
-     * 服务端管理的追踪策略版本，编辑策略时作为预期版本。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 服务端管理的追踪策略版本，编辑策略时作为预期版本。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long trackingVersion;
 
     /**
@@ -207,7 +207,8 @@ public class BdMaterial extends TenantEntity {
     /**
      * 删除标志
      */
-    @TableLogic private String delFlag;
+    @TableLogic
+    private String delFlag;
 
     /**
      * 备注

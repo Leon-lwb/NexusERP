@@ -2,18 +2,23 @@ package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.vo.AllocatedStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
-import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.service.IInventoryValuationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +38,8 @@ import java.util.List;
 @Slf4j
 @Component
 public class ProductionIssueStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：生产领料
@@ -112,7 +117,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         Date now = (Date) args[1];
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                        WmSerialPostingRequest.out(
                                 "WM_PRODUCTION_ISSUE",
                                 line.getIssueId(),
                                 line.getLineId(),
@@ -185,7 +190,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         }
         if (serialInventory != null) {
             serialInventory.bindTrackedLegacyIssue(
-                    com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                    WmSerialPostingRequest.out(
                             "WM_PRODUCTION_ISSUE",
                             line.getIssueId(),
                             line.getLineId(),
@@ -220,7 +225,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
                             .map(AllocatedStock::getDeductQty)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
             if (serialInventory.post(
-                    com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                    WmSerialPostingRequest.out(
                             "WM_PRODUCTION_ISSUE",
                             issueId,
                             lineId,

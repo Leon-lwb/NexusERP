@@ -36,12 +36,15 @@ import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
 import com.nexus.erp.so.mapper.SoInvoiceMapper;
 import com.nexus.erp.so.service.ISoInvoiceService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -86,7 +89,7 @@ public class FinSettlementServiceImpl implements IFinSettlementService {
         }
         // 精度对齐：收付款单/核销金额为 decimal(18,4)，凭证与余额表为 decimal(18,2)，
         // 统一按 2 位小数入账，防止明细与余额表对不平（如 10.125 → 凭证 10.13）
-        settleAmount = settleAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+        settleAmount = settleAmount.setScale(2, RoundingMode.HALF_UP);
         if (invoiceId == null || receiptId == null || StringUtils.isBlank(direction)) {
             throw new ServiceException("发票/收付款单/方向不能为空");
         }

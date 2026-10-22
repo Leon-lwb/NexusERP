@@ -7,6 +7,7 @@ import com.nexus.erp.prd.domain.bo.PrdWorkOrderBo;
 import com.nexus.erp.prd.domain.vo.PrdWorkOrderVo;
 import com.nexus.workflow.service.WfCallBackServiceI;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -176,14 +177,14 @@ public interface IPrdWorkOrderService extends WfCallBackServiceI {
 
     /**
      * 工单完工(指定完工数量)
-     * <p>
-     * 使用 MQ 消息或报工中的实际完工数量进行原子累加, 避免并发覆盖。
      *
-     * @param woId       工单 ID
+     * <p>使用 MQ 消息或报工中的实际完工数量进行原子累加, 避免并发覆盖。
+     *
+     * @param woId 工单 ID
      * @param completeQty 本次完工数量
-     * @param scrapQty   本次报废数量
+     * @param scrapQty 本次报废数量
      */
-    void complete(Long woId, java.math.BigDecimal completeQty, java.math.BigDecimal scrapQty);
+    void complete(Long woId, BigDecimal completeQty, BigDecimal scrapQty);
 
     /**
      * 关闭工单

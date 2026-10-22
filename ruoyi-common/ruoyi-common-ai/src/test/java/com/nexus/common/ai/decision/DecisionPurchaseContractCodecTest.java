@@ -1,5 +1,7 @@
 package com.nexus.common.ai.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.ai.decision.dto.*;
@@ -10,9 +12,11 @@ import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
 import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -20,8 +24,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("local")
 @Tag("dev")
@@ -496,11 +498,14 @@ class DecisionPurchaseContractCodecTest {
     private static void assertDefaultFailure(String name, String message, Class<?>... types) throws Throwable {
         Method method = IndustrialDecisionDataPort.class.getMethod(name, types);
         assertTrue(method.isDefault(), "新增 Port 方法必须为默认接口：" + name);
-        Object port = Proxy.newProxyInstance(IndustrialDecisionDataPort.class.getClassLoader(),
-            new Class<?>[] {IndustrialDecisionDataPort.class}, (proxy, invoked, args) -> {
-                if (!invoked.isDefault()) throw new AssertionError("测试不得调用原有抽象接口");
-                return java.lang.reflect.InvocationHandler.invokeDefault(proxy, invoked, args);
-            });
+        Object port =
+                Proxy.newProxyInstance(
+                        IndustrialDecisionDataPort.class.getClassLoader(),
+                        new Class<?>[] {IndustrialDecisionDataPort.class},
+                        (proxy, invoked, args) -> {
+                            if (!invoked.isDefault()) throw new AssertionError("测试不得调用原有抽象接口");
+                            return InvocationHandler.invokeDefault(proxy, invoked, args);
+                        });
         Object[] args = new Object[types.length];
         for (int i = 0; i < types.length; i++) if (types[i] == int.class) args[i] = 7;
         InvocationTargetException failure = assertThrows(InvocationTargetException.class, () -> method.invoke(port, args), "缺少 ERP 实现时必须明确拒绝");

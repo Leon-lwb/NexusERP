@@ -15,14 +15,17 @@ import com.nexus.mes.flash.mapper.MesResourceItemMapper;
 import com.nexus.mes.flash.mapper.MesResourcePoolMapper;
 import com.nexus.mes.flash.service.IMesResourcePoolService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 刷写资源池 Service 实现
@@ -240,9 +243,15 @@ public class MesResourcePoolServiceImpl implements IMesResourcePoolService {
         if (snId == null || StringUtils.isBlank(resourceType)) {
             return 0;
         }
-        List<Long> poolIds = baseMapper.selectList(Wrappers.<MesResourcePool>lambdaQuery()
-                .eq(MesResourcePool::getResourceType, resourceType))
-            .stream().map(MesResourcePool::getPoolId).filter(java.util.Objects::nonNull).toList();
+        List<Long> poolIds =
+                baseMapper
+                        .selectList(
+                                Wrappers.<MesResourcePool>lambdaQuery()
+                                        .eq(MesResourcePool::getResourceType, resourceType))
+                        .stream()
+                        .map(MesResourcePool::getPoolId)
+                        .filter(Objects::nonNull)
+                        .toList();
         if (poolIds.isEmpty()) {
             log.warn("刷写结果回写资源项跳过(无该类型资源池): snId={}, resourceType={}", snId, resourceType);
             return 0;

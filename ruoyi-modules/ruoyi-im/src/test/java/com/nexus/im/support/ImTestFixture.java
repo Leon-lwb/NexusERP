@@ -1,5 +1,6 @@
 package com.nexus.im.support;
 
+import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
@@ -97,15 +98,18 @@ public final class ImTestFixture {
     public static Long snowflakeId(long seq) {
         return 1_900_000_000_000_000_000L + seq;
     }
+
     /** 同时支持当前源码和已安装依赖的分页构造器。 */
-    public static com.nexus.common.mybatis.core.page.PageQuery pageQuery(int pageSize, int pageNum) {
+    public static PageQuery pageQuery(int pageSize, int pageNum) {
         try {
-            com.nexus.common.mybatis.core.page.PageQuery query;
+            PageQuery query;
             try {
-                query = com.nexus.common.mybatis.core.page.PageQuery.class.getDeclaredConstructor().newInstance();
+                query = PageQuery.class.getDeclaredConstructor().newInstance();
             } catch (NoSuchMethodException e) {
-                query = com.nexus.common.mybatis.core.page.PageQuery.class
-                    .getDeclaredConstructor(Integer.class, Integer.class).newInstance(pageSize, pageNum);
+                query =
+                        PageQuery.class
+                                .getDeclaredConstructor(Integer.class, Integer.class)
+                                .newInstance(pageSize, pageNum);
             }
             query.setPageSize(pageSize);
             query.setPageNum(pageNum);

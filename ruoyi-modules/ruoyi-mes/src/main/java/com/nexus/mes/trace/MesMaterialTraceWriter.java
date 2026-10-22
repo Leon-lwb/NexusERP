@@ -1,18 +1,24 @@
 package com.nexus.mes.trace;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.trace.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.util.*;
 import static com.nexus.mes.trace.MesTraceContext.need;
 import static com.nexus.mes.trace.MesTraceSql.*;
 import static com.nexus.mes.trace.MesTraceStore.number;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.trace.*;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * 管理实际消耗和逐身份分配；仓库扣减由库存业务事务负责。
@@ -370,9 +376,7 @@ public class MesMaterialTraceWriter {
      * @param consumptionId 已经发生的工单实际消耗记录。
      * @return 本次业务关联或新建的稳定记录标识。
      */
-    @Transactional(
-            readOnly = true,
-            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public Long consumptionMaterial(Long consumptionId) {
         var row =
                 one(
@@ -1219,9 +1223,7 @@ public class MesMaterialTraceWriter {
     }
 
     private boolean validateSource(
-            Map<String, Object> source,
-            com.fasterxml.jackson.databind.JsonNode evidence,
-            BigDecimal quantity) {
+            Map<String, Object> source, JsonNode evidence, BigDecimal quantity) {
         var policy = events.sourcePolicy(source);
         events.sourceVersion(source);
         Long batch = number(evidence, "erpBatchId"), identity = number(evidence, "identityId");
@@ -1269,7 +1271,7 @@ public class MesMaterialTraceWriter {
         return wo;
     }
 
-    private com.fasterxml.jackson.databind.JsonNode readProof(Map<String, Object> allocation) {
+    private JsonNode readProof(Map<String, Object> allocation) {
         String proof = text(allocation.get("evidence_json"));
         need(TraceHashes.sha256(proof).equals(allocation.get("evidence_hash")), "批次分配来源摘要不一致");
         try {
@@ -1293,7 +1295,7 @@ public class MesMaterialTraceWriter {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    static BigDecimal decimal(com.fasterxml.jackson.databind.JsonNode node, String key) {
+    static BigDecimal decimal(JsonNode node, String key) {
         try {
             return new BigDecimal(node.path(key).asText());
         } catch (Exception e) {

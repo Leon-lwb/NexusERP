@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -7,6 +11,8 @@ import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.wm.domain.*;
 import com.nexus.erp.wm.mapper.WmProductionRecptGuardMapper;
 import com.nexus.erp.wm.service.WmProductionRecptWriteGuard;
+
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -14,16 +20,17 @@ import org.mockito.MockedStatic;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** 原工单、单位、仓储和历史入库结果的真实守卫用例；模拟 JDBC 不代表 MySQL 现场验收。 */
 class WmProductionRecptWriteGuardTest {
@@ -75,7 +82,7 @@ class WmProductionRecptWriteGuardTest {
         when(mapper.approvedReportedQuantity("000000",201L)).thenReturn(d("0"));
         when(mapper.lockStock("000000",601L)).thenReturn(stock);
         when(mapper.lockBatch("000000",401L)).thenReturn(batch);
-        when(mapper.databaseDate()).thenReturn(java.time.LocalDate.now().toString());
+        when(mapper.databaseDate()).thenReturn(LocalDate.now().toString());
         when(mapper.lockMaterial("000000",301L)).thenReturn(new WmProductionRecptGuardMapper.MaterialSource(301L,
             wo.getMaterialCode(),"连接组件","M12","1","0",26L,"件",26L,1L,d("1"),0,"1","0","Q-UNIT-26",new Date(),d("3.89")));
         when(mapper.lockStorage("000000",3L,28L)).thenReturn(new WmProductionRecptGuardMapper.StorageSource(3L,"WH003","成品仓",
@@ -101,7 +108,7 @@ class WmProductionRecptWriteGuardTest {
 
     @Test
     void nativeSqlDateUsesSameBusinessDateWithoutUnsupportedInstantConversion() {
-        receipt.setRecptDate(java.sql.Date.valueOf(java.time.LocalDate.now()));
+        receipt.setRecptDate(java.sql.Date.valueOf(LocalDate.now()));
         run(() -> guard.validateReady(wo,receipt));
         assertEquals("WH003",receipt.getWarehouseCode(),"原生日期类型应按同一业务日期验证");
     }
@@ -258,8 +265,12 @@ class WmProductionRecptWriteGuardTest {
     @Test
     void fixedSqlPinsTenantAndLocksWithoutFilteringDeletedEvidence() throws Exception {
         for (String method : List.of("lockWorkOrder","lockReceipts","lockTransactions","lockStock","lockBatch")) {
-            var found = java.util.Arrays.stream(WmProductionRecptGuardMapper.class.getMethods()).filter(m -> method.equals(m.getName())).findFirst().orElseThrow();
-            String sql = String.join(" ",found.getAnnotation(org.apache.ibatis.annotations.Select.class).value());
+            var found =
+                    Arrays.stream(WmProductionRecptGuardMapper.class.getMethods())
+                            .filter(m -> method.equals(m.getName()))
+                            .findFirst()
+                            .orElseThrow();
+            String sql = String.join(" ", found.getAnnotation(Select.class).value());
             assertTrue(sql.contains("tenant_id=#{tenant}"),"固定原生读取必须显式限定租户："+method);
             assertTrue(sql.contains("FOR UPDATE"),"写授权读取必须锁住真实源："+method);
             assertFalse(sql.contains("del_flag='0'"),"异常删除凭据不能被读取器隐藏："+method);

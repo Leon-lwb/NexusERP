@@ -1,10 +1,12 @@
 package com.nexus.ai.service.rag;
 
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 文本分段服务
@@ -82,7 +84,7 @@ public class ChunkingService {
      * @return 片段列表
      */
     private List<ChunkResult> splitBySeparator(String content, String separator, int chunkSize, int overlap) {
-        String[] parts = content.split(java.util.regex.Pattern.quote(separator));
+        String[] parts = content.split(Pattern.quote(separator));
         List<ChunkResult> chunks = new ArrayList<>();
         StringBuilder currentChunk = new StringBuilder();
         int index = 0;

@@ -7,6 +7,7 @@ import com.nexus.ai.engineering.domain.*;
 import com.nexus.ai.engineering.service.*;
 import com.nexus.common.ai.domain.entity.*;
 import com.nexus.common.ai.engineering.*;
+import com.nexus.common.web.config.JacksonConfig;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,8 +31,7 @@ class EngineeringSecurityReviewTest {
         var json =
                 new ObjectMapper()
                         .findAndRegisterModules()
-                        .registerModule(
-                                new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
+                        .registerModule(new JacksonConfig().bigNumberModule());
         var device = new AiEngineeringDevice();
         device.setAccessHash("test-access-hash");
         device.setRefreshHash("test-refresh-hash");

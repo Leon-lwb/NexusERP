@@ -14,11 +14,15 @@ import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.station.domain.MesSnBindLog;
 import com.nexus.station.domain.MesStationReport;
-import com.nexus.station.mapper.StationSnBindLogMapper;
 import com.nexus.station.mapper.StationReportMapper;
+import com.nexus.station.mapper.StationSnBindLogMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -71,9 +75,7 @@ public class StationTraceService {
      * @param snCode SN编码
      * @return {sn, steps, records: [{type, time, result?, summary, items?}]} 记录按时间倒序
      */
-    @org.springframework.transaction.annotation.Transactional(
-            readOnly = true,
-            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public Map<String, Object> trace(String snCode) {
         String sn = snCode == null ? null : snCode.trim();
         if (StringUtils.isBlank(sn)) {

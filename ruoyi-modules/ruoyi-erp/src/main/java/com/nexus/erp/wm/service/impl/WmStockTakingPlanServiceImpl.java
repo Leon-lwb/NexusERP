@@ -4,9 +4,8 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
@@ -23,15 +22,23 @@ import com.nexus.erp.wm.mapper.WmStockTakingPlanMapper;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.erp.wm.service.IWmStockTakingPlanService;
 import com.nexus.workflow.domain.WfMyBusiness;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 /**
  * 库存盘点计划服务实现
  * <p>
@@ -141,13 +148,13 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         // 差异记录消失后再次过账即按新行重复调整库存。
         WmStockTakingPlan existing = baseMapper.selectById(entity.getPlanId());
         if (existing == null) {
-            throw new com.nexus.common.core.exception.ServiceException("盘点计划不存在");
+            throw new ServiceException("盘点计划不存在");
         }
         if (STATUS_GENERATED.equals(existing.getStatus())) {
             return saveGeneratedCounts(existing.getPlanId(), bo.getWmStockTakingLineList());
         }
         if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
-            throw new com.nexus.common.core.exception.ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
+            throw new ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
         }
         entity.setStatus(existing.getStatus());
         deleteLinesByPlanId(entity.getPlanId());
@@ -174,7 +181,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             // ERP-WM-10: 仅草稿可删；删除已生成/已过账单据会让盘点结果与库存调整失去凭据
             WmStockTakingPlan existing = baseMapper.selectById(id);
             if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
-                throw new com.nexus.common.core.exception.ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
+                throw new ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
             }
             deleteLinesByPlanId(id);
         }
@@ -198,8 +205,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         // 修复前无守卫：对 POSTED 计划再点一次"生成盘点明细"会把已过账行删掉重建为 PENDING，
         // 差异记录消失后再次过账即按新行重复调整库存。
         if (!STATUS_DRAFT.equals(plan.getStatus()) && !STATUS_REJECTED.equals(plan.getStatus())) {
-            throw new com.nexus.common.core.exception.ServiceException(
-                "当前状态不允许生成盘点明细，只有草稿和已驳回状态才能生成！");
+            throw new ServiceException("当前状态不允许生成盘点明细，只有草稿和已驳回状态才能生成！");
         }
         // 先清除已有盘点行
         deleteLinesByPlanId(planId);
@@ -261,7 +267,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         }
 
         if (!STATUS_GENERATED.equals(plan.getStatus()) || plan.getSelectFlowId() != null) {
-            throw new com.nexus.common.core.exception.ServiceException("仅未配置审批流程的已生成计划可手工过账；审批计划须审批通过后过账");
+            throw new ServiceException("仅未配置审批流程的已生成计划可手工过账；审批计划须审批通过后过账");
         }
 
         // 手工过账只接受无审批流程的GENERATED，不能抢占审批中的计划。
@@ -317,25 +323,25 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         WmStockTakingPlan locked = baseMapper.selectOne(Wrappers.<WmStockTakingPlan>lambdaQuery()
             .eq(WmStockTakingPlan::getPlanId, planId).last("FOR UPDATE"));
         if (locked == null || !STATUS_GENERATED.equals(locked.getStatus())) {
-            throw new com.nexus.common.core.exception.ServiceException("盘点状态已变化，请重新读取");
+            throw new ServiceException("盘点状态已变化，请重新读取");
         }
         List<WmStockTakingLine> persisted = lineMapper.selectList(Wrappers.<WmStockTakingLine>lambdaQuery()
             .eq(WmStockTakingLine::getPlanId, planId));
         if (requested == null || requested.isEmpty() || requested.size() != persisted.size()) {
-            throw new com.nexus.common.core.exception.ServiceException("实盘明细必须完整且与原计划一致");
+            throw new ServiceException("实盘明细必须完整且与原计划一致");
         }
         Map<Long, WmStockTakingLine> originals = new HashMap<>();
         for (WmStockTakingLine row : persisted) originals.put(row.getLineId(), row);
-        java.util.Set<Long> seen = new java.util.HashSet<>();
+        Set<Long> seen = new HashSet<>();
         for (WmStockTakingLine input : requested) {
             if (input == null || input.getLineId() == null || !seen.add(input.getLineId())
                     || !originals.containsKey(input.getLineId())
                     || input.getPlanId() != null && !planId.equals(input.getPlanId())) {
-                throw new com.nexus.common.core.exception.ServiceException("实盘行重复或不属于当前盘点计划");
+                throw new ServiceException("实盘行重复或不属于当前盘点计划");
             }
             BigDecimal actual = input.getActualQuantity();
             if (actual == null || actual.signum() < 0 || actual.stripTrailingZeros().scale() > 4) {
-                throw new com.nexus.common.core.exception.ServiceException("实盘数量必须非负且最多4位小数");
+                throw new ServiceException("实盘数量必须非负且最多4位小数");
             }
         }
         for (WmStockTakingLine input : requested) {
@@ -344,7 +350,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             patch.setLineId(original.getLineId());
             patch.setActualQuantity(input.getActualQuantity());
             patch.setDifferenceQuantity(input.getActualQuantity().subtract(original.getBookQuantity() == null ? BigDecimal.ZERO : original.getBookQuantity()));
-            if (lineMapper.updateById(patch) != 1) throw new com.nexus.common.core.exception.ServiceException("盘点行保存失败");
+            if (lineMapper.updateById(patch) != 1) throw new ServiceException("盘点行保存失败");
         }
         return requested.size();
     }
@@ -367,7 +373,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             throw new RuntimeException("盘点计划不存在");
         }
         if (!STATUS_GENERATED.equals(plan.getStatus())) {
-            throw new com.nexus.common.core.exception.ServiceException("只有已生成并完成实盘录入的计划才能提交审批");
+            throw new ServiceException("只有已生成并完成实盘录入的计划才能提交审批");
         }
         assertAllLinesCounted(lineMapper.selectList(Wrappers.<WmStockTakingLine>lambdaQuery()
             .eq(WmStockTakingLine::getPlanId, planId)));
@@ -538,7 +544,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
      * @param lines 同一计划下的盘点行
      */
     private void assertAllLinesCounted(List<WmStockTakingLine> lines) {
-        List<String> missing = new java.util.ArrayList<>();
+        List<String> missing = new ArrayList<>();
         for (WmStockTakingLine line : lines) {
             if ("POSTED".equals(line.getStatus()) || "BALANCED".equals(line.getStatus())) {
                 continue;
@@ -551,9 +557,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         if (!missing.isEmpty()) {
             int shown = Math.min(missing.size(), 5);
             String detail = String.join("、", missing.subList(0, shown));
-            throw new com.nexus.common.core.exception.ServiceException(
-                "存在 " + missing.size() + " 行未录入实盘数，禁止过账：" + detail
-                    + (missing.size() > shown ? " 等" : ""));
+            throw new ServiceException(
+                    "存在 "
+                            + missing.size()
+                            + " 行未录入实盘数，禁止过账："
+                            + detail
+                            + (missing.size() > shown ? " 等" : ""));
         }
     }
 

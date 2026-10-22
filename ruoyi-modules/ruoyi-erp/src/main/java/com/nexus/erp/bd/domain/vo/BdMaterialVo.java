@@ -2,9 +2,13 @@ package com.nexus.erp.bd.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.nexus.erp.bd.domain.BdMaterial;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -21,7 +25,8 @@ import java.math.BigDecimal;
 @AutoMapper(target = BdMaterial.class)
 public class BdMaterialVo implements Serializable {
 
-    @Serial private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 物料ID
@@ -124,11 +129,8 @@ public class BdMaterialVo implements Serializable {
      */
     private Integer allowMixedLot;
 
-    /**
-     * 服务端管理的追踪策略版本，编辑策略时作为预期版本。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 服务端管理的追踪策略版本，编辑策略时作为预期版本。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long trackingVersion;
 
     /**

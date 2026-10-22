@@ -1,43 +1,86 @@
 package com.nexus.ai.service.decision;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.ai.service.decision.executor.DecisionActionExecutor;
-import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
-import com.nexus.common.ai.decision.enums.DecisionActionType;
-import com.nexus.common.ai.domain.entity.AiDecisionAction;
-import com.nexus.common.ai.decision.enums.DecisionRunStatus;
-import org.junit.jupiter.api.Test;
-import java.util.List;
-import java.util.Map;
+import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.service.decision.executor.DecisionActionExecutor;
+import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
+import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
+import com.nexus.common.ai.decision.dto.DecisionActionProposal;
+import com.nexus.common.ai.decision.dto.DecisionActor;
+import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.dto.DecisionFreshnessResult;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
+import com.nexus.common.ai.decision.enums.DecisionActionType;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
+import com.nexus.common.ai.decision.enums.DecisionRunStatus;
+import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.ai.domain.entity.AiDecisionAction;
+import com.nexus.common.ai.domain.entity.AiDecisionRun;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.service.PermissionService;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /** 独立验证执行中断的调度边界，不伪装为跨物理库事务验证。 */
 class DecisionPurchaseRecoveryTest {
     @Test void productionConstructorExplicitlyRequiresPurchasePortAndFinalizer() {
-        assertDoesNotThrow(() -> {
-            var constructor = DecisionActionExecutionService.class.getConstructor(DecisionPersistenceService.class,
-                java.util.List.class, ObjectMapper.class, com.nexus.ai.service.sse.AiDecisionSseMessageHelper.class,
-                com.nexus.common.core.service.PermissionService.class,
-                com.nexus.common.ai.decision.port.IndustrialDecisionDataPort.class, DecisionFinalizeService.class);
-            assertNotNull(constructor.getAnnotation(org.springframework.beans.factory.annotation.Autowired.class),
-                "生产构造器必须明确注入采购恢复端口、实时权限和复盘服务");
-            assertEquals(1L, java.util.Arrays.stream(DecisionActionExecutionService.class.getConstructors())
-                .filter(c -> c.isAnnotationPresent(org.springframework.beans.factory.annotation.Autowired.class)).count(),
-                "只能有一个 Spring 自动注入构造器");
-        }, "旧隔离重载不能成为新版采购的默认授权依赖");
+        assertDoesNotThrow(
+                () -> {
+                    var constructor =
+                            DecisionActionExecutionService.class.getConstructor(
+                                    DecisionPersistenceService.class,
+                                    List.class,
+                                    ObjectMapper.class,
+                                    AiDecisionSseMessageHelper.class,
+                                    PermissionService.class,
+                                    IndustrialDecisionDataPort.class,
+                                    DecisionFinalizeService.class);
+                    assertNotNull(
+                            constructor.getAnnotation(Autowired.class),
+                            "生产构造器必须明确注入采购恢复端口、实时权限和复盘服务");
+                    assertEquals(
+                            1L,
+                            Arrays.stream(DecisionActionExecutionService.class.getConstructors())
+                                    .filter(c -> c.isAnnotationPresent(Autowired.class))
+                                    .count(),
+                            "只能有一个 Spring 自动注入构造器");
+                },
+                "旧隔离重载不能成为新版采购的默认授权依赖");
     }
     @Test void resumedRunCountsVerifiedSucceededActionsWithoutExecutingAgain() throws Exception {
         var store = mock(DecisionPersistenceService.class);
         var executor = mock(DecisionActionExecutor.class);
         when(executor.type()).thenReturn(DecisionActionType.CREATE_SCHEDULE_PLAN_DRAFT);
         var mapper = new ObjectMapper();
-        var rights = mock(com.nexus.common.core.service.PermissionService.class);
+        var rights = mock(PermissionService.class);
         when(rights.getMenuPermission(1L)).thenReturn(actor().permissions());
         var finalizer = mock(DecisionFinalizeService.class);
-        var service = new DecisionActionExecutionService(store, List.of(executor), mapper, null, rights,
-            mock(com.nexus.common.ai.decision.port.IndustrialDecisionDataPort.class), finalizer);
+        var service =
+                new DecisionActionExecutionService(
+                        store,
+                        List.of(executor),
+                        mapper,
+                        null,
+                        rights,
+                        mock(IndustrialDecisionDataPort.class),
+                        finalizer);
         when(store.finishRecoveredExecution(eq(10L), anyInt())).thenReturn(true);
         var versionedRun = run(10L, DecisionRunStatus.EXECUTING); versionedRun.setDecisionContractVersion(2);
         when(store.requireRun(10L, "000000")).thenReturn(versionedRun);
@@ -54,7 +97,7 @@ class DecisionPurchaseRecoveryTest {
     }
     @Test void unknownExecutingMissCannotCreateOrIncrementCounter() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
-        var error = assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        var error = assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         assertTrue(error.getMessage().contains("尚不能确定"), "永久记录 MISS 不等于执行事务已经失败");
         verify(h.port).recoverPurchaseAction(any(), eq(actor()));
         h.assertNoPurchaseWrite();
@@ -79,14 +122,14 @@ class DecisionPurchaseRecoveryTest {
     }
     @Test void differentAdministratorCannotReplaceBoundExecutionActor() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
-        var other = new com.nexus.common.ai.decision.dto.DecisionActor("000000", 2L, "其他管理员", java.util.Set.of("*:*:*"));
-        when(h.rights.getMenuPermission(2L)).thenReturn(java.util.Set.of("*:*:*"));
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, other));
+        var other = new DecisionActor("000000", 2L, "其他管理员", Set.of("*:*:*"));
+        when(h.rights.getMenuPermission(2L)).thenReturn(Set.of("*:*:*"));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, other));
         verifyNoInteractions(h.port); h.assertNoPurchaseWrite();
     }
     @Test void revokedLivePurchasePermissionBlocksRecoveryWithoutStateChange() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
-        when(h.rights.getMenuPermission(1L)).thenReturn(java.util.Set.of("ai:decision:execute"));
+        when(h.rights.getMenuPermission(1L)).thenReturn(Set.of("ai:decision:execute"));
         assertThrows(DecisionActionExecutionService.InitialExecutionCheckUnavailableException.class, () -> h.service.retry(20L, actor()));
         verifyNoInteractions(h.port); h.assertNoPurchaseWrite();
     }
@@ -154,14 +197,15 @@ class DecisionPurchaseRecoveryTest {
         var changed = new DecisionActionExecutionResult(false, false, "PU_PURCHASE_REQUISITION", 99L, "REQ-99",
             Map.of("status", "CLOSED"), "VERIFY_STATE_MISMATCH", "原单已关闭");
         when(h.port.recoverPurchaseAction(any(), any())).thenReturn(changed);
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         h.assertNoPurchaseWrite(); assertEquals(99L, h.purchase.getResultBizId(), "历史引用不能因恢复冲突被清空");
         assertEquals("EXECUTING", h.purchase.getExecutionStatus());
     }
     @Test void recoveryConflictIsNotAConfirmedMiss() {
         var h = new RecoveryHarness("EXECUTING", "FAILED");
-        when(h.port.recoverPurchaseAction(any(), any())).thenThrow(new com.nexus.common.core.exception.ServiceException("载荷或永久记录冲突"));
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        when(h.port.recoverPurchaseAction(any(), any()))
+                .thenThrow(new ServiceException("载荷或永久记录冲突"));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         h.assertNoPurchaseWrite(); verify(h.port, never()).requireFreshPurchaseContract(any(), any(), anyInt(), any());
     }
     @Test void committedButUnverifiedDraftCannotBecomeFailedOrCompensated() {
@@ -198,8 +242,13 @@ class DecisionPurchaseRecoveryTest {
     @Test void concurrentSameStableRecoveredResultIsVerifiedWithoutOverwriting() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
         when(h.port.recoverPurchaseAction(any(), any())).thenReturn(h.receipt(true));
-        doAnswer(call -> { h.save(h.receipt(false)); throw new com.nexus.common.core.exception.ServiceException("动作 CAS 已被另一个执行者完成"); })
-            .when(h.store).saveRecoveredPurchaseResult(eq(20L), eq(0), any());
+        doAnswer(
+                        call -> {
+                            h.save(h.receipt(false));
+                            throw new ServiceException("动作 CAS 已被另一个执行者完成");
+                        })
+                .when(h.store)
+                .saveRecoveredPurchaseResult(eq(20L), eq(0), any());
         h.service.retry(20L, actor());
         verify(h.purchaseExecutor, times(2)).verify(any(), any(), any());
         verify(h.store, times(1)).saveRecoveredPurchaseResult(eq(20L), eq(0), any());
@@ -208,10 +257,23 @@ class DecisionPurchaseRecoveryTest {
     @Test void concurrentDifferentBusinessReferenceStopsWithoutOverwriting() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
         when(h.port.recoverPurchaseAction(any(), any())).thenReturn(h.receipt(true));
-        doAnswer(call -> { h.save(new DecisionActionExecutionResult(true, false, "PU_PURCHASE_REQUISITION", 100L, "REQ-100",
-            h.receipt(false).result(), null, null)); throw new com.nexus.common.core.exception.ServiceException("并发结果冲突"); })
-            .when(h.store).saveRecoveredPurchaseResult(eq(20L), eq(0), any());
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        doAnswer(
+                        call -> {
+                            h.save(
+                                    new DecisionActionExecutionResult(
+                                            true,
+                                            false,
+                                            "PU_PURCHASE_REQUISITION",
+                                            100L,
+                                            "REQ-100",
+                                            h.receipt(false).result(),
+                                            null,
+                                            null));
+                            throw new ServiceException("并发结果冲突");
+                        })
+                .when(h.store)
+                .saveRecoveredPurchaseResult(eq(20L), eq(0), any());
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         verify(h.store, never()).finishRecoveredExecution(anyLong(), anyInt());
         verify(h.store, never()).saveActionResult(anyLong(), any(), anyInt());
     }
@@ -250,7 +312,7 @@ class DecisionPurchaseRecoveryTest {
         h.actions.add(scheduleAction("EXECUTING"));
         var schedule = mock(DecisionActionExecutor.class); when(schedule.type()).thenReturn(DecisionActionType.CREATE_SCHEDULE_PLAN_DRAFT);
         h.service = h.withExecutors(List.of(h.purchaseExecutor, schedule));
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.executeApproved(10L, actor()));
+        assertThrows(ServiceException.class, () -> h.service.executeApproved(10L, actor()));
         verify(schedule, never()).execute(any(), any()); verify(h.store, never()).finishRecoveredExecution(anyLong(), anyInt());
     }
     @Test void purchaseRetryCanContinueReadyNotStartedDependency() {
@@ -269,7 +331,7 @@ class DecisionPurchaseRecoveryTest {
     }
     @Test void terminalPurchaseRunIsNeverMutatedOrRecovered() {
         var h = new RecoveryHarness("FAILED", "FAILED");
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         verifyNoInteractions(h.port); h.assertNoPurchaseWrite();
     }
     @Test void missingProductionDependenciesCannotAllowV2Purchase() {
@@ -279,8 +341,10 @@ class DecisionPurchaseRecoveryTest {
             new DecisionActionExecutionService(h.store, List.of(h.purchaseExecutor), h.mapper, h.events, h.rights, null, h.finalizer),
             new DecisionActionExecutionService(h.store, List.of(h.purchaseExecutor), h.mapper, h.events, h.rights, h.port, null),
             new DecisionActionExecutionService(h.store, List.of(h.purchaseExecutor), h.mapper, h.events, null, h.port, h.finalizer))) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.executeApproved(10L, actor()),
-                "新版采购端口、实时权限或复盘依赖缺失必须失败关闭");
+            assertThrows(
+                    ServiceException.class,
+                    () -> service.executeApproved(10L, actor()),
+                    "新版采购端口、实时权限或复盘依赖缺失必须失败关闭");
         }
         h.assertNoPurchaseWrite(); verify(h.store, never()).transition(anyLong(), any(), any());
     }
@@ -308,7 +372,8 @@ class DecisionPurchaseRecoveryTest {
         assertEquals("SUCCEEDED", h.purchase.getExecutionStatus(), "已提交采购不能被非采购补偿虚构为已撤销");
     }
     @Test void oldNonPurchaseInterruptedRunUsesExistingVersionCasTransition() throws Exception {
-        var store = mock(DecisionPersistenceService.class); var rights = mock(com.nexus.common.core.service.PermissionService.class);
+        var store = mock(DecisionPersistenceService.class);
+        var rights = mock(PermissionService.class);
         when(rights.getMenuPermission(1L)).thenReturn(actor().permissions());
         var finalizer = mock(DecisionFinalizeService.class); var executor = mock(DecisionActionExecutor.class);
         when(executor.type()).thenReturn(DecisionActionType.CREATE_SCHEDULE_PLAN_DRAFT);
@@ -317,8 +382,15 @@ class DecisionPurchaseRecoveryTest {
         var mapper = new ObjectMapper(); a.setResultJson(mapper.writeValueAsString(result));
         when(store.requireRun(10L, "000000")).thenReturn(r); when(store.listActions(10L)).thenReturn(List.of(a));
         when(executor.verify(any(), any(), any())).thenReturn(result);
-        var service = new DecisionActionExecutionService(store, List.of(executor), mapper, null, rights,
-            mock(com.nexus.common.ai.decision.port.IndustrialDecisionDataPort.class), finalizer);
+        var service =
+                new DecisionActionExecutionService(
+                        store,
+                        List.of(executor),
+                        mapper,
+                        null,
+                        rights,
+                        mock(IndustrialDecisionDataPort.class),
+                        finalizer);
         service.executeApproved(10L, actor());
         verify(store).transition(10L, DecisionRunStatus.EXECUTING, DecisionRunStatus.SUCCEEDED);
         verify(store, never()).finishRecoveredExecution(anyLong(), anyInt());
@@ -326,8 +398,10 @@ class DecisionPurchaseRecoveryTest {
     }
     @Test void unknownExecutionStateIsSafelyRejectedBeforeAnyRecoveryWrite() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING"); h.purchase.setExecutionStatus(null);
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()),
-            "损坏或未知动作状态不能变成 NPE，更不能取得恢复或创建授权");
+        assertThrows(
+                ServiceException.class,
+                () -> h.service.retry(20L, actor()),
+                "损坏或未知动作状态不能变成 NPE，更不能取得恢复或创建授权");
         h.assertNoPurchaseWrite(); verifyNoInteractions(h.port);
     }
     @Test void finishCasRefusalKeepsRunUnresolvedAndDoesNotFinalize() {
@@ -341,47 +415,52 @@ class DecisionPurchaseRecoveryTest {
     @Test void forgedPayloadV2FailsBeforeExecutionStatusOrCounters() {
         var h = new RecoveryHarness("APPROVED", "NOT_STARTED");
         h.purchase.setPayloadJson("{\"runId\":\"10\",\"purchase_payload_version\":2}");
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.executeApproved(10L, actor()));
+        assertThrows(ServiceException.class, () -> h.service.executeApproved(10L, actor()));
         h.assertNoPurchaseWrite(); verify(h.store, never()).transition(anyLong(), any(), any());
         verifyNoInteractions(h.port); assertEquals(2, h.purchase.getRetryCount());
     }
     @Test void nullActionListRowCannotBeIgnoredToFinalizeRun() {
         var h = new RecoveryHarness("EXECUTING", "SUCCEEDED"); h.save(h.receipt(false));
-        when(h.store.listActions(10L)).thenReturn(java.util.Arrays.asList(h.purchase, null));
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()),
-            "读取不到某个动作不是该动作已成功的证据，不允许过滤后收敛运行");
+        when(h.store.listActions(10L)).thenReturn(Arrays.asList(h.purchase, null));
+        assertThrows(
+                ServiceException.class,
+                () -> h.service.retry(20L, actor()),
+                "读取不到某个动作不是该动作已成功的证据，不允许过滤后收敛运行");
         verify(h.store, never()).finishRecoveredExecution(anyLong(), anyInt());
         verifyNoInteractions(h.finalizer);
     }
     @Test void anotherTenantCannotRecoverEvenWithSameNumericUserId() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
-        var foreign = new com.nexus.common.ai.decision.dto.DecisionActor("000001", 1L, "同 ID 不同租户", actor().permissions());
+        var foreign = new DecisionActor("000001", 1L, "同 ID 不同租户", actor().permissions());
         when(h.store.requireAction(20L, "000001")).thenReturn(h.purchase);
         when(h.store.requireRun(10L, "000001")).thenReturn(h.run);
         when(h.store.trustedExecutionActor(10L, "000001")).thenReturn(actor());
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, foreign));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, foreign));
         h.assertNoPurchaseWrite(); verifyNoInteractions(h.port);
     }
     @Test void revokedLivePermissionIsRecheckedOnEveryRecoveryAttempt() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
-        when(h.rights.getMenuPermission(1L)).thenReturn(java.util.Set.of("ai:decision:execute"));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
+        when(h.rights.getMenuPermission(1L)).thenReturn(Set.of("ai:decision:execute"));
         assertThrows(DecisionActionExecutionService.InitialExecutionCheckUnavailableException.class, () -> h.service.retry(20L, actor()));
         verify(h.port, times(1)).recoverPurchaseAction(any(), any()); h.assertNoPurchaseWrite();
     }
     @Test void failedRetryUnknownSourceReadDoesNotIncrementCounterOrCreate() {
         var h = new RecoveryHarness("EXECUTING", "FAILED");
-        doThrow(new com.nexus.common.core.exception.ServiceException("来源链读取不可证明")).when(h.port)
-            .requireFreshPurchaseContract(any(), any(), anyInt(), any());
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        doThrow(new ServiceException("来源链读取不可证明"))
+                .when(h.port)
+                .requireFreshPurchaseContract(any(), any(), anyInt(), any());
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         h.assertNoPurchaseWrite(); assertEquals("FAILED", h.purchase.getExecutionStatus()); assertEquals(2, h.purchase.getRetryCount());
     }
     @Test void recoveredReceiptWithChangedDraftVersionCannotConvergeOrCompensate() {
         var h = new RecoveryHarness("EXECUTING", "EXECUTING");
-        var draft = h.receipt(true); var details = new java.util.HashMap<String, Object>(draft.result()); details.put("versionMarker", "v1");
+        var draft = h.receipt(true);
+        var details = new HashMap<String, Object>(draft.result());
+        details.put("versionMarker", "v1");
         when(h.port.recoverPurchaseAction(any(), any())).thenReturn(new DecisionActionExecutionResult(true, false,
             draft.resultBizType(), draft.resultBizId(), draft.resultBizCode(), details, null, null));
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> h.service.retry(20L, actor()));
+        assertThrows(ServiceException.class, () -> h.service.retry(20L, actor()));
         h.assertNoPurchaseWrite(); verifyNoInteractions(h.finalizer);
     }
     @Test void retrySucceededTerminalPurchaseOnlyVerifiesNeverWrites() {
@@ -401,16 +480,26 @@ class DecisionPurchaseRecoveryTest {
             "PRD_SCHEDULE_PLAN", 101L, "PLAN-101", Map.of(), "VERIFY_FAILED", "排程核验失败"));
         when(schedule.compensate(any(), any(), any())).thenReturn(created);
         // 实体读取不是数据库活对象：master 更新只替换持久化读回行，不改先前读取的快照。
-        doAnswer(c -> {
-            Long id = c.getArgument(0); var current = h.actions.stream().filter(a -> a.getId().equals(id)).findFirst().orElseThrow();
-            if (!java.util.Objects.equals(current.getExecutionStatus(), c.getArgument(2)))
-                throw new com.nexus.common.core.exception.ServiceException("模拟状态 CAS 拒绝覆写先前已成功动作");
-            if (id.equals(20L)) {
-                var fresh = DecisionPurchaseContractGuardTest.v2Action(); fresh.setExecutionStatus(c.getArgument(3)); fresh.setVersion(1);
-                h.actions.set(0, fresh);
-            } else current.setExecutionStatus(c.getArgument(3));
-            return null;
-        }).when(h.store).transitionAction(anyLong(), anyString(), anyString(), anyString());
+        doAnswer(
+                        c -> {
+                            Long id = c.getArgument(0);
+                            var current =
+                                    h.actions.stream()
+                                            .filter(a -> a.getId().equals(id))
+                                            .findFirst()
+                                            .orElseThrow();
+                            if (!Objects.equals(current.getExecutionStatus(), c.getArgument(2)))
+                                throw new ServiceException("模拟状态 CAS 拒绝覆写先前已成功动作");
+                            if (id.equals(20L)) {
+                                var fresh = DecisionPurchaseContractGuardTest.v2Action();
+                                fresh.setExecutionStatus(c.getArgument(3));
+                                fresh.setVersion(1);
+                                h.actions.set(0, fresh);
+                            } else current.setExecutionStatus(c.getArgument(3));
+                            return null;
+                        })
+                .when(h.store)
+                .transitionAction(anyLong(), anyString(), anyString(), anyString());
         doAnswer(c -> {
             var current = h.actions.get(0); DecisionActionExecutionResult r = c.getArgument(1);
             current.setExecutionStatus("SUCCEEDED"); current.setResultBizType(r.resultBizType()); current.setResultBizId(r.resultBizId());
@@ -427,26 +516,38 @@ class DecisionPurchaseRecoveryTest {
     /** 内存替身只模拟 master 返回的状态，验证编排调用顺序，不证明 SQL CAS 或跨库物理回滚。 */
     private static final class RecoveryHarness {
         final DecisionPersistenceService store = mock(DecisionPersistenceService.class);
-        final com.nexus.common.ai.decision.port.IndustrialDecisionDataPort port = mock(com.nexus.common.ai.decision.port.IndustrialDecisionDataPort.class);
-        final com.nexus.common.core.service.PermissionService rights = mock(com.nexus.common.core.service.PermissionService.class);
+        final IndustrialDecisionDataPort port = mock(IndustrialDecisionDataPort.class);
+        final PermissionService rights = mock(PermissionService.class);
         final DecisionFinalizeService finalizer = mock(DecisionFinalizeService.class);
-        final com.nexus.ai.service.sse.AiDecisionSseMessageHelper events = mock(com.nexus.ai.service.sse.AiDecisionSseMessageHelper.class);
+        final AiDecisionSseMessageHelper events = mock(AiDecisionSseMessageHelper.class);
         final DecisionActionExecutor purchaseExecutor = mock(DecisionActionExecutor.class);
         final ObjectMapper mapper = new ObjectMapper();
-        final com.nexus.common.ai.domain.entity.AiDecisionRun run = DecisionPurchaseContractGuardTest.v2Run();
+        final AiDecisionRun run = DecisionPurchaseContractGuardTest.v2Run();
         final AiDecisionAction purchase = DecisionPurchaseContractGuardTest.v2Action();
-        final java.util.List<AiDecisionAction> actions = new java.util.ArrayList<>();
-        final com.nexus.common.ai.decision.dto.DeliveryContextSnapshot snapshot = new com.nexus.common.ai.decision.dto.DeliveryContextSnapshot(
-            new com.nexus.common.ai.decision.dto.DecisionBusinessRef(com.nexus.common.ai.decision.enums.DecisionBusinessType.WORK_ORDER, 9001L, "WO-9001"),
-            List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(), List.of(), Map.of(), List.of(),
-            "hash-old", java.time.LocalDateTime.of(2026, 10, 6, 10, 0), List.of());
+        final List<AiDecisionAction> actions = new ArrayList<>();
+        final DeliveryContextSnapshot snapshot =
+                new DeliveryContextSnapshot(
+                        new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 9001L, "WO-9001"),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        "hash-old",
+                        LocalDateTime.of(2026, 10, 6, 10, 0),
+                        List.of());
         DecisionActionExecutionService service;
         RecoveryHarness(String runState, String actionState) {
             run.setStatus(runState); run.setInputSnapshotHash("hash-old"); purchase.setExecutionStatus(actionState); purchase.setRetryCount(2); actions.add(purchase);
             when(rights.getMenuPermission(1L)).thenReturn(actor().permissions());
             when(port.canAccess(any(), any())).thenReturn(true);
-            when(port.checkFreshness(any(), anyString(), any())).thenReturn(
-                new com.nexus.common.ai.decision.dto.DecisionFreshnessResult(true, "hash-old", List.of()));
+            when(port.checkFreshness(any(), anyString(), any()))
+                    .thenReturn(new DecisionFreshnessResult(true, "hash-old", List.of()));
             when(purchaseExecutor.type()).thenReturn(DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT);
             when(purchaseExecutor.verify(any(), any(), any())).thenAnswer(c -> c.getArgument(1));
             when(store.requireRun(10L, "000000")).thenReturn(run);
@@ -472,24 +573,72 @@ class DecisionPurchaseRecoveryTest {
         }
         DecisionActionExecutionResult receipt(boolean replayed) {
             try {
-                var payload = mapper.readValue(purchase.getPayloadJson(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() { });
-                var contract = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.parse(payload, run.getId());
-                var proposal = new com.nexus.common.ai.decision.dto.DecisionActionProposal(purchase.getId(),
-                    DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT, "合成采购", "来源已冻结", snapshot.rootBusinessRef(), payload,
-                    com.nexus.common.ai.decision.enums.DecisionRiskLevel.MEDIUM, true, "pu:requisition:add", purchase.getIdempotencyKey(),
-                    "purchaseRequisitionDraft", 1, List.of());
+                var payload =
+                        mapper.readValue(
+                                purchase.getPayloadJson(),
+                                new TypeReference<Map<String, Object>>() {});
+                var contract = DecisionPurchaseContractCodec.parse(payload, run.getId());
+                var proposal =
+                        new DecisionActionProposal(
+                                purchase.getId(),
+                                DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+                                "合成采购",
+                                "来源已冻结",
+                                snapshot.rootBusinessRef(),
+                                payload,
+                                DecisionRiskLevel.MEDIUM,
+                                true,
+                                "pu:requisition:add",
+                                purchase.getIdempotencyKey(),
+                                "purchaseRequisitionDraft",
+                                1,
+                                List.of());
                 var line = contract.frozenLines().get(0);
-                var details = Map.<String, Object>ofEntries(Map.entry("purchase_payload_version", 2), Map.entry("runId", "10"),
-                    Map.entry("actionId", "20"), Map.entry("tenantId", actor().tenantId()), Map.entry("requestKey", purchase.getIdempotencyKey()),
-                    Map.entry("materialId", contract.materialId().toString()), Map.entry("vendorId", contract.vendorId().toString()),
-                    Map.entry("sourceType", "AI_DECISION"), Map.entry("sourceFingerprint", contract.expectedSourceFingerprint()),
-                    Map.entry("payloadFingerprint", com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.payloadFingerprint(proposal, actor())),
-                    Map.entry("status", "DRAFT"), Map.entry("versionMarker", "v0"), Map.entry("afterState", "DRAFT"),
-                    Map.entry("beforeState", replayed ? "COMMITTED" : "ABSENT"), Map.entry("replayed", replayed),
-                    Map.entry("lines", List.of(Map.of("lineId", "801", "requirementDetailId", line.detailId().toString(),
-                        "materialId", contract.materialId().toString(), "baseUomId", line.baseUomId().toString(),
-                        "orderUomId", line.orderUomId().toString(), "coveredDemandBase", line.coveredDemandBase().stripTrailingZeros().toPlainString(),
-                        "requestedOrderQty", line.requestedOrderQty().stripTrailingZeros().toPlainString(), "requiredDate", line.requiredDate().toString()))));
+                var details =
+                        Map.<String, Object>ofEntries(
+                                Map.entry("purchase_payload_version", 2),
+                                Map.entry("runId", "10"),
+                                Map.entry("actionId", "20"),
+                                Map.entry("tenantId", actor().tenantId()),
+                                Map.entry("requestKey", purchase.getIdempotencyKey()),
+                                Map.entry("materialId", contract.materialId().toString()),
+                                Map.entry("vendorId", contract.vendorId().toString()),
+                                Map.entry("sourceType", "AI_DECISION"),
+                                Map.entry(
+                                        "sourceFingerprint", contract.expectedSourceFingerprint()),
+                                Map.entry(
+                                        "payloadFingerprint",
+                                        DecisionPurchaseContractCodec.payloadFingerprint(
+                                                proposal, actor())),
+                                Map.entry("status", "DRAFT"),
+                                Map.entry("versionMarker", "v0"),
+                                Map.entry("afterState", "DRAFT"),
+                                Map.entry("beforeState", replayed ? "COMMITTED" : "ABSENT"),
+                                Map.entry("replayed", replayed),
+                                Map.entry(
+                                        "lines",
+                                        List.of(
+                                                Map.of(
+                                                        "lineId",
+                                                        "801",
+                                                        "requirementDetailId",
+                                                        line.detailId().toString(),
+                                                        "materialId",
+                                                        contract.materialId().toString(),
+                                                        "baseUomId",
+                                                        line.baseUomId().toString(),
+                                                        "orderUomId",
+                                                        line.orderUomId().toString(),
+                                                        "coveredDemandBase",
+                                                        line.coveredDemandBase()
+                                                                .stripTrailingZeros()
+                                                                .toPlainString(),
+                                                        "requestedOrderQty",
+                                                        line.requestedOrderQty()
+                                                                .stripTrailingZeros()
+                                                                .toPlainString(),
+                                                        "requiredDate",
+                                                        line.requiredDate().toString()))));
                 return new DecisionActionExecutionResult(true, false, "PU_PURCHASE_REQUISITION", 99L, "REQ-99", details, null, null);
             } catch (Exception invalid) { throw new AssertionError("恢复成功 fixture 必须具备真实完整 ERP 结果形状", invalid); }
         }

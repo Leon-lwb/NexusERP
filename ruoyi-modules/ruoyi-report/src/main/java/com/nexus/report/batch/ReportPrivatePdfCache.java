@@ -9,6 +9,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** PDFBox随机访问缓存使用私有暂存，增长先经过原存储输出流的硬配额。 */
 final class ReportPrivatePdfCache implements RandomAccessStreamCache {
@@ -220,7 +221,7 @@ final class ReportPrivatePdfCache implements RandomAccessStreamCache {
 
         /** 写入已经预留容量的指定字节块。 */
         public void write(byte[] bytes, int offset, int count) throws IOException {
-            java.util.Objects.checkFromIndexSize(offset, count, bytes.length);
+            Objects.checkFromIndexSize(offset, count, bytes.length);
             grow(count);
             file.write(bytes, offset, count);
         }

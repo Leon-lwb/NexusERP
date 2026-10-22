@@ -1,6 +1,7 @@
 package com.nexus.mes.pda.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,20 +14,23 @@ import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaQcDetailVo;
 import com.nexus.mes.pda.domain.vo.PdaQcItemVo;
 import com.nexus.mes.pda.service.IPdaQcService;
-import com.nexus.mes.qc.domain.QcIqc;
 import com.nexus.mes.qc.domain.QcIpqc;
+import com.nexus.mes.qc.domain.QcIqc;
 import com.nexus.mes.qc.domain.QcOqc;
-import com.nexus.mes.qc.mapper.QcIqcMapper;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import com.nexus.mes.qc.mapper.QcIqcMapper;
 import com.nexus.mes.qc.mapper.QcOqcMapper;
-import com.nexus.mes.qc.service.IQcIqcService;
 import com.nexus.mes.qc.service.IQcIpqcService;
+import com.nexus.mes.qc.service.IQcIqcService;
 import com.nexus.mes.qc.service.IQcOqcService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -224,10 +228,19 @@ public class PdaQcServiceImpl implements IPdaQcService {
 
     // ==================== 通用 ====================
 
-    private PdaQcDetailVo baseDetail(String domain, Long id, String code, String status, String inspectResult,
-                                     String materialCode, String materialName, String defectInfo,
-                                     String inspectorName, java.util.Date inspectTime,
-                                     String remark, String photoOssIds) {
+    private PdaQcDetailVo baseDetail(
+            String domain,
+            Long id,
+            String code,
+            String status,
+            String inspectResult,
+            String materialCode,
+            String materialName,
+            String defectInfo,
+            String inspectorName,
+            Date inspectTime,
+            String remark,
+            String photoOssIds) {
         PdaQcDetailVo vo = new PdaQcDetailVo();
         vo.setDomain(domain);
         vo.setId(id);

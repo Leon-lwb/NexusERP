@@ -1,5 +1,9 @@
 package com.nexus.erp.prd;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
@@ -10,13 +14,13 @@ import com.nexus.erp.prd.mapper.*;
 import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
+
 import org.junit.jupiter.api.*;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 覆盖实际来源下发方法及事务提交后的发布回调。
@@ -177,7 +181,7 @@ class PrdWorkOrderTrackingPolicyReleaseTest {
                 wo.setBomId(100L);
                 wo.setBomVersion("B1");
                 wo.setPlanId(500L);
-                wo.setPlannedQty(java.math.BigDecimal.ONE);
+                wo.setPlannedQty(BigDecimal.ONE);
                 wo.setSourceType("MATERIAL_REQUIREMENT");
                 wo.setSourceId(200L);
                 wo.setBackflushFlag(0);

@@ -1,8 +1,14 @@
 package com.nexus.flow.engine;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.flow.expr.FlowConditionEvaluator;
 import com.nexus.flow.model.FlowGraph;
 import com.nexus.flow.model.FlowNodeDef;
 import com.nexus.flow.node.FlowExecutionContext;
@@ -10,15 +16,11 @@ import com.nexus.flow.node.FlowNodeProvider;
 import com.nexus.flow.node.NodeParamSchema;
 import com.nexus.flow.state.FlowState;
 import com.nexus.flow.state.FlowTemplateRenderer;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * P1-6: AI 流程编排核心逻辑单元测试（无 Spring 环境，直接测图模型/状态/渲染/条件）
@@ -177,34 +179,55 @@ class FlowCoreLogicTest {
         FlowState state = new FlowState(input);
 
         // AND: 两个条件都满足
-        boolean andTrue = com.nexus.flow.expr.FlowConditionEvaluator.evaluate("AND", List.of(
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.status", "EQ", "APPROVED"),
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.amount", "GT", "1000")
-        ), state);
+        boolean andTrue =
+                FlowConditionEvaluator.evaluate(
+                        "AND",
+                        List.of(
+                                new FlowConditionEvaluator.Condition(
+                                        "input.status", "EQ", "APPROVED"),
+                                new FlowConditionEvaluator.Condition("input.amount", "GT", "1000")),
+                        state);
         assertTrue(andTrue);
 
         // AND: 一个不满足 → false
-        boolean andFalse = com.nexus.flow.expr.FlowConditionEvaluator.evaluate("AND", List.of(
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.status", "EQ", "REJECTED"),
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.amount", "GT", "1000")
-        ), state);
+        boolean andFalse =
+                FlowConditionEvaluator.evaluate(
+                        "AND",
+                        List.of(
+                                new FlowConditionEvaluator.Condition(
+                                        "input.status", "EQ", "REJECTED"),
+                                new FlowConditionEvaluator.Condition("input.amount", "GT", "1000")),
+                        state);
         assertEquals(false, andFalse);
 
         // OR: 任一满足 → true
-        boolean orTrue = com.nexus.flow.expr.FlowConditionEvaluator.evaluate("OR", List.of(
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.status", "EQ", "REJECTED"),
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.amount", "GTE", "1500")
-        ), state);
+        boolean orTrue =
+                FlowConditionEvaluator.evaluate(
+                        "OR",
+                        List.of(
+                                new FlowConditionEvaluator.Condition(
+                                        "input.status", "EQ", "REJECTED"),
+                                new FlowConditionEvaluator.Condition(
+                                        "input.amount", "GTE", "1500")),
+                        state);
         assertTrue(orTrue);
 
         // CONTAINS / IS_EMPTY
-        boolean contains = com.nexus.flow.expr.FlowConditionEvaluator.evaluate("AND", List.of(
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.status", "CONTAINS", "PROV")
-        ), state);
+        boolean contains =
+                FlowConditionEvaluator.evaluate(
+                        "AND",
+                        List.of(
+                                new FlowConditionEvaluator.Condition(
+                                        "input.status", "CONTAINS", "PROV")),
+                        state);
         assertTrue(contains);
-        boolean empty = com.nexus.flow.expr.FlowConditionEvaluator.evaluate("AND", List.of(
-            new com.nexus.flow.expr.FlowConditionEvaluator.Condition("input.nonexistent", "IS_EMPTY", "")
-        ), state);
+        boolean empty =
+                FlowConditionEvaluator.evaluate(
+                        "AND",
+                        List.of(
+                                new FlowConditionEvaluator.Condition(
+                                        "input.nonexistent", "IS_EMPTY", "")),
+                        state);
         assertTrue(empty);
     }
 

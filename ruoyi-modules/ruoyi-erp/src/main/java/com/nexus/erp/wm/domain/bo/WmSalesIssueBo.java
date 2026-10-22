@@ -1,11 +1,14 @@
 package com.nexus.erp.wm.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.erp.wm.domain.WmSalesIssue;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.mybatis.core.domain.BaseEntity;
-import com.nexus.erp.wm.domain.WmSalesIssue;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -95,9 +98,10 @@ public class WmSalesIssueBo extends BaseEntity {
 
     /**
      * 单据状态（ERP-WM-09: 服务端权威字段，忽略客户端直传）
-     * <p>新增时 Service 强制 DRAFT、修改时沿用库内现值，状态流转一律走 CAS 端点，BO 不再可写。</p>
+     *
+     * <p>新增时 Service 强制 DRAFT、修改时沿用库内现值，状态流转一律走 CAS 端点，BO 不再可写。
      */
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private String status;
 
     /**

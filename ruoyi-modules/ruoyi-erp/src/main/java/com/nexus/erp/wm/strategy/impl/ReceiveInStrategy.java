@@ -1,7 +1,10 @@
 package com.nexus.erp.wm.strategy.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -13,12 +16,19 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 采购入库策略
@@ -31,8 +41,8 @@ import java.util.List;
 @Slf4j
 @Component
 public class ReceiveInStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 来源单据类型：物料入库单
@@ -69,10 +79,8 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
      */
     private final IInventoryValuationService valuationService;
 
-    /**
-     * 物料基础数据 Mapper(取参考价/标准成本)
-     */
-    private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
+    /** 物料基础数据 Mapper(取参考价/标准成本) */
+    private final BdMaterialMapper materialMapper;
 
     /**
      * 策略被直接调用时也必须遵守旧执行的事务、租户与来源门禁。
@@ -82,12 +90,12 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
     /**
      * 构造采购入库策略实例
      *
-     * @param stockTxMapper        库存事务Mapper
-     * @param receiveMapper        物料入库单Mapper
-     * @param receiveDetailMapper  入库单明细Mapper
-     * @param stockMapper          库存Mapper
-     * @param valuationService     库存计价服务
-     * @param materialMapper       物料Mapper
+     * @param stockTxMapper 库存事务Mapper
+     * @param receiveMapper 物料入库单Mapper
+     * @param receiveDetailMapper 入库单明细Mapper
+     * @param stockMapper 库存Mapper
+     * @param valuationService 库存计价服务
+     * @param materialMapper 物料Mapper
      * @param certifiedReceiptGuard 认证收货来源保护
      */
     public ReceiveInStrategy(
@@ -96,7 +104,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
             WmMaterialReceiveDetailMapper receiveDetailMapper,
             WmMaterialStockMapper stockMapper,
             IInventoryValuationService valuationService,
-            com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper,
+            BdMaterialMapper materialMapper,
             WmCertifiedReceiptMutationGuard certifiedReceiptGuard) {
         super(stockTxMapper);
         this.receiveMapper = receiveMapper;
@@ -111,8 +119,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
      * 入库计价:优先参考价,其次标准成本,无价格按 0
      */
     private BigDecimal resolveReceiveUnitCost(WmMaterialReceiveDetail detail) {
-        com.nexus.erp.bd.domain.BdMaterial material =
-                materialMapper.selectById(detail.getMaterialId());
+        BdMaterial material = materialMapper.selectById(detail.getMaterialId());
         if (material == null) {
             return BigDecimal.ZERO;
         }
@@ -158,10 +165,8 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("入库单明细为空，无法入库过账");
         }
 
-        java.util.Set<Long> serialLines =
-                serialInventory == null
-                        ? java.util.Set.of()
-                        : serialInventory.postReceiveDocument(receiveId);
+        Set<Long> serialLines =
+                serialInventory == null ? Set.of() : serialInventory.postReceiveDocument(receiveId);
         Date now = new Date();
         for (WmMaterialReceiveDetail detail : detailList) {
             if (serialLines.contains(detail.getLineId())) {
@@ -182,7 +187,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                 stock = buildStockFromReceiveDetail(detail, receive, afterQuantity, now);
                 try {
                     stockMapper.insert(stock);
-                } catch (org.springframework.dao.DuplicateKeyException e) {
+                } catch (DuplicateKeyException e) {
                     // ERP-WM-08: 「查不到就 insert」在并发收货 / MQ 重投下是典型 TOCTOU ——
                     // 两个线程都查到 null 各自插入，产生同维度重复库存行，此后该物料所有收货
                     // 都会因「匹配到多条库存记录」永久失败。唯一键 uk_stock_dim 生效后由数据库兜底，
@@ -208,7 +213,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                             stockMapper.addStock(
                                     stock.getStockId(), detail.getQuantity(), stock.getVersion());
                     if (affected == 0) {
-                        throw new com.nexus.common.core.exception.ServiceException("库存并发冲突，请重试");
+                        throw new ServiceException("库存并发冲突，请重试");
                     }
                 }
             } else {
@@ -216,7 +221,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                         stockMapper.addStock(
                                 stock.getStockId(), detail.getQuantity(), stock.getVersion());
                 if (affected == 0) {
-                    throw new com.nexus.common.core.exception.ServiceException("库存并发冲突，请重试");
+                    throw new ServiceException("库存并发冲突，请重试");
                 }
                 stockMapper.update(
                         null,
@@ -239,8 +244,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
 
     private WmMaterialStock findStockForReceive(
             WmMaterialReceiveDetail detail, WmMaterialReceive receive) {
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WmMaterialStock> lqw =
-                Wrappers.lambdaQuery();
+        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, detail.getMaterialId());
         lqw.eq(detail.getBaseUomId() != null, WmMaterialStock::getBaseUomId, detail.getBaseUomId());
         lqw.eq(detail.getBatchId() != null, WmMaterialStock::getBatchId, detail.getBatchId());

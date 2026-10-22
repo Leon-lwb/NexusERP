@@ -1,9 +1,9 @@
 package com.nexus.ai.service.rag;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nexus.ai.config.AiProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.nexus.ai.config.AiProperties;
 import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.domain.entity.AiModel;
@@ -11,7 +11,10 @@ import com.nexus.common.ai.enums.AiModelTypeEnum;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
 import com.nexus.common.ai.mapper.AiKnowledgeMapper;
 import com.nexus.common.ai.mapper.AiModelMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
+
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -22,8 +25,18 @@ import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
+import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
+
+import io.milvus.client.MilvusServiceClient;
+import io.milvus.param.ConnectParam;
+import io.milvus.param.R;
+import io.milvus.param.RpcStatus;
+import io.milvus.param.collection.DropCollectionParam;
+import io.milvus.param.collection.HasCollectionParam;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -139,20 +152,27 @@ public class VectorStoreService {
     private EmbeddingStore<TextSegment> getStore(Long knowledgeId, Integer dimensionOverride) {
         String storeType = getStoreType(knowledgeId);
         if ("milvus".equalsIgnoreCase(storeType)) {
-            return milvusStores.get(knowledgeId, kid -> {
-                String collectionName = getCollectionName(kid);
-                String url = aiProperties.getVectorStore().getMilvus().getUrl();
-                int dimension = (dimensionOverride != null && dimensionOverride > 0)
-                    ? dimensionOverride
-                    : resolveEmbeddingDimension(loadKnowledgeEmbeddingModel(kid));
-                log.info("[VectorStore] 创建 Milvus EmbeddingStore: collection={}, dimension={}", collectionName, dimension);
-                return dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore.builder()
-                    .uri(url)
-                    .collectionName(collectionName)
-                    .dimension(dimension)
-                    .retrieveEmbeddingsOnSearch(true)
-                    .build();
-            });
+            return milvusStores.get(
+                    knowledgeId,
+                    kid -> {
+                        String collectionName = getCollectionName(kid);
+                        String url = aiProperties.getVectorStore().getMilvus().getUrl();
+                        int dimension =
+                                (dimensionOverride != null && dimensionOverride > 0)
+                                        ? dimensionOverride
+                                        : resolveEmbeddingDimension(
+                                                loadKnowledgeEmbeddingModel(kid));
+                        log.info(
+                                "[VectorStore] 创建 Milvus EmbeddingStore: collection={}, dimension={}",
+                                collectionName,
+                                dimension);
+                        return MilvusEmbeddingStore.builder()
+                                .uri(url)
+                                .collectionName(collectionName)
+                                .dimension(dimension)
+                                .retrieveEmbeddingsOnSearch(true)
+                                .build();
+                    });
         } else {
             return inMemoryStores.computeIfAbsent(knowledgeId, k -> new InMemoryEmbeddingStore<>());
         }
@@ -246,7 +266,7 @@ public class VectorStoreService {
             // 构建 TextSegment 列表
             List<TextSegment> segments = new ArrayList<>();
             for (AiKnowledgeChunk chunk : batch) {
-                dev.langchain4j.data.document.Metadata metadata = new dev.langchain4j.data.document.Metadata();
+                Metadata metadata = new Metadata();
                 metadata.put("knowledgeId", knowledgeId.toString());
                 metadata.put("documentId", chunk.getDocumentId().toString());
                 metadata.put("chunkId", chunk.getId().toString());
@@ -272,7 +292,7 @@ public class VectorStoreService {
             // 降级：逐条处理（宽容模式跳过失败片段，严格模式任何片段失败立即上抛）
             for (AiKnowledgeChunk chunk : batch) {
                 try {
-                    dev.langchain4j.data.document.Metadata metadata = new dev.langchain4j.data.document.Metadata();
+                    Metadata metadata = new Metadata();
                     metadata.put("knowledgeId", knowledgeId.toString());
                     metadata.put("documentId", chunk.getDocumentId().toString());
                     metadata.put("chunkId", chunk.getId().toString());
@@ -378,15 +398,18 @@ public class VectorStoreService {
     private void dropMilvusCollection(Long knowledgeId) {
         String collectionName = getCollectionName(knowledgeId);
         String url = aiProperties.getVectorStore().getMilvus().getUrl();
-        io.milvus.client.MilvusServiceClient client = new io.milvus.client.MilvusServiceClient(
-            io.milvus.param.ConnectParam.newBuilder().withUri(url).build());
+        MilvusServiceClient client =
+                new MilvusServiceClient(ConnectParam.newBuilder().withUri(url).build());
         try {
-            io.milvus.param.R<Boolean> has = client.hasCollection(
-                io.milvus.param.collection.HasCollectionParam.newBuilder()
-                    .withCollectionName(collectionName).build());
+            R<Boolean> has =
+                    client.hasCollection(
+                            HasCollectionParam.newBuilder()
+                                    .withCollectionName(collectionName)
+                                    .build());
             // RPC 失败（status 非 Success/data null）必须上抛：与"Collection 不存在"语义不同，
             // 误判为不存在会跳过 DROP，getStore 挂回旧维度 Collection，插入错误被吞后产出空 READY
-            if (has == null || !Integer.valueOf(io.milvus.param.R.Status.Success.getCode()).equals(has.getStatus())) {
+            if (has == null
+                    || !Integer.valueOf(R.Status.Success.getCode()).equals(has.getStatus())) {
                 throw new IllegalStateException("Milvus hasCollection 失败: "
                     + (has == null ? "无响应" : has.getStatus() + " " + has.getMessage()));
             }
@@ -394,10 +417,13 @@ public class VectorStoreService {
                 log.info("[VectorStore] Collection 不存在，跳过删除: {}", collectionName);
                 return;
             }
-            io.milvus.param.R<io.milvus.param.RpcStatus> drop = client.dropCollection(
-                io.milvus.param.collection.DropCollectionParam.newBuilder()
-                    .withCollectionName(collectionName).build());
-            if (drop == null || !Integer.valueOf(io.milvus.param.R.Status.Success.getCode()).equals(drop.getStatus())) {
+            R<RpcStatus> drop =
+                    client.dropCollection(
+                            DropCollectionParam.newBuilder()
+                                    .withCollectionName(collectionName)
+                                    .build());
+            if (drop == null
+                    || !Integer.valueOf(R.Status.Success.getCode()).equals(drop.getStatus())) {
                 throw new IllegalStateException("Milvus dropCollection 失败: "
                     + (drop == null ? "无响应" : drop.getStatus() + " " + drop.getMessage()));
             }
@@ -499,12 +525,12 @@ public class VectorStoreService {
 
     /**
      * 按文档身份精确删除向量，不清空同一知识库其他文档的数据。
-     * <p>Milvus 与当前 InMemory 存储均使用相同的 metadata 过滤条件。
-     * 外部删除失败必须明确拒绝，清除客户端缓存不等于删除实际向量。</p>
+     *
+     * <p>Milvus 与当前 InMemory 存储均使用相同的 metadata 过滤条件。 外部删除失败必须明确拒绝，清除客户端缓存不等于删除实际向量。
      *
      * @param documentId 文档ID，对应向量 metadata 中的 {@code documentId}
      * @param knowledgeId 知识库ID，用于定位已缓存的 InMemory 存储或 Milvus Collection
-     * @throws com.nexus.common.core.exception.ServiceException 清理未完成，不携带厂商原始错误
+     * @throws ServiceException 清理未完成，不携带厂商原始错误
      */
     public void deleteByDocumentId(Long documentId, Long knowledgeId) {
         try {
@@ -519,7 +545,7 @@ public class VectorStoreService {
         } catch (Exception failure) {
             log.warn("[VectorStore] 文档向量清理未完成: documentId={}, knowledgeId={}, errorType={}",
                 documentId, knowledgeId, failure.getClass().getSimpleName());
-            throw new com.nexus.common.core.exception.ServiceException("文档向量清理失败，请稍后重试或联系管理员。");
+            throw new ServiceException("文档向量清理失败，请稍后重试或联系管理员。");
         }
     }
 }

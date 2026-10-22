@@ -1,19 +1,29 @@
 package com.nexus.mes.pda.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.lt.domain.LtLot;
 import com.nexus.mes.lt.domain.LtSnBinding;
 import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.pda.domain.bo.PdaSnBindBo;
+import com.nexus.mes.pda.domain.bo.PdaSnUnbindBo;
 import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+import com.nexus.mes.trace.MesSerialReferenceService;
+import com.nexus.mes.trace.MesSnCreationWriter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,12 +31,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * PDA SN 绑定测试(MES-PDA-01)
@@ -51,28 +58,33 @@ class PdaSnServiceImplTest {
         TableInfoHelper.initTableInfo(assistant, ProSn.class);
     }
 
-    @Mock private LtSnBindingMapper snBindingMapper;
-    @Mock private LtLotMapper lotMapper;
-    @Mock private ProSnMapper proSnMapper;
-    @Mock private com.nexus.mes.trace.MesSnCreationWriter productLots;
-    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    @InjectMocks private PdaSnServiceImpl service;
+    @Mock
+    private LtSnBindingMapper snBindingMapper;
+    @Mock
+    private LtLotMapper lotMapper;
+    @Mock
+    private ProSnMapper proSnMapper;
+    @Mock
+    private MesSnCreationWriter productLots;
+    @Mock
+    private MesSerialReferenceService serialReferences;
+    @InjectMocks
+    private PdaSnServiceImpl service;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void identityLookup() {
-        org.mockito.Mockito.lenient()
+        Mockito.lenient()
                 .when(serialReferences.resolve(anyString()))
                 .thenAnswer(
                         call -> {
                             String code = call.getArgument(0);
                             ProSn row =
                                     proSnMapper.selectOne(
-                                            com.baomidou.mybatisplus.core.toolkit.Wrappers
-                                                    .<ProSn>lambdaQuery()
+                                            Wrappers.<ProSn>lambdaQuery()
                                                     .eq(ProSn::getSnCode, code));
                             return row == null
                                     ? null
-                                    : new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                    : new MesSerialReferenceService.Resolved(
                                             "000001",
                                             row.getIdentityId(),
                                             row.getSnId(),
@@ -203,7 +215,7 @@ class PdaSnServiceImplTest {
     void unbindCannotDeleteTraceAudit() {
         when(proSnMapper.selectOne(any())).thenReturn(sn(9001L, "SN-001"));
         when(snBindingMapper.selectOne(any())).thenReturn(binding(1L, 9001L, 77L));
-        var request = new com.nexus.mes.pda.domain.bo.PdaSnUnbindBo();
+        var request = new PdaSnUnbindBo();
         request.setSnCode("SN-001");
         assertFalse(Boolean.TRUE.equals(service.unbind(request).getOk()));
         verify(snBindingMapper, never()).deleteById(any(Long.class));

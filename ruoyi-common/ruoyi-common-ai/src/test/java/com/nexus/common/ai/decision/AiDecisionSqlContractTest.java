@@ -1,22 +1,5 @@
 package com.nexus.common.ai.decision;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,6 +7,27 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Tag("local")
 @Tag("dev")
@@ -291,8 +295,10 @@ class AiDecisionSqlContractTest {
                 && (!button[0].equals("query") || "".equals(candidate.component())));
             assertMenuRow(row, button[1], board.id(), "F", "0", "", "", permission);
         }
-        Map<String, Long> permissions = rows.stream().filter(row -> row.permission() != null && !row.permission().isEmpty())
-            .collect(java.util.stream.Collectors.groupingBy(MenuRow::permission, java.util.stream.Collectors.counting()));
+        Map<String, Long> permissions =
+                rows.stream()
+                        .filter(row -> row.permission() != null && !row.permission().isEmpty())
+                        .collect(Collectors.groupingBy(MenuRow::permission, Collectors.counting()));
         assertEquals(Map.of("ai:decision:query", 3L, "ai:decision:run", 1L, "ai:decision:approve", 1L,
             "ai:decision:execute", 1L, "ai:decision:export", 1L, "ai:decision:config", 1L,
             "ai:decision:benchmark", 1L), permissions, "决策权限必须完整且不得重复授权");
@@ -333,10 +339,17 @@ class AiDecisionSqlContractTest {
         while (insert.find()) {
             List<String> columns = MENU_COLUMNS;
             if (insert.group(1) != null) {
-                columns = java.util.Arrays.stream(insert.group(1).split(",", -1)).map(String::strip).map(column -> {
-                    assertTrue(column.matches("`[a-z_]+`"), "sys_menu 列清单格式错误");
-                    return column.substring(1, column.length() - 1);
-                }).toList();
+                columns =
+                        Arrays.stream(insert.group(1).split(",", -1))
+                                .map(String::strip)
+                                .map(
+                                        column -> {
+                                            assertTrue(
+                                                    column.matches("`[a-z_]+`"),
+                                                    "sys_menu 列清单格式错误");
+                                            return column.substring(1, column.length() - 1);
+                                        })
+                                .toList();
                 assertEquals(MENU_COLUMNS.size(), columns.size(), "sys_menu 列数量错误");
                 assertEquals(new HashSet<>(MENU_COLUMNS), new HashSet<>(columns), "sys_menu 列缺失或重复");
             }
@@ -384,7 +397,7 @@ class AiDecisionSqlContractTest {
 
     private static String menuId(String value) {
         assertTrue(value != null && value.matches("\\d+"), "sys_menu ID 必须是非负整数");
-        return new java.math.BigInteger(value).toString();
+        return new BigInteger(value).toString();
     }
 
     private static MenuRow menuByPermission(String source, String permission) {
@@ -413,7 +426,7 @@ class AiDecisionSqlContractTest {
         }
         List<String> columns = new ArrayList<>(MENU_COLUMNS);
         if (dumpStyle) {
-            java.util.Collections.rotate(columns, 3); // Explicit dump columns need not be positional.
+            Collections.rotate(columns, 3); // Explicit dump columns need not be positional.
         }
         List<String> tuples = new ArrayList<>();
         for (MenuRow row : selected) {
@@ -473,14 +486,28 @@ class AiDecisionSqlContractTest {
             + "`\\s*\\(([^)]*)\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$").matcher(table);
         assertTrue(index.find(), "缺少索引 `" + name + "`");
         assertEquals(unique, index.group(1) != null, name + " 唯一性错误");
-        assertEquals(java.util.Arrays.stream(columns).map(column -> "`" + column + "`").toList(),
-            java.util.Arrays.stream(index.group(2).split(",")).map(String::trim).toList(),
-            name + " 索引列或顺序错误");
+        assertEquals(
+                Arrays.stream(columns).map(column -> "`" + column + "`").toList(),
+                Arrays.stream(index.group(2).split(",")).map(String::trim).toList(),
+                name + " 索引列或顺序错误");
         assertFalse(index.find(), name + " 索引名称重复");
     }
 
     private static void assertColumns(String definition, String... columns) {
-        assertAll("column coverage", java.util.Arrays.stream(columns).map(column -> (Executable) () ->
-            assertTrue(Pattern.compile("(?m)^  `" + column + "`\\s+").matcher(definition).find(), "缺少列 `" + column + "`")));
+        assertAll(
+                "column coverage",
+                Arrays.stream(columns)
+                        .map(
+                                column ->
+                                        (Executable)
+                                                () ->
+                                                        assertTrue(
+                                                                Pattern.compile(
+                                                                                "(?m)^  `"
+                                                                                        + column
+                                                                                        + "`\\s+")
+                                                                        .matcher(definition)
+                                                                        .find(),
+                                                                "缺少列 `" + column + "`")));
     }
 }

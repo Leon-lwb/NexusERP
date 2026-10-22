@@ -1,5 +1,9 @@
 package com.nexus.mes.qc.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -10,6 +14,8 @@ import com.nexus.mes.qc.domain.QcOqc;
 import com.nexus.mes.qc.domain.bo.QcOqcBo;
 import com.nexus.mes.qc.domain.vo.QcOqcVo;
 import com.nexus.mes.qc.mapper.QcOqcMapper;
+import com.nexus.mes.qc.service.IQcInspectDetailService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -27,10 +33,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class QcOqcServiceImplTest {
 
@@ -41,7 +43,7 @@ class QcOqcServiceImplTest {
     @Mock
     private INcrOrderService ncrOrderService;
     @Mock
-    private com.nexus.mes.qc.service.IQcInspectDetailService inspectDetailService;
+    private IQcInspectDetailService inspectDetailService;
     @InjectMocks
     private QcOqcServiceImpl service;
 

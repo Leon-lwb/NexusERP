@@ -3,14 +3,18 @@ package com.nexus.erp.wm.trace;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.CodeResolverPort;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
+import java.util.Date;
 
 /**
  * 物料标记的只读解析内核；正式码和有上下文别名同等参与歧义检查，不靠前缀选表。
@@ -462,7 +466,7 @@ public class ErpCodeResolverService implements CodeResolverPort {
             return false;
         }
         Object expires = row.get("expire_time");
-        return !(expires instanceof java.util.Date date) || !date.before(new java.util.Date());
+        return !(expires instanceof Date date) || !date.before(new Date());
     }
 
     private static boolean matchesMaterial(Map<String, Object> row, Long expected) {

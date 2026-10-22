@@ -8,24 +8,29 @@ import com.nexus.iot.device.service.IIotDeviceDataService;
 import com.nexus.iot.device.service.IIotDeviceService;
 import com.nexus.iot.forward.IotForwardDispatcher;
 import com.nexus.iot.pipeline.payload.IotDataValueResolver;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.redisson.api.RStream;
 import org.redisson.api.StreamMessageId;
 import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.api.stream.StreamReadGroupArgs;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +38,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * IoT 设备数据 Redis Stream 消费者。
@@ -69,17 +73,14 @@ public class IotStreamConsumer {
     private final IotDataValueResolver valueResolver;
 
     /**
-     * 数据转发调度器（§4#6）。用字段注入（非 final）而非构造器注入，
-     * 以保持既有构造器签名不变（已有单测按 7 参构造，避免无谓的测试改动）；
+     * 数据转发调度器（§4#6）。用字段注入（非 final）而非构造器注入， 以保持既有构造器签名不变（已有单测按 7 参构造，避免无谓的测试改动）；
      * 允许为空（转发功能未启用/未装配时跳过）。
      */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @Autowired(required = false)
     private IotForwardDispatcher forwardDispatcher;
 
-    /**
-     * 最后上报时间缓存（运维字段）。同上：允许为空，为空时跳过写入。
-     */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    /** 最后上报时间缓存（运维字段）。同上：允许为空，为空时跳过写入。 */
+    @Autowired(required = false)
     private IotDeviceReportTimeCache reportTimeCache;
 
     private RStream<Object, Object> stream;
@@ -184,7 +185,7 @@ public class IotStreamConsumer {
      */
     void processBatch(Map<StreamMessageId, Map<Object, Object>> messages) {
         // 1. 按设备编码批量解析设备（每个 deviceCode 一次 DB 查询）
-        Set<String> deviceCodes = new java.util.HashSet<>();
+        Set<String> deviceCodes = new HashSet<>();
         for (Map<Object, Object> entry : messages.values()) {
             String code = str(entry.get("device_code"));
             if (StringUtils.isNotBlank(code)) {
@@ -280,7 +281,7 @@ public class IotStreamConsumer {
         Throwable t = ex;
         while (t != null) {
             if (t instanceof DuplicateKeyException
-                || t instanceof java.sql.SQLIntegrityConstraintViolationException) {
+                    || t instanceof SQLIntegrityConstraintViolationException) {
                 return true;
             }
             String msg = t.getMessage();

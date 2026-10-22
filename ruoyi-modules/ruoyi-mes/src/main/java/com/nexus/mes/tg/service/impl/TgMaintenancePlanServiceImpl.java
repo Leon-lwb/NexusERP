@@ -12,12 +12,15 @@ import com.nexus.mes.tg.domain.bo.TgMaintenancePlanBo;
 import com.nexus.mes.tg.domain.vo.TgMaintenancePlanVo;
 import com.nexus.mes.tg.mapper.TgMaintenancePlanMapper;
 import com.nexus.mes.tg.service.ITgMaintenancePlanService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 
@@ -99,7 +102,7 @@ public class TgMaintenancePlanServiceImpl implements ITgMaintenancePlanService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        return baseMapper.deleteByIds(java.util.Arrays.asList(ids)) > 0;
+        return baseMapper.deleteByIds(Arrays.asList(ids)) > 0;
     }
 
     @Override

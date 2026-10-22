@@ -1,14 +1,19 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.common.trace.*;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
 
 /**
  * 请求库存侧建立取消屏障，收到并核验库存确认后才释放冻结修订。
@@ -130,9 +135,7 @@ public class MesCompletionCancellationService {
         var request =
                 new CompletionCancellationRequest(
                         manifestId, revision, text(latest.get("content_hash")), originalEvent);
-        var payload =
-                (com.fasterxml.jackson.databind.node.ObjectNode)
-                        events.read(events.encode(request));
+        var payload = (ObjectNode) events.read(events.encode(request));
         payload.put("commandId", commandId);
         payload.put("reason", reason);
         payload.put("actorId", actorId.toString());

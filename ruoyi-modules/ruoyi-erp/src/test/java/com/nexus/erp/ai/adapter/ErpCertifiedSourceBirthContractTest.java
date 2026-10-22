@@ -1,7 +1,12 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper;
 import com.nexus.erp.support.ErpDdlTestSupport;
 
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,8 +19,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 实际出生服务、端点和追加结构必须存在；缺类使用断言形成运行时反例。 */
 class ErpCertifiedSourceBirthContractTest {
@@ -43,14 +46,15 @@ class ErpCertifiedSourceBirthContractTest {
 
     @Test
     void globalCoverageSqlCannotHideOtherTenantDeletedOrOtherWarehouseSources() throws Exception {
-        var mapper=com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class;
+        var mapper = ErpCertifiedSourceBirthMapper.class;
         for(String method:List.of("lockAllStocks","lockAllTransactions")){
             var query=mapper.getMethod(method,Long.class);
-            String sql=String.join(" ",query.getAnnotation(org.apache.ibatis.annotations.Select.class).value()).toLowerCase();
+            String sql = String.join(" ", query.getAnnotation(Select.class).value()).toLowerCase();
             assertTrue(sql.contains("where material_id=#{id}"));assertTrue(sql.contains("for update"));
             for(String hidden:List.of("tenant_id","del_flag","warehouse_id","stock_quantity","tx_quantity","limit"))assertFalse(sql.contains(hidden));
-            var options=query.getAnnotation(org.apache.ibatis.annotations.Options.class);
-            assertFalse(options.useCache());assertEquals(org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE,options.flushCache());
+            var options = query.getAnnotation(Options.class);
+            assertFalse(options.useCache());
+            assertEquals(Options.FlushCachePolicy.TRUE, options.flushCache());
         }
     }
     @Test

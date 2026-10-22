@@ -8,24 +8,28 @@ import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelPrintTask;
 import com.nexus.mes.pro.service.MesProgressTransactionGuard;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 持久化任务仓储：冻结字段只 INSERT，状态 CAS 与日志分别在短 MES 事务中原子提交。
@@ -101,8 +105,8 @@ public class LabelPrintTaskStore {
                         }
                         if (StringUtils.isNotBlank(original.getRenderedPayload())
                                 && StringUtils.isNotBlank(original.getPayloadCharset())) {
-                            var oldBean = new org.springframework.beans.BeanWrapperImpl(original);
-                            var newBean = new org.springframework.beans.BeanWrapperImpl(frozen);
+                            var oldBean = new BeanWrapperImpl(original);
+                            var newBean = new BeanWrapperImpl(frozen);
                             for (String property :
                                     new String[] {
                                         "snCode",
@@ -142,7 +146,7 @@ public class LabelPrintTaskStore {
                         LabelPrintSnapshot.payload(
                                 frozen,
                                 frozen.getRenderedPayload(),
-                                java.nio.charset.Charset.forName(frozen.getPayloadCharset()));
+                                Charset.forName(frozen.getPayloadCharset()));
                     }
                     String intent =
                             digest(
@@ -185,11 +189,11 @@ public class LabelPrintTaskStore {
                         var old =
                                 jdbc.query(
                                         "SELECT l.* FROM mes_label_print_log l WHERE l.tenant_id=?"
-                                            + " AND l.sn_id=? AND l.template_id=? AND l.result IN"
-                                            + " ('SENT','SUCCESS') AND NOT EXISTS (SELECT 1 FROM"
-                                            + " mes_label_print_task t WHERE"
-                                            + " t.tenant_id=l.tenant_id AND t.task_id=l.log_id)"
-                                            + " ORDER BY l.log_id DESC LIMIT 1",
+                                                + " AND l.sn_id=? AND l.template_id=? AND l.result IN"
+                                                + " ('SENT','SUCCESS') AND NOT EXISTS (SELECT 1 FROM"
+                                                + " mes_label_print_task t WHERE"
+                                                + " t.tenant_id=l.tenant_id AND t.task_id=l.log_id)"
+                                                + " ORDER BY l.log_id DESC LIMIT 1",
                                         LOG,
                                         tenant,
                                         frozen.getSnId(),
@@ -212,13 +216,13 @@ public class LabelPrintTaskStore {
                             Long prior =
                                     jdbc.queryForObject(
                                             "SELECT (SELECT COUNT(*) FROM mes_label_print_task"
-                                                + " WHERE tenant_id=? AND sn_id=? AND"
-                                                + " template_id=?) + (SELECT COUNT(*) FROM"
-                                                + " mes_label_print_log l WHERE l.tenant_id=? AND"
-                                                + " l.sn_id=? AND l.template_id=? AND NOT EXISTS"
-                                                + " (SELECT 1 FROM mes_label_print_task t WHERE"
-                                                + " t.tenant_id=l.tenant_id AND"
-                                                + " t.task_id=l.log_id))",
+                                                    + " WHERE tenant_id=? AND sn_id=? AND"
+                                                    + " template_id=?) + (SELECT COUNT(*) FROM"
+                                                    + " mes_label_print_log l WHERE l.tenant_id=? AND"
+                                                    + " l.sn_id=? AND l.template_id=? AND NOT EXISTS"
+                                                    + " (SELECT 1 FROM mes_label_print_task t WHERE"
+                                                    + " t.tenant_id=l.tenant_id AND"
+                                                    + " t.task_id=l.log_id))",
                                             Long.class,
                                             tenant,
                                             frozen.getSnId(),
@@ -248,8 +252,8 @@ public class LabelPrintTaskStore {
                         new NamedParameterJdbcTemplate(jdbc)
                                 .update(
                                         "INSERT INTO"
-                                            + " mes_label_print_task(task_id,tenant_id,task_key,request_fingerprint,sn_id,template_id,template_revision,print_source,original_print_log_id,reprint_reason,frozen_record,record_hash,status,attempt_count,last_error,created_at,updated_at,completed_at)"
-                                            + " VALUES(:taskId,:tenantId,:taskKey,:requestFingerprint,:snId,:templateId,:templateRevision,:printSource,:originalPrintLogId,:reprintReason,:frozenRecord,:recordHash,:status,:attemptCount,:lastError,:createdAt,:updatedAt,:completedAt)",
+                                                + " mes_label_print_task(task_id,tenant_id,task_key,request_fingerprint,sn_id,template_id,template_revision,print_source,original_print_log_id,reprint_reason,frozen_record,record_hash,status,attempt_count,last_error,created_at,updated_at,completed_at)"
+                                                + " VALUES(:taskId,:tenantId,:taskKey,:requestFingerprint,:snId,:templateId,:templateRevision,:printSource,:originalPrintLogId,:reprintReason,:frozenRecord,:recordHash,:status,:attemptCount,:lastError,:createdAt,:updatedAt,:completedAt)",
                                         new BeanPropertySqlParameterSource(task));
                     } catch (DuplicateKeyException duplicate) {
                         MesLabelPrintTask winner = byKey(tenant, key, true);
@@ -576,9 +580,9 @@ public class LabelPrintTaskStore {
 
     private static String digest(Object... values) {
         return digestBytes(
-                java.util.Arrays.stream(values)
+                Arrays.stream(values)
                         .map(value -> value == null ? "" : value.toString())
-                        .collect(java.util.stream.Collectors.joining("\u0000")));
+                        .collect(Collectors.joining("\u0000")));
     }
 
     private static String digestBytes(String value) {

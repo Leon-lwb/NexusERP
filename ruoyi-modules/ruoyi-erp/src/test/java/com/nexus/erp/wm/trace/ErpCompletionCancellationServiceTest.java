@@ -1,11 +1,15 @@
 package com.nexus.erp.wm.trace;
 
-import com.nexus.common.trace.*;
-import org.junit.jupiter.api.Test;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.nexus.common.trace.*;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ERP 取消终态、原 ACK、业务消耗及同工单竞争的 H2 行为测试。
@@ -199,9 +203,7 @@ class ErpCompletionCancellationServiceTest extends ErpCompletionCancellationTest
     void noTransactionAndReadOnlyTransactionCannotCreateATombstone() {
         var proof = proof();
         assertThrows(IllegalStateException.class, () -> service.cancel(proof));
-        var readOnly =
-                new org.springframework.transaction.support.TransactionTemplate(
-                        et.getTransactionManager());
+        var readOnly = new TransactionTemplate(et.getTransactionManager());
         readOnly.setReadOnly(true);
         assertThrows(
                 IllegalStateException.class, () -> readOnly.execute(s -> service.cancel(proof)));

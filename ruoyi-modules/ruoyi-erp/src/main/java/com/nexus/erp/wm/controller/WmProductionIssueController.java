@@ -1,8 +1,7 @@
 package com.nexus.erp.wm.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
@@ -10,15 +9,21 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
-import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -167,7 +172,7 @@ public class WmProductionIssueController extends BaseController {
     @SaCheckPermission("wm:productionissue:query")
     @GetMapping("/availableStockBatch")
     public R<Map<Long, BigDecimal>> availableStockBatch(@RequestParam String materialIds) {
-        List<Long> ids = new java.util.ArrayList<>();
+        List<Long> ids = new ArrayList<>();
         for (String s : materialIds.split(",")) {
             String trimmed = s.trim();
             if (!trimmed.isEmpty()) {

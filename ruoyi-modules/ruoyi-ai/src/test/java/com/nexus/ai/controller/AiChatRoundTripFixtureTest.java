@@ -1,10 +1,17 @@
 package com.nexus.ai.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.strategy.SaAnnotationStrategy;
+import cn.hutool.extra.spring.SpringUtil;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.context.AiRequestContext;
@@ -21,18 +28,23 @@ import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiSessionMapper;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiSessionService;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.satoken.handler.SaTokenExceptionHandler;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.common.web.config.JacksonConfig;
+
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -62,24 +74,24 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+// 同名类型说明：本文件同时使用 com.nexus.common.ai.domain.entity.AiMessage 和
+// dev.langchain4j.data.message.AiMessage，后者保留全限定名以区分。
 
 /** 使用合成端口贯通真实控制器、异步门面和序列化 SSE，供真实 Vue 处理函数离线重放。 */
 class AiChatRoundTripFixtureTest {
     private static final String TENANT = "000007";
     private static final long USER = 7L;
-    private static final ObjectMapper JSON = new ObjectMapper().registerModule(
-        new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
+    private static final ObjectMapper JSON =
+            new ObjectMapper().registerModule(new JacksonConfig().bigNumberModule());
 
     /** 沿用现有 SSE 夹具的离线初始化方式，避免静态初始化读取真实 Spring 或 Redis。 */
     @BeforeAll
     static void initializeOfflinePublisher() throws Exception {
-        try (var spring = mockStatic(cn.hutool.extra.spring.SpringUtil.class)) {
-            spring.when(() -> com.nexus.common.core.utils.SpringUtils.getProperty("sse.enabled", Boolean.class, true)).thenReturn(false);
+        try (var spring = mockStatic(SpringUtil.class)) {
+            spring.when(() -> SpringUtils.getProperty("sse.enabled", Boolean.class, true))
+                    .thenReturn(false);
             Class.forName(SseMessageUtils.class.getName());
         }
     }
@@ -396,7 +408,7 @@ class AiChatRoundTripFixtureTest {
             assertTrue(workerFailures.isEmpty(), () -> workerFailures.toString());
         }
 
-        void callback(Scenario scenario, java.util.function.Consumer<StreamingChatResponseHandler> callback) {
+        void callback(Scenario scenario, Consumer<StreamingChatResponseHandler> callback) {
             await(dispatch(() -> callback.accept(handlers.get(scenario.sessionId))));
             assertTrue(workerFailures.isEmpty(), () -> workerFailures.toString());
         }

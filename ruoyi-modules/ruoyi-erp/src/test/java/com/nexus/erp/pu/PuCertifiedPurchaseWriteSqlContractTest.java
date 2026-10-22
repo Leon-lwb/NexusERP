@@ -1,15 +1,23 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+
+import com.nexus.erp.pu.controller.PuCertifiedPurchaseController;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseWriteMapper;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService;
-import com.nexus.erp.pu.controller.PuCertifiedPurchaseController;
-import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import org.apache.ibatis.annotations.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+
 import java.nio.file.*;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 class PuCertifiedPurchaseWriteSqlContractTest {
     @Test void allCurrentReadsAreExplicitTenantBoundAndDoNotReuseMyBatisCaches() {
@@ -35,16 +43,24 @@ class PuCertifiedPurchaseWriteSqlContractTest {
             assertArrayEquals(new String[]{"pu:requisition:add"},permission.value());endpoints++;
         }
         assertEquals(4,endpoints);
-        assertEquals(3,java.util.Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
-            .filter(m -> m.isAnnotationPresent(org.springframework.web.bind.annotation.PostMapping.class)).count());
-        assertEquals(1,java.util.Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
-            .filter(m -> m.isAnnotationPresent(org.springframework.web.bind.annotation.GetMapping.class)).count());
+        assertEquals(
+                3,
+                Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
+                        .filter(m -> m.isAnnotationPresent(PostMapping.class))
+                        .count());
+        assertEquals(
+                1,
+                Arrays.stream(PuCertifiedPurchaseController.class.getDeclaredMethods())
+                        .filter(m -> m.isAnnotationPresent(GetMapping.class))
+                        .count());
     }
     @Test void installationSchemaKeepsPermanentTenantKeysAndCommittedDefault() throws Exception {
         Path root=Path.of(".").toAbsolutePath();while(root!=null&&!Files.exists(root.resolve("script/sql/ry-erp.sql")))root=root.getParent();
         assertNotNull(root,"需要仓库脚本上下文");
-        var ddl=java.util.regex.Pattern.compile("(?is)CREATE\\s+TABLE\\s+`pu_certified_purchase_command`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
-            .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
+        var ddl =
+                Pattern.compile(
+                                "(?is)CREATE\\s+TABLE\\s+`pu_certified_purchase_command`\\s*\\(.*?\\)\\s*ENGINE[^;]*;")
+                        .matcher(Files.readString(root.resolve("script/sql/ry-erp.sql")));
         assertTrue(ddl.find(),"Missing installation DDL: pu_certified_purchase_command");
         String sql=ddl.group().toLowerCase(Locale.ROOT);
         assertTrue(sql.contains("create table `pu_certified_purchase_command`"));

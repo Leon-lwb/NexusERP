@@ -38,14 +38,15 @@ tests = sorted((base / "test/java/com/nexus/erp/wm/controller/serial").glob("*Te
 sources += sorted((base / "test/java/com/nexus/erp/wm/controller/serial").glob("*.java"))
 runner = out / "OriginalSerialTestRunner.java"
 runner.write_text(
-    """import org.junit.platform.launcher.core.*;
+    """import java.io.PrintWriter;
+import org.junit.platform.launcher.core.*;
 import org.junit.platform.launcher.listeners.*;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.*;
 public class OriginalSerialTestRunner {
  public static void main(String[] args) {
   var builder=LauncherDiscoveryRequestBuilder.request();for(String name:args)builder.selectors(selectClass(name));
   var launcher=LauncherFactory.create();var listener=new SummaryGeneratingListener();launcher.registerTestExecutionListeners(listener);
-  launcher.execute(builder.build());var summary=listener.getSummary();var output=new java.io.PrintWriter(System.out);
+  launcher.execute(builder.build());var summary=listener.getSummary();var output=new PrintWriter(System.out);
   summary.printTo(output);summary.printFailuresTo(output);
   if(summary.getTestsFoundCount()==0||summary.getTestsSkippedCount()>0||summary.getTotalFailureCount()>0)System.exit(1);
  }

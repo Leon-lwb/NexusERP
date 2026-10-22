@@ -4,6 +4,7 @@ import com.nexus.common.report.ReportCancellation;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.storage.ReportArtifactStore;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.*;
@@ -89,7 +90,7 @@ public final class ReportFontResourceStore {
                         Timestamp.from(Instant.now().plusSeconds(3600)));
                 kept = true;
                 return font;
-            } catch (org.springframework.dao.DuplicateKeyException concurrent) {
+            } catch (DuplicateKeyException concurrent) {
                 var winner = find(tenant, checksum).orElseThrow();
                 if (!artifacts.exists(tenant, winner.reference())) {
                     if (jdbc.update(

@@ -2,26 +2,27 @@ package com.nexus.erp.wm.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.message.ReceiveApprovedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.system.strategy.AutoCodeUtil;
-import com.nexus.erp.mq.message.StockInMessage;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
@@ -38,15 +39,18 @@ import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
-import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveExecutorService;
-import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
@@ -54,17 +58,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -78,7 +80,7 @@ import java.util.Set;
 @Service("wmMaterialReceiveCrudService")
 public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudService {
 
-    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /** 审批准备仅持有短 ERP 事务，返回前提交并释放单据头锁。 */
     private final PuRequirementErpTransactionExecutor receiptSubmissionTransactions;

@@ -1,8 +1,23 @@
 package com.nexus.ai.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import cn.hutool.extra.spring.SpringUtil;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import cn.hutool.extra.spring.SpringUtil;
 import com.nexus.ai.service.config.impl.AiConfigServiceImpl;
 import com.nexus.ai.service.query.ErpTableSchemaManager;
 import com.nexus.ai.service.rag.VectorStoreService;
@@ -12,34 +27,23 @@ import com.nexus.common.ai.mapper.AiConfigMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
-import org.redisson.api.RedissonClient;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.MockedStatic;
+import org.redisson.api.RedissonClient;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import org.mockito.MockedStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Tag("local")
 @Tag("dev")
@@ -104,7 +108,7 @@ class AiDecisionConfigContractTest {
     @Test
     void removingHighRiskApprovalIsRejectedBeforeAnyPersistence() {
         AiConfigBo bo = completeRequest();
-        bo.getDecision().setRequireApprovalLevels(java.util.List.of("MEDIUM"));
+        bo.getDecision().setRequireApprovalLevels(List.of("MEDIUM"));
         TransactionSynchronizationManager.initSynchronization();
         try {
             assertThrows(ServiceException.class, () -> service.updateConfig(bo));
@@ -202,7 +206,7 @@ class AiDecisionConfigContractTest {
             TransactionSynchronizationManager.clearSynchronization();
         }
         assertEquals(3, properties.getDecision().getMaxScenarios());
-        var captor = org.mockito.ArgumentCaptor.forClass(AiConfig.class);
+        var captor = ArgumentCaptor.forClass(AiConfig.class);
         verify(mapper, times(6)).insert(captor.capture());
         AiConfig stored = captor.getAllValues().stream()
             .filter(c -> AiConfigServiceImpl.GROUP_DECISION.equals(c.getConfigGroup()))
@@ -234,7 +238,11 @@ class AiDecisionConfigContractTest {
         synchronizations.forEach(TransactionSynchronization::beforeCompletion);
         try (MockedStatic<RedisUtils> redis = mockStatic(RedisUtils.class)) {
             synchronizations.forEach(TransactionSynchronization::afterCommit);
-            redis.verify(() -> RedisUtils.publish(org.mockito.ArgumentMatchers.eq("ai:config:refresh"), org.mockito.ArgumentMatchers.anyString()));
+            redis.verify(
+                    () ->
+                            RedisUtils.publish(
+                                    ArgumentMatchers.eq("ai:config:refresh"),
+                                    ArgumentMatchers.anyString()));
         }
         synchronizations.forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
     }

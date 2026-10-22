@@ -3,10 +3,12 @@ package com.nexus.erp.bd.domain;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.tenant.core.TenantEntity;
 
 /**
  * 产品序列号/条码/批次号规则对象 bd_serial_number_rule
@@ -35,11 +37,8 @@ public class BdSerialNumberRule extends TenantEntity {
     @TableId(value = "rule_id")
     private Long ruleId;
 
-    /**
-     * 冻结编号规则的并发版本，已预留号码仍按原快照重放。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 冻结编号规则的并发版本，已预留号码仍按原快照重放。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long ruleVersion;
 
     /**
@@ -115,7 +114,8 @@ public class BdSerialNumberRule extends TenantEntity {
     /**
      * 删除标志
      */
-    @TableLogic private String delFlag;
+    @TableLogic
+    private String delFlag;
 
     /**
      * 备注

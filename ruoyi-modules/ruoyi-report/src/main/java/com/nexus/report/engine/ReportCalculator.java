@@ -4,6 +4,7 @@ import com.nexus.common.report.*;
 import com.nexus.report.domain.*;
 
 import java.math.*;
+import java.time.DateTimeException;
 import java.util.*;
 
 /** 按精确类型计算展示值，不将计算结果回写业务数据提供者。 */
@@ -179,7 +180,7 @@ public final class ReportCalculator {
             if (scalar != null && (type == ValueType.DECIMAL || type == ValueType.INTEGER))
                 SafeExpression.checked(new BigDecimal(scalar.toString()));
             return TypedValue.of(type, raw);
-        } catch (IllegalArgumentException | java.time.DateTimeException e) {
+        } catch (IllegalArgumentException | DateTimeException e) {
             throw new ReportFault("INVALID_DATA_TYPE", "数据集字段或参数类型不匹配: " + name);
         }
     }

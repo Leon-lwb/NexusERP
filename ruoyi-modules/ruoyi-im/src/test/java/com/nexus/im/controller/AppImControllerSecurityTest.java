@@ -1,11 +1,19 @@
 package com.nexus.im.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.im.controller.AppImController;
-import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.SysUserNotification;
+import com.nexus.im.domain.bo.ImPrivateSendBo;
+import com.nexus.im.domain.vo.ImSearchResultVo;
 import com.nexus.im.mapper.ImFriendMapper;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
@@ -14,27 +22,22 @@ import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImChatSupport;
+import com.nexus.im.service.impl.support.ImConversationService;
+import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P3-2: P0-1 越权修复回归测试。
@@ -58,19 +61,31 @@ import static org.mockito.Mockito.when;
  */
 class AppImControllerSecurityTest extends ImUnitTestBase {
 
-    @Mock private IImChatService imChatService;
-    @Mock private ISysUserNotificationService notificationService;
-    @Mock private SysUserMapper userMapper;
-    @Mock private ImMessageMapper messageMapper;
-    @Mock private ImGroupMapper groupMapper;
-    @Mock private ImGroupMemberMapper groupMemberMapper;
-    @Mock private SysUserNotificationMapper notificationMapper;
-    @Mock private ImFriendMapper friendMapper;
-    @Mock private ImRealtimePush imRealtimePush;
+    @Mock
+    private IImChatService imChatService;
+    @Mock
+    private ISysUserNotificationService notificationService;
+    @Mock
+    private SysUserMapper userMapper;
+    @Mock
+    private ImMessageMapper messageMapper;
+    @Mock
+    private ImGroupMapper groupMapper;
+    @Mock
+    private ImGroupMemberMapper groupMemberMapper;
+    @Mock
+    private SysUserNotificationMapper notificationMapper;
+    @Mock
+    private ImFriendMapper friendMapper;
+    @Mock
+    private ImRealtimePush imRealtimePush;
 
-    @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
-    @Mock private com.nexus.im.service.impl.support.ImConversationService conversationService;
-    @Mock private com.nexus.im.service.impl.support.ImChatSupport chatSupport;
+    @Mock
+    private ImMessageVisibility visibility;
+    @Mock
+    private ImConversationService conversationService;
+    @Mock
+    private ImChatSupport chatSupport;
 
     @InjectMocks
     private AppImController controller;
@@ -182,8 +197,7 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
 
         assertThat(result.getCode()).isEqualTo(200);
         // 守护：转发流程被触发，且携带 forwardFrom
-        ArgumentCaptor<com.nexus.im.domain.bo.ImPrivateSendBo> captor =
-            ArgumentCaptor.forClass(com.nexus.im.domain.bo.ImPrivateSendBo.class);
+        ArgumentCaptor<ImPrivateSendBo> captor = ArgumentCaptor.forClass(ImPrivateSendBo.class);
         verify(imChatService).sendPrivate(captor.capture());
         assertThat(captor.getValue().getForwardFrom()).isEqualTo(1L);
     }
@@ -271,8 +285,7 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
         when(groupMemberMapper.selectList(any())).thenReturn(Collections.emptyList());
         when(messageMapper.selectList(any())).thenReturn(Collections.emptyList());
 
-        R<com.nexus.im.domain.vo.ImSearchResultVo> result = controller.searchMessages(
-            "hi", null, null, 1, 1000000);
+        R<ImSearchResultVo> result = controller.searchMessages("hi", null, null, 1, 1000000);
 
         assertThat(result.getCode()).isEqualTo(200);
         assertThat(result.getData().getPageSize()).isEqualTo(100);
@@ -286,8 +299,7 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
         when(groupMemberMapper.selectList(any())).thenReturn(Collections.emptyList());
         when(messageMapper.selectList(any())).thenReturn(Collections.emptyList());
 
-        R<com.nexus.im.domain.vo.ImSearchResultVo> result = controller.searchMessages(
-            "hi", null, null, 0, 0);
+        R<ImSearchResultVo> result = controller.searchMessages("hi", null, null, 0, 0);
 
         assertThat(result.getCode()).isEqualTo(200);
         assertThat(result.getData().getPageSize()).isEqualTo(20);

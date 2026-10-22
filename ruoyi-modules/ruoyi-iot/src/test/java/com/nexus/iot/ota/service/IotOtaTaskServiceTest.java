@@ -1,5 +1,19 @@
 package com.nexus.iot.ota.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -31,6 +45,7 @@ import com.nexus.iot.ota.domain.vo.IotOtaBatchResultVo;
 import com.nexus.iot.ota.domain.vo.IotOtaVersionCheckVo;
 import com.nexus.iot.ota.mapper.IotOtaTaskMapper;
 import com.nexus.iot.ota.service.impl.IotOtaTaskServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,26 +54,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * IoT OTA 升级任务单元测试（OTA MVP）。
@@ -612,12 +614,18 @@ class IotOtaTaskServiceTest {
         assertTrue(wrapper.getParamNameValuePairs().containsValue(IotOtaStatus.TIMEOUT));
         // 断言"只扫描 SENT/UPGRADING"：兼容 MyBatis-Plus 对 in(...) 的两种参数存放形态
         // （整集合一个占位符 / 逐元素占位符），并以 SQL 片段兜底。
-        java.util.Collection<Object> values = wrapper.getParamNameValuePairs().values();
+        Collection<Object> values = wrapper.getParamNameValuePairs().values();
         String sql = String.valueOf(wrapper.getSqlSegment()).toLowerCase();
-        boolean scoped = values.stream().anyMatch(v -> v instanceof java.util.Collection<?> c
-                && c.contains(IotOtaStatus.SENT) && c.contains(IotOtaStatus.UPGRADING))
-            || (values.contains(IotOtaStatus.SENT) && values.contains(IotOtaStatus.UPGRADING))
-            || (sql.contains("status in") && sql.contains("sent_time <"));
+        boolean scoped =
+                values.stream()
+                                .anyMatch(
+                                        v ->
+                                                v instanceof Collection<?> c
+                                                        && c.contains(IotOtaStatus.SENT)
+                                                        && c.contains(IotOtaStatus.UPGRADING))
+                        || (values.contains(IotOtaStatus.SENT)
+                                && values.contains(IotOtaStatus.UPGRADING))
+                        || (sql.contains("status in") && sql.contains("sent_time <"));
         assertTrue(scoped, "只扫描 SENT/UPGRADING 且按 sent_time < deadline：params=" + values + ", sql=" + sql);
         assertTrue(wrapper.getParamNameValuePairs().values().stream()
             .anyMatch(v -> v instanceof String s && s.contains("超时")));

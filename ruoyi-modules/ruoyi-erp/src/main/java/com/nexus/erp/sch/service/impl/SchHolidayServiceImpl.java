@@ -1,28 +1,30 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
-import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.mybatis.core.page.PageQuery;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.bo.SchHolidayBo;
 import com.nexus.erp.sch.domain.vo.SchHolidayVo;
 import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.service.ISchHolidayService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -31,9 +33,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /**
  * 节假日设置服务业务层处理
@@ -238,9 +243,11 @@ public class SchHolidayServiceImpl implements ISchHolidayService {
                     || row.getPlannedHours().signum() != 0 || !currentIds.add(row.getCalendarId()))
                     throw new ServiceException("日期已有产能占用或日历来源不可信，不能修改节假日");
             }
-            Set<Long> expectedIds = candidateIds.entrySet().stream()
-                .filter(entry -> day.equals(entry.getValue())).map(Map.Entry::getKey)
-                .collect(java.util.stream.Collectors.toSet());
+            Set<Long> expectedIds =
+                    candidateIds.entrySet().stream()
+                            .filter(entry -> day.equals(entry.getValue()))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toSet());
             if (!currentIds.equals(expectedIds)) throw new ServiceException("产能日历已变化，请重试节假日修改");
         }
         for (Long id : candidateIds.keySet().stream().sorted().toList()) {

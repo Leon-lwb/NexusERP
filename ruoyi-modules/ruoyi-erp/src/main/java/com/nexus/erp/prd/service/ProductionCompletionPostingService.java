@@ -13,12 +13,19 @@ import com.nexus.erp.wm.domain.WmProductionRecpt;
 import com.nexus.erp.wm.domain.vo.PutawayLocation;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.IWmProductionRecptService;
+import com.nexus.erp.wm.service.WmBatchProductionReceiptProofService;
+import com.nexus.erp.wm.service.WmProductionRecptWriteGuard;
+import com.nexus.erp.wm.service.WmSerialInventoryProofService;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -33,14 +40,14 @@ import java.util.Objects;
 @DS("erp")
 @RequiredArgsConstructor
 public class ProductionCompletionPostingService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmBatchProductionReceiptProofService batchProof;
+    @Autowired
+    private WmBatchProductionReceiptProofService batchProof;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryProofService serialProof;
+    @Autowired
+    private WmSerialInventoryProofService serialProof;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmProductionRecptWriteGuard serialReceiptGuard;
+    @Autowired
+    private WmProductionRecptWriteGuard serialReceiptGuard;
 
     private final ProductionCompletionPostingMapper postingMapper;
     private final PrdBackflushServiceImpl backflushService;
@@ -155,7 +162,7 @@ public class ProductionCompletionPostingService {
         List<WmMaterialStockTx> transactions =
                 postingMapper.selectCompletionTransactions(tenantId, wo.getWoId());
         require(allReceipts != null && transactions != null, "无法读取工单成品过账凭据");
-        List<WmProductionRecpt> receipts = new java.util.ArrayList<>();
+        List<WmProductionRecpt> receipts = new ArrayList<>();
         for (WmProductionRecpt row : allReceipts) {
             require(
                     row != null

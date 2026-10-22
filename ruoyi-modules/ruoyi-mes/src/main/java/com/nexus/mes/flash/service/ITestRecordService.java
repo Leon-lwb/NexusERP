@@ -3,6 +3,7 @@ package com.nexus.mes.flash.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.flash.domain.bo.TestRecordBo;
+import com.nexus.mes.flash.domain.bo.TestReportBo;
 import com.nexus.mes.flash.domain.vo.TestRecordVo;
 
 import java.util.List;
@@ -62,11 +63,10 @@ public interface ITestRecordService {
     Map<String, Object> summary(TestRecordBo bo);
 
     /**
-     * AUTO 设备批量上报测试结果(开放接口, 宽松模式):
-     * 每 SN 按测试项编码匹配物料标准自动判定落库(test_mode=AUTO),
-     * 返回 {success, failed:[{snCode,reason}], details:[{snCode,testNo,judged}]}
+     * AUTO 设备批量上报测试结果(开放接口, 宽松模式): 每 SN 按测试项编码匹配物料标准自动判定落库(test_mode=AUTO), 返回 {success,
+     * failed:[{snCode,reason}], details:[{snCode,testNo,judged}]}
      */
-    Map<String, Object> reportTestAutoBatch(List<com.nexus.mes.flash.domain.bo.TestReportBo> list);
+    Map<String, Object> reportTestAutoBatch(List<TestReportBo> list);
 
     /**
      * 该 SN 是否存在未处置的 FAIL 测试行(MES-TEST-04, 供工序/完工门禁查询)。

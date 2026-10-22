@@ -1,22 +1,30 @@
 package com.nexus.erp.wm.controller.serial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.trace.TrackingPolicy;
+import com.nexus.common.trace.TrackingStage;
 import com.nexus.erp.wm.controller.*;
+import com.nexus.erp.wm.controller.app.AppPdaIssueController;
 import com.nexus.erp.wm.controller.app.AppPdaReceiveController;
 import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.service.*;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.test.util.AopTestUtils;
+
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * 原离线任务已提交但ACK丢失、实物随后移库，再重放同一原URL/原载荷。
@@ -255,9 +263,7 @@ class WmSerialOfflineCommandReplayTest {
     void replayUsesOriginalPolicyAndRevisionWithoutReadingTodaysPolicySnapshot() throws Exception {
         var s = new Scenario();
         s.commitLoseAckThenMove();
-        s.f.policy =
-                new com.nexus.common.trace.TrackingPolicy(
-                        false, true, true, 8L, com.nexus.common.trace.TrackingStage.AUDIT);
+        s.f.policy = new TrackingPolicy(false, true, true, 8L, TrackingStage.AUDIT);
         clearInvocations(s.f.selections);
         s.mvc.perform(post(RECEIVE).contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
                 .andExpect(status().isOk())
@@ -272,9 +278,7 @@ class WmSerialOfflineCommandReplayTest {
     void missingHistoricalProofCannotBeAcknowledgedOrReposted() throws Exception {
         var s = new Scenario();
         s.commitLoseAckThenMove();
-        doThrow(new com.nexus.common.core.exception.ServiceException("原命令历史证明缺失"))
-                .when(s.f.selections)
-                .freeze(any());
+        doThrow(new ServiceException("原命令历史证明缺失")).when(s.f.selections).freeze(any());
         var error =
                 assertThrows(
                         Exception.class,
@@ -354,10 +358,7 @@ class WmSerialOfflineCommandReplayTest {
                             return PdaActionResultVo.ok();
                         });
         var mvc =
-                MockMvcBuilders.standaloneSetup(
-                                f.proxy(
-                                        new com.nexus.erp.wm.controller.app.AppPdaIssueController(
-                                                pda)))
+                MockMvcBuilders.standaloneSetup(f.proxy(new AppPdaIssueController(pda)))
                         .addFilters(new WmSerialPayloadFilter(f.json))
                         .build();
         String url = "/app/pda/wm/issue/10/line/pick";
@@ -389,7 +390,7 @@ class WmSerialOfflineCommandReplayTest {
             throws Exception {
         var s = new Scenario();
         s.commitLoseAckThenMove();
-        var changed = (com.fasterxml.jackson.databind.node.ObjectNode) s.f.body(PAYLOAD);
+        var changed = (ObjectNode) s.f.body(PAYLOAD);
         changed.put("detailVersion", s.f.version);
         changed.set("snItems", s.f.json.createArrayNode());
         var error =
@@ -410,7 +411,7 @@ class WmSerialOfflineCommandReplayTest {
             throws Exception {
         var s = new Scenario();
         s.commitLoseAckThenMove();
-        var changed = (com.fasterxml.jackson.databind.node.ObjectNode) s.f.body(PAYLOAD);
+        var changed = (ObjectNode) s.f.body(PAYLOAD);
         changed.put("detailVersion", s.f.version);
         changed.remove("snItems");
         var error =

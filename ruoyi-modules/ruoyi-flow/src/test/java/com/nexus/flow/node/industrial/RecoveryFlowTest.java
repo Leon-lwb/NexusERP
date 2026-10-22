@@ -1,7 +1,15 @@
 package com.nexus.flow.node.industrial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import cn.hutool.extra.spring.SpringUtil;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.service.decision.*;
+import com.nexus.ai.service.decision.executor.CreatePurchaseRequisitionDraftExecutor;
 import com.nexus.ai.service.decision.executor.DecisionActionExecutor;
 import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
 import com.nexus.common.ai.decision.dto.*;
@@ -11,16 +19,19 @@ import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.domain.entity.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.service.PermissionService;
+import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.flow.node.FlowExecutionContext;
 import com.nexus.flow.state.FlowState;
+
 import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /** 实际执行节点、异常包装和执行服务整链反例；内存状态不代表真实 JDBC 或 ERP 回滚。 */
 class RecoveryFlowTest {
@@ -174,10 +185,18 @@ class RecoveryFlowTest {
         var h = new Harness("EXECUTING", "SUCCEEDED"); h.save(h.receipt(false));
         String oldJson=h.action.getResultJson(); int version=h.action.getVersion();
         var reader=spy(h.mapper);
-        doThrow(new ServiceException("冻结采购请求暂时读取不可确认")).when(reader).readValue(eq(h.action.getPayloadJson()),
-            any(com.fasterxml.jackson.core.type.TypeReference.class));
-        h.execution=new DecisionActionExecutionService(h.store,List.of(new com.nexus.ai.service.decision.executor.CreatePurchaseRequisitionDraftExecutor(h.port)),
-            reader,h.events,h.rights,h.port,h.finalizer);
+        doThrow(new ServiceException("冻结采购请求暂时读取不可确认"))
+                .when(reader)
+                .readValue(eq(h.action.getPayloadJson()), any(TypeReference.class));
+        h.execution =
+                new DecisionActionExecutionService(
+                        h.store,
+                        List.of(new CreatePurchaseRequisitionDraftExecutor(h.port)),
+                        reader,
+                        h.events,
+                        h.rights,
+                        h.port,
+                        h.finalizer);
         assertThrows(ServiceException.class,()->h.node());
         assertEquals("EXECUTING",h.run.getStatus()); assertEquals("SUCCEEDED",h.action.getExecutionStatus());
         assertEquals(oldJson,h.action.getResultJson()); assertEquals(version,h.action.getVersion());
@@ -196,8 +215,15 @@ class RecoveryFlowTest {
     private void assertStoredPurchaseReadPending(Harness h, RuntimeException error, DecisionActionExecutionResult result) {
         String json=h.action.getResultJson(); int version=h.action.getVersion(); Long id=h.action.getResultBizId();
         String type=h.action.getResultBizType(), code=h.action.getResultBizCode();
-        h.execution=new DecisionActionExecutionService(h.store,List.of(new com.nexus.ai.service.decision.executor.CreatePurchaseRequisitionDraftExecutor(h.port)),
-            h.mapper,h.events,h.rights,h.port,h.finalizer);
+        h.execution =
+                new DecisionActionExecutionService(
+                        h.store,
+                        List.of(new CreatePurchaseRequisitionDraftExecutor(h.port)),
+                        h.mapper,
+                        h.events,
+                        h.rights,
+                        h.port,
+                        h.finalizer);
         if(error!=null) when(h.port.verifyBusinessAction(any(),any(),any())).thenThrow(error);
         else when(h.port.verifyBusinessAction(any(),any(),any())).thenReturn(result);
         assertThrows(ServiceException.class,()->h.node(),"真实采购执行器的未知核验只能失败节点，不能关闭业务运行");
@@ -253,28 +279,66 @@ class RecoveryFlowTest {
             try { action.setPayloadJson(mapper.writeValueAsString(DecisionPurchaseContractCodec.toPayload(10L,contract))); }
             catch (Exception invalid) { throw new AssertionError("合成合同编码失败",invalid); }
             snapshot = new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER,9001L,"WO-9001"),List.of(),List.of(),Map.of(),List.of(),List.of(),List.of(),Map.of(),List.of(),Map.of(),List.of(),"hash-old",LocalDateTime.of(2026,10,6,10,0),List.of());
-            store = mock(DecisionPersistenceService.class, invocation -> {
-                var args=invocation.getArguments();
-                switch(invocation.getMethod().getName()) {
-                    case "requireRun": return run;
-                    case "requireAction": return action;
-                    case "listActions": return List.of(action);
-                    case "trustedExecutionActor", "trustedActor": return actor;
-                    case "requireSnapshot": return snapshot;
-                    case "transition": states.requireTransition((DecisionRunStatus)args[1],(DecisionRunStatus)args[2]);
-                        if (!run.getStatus().equals(((DecisionRunStatus)args[1]).name())) throw new ServiceException("模拟 master 状态 CAS 冲突");
-                        run.setStatus(((DecisionRunStatus)args[2]).name());run.setVersion(run.getVersion()+1);return null;
-                    case "transitionAction": if(!Objects.equals(action.getExecutionStatus(),args[2]))throw new ServiceException("模拟动作状态 CAS 冲突");
-                        action.setExecutionStatus((String)args[3]);action.setVersion(action.getVersion()+1);return null;
-                    case "saveActionResult": if(masterResultUnavailable)throw new ServiceException("ERP 已提交而 master 回写未知");save((DecisionActionExecutionResult)args[1]);return null;
-                    case "saveRecoveredPurchaseResult": save((DecisionActionExecutionResult)args[2]);return null;
-                    case "finishRecoveredExecution": if(!finishCas || !"SUCCEEDED".equals(action.getExecutionStatus()))return false;
-                        run.setStatus("SUCCEEDED");run.setVersion(run.getVersion()+1);return true;
-                    case "fail": states.requireTransition(DecisionRunStatus.valueOf(run.getStatus()),DecisionRunStatus.FAILED);run.setStatus("FAILED");return null;
-                    case "saveOutcome": run.setOutcomeJson("已持久化复盘");return null;
-                    default: return org.mockito.Answers.RETURNS_DEFAULTS.answer(invocation);
-                }
-            });
+            store =
+                    mock(
+                            DecisionPersistenceService.class,
+                            invocation -> {
+                                var args = invocation.getArguments();
+                                switch (invocation.getMethod().getName()) {
+                                    case "requireRun":
+                                        return run;
+                                    case "requireAction":
+                                        return action;
+                                    case "listActions":
+                                        return List.of(action);
+                                    case "trustedExecutionActor", "trustedActor":
+                                        return actor;
+                                    case "requireSnapshot":
+                                        return snapshot;
+                                    case "transition":
+                                        states.requireTransition(
+                                                (DecisionRunStatus) args[1],
+                                                (DecisionRunStatus) args[2]);
+                                        if (!run.getStatus()
+                                                .equals(((DecisionRunStatus) args[1]).name()))
+                                            throw new ServiceException("模拟 master 状态 CAS 冲突");
+                                        run.setStatus(((DecisionRunStatus) args[2]).name());
+                                        run.setVersion(run.getVersion() + 1);
+                                        return null;
+                                    case "transitionAction":
+                                        if (!Objects.equals(action.getExecutionStatus(), args[2]))
+                                            throw new ServiceException("模拟动作状态 CAS 冲突");
+                                        action.setExecutionStatus((String) args[3]);
+                                        action.setVersion(action.getVersion() + 1);
+                                        return null;
+                                    case "saveActionResult":
+                                        if (masterResultUnavailable)
+                                            throw new ServiceException("ERP 已提交而 master 回写未知");
+                                        save((DecisionActionExecutionResult) args[1]);
+                                        return null;
+                                    case "saveRecoveredPurchaseResult":
+                                        save((DecisionActionExecutionResult) args[2]);
+                                        return null;
+                                    case "finishRecoveredExecution":
+                                        if (!finishCas
+                                                || !"SUCCEEDED".equals(action.getExecutionStatus()))
+                                            return false;
+                                        run.setStatus("SUCCEEDED");
+                                        run.setVersion(run.getVersion() + 1);
+                                        return true;
+                                    case "fail":
+                                        states.requireTransition(
+                                                DecisionRunStatus.valueOf(run.getStatus()),
+                                                DecisionRunStatus.FAILED);
+                                        run.setStatus("FAILED");
+                                        return null;
+                                    case "saveOutcome":
+                                        run.setOutcomeJson("已持久化复盘");
+                                        return null;
+                                    default:
+                                        return Answers.RETURNS_DEFAULTS.answer(invocation);
+                                }
+                            });
             when(rights.getMenuPermission(1L)).thenReturn(actor.permissions());when(port.canAccess(any(),any())).thenReturn(true);
             when(port.checkFreshness(any(),anyString(),any())).thenReturn(new DecisionFreshnessResult(true,"hash-old",List.of()));
             when(executor.type()).thenReturn(DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT);
@@ -291,13 +355,43 @@ class RecoveryFlowTest {
             when(executor.type()).thenReturn(DecisionActionType.CREATE_SCHEDULE_PLAN_DRAFT);
             execution=new DecisionActionExecutionService(store,List.of(executor),mapper,events,rights,port,finalizer);
         }
-        com.fasterxml.jackson.databind.JsonNode node(){return inTenant(()->new DecisionExecuteApprovedActionsNodeProvider(support,execution,store,finalizer).execute(ctx));}
-        <T>T inTenant(Supplier<T> body){try(var spring=mockStatic(cn.hutool.extra.spring.SpringUtil.class);var login=mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)){
-            spring.when(()->com.nexus.common.core.utils.SpringUtils.getProperty("tenant.enable")).thenReturn("true");
-            login.when(com.nexus.common.satoken.utils.LoginHelper::isLogin).thenReturn(false);return body.get();}}
-        DecisionActionProposal proposal(){try {return new DecisionActionProposal(20L,DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,"合成采购","冻结来源",snapshot.rootBusinessRef(),
-            mapper.readValue(action.getPayloadJson(),new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>(){}),DecisionRiskLevel.MEDIUM,true,"pu:requisition:add",action.getIdempotencyKey(),"purchaseRequisitionDraft",1,List.of());}
-            catch(Exception invalid){throw new AssertionError("合成动作解析失败",invalid);}}
+
+        JsonNode node() {
+            return inTenant(
+                    () ->
+                            new DecisionExecuteApprovedActionsNodeProvider(
+                                            support, execution, store, finalizer)
+                                    .execute(ctx));
+        }
+
+        <T> T inTenant(Supplier<T> body) {
+            try (var spring = mockStatic(SpringUtil.class);
+                    var login = mockStatic(LoginHelper.class)) {
+                spring.when(() -> SpringUtils.getProperty("tenant.enable")).thenReturn("true");
+                login.when(LoginHelper::isLogin).thenReturn(false);
+                return body.get();
+            }
+        }
+
+        DecisionActionProposal proposal(){try {
+                return new DecisionActionProposal(
+                        20L,
+                        DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+                        "合成采购",
+                        "冻结来源",
+                        snapshot.rootBusinessRef(),
+                        mapper.readValue(
+                                action.getPayloadJson(),
+                                new TypeReference<Map<String, Object>>() {}),
+                        DecisionRiskLevel.MEDIUM,
+                        true,
+                        "pu:requisition:add",
+                        action.getIdempotencyKey(),
+                        "purchaseRequisitionDraft",
+                        1,
+                        List.of());
+            } catch (Exception invalid) {
+                throw new AssertionError("合成动作解析失败",invalid);}}
         DecisionActionExecutionResult receipt(boolean replayed){var a=proposal();var c=DecisionPurchaseContractCodec.parse(a.payload(),10L);var l=c.frozenLines().get(0);
             var fields=Map.<String,Object>ofEntries(Map.entry("purchase_payload_version",2),Map.entry("runId","10"),Map.entry("actionId","20"),Map.entry("tenantId",actor.tenantId()),
                 Map.entry("requestKey",a.idempotencyKey()),Map.entry("materialId","139"),Map.entry("vendorId","17"),Map.entry("sourceType","AI_DECISION"),

@@ -1,11 +1,22 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.enums.DecisionRunStatus;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.domain.entity.AiDecisionAction;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
-import com.nexus.common.ai.decision.enums.DecisionRunStatus;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /** 采购门禁只读取持久化合同，版本号不能代替逐来源证明。 */
 class DecisionPurchaseContractGuardTest {
@@ -31,12 +42,19 @@ class DecisionPurchaseContractGuardTest {
             "缺逐来源及单位合同的伪造 v2 仍须拒绝");
     }
     @Test void mismatchedMarkersTargetPermissionAndStableKeyAreRejected() {
-        var mutations = java.util.List.<java.util.function.Consumer<AiDecisionAction>>of(
-            a -> a.setPurchasePayloadVersion(1), a -> a.setTargetBizId(9002L),
-            a -> a.setTargetBizType("SCHEDULE_PLAN"), a -> a.setTargetBizCode("OTHER"),
-            a -> a.setExecutorCode("schedulePlanDraft"), a -> a.setActionType("SEND_MANAGER_NOTIFICATION"),
-            a -> a.setPermissionCode("ai:decision:execute"), a -> a.setApprovalRequired("N"),
-            a -> a.setIdempotencyKey("replacement-key"), a -> a.setTenantId("other"), a -> a.setRunId(11L));
+        var mutations =
+                List.<Consumer<AiDecisionAction>>of(
+                        a -> a.setPurchasePayloadVersion(1),
+                        a -> a.setTargetBizId(9002L),
+                        a -> a.setTargetBizType("SCHEDULE_PLAN"),
+                        a -> a.setTargetBizCode("OTHER"),
+                        a -> a.setExecutorCode("schedulePlanDraft"),
+                        a -> a.setActionType("SEND_MANAGER_NOTIFICATION"),
+                        a -> a.setPermissionCode("ai:decision:execute"),
+                        a -> a.setApprovalRequired("N"),
+                        a -> a.setIdempotencyKey("replacement-key"),
+                        a -> a.setTenantId("other"),
+                        a -> a.setRunId(11L));
         for (var mutation : mutations) {
             var a = v2Action(); mutation.accept(a);
             assertThrows(ServiceException.class, () -> DecisionPurchaseContractGuard.requireExecutable(v2Run(), a),
@@ -47,15 +65,28 @@ class DecisionPurchaseContractGuardTest {
     }
     @Test void rejectsNonIntegerWireIncompleteSourceAndAdditionalLegacyFields() {
         String payload = v2Action().getPayloadJson();
-        for (String bad : java.util.List.of(
-            payload.replace("\"purchase_payload_version\":2", "\"purchase_payload_version\":\"2\""),
-            payload.replace("\"purchase_payload_version\":2", "\"purchase_payload_version\":2.0"),
-            payload.replace("\"expectedSourceFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"", "\"expectedSourceFingerprint\":\"\""),
-            payload.replace("\"runId\":\"10\"", "\"runId\":\"11\""),
-            payload.replace("\"materialId\":\"139\"", "\"materialId\":139"),
-            payload.replace("\"requirement_detail_ids\":[\"500\"]", "\"requirement_detail_ids\":[\"501\"]"),
-            payload.replace("\"purchase_payload_version\":2", "\"materialLines\":[],\"purchase_payload_version\":2"),
-            payload.replace("\"purchase_payload_version\":2", "\"purchase_payload_version\":1,\"purchase_payload_version\":2"))) {
+        for (String bad :
+                List.of(
+                        payload.replace(
+                                "\"purchase_payload_version\":2",
+                                "\"purchase_payload_version\":\"2\""),
+                        payload.replace(
+                                "\"purchase_payload_version\":2",
+                                "\"purchase_payload_version\":2.0"),
+                        payload.replace(
+                                "\"expectedSourceFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
+                                "\"expectedSourceFingerprint\":\"\""),
+                        payload.replace("\"runId\":\"10\"", "\"runId\":\"11\""),
+                        payload.replace("\"materialId\":\"139\"", "\"materialId\":139"),
+                        payload.replace(
+                                "\"requirement_detail_ids\":[\"500\"]",
+                                "\"requirement_detail_ids\":[\"501\"]"),
+                        payload.replace(
+                                "\"purchase_payload_version\":2",
+                                "\"materialLines\":[],\"purchase_payload_version\":2"),
+                        payload.replace(
+                                "\"purchase_payload_version\":2",
+                                "\"purchase_payload_version\":1,\"purchase_payload_version\":2"))) {
             var a = v2Action(); a.setPayloadJson(bad);
             assertThrows(ServiceException.class, () -> DecisionPurchaseContractGuard.requireExecutable(v2Run(), a),
                 "非整数版本、缺失证明、重复字段与旧载荷夹带均不得放行");
@@ -90,12 +121,19 @@ class DecisionPurchaseContractGuardTest {
              "expectedSourceFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
             """);
         try {
-            var payload = new com.fasterxml.jackson.databind.ObjectMapper().readValue(a.getPayloadJson(),
-                new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() { });
-            var contract = com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.parse(payload, 10L);
-            a.setIdempotencyKey(com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.idempotencyKey("000000", 10L,
-                new com.nexus.common.ai.decision.dto.DecisionBusinessRef(
-                    com.nexus.common.ai.decision.enums.DecisionBusinessType.WORK_ORDER, 9001L, "WO-9001"), contract));
+            var payload =
+                    new ObjectMapper()
+                            .readValue(
+                                    a.getPayloadJson(),
+                                    new TypeReference<Map<String, Object>>() {});
+            var contract = DecisionPurchaseContractCodec.parse(payload, 10L);
+            a.setIdempotencyKey(
+                    DecisionPurchaseContractCodec.idempotencyKey(
+                            "000000",
+                            10L,
+                            new DecisionBusinessRef(
+                                    DecisionBusinessType.WORK_ORDER, 9001L, "WO-9001"),
+                            contract));
         } catch (Exception invalid) { throw new AssertionError("合成采购合同应可由唯一 codec 解析", invalid); }
         return a;
     }

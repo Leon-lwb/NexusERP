@@ -1,13 +1,20 @@
 package com.nexus.erp.wm.controller.serial;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.nexus.common.core.domain.R;
+import com.nexus.common.trace.TrackingPolicy;
+import com.nexus.common.trace.TrackingStage;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+
+import java.util.*;
 
 /**
  * 提交凭据只取原过账组及ERP 所属业务库发件箱，首次提交和原命令重放保持一致。
@@ -74,7 +81,7 @@ class WmSerialSubmissionStateTest {
                     .andExpect(jsonPath("$.data.submissionState").value("CROSS_MODULE_PENDING"))
                     .andExpect(
                             jsonPath("$.data.submissionWarnings[0]")
-                                    .value(org.hamcrest.Matchers.containsString("原消费证明发生冲突")));
+                                    .value(Matchers.containsString("原消费证明发生冲突")));
         }
     }
 
@@ -136,9 +143,9 @@ class WmSerialSubmissionStateTest {
                         "finish",
                         () -> {
                             s.receive.finish(10L);
-                            return com.nexus.common.core.domain.R.ok();
+                            return R.ok();
                         });
-        var data = (Map<?, ?>) ((com.nexus.common.core.domain.R<?>) result).getData();
+        var data = (Map<?, ?>) ((R<?>) result).getData();
         assertEquals("SERVER_COMMITTED", data.get("submissionState"));
         assertEquals(List.of("99"), data.get("postingGroupIds"));
         assertEquals("offline-receive-ACK-lost", data.get("commandId"));
@@ -168,17 +175,15 @@ class WmSerialSubmissionStateTest {
     @Test
     void ordinaryQuantityUrlKeepsVoidResponseWithoutInventedSubmissionMetadata() throws Throwable {
         var f = new SerialAdapterFixture();
-        f.policy =
-                new com.nexus.common.trace.TrackingPolicy(
-                        false, false, false, 7L, com.nexus.common.trace.TrackingStage.AUDIT);
+        f.policy = new TrackingPolicy(false, false, false, 7L, TrackingStage.AUDIT);
         var result =
-                (com.nexus.common.core.domain.R<?>)
+                (R<?>)
                         f.adapter.invoke(
                                 SerialBusinessRoute.ofType("WM_TRANSFER"),
                                 "/erp/wm/transfer/execute/10",
                                 f.body("{}"),
                                 "execute",
-                                () -> com.nexus.common.core.domain.R.ok());
+                                () -> R.ok());
         assertNull(result.getData());
         verify(f.jdbc, never())
                 .queryForList(

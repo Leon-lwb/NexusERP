@@ -1,21 +1,29 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.service.*;
+import com.nexus.erp.wm.mapper.WmCertifiedArrivalNoticeMapper;
+import com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper;
+import com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingAuthorizer;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 明确订单行创建草稿的离线事务反例，不连接数据库、不代替实际审批和IQC。 */
 class WmCertifiedReceiptDraftServiceTest {
@@ -80,11 +88,29 @@ class WmCertifiedReceiptDraftServiceTest {
     @Test void unknownPendingStateNeverTreatedAsZeroBalance(){pending.add(record("mapper.WmCertifiedReceiptDraftMapper$Pending",BigDecimal.ONE,"UNKNOWN","0","0"));assertThrows(ServiceException.class,()->create(command(BigDecimal.ONE)));assertTrue(writes.isEmpty());}
 
     Object linked(BigDecimal q,Long n,Long l){return record("service.WmCertifiedReceiptDraftService$Request","local-receipt-1",31L,2,41L,q,1L,2L,3L,day,"本地测试实际到货",n,l);}
-    com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService attachNotice(){
-        var a=mock(com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService.class);
-        var n=new com.nexus.erp.wm.mapper.WmCertifiedArrivalNoticeMapper.Notice(T,81L,82L,"AN001",31L,"CGDD202610040001",41L,9L,51L,"26",new BigDecimal("5"),BigDecimal.ZERO,"APPROVED","0","0");
+
+    WmCertifiedArrivalNoticeService attachNotice() {
+        var a = mock(WmCertifiedArrivalNoticeService.class);
+        var n =
+                new WmCertifiedArrivalNoticeMapper.Notice(
+                        T,
+                        81L,
+                        82L,
+                        "AN001",
+                        31L,
+                        "CGDD202610040001",
+                        41L,
+                        9L,
+                        51L,
+                        "26",
+                        new BigDecimal("5"),
+                        BigDecimal.ZERO,
+                        "APPROVED",
+                        "0",
+                        "0");
         when(a.requireBindingLocked(eq(T),eq(81L),eq(82L),eq(31L),eq(41L),eq(51L),eq("26"),any(),anyBoolean())).thenReturn(n);
-        org.springframework.test.util.ReflectionTestUtils.setField(service,"arrivals",a);return a;
+        ReflectionTestUtils.setField(service, "arrivals", a);
+        return a;
     }
     @Test void nullReferencesKeepExactOriginalCanonicalHash(){
         Object first=create(command(BigDecimal.ONE));assertEquals("8d7fc9912f38ccaa8f0d579c48a0bc4a78679bcff13935d2663e207b510c5d5e",field(first,"requestHash"));
@@ -92,8 +118,9 @@ class WmCertifiedReceiptDraftServiceTest {
     }
     @Test void halfNoticeReferenceRejectedBeforeAnyTransaction(){assertThrows(ServiceException.class,()->create(linked(BigDecimal.ONE,81L,null)));verifyNoInteractions(tx);assertTrue(writes.isEmpty());}
     @Test void referenceIsPersistedInCommandAndChangesHash(){
-        var a=attachNotice();var captured=new java.util.concurrent.atomic.AtomicReference<com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper.Command>();
-        var typed=(com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper)mapper;
+        var a = attachNotice();
+        var captured = new AtomicReference<WmCertifiedReceiptDraftMapper.Command>();
+        var typed = (WmCertifiedReceiptDraftMapper) mapper;
         doAnswer(i->{captured.set(i.getArgument(0));writes.add("insertCommand");return 1;}).when(typed).insertCommand(any());
         Object normal=create(command(BigDecimal.ONE));writes.clear();Object bound=create(linked(BigDecimal.ONE,81L,82L));
         assertNotEquals(field(normal,"requestHash"),field(bound,"requestHash"));assertEquals(81L,captured.get().noticeId());assertEquals(82L,captured.get().noticeLineId());
@@ -102,11 +129,28 @@ class WmCertifiedReceiptDraftServiceTest {
     }
     @Test void unapprovedNoticeCannotCreateAnyReceiptRows(){var a=attachNotice();doThrow(new ServiceException("通知未批准")).when(a).requireBindingLocked(eq(T),eq(81L),eq(82L),any(),any(),any(),any(),any(),eq(false));assertThrows(ServiceException.class,()->create(linked(BigDecimal.ONE,81L,82L)));assertTrue(writes.isEmpty());}
     @Test void originalBoundRequestReplaysWithoutSecondBusinessWrite(){
-        var a=attachNotice();var typed=(com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper)mapper;
+        var a = attachNotice();
+        var typed = (WmCertifiedReceiptDraftMapper) mapper;
         doAnswer(i->{old=i.getArgument(0);writes.add("insertCommand");return 1;}).when(typed).insertCommand(any());
         Object first=create(linked(BigDecimal.ONE,81L,82L));writes.clear();Object replay=create(linked(new BigDecimal("1.0000"),81L,82L));
         assertTrue((boolean)field(replay,"replayed"));assertEquals(field(first,"requestHash"),field(replay,"requestHash"));assertTrue(writes.isEmpty());
         verify(a).requireBindingLocked(eq(T),eq(81L),eq(82L),any(),any(),any(),any(),any(),eq(true));
     }
-    @Test void originalRequestKeyCannotBeMovedToAnotherNotice(){attachNotice();var typed=(com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper)mapper;doAnswer(i->{old=i.getArgument(0);return 1;}).when(typed).insertCommand(any());create(linked(BigDecimal.ONE,81L,82L));writes.clear();assertThrows(ServiceException.class,()->create(linked(BigDecimal.ONE,91L,92L)));assertTrue(writes.isEmpty());}
+
+    @Test
+    void originalRequestKeyCannotBeMovedToAnotherNotice() {
+        attachNotice();
+        var typed = (WmCertifiedReceiptDraftMapper) mapper;
+        doAnswer(
+                        i -> {
+                            old = i.getArgument(0);
+                            return 1;
+                        })
+                .when(typed)
+                .insertCommand(any());
+        create(linked(BigDecimal.ONE, 81L, 82L));
+        writes.clear();
+        assertThrows(ServiceException.class, () -> create(linked(BigDecimal.ONE, 91L, 92L)));
+        assertTrue(writes.isEmpty());
+    }
 }

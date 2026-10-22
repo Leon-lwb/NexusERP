@@ -2,6 +2,8 @@ package com.nexus.report.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.Set;
+
 /** 可信服务端报表配置，限制工作线程、容量、保留期、字体和禁用引擎。 */
 @ConfigurationProperties(prefix = "nexus.report")
 public class ReportProperties {
@@ -65,14 +67,14 @@ public class ReportProperties {
     }
 
     /** 保存当前 {@code disabledEngines} 值。 */
-    private java.util.Set<String> disabledEngines = java.util.Set.of();
+    private Set<String> disabledEngines = Set.of();
 
     /**
      * 读取DisabledEngines配置。
      *
      * @return 当前处理返回的固定结果
      */
-    public java.util.Set<String> getDisabledEngines() {
+    public Set<String> getDisabledEngines() {
         return disabledEngines;
     }
 
@@ -81,8 +83,8 @@ public class ReportProperties {
      *
      * @param values 绑定值
      */
-    public void setDisabledEngines(java.util.Set<String> values) {
-        disabledEngines = java.util.Set.copyOf(values);
+    public void setDisabledEngines(Set<String> values) {
+        disabledEngines = Set.copyOf(values);
     }
 
     /** 保存当前 {@code artifactRoot} 值。 */

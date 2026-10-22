@@ -2,9 +2,12 @@ package com.nexus.common.mq.producer;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.domain.MessageRecord;
 import com.nexus.common.mq.domain.MessageRecordMapper;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +45,7 @@ public class MessageRecordService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void saveSendingStrict(MessageRecord record) {
         if (messageRecordMapper.insert(record) != 1) {
-            throw new com.nexus.common.core.exception.ServiceException("可靠消息持久化未确认");
+            throw new ServiceException("可靠消息持久化未确认");
         }
     }
 
@@ -51,7 +54,7 @@ public class MessageRecordService {
     public void updateStatusStrict(String messageId, String status) {
         if (messageRecordMapper.update(null, new LambdaUpdateWrapper<MessageRecord>()
             .eq(MessageRecord::getMessageId, messageId).set(MessageRecord::getStatus, status)) != 1) {
-            throw new com.nexus.common.core.exception.ServiceException("可靠消息状态未确认");
+            throw new ServiceException("可靠消息状态未确认");
         }
     }
 

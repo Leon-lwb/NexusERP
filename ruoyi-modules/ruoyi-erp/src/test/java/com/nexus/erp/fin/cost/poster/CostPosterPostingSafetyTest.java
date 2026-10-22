@@ -1,12 +1,18 @@
 package com.nexus.erp.fin.cost.poster;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.fin.cost.controller.CostController;
 import com.nexus.erp.fin.cost.service.CostService;
 import com.nexus.erp.fin.gl.constant.GlConstants;
@@ -18,6 +24,7 @@ import com.nexus.erp.fin.gl.service.impl.GlVoucherServiceImpl;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.*;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,8 +33,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.*;
 
 import java.math.BigDecimal;
@@ -35,10 +42,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 实际 controller/poster/GL + Spring 代理的离线测试。
@@ -232,7 +235,8 @@ class CostPosterPostingSafetyTest {
                 assertTrue(TransactionSynchronizationManager.isActualTransactionActive(), "库存锁须在 Spring 事务中持有");
                 rowLock.lock();
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override public void afterCompletion(int status) { rowLock.unlock(); }
+                    @Override
+                    public void afterCompletion(int status) { rowLock.unlock(); }
                 });
                 event("锁定流水读取"); return tx();
             });
@@ -244,13 +248,20 @@ class CostPosterPostingSafetyTest {
             });
             WmMaterialStock record = new WmMaterialStock(); record.setMaterialType(3L);
             when(stock.selectById(anyLong())).thenAnswer(inv -> { event("库存类型"); return record; });
-            when(accounts.selectOne(any(Wrapper.class))).thenAnswer(inv -> {
-                event("科目编码");
-                var wrapper = (com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<GlAccount>) inv.getArgument(0);
-                wrapper.getSqlSegment();
-                String code = wrapper.getParamNameValuePairs().values().iterator().next().toString();
-                return account(Long.parseLong(code));
-            });
+            when(accounts.selectOne(any(Wrapper.class)))
+                    .thenAnswer(
+                            inv -> {
+                                event("科目编码");
+                                var wrapper = (LambdaQueryWrapper<GlAccount>) inv.getArgument(0);
+                                wrapper.getSqlSegment();
+                                String code =
+                                        wrapper.getParamNameValuePairs()
+                                                .values()
+                                                .iterator()
+                                                .next()
+                                                .toString();
+                                return account(Long.parseLong(code));
+                            });
             when(accounts.selectById(anyLong())).thenAnswer(inv -> { event("末级科目"); return account(inv.getArgument(0)); });
             when(periodService.getOrDerivePeriod(any())).thenAnswer(inv -> {
                 event("派生期间"); periods = 1;
@@ -281,8 +292,15 @@ class CostPosterPostingSafetyTest {
             GlVoucherServiceImpl gl = new GlVoucherServiceImpl(voucherMapper, lineMapper, accounts,
                 mock(GlPeriodMapper.class), periodService, balances);
             IGlVoucherService glProxy = proxy(gl);
-            CostPoster poster = new CostPoster(stockTx, stock, mock(com.nexus.erp.bd.mapper.BdMaterialMapper.class),
-                accounts, mock(GlPeriodMapper.class), periodService, glProxy);
+            CostPoster poster =
+                    new CostPoster(
+                            stockTx,
+                            stock,
+                            mock(BdMaterialMapper.class),
+                            accounts,
+                            mock(GlPeriodMapper.class),
+                            periodService,
+                            glProxy);
             controller = new CostController(proxy(poster), mock(CostService.class), mock(WmMaterialReceiveMapper.class));
         }
         private void event(String stage) { events.add(new Event(stage,
@@ -326,25 +344,34 @@ class CostPosterPostingSafetyTest {
         private final AtomicInteger commits = new AtomicInteger();
         private final AtomicInteger rollbacks = new AtomicInteger();
         private MemoryTransactions(Harness h) { this.h = h; }
-        @Override protected Object doGetTransaction() {
+        @Override
+        protected Object doGetTransaction() {
             State current = state.get(); if (current == null) { current = new State(); state.set(current); } return current;
         }
-        @Override protected boolean isExistingTransaction(Object transaction) { return ((State) transaction).active; }
-        @Override protected void doBegin(Object transaction, TransactionDefinition definition) {
+        @Override
+        protected boolean isExistingTransaction(Object transaction) { return ((State) transaction).active; }
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) {
             State s = (State) transaction; s.active = true; s.before = h.snapshot(); begins.incrementAndGet();
         }
-        @Override protected void doCommit(DefaultTransactionStatus status) { commits.incrementAndGet(); }
-        @Override protected void doRollback(DefaultTransactionStatus status) {
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) { commits.incrementAndGet(); }
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
             h.restore(((State) status.getTransaction()).before); rollbacks.incrementAndGet();
         }
-        @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) { ((State) status.getTransaction()).rollback = true; }
-        @Override protected void doCleanupAfterCompletion(Object transaction) { ((State) transaction).active = false; state.remove(); }
+        @Override
+        protected void doSetRollbackOnly(DefaultTransactionStatus status) { ((State) status.getTransaction()).rollback = true; }
+        @Override
+        protected void doCleanupAfterCompletion(Object transaction) { ((State) transaction).active = false; state.remove(); }
         private static final class State implements SmartTransactionObject {
             private boolean active;
             private boolean rollback;
             private Snapshot before;
-            @Override public boolean isRollbackOnly() { return rollback; }
-            @Override public void flush() { }
+            @Override
+            public boolean isRollbackOnly() { return rollback; }
+            @Override
+            public void flush() { }
         }
     }
 }

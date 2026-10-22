@@ -1,10 +1,16 @@
 package com.nexus.ai.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.service.facade.AiServiceFacade;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiSessionService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -12,11 +18,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import java.util.Collections;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import java.util.Map;
 
 class AiChatControllerInputValidationTest {
     private final AiServiceFacade facade = mock(AiServiceFacade.class);
@@ -51,7 +55,10 @@ class AiChatControllerInputValidationTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "short", "has spaces in request id", "request-id-with-\\n-control", "\"quoted-request-id-value\""})
     void invalidClientCorrelationNeverInvokesModel(String clientRequestId) throws Exception {
-        String body = new ObjectMapper().writeValueAsString(java.util.Map.of("content", "hello", "clientRequestId", clientRequestId));
+        String body =
+                new ObjectMapper()
+                        .writeValueAsString(
+                                Map.of("content", "hello", "clientRequestId", clientRequestId));
         mvc.perform(post("/ai/chat/send").contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(jsonPath("$.code").value(400));
         verifyNoInteractions(facade, messages, sessions);

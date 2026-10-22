@@ -1,12 +1,17 @@
 package com.nexus.erp.wm.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.common.trace.*;
+
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class ErpTypedBarcodeResolutionTest {
     JdbcTemplate jdbc;
@@ -103,10 +108,9 @@ class ErpTypedBarcodeResolutionTest {
     @Test
     void aDocumentCarrierResolvesItsAuthorizedActualDocument() {
         var docs = documents();
-        try (var auth = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
-            auth.when(cn.dev33.satoken.stp.StpUtil::isLogin).thenReturn(true);
-            auth.when(() -> cn.dev33.satoken.stp.StpUtil.hasPermission("wm:receive:query"))
-                    .thenReturn(true);
+        try (var auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::isLogin).thenReturn(true);
+            auth.when(() -> StpUtil.hasPermission("wm:receive:query")).thenReturn(true);
             var result =
                     docs.resolve(
                             "000001",
@@ -128,8 +132,8 @@ class ErpTypedBarcodeResolutionTest {
     @Test
     void aDocumentCarrierNeverBypassesItsObjectPermission() {
         var docs = documents();
-        try (var auth = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
-            auth.when(cn.dev33.satoken.stp.StpUtil::isLogin).thenReturn(true);
+        try (var auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::isLogin).thenReturn(true);
             assertTrue(
                     docs.resolve(
                                     "000001",

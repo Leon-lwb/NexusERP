@@ -1,19 +1,24 @@
 package com.nexus.ai.mcp.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.mcp.McpPinnedHttpClientBuilder;
 import com.nexus.ai.mcp.service.impl.McpMarketServiceImpl;
 import com.nexus.common.ai.domain.entity.AiMcpMarket;
+import com.nexus.common.ai.domain.entity.AiMcpMarketTool;
+import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiMcpMarketMapper;
 import com.nexus.common.ai.mapper.AiMcpMarketToolMapper;
 import com.nexus.common.ai.mapper.AiToolMapper;
+
 import dev.langchain4j.http.client.HttpRequest;
 import dev.langchain4j.http.client.SuccessfulHttpResponse;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedConstruction;
 
 /** 保留市场URL/导入/跳转/异常回归；改用受控HTTP客户端替身，不发请求。 */
 class McpMarketServiceImplTest {
@@ -31,13 +36,15 @@ class McpMarketServiceImplTest {
     }
 
     @Test void loadingUnauthorizedRemoteMetadataFailsBeforeWritingLocalTool() {
-        var entry=new com.nexus.common.ai.domain.entity.AiMcpMarketTool();entry.setId(2L);entry.setToolName("unauthorized_remote");
+        var entry = new AiMcpMarketTool();
+        entry.setId(2L);
+        entry.setToolName("unauthorized_remote");
         entry.setToolMetadata("{\"baseUrl\":\"http://127.0.0.1:19540/mcp\"}");entry.setIsLoaded("0");
         var entries=mock(AiMcpMarketToolMapper.class);var tools=mock(AiToolMapper.class);
         var guarded=new McpMarketServiceImpl(mapper,entries,tools,new ObjectMapper());when(entries.selectById(2L)).thenReturn(entry);
         assertThrows(RuntimeException.class,()->guarded.loadToolToLocal(2L));
-        verify(tools,never()).insert(any(com.nexus.common.ai.domain.entity.AiTool.class));
-        verify(entries,never()).updateById(any(com.nexus.common.ai.domain.entity.AiMcpMarketTool.class));
+        verify(tools, never()).insert(any(AiTool.class));
+        verify(entries, never()).updateById(any(AiMcpMarketTool.class));
     }
 
     @Test void refreshDisablesAutomaticRedirects() {
@@ -45,7 +52,8 @@ class McpMarketServiceImplTest {
         try(var builders=fakeResponse()){
             assertEquals(0,service.refreshMarketTools(1L).addedCount());assertEquals(1,builders.constructed().size());
             // 受控适配器的真实DNS/代理/禁止跳转设置由McpPinnedHttpClientTest验证。
-            var request=org.mockito.ArgumentCaptor.forClass(HttpRequest.class);verify(http).execute(request.capture());
+            var request = ArgumentCaptor.forClass(HttpRequest.class);
+            verify(http).execute(request.capture());
             assertEquals("https://93.184.216.34/catalog",request.getValue().url());verify(http).close();
         }
     }

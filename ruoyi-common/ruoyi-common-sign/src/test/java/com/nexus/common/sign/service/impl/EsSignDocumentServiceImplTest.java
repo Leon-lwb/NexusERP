@@ -1,5 +1,9 @@
 package com.nexus.common.sign.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -8,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.EsSignDocument;
 import com.nexus.common.sign.domain.vo.EsSignDocumentVo;
@@ -16,6 +21,7 @@ import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.common.sign.support.pdf.PdfContentStamper;
 import com.nexus.common.sign.support.pdf.PdfTestSupport;
 import com.nexus.common.sign.util.Sm3Utils;
+
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,10 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * {@code IESSignDocumentService} 实现的服务层测试（P2a-3）。
@@ -85,20 +87,29 @@ class EsSignDocumentServiceImplTest {
     private static byte[] twoPagePdf;
     private static byte[] threePagePdf;
 
-    @Mock private EsSignDocumentMapper baseMapper;
-    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
-    @Mock private OssContentAccessor ossContentAccessor;
-    @Mock private LockTemplate lockTemplate;
+    @Mock
+    private EsSignDocumentMapper baseMapper;
+    @Mock
+    private ObjectProvider<OssContentAccessor> ossAccessorProvider;
+    @Mock
+    private OssContentAccessor ossContentAccessor;
+    @Mock
+    private LockTemplate lockTemplate;
 
-    @Captor private ArgumentCaptor<EsSignDocument> docCaptor;
-    @Captor private ArgumentCaptor<byte[]> storedBytesCaptor;
-    @Captor private ArgumentCaptor<String> fileNameCaptor;
-    @Captor private ArgumentCaptor<String> contentTypeCaptor;
-    @Captor private ArgumentCaptor<LambdaUpdateWrapper<EsSignDocument>> updateWrapperCaptor;
+    @Captor
+    private ArgumentCaptor<EsSignDocument> docCaptor;
+    @Captor
+    private ArgumentCaptor<byte[]> storedBytesCaptor;
+    @Captor
+    private ArgumentCaptor<String> fileNameCaptor;
+    @Captor
+    private ArgumentCaptor<String> contentTypeCaptor;
+    @Captor
+    private ArgumentCaptor<LambdaUpdateWrapper<EsSignDocument>> updateWrapperCaptor;
 
     private EsSignDocumentServiceImpl service;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
-    private MockedStatic<com.nexus.common.satoken.utils.LoginHelper> loginHelperMock;
+    private MockedStatic<LoginHelper> loginHelperMock;
 
     @BeforeAll
     static void buildFixtures() {
@@ -123,8 +134,8 @@ class EsSignDocumentServiceImplTest {
         }
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(EsSignDocument.class)).thenReturn(cols);
 
-        loginHelperMock = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getTenantId).thenReturn(TENANT);
+        loginHelperMock = mockStatic(LoginHelper.class);
+        loginHelperMock.when(LoginHelper::getTenantId).thenReturn(TENANT);
 
         when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(newLock());
         when(ossAccessorProvider.getIfAvailable()).thenReturn(ossContentAccessor);

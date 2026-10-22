@@ -1,26 +1,50 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.ai.decision.dto.ApsScenarioCompareResult;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
+import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.json.utils.JsonUtils;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
+import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
+import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
+import com.nexus.erp.prd.schedule.ScheduleModel;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.Set;
+import java.util.stream.LongStream;
 
 @Tag("dev")
 class ErpDecisionApsSimulationTest {
@@ -34,17 +58,22 @@ class ErpDecisionApsSimulationTest {
     private final ErpDecisionApsSimulation simulation =
         new ErpDecisionApsSimulation(assembler, workOrderMapper, shortage);
 
-    @org.junit.jupiter.api.BeforeAll
+    @BeforeAll
     static void initMybatisWorkOrderMetadata() {
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
-            new org.apache.ibatis.builder.MapperBuilderAssistant(
-                new com.baomidou.mybatisplus.core.MybatisConfiguration(), ""),
-            com.nexus.erp.prd.domain.PrdWorkOrder.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), PrdWorkOrder.class);
     }
-    private com.nexus.common.ai.decision.dto.ShortageSimulationResult knownMaterialResult() {
-        return new com.nexus.common.ai.decision.dto.ShortageSimulationResult(false, 0, null,
-            BigDecimal.ZERO, List.of(), new com.nexus.common.ai.decision.dto.DecisionKpiSet(
-                0, 0, 0, 0, null, 0, BigDecimal.ZERO, null, null, 0, 0, null), List.of(), List.of());
+
+    private ShortageSimulationResult knownMaterialResult() {
+        return new ShortageSimulationResult(
+                false,
+                0,
+                null,
+                BigDecimal.ZERO,
+                List.of(),
+                new DecisionKpiSet(0, 0, 0, 0, null, 0, BigDecimal.ZERO, null, null, 0, 0, null),
+                List.of(),
+                List.of());
     }
     private DeliveryContextSnapshot snapshot(Map<String, Object> schedule) {
         return new DeliveryContextSnapshot(
@@ -88,7 +117,7 @@ class ErpDecisionApsSimulationTest {
     }
 
     private Map<String, Object> withField(Map<String, Object> row, String field, Object value) {
-        var copy = new java.util.HashMap<>(row);
+        var copy = new HashMap<>(row);
         copy.put(field, value);
         return copy;
     }
@@ -286,42 +315,43 @@ class ErpDecisionApsSimulationTest {
             LocalDateTime.of(2026, 9, 24, 10, 0), List.of());
     }
 
-    private com.nexus.erp.prd.domain.PrdWorkOrder liveWo(long id, String status) {
-        com.nexus.erp.prd.domain.PrdWorkOrder wo = new com.nexus.erp.prd.domain.PrdWorkOrder();
+    private PrdWorkOrder liveWo(long id, String status) {
+        PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoId(id);
         wo.setWoNo("WO-" + id);
         wo.setMaterialId(101L);
         wo.setPlannedQty(new BigDecimal("16"));
         wo.setCompletedQty(BigDecimal.ZERO);
-        wo.setPlanEndDate(java.util.Date.from(TODAY.atStartOfDay(java.time.ZoneId.of("Asia/Shanghai")).toInstant()));
+        wo.setPlanEndDate(Date.from(TODAY.atStartOfDay(ZoneId.of("Asia/Shanghai")).toInstant()));
         wo.setPriority(1L);
         wo.setWorkshopId(3L);
         wo.setWoStatus(status);
         return wo;
     }
 
-    private com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput engineInput(String strategy,
-                                                                                BigDecimal dailyCapacity) {
-        var wo = new com.nexus.erp.prd.schedule.ScheduleModel.WoInfo();
+    private ScheduleModel.ScheduleInput engineInput(String strategy, BigDecimal dailyCapacity) {
+        var wo = new ScheduleModel.WoInfo();
         wo.setWoId(11L); wo.setWoNo("WO-11"); wo.setMaterialId(101L);
         wo.setRemainingQty(new BigDecimal("16")); wo.setPriority(1L);
         wo.setDueDate(TODAY); wo.setWorkshopId(3L);
-        var step = new com.nexus.erp.prd.schedule.ScheduleModel.StepInfo();
+        var step = new ScheduleModel.StepInfo();
         step.setStepId(901L); step.setSeqNum(1); step.setStandardHours(BigDecimal.ONE);
-        var input = new com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput();
+        var input = new ScheduleModel.ScheduleInput();
         input.setWorkOrders(List.of(wo));
         input.setRoutingProvider(material -> List.of(step));
-        input.setStrategy(com.nexus.erp.prd.schedule.ScheduleModel.Strategy.valueOf(strategy));
+        input.setStrategy(ScheduleModel.Strategy.valueOf(strategy));
         input.setStartDate(TODAY); input.setHorizonDays(7);
         input.setCapacityByDate(Map.of(TODAY, Map.of("WORKSHOP:3", dailyCapacity),
             TODAY.plusDays(1), Map.of("WORKSHOP:3", dailyCapacity)));
-        input.setHolidays(java.util.Set.of());
+        input.setHolidays(Set.of());
         return input;
     }
 
     private ErpDecisionApsSimulation withRealShortage() {
-        return new ErpDecisionApsSimulation(assembler, workOrderMapper,
-            new ErpDecisionShortageSimulation(new com.nexus.erp.prd.schedule.PrdShortageScenarioService()));
+        return new ErpDecisionApsSimulation(
+                assembler,
+                workOrderMapper,
+                new ErpDecisionShortageSimulation(new PrdShortageScenarioService()));
     }
 
     @Test
@@ -331,14 +361,22 @@ class ErpDecisionApsSimulationTest {
                 "startTime", TODAY.toString(), "endTime", TODAY.toString())));
         DeliveryContextSnapshot snapshot = withMaterialEvidence(saved, true, true, true);
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
-            var bo = (com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0);
-            assertEquals(TODAY, bo.getStartDate().toInstant()
-                .atZone(java.time.ZoneId.of("Asia/Shanghai")).toLocalDate());
-            assertEquals(7, bo.getHorizonDays());
-            assertEquals(List.of(11L), List.copyOf((java.util.Collection<Long>) call.getArgument(1)));
-            return engineInput(bo.getStrategy(), new BigDecimal("8"));
-        });
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            var bo = (PrdSchedulePlanBo) call.getArgument(0);
+                            assertEquals(
+                                    TODAY,
+                                    bo.getStartDate()
+                                            .toInstant()
+                                            .atZone(ZoneId.of("Asia/Shanghai"))
+                                            .toLocalDate());
+                            assertEquals(7, bo.getHorizonDays());
+                            assertEquals(
+                                    List.of(11L),
+                                    List.copyOf((Collection<Long>) call.getArgument(1)));
+                            return engineInput(bo.getStrategy(), new BigDecimal("8"));
+                        });
         var sim = withRealShortage();
         var compared = sim.compare(snapshot, null, 7);
         List<DecisionScenario> scenarios = compared.scenarios();
@@ -361,22 +399,23 @@ class ErpDecisionApsSimulationTest {
             "one overridden purchase line costs one proxy unit, not actual money");
         assertTrue(compared.warnings().contains("EXPEDITE_COST_IS_LINE_COUNT_PROXY"));
         assertNotEquals(cr.inputHash(), expedite.inputHash());
-        verify(assembler, times(2)).assemble(any(), any(java.util.Collection.class));
+        verify(assembler, times(2)).assemble(any(), any(Collection.class));
         assertEquals(sim.compare(snapshot, null, 7).scenarios().get(2).inputHash(), cr.inputHash());
         assertEquals(sim.compare(snapshot, null, 7).scenarios().get(2).schedulePreview(), cr.schedulePreview());
         assertEquals(saved, snapshot.currentSchedule());
         assertEquals(0, cr.rank()); assertNull(cr.objectiveScore());
         assertInstanceOf(String.class, cr.schedulePreview().get(0).get("woId"));
         assertInstanceOf(String.class, cr.schedulePreview().get(0).get("processHours"));
-        assertDoesNotThrow(() -> com.nexus.common.json.utils.JsonUtils.toJsonString(cr.schedulePreview()));
+        assertDoesNotThrow(() -> JsonUtils.toJsonString(cr.schedulePreview()));
     }
 
     @Test
     void mapperExtraDuplicateOrMissingFailsClosedAndDoesNotAssemble() {
-        for (List<com.nexus.erp.prd.domain.PrdWorkOrder> rows : List.of(
-            List.of(liveWo(99L, "CREATED")),
-            List.of(liveWo(11L, "CREATED"), liveWo(11L, "CREATED")),
-            List.<com.nexus.erp.prd.domain.PrdWorkOrder>of())) {
+        for (List<PrdWorkOrder> rows :
+                List.of(
+                        List.of(liveWo(99L, "CREATED")),
+                        List.of(liveWo(11L, "CREATED"), liveWo(11L, "CREATED")),
+                        List.<PrdWorkOrder>of())) {
             reset(workOrderMapper, assembler);
             when(workOrderMapper.selectList(any())).thenReturn(rows);
             assertStale(() -> simulation.compare(snapshot(Map.of()), List.of("APS_EDD"), 7));
@@ -393,13 +432,16 @@ class ErpDecisionApsSimulationTest {
             base.stocks(), base.arrivals(), base.capacityByDate(), base.holidays(), base.currentSchedule(),
             base.supplierMetrics(), base.snapshotHash(), base.snapshotAt(), base.warnings());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED"), liveWo(22L, "APPROVING")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenAnswer(call -> {
-                assertEquals(List.of(11L), List.copyOf((java.util.Collection<Long>) call.getArgument(1)));
-                return engineInput("EDD", new BigDecimal("8"));
-            });
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            assertEquals(
+                                    List.of(11L),
+                                    List.copyOf((Collection<Long>) call.getArgument(1)));
+                            return engineInput("EDD", new BigDecimal("8"));
+                        });
         simulation.compare(two, List.of("APS_EDD"), 7);
-        verify(assembler).assemble(any(), any(java.util.Collection.class));
+        verify(assembler).assemble(any(), any(Collection.class));
         reset(assembler, workOrderMapper);
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "APPROVING"), liveWo(22L, "CLOSED")));
         DecisionScenario result = simulation.compare(two, List.of("APS_EDD"), 7).scenarios().get(0);
@@ -422,7 +464,9 @@ class ErpDecisionApsSimulationTest {
         var snap = snapshot(Map.of());
         assertThrows(IllegalArgumentException.class, () -> simulation.compare(snap, List.of("APS_EDD", "APS_EDD"), 7));
         assertThrows(IllegalArgumentException.class, () -> simulation.compare(snap, List.of("A", "B", "C", "D", "E"), 7));
-        assertThrows(IllegalArgumentException.class, () -> simulation.compare(snap, java.util.Arrays.asList("APS_EDD", null), 7));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> simulation.compare(snap, Arrays.asList("APS_EDD", null), 7));
         assertThrows(IllegalArgumentException.class, () -> simulation.compare(snap, List.of("APS_EDD"), 0));
         assertEquals(List.of("UNSUPPORTED_SCENARIO"), simulation.compare(snap, List.of("CURRENT"), 7)
             .scenarios().get(0).infeasibleReasons());
@@ -432,11 +476,14 @@ class ErpDecisionApsSimulationTest {
     @Test
     void assemblerErrorsAndProgrammingBugsAbortWithoutContinuingScenarios() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
-            var bo = (com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0);
-            if ("EDD".equals(bo.getStrategy())) throw new com.nexus.common.core.exception.ServiceException("NO_ROUTE");
-            return engineInput("CR", new BigDecimal("8"));
-        });
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            var bo = (PrdSchedulePlanBo) call.getArgument(0);
+                            if ("EDD".equals(bo.getStrategy()))
+                                throw new ServiceException("NO_ROUTE");
+                            return engineInput("CR", new BigDecimal("8"));
+                        });
         var base = withMaterialEvidence(savedOneTask(), true, true, false);
         var safe = new DeliveryContextSnapshot(base.rootBusinessRef(), base.salesOrders(),
             base.workOrders(), base.routingByMaterial(), base.requirements(),
@@ -446,13 +493,18 @@ class ErpDecisionApsSimulationTest {
             base.snapshotAt(), base.warnings());
         var sim = withRealShortage();
         assertTrue(sim.compare(safe, List.of("BASELINE_CURRENT"), 7).scenarios().get(0).feasible());
-        var failure = assertThrows(com.nexus.common.core.exception.ServiceException.class, () ->
-            sim.compare(safe, List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7));
+        var failure =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                sim.compare(
+                                        safe, List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7));
         assertEquals("NO_ROUTE", failure.getMessage());
-        verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
+        verify(assembler, times(1)).assemble(any(), any(Collection.class));
         /** 未分类装配异常出现后，不得继续运行 CR 候选。 */
         reset(assembler);
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenThrow(new NullPointerException("bug"));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenThrow(new NullPointerException("bug"));
         assertThrows(NullPointerException.class, () -> simulation.compare(withMaterialEvidence(Map.of(), true, true, true), List.of("APS_EDD"), 7));
     }
 
@@ -463,17 +515,25 @@ class ErpDecisionApsSimulationTest {
         assertTrue(simulation.compare(snapshot, List.of("BASELINE_CURRENT"), 7)
             .scenarios().get(0).feasible());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        var forbidden = new com.nexus.common.core.exception.ServiceException("NO_ROUTE", 403);
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
-            var bo = (com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0);
-            if ("EDD".equals(bo.getStrategy())) throw forbidden;
-            return engineInput("CR", new BigDecimal("8"));
-        });
-        var caught = assertThrows(com.nexus.common.core.exception.ServiceException.class, () ->
-            simulation.compare(snapshot, List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7));
+        var forbidden = new ServiceException("NO_ROUTE", 403);
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            var bo = (PrdSchedulePlanBo) call.getArgument(0);
+                            if ("EDD".equals(bo.getStrategy())) throw forbidden;
+                            return engineInput("CR", new BigDecimal("8"));
+                        });
+        var caught =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                simulation.compare(
+                                        snapshot,
+                                        List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"),
+                                        7));
         assertSame(forbidden, caught, "must preserve original error code and instance");
         assertEquals(403, caught.getCode());
-        verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
+        verify(assembler, times(1)).assemble(any(), any(Collection.class));
     }
 
     @Test
@@ -481,22 +541,22 @@ class ErpDecisionApsSimulationTest {
         var snapshot = withMaterialEvidence(Map.of(), true, true, true);
         when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("CR", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("CR", new BigDecimal("8")));
         var compared = simulation.compare(snapshot, List.of("NOT_SUPPORTED", "APS_CR"), 7);
         assertEquals(2, compared.scenarios().size());
         assertEquals(List.of("UNSUPPORTED_SCENARIO"), compared.scenarios().get(0).infeasibleReasons());
         assertNotNull(compared.scenarios().get(0).inputHash());
         assertTrue(compared.scenarios().get(1).feasible());
         assertFalse(compared.scenarios().get(1).schedulePreview().isEmpty());
-        verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
+        verify(assembler, times(1)).assemble(any(), any(Collection.class));
     }
 
     @Test
     void missingRequirementOrStockMustNotBecomeFeasibleEvenWhenApsFinishes() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("8")));
         for (var snapshot : List.of(withMaterialEvidence(Map.of(), false, true, true),
             withMaterialEvidence(Map.of(), true, false, true))) {
             DecisionScenario scenario = withRealShortage().compare(snapshot, List.of("APS_EDD"), 7).scenarios().get(0);
@@ -508,8 +568,8 @@ class ErpDecisionApsSimulationTest {
     @Test
     void missingArrivalOrLateArrivalNeverMovesApsMakespan() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("CR", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("CR", new BigDecimal("8")));
         var results = withRealShortage().compare(withMaterialEvidence(Map.of(), true, true, false),
             List.of("APS_CR", "APS_CR_EXPEDITE"), 7).scenarios();
         assertTrue(results.get(1).infeasibleReasons().contains("NO_EXPEDITABLE_PURCHASE_LINE"));
@@ -520,8 +580,8 @@ class ErpDecisionApsSimulationTest {
     @Test
     void changingActualCapacityChangesHashWhileSameInputsRemainStable() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("8")));
         var sim = withRealShortage();
         var snap = withMaterialEvidence(Map.of(), true, true, true);
         var first = sim.compare(snap, List.of("APS_EDD"), 7).scenarios().get(0);
@@ -530,8 +590,8 @@ class ErpDecisionApsSimulationTest {
         assertEquals(first.schedulePreview(), repeated.schedulePreview());
         assertEquals(64, first.inputHash().length());
         reset(assembler);
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("16")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("16")));
         var newerSnapshot = withApsFacts(snap, routeFacts(), calendar(new BigDecimal("16")),
             List.of(), "hash-capacity-16");
         var changed = sim.compare(newerSnapshot, List.of("APS_EDD"), 7).scenarios().get(0);
@@ -542,12 +602,14 @@ class ErpDecisionApsSimulationTest {
     @Test
     void incompleteHorizonOrSkippedRoutingIsNeverFeasible() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenAnswer(call -> {
-                var input = engineInput("EDD", new BigDecimal("8"));
-                input.setHorizonDays(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getHorizonDays());
-                return input;
-            });
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            var input = engineInput("EDD", new BigDecimal("8"));
+                            input.setHorizonDays(
+                                    ((PrdSchedulePlanBo) call.getArgument(0)).getHorizonDays());
+                            return input;
+                        });
         var sim = withRealShortage();
         var snap = withMaterialEvidence(Map.of(), true, true, true);
         assertTrue(sim.compare(snap, List.of("APS_EDD"), 1).scenarios().get(0)
@@ -555,7 +617,7 @@ class ErpDecisionApsSimulationTest {
         var empty = engineInput("EDD", new BigDecimal("8"));
         empty.setRoutingProvider(material -> List.of());
         reset(assembler);
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(empty);
+        when(assembler.assemble(any(), any(Collection.class))).thenReturn(empty);
         var withoutRouting = withApsFacts(snap, Map.of(101L, List.of()), snap.capacityByDate(),
             snap.holidays(), "hash-no-route");
         assertTrue(sim.compare(withoutRouting, List.of("APS_EDD"), 7).scenarios().get(0)
@@ -567,8 +629,10 @@ class ErpDecisionApsSimulationTest {
         var saved = Map.<String, Object>of("planId", "42", "strategy", "EDD", "makespanDate",
             TODAY.plusDays(4).toString(), "tasks", List.of(Map.of("taskId", "1", "woId", "11", "seqNum", 1,
                 "startTime", TODAY.toString(), "endTime", TODAY.plusDays(4).toString())));
-        when(shortage.simulate(any(), anyInt(), any())).thenThrow(new com.nexus.common.ai.decision.exception.DecisionEvidenceException(
-            com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE));
+        when(shortage.simulate(any(), anyInt(), any()))
+                .thenThrow(
+                        new DecisionEvidenceException(
+                                DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE));
         var result = assertDoesNotThrow(() -> simulation.compare(snapshot(saved), List.of("BASELINE_CURRENT"), 7));
         assertFalse(result.scenarios().get(0).feasible());
         assertTrue(result.warnings().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
@@ -588,12 +652,12 @@ class ErpDecisionApsSimulationTest {
 
     @Test
     void previewAndBaselineHashAreIndependentOfSavedTaskInsertionOrder() {
-        List<Map<String, Object>> rows = new java.util.ArrayList<>();
+        List<Map<String, Object>> rows = new ArrayList<>();
         for (int i = 59; i >= 0; i--) rows.add(Map.of("taskId", String.valueOf(i + 100), "woId", "11", "seqNum", i,
             "startTime", TODAY.toString(), "endTime", TODAY.toString()));
         Map<String, Object> first = Map.of("planId", "42", "strategy", "CR", "tasks", rows);
-        List<Map<String, Object>> reversed = new java.util.ArrayList<>(rows);
-        java.util.Collections.reverse(reversed);
+        List<Map<String, Object>> reversed = new ArrayList<>(rows);
+        Collections.reverse(reversed);
         var left = simulation.compare(snapshot(first), List.of("BASELINE_CURRENT"), 7).scenarios().get(0);
         var right = simulation.compare(snapshot(Map.of("planId", "42", "strategy", "CR", "tasks", reversed)),
             List.of("BASELINE_CURRENT"), 7).scenarios().get(0);
@@ -609,7 +673,7 @@ class ErpDecisionApsSimulationTest {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
         var input = engineInput("EDD", new BigDecimal("8"));
         input.setRoutingProvider(material -> List.of());
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(input);
+        when(assembler.assemble(any(), any(Collection.class))).thenReturn(input);
         var base = withMaterialEvidence(Map.of(), true, true, true);
         var withoutRouting = withApsFacts(base, Map.of(101L, List.of()), base.capacityByDate(),
             base.holidays(), "hash-no-route");
@@ -622,36 +686,46 @@ class ErpDecisionApsSimulationTest {
     @Test
     void scopedLookupBatchesAtFiveHundredAndRejectsRowsFromOtherBatch() {
         var base = withMaterialEvidence(Map.of(), true, true, false);
-        List<WorkOrderFact> all = new java.util.ArrayList<>();
+        List<WorkOrderFact> all = new ArrayList<>();
         for (long id = 1; id <= 501; id++) all.add(new WorkOrderFact(id, "WO-" + id, 101L,
             new BigDecimal("16"), TODAY, 1L, 3L));
         var wide = new DeliveryContextSnapshot(base.rootBusinessRef(), base.salesOrders(), all,
             base.routingByMaterial(), base.requirements(), base.stocks(), base.arrivals(),
             base.capacityByDate(), base.holidays(), base.currentSchedule(), base.supplierMetrics(),
             base.snapshotHash(), base.snapshotAt(), base.warnings());
-        when(workOrderMapper.selectList(any())).thenAnswer(call -> {
-            var query = (com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) call.getArgument(0);
-            query.getSqlSegment();
-            var ids = query.getParamNameValuePairs().values().stream()
-                .map(value -> ((Number) value).longValue()).toList();
-            assertTrue(ids.size() <= 500);
-            assertTrue(ids.stream().allMatch(id -> id >= 1 && id <= 501));
-            return ids.stream().map(id -> liveWo(id, "CLOSED")).toList();
-        });
+        when(workOrderMapper.selectList(any()))
+                .thenAnswer(
+                        call -> {
+                            var query = (AbstractWrapper<?, ?, ?>) call.getArgument(0);
+                            query.getSqlSegment();
+                            var ids =
+                                    query.getParamNameValuePairs().values().stream()
+                                            .map(value -> ((Number) value).longValue())
+                                            .toList();
+                            assertTrue(ids.size() <= 500);
+                            assertTrue(ids.stream().allMatch(id -> id >= 1 && id <= 501));
+                            return ids.stream().map(id -> liveWo(id, "CLOSED")).toList();
+                        });
         var scenario = simulation.compare(wide, List.of("APS_EDD"), 7).scenarios().get(0);
         assertEquals(List.of("NO_SCHEDULABLE_WORK_ORDERS"), scenario.infeasibleReasons());
         verify(workOrderMapper, times(2)).selectList(any());
         verifyNoInteractions(assembler);
         reset(workOrderMapper);
-        when(workOrderMapper.selectList(any())).thenAnswer(call -> {
-            var query = (com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) call.getArgument(0);
-            query.getSqlSegment();
-            var ids = query.getParamNameValuePairs().values().stream()
-                .map(value -> ((Number) value).longValue()).toList();
-            if (ids.size() == 500) return java.util.stream.LongStream.rangeClosed(1, 501)
-                .mapToObj(id -> liveWo(id, "CLOSED")).toList();
-            return List.of();
-        });
+        when(workOrderMapper.selectList(any()))
+                .thenAnswer(
+                        call -> {
+                            var query = (AbstractWrapper<?, ?, ?>) call.getArgument(0);
+                            query.getSqlSegment();
+                            var ids =
+                                    query.getParamNameValuePairs().values().stream()
+                                            .map(value -> ((Number) value).longValue())
+                                            .toList();
+                            if (ids.size() == 500)
+                                return LongStream.rangeClosed(1, 501)
+                                        .mapToObj(id -> liveWo(id, "CLOSED"))
+                                        .toList();
+                            return List.of();
+                        });
         assertStale(() -> simulation.compare(wide, List.of("APS_EDD"), 7));
         verifyNoInteractions(assembler);
     }
@@ -661,8 +735,8 @@ class ErpDecisionApsSimulationTest {
         Map<String, Object> orphan = Map.of("tasks", List.of(Map.of("woId", "11", "seqNum", 1,
             "taskId", "1", "startTime", TODAY.toString(), "endTime", TODAY.plusDays(1).toString())));
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("8")));
         var result = withRealShortage().compare(withMaterialEvidence(orphan, true, true, true),
             List.of("BASELINE_CURRENT", "APS_EDD"), 7);
         assertEquals(List.of("NO_SAVED_SCHEDULE"), result.scenarios().get(0).infeasibleReasons());
@@ -704,11 +778,13 @@ class ErpDecisionApsSimulationTest {
             base.capacityByDate(), base.holidays(), base.currentSchedule(), base.supplierMetrics(),
             base.snapshotHash(), base.snapshotAt(), base.warnings());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
-            var input = engineInput("CR", new BigDecimal("8"));
-            input.setHorizonDays(1);
-            return input;
-        });
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            var input = engineInput("CR", new BigDecimal("8"));
+                            input.setHorizonDays(1);
+                            return input;
+                        });
         var scenarios = withRealShortage().compare(nowDemand, List.of("APS_CR", "APS_CR_EXPEDITE"), 1).scenarios();
         assertTrue(scenarios.get(0).infeasibleReasons().contains("SCHEDULE_INCOMPLETE"));
         assertTrue(scenarios.get(1).infeasibleReasons().contains("NO_EXPEDITABLE_PURCHASE_LINE"));
@@ -740,7 +816,7 @@ class ErpDecisionApsSimulationTest {
     }
 
     private void assertStale(Runnable compare) {
-        var ex = assertThrows(com.nexus.common.core.exception.ServiceException.class, compare::run);
+        var ex = assertThrows(ServiceException.class, compare::run);
         assertTrue(ex.getMessage().startsWith("STALE_SNAPSHOT"), ex.getMessage());
     }
 
@@ -750,10 +826,10 @@ class ErpDecisionApsSimulationTest {
             routeFacts(), calendar(new BigDecimal("8")), List.of(), "hash-route-old");
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
         var changed = engineInput("EDD", new BigDecimal("8"));
-        var newStep = new com.nexus.erp.prd.schedule.ScheduleModel.StepInfo();
+        var newStep = new ScheduleModel.StepInfo();
         newStep.setStepId(901L); newStep.setSeqNum(1); newStep.setStandardHours(new BigDecimal("16"));
         changed.setRoutingProvider(material -> List.of(newStep));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(changed);
+        when(assembler.assemble(any(), any(Collection.class))).thenReturn(changed);
         assertStale(() -> withRealShortage().compare(snap, List.of("BASELINE_CURRENT", "APS_EDD"), 7));
         /** 缺失的旧工艺路线不得由新建的实时路线悄然补齐。 */
         var missing = withApsFacts(snap, Map.of(), snap.capacityByDate(), List.of(), "hash-no-route");
@@ -765,13 +841,13 @@ class ErpDecisionApsSimulationTest {
         var snap = withApsFacts(withMaterialEvidence(Map.of(), true, true, true),
             routeFacts(), calendar(new BigDecimal("8")), List.of(), "hash-calendar-old");
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("16")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("16")));
         assertStale(() -> withRealShortage().compare(snap, List.of("APS_EDD"), 7));
         var holiday = engineInput("EDD", new BigDecimal("8"));
-        holiday.setHolidays(java.util.Set.of(TODAY));
+        holiday.setHolidays(Set.of(TODAY));
         reset(assembler);
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(holiday);
+        when(assembler.assemble(any(), any(Collection.class))).thenReturn(holiday);
         assertStale(() -> withRealShortage().compare(snap, List.of("APS_EDD"), 7));
     }
 
@@ -786,10 +862,14 @@ class ErpDecisionApsSimulationTest {
             base.holidays(), base.currentSchedule(), base.supplierMetrics(), base.snapshotHash(),
             base.snapshotAt(), base.warnings());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenThrow(new com.nexus.common.core.exception.ServiceException("ERP_ACCESS_DENIED"));
-        var ex = assertThrows(com.nexus.common.core.exception.ServiceException.class, () ->
-            withRealShortage().compare(safe, List.of("BASELINE_CURRENT", "APS_EDD"), 7));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenThrow(new ServiceException("ERP_ACCESS_DENIED"));
+        var ex =
+                assertThrows(
+                        ServiceException.class,
+                        () ->
+                                withRealShortage()
+                                        .compare(safe, List.of("BASELINE_CURRENT", "APS_EDD"), 7));
         assertEquals("ERP_ACCESS_DENIED", ex.getMessage());
         reset(workOrderMapper, assembler);
         when(workOrderMapper.selectList(any())).thenThrow(new IllegalArgumentException("DATA_SOURCE_DENIED"));
@@ -813,7 +893,7 @@ class ErpDecisionApsSimulationTest {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
         var changedInput = engineInput("EDD", new BigDecimal("8"));
         changedInput.getWorkOrders().get(0).setWoNo("RENAMED-BETWEEN-READS");
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(changedInput);
+        when(assembler.assemble(any(), any(Collection.class))).thenReturn(changedInput);
         assertStale(() -> withRealShortage().compare(snap, List.of("APS_EDD"), 7));
     }
 
@@ -826,7 +906,7 @@ class ErpDecisionApsSimulationTest {
                 "startTime", TODAY.plusDays(1).toString(), "endTime", TODAY.plusDays(1).toString())));
         var first = simulation.compare(snapshot(backwards), List.of("BASELINE_CURRENT"), 7).scenarios().get(0);
         assertEquals(List.of("INVALID_SAVED_SCHEDULE"), first.infeasibleReasons());
-        var terminal = new java.util.LinkedHashMap<String, Object>();
+        var terminal = new LinkedHashMap<String, Object>();
         terminal.put("taskId", "2"); terminal.put("woId", "11"); terminal.put("seqNum", 2);
         terminal.put("startTime", TODAY.plusDays(1).toString()); terminal.put("endTime", null);
         var saved = Map.<String, Object>of("planId", "42", "tasks", List.of(
@@ -851,8 +931,8 @@ class ErpDecisionApsSimulationTest {
     @Test
     void review5UnknownMaterialRiskHasNoCompositeKpisButKeepsSchedulePreview() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("8")));
         var result = withRealShortage().compare(withMaterialEvidence(Map.of(), false, true, true),
             List.of("APS_EDD"), 7).scenarios().get(0);
         assertEquals(List.of("SHORTAGE_UNKNOWN"), result.infeasibleReasons());
@@ -872,8 +952,8 @@ class ErpDecisionApsSimulationTest {
         var eight = simulation.compare(saved, List.of("BASELINE_CURRENT"), 8).scenarios().get(0);
         assertNotEquals(seven.inputHash(), eight.inputHash());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("8")));
         var base = withApsFacts(withMaterialEvidence(Map.of(), true, true, true),
             routeFacts(), calendar(new BigDecimal("8")), List.of(), "stock-low");
         var enough = new DeliveryContextSnapshot(base.rootBusinessRef(), base.salesOrders(), base.workOrders(),
@@ -896,12 +976,12 @@ class ErpDecisionApsSimulationTest {
             "startTime", TODAY.toString(), "endTime", TODAY.toString());
         Map<String, Object> firstLink = Map.of("workOrderId", "11", "salesOrderId", "42");
         Map<String, Object> secondLink = Map.of("workOrderId", "22", "salesOrderId", "43");
-        var a = new java.util.LinkedHashMap<String, Object>(savedOneTask());
+        var a = new LinkedHashMap<String, Object>(savedOneTask());
         a.put("tasks", List.of(secondTask, firstTask));
         a.put("workOrderSalesOrders", List.of(secondLink, firstLink));
         a.put("workOrderIds", List.of("22", "11"));
         a.put("workOrderSalesOrderIds", List.of("43", "42"));
-        var b = new java.util.LinkedHashMap<String, Object>(savedOneTask());
+        var b = new LinkedHashMap<String, Object>(savedOneTask());
         b.put("tasks", List.of(firstTask, secondTask));
         b.put("workOrderSalesOrders", List.of(firstLink, secondLink));
         b.put("workOrderIds", List.of("11", "22"));
@@ -926,9 +1006,16 @@ class ErpDecisionApsSimulationTest {
 
     @Test
     void review5NoRequirementWarningRejectsCompositeKpisEvenIfHelperSuppliesZeros() {
-        var misleading = new com.nexus.common.ai.decision.dto.ShortageSimulationResult(false, 0, null,
-            BigDecimal.ZERO, List.of(), knownMaterialResult().kpis(), List.of(),
-            List.of("NO_REQUIREMENT_DATA"));
+        var misleading =
+                new ShortageSimulationResult(
+                        false,
+                        0,
+                        null,
+                        BigDecimal.ZERO,
+                        List.of(),
+                        knownMaterialResult().kpis(),
+                        List.of(),
+                        List.of("NO_REQUIREMENT_DATA"));
         when(shortage.simulate(any(), anyInt(), any())).thenReturn(misleading);
         var saved = simulation.compare(snapshot(savedOneTask()), List.of("BASELINE_CURRENT"), 7)
             .scenarios().get(0);
@@ -936,8 +1023,8 @@ class ErpDecisionApsSimulationTest {
         assertNull(saved.kpis());
         assertTrue(saved.infeasibleReasons().contains("SHORTAGE_UNKNOWN"));
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("CR", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("CR", new BigDecimal("8")));
         var scenarios = simulation.compare(withMaterialEvidence(Map.of(), true, true, true),
             List.of("APS_CR", "APS_CR_EXPEDITE"), 7).scenarios();
         for (var scenario : scenarios) {
@@ -952,8 +1039,8 @@ class ErpDecisionApsSimulationTest {
     void review3InputHashContainsWorkOrderCodeEvenWhenSnapshotHashIsUnchanged() {
         var original = withMaterialEvidence(Map.of(), true, true, true);
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class)))
-            .thenReturn(engineInput("EDD", new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenReturn(engineInput("EDD", new BigDecimal("8")));
         String before = withRealShortage().compare(original, List.of("APS_EDD"), 7)
             .scenarios().get(0).inputHash();
         var renamed = new WorkOrderFact(11L, "WO-RENAMED", 101L, new BigDecimal("16"),
@@ -967,11 +1054,13 @@ class ErpDecisionApsSimulationTest {
         row.setWoNo("WO-RENAMED");
         reset(workOrderMapper, assembler);
         when(workOrderMapper.selectList(any())).thenReturn(List.of(row));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
-            var input = engineInput("EDD", new BigDecimal("8"));
-            input.getWorkOrders().get(0).setWoNo("WO-RENAMED");
-            return input;
-        });
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call -> {
+                            var input = engineInput("EDD", new BigDecimal("8"));
+                            input.getWorkOrders().get(0).setWoNo("WO-RENAMED");
+                            return input;
+                        });
         String after = withRealShortage().compare(changed, List.of("APS_EDD"), 7)
             .scenarios().get(0).inputHash();
         assertNotEquals(before, after);
@@ -991,7 +1080,7 @@ class ErpDecisionApsSimulationTest {
                 case "transfer" -> step.setTransferTime(new BigDecimal("3"));
                 default -> fail("unknown test case");
             }
-            when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(input);
+            when(assembler.assemble(any(), any(Collection.class))).thenReturn(input);
             assertStale(() -> withRealShortage().compare(snapshot,
                 List.of("BASELINE_CURRENT", "APS_EDD"), 7));
         }
@@ -1028,7 +1117,7 @@ class ErpDecisionApsSimulationTest {
 
     @Test
     void scopeBaselineUsesTerminalMaxNotGlobalPlanMakespan() {
-        var saved = new java.util.LinkedHashMap<String, Object>(savedOneTask());
+        var saved = new LinkedHashMap<String, Object>(savedOneTask());
         saved.put("makespanDate", TODAY.plusDays(5).toString());
         saved.put("tasks", List.of(Map.of("taskId", "101", "woId", "11", "seqNum", 1,
             "startTime", TODAY.toString(), "endTime", TODAY.plusDays(1).toString())));
@@ -1055,8 +1144,12 @@ class ErpDecisionApsSimulationTest {
     void mixedUnitNullTotalDoesNotLoseRealApsOrExpediteBasis() {
         var snapshot = confirmedMixedMaterialSnapshot(true);
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call ->
-            engineInput(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getStrategy(), new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call ->
+                                engineInput(
+                                        ((PrdSchedulePlanBo) call.getArgument(0)).getStrategy(),
+                                        new BigDecimal("8")));
         var scenarios = withRealShortage().compare(snapshot, null, 7).scenarios();
         assertEquals(4, scenarios.size());
         for (var scenario : scenarios) {
@@ -1078,8 +1171,12 @@ class ErpDecisionApsSimulationTest {
     void evenSingleRequestedScenarioWithUnknownArrivalCannotMintRankableKpi() {
         var snapshot = confirmedMixedMaterialSnapshot(false);
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call ->
-            engineInput(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getStrategy(), new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call ->
+                                engineInput(
+                                        ((PrdSchedulePlanBo) call.getArgument(0)).getStrategy(),
+                                        new BigDecimal("8")));
         for (String code : List.of("BASELINE_CURRENT", "APS_EDD")) {
             var compared = withRealShortage().compare(snapshot, List.of(code), 7);
             var scenario = compared.scenarios().get(0);
@@ -1114,8 +1211,12 @@ class ErpDecisionApsSimulationTest {
             original.capacityByDate(), original.holidays(), original.currentSchedule(), original.supplierMetrics(),
             original.snapshotHash(), original.snapshotAt(), original.warnings());
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
-        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call ->
-            engineInput(((com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0)).getStrategy(), new BigDecimal("8")));
+        when(assembler.assemble(any(), any(Collection.class)))
+                .thenAnswer(
+                        call ->
+                                engineInput(
+                                        ((PrdSchedulePlanBo) call.getArgument(0)).getStrategy(),
+                                        new BigDecimal("8")));
         var originalArrival = snapshot.arrivals().get(0).expectedDate();
         var scenarios = withRealShortage().compare(snapshot, null, 7).scenarios();
         for (var scenario : scenarios) {

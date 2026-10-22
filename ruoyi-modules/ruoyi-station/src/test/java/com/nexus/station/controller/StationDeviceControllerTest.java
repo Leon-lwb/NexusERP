@@ -1,8 +1,13 @@
 package com.nexus.station.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.station.domain.dto.StationPassReportDto;
@@ -10,17 +15,22 @@ import com.nexus.station.mapper.StationDefectCodeMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
 import com.nexus.station.service.*;
 import com.nexus.system.service.ISysUserService;
+
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.CannotCreateTransactionException;
+import org.springframework.transaction.TransactionSystemException;
+
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.stream.Stream;
 
 /** 设备通道事务外的重试结果分类与拒绝日志脱敏。 */
 class StationDeviceControllerTest {
@@ -38,12 +48,14 @@ class StationDeviceControllerTest {
             verifyNoInteractions(pass);
         } finally { log.detachAppender(appender); appender.stop(); }
     }
-    static java.util.stream.Stream<RuntimeException> retryableFailures() {
-        return java.util.stream.Stream.of(new CannotAcquireLockException("test-only-database-detail"),
-            new org.springframework.dao.DataAccessResourceFailureException("test-only-database-detail"),
-            new org.springframework.dao.RecoverableDataAccessException("test-only-database-detail"),
-            new org.springframework.transaction.CannotCreateTransactionException("test-only-database-detail"),
-            new org.springframework.transaction.TransactionSystemException("test-only-database-detail"));
+
+    static Stream<RuntimeException> retryableFailures() {
+        return Stream.of(
+                new CannotAcquireLockException("test-only-database-detail"),
+                new DataAccessResourceFailureException("test-only-database-detail"),
+                new RecoverableDataAccessException("test-only-database-detail"),
+                new CannotCreateTransactionException("test-only-database-detail"),
+                new TransactionSystemException("test-only-database-detail"));
     }
     @ParameterizedTest @MethodSource("retryableFailures")
     void transientDatabaseAbortIsRetryableOnlyAfterServiceTransactionReturns(RuntimeException failure) {

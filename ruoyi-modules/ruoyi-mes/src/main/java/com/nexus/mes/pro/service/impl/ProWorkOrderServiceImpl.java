@@ -1,32 +1,31 @@
 package com.nexus.mes.pro.service.impl;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.mes.trace.MesCompletionManifestService;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Dict;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.core.domain.R;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.common.json.utils.JsonUtils;
+import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.common.mq.message.WorkOrderReleaseMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
+import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.flash.config.FwProperties;
 import com.nexus.mes.flash.domain.Firmware;
 import com.nexus.mes.flash.mapper.FirmwareMapper;
 import com.nexus.mes.flash.service.IFirmwareService;
-import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.NcrReworkOrder;
 import com.nexus.mes.ncr.mapper.NcrOrderMapper;
@@ -37,6 +36,8 @@ import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
 import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
+import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
+import com.nexus.mes.pro.domain.vo.MesMbomVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderBomLineVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderStepVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
@@ -46,8 +47,6 @@ import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IMesMbomService;
 import com.nexus.mes.pro.service.IProFlowCardService;
-import com.nexus.mes.pro.domain.vo.MesMbomVo;
-import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
@@ -57,9 +56,13 @@ import com.nexus.mes.release.domain.vo.ReleasePkgBomItemVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgConfigVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgFirmwareVo;
 import com.nexus.mes.release.service.IReleasePackageService;
+import com.nexus.mes.trace.MesCompletionManifestService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesProductionDetailFactsService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,6 +73,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -98,8 +102,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final FlowableProcInsIdHelper procInsIdHelper;
     private final MesMqSendService mesMqSendService;
     private final MesCompletionManifestService completionManifests;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    private final com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesProductionDetailFactsService detailFacts;
     private final EqEquipmentMapper equipmentMapper;
 
     /**
@@ -1056,10 +1060,7 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             snapshot.setTotalQuantity(
                     qty.multiply(
                             BigDecimal.ONE.add(
-                                    loss.divide(
-                                            new BigDecimal("100"),
-                                            6,
-                                            java.math.RoundingMode.HALF_UP))));
+                                    loss.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP))));
             snapshot.setRoutingStepId(line.getRoutingStepId());
             snapshot.setSequenceNum(line.getRoutingStepSequence());
             snapshot.setProcessId(line.getProcessId());
@@ -1332,17 +1333,17 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     @Override
     /**
      * 获取
-     * <p>必须显式 @DS("mes") + @Transactional(REQUIRES_NEW): 该回调由 Flowable(master 事务)经 getBean 直接调用,
-     * 外层 master 事务已绑定连接, 仅靠 @DS 改 holder 无法切换(查询会落到 ry-vue 报 pro_work_order 不存在);
-     * REQUIRES_NEW 挂起外层事务、在 holder top="mes" 时另起新事务绑定 mes 连接(同 ERP WmArrivalNotice 先例)。
-     * 原始实现缺 REQUIRES_NEW 导致工单审批流程从未成功启动过(流程实例数为 0)。</p>
+     *
+     * <p>必须显式 @DS("mes") + @Transactional(REQUIRES_NEW): 该回调由 Flowable(master 事务)经 getBean 直接调用, 外层
+     * master 事务已绑定连接, 仅靠 @DS 改 holder 无法切换(查询会落到 ry-vue 报 pro_work_order 不存在); REQUIRES_NEW
+     * 挂起外层事务、在 holder top="mes" 时另起新事务绑定 mes 连接(同 ERP WmArrivalNotice 先例)。 原始实现缺 REQUIRES_NEW
+     * 导致工单审批流程从未成功启动过(流程实例数为 0)。
+     *
      * @param dataId ID
      * @return 返回结果
      */
     @DS("mes")
-    @Transactional(
-            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW,
-            readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

@@ -1,33 +1,5 @@
 package com.nexus.iot.command.service;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.iot.command.domain.IotDeviceCommand;
-import com.nexus.iot.command.domain.bo.IotDeviceCommandBo;
-import com.nexus.iot.command.mapper.IotDeviceCommandMapper;
-import com.nexus.iot.command.service.impl.IotDeviceCommandServiceImpl;
-import com.nexus.iot.device.domain.IotDevice;
-import com.nexus.iot.device.domain.IotDeviceStatus;
-import com.nexus.iot.device.domain.vo.IotDeviceVo;
-import com.nexus.iot.device.service.IIotDeviceService;
-import com.nexus.iot.mqtt.IotMqttPublisher;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,6 +12,36 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.iot.command.domain.IotDeviceCommand;
+import com.nexus.iot.command.domain.bo.IotDeviceCommandBo;
+import com.nexus.iot.command.mapper.IotDeviceCommandMapper;
+import com.nexus.iot.command.service.impl.IotDeviceCommandServiceImpl;
+import com.nexus.iot.device.domain.IotDevice;
+import com.nexus.iot.device.domain.IotDeviceStatus;
+import com.nexus.iot.device.domain.vo.IotDeviceVo;
+import com.nexus.iot.device.service.IIotDeviceService;
+import com.nexus.iot.mqtt.IotMqttPublisher;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * IoT 下行指令单元测试（IOT-PIPE-02 下行通道 / §4#8）。
@@ -69,7 +71,9 @@ class IotDeviceCommandServiceTest {
         baseMapper = mock(IotDeviceCommandMapper.class);
         deviceService = mock(IIotDeviceService.class);
         publisher = mock(IotMqttPublisher.class);
-        service = new IotDeviceCommandServiceImpl(baseMapper, deviceService, publisher, new com.fasterxml.jackson.databind.ObjectMapper());
+        service =
+                new IotDeviceCommandServiceImpl(
+                        baseMapper, deviceService, publisher, new ObjectMapper());
 
         tenantMock = mockStatic(TenantHelper.class);
         tenantMock.when(TenantHelper::getTenantId).thenReturn(TENANT);

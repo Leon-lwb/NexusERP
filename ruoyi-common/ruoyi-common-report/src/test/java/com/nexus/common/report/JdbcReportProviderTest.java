@@ -2,8 +2,10 @@ package com.nexus.common.report;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.aopalliance.intercept.MethodInterceptor;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.*;
@@ -81,11 +83,11 @@ class JdbcReportProviderTest {
     @Test
     void inheritedProviderMethodsRemainProxyableForDatasourceRouting() {
         var calls = new AtomicInteger();
-        var factory = new org.springframework.aop.framework.ProxyFactory();
+        var factory = new ProxyFactory();
         factory.setTarget(new Provider(database()));
         factory.setProxyTargetClass(true);
         factory.addAdvice(
-                (org.aopalliance.intercept.MethodInterceptor)
+                (MethodInterceptor)
                         invocation -> {
                             calls.incrementAndGet();
                             return invocation.proceed();

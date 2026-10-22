@@ -1,14 +1,17 @@
 package com.nexus.erp.ai.adapter;
 
-import com.nexus.common.core.exception.ServiceException;
+import static com.nexus.erp.ai.adapter.ErpCertifiedSourceBirthSupport.*;
+
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper;
 import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.*;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
-import java.util.Objects;
-import static com.nexus.erp.ai.adapter.ErpCertifiedSourceBirthSupport.*;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.function.Supplier;
 
 /** 只允许服务端生成身份的全新物料与持久出生同事务写入，绝不补登记旧物料。 */
 @Service
@@ -55,8 +58,19 @@ public class ErpCertifiedSourceBirthService {
             return new CreatedMaterial(id,birthId,born.birthFingerprint(),"SUPPLIER_TERMS_PENDING");
         });
     }
-    private static void empty(java.util.List<Long> rows,String reason){need(rows!=null&&rows.isEmpty(),reason);}
-    private static <T>T io(java.util.function.Supplier<T> read){try{return read.get();}catch(RuntimeException invalid){throw rejected("出生来源读写失败");}}
+
+    private static void empty(List<Long> rows, String reason) {
+        need(rows != null && rows.isEmpty(), reason);
+    }
+
+    private static <T> T io(Supplier<T> read) {
+        try {
+            return read.get();
+        } catch (RuntimeException invalid) {
+            throw rejected("出生来源读写失败");
+        }
+    }
+
     /** 请求中没有物料ID、出生ID、租户、操作人、核验时间或来源摘要。 */
     public record CreateMaterial(String materialCode,String materialName,Long categoryId,Long baseUomId,
                                  Long warehouseId,Long areaId,Long locationId,String scenario) { }

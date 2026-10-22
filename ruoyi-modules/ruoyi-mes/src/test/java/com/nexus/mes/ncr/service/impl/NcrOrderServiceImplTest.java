@@ -1,8 +1,14 @@
 package com.nexus.mes.ncr.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.lock.annotation.Lock4j;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -26,8 +32,11 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.ncr.service.INcrDefectService;
 import com.nexus.mes.ncr.service.INcrReworkOrderService;
 import com.nexus.mes.pro.service.IProAndonService;
+import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.mes.testsupport.SpringStaticBootstrap;
 import com.nexus.system.strategy.AutoCodeUtil;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,10 +59,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 /**
  * NCR不合格品单 Service 单元测试。
  * <p>mockStatic(LambdaUtils,CALLS_REAL_METHODS) 解决 lambda 缓存；
@@ -64,20 +69,33 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class NcrOrderServiceImplTest {
 
-    @Mock private NcrOrderMapper baseMapper;
-    @Mock private NcrDefectMapper defectMapper;
-    @Mock private AutoCodeUtil autoCodeUtil;
-    @Mock private ILtLotService ltLotService;
-    @Mock private LtLotMapper ltLotMapper;
-    @Mock private com.nexus.mes.qc.mapper.QcIpqcMapper qcIpqcMapper;
-    @Mock private IProAndonService proAndonService;
-    @Mock private INcrReworkOrderService ncrReworkOrderService;
-    @Mock private INcrDefectService defectService;
-    @Mock private ESignatureService eSignatureService;
-    @InjectMocks private NcrOrderServiceImpl service;
+    @Mock
+    private NcrOrderMapper baseMapper;
+    @Mock
+    private NcrDefectMapper defectMapper;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
+    @Mock
+    private ILtLotService ltLotService;
+    @Mock
+    private LtLotMapper ltLotMapper;
+    @Mock
+    private QcIpqcMapper qcIpqcMapper;
+    @Mock
+    private IProAndonService proAndonService;
+    @Mock
+    private INcrReworkOrderService ncrReworkOrderService;
+    @Mock
+    private INcrDefectService defectService;
+    @Mock
+    private ESignatureService eSignatureService;
+    @InjectMocks
+    private NcrOrderServiceImpl service;
 
-    @Captor private ArgumentCaptor<NcrOrder> orderCaptor;
-    @Captor private ArgumentCaptor<List<NcrDefect>> defectsCaptor;
+    @Captor
+    private ArgumentCaptor<NcrOrder> orderCaptor;
+    @Captor
+    private ArgumentCaptor<List<NcrDefect>> defectsCaptor;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
     private static ObjectMapper sharedJsonMapper;
     private static DeserializationConfig sharedJsonConfiguration;
@@ -91,15 +109,13 @@ class NcrOrderServiceImplTest {
         assertFalse(mockingDetails(sharedJsonMapper).isMock(),
             "缺陷回归必须使用真实 ObjectMapper，不得 mock JsonUtils 解析结果");
         // LtLot 的真实列缓存: resolveLot/lotCodeOf 会构造 LtLot 查询与条件更新
-        com.baomidou.mybatisplus.core.MybatisConfiguration configuration =
-            new com.baomidou.mybatisplus.core.MybatisConfiguration();
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
-            new org.apache.ibatis.builder.MapperBuilderAssistant(configuration, ""), LtLot.class);
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(configuration, ""), LtLot.class);
     }
 
     @AfterAll
     static void clearLotTableInfo() {
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.remove(LtLot.class);
+        TableInfoHelper.remove(LtLot.class);
     }
 
     @BeforeEach
@@ -578,7 +594,7 @@ class NcrOrderServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(500L);
         lot.setLotCode("LOT-500");
-        when(ltLotMapper.selectList(any())).thenReturn(java.util.List.of(lot));
+        when(ltLotMapper.selectList(any())).thenReturn(List.of(lot));
 
         service.autoCreateFromIqc(9L, 9001L, 1001L, "");
 
@@ -590,7 +606,7 @@ class NcrOrderServiceImplTest {
     @Test
     void autoCreateFromIqc_withoutResolvableLot_keepsNullAndDoesNotFakeLot() {
         stubCreate(101L, "NCR-101");
-        when(ltLotMapper.selectList(any())).thenReturn(java.util.List.of());
+        when(ltLotMapper.selectList(any())).thenReturn(List.of());
 
         service.autoCreateFromIqc(10L, 9002L, 1002L, "");
 

@@ -1,18 +1,20 @@
 package com.nexus.ai.service.query;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.config.AiProperties;
+
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.util.List;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.function.Consumer;
 
 /** 真正执行净化后的SQL；不能只因字符串含tenant_id就认定隔离成功。 */
 @Tag("local")
@@ -61,7 +63,7 @@ class SqlTenantIsolationResultTest {
         });
     }
 
-    private void withDatabase(java.util.function.Consumer<JdbcTemplate> assertion) throws Exception {
+    private void withDatabase(Consumer<JdbcTemplate> assertion) throws Exception {
         var datasource = new DriverManagerDataSource(
             "jdbc:h2:mem:sql_isolation_" + UUID.randomUUID() + ";MODE=MySQL", "sa", "");
         try (var keepAlive = datasource.getConnection()) {

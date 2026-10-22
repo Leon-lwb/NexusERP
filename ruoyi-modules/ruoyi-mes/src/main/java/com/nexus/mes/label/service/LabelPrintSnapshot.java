@@ -6,7 +6,9 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelTemplate;
+
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapperImpl;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -106,7 +108,7 @@ final class LabelPrintSnapshot {
      */
     static String recordJson(MesLabelPrintLog record) {
         Map<String, Object> values = new LinkedHashMap<>();
-        var bean = new org.springframework.beans.BeanWrapperImpl(record);
+        var bean = new BeanWrapperImpl(record);
         for (String property :
                 new String[] {
                     "logId",

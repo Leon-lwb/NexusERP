@@ -1,18 +1,25 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.ai.config.AiProperties;
+import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
-import java.time.LocalDate;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("dev")
 class DecisionScenarioRankingServiceTest {
@@ -86,7 +93,7 @@ class DecisionScenarioRankingServiceTest {
 
     @Test
     void actualApsPreviewRetainsNullableResourceFieldsWithoutCrashing() {
-        Map<String, Object> previewRow = new java.util.LinkedHashMap<>();
+        Map<String, Object> previewRow = new LinkedHashMap<>();
         previewRow.put("woId", "11");
         previewRow.put("stepId", null);  // 真实 ERP 预览不包含缺失的步骤标识。
         previewRow.put("resourceId", null);
@@ -143,9 +150,9 @@ class DecisionScenarioRankingServiceTest {
 
     @Test
     void expeditedArrivalOverridesAreDeepCopiedBeforeRanking() {
-        Map<String, Object> dates = new java.util.LinkedHashMap<>();
+        Map<String, Object> dates = new LinkedHashMap<>();
         dates.put("1001", "2026-09-26");
-        Map<String, Object> overrides = new java.util.LinkedHashMap<>();
+        Map<String, Object> overrides = new LinkedHashMap<>();
         overrides.put("purchaseArrivalOverrides", dates);
         DecisionScenario base = scenario("APS_CR_EXPEDITE", true, kpis(1, 1, 1), 0);
         DecisionScenario expedite = new DecisionScenario(base.scenarioCode(), base.scenarioName(),
@@ -257,8 +264,11 @@ class DecisionScenarioRankingServiceTest {
             materialScenario("S3", "0", "0", "10", "20", 1L)));
         assertEquals("S3", ranked.get(0).scenarioCode());
         assertEquals(new BigDecimal("0E-8"), ranked.get(0).kpis().shortageGapRatio());
-        BigDecimal component = BigDecimal.valueOf(properties.getDecision().getRanking().getShortageWeight()
-            / properties.getDecision().getRanking().weightSum()).setScale(6, java.math.RoundingMode.HALF_UP);
+        BigDecimal component =
+                BigDecimal.valueOf(
+                                properties.getDecision().getRanking().getShortageWeight()
+                                        / properties.getDecision().getRanking().weightSum())
+                        .setScale(6, RoundingMode.HALF_UP);
         for (var item : ranked.subList(1, 3)) {
             assertEquals(new BigDecimal("0.25000000"), item.kpis().shortageGapRatio());
             assertEquals(component, item.objectiveScore());
@@ -340,20 +350,58 @@ class DecisionScenarioRankingServiceTest {
             original.infeasibleReasons(), produced, null, 0, original.overrides(), original.evidenceKeys(), original.schedulePreview(),
             original.inputHash(), original.delayedOrders(), original.bottleneckResources());
         var start = b.windowStart();
-        var snapshot = new com.nexus.common.ai.decision.dto.DeliveryContextSnapshot(
-            new com.nexus.common.ai.decision.dto.DecisionBusinessRef(com.nexus.common.ai.decision.enums.DecisionBusinessType.WORK_ORDER, 10L, "WO-10"),
-            List.of(), List.of(), Map.of(), List.of(
-                new com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact(1L, 1L, "A", "物料A", start, new BigDecimal("10"), 10L, "WO-10", 1L),
-                new com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact(2L, 2L, "B", "物料B", start, new BigDecimal("20"), 10L, "WO-10", 2L)),
-            List.of(), List.of(), Map.of(), List.of(), Map.of(), List.of(), "ratio-test", start.atStartOfDay(), List.of());
-        var method = ranking.getClass().getMethod("rank", Long.class,
-            com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.class, int.class, List.class);
+        var snapshot =
+                new DeliveryContextSnapshot(
+                        new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 10L, "WO-10"),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(
+                                new DeliveryContextSnapshot.RequirementFact(
+                                        1L,
+                                        1L,
+                                        "A",
+                                        "物料A",
+                                        start,
+                                        new BigDecimal("10"),
+                                        10L,
+                                        "WO-10",
+                                        1L),
+                                new DeliveryContextSnapshot.RequirementFact(
+                                        2L,
+                                        2L,
+                                        "B",
+                                        "物料B",
+                                        start,
+                                        new BigDecimal("20"),
+                                        10L,
+                                        "WO-10",
+                                        2L)),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        "ratio-test",
+                        start.atStartOfDay(),
+                        List.of());
+        var method =
+                ranking.getClass()
+                        .getMethod(
+                                "rank",
+                                Long.class,
+                                DeliveryContextSnapshot.class,
+                                int.class,
+                                List.class);
         var ranked = (List<DecisionScenario>) method.invoke(ranking, 900L, snapshot, 30, List.of(scenario));
         assertEquals("900", ranked.get(0).kpis().shortageBasis().runId());
         assertEquals(new BigDecimal("0.25000000"), ranked.get(0).kpis().shortageGapRatio());
         assertNotNull(ranked.get(0).objectiveScore());
-        assertThrows(java.lang.reflect.InvocationTargetException.class,
-            () -> method.invoke(ranking, 900L, snapshot, 1, List.of(scenario)), "不能由客户端或推演依据裁剪冻结窗口");
+        assertThrows(
+                InvocationTargetException.class,
+                () -> method.invoke(ranking, 900L, snapshot, 1, List.of(scenario)),
+                "不能由客户端或推演依据裁剪冻结窗口");
         assertNull(scenario.kpis().shortageBasis().runId(), "绑定不能原地改写ERP返回或历史运行");
     }
 

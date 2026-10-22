@@ -1,17 +1,21 @@
 package com.nexus.erp.prd.service.impl;
 
-import com.nexus.erp.prd.util.BomExplosionCalculator;
-
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.erp.bd.domain.BdBom;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.bo.BdBomDetailBo;
+import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
+import com.nexus.erp.bd.domain.vo.BdMaterialVo;
+import com.nexus.erp.bd.mapper.BdBomMapper;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.service.IBdBomDetailService;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.bo.PrdMaterialRequirementBo;
@@ -19,21 +23,17 @@ import com.nexus.erp.prd.domain.vo.PrdMaterialRequirementVo;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.service.IPrdMaterialRequirementService;
+import com.nexus.erp.prd.util.BomExplosionCalculator;
+import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.system.strategy.AutoCodeUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.erp.bd.domain.BdMaterial;
-import com.nexus.erp.bd.domain.BdBom;
-import com.nexus.erp.bd.domain.bo.BdBomDetailBo;
-import com.nexus.erp.bd.domain.vo.BdMaterialVo;
-import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
-import com.nexus.erp.bd.mapper.BdMaterialMapper;
-import com.nexus.erp.bd.mapper.BdBomMapper;
-import com.nexus.erp.bd.service.IBdBomDetailService;
-import com.nexus.erp.wm.domain.WmMaterialStock;
-import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -489,8 +489,8 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     /**
      * 按提前期倒排需求日期。
      *
-     * @deprecated ERP-PRD-01 起统一走 {@link BomExplosionCalculator#resolveRequiredDate(java.util.Date, Number)}，
-     *             本方法仅为兼容历史调用保留，请勿在新代码中使用。
+     * @deprecated ERP-PRD-01 起统一走 {@link BomExplosionCalculator#resolveRequiredDate(Date, Number)}，
+     *     本方法仅为兼容历史调用保留，请勿在新代码中使用。
      */
     @Deprecated
     private Date resolveRequiredDate(Integer leadTime) {

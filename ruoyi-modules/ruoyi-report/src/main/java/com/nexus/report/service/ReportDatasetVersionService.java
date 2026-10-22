@@ -7,6 +7,7 @@ import com.nexus.report.engine.ReportCompiler;
 import com.nexus.report.mapper.JdbcReportStore;
 
 import java.util.*;
+import java.util.function.Function;
 
 /** 读取不可变且已安装的契约，并应用与执行相同的当前资源和字段权限。 */
 public final class ReportDatasetVersionService {
@@ -235,7 +236,7 @@ public final class ReportDatasetVersionService {
     private static <T> void compare(
             List<T> old,
             List<T> next,
-            java.util.function.Function<T, String> name,
+            Function<T, String> name,
             String category,
             List<Change> changes) {
         var prior = new LinkedHashMap<String, T>();

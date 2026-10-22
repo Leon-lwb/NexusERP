@@ -7,6 +7,7 @@ import com.nexus.common.report.*;
 import com.nexus.report.domain.*;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -108,7 +109,7 @@ class ReportEngineRegressionTest {
                 List.of("1+", "1+EOF", "ROUND(1,)", "IF(TRUE,1,)", "(", "SUM(").stream()
                         .map(
                                 text ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () ->
                                                         assertThrows(
                                                                 ReportFault.class,
@@ -124,7 +125,7 @@ class ReportEngineRegressionTest {
                 List.of("IF(1,2,3)", "1 AND TRUE", "FALSE OR 1").stream()
                         .map(
                                 text ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () ->
                                                         assertThrows(
                                                                 ReportFault.class,
@@ -188,7 +189,7 @@ class ReportEngineRegressionTest {
                         .stream()
                         .map(
                                 text ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () ->
                                                         assertThrows(
                                                                 ReportFault.class,
@@ -232,7 +233,7 @@ class ReportEngineRegressionTest {
                 List.of("SUM(cost)", "MIN(cost)", "MAX(cost)").stream()
                         .map(
                                 text ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () ->
                                                         assertThrows(
                                                                 ReportFault.class,
@@ -381,7 +382,7 @@ class ReportEngineRegressionTest {
                         .stream()
                         .map(
                                 text ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () ->
                                                         assertThrows(
                                                                 ReportFault.class,
@@ -398,7 +399,7 @@ class ReportEngineRegressionTest {
                         .stream()
                         .map(
                                 cell ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () -> {
                                                     var headers =
                                                             List.of(
@@ -444,7 +445,7 @@ class ReportEngineRegressionTest {
                         .stream()
                         .map(
                                 summary ->
-                                        (org.junit.jupiter.api.function.Executable)
+                                        (Executable)
                                                 () ->
                                                         assertThrows(
                                                                 ReportFault.class,

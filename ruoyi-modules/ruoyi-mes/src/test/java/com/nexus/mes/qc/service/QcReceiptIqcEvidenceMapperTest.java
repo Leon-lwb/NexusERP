@@ -1,7 +1,12 @@
 package com.nexus.mes.qc.service;
 
+import static org.assertj.core.api.Assertions.*;
+
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper;
+
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.session.Configuration;
 import org.junit.jupiter.api.Test;
@@ -10,8 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.*;
 
 class QcReceiptIqcEvidenceMapperTest {
     @Test void nativeMesQueriesAreReadOnlyTenantScopedAndParseUnderCurrentTenantInterceptorParser() throws Exception {
@@ -47,7 +50,10 @@ class QcReceiptIqcEvidenceMapperTest {
             String sql = config.getMappedStatement(QcReceiptIqcEvidenceMapper.class.getName() + "." + name).getBoundSql(null).getSql();
             assertThat(sql).contains("information_schema.", "DATABASE()", "TABLE_NAME IN").doesNotContain("tenant_id =");
             assertThat(CCJSqlParserUtil.parse(sql)).isNotNull();
-            var ignore = QcReceiptIqcEvidenceMapper.class.getMethod(name).getAnnotation(com.baomidou.mybatisplus.annotation.InterceptorIgnore.class);
+            var ignore =
+                    QcReceiptIqcEvidenceMapper.class
+                            .getMethod(name)
+                            .getAnnotation(InterceptorIgnore.class);
             assertThat(ignore).isNotNull(); assertThat(ignore.tenantLine()).isEqualTo("true");
         }
     }

@@ -1,5 +1,7 @@
 package com.nexus.common.sign.support.pdf;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -7,15 +9,15 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import javax.imageio.ImageIO;
 
 /**
  * PDF 盖章/验签测试的公共夹具与像素回读探针。
@@ -234,7 +236,7 @@ public final class PdfTestSupport {
         byte[] out = signed.clone();
         int coveredEnd = coveredEndOf(signed);
 
-        byte[] marker = MARKER.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        byte[] marker = MARKER.getBytes(StandardCharsets.US_ASCII);
         int at = indexOf(out, marker);
         assertTrue(at > 0, "测试夹具标记必须存在于文档中（找不到标记会让本用例静默退化成空跑）");
         assertTrue(at + marker.length <= coveredEnd,

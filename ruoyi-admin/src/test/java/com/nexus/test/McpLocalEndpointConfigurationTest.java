@@ -1,17 +1,19 @@
 package com.nexus.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.nexus.ai.mcp.McpEndpointPolicy;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mock.env.MockEnvironment;
 
 import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** 本机MCP端点必须来自开发配置，不能依赖启动终端或放宽其他环境。 */
 @Tag("dev")
@@ -62,9 +64,12 @@ class McpLocalEndpointConfigurationTest {
     private MockEnvironment load(String resource) throws IOException {
         MockEnvironment environment = new MockEnvironment();
         var loader = new YamlPropertySourceLoader();
-        for (var source : loader.load(resource, resource.endsWith(".example.yml")
-            ? new org.springframework.core.io.FileSystemResource("src/main/resources/" + resource)
-            : new ClassPathResource(resource))) {
+        for (var source :
+                loader.load(
+                        resource,
+                        resource.endsWith(".example.yml")
+                                ? new FileSystemResource("src/main/resources/" + resource)
+                                : new ClassPathResource(resource))) {
             environment.getPropertySources().addLast(source);
         }
         return environment;

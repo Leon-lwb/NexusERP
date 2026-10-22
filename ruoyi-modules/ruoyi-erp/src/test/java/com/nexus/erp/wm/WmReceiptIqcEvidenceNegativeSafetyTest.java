@@ -1,11 +1,16 @@
 package com.nexus.erp.wm;
 
-import com.nexus.common.mq.iqc.ReceiptIqcSource;
-import org.junit.jupiter.api.Test;
-import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
+import com.nexus.common.mq.iqc.ReceiptIqcSource;
+
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class WmReceiptIqcEvidenceNegativeSafetyTest {
     final WmReceiptIqcEvidenceServiceTest fixture = new WmReceiptIqcEvidenceServiceTest();
@@ -40,7 +45,7 @@ class WmReceiptIqcEvidenceNegativeSafetyTest {
     @Test void finishedReceiptRepeatedNegativeCanReapplyIdempotentIsolationWithoutHeadMutationOrEvidence() {
         arrange(null); fixture.mapper.selectReceiveForUpdate("000007", 101L).setStatus("FINISHED");
         try (var tenant = fixture.tenant()) {
-            var count = new java.util.concurrent.atomic.AtomicInteger();
+            var count = new AtomicInteger();
             fixture.service.consumeCompleted(fixture.message(), actual -> count.incrementAndGet());
             fixture.service.consumeCompleted(fixture.message(), actual -> count.incrementAndGet());
             assertThat(count.get()).isEqualTo(2); verify(fixture.mapper, never()).insertEvidence(any());
@@ -65,7 +70,10 @@ class WmReceiptIqcEvidenceNegativeSafetyTest {
         }
     }
     @Test void missingRealMaterialLineRefusesIsolationInsteadOfGuessingAnotherMaterial() {
-        arrange(null); doReturn(java.util.List.of()).when(fixture.mapper).selectMaterialIdentitiesForUpdate("000007", 101L, 201L);
+        arrange(null);
+        doReturn(List.of())
+                .when(fixture.mapper)
+                .selectMaterialIdentitiesForUpdate("000007", 101L, 201L);
         try (var tenant = fixture.tenant()) {
             assertThatThrownBy(() -> fixture.service.consumeCompleted(fixture.message(), actual -> fail("must not project")))
                 .hasMessage("IQC_NEGATIVE_MATERIAL_IDENTITY_MISSING");

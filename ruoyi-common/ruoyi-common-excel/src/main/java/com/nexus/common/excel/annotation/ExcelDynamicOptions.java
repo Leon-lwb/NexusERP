@@ -16,8 +16,8 @@ public @interface ExcelDynamicOptions {
 
     /**
      * 提供者类全限定名
-     * <p>
-     * {@link com.nexus.common.excel.core.ExcelOptionsProvider} 接口实现类 class
+     *
+     * <p>{@link ExcelOptionsProvider} 接口实现类 class
      */
     Class<? extends ExcelOptionsProvider> providerClass();
 }

@@ -1,13 +1,14 @@
 package com.nexus.system.runtime;
 
-import com.nexus.runtime.attestation.RuntimeAttestationAgent;
 import com.nexus.runtime.attestation.ProcurementRuntimeBoundary;
+import com.nexus.runtime.attestation.RuntimeAttestationAgent;
 import com.nexus.runtime.attestation.WitnessSnapshot;
 
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.jar.JarFile;
 
 /**
@@ -46,7 +47,13 @@ public final class LoadedArtifactAssessment {
     public static Observation inspect(Class<?> anchor, List<String> arguments, boolean hotReload) {
         WitnessSnapshot witness = RuntimeAttestationAgent.snapshot(anchor, REQUIRED_CLASSES);
         ClassLoader actualLoader = anchor.getClassLoader();
-        if (hotReload || actualLoader != null && actualLoader.getClass().getName().toLowerCase(java.util.Locale.ROOT).contains("restart")) {
+        if (hotReload
+                || actualLoader != null
+                        && actualLoader
+                                .getClass()
+                                .getName()
+                                .toLowerCase(Locale.ROOT)
+                                .contains("restart")) {
             return new Observation("UNPROVEN", "ATTESTATION_HOTRELOAD_UNSUPPORTED", "NONE", "UNPROVEN", "UNPROVEN", witness);
         }
         if (!"ABSENT".equals(witness.state())) {

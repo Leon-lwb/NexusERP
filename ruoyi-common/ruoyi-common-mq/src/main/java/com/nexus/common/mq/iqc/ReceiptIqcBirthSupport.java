@@ -1,11 +1,13 @@
 package com.nexus.common.mq.iqc;
 
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
+
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
 
 /** 出生事实的规范完整性摘要；持久来源归属必须另由实际数据库核验，摘要不是写授权。 */
 public final class ReceiptIqcBirthSupport {
@@ -57,7 +59,7 @@ public final class ReceiptIqcBirthSupport {
                 digest.update((byte) ':'); digest.update(raw); digest.update((byte) ';');
             }
             return HexFormat.of().formatHex(digest.digest());
-        } catch (java.security.NoSuchAlgorithmException impossible) {
+        } catch (NoSuchAlgorithmException impossible) {
             throw new IllegalStateException("出生来源摘要算法不可用", impossible);
         }
     }

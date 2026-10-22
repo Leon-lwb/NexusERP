@@ -2,10 +2,15 @@ package com.nexus.ai.observability;
 
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiTokenUsageService;
+
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.embedding.listener.EmbeddingModelListener;
+import dev.langchain4j.observability.api.AiServiceListenerRegistrar;
+
 import jakarta.annotation.PostConstruct;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,7 +40,7 @@ public class LangChain4jObservabilityConfig {
     @PostConstruct
     public void registerAiServiceListeners() {
         try {
-            var registrar = dev.langchain4j.observability.api.AiServiceListenerRegistrar.newInstance();
+            var registrar = AiServiceListenerRegistrar.newInstance();
             registrar.register(new AiToolExecutedListener());
             log.info("[Observability] AI Service 监听器注册完成: AiToolExecutedListener");
         } catch (Exception e) {

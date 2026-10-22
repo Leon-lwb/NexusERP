@@ -1,7 +1,19 @@
 package com.nexus.report.storage;
 
+import com.nexus.report.domain.ReportFault;
+
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.util.List;
+import java.util.function.BiPredicate;
 
 /** 可替换的私有存储契约，接口响应中不出现物理路径。 */
 public interface ReportArtifactStore extends AutoCloseable {
@@ -33,8 +45,8 @@ public interface ReportArtifactStore extends AutoCloseable {
      *
      * @return 当前受控处理的固定结果
      */
-    default java.util.List<Inventory> inventory() {
-        return java.util.List.of();
+    default List<Inventory> inventory() {
+        return List.of();
     }
 
     /**
@@ -122,13 +134,12 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @param reference 私有对象的一次性引用
      * @return 当前受控处理的固定结果
      */
-    default java.io.InputStream open(String tenant, String reference) {
+    default InputStream open(String tenant, String reference) {
         var materialized = materialize(tenant, reference);
         try {
-            return new java.io.FilterInputStream(
-                    java.nio.file.Files.newInputStream(materialized.path())) {
+            return new FilterInputStream(Files.newInputStream(materialized.path())) {
                 /** 释放本次受控资源并确认清理结果。 */
-                public void close() throws java.io.IOException {
+                public void close() throws IOException {
                     try {
                         super.close();
                     } finally {
@@ -136,10 +147,9 @@ public interface ReportArtifactStore extends AutoCloseable {
                     }
                 }
             };
-        } catch (java.io.IOException failure) {
+        } catch (IOException failure) {
             materialized.close();
-            throw new com.nexus.report.domain.ReportFault(
-                    "ARTIFACT_STORE_UNAVAILABLE", "私有产物不可读取", 503);
+            throw new ReportFault("ARTIFACT_STORE_UNAVAILABLE", "私有产物不可读取", 503);
         }
     }
 
@@ -153,20 +163,18 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @param checksum 实际内容的SHA-256校验和
      * @return 当前受控处理的固定结果
      */
-    default java.io.InputStream range(
+    default InputStream range(
             String tenant, String reference, long offset, long length, String checksum) {
         var materialized = materialize(tenant, reference);
         try {
-            long total = java.nio.file.Files.size(materialized.path());
+            long total = Files.size(materialized.path());
             if (offset < 0 || length < 0 || offset > total || length > total - offset)
-                throw com.nexus.report.domain.ReportFault.invalid("产物范围无效");
-            var channel =
-                    java.nio.channels.FileChannel.open(
-                            materialized.path(), java.nio.file.StandardOpenOption.READ);
+                throw ReportFault.invalid("产物范围无效");
+            var channel = FileChannel.open(materialized.path(), StandardOpenOption.READ);
             channel.position(offset);
-            var input = java.nio.channels.Channels.newInputStream(channel);
+            var input = Channels.newInputStream(channel);
             var limited =
-                    new java.io.FilterInputStream(input) {
+                    new FilterInputStream(input) {
                         /** 保存当前remaining状态或配置。 */
                         private long remaining = length;
 
@@ -175,7 +183,7 @@ public interface ReportArtifactStore extends AutoCloseable {
                          *
                          * @return 当前固定契约或处理结果
                          */
-                        public int read() throws java.io.IOException {
+                        public int read() throws IOException {
                             if (remaining == 0) return -1;
                             int value = in.read();
                             if (value >= 0) remaining--;
@@ -190,8 +198,7 @@ public interface ReportArtifactStore extends AutoCloseable {
                          * @param count 当前受控操作的count输入
                          * @return 当前固定契约或处理结果
                          */
-                        public int read(byte[] bytes, int start, int count)
-                                throws java.io.IOException {
+                        public int read(byte[] bytes, int start, int count) throws IOException {
                             if (remaining == 0) return -1;
                             int read = in.read(bytes, start, (int) Math.min(count, remaining));
                             if (read > 0) remaining -= read;
@@ -199,11 +206,10 @@ public interface ReportArtifactStore extends AutoCloseable {
                         }
                     };
             return new CheckedArtifactInputStream(limited, length, checksum, materialized::close);
-        } catch (java.io.IOException | RuntimeException failure) {
+        } catch (IOException | RuntimeException failure) {
             materialized.close();
-            if (failure instanceof com.nexus.report.domain.ReportFault fault) throw fault;
-            throw new com.nexus.report.domain.ReportFault(
-                    "ARTIFACT_STORE_UNAVAILABLE", "产物范围不可读取", 503);
+            if (failure instanceof ReportFault fault) throw fault;
+            throw new ReportFault("ARTIFACT_STORE_UNAVAILABLE", "产物范围不可读取", 503);
         }
     }
 
@@ -216,10 +222,9 @@ public interface ReportArtifactStore extends AutoCloseable {
      */
     default Info info(String tenant, String reference) {
         try (var file = materialize(tenant, reference)) {
-            return new Info(java.nio.file.Files.size(file.path()), checksum(tenant, reference));
-        } catch (java.io.IOException failure) {
-            throw new com.nexus.report.domain.ReportFault(
-                    "ARTIFACT_STORE_UNAVAILABLE", "私有产物元数据不可读取", 503);
+            return new Info(Files.size(file.path()), checksum(tenant, reference));
+        } catch (IOException failure) {
+            throw new ReportFault("ARTIFACT_STORE_UNAVAILABLE", "私有产物元数据不可读取", 503);
         }
     }
 
@@ -233,8 +238,7 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @return 当前受控处理的固定结果
      */
     default String commitAt(String tenant, Path temporary, String kind, String reference) {
-        throw new com.nexus.report.domain.ReportFault(
-                "ARTIFACT_STORE_UNSUPPORTED", "存储未实现确定引用提交", 409);
+        throw new ReportFault("ARTIFACT_STORE_UNSUPPORTED", "存储未实现确定引用提交", 409);
     }
 
     /**
@@ -255,8 +259,7 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @return 当前受控处理的固定结果
      */
     default Path temporaryPath(String tenant, String kind, String token) {
-        throw new com.nexus.report.domain.ReportFault(
-                "ARTIFACT_STORE_UNSUPPORTED", "存储未实现确定暂存路径", 409);
+        throw new ReportFault("ARTIFACT_STORE_UNSUPPORTED", "存储未实现确定暂存路径", 409);
     }
 
     /**
@@ -266,8 +269,7 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @param temporary 当前契约的temporary配置或状态
      */
     default void allocateTemporary(String tenant, Path temporary) {
-        throw new com.nexus.report.domain.ReportFault(
-                "ARTIFACT_STORE_UNSUPPORTED", "存储未实现确定路径分配", 409);
+        throw new ReportFault("ARTIFACT_STORE_UNSUPPORTED", "存储未实现确定路径分配", 409);
     }
 
     /**
@@ -350,9 +352,7 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @param olderThan 当前契约的olderThan配置或状态
      * @param referenced 当前契约的referenced配置或状态
      */
-    default void reap(
-            java.time.Instant olderThan,
-            java.util.function.BiPredicate<String, String> referenced) {}
+    default void reap(Instant olderThan, BiPredicate<String, String> referenced) {}
 
     /**
      * 只回收未登记的已提交对象，受清单控制的暂存文件由持有节点单独清理。
@@ -360,7 +360,5 @@ public interface ReportArtifactStore extends AutoCloseable {
      * @param olderThan 当前契约的olderThan配置或状态
      * @param referenced 当前契约的referenced配置或状态
      */
-    default void reapUntracked(
-            java.time.Instant olderThan,
-            java.util.function.BiPredicate<String, String> referenced) {}
+    default void reapUntracked(Instant olderThan, BiPredicate<String, String> referenced) {}
 }

@@ -1,13 +1,16 @@
 package com.nexus.mes.common.mq.consumer;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.SubcontractSnGenerateMessage;
 import com.nexus.mes.pro.service.IProSnService;
 import com.rabbitmq.client.Channel;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -46,10 +49,10 @@ public class SubcontractSnGenerateConsumer
         try {
             quantity = message.getQuantity() == null ? 0 : message.getQuantity().intValueExact();
         } catch (ArithmeticException error) {
-            throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为32位正整数，不能截断或溢出");
+            throw new ServiceException("委外SN数量必须为32位正整数，不能截断或溢出");
         }
         if (quantity <= 0) {
-            throw new com.nexus.common.core.exception.ServiceException("委外SN数量必须为正整数，不能将无效消息当作已完成");
+            throw new ServiceException("委外SN数量必须为正整数，不能将无效消息当作已完成");
         }
         String commandId = "MES:SUBCONTRACT:" + message.getSubcontractId();
         if (message.getMessageId() != null && !message.getMessageId().isBlank()) {

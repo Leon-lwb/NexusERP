@@ -1,20 +1,31 @@
 package com.nexus.flow.node.industrial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.service.decision.*;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.json.config.JacksonConfig;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.flow.adapter.DecisionFlowDefinitionFactory;
 import com.nexus.flow.model.FlowGraph;
 import com.nexus.flow.node.FlowExecutionContext;
 import com.nexus.flow.state.FlowState;
+
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,14 +33,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.json.config.JacksonConfig 和
+// com.nexus.common.web.config.JacksonConfig，后者保留全限定名以区分。
 
 class IndustrialDecisionProvidersSmokeTest {
-    private final ObjectMapper mapper = new ObjectMapper()
-        .registerModule(new com.nexus.common.json.config.JacksonConfig().registerJavaTimeModule())
-        .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
+    private final ObjectMapper mapper =
+            new ObjectMapper()
+                    .registerModule(new JacksonConfig().registerJavaTimeModule())
+                    .registerModule(
+                            new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
     private final DecisionPersistenceService store = mock(DecisionPersistenceService.class);
     private final IndustrialDecisionDataPort port = mock(IndustrialDecisionDataPort.class);
     private final DecisionNodeSupport support = new DecisionNodeSupport(store, port, mapper);
@@ -118,7 +131,7 @@ class IndustrialDecisionProvidersSmokeTest {
         var output = inTenant(() -> provider.execute(ctx));
         assertTrue(output.get("scenarios").isArray());
         assertEquals("trusted summary prompt", output.get("summaryPrompt").asText());
-        var promptInput = org.mockito.ArgumentCaptor.forClass(DecisionSummaryService.SummaryInput.class);
+        var promptInput = ArgumentCaptor.forClass(DecisionSummaryService.SummaryInput.class);
         verify(summaries).renderPrompt(promptInput.capture());
         assertEquals(facts.riskScore(), promptInput.getValue().riskScore());
         assertEquals(facts.rootCauseCodes(), promptInput.getValue().rootCauseCodes());
@@ -133,13 +146,13 @@ class IndustrialDecisionProvidersSmokeTest {
         var analysis = mock(DecisionAnalysisAssemblyService.class);
         var summaries = mock(DecisionSummaryService.class);
         when(analysis.prepare(any(), any(), any(), anyList(), anyList(), isNull()))
-            .thenThrow(new com.nexus.common.core.exception.ServiceException("缺少可信业务源事实"));
+                .thenThrow(new ServiceException("缺少可信业务源事实"));
         var provider = new ScenarioRankNodeProvider(support, ranking, store, analysis, summaries);
         var ctx = context(provider.getNodeType(), "rank");
         ctx.getState().putNodeOutput("aps", mapper.valueToTree(new ApsScenarioCompareResult(List.of(), List.of())));
         ctx.getState().putNodeOutput("shortage", mapper.valueToTree(
             new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO, List.of(), null, List.of(), List.of())));
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> inTenant(() -> provider.execute(ctx)));
+        assertThrows(ServiceException.class, () -> inTenant(() -> provider.execute(ctx)));
         verifyNoInteractions(summaries);
         verify(store, never()).saveActions(anyLong(), anyList(), any());
     }
@@ -151,7 +164,11 @@ class IndustrialDecisionProvidersSmokeTest {
         when(analysis.prepare(any(), any(), any(), anyList(), anyList(), isNull())).thenReturn(proposed);
         var provider = new DecisionPolicyGuardNodeProvider(support, store, analysis, mapper);
         var ctx = context(provider.getNodeType(), "guard");
-        ctx.setGraph(FlowGraph.parse(new DecisionFlowDefinitionFactory(mapper, new com.nexus.ai.config.AiProperties()).analysisFlow(null, null).getConfigJson()));
+        ctx.setGraph(
+                FlowGraph.parse(
+                        new DecisionFlowDefinitionFactory(mapper, new AiProperties())
+                                .analysisFlow(null, null)
+                                .getConfigJson()));
         ctx.getState().putNodeOutput("shortage", mapper.valueToTree(
             new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO, List.of(), null, List.of(), List.of())));
         ctx.getState().putNodeOutput("rank", mapper.valueToTree(Map.of("scenarios", List.of(Map.of("scenarioCode", "BASELINE_CURRENT", "inputHash", "fingerprint")))));

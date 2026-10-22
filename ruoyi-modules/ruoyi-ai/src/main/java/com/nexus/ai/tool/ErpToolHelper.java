@@ -2,11 +2,13 @@ package com.nexus.ai.tool;
 
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.query.ErpQueryService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,8 +42,10 @@ public abstract class ErpToolHelper {
         "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
 
     /** 子句关键字（FROM 别名提取时排除，防止无别名表把 WHERE/ORDER 等当别名吞掉 → 注入出 WHERE.tenant_id 语法错误） */
-    private static final java.util.Set<String> CLAUSE_KEYWORDS = java.util.Set.of(
-        "WHERE", "GROUP", "ORDER", "LIMIT", "HAVING", "JOIN", "UNION", "ON", "AND", "OR", "SET", "VALUES");
+    private static final Set<String> CLAUSE_KEYWORDS =
+            Set.of(
+                    "WHERE", "GROUP", "ORDER", "LIMIT", "HAVING", "JOIN", "UNION", "ON", "AND",
+                    "OR", "SET", "VALUES");
 
     /**
      * 注入租户隔离条件

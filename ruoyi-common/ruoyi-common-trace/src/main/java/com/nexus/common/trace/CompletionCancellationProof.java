@@ -3,7 +3,11 @@ package com.nexus.common.trace;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.port.TraceSourceVerificationPort;
+
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
@@ -49,7 +53,7 @@ public final class CompletionCancellationProof {
         try {
             command = json.readValue(event.payload(), CompletionCancellationRequest.class);
             original = json.readTree(command.originalEvent().payload());
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("取消来源载荷无效", e);
         }
         MaterialTraceEvent source = command.originalEvent();
@@ -76,7 +80,7 @@ public final class CompletionCancellationProof {
 
     private static Long positive(JsonNode node, String key) {
         try {
-            long value = new java.math.BigDecimal(node.path(key).asText("")).longValueExact();
+            long value = new BigDecimal(node.path(key).asText("")).longValueExact();
             if (value > 0) {
                 return value;
             }

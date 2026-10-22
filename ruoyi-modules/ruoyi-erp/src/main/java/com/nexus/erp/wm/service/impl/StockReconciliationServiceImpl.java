@@ -4,8 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -22,6 +20,10 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmStockReconciliationMapper;
 import com.nexus.erp.wm.service.IStockReconciliationService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +31,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -135,8 +139,8 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
                         "SUM(CASE WHEN tx_flag < 0 THEN tx_quantity ELSE 0 END) as total_out")
                 .groupBy("material_id"));
 
-        Map<Long, BigDecimal> txInMap = new java.util.HashMap<>();
-        Map<Long, BigDecimal> txOutMap = new java.util.HashMap<>();
+        Map<Long, BigDecimal> txInMap = new HashMap<>();
+        Map<Long, BigDecimal> txOutMap = new HashMap<>();
         if (txList != null) {
             for (Map<String, Object> row : txList) {
                 Long materialId = ((Number) row.get("material_id")).longValue();
@@ -151,7 +155,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         for (Map<String, Object> row : bookQtyList) {
             bookByMaterial.put(((Number) row.get("material_id")).longValue(), toBigDecimal(row.get("total_qty")));
         }
-        java.util.Set<Long> allMaterials = new java.util.LinkedHashSet<>(bookByMaterial.keySet());
+        Set<Long> allMaterials = new LinkedHashSet<>(bookByMaterial.keySet());
         allMaterials.addAll(txInMap.keySet());
         allMaterials.addAll(txOutMap.keySet());
         List<Long> materialIds = new ArrayList<>(allMaterials);
@@ -254,7 +258,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
 
     private Map<Long, BdMaterial> batchLoadMaterials(List<Long> materialIds) {
         if (materialIds == null || materialIds.isEmpty()) {
-            return java.util.Map.of();
+            return Map.of();
         }
         List<BdMaterial> materials = materialMapper.selectBatchIds(materialIds);
         Map<Long, BdMaterial> materialMap = materials.stream()

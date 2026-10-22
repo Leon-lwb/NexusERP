@@ -18,7 +18,9 @@ import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseRequisitionVo;
 import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** 执行、验证并条件补偿 ERP 决策草稿动作。 */
 @Component

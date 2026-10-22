@@ -1,12 +1,12 @@
 package com.nexus.erp.sch.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.DateUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -37,7 +37,11 @@ import com.nexus.system.domain.vo.SysOssVo;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +51,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -124,7 +129,7 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
         apply.setApplyStatus(STATUS_PENDING);
         try {
             supplementApplyMapper.insert(apply);
-        } catch (org.springframework.dao.DuplicateKeyException e) {
+        } catch (DuplicateKeyException e) {
             // ERP-SCH-11: 单号为"前缀+秒级时间", 同秒并发会撞 uk_tenant_apply_no(增量脚本 §2)。
             // 捕获后给出可读提示而非 500(重试即可拿到新单号)。
             log.warn("[sch] 补卡单号冲突: applyNo={}", apply.getApplyNo());
@@ -336,7 +341,7 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
         apply.setApplyStatus(STATUS_PENDING);
         try {
             leaveApplyMapper.insert(apply);
-        } catch (org.springframework.dao.DuplicateKeyException e) {
+        } catch (DuplicateKeyException e) {
             // ERP-SCH-11: 单号为"前缀+秒级时间", 同秒并发会撞 uk_tenant_leave_no(增量脚本 §2)
             log.warn("[sch] 请假单号冲突: leaveNo={}", apply.getLeaveNo());
             throw new ServiceException("请假单号生成冲突，请重试");
@@ -465,7 +470,7 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
         String base64 = base64Image.contains(",") ? base64Image.split(",", 2)[1] : base64Image;
         byte[] bytes;
         try {
-            bytes = java.util.Base64.getDecoder().decode(base64);
+            bytes = Base64.getDecoder().decode(base64);
         } catch (IllegalArgumentException e) {
             throw new ServiceException("照片数据格式错误");
         }

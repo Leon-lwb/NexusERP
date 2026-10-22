@@ -1,43 +1,44 @@
 package com.nexus.erp.bd.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.BdBom;
+import com.nexus.erp.bd.domain.BdBomAlternative;
+import com.nexus.erp.bd.domain.BdBomDetail;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdRouting;
+import com.nexus.erp.bd.domain.BdRoutingStep;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
-import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
+import com.nexus.erp.bd.domain.vo.BdRoutingVo;
 import com.nexus.erp.bd.domain.vo.BomComparisonVo;
 import com.nexus.erp.bd.domain.vo.BomCostRollupVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
+import com.nexus.erp.bd.mapper.BdBomAlternativeMapper;
+import com.nexus.erp.bd.mapper.BdBomDetailMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdRoutingMapper;
-import com.nexus.erp.bd.domain.BdRouting;
-import com.nexus.erp.bd.domain.vo.BdRoutingVo;
-import com.nexus.erp.bd.service.IBdBomService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.erp.bd.domain.BdBomAlternative;
-import com.nexus.erp.bd.domain.BdBomDetail;
-import com.nexus.erp.bd.domain.BdRoutingStep;
-import com.nexus.erp.bd.mapper.BdBomAlternativeMapper;
-import com.nexus.erp.bd.mapper.BdBomDetailMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
+import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -459,7 +460,8 @@ public class BdBomServiceImpl implements IBdBomService {
             if (detail.getChildMaterialId() == null) {
                 return "BOM明细存在空的子项物料";
             }
-            if (detail.getQuantityPerParent() == null || detail.getQuantityPerParent().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            if (detail.getQuantityPerParent() == null
+                    || detail.getQuantityPerParent().compareTo(BigDecimal.ZERO) <= 0) {
                 return "BOM明细子项用量必须大于0";
             }
         }
@@ -576,7 +578,10 @@ public class BdBomServiceImpl implements IBdBomService {
         // 计算含损耗总用量
         BigDecimal qty = detail.getQuantityPerParent() != null ? detail.getQuantityPerParent() : BigDecimal.ZERO;
         BigDecimal loss = detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO;
-        node.setTotalQuantity(qty.multiply(BigDecimal.ONE.add(loss.divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP))));
+        node.setTotalQuantity(
+                qty.multiply(
+                        BigDecimal.ONE.add(
+                                loss.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP))));
         // 从上下文获取物料信息
         BdMaterial material = ctx.materialMap.get(detail.getChildMaterialId());
         if (material != null) {
@@ -706,7 +711,10 @@ public class BdBomServiceImpl implements IBdBomService {
             // 计算累计用量
             BigDecimal qty = detail.getQuantityPerParent() != null ? detail.getQuantityPerParent() : BigDecimal.ZERO;
             BigDecimal loss = detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO;
-            BigDecimal totalQty = qty.multiply(BigDecimal.ONE.add(loss.divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP)));
+            BigDecimal totalQty =
+                    qty.multiply(
+                            BigDecimal.ONE.add(
+                                    loss.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP)));
             line.setCumulativeQuantity(parentCumulativeQty.multiply(totalQty));
             // 从上下文获取物料信息
             BdMaterial material = ctx.materialMap.get(detail.getChildMaterialId());

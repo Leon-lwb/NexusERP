@@ -1,6 +1,12 @@
 package com.nexus.erp.cv;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.domain.DetectDtos.DetectionItem;
 import com.nexus.common.cv.domain.DetectDtos.OcrItem;
@@ -9,6 +15,8 @@ import com.nexus.common.cv.exception.VisionException;
 import com.nexus.erp.cv.controller.CvDetectController;
 import com.nexus.erp.cv.service.CvLabelParseService;
 import com.nexus.erp.cv.service.CvOpsService;
+
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,11 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** Real Spring multipart binding and controller behavior, isolated from Vision and databases. */
 class CvDefectDetectControllerTest {
@@ -91,8 +94,9 @@ class CvDefectDetectControllerTest {
     @ValueSource(strings = {"", " ", "general", "defect_other", "DEFECT_PCB", "defect_pcb "})
     void invalidScenarioCannotFallBackToGeneral(String scenario) throws Exception {
         mvc.perform(multipart("/cv/detect/defect").file(image()).param("scenario", scenario))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(500))
-            .andExpect(jsonPath("$.msg").value(org.hamcrest.Matchers.containsString("场景")));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.msg").value(Matchers.containsString("场景")));
         assertTrue(calls.isEmpty());
     }
 
@@ -146,9 +150,10 @@ class CvDefectDetectControllerTest {
         inference.setCount(0);
         inference.setDetections(List.of());
         mvc.perform(multipart("/cv/detect/defect").file(image()).param("scenario", "defect_pcb"))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(500))
-            .andExpect(jsonPath("$.msg").value(org.hamcrest.Matchers.containsString("场景")))
-            .andExpect(jsonPath("$.data").doesNotExist());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.msg").value(Matchers.containsString("场景")))
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test

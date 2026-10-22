@@ -8,10 +8,12 @@ import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +22,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 
 /**
  * 纯服务端大模型叙述及动作护栏，违反规则时拒绝处理。
@@ -43,9 +44,14 @@ public class DecisionPolicyGuardService {
             errors.add(block("RISK_TAMPERED", "riskLevel", "风险等级与工业评分不一致"));
         }
         List<DecisionScenario> scenarios = result.scenarios() == null ? List.of() : result.scenarios();
-        DecisionScenario best = scenarios.stream().filter(Objects::nonNull).filter(s -> s.feasible() && s.kpis() != null)
-            .min(java.util.Comparator.comparingInt(DecisionScenario::rank)
-                .thenComparing(DecisionScenario::scenarioCode)).orElse(null);
+        DecisionScenario best =
+                scenarios.stream()
+                        .filter(Objects::nonNull)
+                        .filter(s -> s.feasible() && s.kpis() != null)
+                        .min(
+                                Comparator.comparingInt(DecisionScenario::rank)
+                                        .thenComparing(DecisionScenario::scenarioCode))
+                        .orElse(null);
         if (best == null ? result.recommendedScenarioCode() != null
             : !best.scenarioCode().equals(result.recommendedScenarioCode())) {
             errors.add(block("RECOMMENDATION_TAMPERED", "recommendedScenarioCode", "推荐方案与确定性排名不一致"));

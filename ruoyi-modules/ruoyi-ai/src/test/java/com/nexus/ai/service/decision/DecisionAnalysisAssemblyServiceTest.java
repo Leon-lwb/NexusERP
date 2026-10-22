@@ -1,28 +1,36 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
-import com.nexus.common.ai.domain.entity.AiDecisionRun;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
+import com.nexus.common.ai.domain.entity.AiDecisionRun;
+import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Test;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class DecisionAnalysisAssemblyServiceTest {
-    private final DecisionAnalysisAssemblyService service = new DecisionAnalysisAssemblyService(
-        new DeliveryRiskScoringService(new AiProperties()), new DecisionEvidenceService(),
-        new DecisionSourceFactVerifier(), new DecisionSummaryService(mock(com.nexus.ai.service.chat.ChatModelFactory.class)),
-        new DecisionPolicyGuardService());
+    private final DecisionAnalysisAssemblyService service =
+            new DecisionAnalysisAssemblyService(
+                    new DeliveryRiskScoringService(new AiProperties()),
+                    new DecisionEvidenceService(),
+                    new DecisionSourceFactVerifier(),
+                    new DecisionSummaryService(mock(ChatModelFactory.class)),
+                    new DecisionPolicyGuardService());
 
     @Test void deterministicBaselineAndKpisAreRootedInRereadSourceFacts() {
         var ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 2L, "WO-2");
@@ -221,9 +229,21 @@ class DecisionAnalysisAssemblyServiceTest {
         var roots = verifier.numericFacts(5L, original);
         assertTrue(roots.stream().anyMatch(f -> "ERP:CALENDAR:8:planned_hours".equals(f.evidenceKey())));
         assertTrue(roots.stream().anyMatch(f -> "ERP:SCHEDULE_TASK:4:process_hours".equals(f.evidenceKey())));
-        var result = new DecisionResult(5L, ref, 50d,
-            com.nexus.common.ai.decision.enums.DecisionRiskLevel.MEDIUM, "HIGH", List.of(),
-            null, List.of(), null, Map.of(), roots, List.of(), List.of());
+        var result =
+                new DecisionResult(
+                        5L,
+                        ref,
+                        50d,
+                        DecisionRiskLevel.MEDIUM,
+                        "HIGH",
+                        List.of(),
+                        null,
+                        List.of(),
+                        null,
+                        Map.of(),
+                        roots,
+                        List.of(),
+                        List.of());
         assertThrows(ServiceException.class, () -> verifier.assertProvenance(result, original, changed));
         var differentResource = sourceSnapshot(ref, at, task, Map.of(
             "calendarId", "8", "calendarDate", "2026-09-27",
@@ -263,9 +283,13 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DecisionPolicyGuardService.PolicyViolation("SOURCE_FACT_REJECTED", "BLOCK", "evidence", "拒绝")),
             null, true, true);
         when(guard.validate(any(), any(), anyList())).thenReturn(refusal);
-        var checkedService = new DecisionAnalysisAssemblyService(new DeliveryRiskScoringService(new AiProperties()),
-            new DecisionEvidenceService(), new DecisionSourceFactVerifier(),
-            new DecisionSummaryService(mock(com.nexus.ai.service.chat.ChatModelFactory.class)), guard);
+        var checkedService =
+                new DecisionAnalysisAssemblyService(
+                        new DeliveryRiskScoringService(new AiProperties()),
+                        new DecisionEvidenceService(),
+                        new DecisionSourceFactVerifier(),
+                        new DecisionSummaryService(mock(ChatModelFactory.class)),
+                        guard);
         assertThrows(ServiceException.class, () -> checkedService.prepare(run, snapshot, shortage,
             List.of(scenario), List.of(), raw));
         verify(guard, times(2)).validate(any(), any(), anyList());
@@ -564,7 +588,7 @@ class DecisionAnalysisAssemblyServiceTest {
                 "effectiveHours", calendar.get("effectiveHours"))));
     }
     @Test void trustedSourceFactVerifierIsAvailableAsSpringBean() {
-        assertNotNull(DecisionSourceFactVerifier.class.getAnnotation(org.springframework.stereotype.Component.class));
+        assertNotNull(DecisionSourceFactVerifier.class.getAnnotation(Component.class));
     }
 
     @Test void missingBaselineDoesNotClaimLowRiskOrFabricateNumbers() {

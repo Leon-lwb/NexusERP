@@ -1,30 +1,16 @@
 package com.nexus.mes.label.service;
 
-import cn.hutool.extra.spring.SpringUtil;
-import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.mes.label.domain.MesLabelPrintLog;
-import com.nexus.mes.label.domain.MesLabelPrintTask;
-import com.nexus.mes.pro.service.MesProgressTransactionGuard;
-import org.h2.jdbcx.JdbcDataSource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.mes.label.domain.MesLabelPrintLog;
+import com.nexus.mes.label.domain.MesLabelPrintTask;
+
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * 使用独立内存 H2 与真实 Spring 事务验证提交、回滚、租约及一次发送。
@@ -32,14 +18,14 @@ import static org.mockito.Mockito.*;
 class LabelDurablePrintTest extends LabelDurableTestSupport {
     @Test
     void committedBusinessTaskSurvivesBeforeSendAndAnotherWorkerDispatchesOnce() {
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.push("mes");
+        DynamicDataSourceContextHolder.push("mes");
         business.executeWithoutResult(
                 tx -> {
                     service.submit(record("AUTO"), "FROZEN", StandardCharsets.UTF_8);
                     assertEquals(1, count("mes_label_print_task"));
                     assertEquals(0, sends.get());
                 });
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.poll();
+        DynamicDataSourceContextHolder.poll();
         assertEquals("PENDING", onlyTask().getStatus());
         new LabelPrintDispatcher(store, transport).pollTenant();
         dispatcher.pollTenant();
@@ -50,7 +36,7 @@ class LabelDurablePrintTest extends LabelDurableTestSupport {
 
     @Test
     void rollbackRemovesTaskAndNeverSends() {
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.push("mes");
+        DynamicDataSourceContextHolder.push("mes");
         business.executeWithoutResult(
                 tx -> {
                     service.submit(record("AUTO"), "FROZEN", StandardCharsets.UTF_8);
@@ -63,13 +49,13 @@ class LabelDurablePrintTest extends LabelDurableTestSupport {
 
     @Test
     void duplicateAutomaticSubmissionKeepsFirstFrozenTaskAndOneSend() {
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.push("mes");
+        DynamicDataSourceContextHolder.push("mes");
         business.executeWithoutResult(
                 tx -> {
                     service.submit(record("AUTO"), "ORIGINAL", StandardCharsets.UTF_8);
                     service.submit(record("AUTO"), "CHANGED", StandardCharsets.UTF_8);
                 });
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.poll();
+        DynamicDataSourceContextHolder.poll();
         assertEquals(1, count("mes_label_print_task"));
         dispatcher.pollTenant();
         assertEquals("ORIGINAL", store.record(onlyTask()).getRenderedPayload());

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.*;
 
@@ -76,7 +77,7 @@ class ReportDefinitionServiceTest {
          * @return 当前处理返回的固定结果
          */
         public DatasetResult query(ReportExecutionContext context, DatasetQuery query) {
-            return new DatasetResult(List.of(Map.of("code", "001")), 1, java.time.Instant.now());
+            return new DatasetResult(List.of(Map.of("code", "001")), 1, Instant.now());
         }
     }
 

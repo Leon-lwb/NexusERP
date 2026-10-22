@@ -23,12 +23,15 @@ import com.nexus.erp.fin.gl.constant.GlConstants;
 import com.nexus.erp.fin.gl.domain.GlAccount;
 import com.nexus.erp.fin.gl.domain.GlPeriod;
 import com.nexus.erp.fin.gl.domain.GlVoucherLine;
+import com.nexus.erp.fin.gl.domain.vo.GlVoucherVo;
 import com.nexus.erp.fin.gl.mapper.GlAccountMapper;
 import com.nexus.erp.fin.gl.mapper.GlPeriodMapper;
 import com.nexus.erp.fin.gl.service.IGlVoucherService;
 import com.nexus.erp.fin.gl.service.VoucherBuildRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -139,7 +142,7 @@ public class FaDisposalServiceImpl implements IFaDisposalService {
         req.setSourceNo(FaConstants.SOURCE_NO_DISPOSAL + asset.getAssetNo() + "-" + disposalId);
         req.setSummary(summary);
         req.setLines(lines);
-        com.nexus.erp.fin.gl.domain.vo.GlVoucherVo voucher = voucherService.createAndPost(req);
+        GlVoucherVo voucher = voucherService.createAndPost(req);
         // 落处置记录 + 资产置为已处置
         FaDisposal disposal = MapstructUtils.convert(bo, FaDisposal.class);
         disposal.setDisposalId(disposalId);

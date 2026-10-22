@@ -1,17 +1,28 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.support.ErpDdlTestSupport;
-import com.nexus.erp.pu.mapper.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.erp.pu.controller.PuCertifiedPurchaseWorkflowController;
+import com.nexus.erp.pu.domain.PuRequirementAllocationEvent;
+import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
+import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseWorkflowService;
-import org.apache.ibatis.annotations.Select;
+import com.nexus.erp.support.ErpDdlTestSupport;
+
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.session.Configuration;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
-import cn.dev33.satoken.annotation.SaCheckPermission;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.regex.Pattern;
+
 class PuCertifiedPurchaseLifecycleSqlContractTest {
     @Test void metadataRecordsHaveExplicitAliasesInsteadOfDependingOnPositionalConstructorDefaults() throws Exception {
         String columns=sql(PuCertifiedPurchaseLifecycleMapper.class,"lifecycleQuantityDefinitions");
@@ -28,8 +39,13 @@ class PuCertifiedPurchaseLifecycleSqlContractTest {
         // 仅显式本地诊断时导出已编译注解 SQL；默认回归不连接任何数据库。
         String export = System.getProperty("nexus.metadataSqlExport");
         if (export != null) {
-            java.nio.file.Files.writeString(java.nio.file.Path.of(export),
-                columns + "\n---\n" + sql(PuCertifiedPurchaseLifecycleMapper.class, "lifecycleQuantityDefinitions"));
+            Files.writeString(
+                    Path.of(export),
+                    columns
+                            + "\n---\n"
+                            + sql(
+                                    PuCertifiedPurchaseLifecycleMapper.class,
+                                    "lifecycleQuantityDefinitions"));
         }
     }
     @Test void currentReadsFlushBothMybatisCachesAndDoNotReuseSessionSnapshot() {
@@ -62,7 +78,12 @@ class PuCertifiedPurchaseLifecycleSqlContractTest {
         String update=String.join(" ",method.getAnnotation(Update.class).value());
         assertTrue(update.contains("tenant_id=#{tenantId}"));assertTrue(update.contains("command_status='COMMITTED'"));
         assertFalse(update.toUpperCase().contains("DELETE"));
-        var cas=PuRequirementAllocationLedgerMapper.class.getMethod("updateWithVersion",String.class,com.nexus.erp.pu.domain.PuRequirementAllocationLedger.class,Integer.class);
+        var cas =
+                PuRequirementAllocationLedgerMapper.class.getMethod(
+                        "updateWithVersion",
+                        String.class,
+                        PuRequirementAllocationLedger.class,
+                        Integer.class);
         String ledger=String.join(" ",cas.getAnnotation(Update.class).value());assertTrue(ledger.contains("version = #{expectedVersion}"));
         assertTrue(ledger.contains("allocation_key = #{row.allocationKey}"));assertTrue(ledger.contains("base_uom_id = #{row.baseUomId}"));
     }
@@ -86,29 +107,39 @@ class PuCertifiedPurchaseLifecycleSqlContractTest {
         }
     }
     @Test void eventCausalityRequiresPersistedSequenceNotOccurrenceTimeOrSnowflakeOrder() throws Exception {
-        assertDoesNotThrow(()->com.nexus.erp.pu.domain.PuRequirementAllocationEvent.class.getMethod("getEventSequence"));
-        assertDoesNotThrow(()->com.nexus.erp.pu.domain.PuRequirementAllocationEvent.class.getMethod("setEventSequence",Integer.class));
+        assertDoesNotThrow(() -> PuRequirementAllocationEvent.class.getMethod("getEventSequence"));
+        assertDoesNotThrow(
+                () ->
+                        PuRequirementAllocationEvent.class.getMethod(
+                                "setEventSequence", Integer.class));
         for(String name:new String[]{"listByAllocation","lockByAllocation"}) {
             var method=PuRequirementAllocationEventMapper.class.getMethod(name,String.class,Long.class);
             String select=String.join(" ",method.getAnnotation(Select.class).value());
             assertTrue(select.contains("ORDER BY event_sequence"));assertFalse(select.contains("ORDER BY occurred_at"));
             assertFalse(select.contains("ORDER BY event_id"));
         }
-        var method=PuRequirementAllocationEventMapper.class.getMethod("insert",com.nexus.erp.pu.domain.PuRequirementAllocationEvent.class);
-        String insert=String.join(" ",method.getAnnotation(org.apache.ibatis.annotations.Insert.class).value());
+        var method =
+                PuRequirementAllocationEventMapper.class.getMethod(
+                        "insert", PuRequirementAllocationEvent.class);
+        String insert = String.join(" ", method.getAnnotation(Insert.class).value());
         assertTrue(insert.contains("event_sequence"));assertTrue(insert.contains("#{row.eventSequence}"));
     }
     @Test void installationSchemaRequiresExplicitSequencePerTenantAllocation() throws Exception {
-        var root=java.nio.file.Path.of(getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-        while(root!=null&&!java.nio.file.Files.isRegularFile(root.resolve("ruoyi-modules/ruoyi-erp/pom.xml")))root=root.getParent();
+        var root = Path.of(getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+        while (root != null
+                && !Files.isRegularFile(root.resolve("ruoyi-modules/ruoyi-erp/pom.xml")))
+            root = root.getParent();
         assertNotNull(root,"Test must locate the actual repository schema");
-        String install=java.nio.file.Files.readString(root.resolve("script/sql/ry-erp.sql"));
+        String install = Files.readString(root.resolve("script/sql/ry-erp.sql"));
         int start=install.indexOf("CREATE TABLE `pu_requirement_allocation_event`");
         assertTrue(start>=0);String event=install.substring(start,install.indexOf(";",start));
         ErpDdlTestSupport.assertColumn(event, "event_sequence", "int NOT NULL");
         ErpDdlTestSupport.assertIndex(event, true, "uk_prae_tenant_allocation_sequence", "tenant_id", "allocation_id", "event_sequence");
-        assertFalse(java.util.regex.Pattern.compile("(?im)^\\s*`event_sequence`[^\\r\\n]*\\bDEFAULT\\b").matcher(event).find(),
-            "Event order must be supplied by the writer, not inferred by a default");
+        assertFalse(
+                Pattern.compile("(?im)^\\s*`event_sequence`[^\\r\\n]*\\bDEFAULT\\b")
+                        .matcher(event)
+                        .find(),
+                "Event order must be supplied by the writer, not inferred by a default");
         ErpDdlTestSupport.assertIndex(event, true, "uk_prae_tenant_event_key", "tenant_id", "event_key");
     }
     private static String sql(Class<?> type,String name)throws Exception{return String.join(" ",type.getMethod(name).getAnnotation(Select.class).value());}

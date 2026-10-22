@@ -1,21 +1,5 @@
 package com.nexus.ai.service.rag;
 
-import com.nexus.ai.config.AiProperties;
-import com.nexus.common.ai.domain.entity.AiKnowledge;
-import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
-import com.nexus.common.ai.domain.entity.AiModel;
-import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
-import com.nexus.common.ai.mapper.AiKnowledgeMapper;
-import com.nexus.common.ai.mapper.AiModelMapper;
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.output.Response;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,6 +7,33 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.nexus.ai.config.AiProperties;
+import com.nexus.common.ai.domain.entity.AiKnowledge;
+import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
+import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
+import com.nexus.common.ai.mapper.AiKnowledgeMapper;
+import com.nexus.common.ai.mapper.AiModelMapper;
+import com.nexus.common.core.exception.ServiceException;
+
+import dev.langchain4j.data.document.Metadata;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.filter.Filter;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+
+import java.util.List;
 
 /**
  * 向量存储服务重建路径单元测试（InMemory 模式 + Mockito 桩，无 Milvus 无网络）
@@ -59,13 +70,20 @@ class VectorStoreServiceTest {
         service.rebuildKnowledge(1L, "text-embedding", 64, List.of(chunk(11L), chunk(12L)));
 
         // 两片段 vectorId 均回写
-        verify(chunkMapper).updateById(org.mockito.ArgumentMatchers.<AiKnowledgeChunk>argThat(c ->
-            c.getId().equals(11L) && c.getVectorId() != null));
-        verify(chunkMapper).updateById(org.mockito.ArgumentMatchers.<AiKnowledgeChunk>argThat(c ->
-            c.getId().equals(12L) && c.getVectorId() != null));
+        verify(chunkMapper)
+                .updateById(
+                        ArgumentMatchers.<AiKnowledgeChunk>argThat(
+                                c -> c.getId().equals(11L) && c.getVectorId() != null));
+        verify(chunkMapper)
+                .updateById(
+                        ArgumentMatchers.<AiKnowledgeChunk>argThat(
+                                c -> c.getId().equals(12L) && c.getVectorId() != null));
         // 单批 2/2 → min(99, 200/2)=99；进度为条件写入（WHERE REBUILDING）
-        verify(knowledgeMapper).update(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            Integer.valueOf(99).equals(k.getVectorIndexProgress())), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k -> Integer.valueOf(99).equals(k.getVectorIndexProgress())),
+                        any());
     }
 
     @Test
@@ -115,16 +133,20 @@ class VectorStoreServiceTest {
         var service = newService();
         var store = storeFor(service, 1L);
         var vector = Embedding.from(new float[]{1.0f, 0.0f});
-        store.add(vector, TextSegment.from("待删除文档", new dev.langchain4j.data.document.Metadata()
-            .put("documentId", "7")));
-        store.add(vector, TextSegment.from("应保留文档", new dev.langchain4j.data.document.Metadata()
-            .put("documentId", "8")));
+        store.add(vector, TextSegment.from("待删除文档", new Metadata().put("documentId", "7")));
+        store.add(vector, TextSegment.from("应保留文档", new Metadata().put("documentId", "8")));
 
         service.deleteByDocumentId(7L, 1L);
 
-        org.junit.jupiter.api.Assertions.assertSame(store, storeFor(service, 1L), "按文档删除不能丢弃整个知识库存储");
-        var matches = store.search(dev.langchain4j.store.embedding.EmbeddingSearchRequest.builder()
-            .queryEmbedding(vector).maxResults(10).minScore(0.0).build()).matches();
+        Assertions.assertSame(store, storeFor(service, 1L), "按文档删除不能丢弃整个知识库存储");
+        var matches =
+                store.search(
+                                EmbeddingSearchRequest.builder()
+                                        .queryEmbedding(vector)
+                                        .maxResults(10)
+                                        .minScore(0.0)
+                                        .build())
+                        .matches();
         assertEquals(List.of("应保留文档"), matches.stream().map(match -> match.embedded().text()).toList());
     }
 
@@ -137,31 +159,33 @@ class VectorStoreServiceTest {
         when(knowledgeMapper.selectById(1L)).thenReturn(knowledge);
         var service = newService();
         @SuppressWarnings("unchecked")
-        dev.langchain4j.store.embedding.EmbeddingStore<TextSegment> store =
-            mock(dev.langchain4j.store.embedding.EmbeddingStore.class);
+        EmbeddingStore<TextSegment> store = mock(EmbeddingStore.class);
         var field = VectorStoreService.class.getDeclaredField("milvusStores");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
-        com.github.benmanes.caffeine.cache.Cache<Long, dev.langchain4j.store.embedding.EmbeddingStore<TextSegment>> cache =
-            (com.github.benmanes.caffeine.cache.Cache<Long, dev.langchain4j.store.embedding.EmbeddingStore<TextSegment>>) field.get(service);
+        Cache<Long, EmbeddingStore<TextSegment>> cache =
+                (Cache<Long, EmbeddingStore<TextSegment>>) field.get(service);
         cache.put(1L, store);
-        org.mockito.Mockito.doThrow(new IllegalStateException("private-endpoint password=private-value Bearer private-token"))
-            .when(store).removeAll(any(dev.langchain4j.store.embedding.filter.Filter.class));
+        Mockito.doThrow(
+                        new IllegalStateException(
+                                "private-endpoint password=private-value Bearer private-token"))
+                .when(store)
+                .removeAll(any(Filter.class));
 
-        var rejected = assertThrows(com.nexus.common.core.exception.ServiceException.class,
-            () -> service.deleteByDocumentId(7L, 1L));
+        var rejected =
+                assertThrows(ServiceException.class, () -> service.deleteByDocumentId(7L, 1L));
 
         assertEquals("文档向量清理失败，请稍后重试或联系管理员。", rejected.getMessage());
-        org.junit.jupiter.api.Assertions.assertNull(rejected.getCause());
+        Assertions.assertNull(rejected.getCause());
     }
 
     /** 通过测试侧反射取得真实存储，避免为了测试扩大生产接口或访问远端 Milvus。 */
     @SuppressWarnings("unchecked")
-    private dev.langchain4j.store.embedding.EmbeddingStore<TextSegment> storeFor(
-            VectorStoreService service, Long knowledgeId) throws Exception {
+    private EmbeddingStore<TextSegment> storeFor(VectorStoreService service, Long knowledgeId)
+            throws Exception {
         var method = VectorStoreService.class.getDeclaredMethod("getStore", Long.class);
         method.setAccessible(true);
-        return (dev.langchain4j.store.embedding.EmbeddingStore<TextSegment>) method.invoke(service, knowledgeId);
+        return (EmbeddingStore<TextSegment>) method.invoke(service, knowledgeId);
     }
 
     private AiKnowledgeChunk chunk(Long id) {

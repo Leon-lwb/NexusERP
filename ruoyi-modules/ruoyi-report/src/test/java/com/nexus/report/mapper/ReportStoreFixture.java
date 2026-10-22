@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -199,8 +200,7 @@ final class ReportStoreFixture implements AutoCloseable {
                 store.registerDataset(
                         actor, descriptor("TEST_DATA", 1), "{\"v\":1}", "data-hash-1");
         if (dataset.owner() != actor.userId()) {
-            var grants =
-                    new java.util.ArrayList<>(store.acl(actor.tenantId(), "DATASET", dataset.id()));
+            var grants = new ArrayList<>(store.acl(actor.tenantId(), "DATASET", dataset.id()));
             grants.add(new Grant("USER", Long.toString(actor.userId()), "VIEW"));
             store.replaceAcl(
                     actor(actor.tenantId(), dataset.owner()), "DATASET", dataset.id(), grants);

@@ -1,17 +1,45 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
+import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.ai.adapter.ErpCertifiedPurchaseDecisionAdapter;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
+import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseOrderWorkflowMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseAuthorizer;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.Operation;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseOrderWorkflowService;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatchers;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.sql.DataSource;
 
 /** 原独立审查反例转为真实领域入口断言，不连接服务或数据库。 */
 class PuCertifiedPurchaseOriginalReceiptReviewRegressionTest {
@@ -127,35 +155,85 @@ class PuCertifiedPurchaseOriginalReceiptReviewRegressionTest {
         try(var f=new PuCertifiedPurchaseOriginalReceiptTest.Fixture()) {
             f.advance(3);f.clearWrites();
             var type=Class.forName("com.nexus.erp.pu.PuRequirementErpTransactionExecutorTest$Fixture");var constructor=type.getDeclaredConstructor();constructor.setAccessible(true);var tx=constructor.newInstance();
-            var factory=(org.apache.ibatis.session.SqlSessionFactory)field(tx,"sessionFactory");var routing=(javax.sql.DataSource)field(tx,"routing");
-            var jdbc=(java.sql.Connection)field(field(tx,"erpJdbc"),"connection");var isolation=new java.util.concurrent.atomic.AtomicInteger(java.sql.Connection.TRANSACTION_READ_COMMITTED);
-            when(jdbc.getTransactionIsolation()).thenAnswer(a->isolation.get());doAnswer(a->{isolation.set(a.getArgument(0));return null;}).when(jdbc).setTransactionIsolation(org.mockito.ArgumentMatchers.anyInt());
-            var executor=new com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor(factory);var qualification=new com.nexus.erp.pu.service.PuRequirementErpTransactionQualification(factory);
-            var target=new com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService(executor,qualification,f.physical.locks,f.physical.guards,f.physical.ledgers,f.physical.events,f.physical.mapper);
-            var proxy=new org.springframework.aop.framework.ProxyFactory(target);proxy.setProxyTargetClass(true);
-            proxy.addAdvisor(new com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor(new com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor(true,null),com.baomidou.dynamic.datasource.annotation.DS.class));
-            proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(new org.springframework.jdbc.datasource.DataSourceTransactionManager(routing),new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
-            var lifecycle=(com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService)proxy.getProxy();
-            var workflow=new com.nexus.erp.pu.service.PuCertifiedPurchaseOrderWorkflowService(executor,qualification,f.physical.locks,f.nativeMapper,f.physical.mapper,lifecycle,f.certification);
-            var writer=new com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService(mock(com.nexus.erp.pu.service.PuCertifiedPurchaseAuthorizer.class),executor,qualification,f.physical.locks,f.certification,f.write,f.physical.ledgers,f.physical.events,f.numbers,f.physical.mapper,f.scope,lifecycle,workflow,f.nativeMapper);
-            var adapter=new com.nexus.erp.ai.adapter.ErpCertifiedPurchaseDecisionAdapter(writer);
-            assertTrue(org.springframework.aop.support.AopUtils.isCglibProxy(lifecycle),"生命周期必须通过真实 Spring 代理调用 MANDATORY");
+            var factory = (SqlSessionFactory) field(tx, "sessionFactory");
+            var routing = (DataSource) field(tx, "routing");
+            var jdbc = (Connection) field(field(tx, "erpJdbc"), "connection");
+            var isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
+            when(jdbc.getTransactionIsolation()).thenAnswer(a -> isolation.get());
+            doAnswer(
+                            a -> {
+                                isolation.set(a.getArgument(0));
+                                return null;
+                            })
+                    .when(jdbc)
+                    .setTransactionIsolation(ArgumentMatchers.anyInt());
+            var executor = new PuRequirementErpTransactionExecutor(factory);
+            var qualification = new PuRequirementErpTransactionQualification(factory);
+            var target =
+                    new PuCertifiedPurchaseLifecycleService(
+                            executor,
+                            qualification,
+                            f.physical.locks,
+                            f.physical.guards,
+                            f.physical.ledgers,
+                            f.physical.events,
+                            f.physical.mapper);
+            var proxy = new ProxyFactory(target);
+            proxy.setProxyTargetClass(true);
+            proxy.addAdvisor(
+                    new DynamicDataSourceAnnotationAdvisor(
+                            new DynamicDataSourceAnnotationInterceptor(true, null), DS.class));
+            proxy.addAdvice(
+                    new TransactionInterceptor(
+                            new DataSourceTransactionManager(routing),
+                            new AnnotationTransactionAttributeSource()));
+            var lifecycle = (PuCertifiedPurchaseLifecycleService) proxy.getProxy();
+            var workflow =
+                    new PuCertifiedPurchaseOrderWorkflowService(
+                            executor,
+                            qualification,
+                            f.physical.locks,
+                            f.nativeMapper,
+                            f.physical.mapper,
+                            lifecycle,
+                            f.certification);
+            var writer =
+                    new PuCertifiedPurchaseWriteService(
+                            mock(PuCertifiedPurchaseAuthorizer.class),
+                            executor,
+                            qualification,
+                            f.physical.locks,
+                            f.certification,
+                            f.write,
+                            f.physical.ledgers,
+                            f.physical.events,
+                            f.numbers,
+                            f.physical.mapper,
+                            f.scope,
+                            lifecycle,
+                            workflow,
+                            f.nativeMapper);
+            var adapter = new ErpCertifiedPurchaseDecisionAdapter(writer);
+            assertTrue(AopUtils.isCglibProxy(lifecycle), "生命周期必须通过真实 Spring 代理调用 MANDATORY");
             assertSame(f.original,adapter.verify(f.action,f.original,ACTOR),"真实 executor/代理与 mock JDBC 正向必须保持原信封");
             f.physical.row.setVersion(5);
             assertAll("真实组合拒绝缺失账本历史",()->assertThrows(ServiceException.class,()->adapter.verify(f.action,f.original,ACTOR),"真实组合不能认证版本跳跃"),
                 ()->assertThrows(ServiceException.class,()->adapter.recover(f.action,ACTOR),"真实组合不能投影不完整历史"));
-            assertFalse(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive(),"退出后必须清理真实事务");
-            assertTrue(org.springframework.transaction.support.TransactionSynchronizationManager.getResourceMap().isEmpty(),"退出后必须清理连接资源");
-            assertNull(com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.peek(),"退出后必须清理路由");
-            verify((javax.sql.DataSource)field(tx,"master"),never()).getConnection();f.assertNoWrites();
+            assertFalse(
+                    TransactionSynchronizationManager.isActualTransactionActive(), "退出后必须清理真实事务");
+            assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty(), "退出后必须清理连接资源");
+            assertNull(DynamicDataSourceContextHolder.peek(), "退出后必须清理路由");
+            verify((DataSource) field(tx, "master"), never()).getConnection();
+            f.assertNoWrites();
         }
     }
     private static Object field(Object object,String name) throws Exception {var field=object.getClass().getDeclaredField(name);field.setAccessible(true);return field.get(object);}
 
     @Test void r3AuditProjectionsReadOnlyExistingNativeColumnsWithinTenantAndParent() throws Exception {
-        var mapper=com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.class;
+        var mapper = PuCertifiedPurchaseLifecycleMapper.class;
         for(String name:List.of("lockRequisitionStateAudit","lockRequisitionApprovalAudits","lockOrderStateAudit")) {
-            var method=mapper.getMethod(name,String.class,Long.class);var select=method.getAnnotation(org.apache.ibatis.annotations.Select.class);
+            var method = mapper.getMethod(name, String.class, Long.class);
+            var select = method.getAnnotation(Select.class);
             assertNotNull(select,"独立 audit 必须是只读原生 SELECT 投影");String sql=String.join(" ",select.value());
             assertTrue(sql.startsWith("SELECT "),"不得以新投影执行写入或修改 schema");
             assertTrue(sql.contains("tenant_id=#{tenantId}")&&sql.contains("FOR UPDATE"),"必须保留真实租户父绑定与当前锁定读");

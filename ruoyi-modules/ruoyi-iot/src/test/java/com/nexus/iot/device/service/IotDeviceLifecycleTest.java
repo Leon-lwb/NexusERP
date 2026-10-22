@@ -1,11 +1,25 @@
 package com.nexus.iot.device.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import io.github.linpeilie.Converter;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.iot.device.domain.IotDevice;
@@ -19,6 +33,9 @@ import com.nexus.iot.device.mapper.IotProductMapper;
 import com.nexus.iot.device.service.impl.IotDeviceServiceImpl;
 import com.nexus.iot.mqtt.IotMqttAuthenticator;
 import com.nexus.iot.pipeline.IotDeviceReportTimeCache;
+
+import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,19 +46,6 @@ import org.mockito.MockedStatic;
 
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * IoT 设备生命周期单元测试（IOT-DEV-01 / §4#7）。
@@ -285,11 +289,11 @@ class IotDeviceLifecycleTest {
         IotDeviceServiceImpl service = new IotDeviceServiceImpl(deviceMapper, mock(IotProductMapper.class),
             mock(IotDeviceGroupRelMapper.class), mock(IotDeviceTagRelMapper.class), resolver,
             mock(IotDeviceReportTimeCache.class), converter);
-        when(deviceMapper.selectVoPage(any(), any())).thenReturn(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>());
+        when(deviceMapper.selectVoPage(any(), any())).thenReturn(new Page<>());
 
         IotDeviceBo bo = new IotDeviceBo();
         bo.setGroupId(100L);
-        service.selectPageList(bo, new com.nexus.common.mybatis.core.page.PageQuery(1, 10));
+        service.selectPageList(bo, new PageQuery(1, 10));
 
         ArgumentCaptor<Wrapper<IotDevice>> captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(deviceMapper).selectVoPage(any(), captor.capture());

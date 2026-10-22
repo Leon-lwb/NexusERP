@@ -1,7 +1,12 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -9,6 +14,7 @@ import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
+import com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.pu.service.PuPurchaseReceivingService;
@@ -21,17 +27,17 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class WmArrivalNoticeServiceImplTest {
@@ -70,7 +76,7 @@ class WmArrivalNoticeServiceImplTest {
     @AfterEach void closeTenant() {tenant.close();}
 
     @Test void unmarkedArrivalOrderWithLedgerIsRecognizedByTheRealGuardBeforeReceiptCreation() {
-        var evidence=mock(com.nexus.erp.pu.mapper.PuCertifiedPurchaseDocumentGuardMapper.class);
+        var evidence = mock(PuCertifiedPurchaseDocumentGuardMapper.class);
         var realGuard=new PuCertifiedPurchaseDocumentGuard(evidence);
         ReflectionTestUtils.setField(service,"certifiedDocumentGuard",realGuard);
         WmArrivalNotice notice=notice(1L,"PO-A");notice.setStatus("APPROVING");

@@ -11,9 +11,12 @@ import com.nexus.generator.domain.GenTableDesign;
 import com.nexus.generator.mapper.GenTableDesignMapper;
 import com.nexus.generator.service.IGenTableService;
 import com.nexus.online.service.ITableDesignService;
+
 import jakarta.annotation.Resource;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 在线表单设计Service业务层处理
@@ -364,9 +369,10 @@ public class TableDesignServiceImpl implements ITableDesignService {
     private String extractCreateTableName(String sqlStmt) {
         if (StringUtils.isBlank(sqlStmt)) return null;
         // 匹配 create table [if not exists] `name` 或 标识符
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile(
-                "(?i)create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:`([^`]+)`|([a-zA-Z0-9_]+))");
-        java.util.regex.Matcher m = p.matcher(sqlStmt);
+        Pattern p =
+                Pattern.compile(
+                        "(?i)create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:`([^`]+)`|([a-zA-Z0-9_]+))");
+        Matcher m = p.matcher(sqlStmt);
         if (m.find()) {
             String g1 = m.group(1);
             String g2 = m.group(2);

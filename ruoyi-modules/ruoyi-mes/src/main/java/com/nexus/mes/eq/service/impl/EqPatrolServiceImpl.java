@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -23,8 +24,10 @@ import com.nexus.mes.eq.mapper.EqPatrolRecordMapper;
 import com.nexus.mes.eq.mapper.EqPatrolRouteMapper;
 import com.nexus.mes.eq.mapper.EqPatrolTaskMapper;
 import com.nexus.mes.eq.service.IEqPatrolService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 属于MES 设备管理模块，巡检业务层实现。
@@ -146,7 +152,7 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         for (Long routeId : ids) {
             Long taskCount = taskMapper.selectCount(Wrappers.<EqPatrolTask>lambdaQuery().eq(EqPatrolTask::getRouteId, routeId));
             if (taskCount != null && taskCount > 0) {
-                throw new com.nexus.common.core.exception.ServiceException("路线[" + routeId + "]下有" + taskCount + "个巡检任务, 请先删除任务");
+                throw new ServiceException("路线[" + routeId + "]下有" + taskCount + "个巡检任务, 请先删除任务");
             }
         }
         return routeMapper.deleteByIds(Arrays.asList(ids)) > 0;
@@ -238,7 +244,7 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         for (Long taskId : ids) {
             Long recCount = recordMapper.selectCount(Wrappers.<EqPatrolRecord>lambdaQuery().eq(EqPatrolRecord::getTaskId, taskId));
             if (recCount != null && recCount > 0) {
-                throw new com.nexus.common.core.exception.ServiceException("任务[" + taskId + "]下有" + recCount + "条巡检记录, 请先删除记录");
+                throw new ServiceException("任务[" + taskId + "]下有" + recCount + "条巡检记录, 请先删除记录");
             }
         }
         return taskMapper.deleteByIds(Arrays.asList(ids)) > 0;
@@ -350,10 +356,10 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         if (taskId != null) {
             EqPatrolTask task = taskMapper.selectById(taskId);
             if (task == null) {
-                throw new com.nexus.common.core.exception.ServiceException("巡检任务不存在: " + taskId);
+                throw new ServiceException("巡检任务不存在: " + taskId);
             }
             if ("COMPLETED".equals(task.getStatus()) || "CANCELLED".equals(task.getStatus())) {
-                throw new com.nexus.common.core.exception.ServiceException("巡检任务已结束, 无法提交记录: " + taskId);
+                throw new ServiceException("巡检任务已结束, 无法提交记录: " + taskId);
             }
         }
         EqPatrolRecord record = buildRecord(bo);
@@ -382,18 +388,18 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
             return false;
         }
         // 收集所有关联 taskId 后逐个校验任务状态(去重, 避免同任务重复查库)
-        java.util.Set<Long> taskIds = records.stream()
-            .map(EqPatrolRecord::getTaskId)
-            .filter(java.util.Objects::nonNull)
-            .collect(java.util.stream.Collectors.toSet());
+        Set<Long> taskIds =
+                records.stream()
+                        .map(EqPatrolRecord::getTaskId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
         for (Long taskId : taskIds) {
             EqPatrolTask task = taskMapper.selectById(taskId);
             if (task == null) {
                 continue;
             }
             if ("COMPLETED".equals(task.getStatus()) || "CANCELLED".equals(task.getStatus())) {
-                throw new com.nexus.common.core.exception.ServiceException(
-                    "巡检任务已结束, 其点检记录不可删除(质量留痕): taskId=" + taskId);
+                throw new ServiceException("巡检任务已结束, 其点检记录不可删除(质量留痕): taskId=" + taskId);
             }
         }
         return recordMapper.deleteByIds(Arrays.asList(ids)) > 0;
@@ -411,17 +417,18 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         if (bos == null || bos.isEmpty()) return List.of();
         // 守卫: 逐条校验 taskId(MES-EQ-11)。此前只校验 bos.get(0).getTaskId(),
         // 构造 [{未结束任务}, {已结束任务}] 即可把记录追加到已结束任务下。
-        java.util.Set<Long> taskIds = bos.stream()
-            .map(EqPatrolRecordBo::getTaskId)
-            .filter(java.util.Objects::nonNull)
-            .collect(java.util.stream.Collectors.toSet());
+        Set<Long> taskIds =
+                bos.stream()
+                        .map(EqPatrolRecordBo::getTaskId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
         for (Long taskId : taskIds) {
             EqPatrolTask task = taskMapper.selectById(taskId);
             if (task == null) {
-                throw new com.nexus.common.core.exception.ServiceException("巡检任务不存在: " + taskId);
+                throw new ServiceException("巡检任务不存在: " + taskId);
             }
             if ("COMPLETED".equals(task.getStatus()) || "CANCELLED".equals(task.getStatus())) {
-                throw new com.nexus.common.core.exception.ServiceException("巡检任务已结束, 无法提交记录: " + taskId);
+                throw new ServiceException("巡检任务已结束, 无法提交记录: " + taskId);
             }
         }
         List<EqPatrolRecordVo> result = new ArrayList<>(bos.size());

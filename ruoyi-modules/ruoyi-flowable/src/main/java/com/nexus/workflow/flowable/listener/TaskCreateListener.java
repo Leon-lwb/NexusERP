@@ -1,5 +1,9 @@
 package com.nexus.workflow.flowable.listener;
 
+import com.nexus.common.core.constant.Constants;
+import com.nexus.common.core.domain.model.LoginUser;
+import com.nexus.system.service.CommonService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,16 +15,12 @@ import org.flowable.common.engine.api.delegate.event.FlowableEventType;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
+import org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.task.service.impl.persistence.entity.TaskEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-
-import com.nexus.common.core.constant.Constants;
-import com.nexus.common.core.domain.model.LoginUser;
-import com.nexus.system.service.CommonService;
-
 
 /**
  * 全局监听-工作流待办消息提醒
@@ -53,8 +53,9 @@ public class TaskCreateListener implements FlowableEventListener {
     public void onEvent(FlowableEvent flowableEvent) {
         FlowableEventType type = flowableEvent.getType();
         if (type == FlowableEngineEventType.TASK_ASSIGNED) {
-            if (flowableEvent instanceof org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl) {
-                TaskEntity taskEntity = (TaskEntity) ((org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl) flowableEvent).getEntity();
+            if (flowableEvent instanceof FlowableEntityEventImpl) {
+                TaskEntity taskEntity =
+                        (TaskEntity) ((FlowableEntityEventImpl) flowableEvent).getEntity();
                 String taskId = taskEntity.getId();
                 String procInsId = taskEntity.getProcessInstanceId();
                 HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()

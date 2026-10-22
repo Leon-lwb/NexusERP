@@ -1,21 +1,26 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+import static com.nexus.mes.trace.MesTraceStore.number;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
-import static com.nexus.mes.trace.MesTraceStore.number;
 
 /**
  * 为既有电脑端详情提供事实读取，不创建来源分配、入库凭据或状态变更。
@@ -543,7 +548,7 @@ public class MesProductionDetailFactsService {
         try {
             request =
                     json.treeToValue(read(row.get("payload")), CompletionCancellationRequest.class);
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("取消来源无效", error);
         }
         need(
@@ -592,7 +597,7 @@ public class MesProductionDetailFactsService {
         CompletionCancellationResult result;
         try {
             result = json.treeToValue(applied, CompletionCancellationResult.class);
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("取消回执无效", error);
         }
         var original = request.originalEvent();
@@ -656,7 +661,7 @@ public class MesProductionDetailFactsService {
         try {
             need(value != null, "缺少不可变来源内容");
             return json.readTree(text(value));
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("来源内容无效", error);
         }
     }

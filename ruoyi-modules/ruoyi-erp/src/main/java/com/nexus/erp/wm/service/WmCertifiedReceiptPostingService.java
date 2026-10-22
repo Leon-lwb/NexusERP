@@ -9,12 +9,22 @@ import com.nexus.erp.pu.service.*;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.*;
 import com.nexus.erp.wm.service.impl.WmMqSendService;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.Locale;
+import java.util.function.Supplier;
 
 /**
  * 真实精确收货：支持单物料、根单位及非 SN 批次；原生余额与来源行流水处于同一 ERP 独占可重复读事务。
@@ -23,7 +33,7 @@ import java.util.*;
  */
 @Service
 public class WmCertifiedReceiptPostingService {
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmSerialInventoryService serialInventory;
 
     private static final BigDecimal ZERO = new BigDecimal("0.0000");
@@ -79,7 +89,7 @@ public class WmCertifiedReceiptPostingService {
     private final WmMqSendService notifications;
     private final PuCertifiedPurchaseOrderWorkflowService orderWorkflow;
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmCertifiedArrivalNoticeService arrivals;
 
     public WmCertifiedReceiptPostingService(
@@ -932,13 +942,12 @@ public class WmCertifiedReceiptPostingService {
         need(text(at), "永久过账时点缺失");
         try {
             return BigDecimal.valueOf(
-                    java.time.LocalDateTime.parse(
+                    LocalDateTime.parse(
                                     at,
-                                    java.time.format.DateTimeFormatter.ofPattern(
-                                            "yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT))
-                            .toInstant(java.time.ZoneOffset.ofHours(8))
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT))
+                            .toInstant(ZoneOffset.ofHours(8))
                             .toEpochMilli());
-        } catch (java.time.DateTimeException failure) {
+        } catch (DateTimeException failure) {
             throw error("永久过账时点不符合原数据库时区合同");
         }
     }
@@ -1106,7 +1115,7 @@ public class WmCertifiedReceiptPostingService {
         return new ServiceException("可信精确入库拒绝：" + reason);
     }
 
-    private static <T> T read(java.util.function.Supplier<T> call) {
+    private static <T> T read(Supplier<T> call) {
         try {
             return call.get();
         } catch (RuntimeException failure) {
@@ -1120,7 +1129,7 @@ public class WmCertifiedReceiptPostingService {
                     .formatHex(
                             MessageDigest.getInstance("SHA-256")
                                     .digest(body.getBytes(StandardCharsets.UTF_8)));
-        } catch (java.security.NoSuchAlgorithmException failure) {
+        } catch (NoSuchAlgorithmException failure) {
             throw error("来源摘要不可用");
         }
     }

@@ -1,5 +1,11 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor;
@@ -7,9 +13,10 @@ import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
+import com.nexus.erp.pu.domain.enums.PurchaseOrderStatusEnum;
+import com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawOrderHead;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawOrderLine;
@@ -17,6 +24,9 @@ import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequirement
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequirementHead;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequisitionHead;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawRequisitionLine;
+import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
@@ -43,9 +53,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.UncategorizedSQLException;
@@ -64,7 +77,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
@@ -75,32 +87,32 @@ import java.lang.reflect.RecordComponent;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import javax.sql.DataSource;
 
 /**
  * 有界采购占用来源归属合同；仅认证实际主键引用，不认证库存、额度、量纲或准时供应。
@@ -122,7 +134,7 @@ class ErpPurchaseAllocationLineageReaderTest {
         if(siblings)sourceFixture.orderHead=ErpPurchaseAllocationReceiptSourceReaderTest.replace(sourceFixture.orderHead,"status","PARTIALLY_RECEIVED");
         var sources=mock(ErpPurchaseAllocationReceiptSourceReader.class);
         var qualification=mock(PuRequirementErpTransactionQualification.class);
-        var mapper=mock(com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper.class);
+        var mapper = mock(ErpPurchaseAllocationLineageMapper.class);
         BigDecimal qty=bd(received),left=bd("10").subtract(qty);
         var material=new BdMaterial();material.setTenantId("000000");material.setMaterialId(140L);material.setBaseUomId(26L);material.setStatus(1L);material.setDelFlag("0");
         var ledger=new PuRequirementAllocationLedger();
@@ -139,19 +151,28 @@ class ErpPurchaseAllocationLineageReaderTest {
         var poHead=new RawOrderHead();poHead.setOrderId(81L);poHead.setTenantId("000000");poHead.setRequisitionId(73L);poHead.setVendorId(2L);poHead.setStatus(!siblings&&left.signum()==0?"RECEIVED":"PARTIALLY_RECEIVED");poHead.setDelFlag("0");
         var detail=new RawRequirementDetail();detail.setDetailId(61L);detail.setTenantId("000000");detail.setMaterialId(140L);detail.setRequirementId(62L);detail.setStatus(1L);detail.setDelFlag("0");
         var head=new RawRequirementHead();head.setRequirementId(62L);head.setTenantId("000000");head.setStatus("DRAFT");head.setDelFlag("0");
-        when(mapper.lockDatabaseClock()).thenReturn(new com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper.DatabaseClock(new BigDecimal("1791181611"),"+08:00"));
+        when(mapper.lockDatabaseClock())
+                .thenReturn(
+                        new ErpPurchaseAllocationLineageMapper.DatabaseClock(
+                                new BigDecimal("1791181611"), "+08:00"));
         when(mapper.lockMaterial("000000",140L)).thenReturn(material);when(mapper.lockAllocations("000000",140L)).thenReturn(List.of(ledger));
         when(mapper.lockRequisitionLines("000000",140L)).thenReturn(List.of(reqLine));when(mapper.lockRequisitionHeads("000000",List.of(73L))).thenReturn(List.of(reqHead));
         when(mapper.lockOrderLines("000000",140L)).thenReturn(List.of(poLine));when(mapper.lockOrderHeads("000000",List.of(81L))).thenReturn(List.of(poHead));
         when(mapper.lockRequirementDetails("000000",List.of(61L))).thenReturn(List.of(detail));when(mapper.lockRequirementHeads("000000",List.of(62L))).thenReturn(List.of(head));
         if(siblings) {
-            var second=new PuRequirementAllocationLedger();org.springframework.beans.BeanUtils.copyProperties(ledger,second);
+            var second = new PuRequirementAllocationLedger();
+            BeanUtils.copyProperties(ledger, second);
             second.setAllocationId(75L);second.setDetailId(63L);second.setRequisitionLineId(74L);second.setOrderLineId(83L);
             second.setAllocationKey("allocation-b");second.setOccupiedBaseQty(bd("10"));second.setFulfilledBaseQty(bd("0"));second.setVersion(3);
-            var secondReq=new RawRequisitionLine();org.springframework.beans.BeanUtils.copyProperties(reqLine,secondReq);secondReq.setLineId(74L);
-            var secondPo=new RawOrderLine();org.springframework.beans.BeanUtils.copyProperties(poLine,secondPo);
+            var secondReq = new RawRequisitionLine();
+            BeanUtils.copyProperties(reqLine, secondReq);
+            secondReq.setLineId(74L);
+            var secondPo = new RawOrderLine();
+            BeanUtils.copyProperties(poLine, secondPo);
             secondPo.setLineId(83L);secondPo.setRequisitionLineId(74L);secondPo.setReceivedQuantity(bd("0"));secondPo.setReceiveStatus("PENDING");
-            var secondDetail=new RawRequirementDetail();org.springframework.beans.BeanUtils.copyProperties(detail,secondDetail);secondDetail.setDetailId(63L);
+            var secondDetail = new RawRequirementDetail();
+            BeanUtils.copyProperties(detail, secondDetail);
+            secondDetail.setDetailId(63L);
             when(mapper.lockAllocations("000000",140L)).thenReturn(List.of(ledger,second));
             when(mapper.lockRequisitionLines("000000",140L)).thenReturn(List.of(reqLine,secondReq));
             when(mapper.lockOrderLines("000000",140L)).thenReturn(List.of(poLine,secondPo));
@@ -160,14 +181,24 @@ class ErpPurchaseAllocationLineageReaderTest {
         try(MockedStatic<TenantHelper> tenant=mockStatic(TenantHelper.class)) {
             tenant.when(TenantHelper::isEnable).thenReturn(true);tenant.when(TenantHelper::getTenantId).thenReturn("000000");
             var actual=assertDoesNotThrow(()->sourceFixture.reader.readLocked("000000",sourceFixture.allocation,sourceFixture.orderLine,sourceFixture.orderHead));
-            when(sources.readLocked(org.mockito.ArgumentMatchers.eq("000000"),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any())).thenReturn(actual);
+            when(sources.readLocked(
+                            ArgumentMatchers.eq("000000"),
+                            ArgumentMatchers.any(),
+                            ArgumentMatchers.any(),
+                            ArgumentMatchers.any()))
+                    .thenReturn(actual);
             var reader=new ErpPurchaseAllocationLineageReader(mapper,qualification,sources);
             var result=assertDoesNotThrow(()->reader.readLocked("000000",140L));
             assertEquals(actual.proof(),result.allocations().get(0).receiptFulfillment());
             if(siblings)assertNull(result.allocations().get(1).receiptFulfillment());
             assertEquals(actual.sourceVersions().get("receipt-fulfillment:71"),result.sourceVersions().get("receipt-fulfillment:71"));
             assertEquals(actual.sourceVersions().get("receipt-posting:91"),result.sourceVersions().get("receipt-posting:91"));
-            org.mockito.Mockito.verify(sources).readLocked(org.mockito.ArgumentMatchers.eq("000000"),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any());
+            Mockito.verify(sources)
+                    .readLocked(
+                            ArgumentMatchers.eq("000000"),
+                            ArgumentMatchers.any(),
+                            ArgumentMatchers.any(),
+                            ArgumentMatchers.any());
             assertThrows(ServiceException.class,()->new ErpPurchaseAllocationLineageReader(mapper,qualification).readLocked("000000",140L));
         }
     }
@@ -334,8 +365,12 @@ class ErpPurchaseAllocationLineageReaderTest {
     /** H2仅作自动销毁的隔离SQL反例，不持久化归属；生产语句/参数器/ResultMap完整执行。 */
     private static List<PuRequirementAllocationLedger> selectActualAllocationRows(PuRequirementAllocationLedger original, String relation)
         throws SQLException {
-        try (Connection connection = java.sql.DriverManager.getConnection("jdbc:h2:mem:lineage_ledger_"
-            + java.util.UUID.randomUUID() + ";MODE=MySQL", "sa", ""); Statement ddl = connection.createStatement()) {
+        try (Connection connection =
+                        DriverManager.getConnection(
+                                "jdbc:h2:mem:lineage_ledger_" + UUID.randomUUID() + ";MODE=MySQL",
+                                "sa",
+                                "");
+                Statement ddl = connection.createStatement()) {
             /** H2原生秒值是INT，乘毫秒会溢出；只在本私有方言替换为十进制秒，不改生产SQL/全局配置。 */
             ddl.execute("SET BUILTIN_ALIAS_OVERRIDE TRUE");
             ddl.execute("CREATE ALIAS UNIX_TIMESTAMP FOR \"com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReaderTest$MemoryEpochFunctions.seconds\"");
@@ -395,7 +430,7 @@ class ErpPurchaseAllocationLineageReaderTest {
     /** 仅供私有H2方言返回与既定生产投影一致的十进制秒，不参与任何业务时钟认证。 */
     public static final class MemoryEpochFunctions {
         /** 空值不补全，毫秒按精确十进制比例返回，避免H2内置INT秒的乘法溢出。 */
-        public static BigDecimal seconds(java.sql.Timestamp value) {
+        public static BigDecimal seconds(Timestamp value) {
             return value == null ? null : BigDecimal.valueOf(value.getTime(), 3);
         }
     }
@@ -407,11 +442,17 @@ class ErpPurchaseAllocationLineageReaderTest {
             "releasedBaseQty", "allocationStatus", "allocationKey", "decisionIdempotencyKey", "version", "createTime",
             "transferTime", "releasedAt", "releaseReason", "updateTime");
         String columns = fields.stream().map(field -> field.replaceAll("([A-Z])", "_$1").toLowerCase(Locale.ROOT)).collect(Collectors.joining(","));
-        try (var insert = connection.prepareStatement("INSERT INTO pu_requirement_allocation_ledger (" + columns
-            + ") VALUES (" + String.join(",", java.util.Collections.nCopies(fields.size(), "?")) + ")")) {
+        try (var insert =
+                connection.prepareStatement(
+                        "INSERT INTO pu_requirement_allocation_ledger ("
+                                + columns
+                                + ") VALUES ("
+                                + String.join(",", Collections.nCopies(fields.size(), "?"))
+                                + ")")) {
             for (int i = 0; i < fields.size(); i++) {
                 Object value = beanProperty(row, fields.get(i));
-                insert.setObject(i + 1, value instanceof Date date ? new java.sql.Timestamp(date.getTime()) : value);
+                insert.setObject(
+                        i + 1, value instanceof Date date ? new Timestamp(date.getTime()) : value);
             }
             assertEquals(1, insert.executeUpdate());
         }
@@ -448,8 +489,12 @@ class ErpPurchaseAllocationLineageReaderTest {
     /** 只在自动销毁的内存库建合成表；使用生产SQL、参数处理器及ResultMap，不访问本机业务库。 */
     private static List<RawOrderLine> selectActualOrderRows(Long conflictingMaterial, boolean committed, boolean unrelated)
         throws SQLException {
-        try (Connection connection = java.sql.DriverManager.getConnection("jdbc:h2:mem:lineage_conflict_"
-            + java.util.UUID.randomUUID() + ";MODE=MySQL", "sa", ""); Statement ddl = connection.createStatement()) {
+        try (Connection connection =
+                        DriverManager.getConnection(
+                                "jdbc:h2:mem:lineage_conflict_" + UUID.randomUUID() + ";MODE=MySQL",
+                                "sa",
+                                "");
+                Statement ddl = connection.createStatement()) {
             ddl.execute("CREATE TABLE pu_purchase_order_line (line_id BIGINT PRIMARY KEY, tenant_id VARCHAR(6), "
                 + "order_id BIGINT, requisition_line_id BIGINT, material_id BIGINT, unit VARCHAR(20), "
                 + "order_quantity DECIMAL(18,4), received_quantity DECIMAL(18,4), returned_quantity DECIMAL(18,4), "
@@ -659,7 +704,7 @@ class ErpPurchaseAllocationLineageReaderTest {
     @ParameterizedTest(name = "未履约订单仅承接占用：{0}")
     @ValueSource(strings = {"DRAFT", "SUBMITTED", "APPROVING", "APPROVED", "REJECTED"})
     void preReceiptOrderStatesRemainNonTimelyCommittedFacts(String state) {
-        assertDoesNotThrow(() -> com.nexus.erp.pu.domain.enums.PurchaseOrderStatusEnum.fromCode(state));
+        assertDoesNotThrow(() -> PurchaseOrderStatusEnum.fromCode(state));
         Fixture fixture = new Fixture();
         fixture.orderHead.setStatus(state);
         fixture.orderHead.setExpectedArrivalDate(Date.from(CREATED_AT));
@@ -1528,7 +1573,7 @@ class ErpPurchaseAllocationLineageReaderTest {
 
     /** 采购申请无独立枚举，直接核对服务接口真实状态常量，不借用采购订单集合。 */
     private static Set<String> actualRequisitionStates() {
-        Class<?> type = com.nexus.erp.pu.service.IPuPurchaseRequisitionService.class;
+        Class<?> type = IPuPurchaseRequisitionService.class;
         Set<String> states = Arrays.stream(type.getFields()).filter(field -> field.getName().startsWith("STATUS_"))
             .map(field -> assertDoesNotThrow(() -> (String) field.get(null))).collect(Collectors.toSet());
         assertEquals(Set.of("DRAFT", "SUBMITTED", "APPROVING", "APPROVED", "ORDERED", "CLOSED", "CANCELLED", "REJECTED"), states);

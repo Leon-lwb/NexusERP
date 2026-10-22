@@ -1,17 +1,20 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.*;
+import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseDemandAllocator.Stock;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.*;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.*;
 import com.nexus.erp.pu.service.PuRequirementCompetitionPoolReader.RawLockedFacts;
+
 import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 原始锁定事实与独立归属交叉核验；没有真实数据库或正式单据写入。 */
 class ErpPurchasePoolCertificationTest {
@@ -108,7 +111,7 @@ class ErpPurchasePoolCertificationTest {
         assertThrows(ServiceException.class, () -> certify(Set.of(1L)), "有单位但无独立占用归属也不能升级");
     }
 
-    private com.nexus.erp.ai.adapter.ErpPurchaseDemandAllocator.AllocationInput certify(Set<Long> requested) {
+    private ErpPurchaseDemandAllocator.AllocationInput certify(Set<Long> requested) {
         var unit = new TrustedUnit(TENANT, "26", "26", "数量", BigDecimal.ONE, "v1", 4, NOW.minusSeconds(60), true);
         var catalog = new CatalogSnapshot(TENANT, "20", "30", NOW, "+08:00",
             new Material(TENANT,"10","26",true),

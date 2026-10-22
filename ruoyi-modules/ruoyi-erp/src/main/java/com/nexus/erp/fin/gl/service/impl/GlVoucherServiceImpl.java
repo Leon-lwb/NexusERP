@@ -1,6 +1,7 @@
 package com.nexus.erp.fin.gl.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -27,8 +28,10 @@ import com.nexus.erp.fin.gl.service.IGlAccountBalanceService;
 import com.nexus.erp.fin.gl.service.IGlPeriodService;
 import com.nexus.erp.fin.gl.service.IGlVoucherService;
 import com.nexus.erp.fin.gl.service.VoucherBuildRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -461,7 +464,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
             lqw.eq(StringUtils.isNotBlank(bo.getStatus()), GlVoucher::getStatus, bo.getStatus());
             lqw.eq(StringUtils.isNotBlank(bo.getVoucherSource()), GlVoucher::getVoucherSource, bo.getVoucherSource());
             lqw.eq(bo.getPeriodId() != null, GlVoucher::getPeriodId, bo.getPeriodId());
-            java.util.Map<String, Object> params = bo.getParams();
+            Map<String, Object> params = bo.getParams();
             Object beginDate = params == null ? null : params.get("beginVoucherDate");
             Object endDate = params == null ? null : params.get("endVoucherDate");
             lqw.ge(beginDate != null, GlVoucher::getVoucherDate, beginDate);

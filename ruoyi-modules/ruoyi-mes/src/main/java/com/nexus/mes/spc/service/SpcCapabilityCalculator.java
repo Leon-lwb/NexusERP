@@ -3,6 +3,7 @@ package com.nexus.mes.spc.service;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.List;
 
 /**
  * SPC 过程能力指数计算器（纯静态工具，可单测）
@@ -138,7 +139,7 @@ public final class SpcCapabilityCalculator {
      * @param values 样本序列
      * @return 样本标准差; 样本数 &lt; 2 返回 null
      */
-    public static BigDecimal sampleStdDev(java.util.List<BigDecimal> values) {
+    public static BigDecimal sampleStdDev(List<BigDecimal> values) {
         if (values == null || values.size() < 2) {
             return null;
         }

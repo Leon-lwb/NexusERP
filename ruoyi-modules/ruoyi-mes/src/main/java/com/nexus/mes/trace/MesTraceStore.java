@@ -1,17 +1,24 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
+import com.nexus.common.trace.TrackingPolicy;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
 
 /**
  * 仅管理制造库本地持久化，跨库传输与重试租约由编排层维护。
@@ -151,15 +158,12 @@ public class MesTraceStore {
         return row;
     }
 
-    com.nexus.common.trace.TrackingPolicy sourcePolicy(Map<String, Object> source) {
+    TrackingPolicy sourcePolicy(Map<String, Object> source) {
         try {
-            var policy =
-                    json.treeToValue(
-                            result(source).path("policy"),
-                            com.nexus.common.trace.TrackingPolicy.class);
+            var policy = json.treeToValue(result(source).path("policy"), TrackingPolicy.class);
             need(policy != null, "ERP来源缺少冻结物料策略");
             return policy;
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalStateException("ERP来源策略无效");
         }
     }
@@ -189,7 +193,7 @@ public class MesTraceStore {
                                 && (positive(number(p, "erpBatchId"))
                                         || positive(number(p, "identityId"))
                                                 && positive(number(p, "sourceStockId"))
-                                                && java.math.BigDecimal.ONE.compareTo(
+                                                && BigDecimal.ONE.compareTo(
                                                                 MesMaterialTraceWriter.decimal(
                                                                         p, "quantity"))
                                                         == 0)
@@ -355,7 +359,7 @@ public class MesTraceStore {
         CompletionCancellationRequest request;
         try {
             request = json.treeToValue(payload(origin), CompletionCancellationRequest.class);
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("Invalid frozen cancellation request", error);
         }
         MaterialTraceEvent originalEvent = request.originalEvent();
@@ -515,7 +519,7 @@ public class MesTraceStore {
     private CompletionCancellationResult cancellation(JsonNode payload) {
         try {
             return json.treeToValue(payload, CompletionCancellationResult.class);
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("Invalid ERP cancellation receipt", error);
         }
     }
@@ -575,7 +579,7 @@ public class MesTraceStore {
     JsonNode read(String body) {
         try {
             return json.readTree(body);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("追溯载荷无效");
         }
     }
@@ -677,7 +681,7 @@ public class MesTraceStore {
 
     static Long numberValue(JsonNode n) {
         try {
-            return new java.math.BigDecimal(n.asText()).longValueExact();
+            return new BigDecimal(n.asText()).longValueExact();
         } catch (Exception e) {
             return null;
         }
@@ -689,7 +693,7 @@ public class MesTraceStore {
             return null;
         }
         try {
-            return new java.math.BigDecimal(n.asText()).longValueExact();
+            return new BigDecimal(n.asText()).longValueExact();
         } catch (Exception e) {
             return null;
         }

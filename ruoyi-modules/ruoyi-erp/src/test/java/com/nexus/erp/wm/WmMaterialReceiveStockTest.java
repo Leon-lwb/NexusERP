@@ -1,11 +1,19 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.impl.WmMaterialReceiveExecutorServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -19,10 +27,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * 入库执行器：库存唯一键 / 库存查询 的 SN 维度单元测试（问题③回归）
@@ -79,8 +83,7 @@ class WmMaterialReceiveStockTest {
         m.invoke(executor, condition);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<WmMaterialStock>> captor =
-            ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.Wrapper.class);
+        ArgumentCaptor<Wrapper<WmMaterialStock>> captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(materialStockMapper).selectOne(captor.capture());
         String sql = captor.getValue().getSqlSegment();
         assertTrue(sql.contains("sn_id"), "查询条件必须包含 sn_id，实际: " + sql);
@@ -105,8 +108,7 @@ class WmMaterialReceiveStockTest {
     /** 库存事务必须记录 SN（问题⑥回归） */
     @Test
     void recordStockTransaction_persistsSn() throws Exception {
-        com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo receive =
-            new com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo();
+        WmMaterialReceiveVo receive = new WmMaterialReceiveVo();
         receive.setReceiveId(1L);
         receive.setReceiveCode("CGRK20260816001");
         receive.setReceiveDate(new Date());
@@ -122,20 +124,25 @@ class WmMaterialReceiveStockTest {
         stock.setLocationId(6L);
         stock.setRecptDate(new Date());
 
-        Method m = WmMaterialReceiveExecutorServiceImpl.class.getDeclaredMethod(
-            "recordStockTransaction",
-            com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo.class,
-            WmMaterialStock.class, int.class, BigDecimal.class,
-            BigDecimal.class, BigDecimal.class, Long.class, String.class);
+        Method m =
+                WmMaterialReceiveExecutorServiceImpl.class.getDeclaredMethod(
+                        "recordStockTransaction",
+                        WmMaterialReceiveVo.class,
+                        WmMaterialStock.class,
+                        int.class,
+                        BigDecimal.class,
+                        BigDecimal.class,
+                        BigDecimal.class,
+                        Long.class,
+                        String.class);
         m.setAccessible(true);
         m.invoke(executor, receive, stock, 1, new BigDecimal("1"),
             BigDecimal.ZERO, new BigDecimal("1"), 5L, "TARGET_IN");
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<com.nexus.erp.wm.domain.WmMaterialStockTx> captor =
-            ArgumentCaptor.forClass(com.nexus.erp.wm.domain.WmMaterialStockTx.class);
+        ArgumentCaptor<WmMaterialStockTx> captor = ArgumentCaptor.forClass(WmMaterialStockTx.class);
         verify(materialStockTxMapper).insert(captor.capture());
-        com.nexus.erp.wm.domain.WmMaterialStockTx tx = captor.getValue();
+        WmMaterialStockTx tx = captor.getValue();
         assertEquals(77L, tx.getSnId(), "库存事务必须落 sn_id");
         assertEquals("SN202608160001", tx.getSnCode(), "库存事务必须落 sn_code");
     }

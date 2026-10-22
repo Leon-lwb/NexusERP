@@ -2,6 +2,7 @@ package com.nexus.flow.state;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -30,13 +31,15 @@ public class FlowState {
 
     /**
      * 按路径取值（支持点号 + 数组下标）
+     *
      * <p>路径语义（对齐 n8n 表达式缺失分层）：
+     *
      * <ul>
-     *   <li>路径中节点不存在/未执行 → 抛 {@link IllegalArgumentException}（带节点名与提示）</li>
-     *   <li>已存在节点的属性缺失 → 返回 {@link com.fasterxml.jackson.databind.node.MissingNode}</li>
+     *   <li>路径中节点不存在/未执行 → 抛 {@link IllegalArgumentException}（带节点名与提示）
+     *   <li>已存在节点的属性缺失 → 返回 {@link MissingNode}
      * </ul>
-     * </p>
-     * <p>并行安全：读操作与写入并发，synchronized 保证结构一致性</p>
+     *
+     * <p>并行安全：读操作与写入并发，synchronized 保证结构一致性
      *
      * @param path 路径（如 input.warehouse、nodes.node_llm_1.output.content、chunks[0]）
      * @return 值节点；属性缺失返回 MissingNode（调用方渲染为空串）

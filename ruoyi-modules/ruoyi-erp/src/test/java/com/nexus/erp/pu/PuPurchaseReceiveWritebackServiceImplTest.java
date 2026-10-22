@@ -1,49 +1,62 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
-
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.redis.utils.RedisUtils;
-import com.nexus.erp.pu.domain.PuPurchaseOrder;
-import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
-import com.nexus.erp.pu.service.impl.PuPurchaseReceiveWritebackServiceImpl;
-import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
-import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import cn.hutool.extra.spring.SpringUtil;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.pu.domain.PuPurchaseOrder;
+import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService;
+import com.nexus.erp.pu.service.impl.PuPurchaseReceiveWritebackServiceImpl;
+import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RedissonClient;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 采购收货回写单元测试（ERP-PU-01 超收守卫 / ERP-PU-02 幂等键可重试）。
@@ -70,9 +83,9 @@ class PuPurchaseReceiveWritebackServiceImplTest {
 
     @BeforeAll
     static void initStatics() throws Exception {
-        try(var spring=mockStatic(cn.hutool.extra.spring.SpringUtil.class)) {
-            spring.when(()->cn.hutool.extra.spring.SpringUtil.getBean(org.redisson.api.RedissonClient.class))
-                .thenReturn(mock(org.redisson.api.RedissonClient.class));
+        try (var spring = mockStatic(SpringUtil.class)) {
+            spring.when(() -> SpringUtil.getBean(RedissonClient.class))
+                    .thenReturn(mock(RedissonClient.class));
             Class.forName(RedisUtils.class.getName(),true,RedisUtils.class.getClassLoader());
         }
         MybatisConfiguration configuration = new MybatisConfiguration();
@@ -126,11 +139,12 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         }
         ServiceException error=assertThrows(ServiceException.class,()->writebackService.writeBackReceivedQty(1L,100L));
         assertEquals("采购收货回写数据访问失败，操作未完成",error.getMessage());
-        org.junit.jupiter.api.Assertions.assertNull(error.getCause());
+        Assertions.assertNull(error.getCause());
         assertEquals(0,error.getSuppressed().length);
-        java.io.StringWriter printed=new java.io.StringWriter();error.printStackTrace(new java.io.PrintWriter(printed));
-        org.junit.jupiter.api.Assertions.assertFalse(printed.toString().contains("fixture-password"));
-        org.junit.jupiter.api.Assertions.assertFalse(printed.toString().contains("fixture-private-url"));
+        StringWriter printed = new StringWriter();
+        error.printStackTrace(new PrintWriter(printed));
+        Assertions.assertFalse(printed.toString().contains("fixture-password"));
+        Assertions.assertFalse(printed.toString().contains("fixture-private-url"));
         redisUtilsMock.verify(()->RedisUtils.setObjectIfAbsent(anyString(),any(),any()),never());
     }
     @Test void mapperThrownServiceExceptionWithCauseOrSuppressedDiagnosticsIsNotTrustedBusinessText() {
@@ -139,11 +153,16 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         when(receiveLineMapper.selectList(any())).thenThrow(raw);
         ServiceException error=assertThrows(ServiceException.class,()->writebackService.writeBackReceivedQty(1L,100L));
         assertEquals("采购收货回写数据访问失败，操作未完成",error.getMessage());
-        org.junit.jupiter.api.Assertions.assertNull(error.getCause());assertEquals(0,error.getSuppressed().length);
+        Assertions.assertNull(error.getCause());
+        assertEquals(0, error.getSuppressed().length);
     }
     @Test void mapperJavaErrorPropagatesAsTheExactOriginalObject() {
         AssertionError fatal=new AssertionError("fatal-fixture");when(receiveLineMapper.selectList(any())).thenThrow(fatal);
-        org.junit.jupiter.api.Assertions.assertSame(fatal,assertThrows(AssertionError.class,()->writebackService.writeBackReceivedQty(1L,100L)));
+        Assertions.assertSame(
+                fatal,
+                assertThrows(
+                        AssertionError.class,
+                        () -> writebackService.writeBackReceivedQty(1L, 100L)));
     }
     @Test
     void legacyRepeatedOrderLineStillAccumulatesCorrectStatusAfterBatchSourcePreflight() {
@@ -155,10 +174,11 @@ class PuPurchaseReceiveWritebackServiceImplTest {
             orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO),orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
         when(purchaseOrderLineMapper.update(any(),any())).thenReturn(1);
         writebackService.writeBackReceivedQty(1L,100L);
-        @SuppressWarnings({"rawtypes","unchecked"})
-        org.mockito.ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<PuPurchaseOrderLine>> updates =
-            (org.mockito.ArgumentCaptor) org.mockito.ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
-        verify(purchaseOrderLineMapper,times(2)).update(org.mockito.ArgumentMatchers.isNull(),updates.capture());
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        ArgumentCaptor<LambdaUpdateWrapper<PuPurchaseOrderLine>> updates =
+                (ArgumentCaptor) ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(purchaseOrderLineMapper, times(2))
+                .update(ArgumentMatchers.isNull(), updates.capture());
         var last = updates.getAllValues().get(1); last.getSqlSegment();
         assertTrue(last.getParamNameValuePairs().containsValue("FULL_RECEIVED"),last.getParamNameValuePairs().toString());
     }
@@ -170,9 +190,9 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         when(purchaseOrderLineMapper.selectOne(any())).thenReturn(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
         when(purchaseOrderLineMapper.update(any(),any())).thenReturn(1);
         writebackService.writeBackReceivedQty(1L,100L);
-        @SuppressWarnings({"rawtypes","unchecked"})
-        org.mockito.ArgumentCaptor<LambdaQueryWrapper<PuPurchaseOrderLine>> query =
-            (org.mockito.ArgumentCaptor) org.mockito.ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        ArgumentCaptor<LambdaQueryWrapper<PuPurchaseOrderLine>> query =
+                (ArgumentCaptor) ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(purchaseOrderLineMapper).selectOne(query.capture());
         String sql=query.getValue().getSqlSegment().toLowerCase();
         assertTrue(sql.contains("order_id")&&sql.contains("material_id")&&sql.contains("for update"),sql);
@@ -187,9 +207,12 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         when(receiveLineMapper.selectList(any())).thenReturn(List.of(first,second));
         when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO)));
         when(purchaseOrderLineMapper.selectOne(any())).thenReturn(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
-        org.mockito.Mockito.lenient().doThrow(new ServiceException("protected-document")).when(certifiedDocumentGuard).requireLegacyOrderLineMutation(12L);
+        Mockito.lenient()
+                .doThrow(new ServiceException("protected-document"))
+                .when(certifiedDocumentGuard)
+                .requireLegacyOrderLineMutation(12L);
         assertThrows(ServiceException.class,() -> writebackService.writeBackReceivedQty(1L,100L));
-        verify(purchaseOrderLineMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+        verify(purchaseOrderLineMapper, never()).update(ArgumentMatchers.isNull(), any());
         redisUtilsMock.verify(() -> RedisUtils.setObjectIfAbsent(anyString(),any(),any()),never());
     }
 
@@ -197,9 +220,13 @@ class PuPurchaseReceiveWritebackServiceImplTest {
     void certifiedMqReceiptRejectsBeforeRedisIdempotencyOrBusinessReads() {
         ServiceException protectedError = new ServiceException("protected-document");
         lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderMutation(100L);
-        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class,
-            () -> writebackService.writeBackReceivedQty(1L,100L)));
-        org.mockito.Mockito.verifyNoInteractions(purchaseOrderMapper,purchaseOrderLineMapper,receiveLineMapper);
+        Assertions.assertSame(
+                protectedError,
+                assertThrows(
+                        ServiceException.class,
+                        () -> writebackService.writeBackReceivedQty(1L, 100L)));
+        Mockito.verifyNoInteractions(
+                purchaseOrderMapper, purchaseOrderLineMapper, receiveLineMapper);
         redisUtilsMock.verifyNoInteractions();
     }
 
@@ -209,13 +236,18 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         when(receiveLineMapper.selectList(any())).thenReturn(List.of(receive));
         lenient().when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO)));
         lenient().when(purchaseOrderLineMapper.selectOne(any())).thenReturn(orderLine(11L,new BigDecimal("5"),BigDecimal.ZERO));
-        lenient().when(purchaseOrderLineMapper.update(org.mockito.ArgumentMatchers.isNull(), any())).thenReturn(1);
+        lenient()
+                .when(purchaseOrderLineMapper.update(ArgumentMatchers.isNull(), any()))
+                .thenReturn(1);
         ServiceException protectedError = new ServiceException("protected-document");
         lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderLineMutation(11L);
-        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class,
-            () -> writebackService.writeBackReceivedQty(1L,100L)));
-        verify(purchaseOrderLineMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
-        verify(purchaseOrderMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+        Assertions.assertSame(
+                protectedError,
+                assertThrows(
+                        ServiceException.class,
+                        () -> writebackService.writeBackReceivedQty(1L, 100L)));
+        verify(purchaseOrderLineMapper, never()).update(ArgumentMatchers.isNull(), any());
+        verify(purchaseOrderMapper, never()).update(ArgumentMatchers.isNull(), any());
     }
 
     @Test
@@ -225,10 +257,12 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         when(receiveLineMapper.selectList(any())).thenReturn(List.of(receive));
         when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(orderLine(12L,new BigDecimal("5"),BigDecimal.ZERO)));
         when(purchaseOrderLineMapper.selectOne(any())).thenReturn(foreign);
-        lenient().when(purchaseOrderLineMapper.update(org.mockito.ArgumentMatchers.isNull(), any())).thenReturn(1);
+        lenient()
+                .when(purchaseOrderLineMapper.update(ArgumentMatchers.isNull(), any()))
+                .thenReturn(1);
         ServiceException error = assertThrows(ServiceException.class, () -> writebackService.writeBackReceivedQty(1L,100L));
         assertTrue(error.getMessage().contains("归属"),error.getMessage());
-        verify(purchaseOrderLineMapper,never()).update(org.mockito.ArgumentMatchers.isNull(),any());
+        verify(purchaseOrderLineMapper, never()).update(ArgumentMatchers.isNull(), any());
     }
 
     @Test
@@ -379,36 +413,43 @@ class PuPurchaseReceiveWritebackServiceImplTest {
         assertEquals(0, new BigDecimal(expected).compareTo(actual));
     }
     @Test void dispatcherMustNotOpenAnAmbientTransactionBeforeDedicatedReceiptExecutor() throws Exception {
-        org.junit.jupiter.api.Assertions.assertNull(PuPurchaseReceiveWritebackServiceImpl.class
-            .getMethod("writeBackReceivedQty",Long.class,Long.class)
-            .getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+        Assertions.assertNull(
+                PuPurchaseReceiveWritebackServiceImpl.class
+                        .getMethod("writeBackReceivedQty", Long.class, Long.class)
+                        .getAnnotation(Transactional.class));
     }
     @Test void certifiedDispatcherNeverInvokesLegacyProxyEvenOnDurableReplay() {
-        var batch=mock(com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.class);
+        var batch = mock(PuCertifiedPurchaseReceiptBatchService.class);
         var legacy=mock(PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback.class);
         var dispatcher=new PuPurchaseReceiveWritebackServiceImpl(batch,legacy);
-        try(var tenant=mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000001");
-            when(batch.consumeReceipt("000001",1L,null)).thenReturn(new com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.BatchReceipt("000001",1L,100L,true,List.of(),true));
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000001");
+            when(batch.consumeReceipt("000001", 1L, null))
+                    .thenReturn(
+                            new PuCertifiedPurchaseReceiptBatchService.BatchReceipt(
+                                    "000001", 1L, 100L, true, List.of(), true));
             dispatcher.writeBackReceivedQty(1L,null);verifyNoInteractions(legacy);
         }
     }
     @Test void historicalDispatcherCallsTheSeparateLegacyProxyWithLockedActualOrder() {
-        var batch=mock(com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.class);
+        var batch = mock(PuCertifiedPurchaseReceiptBatchService.class);
         var legacy=mock(PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback.class);
         var dispatcher=new PuPurchaseReceiveWritebackServiceImpl(batch,legacy);
-        try(var tenant=mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000001");
-            when(batch.consumeReceipt("000001",1L,null)).thenReturn(new com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.BatchReceipt("000001",1L,100L,false,List.of(),false));
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000001");
+            when(batch.consumeReceipt("000001", 1L, null))
+                    .thenReturn(
+                            new PuCertifiedPurchaseReceiptBatchService.BatchReceipt(
+                                    "000001", 1L, 100L, false, List.of(), false));
             dispatcher.writeBackReceivedQty(1L,null);verify(legacy).writeBackReceivedQty(1L,100L);
         }
     }
     @Test void uncertainCommitMustNeverFallBackToLegacyWrites() {
-        var batch=mock(com.nexus.erp.pu.service.PuCertifiedPurchaseReceiptBatchService.class);
+        var batch = mock(PuCertifiedPurchaseReceiptBatchService.class);
         var legacy=mock(PuPurchaseReceiveWritebackServiceImpl.LegacyWriteback.class);
         var dispatcher=new PuPurchaseReceiveWritebackServiceImpl(batch,legacy);
-        try(var tenant=mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            tenant.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("000001");
+        try (var tenant = mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000001");
             when(batch.consumeReceipt("000001",1L,null)).thenThrow(new ServiceException("commit unknown"));
             assertThrows(ServiceException.class,()->dispatcher.writeBackReceivedQty(1L,null));verifyNoInteractions(legacy);
         }

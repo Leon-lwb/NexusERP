@@ -1,8 +1,20 @@
 package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+
+import com.nexus.ai.service.rag.KnowledgeImportService;
+import com.nexus.ai.service.rag.KnowledgeIndexRebuildService;
+import com.nexus.ai.service.rag.KnowledgeProcessService;
+import com.nexus.ai.service.rag.RetrieverService;
+import com.nexus.common.ai.domain.bo.AiKnowledgeBo;
+import com.nexus.common.ai.domain.bo.AiKnowledgeChunkBo;
+import com.nexus.common.ai.domain.bo.AiKnowledgeDocumentBo;
+import com.nexus.common.ai.domain.vo.AiKnowledgeChunkVo;
+import com.nexus.common.ai.domain.vo.AiKnowledgeDocumentVo;
+import com.nexus.common.ai.domain.vo.AiKnowledgeVo;
+import com.nexus.common.ai.service.IAiKnowledgeChunkService;
+import com.nexus.common.ai.service.IAiKnowledgeDocumentService;
+import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
@@ -10,19 +22,11 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
-import com.nexus.common.ai.domain.bo.AiKnowledgeBo;
-import com.nexus.common.ai.domain.bo.AiKnowledgeDocumentBo;
-import com.nexus.common.ai.domain.bo.AiKnowledgeChunkBo;
-import com.nexus.common.ai.domain.vo.AiKnowledgeVo;
-import com.nexus.common.ai.domain.vo.AiKnowledgeDocumentVo;
-import com.nexus.common.ai.domain.vo.AiKnowledgeChunkVo;
-import com.nexus.common.ai.service.IAiKnowledgeService;
-import com.nexus.common.ai.service.IAiKnowledgeDocumentService;
-import com.nexus.common.ai.service.IAiKnowledgeChunkService;
-import com.nexus.ai.service.rag.KnowledgeIndexRebuildService;
-import com.nexus.ai.service.rag.KnowledgeProcessService;
-import com.nexus.ai.service.rag.KnowledgeImportService;
-import com.nexus.ai.service.rag.RetrieverService;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -246,15 +250,17 @@ public class AiKnowledgeController extends BaseController {
 
     /**
      * 知识库检索测试
-     * <p>权限标识：{@code ai:knowledge:query}</p>
-     * <p>支持参数覆盖：topK、threshold、enableRerank、rerankModel、enableHybrid、hybridAlpha</p>
+     *
+     * <p>权限标识：{@code ai:knowledge:query}
+     *
+     * <p>支持参数覆盖：topK、threshold、enableRerank、rerankModel、enableHybrid、hybridAlpha
      *
      * @param params 请求参数，包含 knowledgeId（知识库ID）、query（查询文本）及可选覆盖参数
      * @return 检索到的片段内容列表
      */
     @SaCheckPermission("ai:knowledge:query")
     @PostMapping("/retrieval")
-    public R<List<String>> retrieval(@RequestBody java.util.Map<String, Object> params) {
+    public R<List<String>> retrieval(@RequestBody Map<String, Object> params) {
         Long knowledgeId = Long.valueOf(params.get("knowledgeId").toString());
         String query = params.get("query").toString();
         return R.ok(retrieverService.retrieve(knowledgeId, query, params));

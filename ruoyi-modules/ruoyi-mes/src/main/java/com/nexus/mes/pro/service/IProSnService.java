@@ -113,18 +113,19 @@ public interface IProSnService {
 
     /**
      * 按委外订单批量生成SN (PCBA 委外闭环, MQ 触发)
-     * <p>编码规则: SN-{委外单号}-{4位序号}; source=SUBCONTRACT, 冗余 subcontractNo 供直达追溯。
-     * 幂等: 按 subcontractNo 已生成数量续号, @Lock4j 订单维度防并发。</p>
+     *
+     * <p>编码规则: SN-{委外单号}-{4位序号}; source=SUBCONTRACT, 冗余 subcontractNo 供直达追溯。 幂等: 按 subcontractNo
+     * 已生成数量续号, @Lock4j 订单维度防并发。
      *
      * @param subcontractId 委外订单ID
      * @param subcontractNo 委外单号
-     * @param materialId     产出物料ID
-     * @param materialCode   物料编码
-     * @param materialName   物料名称
-     * @param quantity       本次生成数量
+     * @param materialId 产出物料ID
+     * @param materialCode 物料编码
+     * @param materialName 物料名称
+     * @param quantity 本次生成数量
      * @return 本次生成的 SN 列表
      */
-    java.util.List<com.nexus.mes.pro.domain.vo.ProSnVo> generateSnForSubcontract(
+    List<ProSnVo> generateSnForSubcontract(
             Long subcontractId,
             String subcontractNo,
             Long materialId,

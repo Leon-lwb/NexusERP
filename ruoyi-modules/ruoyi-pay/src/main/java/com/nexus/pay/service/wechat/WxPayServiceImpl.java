@@ -1,5 +1,9 @@
 package com.nexus.pay.service.wechat;
 
+import com.nexus.pay.domain.PayOrder;
+import com.nexus.pay.service.IPayOrderService;
+import com.nexus.pay.util.MoneyUtil;
+import com.wechat.pay.java.core.exception.ServiceException;
 import com.wechat.pay.java.core.notification.NotificationParser;
 import com.wechat.pay.java.core.notification.RequestParam;
 import com.wechat.pay.java.service.payments.model.Transaction;
@@ -13,16 +17,16 @@ import com.wechat.pay.java.service.refund.model.AmountReq;
 import com.wechat.pay.java.service.refund.model.CreateRequest;
 import com.wechat.pay.java.service.refund.model.Refund;
 import com.wechat.pay.java.service.refund.model.RefundNotification;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.extern.slf4j.Slf4j;
-import com.nexus.pay.domain.PayOrder;
-import com.nexus.pay.service.IPayOrderService;
-import com.nexus.pay.util.MoneyUtil;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -193,7 +197,7 @@ public class WxPayServiceImpl implements IWxPayService {
             payOrder.setActualAmount(MoneyUtil.fenToYuan(result.getAmount().getTotal()));
             payOrder.setOrderStatus(getTradeState(result.getTradeState()));
             payOrderService.updatePayOrder(payOrder);
-        } catch (com.wechat.pay.java.core.exception.ServiceException e) {
+        } catch (ServiceException e) {
             log.error("微信支付查询失败 code={}, message={}", e.getErrorCode(), e.getErrorMessage());
         }
         return payOrder;

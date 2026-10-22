@@ -1,18 +1,24 @@
 package com.nexus.decisioncontrol;
 
-import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
-import com.nexus.common.ai.decision.dto.DecisionActionProposal;
-import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.mock.env.MockEnvironment;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@org.junit.jupiter.api.Tag("dev")
+import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
+import com.nexus.common.ai.decision.dto.DecisionActionProposal;
+import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.mock.env.MockEnvironment;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+@Tag("dev")
 class DecisionControlTestConfigurationTest {
     @TempDir Path directory;
     private MockEnvironment environment() {
@@ -112,7 +118,7 @@ class DecisionControlTestConfigurationTest {
         var proxy = (IndustrialDecisionDataPort) DecisionControlTestConfiguration.processor(environment())
             .postProcessAfterInitialization(port, "port");
         Files.writeString(directory.resolve("fault.txt"), "12:VERIFY_PAUSE_FAIL");
-        var worker = java.util.concurrent.Executors.newSingleThreadExecutor();
+        var worker = Executors.newSingleThreadExecutor();
         try {
             var task = worker.submit(() -> assertThrows(IllegalStateException.class,
                 () -> proxy.verifyBusinessAction(action, result, null)));
@@ -121,7 +127,7 @@ class DecisionControlTestConfigurationTest {
             assertEquals("34", Files.readString(directory.resolve("12.observed")));
             assertFalse(task.isDone());
             Files.writeString(directory.resolve("12.release"), "release");
-            task.get(5, java.util.concurrent.TimeUnit.SECONDS);
+            task.get(5, TimeUnit.SECONDS);
         } finally { worker.shutdownNow(); }
         verify(port).verifyBusinessAction(action, result, null);
     }

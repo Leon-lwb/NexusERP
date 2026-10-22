@@ -1,12 +1,16 @@
 package com.nexus.erp.pu.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.nexus.common.core.validate.EditGroup;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.erp.pu.domain.PuVendorEvaluation;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
@@ -25,7 +29,9 @@ import java.math.BigDecimal;
 public class PuVendorEvaluationBo extends BaseEntity {
 
     /** 评估记录ID */
-    @NotNull(message = "评估ID不能为空", groups = {com.nexus.common.core.validate.EditGroup.class})
+    @NotNull(
+            message = "评估ID不能为空",
+            groups = {EditGroup.class})
     private Long evaluationId;
 
     /** 供应商ID */

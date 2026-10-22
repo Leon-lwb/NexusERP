@@ -6,6 +6,7 @@ import com.nexus.erp.prd.domain.vo.PrdSubcontractBomLineVo;
 import com.nexus.erp.prd.domain.vo.PrdSubcontractDocVo;
 import com.nexus.erp.prd.domain.vo.PrdSubcontractQuoteVo;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -119,7 +120,7 @@ public interface IPrdSubcontractClosureService {
      * 收货过账回调: 原子累加 actualQty, 累计达计划量时自动完工(COMPLETED)
      *
      * @param subcontractId 委外订单ID
-     * @param receivedQty   本次收货量
+     * @param receivedQty 本次收货量
      */
-    void accumulateActualQty(Long subcontractId, java.math.BigDecimal receivedQty);
+    void accumulateActualQty(Long subcontractId, BigDecimal receivedQty);
 }

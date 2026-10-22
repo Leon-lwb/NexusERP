@@ -1,8 +1,12 @@
 package com.nexus.erp.prd.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
@@ -23,6 +27,7 @@ import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.SchShift;
 import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -36,14 +41,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -127,10 +136,10 @@ class PrdSchedulePublishBookingTest {
         SchShift noEnd = shift(20L, "08:00:00");
         noEnd.setEndTime(null);
         SchShift reversed = shift(20L, "16:00:00");
-        reversed.setEndTime(java.sql.Time.valueOf("08:00:00"));
+        reversed.setEndTime(Time.valueOf("08:00:00"));
         reversed.setIsCrossDay(0);
         SchShift falseCross = shift(20L, "22:00:00");
-        falseCross.setEndTime(java.sql.Time.valueOf("06:00:00"));
+        falseCross.setEndTime(Time.valueOf("06:00:00"));
         falseCross.setIsCrossDay(0);
         SchShift unknownFlag = shift(20L, "08:00:00");
         unknownFlag.setIsCrossDay(null);
@@ -147,7 +156,7 @@ class PrdSchedulePublishBookingTest {
     @Test void explicitCrossDayShiftWithEndBeforeStartIsValid() {
         PrdScheduleTask task = task(D1, D1, "0.10", "0.00");
         SchShift overnight = shift(20L, "22:00:00");
-        overnight.setEndTime(java.sql.Time.valueOf("06:00:00"));
+        overnight.setEndTime(Time.valueOf("06:00:00"));
         overnight.setIsCrossDay(1);
         setup(task, List.of(day(task, D1, "0.10")),
             List.of(calendar(1L, D1, 20L, "0.10")), List.of(overnight));
@@ -167,7 +176,7 @@ class PrdSchedulePublishBookingTest {
             List.of(calendar(1L, D1, 20L, "0.10")), List.of(shift(20L, "08:00:00")));
         PrdScheduleTask competing = task(D1, D1, "0.10", "0.00");
         competing.setPlanId(9999L);
-        java.util.concurrent.atomic.AtomicInteger reads = new java.util.concurrent.atomic.AtomicInteger();
+        AtomicInteger reads = new AtomicInteger();
         when(taskMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
             if (reads.getAndIncrement() == 0) return List.of(own);
             Wrapper<?> query = invocation.getArgument(0);
@@ -239,7 +248,7 @@ class PrdSchedulePublishBookingTest {
                 .map(Long.class::cast).findFirst().orElseThrow()).toList());
     }
 
-    private java.util.Collection<Object> queryValues(Wrapper<?> query) {
+    private Collection<Object> queryValues(Wrapper<?> query) {
         query.getSqlSegment();
         return ((AbstractWrapper<?, ?, ?>) query).getParamNameValuePairs().values();
     }
@@ -258,13 +267,17 @@ class PrdSchedulePublishBookingTest {
         PrdCapacityCalendar newlyInserted = calendar(10L, D1, 20L, "0.10");
         setup(task, List.of(day(task, D1, "0.10")), List.of(visible),
             List.of(shift(10L, "16:00:00"), shift(20L, newStartTime)));
-        lenient().doAnswer(invocation -> {
-            Wrapper<?> query = invocation.getArgument(0);
-            java.util.Collection<Object> ids = queryValues(query);
-            return ids.contains(20L)
-                ? List.of(shift(10L, "16:00:00"), shift(20L, newStartTime))
-                : List.of(shift(10L, "16:00:00"));
-        }).when(shiftMapper).selectList(any(Wrapper.class));
+        lenient()
+                .doAnswer(
+                        invocation -> {
+                            Wrapper<?> query = invocation.getArgument(0);
+                            Collection<Object> ids = queryValues(query);
+                            return ids.contains(20L)
+                                    ? List.of(shift(10L, "16:00:00"), shift(20L, newStartTime))
+                                    : List.of(shift(10L, "16:00:00"));
+                        })
+                .when(shiftMapper)
+                .selectList(any(Wrapper.class));
         /** RR 初始快照只有晚班。后续当前范围读必须看见手工新增的班次日历。 */
         doAnswer(invocation -> {
             Wrapper<?> query = invocation.getArgument(0);
@@ -453,16 +466,38 @@ class PrdSchedulePublishBookingTest {
         lenient().when(planMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
         lenient().when(taskMapper.selectList(any(Wrapper.class))).thenReturn(List.of(task));
         lenient().when(dayMapper.selectList(any(Wrapper.class))).thenReturn(loads);
-        lenient().when(calendarMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
-            Wrapper<?> query = invocation.getArgument(0);
-            java.util.Collection<Object> params = queryValues(query);
-            LocalDate date = params.stream().filter(Date.class::isInstance).map(Date.class::cast)
-                .map(value -> value instanceof java.sql.Date sqlDate ? sqlDate.toLocalDate()
-                    : value.toInstant().atZone(java.time.ZoneId.of("Asia/Shanghai")).toLocalDate())
-                .findFirst().orElseThrow();
-            return rows.stream().filter(row -> params.contains(row.getObjectId())
-                && date.equals(((java.sql.Date) row.getCalendarDate()).toLocalDate())).toList();
-        });
+        lenient()
+                .when(calendarMapper.selectList(any(Wrapper.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Wrapper<?> query = invocation.getArgument(0);
+                            Collection<Object> params = queryValues(query);
+                            LocalDate date =
+                                    params.stream()
+                                            .filter(Date.class::isInstance)
+                                            .map(Date.class::cast)
+                                            .map(
+                                                    value ->
+                                                            value instanceof java.sql.Date sqlDate
+                                                                    ? sqlDate.toLocalDate()
+                                                                    : value.toInstant()
+                                                                            .atZone(
+                                                                                    ZoneId.of(
+                                                                                            "Asia/Shanghai"))
+                                                                            .toLocalDate())
+                                            .findFirst()
+                                            .orElseThrow();
+                            return rows.stream()
+                                    .filter(
+                                            row ->
+                                                    params.contains(row.getObjectId())
+                                                            && date.equals(
+                                                                    ((java.sql.Date)
+                                                                                    row
+                                                                                            .getCalendarDate())
+                                                                            .toLocalDate()))
+                                    .toList();
+                        });
         lenient().when(shiftMapper.selectList(any(Wrapper.class))).thenReturn(shifts);
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoId(11L);
@@ -471,13 +506,21 @@ class PrdSchedulePublishBookingTest {
         lenient().when(workOrderMapper.selectById(11L)).thenReturn(wo);
         lenient().when(workOrderMapper.selectOne(any(Wrapper.class))).thenReturn(wo);
         lenient().when(workOrderMapper.updateById(any(PrdWorkOrder.class))).thenReturn(1);
-        Map<Long, PrdCapacityCalendar> byId = new java.util.HashMap<>();
+        Map<Long, PrdCapacityCalendar> byId = new HashMap<>();
         for (PrdCapacityCalendar row : rows) byId.put(row.getCalendarId(), row);
-        lenient().when(calendarMapper.selectOne(any(Wrapper.class))).thenAnswer(i -> {
-            Wrapper<?> query = i.getArgument(0);
-            return queryValues(query).stream().filter(Long.class::isInstance)
-                .map(Long.class::cast).map(byId::get).filter(java.util.Objects::nonNull).findFirst().orElse(null);
-        });
+        lenient()
+                .when(calendarMapper.selectOne(any(Wrapper.class)))
+                .thenAnswer(
+                        i -> {
+                            Wrapper<?> query = i.getArgument(0);
+                            return queryValues(query).stream()
+                                    .filter(Long.class::isInstance)
+                                    .map(Long.class::cast)
+                                    .map(byId::get)
+                                    .filter(Objects::nonNull)
+                                    .findFirst()
+                                    .orElse(null);
+                        });
         lenient().when(calendarMapper.selectById(any())).thenAnswer(i -> byId.get(i.getArgument(0)));
         lenient().doAnswer(i -> {
             PrdCapacityCalendar row = byId.get(i.getArgument(0));
@@ -523,8 +566,8 @@ class PrdSchedulePublishBookingTest {
         SchShift s = new SchShift();
         s.setShiftId(id); s.setTenantId(TENANT);
         if (start != null) {
-            s.setStartTime(java.sql.Time.valueOf(start));
-            s.setEndTime(java.sql.Time.valueOf(start.equals("16:00:00") ? "23:00:00" : "16:00:00"));
+            s.setStartTime(Time.valueOf(start));
+            s.setEndTime(Time.valueOf(start.equals("16:00:00") ? "23:00:00" : "16:00:00"));
             s.setIsCrossDay(0);
         }
         return s;

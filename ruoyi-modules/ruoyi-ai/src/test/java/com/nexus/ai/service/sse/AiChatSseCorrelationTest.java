@@ -1,22 +1,47 @@
 package com.nexus.ai.service.sse;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import cn.hutool.extra.spring.SpringUtil;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.service.chat.ChatModelFactory;
+import com.nexus.ai.service.chat.PersistentChatMemoryStore;
+import com.nexus.ai.service.facade.AiServiceFacade;
+import com.nexus.common.ai.domain.entity.AiMessage;
+import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.dto.AiChatRequest;
+import com.nexus.common.ai.mapper.AiMessageMapper;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
-import org.junit.jupiter.api.Test;
+import com.nexus.common.tenant.helper.TenantHelper;
+
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+
 import org.junit.jupiter.api.BeforeAll;
-import com.nexus.common.core.utils.SpringUtils;
-import cn.hutool.extra.spring.SpringUtil;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.ai.domain.entity.AiMessage 和
+// dev.langchain4j.data.message.AiMessage，后者保留全限定名以区分。
 
 /** 捕获真实SSE信封，验证跨请求、回调线程和终态关联。 */
 class AiChatSseCorrelationTest {
@@ -122,43 +147,71 @@ class AiChatSseCorrelationTest {
 
     @Test
     void actualStreamingCompletionPublishesDatabaseMessageId() throws Exception {
-        var constructor = com.nexus.ai.service.facade.AiServiceFacade.class.getDeclaredConstructors()[0];
-        var dependencies = new java.util.HashMap<Class<?>, Object>();
-        var arguments = new java.util.ArrayList<Object>();
+        var constructor = AiServiceFacade.class.getDeclaredConstructors()[0];
+        var dependencies = new HashMap<Class<?>, Object>();
+        var arguments = new ArrayList<Object>();
         for (Class<?> type : constructor.getParameterTypes()) {
-            Object dependency = type == java.util.concurrent.Executor.class ? (java.util.concurrent.Executor) Runnable::run : mock(type);
+            Object dependency = type == Executor.class ? (Executor) Runnable::run : mock(type);
             dependencies.put(type, dependency);
             arguments.add(dependency);
         }
-        var facade = (com.nexus.ai.service.facade.AiServiceFacade) constructor.newInstance(arguments.toArray());
-        var streaming = mock(dev.langchain4j.model.chat.StreamingChatModel.class);
-        var callback = new java.util.concurrent.atomic.AtomicReference<dev.langchain4j.model.chat.response.StreamingChatResponseHandler>();
-        doAnswer(call -> { callback.set(call.getArgument(1)); return null; }).when(streaming)
-            .chat(any(dev.langchain4j.model.chat.request.ChatRequest.class), any(dev.langchain4j.model.chat.response.StreamingChatResponseHandler.class));
-        when(((com.nexus.ai.service.chat.ChatModelFactory) dependencies.get(com.nexus.ai.service.chat.ChatModelFactory.class))
-            .getStreamingChatModel(anyLong(), any(com.nexus.common.ai.dto.AiChatRequest.class))).thenReturn(streaming);
-        when(((com.nexus.ai.service.chat.PersistentChatMemoryStore) dependencies.get(com.nexus.ai.service.chat.PersistentChatMemoryStore.class))
-            .getMessages(any())).thenReturn(List.of(dev.langchain4j.data.message.UserMessage.from("question")));
-        var messages = (com.nexus.common.ai.mapper.AiMessageMapper) dependencies.get(com.nexus.common.ai.mapper.AiMessageMapper.class);
-        doAnswer(call -> {
-            com.nexus.common.ai.domain.entity.AiMessage message = call.getArgument(0);
-            message.setId(9007199254740993L);
-            return 1;
-        }).when(messages).insert(any(com.nexus.common.ai.domain.entity.AiMessage.class));
-        var model = new com.nexus.common.ai.domain.entity.AiModel();
+        var facade = (AiServiceFacade) constructor.newInstance(arguments.toArray());
+        var streaming = mock(StreamingChatModel.class);
+        var callback = new AtomicReference<StreamingChatResponseHandler>();
+        doAnswer(
+                        call -> {
+                            callback.set(call.getArgument(1));
+                            return null;
+                        })
+                .when(streaming)
+                .chat(any(ChatRequest.class), any(StreamingChatResponseHandler.class));
+        when(((ChatModelFactory) dependencies.get(ChatModelFactory.class))
+                        .getStreamingChatModel(anyLong(), any(AiChatRequest.class)))
+                .thenReturn(streaming);
+        when(((PersistentChatMemoryStore) dependencies.get(PersistentChatMemoryStore.class))
+                        .getMessages(any()))
+                .thenReturn(List.of(UserMessage.from("question")));
+        var messages = (AiMessageMapper) dependencies.get(AiMessageMapper.class);
+        doAnswer(
+                        call -> {
+                            AiMessage message = call.getArgument(0);
+                            message.setId(9007199254740993L);
+                            return 1;
+                        })
+                .when(messages)
+                .insert(any(AiMessage.class));
+        var model = new AiModel();
         model.setId(9L);
         model.setModelName("offline");
-        var request = new com.nexus.common.ai.dto.AiChatRequest();
+        var request = new AiChatRequest();
         request.setContent("question");
         request.setClientRequestId("ba07d9bb-66f5-40e6-9537-d5ab0c00cc6f");
         List<Map<String, Object>> events = new ArrayList<>();
-        try (var publisher = capture(events); var tenants = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            tenants.when(() -> com.nexus.common.tenant.helper.TenantHelper.dynamic(eq("000007"), any(Runnable.class)))
-                .thenAnswer(call -> { ((Runnable) call.getArgument(1)).run(); return null; });
-            org.springframework.test.util.ReflectionTestUtils.invokeMethod(facade, "invokeWithStreaming", model, request, 7L, 91L, "000007", "offline", "000007");
+        try (var publisher = capture(events);
+                var tenants = mockStatic(TenantHelper.class)) {
+            tenants.when(() -> TenantHelper.dynamic(eq("000007"), any(Runnable.class)))
+                    .thenAnswer(
+                            call -> {
+                                ((Runnable) call.getArgument(1)).run();
+                                return null;
+                            });
+            ReflectionTestUtils.invokeMethod(
+                    facade,
+                    "invokeWithStreaming",
+                    model,
+                    request,
+                    7L,
+                    91L,
+                    "000007",
+                    "offline",
+                    "000007");
             callback.get().onPartialResponse("answer");
-            callback.get().onCompleteResponse(dev.langchain4j.model.chat.response.ChatResponse.builder()
-                .aiMessage(dev.langchain4j.data.message.AiMessage.from("answer")).build());
+            callback.get()
+                    .onCompleteResponse(
+                            ChatResponse.builder()
+                                    .aiMessage(
+                                            dev.langchain4j.data.message.AiMessage.from("answer"))
+                                    .build());
             var done = events.get(events.size() - 1);
             assertEquals("AI_DONE", done.get("type"));
             assertEquals("9007199254740993", done.get("messageId"));

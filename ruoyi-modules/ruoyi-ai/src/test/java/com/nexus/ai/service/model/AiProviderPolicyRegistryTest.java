@@ -1,16 +1,17 @@
 package com.nexus.ai.service.model;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.nexus.common.ai.enums.AiModelProtocolEnum;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 厂商协议策略注册表单元测试
@@ -82,8 +83,9 @@ class AiProviderPolicyRegistryTest {
     void forProviderReturnsExactImmutablePolicy() {
         AiProviderPolicyRegistry.ProviderPolicy policy = registry.forProvider("OPENCODE_GO");
         assertEquals("OPENAI_CHAT_COMPLETIONS", policy.defaultProtocol());
-        assertEquals(java.util.Set.of("OPENAI_CHAT_COMPLETIONS", "OPENAI_RESPONSES", "ANTHROPIC_MESSAGES"),
-            policy.allowedProtocols());
+        assertEquals(
+                Set.of("OPENAI_CHAT_COMPLETIONS", "OPENAI_RESPONSES", "ANTHROPIC_MESSAGES"),
+                policy.allowedProtocols());
         assertThrows(UnsupportedOperationException.class,
             () -> policy.allowedProtocols().add("DASHSCOPE_NATIVE"));
     }

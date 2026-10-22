@@ -1,6 +1,11 @@
 package com.nexus.im;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -10,8 +15,8 @@ import com.nexus.common.core.domain.R;
 import com.nexus.common.core.event.UserNotificationEvent;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.sse.core.SseEmitterManager;
-import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.web.core.BigNumberSerializer;
 import com.nexus.common.websocket.utils.WebSocketUtils;
@@ -30,22 +35,33 @@ import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
+import com.nexus.system.service.ISysOssService;
 import com.nexus.system.service.ISysUserService;
+
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.mockito.*;
 import org.redisson.api.RedissonClient;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** APP 与 PC 共用消息链路的安全和交互行为回归，不连接真实数据库或 Redis。 */
 class ImBehaviorRegressionTest extends ImUnitTestBase {
@@ -361,8 +377,14 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
     /** 有效提及在历史重载后仍按当前用户高亮，损坏旧数据不阻断整个页面。 */
     @Test
     void historyMention_isComputedForCurrentUserAndToleratesOldCorruptJson() {
-        ImChatSupport realSupport = new ImChatSupport(messages, members, userService,
-            mock(com.nexus.system.service.ISysOssService.class), users, visibility);
+        ImChatSupport realSupport =
+                new ImChatSupport(
+                        messages,
+                        members,
+                        userService,
+                        mock(ISysOssService.class),
+                        users,
+                        visibility);
         ImMessage msg = ImTestFixture.buildMessage(MESSAGE, PEER_USER_ID, null, GROUP, "@本人");
         msg.setMentionUserIds("[100,200]");
         assertThat(realSupport.buildSenderMessageRow(msg).get("mentioned")).isEqualTo(true);
@@ -374,13 +396,13 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
     @Test
     void notificationRead_routesRemainCompatible() throws Exception {
         var api = new SysUserNotificationController(notifications);
-        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(api).build();
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/im/notification/read/all"))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code").value(200));
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/im/notification/read/" + NOTICE))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code").value(200));
+        var mvc = MockMvcBuilders.standaloneSetup(api).build();
+        mvc.perform(MockMvcRequestBuilders.put("/im/notification/read/all"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200));
+        mvc.perform(MockMvcRequestBuilders.put("/im/notification/read/" + NOTICE))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200));
         verify(notifications).markAllRead();
         verify(notifications).markRead(NOTICE);
     }
@@ -403,21 +425,28 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
             assertThat(tx.commits).isEqualTo(1);
             return null;
         }).when(realtime).publishToUsers(anyList(), anyString(), anyString());
-        org.springframework.test.util.ReflectionTestUtils.setField(controller, "imRealtimePush", realtime);
-        org.springframework.test.util.ReflectionTestUtils.setField(controller, "notificationService",
-            new SysUserNotificationServiceImpl(notificationMapper, realtime, cache));
+        ReflectionTestUtils.setField(controller, "imRealtimePush", realtime);
+        ReflectionTestUtils.setField(
+                controller,
+                "notificationService",
+                new SysUserNotificationServiceImpl(notificationMapper, realtime, cache));
         SysUserVo peer = new SysUserVo();
         peer.setUserId(PEER_USER_ID);
         when(users.selectVoById(PEER_USER_ID)).thenReturn(peer);
         when(messages.insert(any(ImMessage.class))).thenAnswer(inv -> { inv.<ImMessage>getArgument(0).setMessageId(MESSAGE); return 1; });
-        when(notificationMapper.insert(any(SysUserNotification.class))).thenAnswer(inv -> {
-            assertThat(tx.commits).isZero();
-            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
-            SysUserNotification notice = inv.getArgument(0);
-            notice.setNotificationId(NOTICE);
-            assertThat(notice.getExtJson()).contains(MESSAGE.toString());
-            return 1;
-        });
+        when(notificationMapper.insert(any(SysUserNotification.class)))
+                .thenAnswer(
+                        inv -> {
+                            assertThat(tx.commits).isZero();
+                            assertThat(
+                                            TransactionSynchronizationManager
+                                                    .isActualTransactionActive())
+                                    .isTrue();
+                            SysUserNotification notice = inv.getArgument(0);
+                            notice.setNotificationId(NOTICE);
+                            assertThat(notice.getExtJson()).contains(MESSAGE.toString());
+                            return 1;
+                        });
         assertThat(transactionalController(tx).sendFriendRequest(Map.of("toUserId", PEER_USER_ID.toString())).getCode()).isEqualTo(200);
         assertThat(tx.rollbacks).isZero();
         verify(realtime, times(2)).publishToUsers(anyList(), anyString(), anyString());
@@ -428,9 +457,11 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
     void friendSend_rollbackDoesNotDeliverRealtime() {
         var tx = new MemoryTransactions();
         ImRealtimePush realtime = spy(new ImRealtimePush(new ImMetrics(new SimpleMeterRegistry())));
-        org.springframework.test.util.ReflectionTestUtils.setField(controller, "imRealtimePush", realtime);
-        org.springframework.test.util.ReflectionTestUtils.setField(controller, "notificationService",
-            new SysUserNotificationServiceImpl(notificationMapper, realtime, cache));
+        ReflectionTestUtils.setField(controller, "imRealtimePush", realtime);
+        ReflectionTestUtils.setField(
+                controller,
+                "notificationService",
+                new SysUserNotificationServiceImpl(notificationMapper, realtime, cache));
         SysUserVo peer = new SysUserVo();
         peer.setUserId(PEER_USER_ID);
         when(users.selectVoById(PEER_USER_ID)).thenReturn(peer);
@@ -444,21 +475,27 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
     }
 
     private AppImController transactionalController(MemoryTransactions tx) {
-        var proxy = new org.springframework.aop.framework.ProxyFactory(controller);
+        var proxy = new ProxyFactory(controller);
         proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(tx,
-            new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
+        proxy.addAdvice(new TransactionInterceptor(tx, new AnnotationTransactionAttributeSource()));
         return (AppImController) proxy.getProxy();
     }
 
     /** 只验证 Spring 事务时序，不创建真实数据库连接。 */
-    static class MemoryTransactions extends org.springframework.transaction.support.AbstractPlatformTransactionManager {
+    static class MemoryTransactions extends AbstractPlatformTransactionManager {
         int commits;
         int rollbacks;
         protected Object doGetTransaction() { return new Object(); }
-        protected void doBegin(Object tx, org.springframework.transaction.TransactionDefinition definition) { }
-        protected void doCommit(org.springframework.transaction.support.DefaultTransactionStatus status) { commits++; }
-        protected void doRollback(org.springframework.transaction.support.DefaultTransactionStatus status) { rollbacks++; }
+
+        protected void doBegin(Object tx, TransactionDefinition definition) {}
+
+        protected void doCommit(DefaultTransactionStatus status) {
+            commits++;
+        }
+
+        protected void doRollback(DefaultTransactionStatus status) {
+            rollbacks++;
+        }
     }
 
     /** 创建群和加成员的两个字段名均支持字符串雪花 ID 数组，原路径保持不变。 */
@@ -466,14 +503,16 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
     void appGroupMembership_bindsStringArraysAndLegacyAlias() throws Exception {
         when(chat.createGroup(any(ImGroupCreateBo.class))).thenReturn(R.ok(900L));
         when(chat.addGroupMembers(anyLong(), any(ImGroupMemberAddBo.class))).thenReturn(R.ok());
-        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controller).build();
+        var mvc = MockMvcBuilders.standaloneSetup(controller).build();
         for (String field : List.of("memberUserIds", "memberIds")) {
             String body = "{\"groupName\":\"群\",\"groupId\":\"900\",\"" + field + "\":[\"" + MESSAGE + "\",\"" + NOTICE + "\"]}";
             for (String path : List.of("/im/app/group/create", "/im/app/group/add-members")) {
-                mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path)
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
-                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
-                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code").value(200));
+                mvc.perform(
+                                MockMvcRequestBuilders.post(path)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(body))
+                        .andExpect(MockMvcResultMatchers.status().isOk())
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200));
             }
         }
         ArgumentCaptor<ImGroupCreateBo> create = ArgumentCaptor.forClass(ImGroupCreateBo.class);
@@ -492,7 +531,7 @@ class ImBehaviorRegressionTest extends ImUnitTestBase {
         return notice;
     }
 
-    private com.nexus.common.mybatis.core.page.PageQuery pageQuery() {
+    private PageQuery pageQuery() {
         return ImTestFixture.pageQuery(20, 1);
     }
 

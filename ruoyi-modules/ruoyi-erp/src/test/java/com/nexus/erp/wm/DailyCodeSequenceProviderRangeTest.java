@@ -1,8 +1,13 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.wm.service.impl.DailyCodeSequenceProvider;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.redisson.api.RAtomicLong;
@@ -15,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -22,10 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.stream.LongStream;
 
 class DailyCodeSequenceProviderRangeTest {
     private static final String KEY = "erp:sn:seq:20261018";
@@ -72,7 +75,7 @@ class DailyCodeSequenceProviderRangeTest {
         AtomicInteger loads = new AtomicInteger();
         var executor = Executors.newFixedThreadPool(8);
         try {
-            var tasks = new ArrayList<java.util.concurrent.Callable<List<Long>>>();
+            var tasks = new ArrayList<Callable<List<Long>>>();
             for (int i = 0; i < 40; i++) {
                 tasks.add(
                         () -> {
@@ -85,9 +88,7 @@ class DailyCodeSequenceProviderRangeTest {
                                                     loads.incrementAndGet();
                                                     return 100L;
                                                 });
-                                return java.util.stream.LongStream.range(first, first + 7)
-                                        .boxed()
-                                        .toList();
+                                return LongStream.range(first, first + 7).boxed().toList();
                             }
                         });
             }

@@ -1,20 +1,30 @@
 package com.nexus.flow.engine;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.flow.model.FlowGraph;
-import com.nexus.flow.model.FlowNodeDef;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowNodeRegistry;
-import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.service.sse.AiSseMessageHelper;
 import com.nexus.common.flow.domain.entity.Flow;
 import com.nexus.common.flow.domain.entity.FlowInstance;
 import com.nexus.common.flow.domain.entity.FlowNodeRun;
 import com.nexus.common.flow.mapper.FlowInstanceMapper;
+import com.nexus.common.flow.mapper.FlowMapper;
 import com.nexus.common.flow.mapper.FlowNodeRunMapper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.FlowNodeRegistry;
+import com.nexus.flow.node.NodeParamSchema;
+
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,17 +33,10 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 /**
  * P1-6: 流程引擎调度逻辑测试（mock 依赖，验证 BFS 顺序/IF 分支/SKIPPED/onError）
@@ -47,7 +50,7 @@ class FlowEngineSchedulingTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private MockedStatic<TenantHelper> tenantHelperMock;
-    private MockedStatic<com.nexus.ai.service.sse.AiSseMessageHelper> sseHelperMock;
+    private MockedStatic<AiSseMessageHelper> sseHelperMock;
     private FlowInstanceMapper instanceMapper;
     private FlowNodeRunMapper nodeRunMapper;
     private List<FlowNodeRun> insertedRuns;
@@ -67,17 +70,21 @@ class FlowEngineSchedulingTest {
                 r.run();
                 return null;
             });
-        tenantHelperMock.when(() -> TenantHelper.dynamic(anyString(), any(java.util.function.Supplier.class)))
-            .thenAnswer(inv -> inv.getArgument(1, java.util.function.Supplier.class).get());
+        tenantHelperMock
+                .when(() -> TenantHelper.dynamic(anyString(), any(Supplier.class)))
+                .thenAnswer(inv -> inv.getArgument(1, Supplier.class).get());
 
         // 模拟 SSE 推送（单测环境无 Spring/Redis，SseMessageUtils 静态初始化会失败）
-        sseHelperMock = Mockito.mockStatic(com.nexus.ai.service.sse.AiSseMessageHelper.class);
-        sseHelperMock.when(() -> com.nexus.ai.service.sse.AiSseMessageHelper.sendFlowStatus(any(), any()))
-            .thenAnswer(inv -> null);
-        sseHelperMock.when(() -> com.nexus.ai.service.sse.AiSseMessageHelper.sendFlowNodeStart(any(), any()))
-            .thenAnswer(inv -> null);
-        sseHelperMock.when(() -> com.nexus.ai.service.sse.AiSseMessageHelper.sendFlowNodeEnd(any(), any()))
-            .thenAnswer(inv -> null);
+        sseHelperMock = Mockito.mockStatic(AiSseMessageHelper.class);
+        sseHelperMock
+                .when(() -> AiSseMessageHelper.sendFlowStatus(any(), any()))
+                .thenAnswer(inv -> null);
+        sseHelperMock
+                .when(() -> AiSseMessageHelper.sendFlowNodeStart(any(), any()))
+                .thenAnswer(inv -> null);
+        sseHelperMock
+                .when(() -> AiSseMessageHelper.sendFlowNodeEnd(any(), any()))
+                .thenAnswer(inv -> null);
 
         instanceMapper = mock(FlowInstanceMapper.class);
         nodeRunMapper = mock(FlowNodeRunMapper.class);
@@ -193,9 +200,9 @@ class FlowEngineSchedulingTest {
         when(registry.contains(anyString())).thenReturn(true);
 
         FlowStopRegistry stopRegistry = new FlowStopRegistry();
-        com.nexus.common.flow.mapper.FlowMapper flowMapper = mock(com.nexus.common.flow.mapper.FlowMapper.class);
-        com.nexus.ai.config.AiProperties aiProperties = new com.nexus.ai.config.AiProperties();
-        java.util.concurrent.ExecutorService flowExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        FlowMapper flowMapper = mock(FlowMapper.class);
+        AiProperties aiProperties = new AiProperties();
+        ExecutorService flowExecutor = Executors.newSingleThreadExecutor();
         return new FlowEngineImpl(registry, stopRegistry, instanceMapper, nodeRunMapper, flowMapper, aiProperties,
             syncExecutor(), flowExecutor);
     }
@@ -204,17 +211,32 @@ class FlowEngineSchedulingTest {
     void genericEngineEntryCannotLaunchForgedIndustrialNodeWithRunId() {
         var engine = engine(providerWith("steal", MAPPER.createObjectNode(), false));
         var malicious = flow("{\"nodes\":[{\"id\":\"steal\",\"type\":\"industrial.executeApprovedActions\",\"data\":{\"config\":{}}}],\"edges\":[]}");
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
-            () -> engine.start(malicious, MAPPER.createObjectNode().put("runId", "99"),
-                "MANUAL", "000000", 1L, "admin"));
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        engine.start(
+                                malicious,
+                                MAPPER.createObjectNode().put("runId", "99"),
+                                "MANUAL",
+                                "000000",
+                                1L,
+                                "admin"));
         assertTrue(insertedInstances.isEmpty());
     }
 
     @Test
     void invalidGraphNeverLeavesOrphanRunningInstance() {
         var engine = engine(providerWith("a", MAPPER.createObjectNode(), false));
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
-            () -> engine.start(flow("{}"), MAPPER.createObjectNode(), "MANUAL", "000000", 1L, "admin"));
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        engine.start(
+                                flow("{}"),
+                                MAPPER.createObjectNode(),
+                                "MANUAL",
+                                "000000",
+                                1L,
+                                "admin"));
         assertTrue(insertedInstances.isEmpty());
     }
 

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.*;
@@ -105,8 +106,7 @@ class ReportRuntimeServiceTest {
                      * @return 当前处理返回的固定结果
                      */
                     public DatasetResult query(ReportExecutionContext context, DatasetQuery query) {
-                        return new DatasetResult(
-                                List.of(Map.of("code", "001")), 1, java.time.Instant.now());
+                        return new DatasetResult(List.of(Map.of("code", "001")), 1, Instant.now());
                     }
                 };
         var store = new JdbcReportStore(jdbc, json);

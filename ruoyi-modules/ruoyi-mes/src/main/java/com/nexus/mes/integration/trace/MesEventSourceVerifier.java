@@ -2,9 +2,12 @@ package com.nexus.mes.integration.trace;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.trace.*;
-import com.nexus.common.trace.port.TraceSourceVerificationPort;
 import com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier;
+import com.nexus.common.trace.port.TraceSourceVerificationPort;
+import com.nexus.mes.trace.MesTraceContext;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
@@ -17,7 +20,7 @@ import org.springframework.transaction.annotation.*;
 @RequiredArgsConstructor
 public class MesEventSourceVerifier implements TraceSourceVerificationPort {
     private final JdbcTemplate jdbc;
-    private final com.nexus.mes.trace.MesTraceContext context;
+    private final MesTraceContext context;
 
     @Override
     public String sourceModule() {

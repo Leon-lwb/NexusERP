@@ -1,26 +1,33 @@
 package com.nexus.ai.service.model;
 
+import com.nexus.common.ai.enums.AiModelProtocolEnum;
+
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * 厂商类型 → 调用协议策略注册表（后端可信事实源）
- * <p>字典 ai_model_api_protocol 只提供 UI 选项，本注册表是协议分组的唯一权威：
- * 哪些厂商允许哪些协议（{@link #allows}）、每厂商的默认协议（{@link #defaultProtocol}，
- * 用于 api_protocol 为 NULL 的存量数据回填推断）。启动时在构造器中构建不可变状态。</p>
+ *
+ * <p>字典 ai_model_api_protocol 只提供 UI 选项，本注册表是协议分组的唯一权威： 哪些厂商允许哪些协议（{@link #allows}）、每厂商的默认协议（{@link
+ * #defaultProtocol}， 用于 api_protocol 为 NULL 的存量数据回填推断）。启动时在构造器中构建不可变状态。
+ *
  * <p>批准的协议分组：
+ *
  * <ul>
  *   <li>固定 OpenAI Chat Completions 组：ARK、DEEPSEEK、MOONSHOT、TENCENT_HUNYUAN、MINIMAX、
- *       XIAOMI、SILICONFLOW、OPENAI、MISTRAL、XAI、OPENROUTER</li>
+ *       XIAOMI、SILICONFLOW、OPENAI、MISTRAL、XAI、OPENROUTER
  *   <li>固定原生协议组：DASHSCOPE→DASHSCOPE_NATIVE、ZHIPU→ZHIPU_NATIVE、OLLAMA→OLLAMA_NATIVE、
- *       ANTHROPIC→ANTHROPIC_MESSAGES、GEMINI→GEMINI_GENERATE_CONTENT</li>
+ *       ANTHROPIC→ANTHROPIC_MESSAGES、GEMINI→GEMINI_GENERATE_CONTENT
  *   <li>多协议组：OPENCODE_GO、CUSTOM_API → {OPENAI_CHAT_COMPLETIONS, OPENAI_RESPONSES,
- *       ANTHROPIC_MESSAGES}，默认 OPENAI_CHAT_COMPLETIONS</li>
+ *       ANTHROPIC_MESSAGES}，默认 OPENAI_CHAT_COMPLETIONS
  * </ul>
- * 协议码值与 {@link com.nexus.common.ai.enums.AiModelProtocolEnum} 一致。</p>
+ *
+ * 协议码值与 {@link AiModelProtocolEnum} 一致。
  *
  * @author nexus-school
  * @since 2.0.0
@@ -125,7 +132,7 @@ public class AiProviderPolicyRegistry {
      * 构建全部厂商策略（LinkedHashMap 保序便于日志排查，构建后整体冻结）
      */
     private static Map<String, ProviderPolicy> buildPolicies() {
-        Map<String, ProviderPolicy> mutable = new java.util.LinkedHashMap<>();
+        Map<String, ProviderPolicy> mutable = new LinkedHashMap<>();
         // 固定 OpenAI Chat Completions 组（全部 OpenAI 兼容厂商共用同一协议实现）
         Set<String> openAiCompatibleProviders = Set.of(
             "ARK", "DEEPSEEK", "MOONSHOT", "TENCENT_HUNYUAN", "MINIMAX",
@@ -142,7 +149,7 @@ public class AiProviderPolicyRegistry {
         // 多协议组：允许三种通用协议，默认 OpenAI Chat Completions
         mutable.put("OPENCODE_GO", multiProtocol());
         mutable.put("CUSTOM_API", multiProtocol());
-        return java.util.Collections.unmodifiableMap(mutable);
+        return Collections.unmodifiableMap(mutable);
     }
 
     /** 单协议厂商策略 */

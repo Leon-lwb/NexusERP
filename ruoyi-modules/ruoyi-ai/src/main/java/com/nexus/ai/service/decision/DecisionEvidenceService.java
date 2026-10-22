@@ -5,11 +5,13 @@ import com.nexus.common.ai.decision.dto.DecisionResult;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.EvidenceItem;
 import com.nexus.common.ai.decision.dto.RetrievalHit;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -46,7 +48,7 @@ public class DecisionEvidenceService {
     public Map<String, EvidenceItem> indexByKey(List<EvidenceItem> evidence) {
         Map<String, EvidenceItem> index = new LinkedHashMap<>();
         normalize(evidence).forEach(item -> index.put(item.evidenceKey(), item));
-        return java.util.Collections.unmodifiableMap(index);
+        return Collections.unmodifiableMap(index);
     }
 
     public EvidenceItem derivedNumber(String metricCode, String metricName, String value,

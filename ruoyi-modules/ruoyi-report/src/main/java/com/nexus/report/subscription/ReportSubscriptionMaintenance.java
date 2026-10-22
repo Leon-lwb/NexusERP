@@ -1,5 +1,9 @@
 package com.nexus.report.subscription;
 
+import com.nexus.report.runtime.ReportRuntimeService;
+
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -42,7 +46,7 @@ public final class ReportSubscriptionMaintenance {
             if (installed == null) {
                 Boolean present =
                         jdbc.execute(
-                                (org.springframework.jdbc.core.ConnectionCallback<Boolean>)
+                                (ConnectionCallback<Boolean>)
                                         connection -> {
                                             try (var tables =
                                                     connection
@@ -71,10 +75,8 @@ public final class ReportSubscriptionMaintenance {
             subscriptions.drain();
             deliveries.reconcile();
         } catch (RuntimeException deferred) {
-            org.slf4j.LoggerFactory.getLogger(ReportSubscriptionMaintenance.class)
-                    .warn(
-                            "报表交付维护待重试：{}",
-                            com.nexus.report.runtime.ReportRuntimeService.code(deferred));
+            LoggerFactory.getLogger(ReportSubscriptionMaintenance.class)
+                    .warn("报表交付维护待重试：{}", ReportRuntimeService.code(deferred));
         }
     }
 }

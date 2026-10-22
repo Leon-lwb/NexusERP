@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.core.config.GlobalConfig;
@@ -17,6 +21,7 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+
 import org.apache.ibatis.logging.nologging.NoLoggingImpl;
 import org.apache.ibatis.mapping.Environment;
 import org.h2.jdbcx.JdbcDataSource;
@@ -42,10 +47,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 私有 H2、真实生产 Mapper 和租户插件的预留事务回归。
@@ -181,31 +186,41 @@ class WmStockReservationTransactionTest {
         var setupService = service(transactions);
         setupService.reserve(23L, 3L, new BigDecimal("4"), SOURCE, 41L, 42L);
         setupService.reserve(23L, 3L, new BigDecimal("4"), SOURCE, 51L, 52L);
-        var oldReads = new java.util.concurrent.CountDownLatch(2);
+        var oldReads = new CountDownLatch(2);
         WmMaterialStockMapper stockSpy = spy(stocks);
-        doAnswer(i -> {
-            WmMaterialStock row = stocks.selectById((Long)i.getArgument(0));
-            oldReads.countDown();
-            assertTrue(oldReads.await(3, java.util.concurrent.TimeUnit.SECONDS));
-            return row;
-        }).when(stockSpy).selectById(any());
+        doAnswer(
+                        i -> {
+                            WmMaterialStock row = stocks.selectById((Long) i.getArgument(0));
+                            oldReads.countDown();
+                            assertTrue(oldReads.await(3, TimeUnit.SECONDS));
+                            return row;
+                        })
+                .when(stockSpy)
+                .selectById(any());
         ProxyFactory factory = new ProxyFactory(new WmStockReservationServiceImpl(stockSpy, transactions));
         factory.setProxyTargetClass(true);
         factory.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(dataSource), new AnnotationTransactionAttributeSource()));
         var service = (WmStockReservationServiceImpl) factory.getProxy();
-        var workers = java.util.concurrent.Executors.newFixedThreadPool(2);
+        var workers = Executors.newFixedThreadPool(2);
         try {
-            java.util.concurrent.Callable<BigDecimal> release = () -> {
-                try (MockedStatic<TenantHelper> workerTenant = mockStatic(TenantHelper.class)) {
-                    workerTenant.when(TenantHelper::getTenantId).thenReturn(TENANT);
-                    workerTenant.when(TenantHelper::isEnable).thenReturn(true);
-                    return service.unreserve(SOURCE, 41L, 42L);
-                }
-            };
+            Callable<BigDecimal> release =
+                    () -> {
+                        try (MockedStatic<TenantHelper> workerTenant =
+                                mockStatic(TenantHelper.class)) {
+                            workerTenant.when(TenantHelper::getTenantId).thenReturn(TENANT);
+                            workerTenant.when(TenantHelper::isEnable).thenReturn(true);
+                            return service.unreserve(SOURCE, 41L, 42L);
+                        }
+                    };
             var first = workers.submit(release);
             var second = workers.submit(release);
-            assertEquals(0, new BigDecimal("4").compareTo(first.get(10, java.util.concurrent.TimeUnit.SECONDS)
-                .add(second.get(10, java.util.concurrent.TimeUnit.SECONDS))), "同一来源并发释放总量只能为4");
+            assertEquals(
+                    0,
+                    new BigDecimal("4")
+                            .compareTo(
+                                    first.get(10, TimeUnit.SECONDS)
+                                            .add(second.get(10, TimeUnit.SECONDS))),
+                    "同一来源并发释放总量只能为4");
             assertEquals(new BigDecimal("4.0000"), stocks.selectById(9L).getReservedQuantity(), "另一单据预留4件必须保留");
             assertEquals(1, transactions.selectList(null).stream().filter(tx -> "UNRESERVE".equals(tx.getTxType())).count());
         } finally { workers.shutdownNow(); }

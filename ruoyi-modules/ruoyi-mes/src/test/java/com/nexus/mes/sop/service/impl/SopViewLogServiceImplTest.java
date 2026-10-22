@@ -1,5 +1,11 @@
 package com.nexus.mes.sop.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sign.constants.SignAuthMethod;
@@ -7,12 +13,15 @@ import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.common.sign.support.OssContentAccessor;
-import com.nexus.mes.sop.domain.SopViewLog;
+import com.nexus.common.sign.util.Sm3Utils;
 import com.nexus.mes.sop.domain.SopDocument;
 import com.nexus.mes.sop.domain.SopVersion;
+import com.nexus.mes.sop.domain.SopViewLog;
 import com.nexus.mes.sop.mapper.SopDocumentMapper;
 import com.nexus.mes.sop.mapper.SopVersionMapper;
 import com.nexus.mes.sop.mapper.SopViewLogMapper;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,13 +35,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.List;
 
 /**
  * SOP查阅记录 Service 单元测试 — P0-6 电子签名回填 (5 tests)
@@ -52,14 +55,21 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SopViewLogServiceImplTest {
 
-    @Mock private SopViewLogMapper baseMapper;
-    @Mock private ESignatureService eSignatureService;
-    @Mock private SopDocumentMapper sopDocumentMapper;
-    @Mock private SopVersionMapper sopVersionMapper;
-    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
-    @InjectMocks private SopViewLogServiceImpl service;
+    @Mock
+    private SopViewLogMapper baseMapper;
+    @Mock
+    private ESignatureService eSignatureService;
+    @Mock
+    private SopDocumentMapper sopDocumentMapper;
+    @Mock
+    private SopVersionMapper sopVersionMapper;
+    @Mock
+    private ObjectProvider<OssContentAccessor> ossAccessorProvider;
+    @InjectMocks
+    private SopViewLogServiceImpl service;
 
-    @Captor private ArgumentCaptor<SopViewLog> logCaptor;
+    @Captor
+    private ArgumentCaptor<SopViewLog> logCaptor;
 
     private MockedStatic<LoginHelper> loginHelperMock;
 
@@ -212,7 +222,7 @@ class SopViewLogServiceImplTest {
 
         ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
         verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
-        String expected = com.nexus.common.sign.util.Sm3Utils.hashHexBytes("SOP-BODY".getBytes());
+        String expected = Sm3Utils.hashHexBytes("SOP-BODY".getBytes());
         assertEquals(expected, cmdCaptor.getValue().docHash(), "哈希为空时须按正文现算 SM3");
         // 现算结果回写 sop_version.file_hash 作为缓存
         verify(sopVersionMapper).update(any(), any());
@@ -239,7 +249,7 @@ class SopViewLogServiceImplTest {
         SopViewLog signed = new SopViewLog();
         signed.setLogId(1L);
         signed.setSignatureId(7788L);
-        when(baseMapper.selectList(any())).thenReturn(java.util.List.of(signed));
+        when(baseMapper.selectList(any())).thenReturn(List.of(signed));
 
         assertThrows(ServiceException.class, () -> service.deleteByIds(new Long[]{1L}));
         verify(baseMapper, never()).deleteByIds(any());
@@ -249,7 +259,7 @@ class SopViewLogServiceImplTest {
     void deleteByIds_allowsUnsignedRecord() {
         SopViewLog unsigned = new SopViewLog();
         unsigned.setLogId(2L);
-        when(baseMapper.selectList(any())).thenReturn(java.util.List.of(unsigned));
+        when(baseMapper.selectList(any())).thenReturn(List.of(unsigned));
         when(baseMapper.deleteByIds(any())).thenReturn(1);
 
         assertTrue(service.deleteByIds(new Long[]{2L}));
@@ -258,7 +268,7 @@ class SopViewLogServiceImplTest {
 
     @Test
     void deleteByIds_returnsFalseWhenNothingFound() {
-        when(baseMapper.selectList(any())).thenReturn(java.util.List.of());
+        when(baseMapper.selectList(any())).thenReturn(List.of());
 
         assertFalse(service.deleteByIds(new Long[]{3L}));
         verify(baseMapper, never()).deleteByIds(any());

@@ -18,34 +18,42 @@ import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProFlowCardService;
-import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesSerialReferenceService;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationBatchReportDto;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.mapper.StationDeviceMapper;
-import com.nexus.station.mapper.StationReportMapper;
 import com.nexus.station.mapper.StationPassGuardMapper;
+import com.nexus.station.mapper.StationReportMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import java.sql.Connection;
-import java.util.Objects;
-import java.util.Set;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * 工位终端过站服务 (M2 契约 C2/C3/C4)
@@ -104,8 +112,8 @@ public class StationPassService {
      */
     private final ProWorkOrderStepProgressService progressService;
 
-    private final com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesSerialReferenceService serialReferences;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
 
     // ==================== C2 过站四重校验 ====================
 
@@ -370,7 +378,7 @@ public class StationPassService {
         preparedPolicies.assertPreparedCard(card.getCardId(), proSn.getMesWoId());
         List<ProFlowCardStep> steps = passGuardMapper.lockSteps(tenant, card.getCardId());
         require(steps != null && !steps.isEmpty(), "流转卡工序来源缺失");
-        Set<Integer> sequences = new java.util.HashSet<>();
+        Set<Integer> sequences = new HashSet<>();
         for (ProFlowCardStep s : steps) {
             require(
                     tenant.equals(s.getTenantId())
@@ -387,7 +395,7 @@ public class StationPassService {
         ProFlowCardStep step =
                 steps.stream()
                         .filter(s -> !Set.of("COMPLETED", "SKIPPED").contains(s.getStepStatus()))
-                        .min(java.util.Comparator.comparing(ProFlowCardStep::getSequenceNum))
+                        .min(Comparator.comparing(ProFlowCardStep::getSequenceNum))
                         .orElse(null);
         require(step != null, "流转卡没有可报工工序");
         require(
@@ -414,7 +422,7 @@ public class StationPassService {
         }
         List<TestRecord> localTests = passGuardMapper.lockTests(tenant, sn);
         require(localTests != null, "Local test evidence is unavailable");
-        var tests = new java.util.ArrayList<>(localTests);
+        var tests = new ArrayList<>(localTests);
         if (!sn.equals(reference.canonicalSnCode())) {
             var canonicalTests = passGuardMapper.lockTests(tenant, reference.canonicalSnCode());
             require(canonicalTests != null, "Canonical test evidence is unavailable");
@@ -434,7 +442,7 @@ public class StationPassService {
         require(ncrs != null, "质量来源缺失");
         boolean sameCode = sn.equals(reference.canonicalSnCode());
         boolean unverifiedLegacyTests = false;
-        var qualityTests = new java.util.ArrayList<TestRecord>();
+        var qualityTests = new ArrayList<TestRecord>();
         for (TestRecord test : tests) {
             boolean boundToThisSn = reference.localSnId().equals(test.getSnId());
             boolean historicalCode =
@@ -459,13 +467,12 @@ public class StationPassService {
             }
         }
         qualityTests.sort(
-                java.util.Comparator.comparing(
+                Comparator.comparing(
                                 TestRecord::getTestTime,
-                                java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+                                Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(
                                 TestRecord::getTestRecordId,
-                                java.util.Comparator.nullsLast(
-                                        java.util.Comparator.reverseOrder())));
+                                Comparator.nullsLast(Comparator.reverseOrder())));
         for (NcrOrder ncr : ncrs) {
             require(
                     tenant.equals(ncr.getTenantId())
@@ -622,7 +629,7 @@ public class StationPassService {
         Integer maxSeq =
                 cardSteps.stream()
                         .map(ProFlowCardStep::getSequenceNum)
-                        .filter(java.util.Objects::nonNull)
+                        .filter(Objects::nonNull)
                         .max(Integer::compareTo)
                         .orElse(null);
         boolean isLastStep = maxSeq != null && maxSeq.equals(step.getSequenceNum());
@@ -864,7 +871,7 @@ public class StationPassService {
         // limit=-1 保留尾部空段("STN|..|GENERAL|" 视为 6 段), 与客户端 split 行为对齐
         String[] parts = station.split("\\|", -1);
         if (parts.length >= 6 && "STN".equalsIgnoreCase(parts[0])) {
-            return String.join("|", java.util.Arrays.copyOf(parts, 5));
+            return String.join("|", Arrays.copyOf(parts, 5));
         }
         return station;
     }

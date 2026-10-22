@@ -4,8 +4,13 @@ import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
 import com.aizuda.snailjob.client.job.core.dto.JobArgs;
 import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
-import lombok.RequiredArgsConstructor;
+import com.nexus.common.redis.utils.SchedulerFallbackUtils;
 import com.nexus.iot.device.service.IIotDeviceDataService;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Calendar;
@@ -24,22 +29,23 @@ import java.util.Date;
 public class IotDataCleanupTask {
 
     /**
-     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
-     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位， 避免同一任务被 SnailJob 与
+     * {@code @Scheduled} 双重调度。
      */
-    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    @Value("${snail-job.enabled:false}")
     private boolean snailJobEnabled;
 
     /**
      * 本地 {@code @Scheduled} 兜底入口（IOT-TASK-01）。
-     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
-     * {@link #jobExecute}，由本方法兜底；cron 与 {@code sj_job} 种子一致（每天 02:00）。
-     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     *
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调 {@link
+     * #jobExecute}，由本方法兜底；cron 与 {@code sj_job} 种子一致（每天 02:00）。 Lock4j
+     * 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。
      */
-    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 2 * * ?")
+    @Scheduled(cron = "0 0 2 * * ?")
     public void scheduledExecute() {
-        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
-            snailJobEnabled, "iotDataCleanupTask", 1800000L, () -> jobExecute(null));
+        SchedulerFallbackUtils.runIfFallbackEnabled(
+                snailJobEnabled, "iotDataCleanupTask", 1800000L, () -> jobExecute(null));
     }
 
     /** 设备数据业务服务，提供按时间删除能力。 */

@@ -4,12 +4,17 @@ import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
 import com.aizuda.snailjob.client.job.core.dto.JobArgs;
 import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
-import lombok.RequiredArgsConstructor;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.redis.utils.SchedulerFallbackUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.wm.service.IWmStockAlertService;
 import com.nexus.system.domain.SysTenant;
 import com.nexus.system.mapper.SysTenantMapper;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,22 +38,23 @@ import java.util.List;
 public class StockAlertTask {
 
     /**
-     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
-     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位， 避免同一任务被 SnailJob 与
+     * {@code @Scheduled} 双重调度。
      */
-    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    @Value("${snail-job.enabled:false}")
     private boolean snailJobEnabled;
 
     /**
      * 本地 {@code @Scheduled} 兜底入口。
-     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
-     * {@link #jobExecute}，安全库存预警静默不生成。cron 与 {@code sj_job} 种子一致（每天 01:00）。
-     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     *
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调 {@link
+     * #jobExecute}，安全库存预警静默不生成。cron 与 {@code sj_job} 种子一致（每天 01:00）。 Lock4j
+     * 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。
      */
-    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 1 * * ?")
+    @Scheduled(cron = "0 0 1 * * ?")
     public void scheduledExecute() {
-        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
-            snailJobEnabled, "stockAlertTask", 900000L, () -> jobExecute(null));
+        SchedulerFallbackUtils.runIfFallbackEnabled(
+                snailJobEnabled, "stockAlertTask", 900000L, () -> jobExecute(null));
     }
 
     private final IWmStockAlertService stockAlertService;

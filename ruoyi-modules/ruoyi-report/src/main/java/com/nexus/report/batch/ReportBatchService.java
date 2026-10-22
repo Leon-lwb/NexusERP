@@ -2,6 +2,7 @@ package com.nexus.report.batch;
 
 import com.nexus.common.report.*;
 import com.nexus.report.domain.*;
+import com.nexus.report.domain.ReportRecords;
 import com.nexus.report.engine.ReportCompiler;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.mapper.JdbcReportStore;
@@ -260,7 +261,7 @@ public final class ReportBatchService {
                 jdbc.update(
                         "UPDATE rpt_batch_item SET state='FAILED',error_code=? WHERE tenant_id=?"
                                 + " AND batch_id=? AND item_no=?",
-                        com.nexus.report.runtime.ReportRuntimeService.code(failure),
+                        ReportRuntimeService.code(failure),
                         current.tenantId(),
                         Long.parseLong(id),
                         index);
@@ -435,7 +436,7 @@ public final class ReportBatchService {
      * @param id 固定标识，按字符串传输以保留完整精度
      * @return 当前受控处理的固定结果
      */
-    private com.nexus.report.domain.ReportRecords.Version version(ReportActor actor, String id) {
+    private ReportRecords.Version version(ReportActor actor, String id) {
         var version =
                 store.version(actor.tenantId(), id)
                         .orElseThrow(() -> new ReportFault("NOT_FOUND", "批次单据版本不存在", 404));

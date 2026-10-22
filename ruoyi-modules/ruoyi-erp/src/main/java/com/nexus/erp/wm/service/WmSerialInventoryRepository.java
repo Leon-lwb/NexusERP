@@ -1,19 +1,31 @@
 package com.nexus.erp.wm.service;
 
+import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
+
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.erp.wm.domain.*;
+import com.nexus.erp.wm.domain.vo.PutawayLocation;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.trace.ErpTraceContext;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
+
 import org.springframework.jdbc.core.*;
 import org.springframework.stereotype.Repository;
+
+import java.io.IOException;
 import java.math.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
-import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
+import java.util.Date;
+import java.util.stream.Collectors;
 
 /**
  * 全部SQL使用ERP事务连接；标识符只来自固定来源目录。此类不发布跨库MQ。
@@ -26,7 +38,7 @@ public class WmSerialInventoryRepository {
     private final WmMaterialStockMapper stocks;
     private final WmMaterialStockTxMapper transactions;
     private final ErpTraceContext context;
-    private final com.fasterxml.jackson.databind.ObjectMapper json;
+    private final ObjectMapper json;
 
     /**
      * 库存实物身份及其物料、批次和状态快照。
@@ -807,7 +819,7 @@ public class WmSerialInventoryRepository {
                 group);
     }
 
-    static Long nullable(java.sql.ResultSet rs, String key) throws java.sql.SQLException {
+    static Long nullable(ResultSet rs, String key) throws SQLException {
         long v = rs.getLong(key);
         return rs.wasNull() ? null : v;
     }
@@ -1246,14 +1258,14 @@ public class WmSerialInventoryRepository {
                         && (!"MES_MANUAL".equals(birthType) || same(birthSource, mesWo))) {
                     matched = true;
                 }
-            } catch (java.io.IOException malformed) {
+            } catch (IOException malformed) {
                 throw new ServiceException("原MES交接凭据格式无效");
             }
         }
         need(matched, "正式生产身份缺少同工单、同物料及同清单摘要的ERP本地冻结交接凭据");
     }
 
-    private static Long jsonId(com.fasterxml.jackson.databind.JsonNode payload, String key) {
+    private static Long jsonId(JsonNode payload, String key) {
         return positiveId(payload.path(key).asText());
     }
 
@@ -1334,7 +1346,7 @@ public class WmSerialInventoryRepository {
                             i.batchId(),
                             r.materialId());
             s.setBatchCode((String) batch.get("batch_code"));
-            s.setExpireDate((java.util.Date) batch.get("expiry_date"));
+            s.setExpireDate((Date) batch.get("expiry_date"));
         }
         if (i.originalTxId() != null) {
             var original = original(r, i);
@@ -1757,7 +1769,7 @@ public class WmSerialInventoryRepository {
                         tenant());
         Set<Long> ids = new HashSet<>();
         for (var row : rows) {
-            var p = com.alibaba.fastjson2.JSON.parseObject(row.get("payload").toString());
+            var p = JSON.parseObject(row.get("payload").toString());
             if (Objects.equals(erpWo, p.getLong("erpWoId"))) {
                 ids.add(p.getLong("mesWoId"));
             }
@@ -2099,8 +2111,7 @@ public class WmSerialInventoryRepository {
         return group;
     }
 
-    public com.nexus.erp.wm.domain.vo.PutawayLocation productionLotTarget(
-            Long wo, Long mesWo, Long batch) {
+    public PutawayLocation productionLotTarget(Long wo, Long mesWo, Long batch) {
         var event =
                 row(
                         "SELECT payload,content_hash FROM wm_trace_outbox WHERE tenant_id=? AND"
@@ -2109,13 +2120,13 @@ public class WmSerialInventoryRepository {
                         tenant(),
                         batch);
         String text = event.get("payload").toString();
-        var payload = com.alibaba.fastjson2.JSON.parseObject(text);
+        var payload = JSON.parseObject(text);
         need(
                 TraceHashes.sha256(text).equals(event.get("content_hash"))
                         && Objects.equals(wo, payload.getLong("erpWoId"))
                         && Objects.equals(mesWo, payload.getLong("mesWoId")),
                 "原生产批次授权与最终工单不符");
-        var target = new com.nexus.erp.wm.domain.vo.PutawayLocation();
+        var target = new PutawayLocation();
         target.setWarehouseId(payload.getLong("warehouseId"));
         target.setLocationId(payload.getLong("locationId"));
         return target;
@@ -2139,7 +2150,7 @@ public class WmSerialInventoryRepository {
                         tenant(),
                         batch);
         String text = event.get("payload").toString();
-        var payload = com.alibaba.fastjson2.JSON.parseObject(text);
+        var payload = JSON.parseObject(text);
         need(
                 TraceHashes.sha256(text).equals(event.get("content_hash"))
                         && Objects.equals(mesWo, payload.getLong("mesWoId"))
@@ -2318,7 +2329,7 @@ public class WmSerialInventoryRepository {
         need(
                 selected.stream()
                         .map(SnItem::identityId)
-                        .collect(java.util.stream.Collectors.toSet())
+                        .collect(Collectors.toSet())
                         .containsAll(explicit),
                 "冻结SN遗漏原单指定的正式实物");
     }

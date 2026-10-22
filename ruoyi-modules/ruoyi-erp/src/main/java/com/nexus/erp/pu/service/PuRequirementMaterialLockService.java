@@ -3,8 +3,9 @@ package com.nexus.erp.pu.service;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceSchemaVerifier;
+import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -15,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 
 /**
@@ -36,8 +38,8 @@ public class PuRequirementMaterialLockService {
     @Autowired
     public PuRequirementMaterialLockService(PuRequirementMaterialGuardMapper guardMapper,
                                             ErpPurchaseSourceSchemaVerifier schemaVerifier) {
-        this.guardMapper = java.util.Objects.requireNonNull(guardMapper);
-        this.schemaVerifier = java.util.Objects.requireNonNull(schemaVerifier);
+        this.guardMapper = Objects.requireNonNull(guardMapper);
+        this.schemaVerifier = Objects.requireNonNull(schemaVerifier);
     }
 
     /**

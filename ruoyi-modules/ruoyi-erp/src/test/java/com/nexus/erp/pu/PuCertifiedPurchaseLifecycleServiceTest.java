@@ -1,6 +1,11 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -9,18 +14,20 @@ import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
 import com.nexus.erp.pu.service.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.*;
+
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.*;
-import java.util.function.Supplier;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
+import java.util.*;
+import java.util.function.Supplier;
 
 /** 不连接数据库或运行中的服务：持久化行由明确的边界测试替身表示，算术运算使用真实实现。 */
 class PuCertifiedPurchaseLifecycleServiceTest {
@@ -383,13 +390,35 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             var approve=f.event(Operation.APPROVE,601L,BigDecimal.TEN,BigDecimal.TEN,"REQUEST_INTENT","REQUEST_INTENT",null);
             f.history.get(0).setEventId(900L);approve.setEventId(100L);
             f.history.add(approve);f.row.setVersion(1);
-            when(f.events.lockByAllocation(T,101L)).thenAnswer(a->{
-                String query=String.join(" ",PuRequirementAllocationEventMapper.class.getMethod("lockByAllocation",String.class,Long.class).getAnnotation(org.apache.ibatis.annotations.Select.class).value());
-                var values=new ArrayList<>(f.history);
-                if(query.contains("ORDER BY event_sequence")) values.sort(Comparator.comparing(PuRequirementAllocationEvent::getEventSequence));
-                else values.sort(Comparator.comparing(PuRequirementAllocationEvent::getOccurredAt).thenComparing(PuRequirementAllocationEvent::getEventId));
-                return values;
-            });
+            when(f.events.lockByAllocation(T, 101L))
+                    .thenAnswer(
+                            a -> {
+                                String query =
+                                        String.join(
+                                                " ",
+                                                PuRequirementAllocationEventMapper.class
+                                                        .getMethod(
+                                                                "lockByAllocation",
+                                                                String.class,
+                                                                Long.class)
+                                                        .getAnnotation(Select.class)
+                                                        .value());
+                                var values = new ArrayList<>(f.history);
+                                if (query.contains("ORDER BY event_sequence"))
+                                    values.sort(
+                                            Comparator.comparing(
+                                                    PuRequirementAllocationEvent
+                                                            ::getEventSequence));
+                                else
+                                    values.sort(
+                                            Comparator.comparing(
+                                                            PuRequirementAllocationEvent
+                                                                    ::getOccurredAt)
+                                                    .thenComparing(
+                                                            PuRequirementAllocationEvent
+                                                                    ::getEventId));
+                                return values;
+                            });
             when(f.events.lockByKey(eq(T),anyString())).thenReturn(approve);
             assertTrue(f.service.applyLocked(f.command(Operation.APPROVE,null)).replayed());
             assertNoLifecycleWrites(f);
@@ -657,8 +686,10 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             when(f.locks.lockExisting(T,List.of(201L))).thenReturn(Map.of());
             var method=assertDoesNotThrow(()->PuCertifiedPurchaseLifecycleService.class.getMethod(
                 "validateOrderForWorkflowExistingGuardLocked",PuCertifiedPurchaseLifecycleService.OrderCommand.class));
-            var error=assertThrows(java.lang.reflect.InvocationTargetException.class,
-                ()->method.invoke(f.service,orderGroup(f,Operation.APPROVE_ORDER)));
+            var error =
+                    assertThrows(
+                            InvocationTargetException.class,
+                            () -> method.invoke(f.service, orderGroup(f, Operation.APPROVE_ORDER)));
             assertInstanceOf(ServiceException.class,error.getCause());verify(f.locks,never()).lock(any(),any());
             assertNoLifecycleWrites(f);
         }
@@ -673,7 +704,15 @@ class PuCertifiedPurchaseLifecycleServiceTest {
             "2026-10-12",201L,501L,KEY,"d".repeat(64),"e".repeat(64),902L,903L,"e".repeat(64),"pu:order:terms:confirm",NOW));
     }
     static String hash(String... values) {
-        try {var d=MessageDigest.getInstance("SHA-256");for(String value:values){byte[] b=value.getBytes(StandardCharsets.UTF_8);d.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());d.update(b);}return HexFormat.of().formatHex(d.digest());}
-        catch(Exception impossible){throw new AssertionError(impossible);}
+        try {
+            var d = MessageDigest.getInstance("SHA-256");
+            for (String value : values) {
+                byte[] b = value.getBytes(StandardCharsets.UTF_8);
+                d.update(ByteBuffer.allocate(4).putInt(b.length).array());
+                d.update(b);
+            }
+            return HexFormat.of().formatHex(d.digest());
+        } catch (Exception impossible) {
+            throw new AssertionError(impossible);}
     }
 }

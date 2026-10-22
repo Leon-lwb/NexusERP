@@ -1,5 +1,7 @@
 package com.nexus.mes.qc.service;
 
+import lombok.Data;
+
 /**
  * GB/T 2828.1 计数抽样检验 简化版判定器（全系统唯一 AQL 实现）。
  * <p>
@@ -193,10 +195,8 @@ public final class AqlSampler {
         throw new IllegalArgumentException("AQL 超出简化抽样表支持范围(0.025~10): " + aql);
     }
 
-    /**
-     * 一次抽样方案视图
-     */
-    @lombok.Data
+    /** 一次抽样方案视图 */
+    @Data
     public static class AqlPlan {
         /** 样本量字码 */
         private final char codeLetter;

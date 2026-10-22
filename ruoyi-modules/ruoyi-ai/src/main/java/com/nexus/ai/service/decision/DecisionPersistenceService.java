@@ -1,24 +1,28 @@
 package com.nexus.ai.service.decision;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.domain.entity.*;
 import com.nexus.common.ai.mapper.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -705,8 +709,8 @@ public class DecisionPersistenceService {
         throw new ServiceException("动作结果含不支持的字段");
     }
 
-    private com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AiDecisionAction> actionUpdate(
-        AiDecisionAction row, String tenant) {
+    private LambdaUpdateWrapper<AiDecisionAction> actionUpdate(
+            AiDecisionAction row, String tenant) {
         if (row.getVersion() == null || row.getVersion() < 0) throw new ServiceException("动作版本无效");
         return Wrappers.<AiDecisionAction>lambdaUpdate().eq(AiDecisionAction::getId, row.getId())
             .eq(AiDecisionAction::getTenantId, tenant).eq(AiDecisionAction::getRunId, row.getRunId())
@@ -736,7 +740,7 @@ public class DecisionPersistenceService {
     }
 
     private static LocalDateTime secondPrecision(LocalDateTime time) {
-        return time == null ? null : time.truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        return time == null ? null : time.truncatedTo(ChronoUnit.SECONDS);
     }
     private static boolean sameDecimal(BigDecimal left, BigDecimal right) {
         return left == null || right == null ? left == right : left.compareTo(right) == 0;
@@ -884,8 +888,8 @@ public class DecisionPersistenceService {
         try { return objectMapper.writeValueAsString(value); }
         catch (JsonProcessingException e) { throw new ServiceException("决策数据无法序列化"); }
     }
-    private com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AiDecisionRun> baseUpdate(
-        AiDecisionRun run, String tenant) {
+
+    private LambdaUpdateWrapper<AiDecisionRun> baseUpdate(AiDecisionRun run, String tenant) {
         if (run.getVersion() == null || run.getVersion() < 0) throw new ServiceException("决策运行版本无效");
         return Wrappers.<AiDecisionRun>lambdaUpdate()
             .eq(AiDecisionRun::getId, run.getId())

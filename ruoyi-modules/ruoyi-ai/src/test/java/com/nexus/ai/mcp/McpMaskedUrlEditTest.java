@@ -1,5 +1,9 @@
 package com.nexus.ai.mcp;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.controller.McpMarketController;
 import com.nexus.ai.mcp.service.IMcpMarketService;
@@ -12,13 +16,12 @@ import com.nexus.common.ai.mapper.AiMcpMarketMapper;
 import com.nexus.common.ai.mapper.AiMcpMarketToolMapper;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.Map;
 
 /** 掩码地址的编辑语义回归；哨兵完全虚构，不读写真实数据库或凭据。 */
 class McpMaskedUrlEditTest {
@@ -29,8 +32,8 @@ class McpMaskedUrlEditTest {
     @ParameterizedTest(name = "不能静默丢弃掩码地址编辑：{0}")
     @ValueSource(strings = {"https://93.184.216.34/v2?token=****", "https://93.184.216.35/v1?token=****", "https://93.184.216.34/v1?renamed=****"})
     void 无法无歧义恢复的地址编辑应明确拒绝(String edited) throws Exception {
-        String input=json.writeValueAsString(java.util.Map.of("baseUrl",edited));
-        String old=json.writeValueAsString(java.util.Map.of("baseUrl",STORED));
+        String input = json.writeValueAsString(Map.of("baseUrl", edited));
+        String old = json.writeValueAsString(Map.of("baseUrl", STORED));
         ServiceException error=assertThrows(ServiceException.class,()->McpConfigSanitizer.restoreMasks(input,old));
         assertTrue(error.getMessage().contains("重新填写"));
         assertFalse(error.toString().contains(SECRET));

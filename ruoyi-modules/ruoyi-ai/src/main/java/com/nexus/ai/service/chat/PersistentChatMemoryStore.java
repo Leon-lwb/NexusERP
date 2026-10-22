@@ -5,20 +5,28 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.mapper.AiMessageMapper;
+
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.ai.domain.entity.AiMessage 和
+// dev.langchain4j.data.message.AiMessage，后者保留全限定名以区分。
 
 /**
  * 会话记忆持久化存储
- * <p>将聊天消息持久化到 ai_message 表，支持多轮对话上下文记忆</p>
+ *
+ * <p>将聊天消息持久化到 ai_message 表，支持多轮对话上下文记忆
  *
  * @author NexusERP
  */
@@ -30,13 +38,13 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
     /** 聊天消息表 Mapper，负责会话消息读写与去重。 */
     private final AiMessageMapper aiMessageMapper;
 
-    /** 内存缓存：sessionId -> 最近一次保存的 ASSISTANT 消息内容，避免每次 updateMessages 都查库去重。
-     * <p>有界 + 2h 访问过期：会话被放弃但不显式删除时，条目自动逐出，避免长期运行内存泄漏。
-     * 缓存语义为「最近一次保存内容」，丢失后可从 DB 重建，加 TTL 安全。</p> */
-    private final Cache<Long, String> lastSavedContentCache = Caffeine.newBuilder()
-        .maximumSize(1000)
-        .expireAfterAccess(2, java.util.concurrent.TimeUnit.HOURS)
-        .build();
+    /**
+     * 内存缓存：sessionId -> 最近一次保存的 ASSISTANT 消息内容，避免每次 updateMessages 都查库去重。
+     *
+     * <p>有界 + 2h 访问过期：会话被放弃但不显式删除时，条目自动逐出，避免长期运行内存泄漏。 缓存语义为「最近一次保存内容」，丢失后可从 DB 重建，加 TTL 安全。
+     */
+    private final Cache<Long, String> lastSavedContentCache =
+            Caffeine.newBuilder().maximumSize(1000).expireAfterAccess(2, TimeUnit.HOURS).build();
 
     /**
      * 根据 sessionId 获取历史消息，转换为 LangChain4j ChatMessage 列表

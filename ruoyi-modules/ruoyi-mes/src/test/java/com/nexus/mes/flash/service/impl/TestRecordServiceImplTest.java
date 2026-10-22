@@ -1,5 +1,17 @@
 package com.nexus.mes.flash.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -13,6 +25,7 @@ import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,23 +36,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * TestRecordServiceImpl 单元测试 — MES 测试域 P0 修复回归
@@ -107,7 +111,7 @@ class TestRecordServiceImplTest {
     private TestReportBo report(String... codesAndValues) {
         TestReportBo bo = new TestReportBo();
         bo.setSnCode("SN-1");
-        java.util.List<TestReportBo.TestItemValueBo> items = new java.util.ArrayList<>();
+        List<TestReportBo.TestItemValueBo> items = new ArrayList<>();
         for (int i = 0; i < codesAndValues.length; i += 2) {
             TestReportBo.TestItemValueBo v = new TestReportBo.TestItemValueBo();
             v.setItemCode(codesAndValues[i]);
@@ -147,7 +151,7 @@ class TestRecordServiceImplTest {
         Map<String, Object> result = service.reportTestAutoBatch(List.of(report("VOLT", "5.0", "RF-TXPWR", "12")));
 
         assertEquals(1, result.get("success"));
-        verify(baseMapper, org.mockito.Mockito.times(2)).insert(any(TestRecord.class));
+        verify(baseMapper, Mockito.times(2)).insert(any(TestRecord.class));
     }
 
     // ==================== MES-TEST-02 ENUM fail-closed ====================
@@ -272,8 +276,10 @@ class TestRecordServiceImplTest {
 
     @Test
     void autoReportBatch_emptyListIsRejected() {
-        ServiceException ex = assertThrows(ServiceException.class,
-            () -> service.reportTestAutoBatch(java.util.Collections.emptyList()));
+        ServiceException ex =
+                assertThrows(
+                        ServiceException.class,
+                        () -> service.reportTestAutoBatch(Collections.emptyList()));
         assertTrue(ex.getMessage().contains("不能为空"));
     }
 

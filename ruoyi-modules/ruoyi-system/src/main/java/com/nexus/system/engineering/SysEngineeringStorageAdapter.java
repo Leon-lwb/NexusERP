@@ -2,6 +2,7 @@ package com.nexus.system.engineering;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.ai.engineering.*;
+import com.nexus.common.ai.mapper.AiEngineeringArtifactMapper;
 import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.enums.AccessPolicyType;
 import com.nexus.common.oss.factory.OssFactory;
@@ -17,7 +18,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.util.Objects;
+import java.util.Set;
 
 /** 工程私桶适配器，sys_oss 元数据仅作内部定位，不对外生成对象 URL。 */
 @Component
@@ -25,7 +28,7 @@ import java.util.Objects;
 @ConditionalOnProperty(prefix = "nexus.ai.engineering", name = "enabled", havingValue = "true")
 public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
     private final SysOssMapper mapper;
-    private final com.nexus.common.ai.mapper.AiEngineeringArtifactMapper artifacts;
+    private final AiEngineeringArtifactMapper artifacts;
     private final String configKey;
     private final ISysOssConfigService ossConfigs;
 
@@ -39,7 +42,7 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
      */
     public SysEngineeringStorageAdapter(
             SysOssMapper mapper,
-            com.nexus.common.ai.mapper.AiEngineeringArtifactMapper artifacts,
+            AiEngineeringArtifactMapper artifacts,
             @Value("${nexus.ai.engineering.oss-config-key:}") String configKey,
             ISysOssConfigService ossConfigs) {
         this.mapper = mapper;
@@ -82,7 +85,7 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
         var client = client();
         String key =
                 EngineeringObjectNamespace.key(write.actor(), write.taskId(), write.artifactId());
-        if (!Files.isRegularFile(write.stagedPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)
+        if (!Files.isRegularFile(write.stagedPath(), LinkOption.NOFOLLOW_LINKS)
                 || Files.size(write.stagedPath()) != write.size())
             throw new IOException("已验证暂存文件不存在或大小变化");
         requireArtifact(
@@ -166,8 +169,7 @@ public class SysEngineeringStorageAdapter implements EngineeringStoragePort {
             throw new IllegalStateException("工程产物状态或内部定位不匹配，禁止存储操作");
         String expected =
                 EngineeringObjectNamespace.key(
-                        new EngineeringActor(
-                                row.getTenantId(), row.getUserId(), java.util.Set.of()),
+                        new EngineeringActor(row.getTenantId(), row.getUserId(), Set.of()),
                         row.getTaskId(),
                         row.getArtifactId());
         if (!expected.equals(stored.objectKey())) throw new IllegalStateException("工程产物命名空间归属不匹配");

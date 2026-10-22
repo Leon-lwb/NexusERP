@@ -1,27 +1,30 @@
 package com.nexus.ai.service.decision;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.service.decision.executor.DecisionActionExecutor;
 import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.nexus.common.core.service.PermissionService;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
+import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
 import com.nexus.common.ai.domain.entity.AiDecisionAction;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
-import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
-import java.util.Objects;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.service.PermissionService;
 import com.nexus.common.tenant.helper.TenantHelper;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -573,10 +576,15 @@ public class DecisionActionExecutionService {
         List<AiDecisionAction> result = new ArrayList<>();
         Set<Long> visited = new HashSet<>();
         while (!pending.isEmpty()) {
-            AiDecisionAction candidate = pending.values().stream().filter(a -> visited.containsAll(dependencies(a)))
-                .min(java.util.Comparator.comparing(AiDecisionAction::getSequenceNo,
-                    java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
-                    .thenComparing(AiDecisionAction::getId)).orElse(null);
+            AiDecisionAction candidate =
+                    pending.values().stream()
+                            .filter(a -> visited.containsAll(dependencies(a)))
+                            .min(
+                                    Comparator.comparing(
+                                                    AiDecisionAction::getSequenceNo,
+                                                    Comparator.nullsLast(Comparator.naturalOrder()))
+                                            .thenComparing(AiDecisionAction::getId))
+                            .orElse(null);
             if (candidate == null) throw new ServiceException("动作依赖无效或包含循环");
             for (Long id : dependencies(candidate)) if (!visited.contains(id) && !pending.containsKey(id))
                 throw new ServiceException("动作依赖跨越审批范围");
@@ -600,7 +608,7 @@ public class DecisionActionExecutionService {
                 DecisionRiskLevel.valueOf(row.getRiskLevel()), "Y".equals(row.getApprovalRequired()),
                 row.getPermissionCode(), row.getIdempotencyKey(), row.getExecutorCode(), row.getSequenceNo(),
                 dependencies(row));
-        } catch (RuntimeException | com.fasterxml.jackson.core.JsonProcessingException bad) {
+        } catch (RuntimeException | JsonProcessingException bad) {
             throw new ServiceException("决策动作载荷无效");
         }
     }

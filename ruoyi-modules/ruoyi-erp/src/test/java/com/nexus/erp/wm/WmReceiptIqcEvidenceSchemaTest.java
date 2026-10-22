@@ -1,14 +1,18 @@
 package com.nexus.erp.wm;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.mq.iqc.IqcNativeSchema;
 import com.nexus.common.mq.iqc.IqcNativeSchema.Column;
 import com.nexus.common.mq.iqc.IqcNativeSchema.IndexPart;
+
 import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 class WmReceiptIqcEvidenceSchemaTest {
     static Column col(String table, String name, String type, Integer precision, Integer scale, String nullable) {
@@ -118,8 +122,11 @@ class WmReceiptIqcEvidenceSchemaTest {
         field(columns, "wm_material_receive_line", "quantity_received").setDataType("double");
         doReturn(columns).when(f.mapper).selectNativeColumns();
         try (var tenant = f.tenant()) {
-            assertThatThrownBy(() -> f.service.requireLocked("000007", 101L, 201L, 301L, new java.math.BigDecimal("12")))
-                .hasMessage("IQC_NATIVE_SCHEMA_UNSUPPORTED");
+            assertThatThrownBy(
+                            () ->
+                                    f.service.requireLocked(
+                                            "000007", 101L, 201L, 301L, new BigDecimal("12")))
+                    .hasMessage("IQC_NATIVE_SCHEMA_UNSUPPORTED");
             verify(f.mapper).selectNativeColumns(); verify(f.mapper).selectNativeIndexes();
             verify(f.mapper, never()).selectReceiptMaterialForUpdate(anyString(), anyLong(), anyLong());
         }
@@ -128,8 +135,11 @@ class WmReceiptIqcEvidenceSchemaTest {
         var f = new WmReceiptIqcEvidenceServiceTest(); f.arrange("QUALIFIED"); var keys = erpIndexes();
         keys.removeIf(k -> "scope_unique".equals(k.getIndexName())); doReturn(keys).when(f.mapper).selectNativeIndexes();
         try (var tenant = f.tenant()) {
-            assertThatThrownBy(() -> f.service.requireLocked("000007", 101L, 201L, 301L, new java.math.BigDecimal("12")))
-                .hasMessage("IQC_NATIVE_SCHEMA_UNSUPPORTED");
+            assertThatThrownBy(
+                            () ->
+                                    f.service.requireLocked(
+                                            "000007", 101L, 201L, 301L, new BigDecimal("12")))
+                    .hasMessage("IQC_NATIVE_SCHEMA_UNSUPPORTED");
             verify(f.mapper, never()).selectMaterialForUpdate(anyString(), anyLong());
         }
     }

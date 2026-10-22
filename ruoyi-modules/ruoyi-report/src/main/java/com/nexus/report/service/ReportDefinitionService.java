@@ -1,5 +1,6 @@
 package com.nexus.report.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.nexus.common.report.*;
 import com.nexus.report.config.*;
 import com.nexus.report.dataset.ReportDatasetResolver;
@@ -7,12 +8,14 @@ import com.nexus.report.domain.*;
 import com.nexus.report.domain.ReportRecords.*;
 import com.nexus.report.engine.*;
 import com.nexus.report.mapper.JdbcReportStore;
+import com.nexus.report.runtime.ReportRuntimeMetrics;
 import com.nexus.report.version.*;
 
 import org.springframework.dao.DuplicateKeyException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.time.LocalDate;
 import java.util.*;
 
 /** 管理报表生命周期和资源权限，业务事实仅通过固定版本数据提供者读取。 */
@@ -36,7 +39,7 @@ public class ReportDefinitionService {
     private final ReportEngineRegistry engines;
 
     /** 编译、运行与交付各阶段的耗时观测。 */
-    private final com.nexus.report.runtime.ReportRuntimeMetrics metrics;
+    private final ReportRuntimeMetrics metrics;
 
     /**
      * 初始化报表定义服务并保存所需依赖或不可变值。
@@ -69,13 +72,7 @@ public class ReportDefinitionService {
             ReportAuthorizationPort authorization,
             ReportCompiler compiler,
             ReportEngineRegistry engines) {
-        this(
-                store,
-                registry,
-                authorization,
-                compiler,
-                engines,
-                com.nexus.report.runtime.ReportRuntimeMetrics.local());
+        this(store, registry, authorization, compiler, engines, ReportRuntimeMetrics.local());
     }
 
     /**
@@ -94,7 +91,7 @@ public class ReportDefinitionService {
             ReportAuthorizationPort authorization,
             ReportCompiler compiler,
             ReportEngineRegistry engines,
-            com.nexus.report.runtime.ReportRuntimeMetrics metrics) {
+            ReportRuntimeMetrics metrics) {
         this(
                 store,
                 registry,
@@ -122,7 +119,7 @@ public class ReportDefinitionService {
             ReportAuthorizationPort authorization,
             ReportCompiler compiler,
             ReportEngineRegistry engines,
-            com.nexus.report.runtime.ReportRuntimeMetrics metrics,
+            ReportRuntimeMetrics metrics,
             ReportDatasetResolver datasetResolver) {
         this.store = store;
         this.registry = registry;
@@ -151,7 +148,7 @@ public class ReportDefinitionService {
      * @return 当前处理返回的固定结果
      */
     public ReportDsl parseDraft(String text) {
-        var node = compiler.read(text, com.fasterxml.jackson.databind.JsonNode.class);
+        var node = compiler.read(text, JsonNode.class);
         var schema = node == null ? null : node.get("schemaVersion");
         if (schema == null || !schema.isIntegralNumber() || !schema.canConvertToInt())
             throw ReportFault.invalid("报表格式版本无效");
@@ -552,7 +549,7 @@ public class ReportDefinitionService {
             throw new ReportFault("VERSION_UNSUPPORTED", "数据集契约已变化，请发布新数据集版本并重新绑定");
         return new Binding(
                 metrics.measure(
-                        com.nexus.report.runtime.ReportRuntimeMetrics.Phase.COMPILE,
+                        ReportRuntimeMetrics.Phase.COMPILE,
                         () -> executor.compile(dsl, descriptor, actor)),
                 dataset,
                 version,
@@ -899,9 +896,9 @@ public class ReportDefinitionService {
             if (parameter.defaultValue() != null && !parameter.defaultValue().isBlank()) {
                 String value = parameter.defaultValue();
                 if (parameter.type().equals("DATE") && value.equals("TODAY"))
-                    value = java.time.LocalDate.now().toString();
+                    value = LocalDate.now().toString();
                 if (parameter.type().equals("DATE") && value.equals("MONTHS_AGO_6"))
-                    value = java.time.LocalDate.now().minusMonths(6).toString();
+                    value = LocalDate.now().minusMonths(6).toString();
                 values.put(parameter.name(), value);
             }
         if (input != null)

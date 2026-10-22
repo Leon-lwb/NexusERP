@@ -1,45 +1,52 @@
 package com.nexus.mes.qc.service;
 
-import com.nexus.mes.common.mq.consumer.IqcAutoCreateConsumer;
-import com.nexus.mes.qc.controller.QcIqcController;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
-import com.nexus.common.core.exception.ServiceException;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mq.iqc.IqcNativeSchema;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthPort;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthSupport;
-import com.nexus.common.mq.iqc.IqcNativeSchema;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mq.consumer.IqcAutoCreateConsumer;
+import com.nexus.mes.qc.controller.QcIqcController;
 import com.nexus.mes.qc.domain.QcIqc;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.Binding;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.NativeColumn;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
-import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.springframework.jdbc.datasource.ConnectionHolder;
+import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.datasource.ConnectionHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import javax.sql.DataSource;
+
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.assertj.core.api.Assertions.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.sql.DataSource;
 
 /** 原生出生服务必须接入真实创建入口，而不只是提供一个未调用的读取器。 */
 class QcReceiptIqcBirthServiceTest {
@@ -423,15 +430,17 @@ class QcReceiptIqcBirthServiceTest {
 
     @Test void nativeDispatcherExistsOutsideAutomaticMesRoutingAndTransactions() throws Exception {
         Class<?> type = Class.forName("com.nexus.mes.qc.service.QcReceiptIqcBirthService");
-        assertThat(type.getAnnotation(com.baomidou.dynamic.datasource.annotation.DS.class)).isNull();
-        assertThat(type.getAnnotation(org.springframework.transaction.annotation.Transactional.class)).isNull();
+        assertThat(type.getAnnotation(DS.class)).isNull();
+        assertThat(type.getAnnotation(Transactional.class)).isNull();
         var create = type.getMethod("create", String.class, Long.class, Long.class);
-        assertThat(create.getAnnotation(org.springframework.transaction.annotation.Transactional.class)).isNull();
+        assertThat(create.getAnnotation(Transactional.class)).isNull();
     }
     @Test void bothRealEntrypointsDependOnTheNativeDispatcher() {
         for (Class<?> entry : new Class<?>[]{IqcAutoCreateConsumer.class, QcIqcController.class}) {
-            assertThat(java.util.Arrays.stream(entry.getDeclaredFields()).map(f -> f.getType().getSimpleName()))
-                .contains("QcReceiptIqcBirthService");
+            assertThat(
+                            Arrays.stream(entry.getDeclaredFields())
+                                    .map(f -> f.getType().getSimpleName()))
+                    .contains("QcReceiptIqcBirthService");
         }
     }
 }

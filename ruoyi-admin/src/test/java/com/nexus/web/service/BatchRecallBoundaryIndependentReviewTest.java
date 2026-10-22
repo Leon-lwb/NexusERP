@@ -1,22 +1,26 @@
 package com.nexus.web.service;
 
-import com.nexus.erp.wm.trace.ErpIdentityTraceReader;
-import com.nexus.erp.wm.trace.ErpTraceContext;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.*;
+import com.nexus.common.trace.port.SerialIdentityPort;
+import com.nexus.erp.wm.trace.ErpIdentityTraceReader;
+import com.nexus.erp.wm.trace.ErpTraceContext;
 import com.nexus.mes.integration.trace.MesIdentityTraceReader;
 import com.nexus.mes.trace.MesTraceContext;
-import com.nexus.web.service.MaterialIdentityTraceService;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 使用真实库存与制造读取器及数量来源查询，复现独立审查确认的边界场景。
@@ -50,7 +54,7 @@ class BatchRecallBoundaryIndependentReviewTest {
                     f.mesReader.productBatchesByWorkOrder("000001", 7L, 0, 500).rows());
             var input = f.mesReader.unallocatedByBatch("000001", 20L, 0, 500).rows().get(0);
             assertEquals(7L, input.mesWoId());
-            assertEquals(0, new java.math.BigDecimal("5").compareTo(input.unallocatedQuantity()));
+            assertEquals(0, new BigDecimal("5").compareTo(input.unallocatedQuantity()));
         }
     }
 
@@ -256,9 +260,7 @@ class BatchRecallBoundaryIndependentReviewTest {
             mes.update("INSERT INTO pro_product_lot_output VALUES(401,'000001',7,201)");
             mesReader =
                     new MesIdentityTraceReader(
-                            mes,
-                            mock(MesTraceContext.class),
-                            mock(com.nexus.common.trace.port.SerialIdentityPort.class));
+                            mes, mock(MesTraceContext.class), mock(SerialIdentityPort.class));
             service = new MaterialIdentityTraceService(List.of(erp.reader, mesReader));
             tenant = mockStatic(TenantHelper.class);
             try {

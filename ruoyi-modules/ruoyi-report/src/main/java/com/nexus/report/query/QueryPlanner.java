@@ -5,6 +5,7 @@ import com.nexus.common.report.catalog.ReportEntityCatalog;
 import com.nexus.report.domain.ReportFault;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** 从代码目录和受限模型生成参数化查询，各实体在连接前应用自己的权限范围。 */
@@ -162,7 +163,7 @@ public final class QueryPlanner {
         var outputNames = new HashSet<String>();
         var selections = new ArrayList<String>();
         var output = new ArrayList<DatasetField>();
-        java.util.function.Function<String, FieldRef> resolve =
+        Function<String, FieldRef> resolve =
                 name -> {
                     if (name == null
                             || !name.matches("[a-z][a-z0-9_]{0,63}\\.[A-Za-z][A-Za-z0-9_]{0,63}"))

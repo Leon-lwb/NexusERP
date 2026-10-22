@@ -1,13 +1,16 @@
 package com.nexus.erp.fin.gl.mq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.erp.fin.gl.poster.AccountingPoster;
 import com.nexus.erp.fin.gl.poster.AccountingPosterRegistry;
 import com.nexus.erp.fin.gl.poster.PostingContext;
 import com.rabbitmq.client.Channel;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -61,11 +64,10 @@ public class GlPostingConsumer extends BaseMessageConsumer<GlPostingMessage> {
         poster.post(ctx);
     }
 
-    /**
-     * 监听 GL 过账队列
-     */
-    @RabbitListener(queues = com.nexus.common.mq.constant.QueueConstants.GL_POSTING_QUEUE)
-    public void onMessage(GlPostingMessage message, Channel channel, Message amqpMessage) throws Exception {
+    /** 监听 GL 过账队列 */
+    @RabbitListener(queues = QueueConstants.GL_POSTING_QUEUE)
+    public void onMessage(GlPostingMessage message, Channel channel, Message amqpMessage)
+            throws Exception {
         processMessage(message, channel, amqpMessage);
     }
 }

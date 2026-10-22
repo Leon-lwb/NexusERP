@@ -1,6 +1,9 @@
 package com.nexus.erp.pu.service;
 
+import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
+
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -11,13 +14,17 @@ import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseOrderWorkflowMapper.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.*;
+
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+
 import org.springframework.stereotype.Service;
+
 import java.math.*;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Supplier;
-import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
+import java.util.stream.Collectors;
 
 /**
  * 真实整订单：供应确认条款不可变版本、不同操作人独立确认、价格/批准/关闭及永久重放。
@@ -56,8 +63,8 @@ public class PuCertifiedPurchaseOrderWorkflowService {
 
     /**
      * 原报价请求的显式处置合同。
-     * <p>摘要是调用方保留的审计线索，不是历史提交证明，也不代替当前权限、来源或额度校验。
-     * 原操作人必须等于当前登录主体，原报价全文仍按正常报价规则验证。</p>
+     *
+     * <p>摘要是调用方保留的审计线索，不是历史提交证明，也不代替当前权限、来源或额度校验。 原操作人必须等于当前登录主体，原报价全文仍按正常报价规则验证。
      *
      * @param originalTerms 原请求全部条款，沿用原请求键，不接受替代报价或客户端数量
      * @param originalActorId 原操作人断言，只能与真实登录主体相同
@@ -66,10 +73,13 @@ public class PuCertifiedPurchaseOrderWorkflowService {
      * @param reason 本次人工核对处置原因
      * @param mode 显式只读核对或核对后录入模式
      */
-    public record TermsRecoveryRequest(@NotNull @jakarta.validation.Valid SupplierTermsRequest originalTerms,
-        @NotNull @Positive Long originalActorId, @NotBlank @Pattern(regexp="[0-9a-f]{64}") String originalIntentSha256,
-        @NotBlank @Pattern(regexp="[0-9a-f]{64}") String expectedRequestHash,
-        @NotBlank @Size(max=500) String reason, @NotNull TermsRecoveryMode mode) { }
+    public record TermsRecoveryRequest(
+            @NotNull @Valid SupplierTermsRequest originalTerms,
+            @NotNull @Positive Long originalActorId,
+            @NotBlank @Pattern(regexp = "[0-9a-f]{64}") String originalIntentSha256,
+            @NotBlank @Pattern(regexp = "[0-9a-f]{64}") String expectedRequestHash,
+            @NotBlank @Size(max = 500) String reason,
+            @NotNull TermsRecoveryMode mode) {}
 
     /** 本次处置状态与不可变报价；只读缺行时 result 为空。 */
     public record TermsRecoveryResult(TermsRecoveryStatus status, QuoteResult result,
@@ -383,7 +393,17 @@ public class PuCertifiedPurchaseOrderWorkflowService {
                 &&equal(row.getCoveredDemandBaseQty(),row.getOccupiedBaseQty().add(row.getFulfilledBaseQty()).add(row.getReleasedBaseQty())),"账本/四量/根单位/版本/永久来源不一致");
             if(root==null)root=row.getBaseUomId();else require(root.equals(row.getBaseUomId()),"整订单根单位不一致");
         }
-        require(allocationIds.equals(orderRows.stream().map(PuRequirementAllocationLedger::getAllocationId).collect(java.util.stream.Collectors.toSet()))&&rows.stream().map(PuRequirementAllocationLedger::getRequisitionLineId).distinct().count()==reqLines.size(),"账本不完整/存在额外来源");
+        require(
+                allocationIds.equals(
+                                orderRows.stream()
+                                        .map(PuRequirementAllocationLedger::getAllocationId)
+                                        .collect(Collectors.toSet()))
+                        && rows.stream()
+                                        .map(PuRequirementAllocationLedger::getRequisitionLineId)
+                                        .distinct()
+                                        .count()
+                                == reqLines.size(),
+                "账本不完整/存在额外来源");
         Set<Long> moneyIds=new HashSet<>();for(var m:money)require(tenant.equals(m.tenantId())&&id.equals(m.orderId())&&lineIds.contains(m.lineId())&&moneyIds.add(m.lineId()),"金额行与订单全集不一致");
         return new Document(head,command,List.copyOf(reqLines),List.copyOf(lines),List.copyOf(rows),List.copyOf(money));
     }

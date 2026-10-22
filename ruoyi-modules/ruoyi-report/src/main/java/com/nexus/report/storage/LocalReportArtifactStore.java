@@ -5,10 +5,17 @@ import com.nexus.report.service.ReportDefinitionService;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.*;
 import java.security.*;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiPredicate;
+import java.util.stream.IntStream;
 
 /** 应用私有且按租户隔离的文件存储，不作为静态或公开资源挂载。 */
 public final class LocalReportArtifactStore implements ReportArtifactStore {
@@ -446,7 +453,7 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
                 reference,
                 channel -> {
                     channel.position(0);
-                    channel.write(java.nio.ByteBuffer.wrap(new byte[] {1}));
+                    channel.write(ByteBuffer.wrap(new byte[] {1}));
                     channel.force(true);
                     Files.deleteIfExists(object(tenant, reference));
                     return null;
@@ -454,10 +461,8 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
     }
 
     /** JVM内按固定条带串行化文件锁申请，避免同进程重叠锁异常和无界内存表。 */
-    private static final java.util.concurrent.locks.ReentrantLock[] REFERENCE_LOCKS =
-            java.util.stream.IntStream.range(0, 64)
-                    .mapToObj(i -> new java.util.concurrent.locks.ReentrantLock())
-                    .toArray(java.util.concurrent.locks.ReentrantLock[]::new);
+    private static final ReentrantLock[] REFERENCE_LOCKS =
+            IntStream.range(0, 64).mapToObj(i -> new ReentrantLock()).toArray(ReentrantLock[]::new);
 
     /** 可在当前私有引用文件锁内执行的受控I/O。 */
     private interface ReferenceAction<T> {
@@ -467,7 +472,7 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
          * @param channel 当前契约的channel配置或状态
          * @return 当前受控处理的固定结果
          */
-        T run(java.nio.channels.FileChannel channel) throws IOException;
+        T run(FileChannel channel) throws IOException;
     }
 
     /**
@@ -504,11 +509,11 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
             Files.createDirectories(folder);
             privateAccess(folder);
             try (var channel =
-                            java.nio.channels.FileChannel.open(
+                            FileChannel.open(
                                     fence,
-                                    java.nio.file.StandardOpenOption.CREATE,
-                                    java.nio.file.StandardOpenOption.READ,
-                                    java.nio.file.StandardOpenOption.WRITE,
+                                    StandardOpenOption.CREATE,
+                                    StandardOpenOption.READ,
+                                    StandardOpenOption.WRITE,
                                     LinkOption.NOFOLLOW_LINKS);
                     var lock = channel.lock()) {
                 privateAccess(fence);
@@ -534,7 +539,7 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
                 path,
                 channel -> {
                     channel.position(0);
-                    channel.write(java.nio.ByteBuffer.wrap(new byte[] {1}));
+                    channel.write(ByteBuffer.wrap(new byte[] {1}));
                     channel.force(true);
                     Files.deleteIfExists(path);
                     return null;
@@ -566,9 +571,7 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
      * @param olderThan 当前契约的olderThan配置或状态
      * @param referenced 当前契约的referenced配置或状态
      */
-    public synchronized void reap(
-            java.time.Instant olderThan,
-            java.util.function.BiPredicate<String, String> referenced) {
+    public synchronized void reap(Instant olderThan, BiPredicate<String, String> referenced) {
         reapFiles(olderThan, referenced, true);
     }
 
@@ -579,8 +582,7 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
      * @param referenced 当前契约的referenced配置或状态
      */
     public synchronized void reapUntracked(
-            java.time.Instant olderThan,
-            java.util.function.BiPredicate<String, String> referenced) {
+            Instant olderThan, BiPredicate<String, String> referenced) {
         reapFiles(olderThan, referenced, false);
     }
 
@@ -592,9 +594,7 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
      * @param includeStaging 当前契约的includeStaging配置或状态
      */
     private void reapFiles(
-            java.time.Instant olderThan,
-            java.util.function.BiPredicate<String, String> referenced,
-            boolean includeStaging) {
+            Instant olderThan, BiPredicate<String, String> referenced, boolean includeStaging) {
         Objects.requireNonNull(olderThan);
         Objects.requireNonNull(referenced);
         try {
@@ -655,13 +655,13 @@ public final class LocalReportArtifactStore implements ReportArtifactStore {
      */
     private void reapFile(
             Path file,
-            java.time.Instant olderThan,
-            java.util.function.BiPredicate<String, String> referenced,
+            Instant olderThan,
+            BiPredicate<String, String> referenced,
             boolean includeStaging)
             throws IOException {
         if (Files.isSymbolicLink(file) || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS))
             return;
-        java.time.Instant modified;
+        Instant modified;
         try {
             modified = Files.getLastModifiedTime(file, LinkOption.NOFOLLOW_LINKS).toInstant();
         } catch (NoSuchFileException concurrentCleanup) {

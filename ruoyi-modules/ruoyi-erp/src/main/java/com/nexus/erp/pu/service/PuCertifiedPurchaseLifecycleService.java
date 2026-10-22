@@ -1,6 +1,9 @@
 package com.nexus.erp.pu.service;
 
+import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
+
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.core.exception.ServiceException;
@@ -11,14 +14,17 @@ import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
 import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
+
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Supplier;
-import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
+import java.util.stream.Collectors;
 
 /**
  * 逐来源账本/订单计数/永久事件的原子服务，不接 HTTP、AI 或旧业务门禁。
@@ -189,8 +195,16 @@ public class PuCertifiedPurchaseLifecycleService {
             }
             contexts.add(c);
         }
-        require(allocations.equals(requisitionRows.stream().map(PuRequirementAllocationLedger::getAllocationId).collect(java.util.stream.Collectors.toSet()))
-            &&lines.equals(current.lines().stream().map(PuCertifiedPurchaseResult.Line::lineId).collect(java.util.stream.Collectors.toSet())),"永久占额或冻结申请行存在额外/缺失来源");
+        require(
+                allocations.equals(
+                                requisitionRows.stream()
+                                        .map(PuRequirementAllocationLedger::getAllocationId)
+                                        .collect(Collectors.toSet()))
+                        && lines.equals(
+                                current.lines().stream()
+                                        .map(PuCertifiedPurchaseResult.Line::lineId)
+                                        .collect(Collectors.toSet())),
+                "永久占额或冻结申请行存在额外/缺失来源");
         require(orders.size()<=1,"原创建暂不支持拆分或多个订单承接");
         verifyRequisitionSubmissions(contexts);
         verifyPolicyDateSources(contexts);
@@ -331,8 +345,15 @@ public class PuCertifiedPurchaseLifecycleService {
                 &&"ORDERED".equals(c.head().status())&&Objects.equals(versions.get(row.getAllocationKey()),c.row().getVersion()),"整订单承接/逐行版本已变化");
             contexts.add(c);
         }
-        require(keys.equals(versions.keySet())&&ids.equals(scope.stream().map(PuRequirementAllocationLedger::getAllocationId).collect(java.util.stream.Collectors.toSet()))
-            &&actualLines.equals(lines.stream().map(OrderLine::lineId).collect(java.util.stream.Collectors.toSet())),"整订单存在未覆盖/额外账本或实际行");
+        require(
+                keys.equals(versions.keySet())
+                        && ids.equals(
+                                scope.stream()
+                                        .map(PuRequirementAllocationLedger::getAllocationId)
+                                        .collect(Collectors.toSet()))
+                        && actualLines.equals(
+                                lines.stream().map(OrderLine::lineId).collect(Collectors.toSet())),
+                "整订单存在未覆盖/额外账本或实际行");
         return List.copyOf(contexts);
     }
     private void checkOrderContext(Context c,OrderCommand command,boolean applying) {
@@ -690,7 +711,9 @@ public class PuCertifiedPurchaseLifecycleService {
             require("APPROVED".equals(c.orderHead().status())&&ORDER.equals(c.row().getAllocationStatus()),"真实订单未完成批准");
             requireOrderApprovalSource(c);requireCatalog(c);reconcileCounters(c);requireNoUnprocessedMovements(c);
             require(c.row().getFulfilledBaseQty().signum()==0&&c.row().getReleasedBaseQty().signum()==0,"订单批准出现履约/释放");
-            var after=new PuRequirementAllocationLedger();org.springframework.beans.BeanUtils.copyProperties(c.row(),after);after.setUpdateTime(new Date(c.now().getTime()));
+            var after = new PuRequirementAllocationLedger();
+            BeanUtils.copyProperties(c.row(), after);
+            after.setUpdateTime(new Date(c.now().getTime()));
             return persistLifecycle(c,command,key,after);
         }
         PuRequirementAllocationPolicy.Change change;
@@ -866,7 +889,13 @@ public class PuCertifiedPurchaseLifecycleService {
             require(ORDER.equals(e.getFromStatus())&&ORDER.equals(e.getToStatus())&&c.orderLine().lineId().equals(e.getOrderLineId())&&posted.actorId().equals(e.getActorId())
                 &&equalQuantity(original,posted.quantity()),"当前physical effect与原事件/逐行冻结入账量不一致");
         }
-        require(seen.equals(c.history().stream().filter(e->operation.name().equals(e.getEventType())).map(PuRequirementAllocationEvent::getEventKey).collect(java.util.stream.Collectors.toSet())),"永久收货/退货事件缺少当前物理来源，不能释放");
+        require(
+                seen.equals(
+                        c.history().stream()
+                                .filter(e -> operation.name().equals(e.getEventType()))
+                                .map(PuRequirementAllocationEvent::getEventKey)
+                                .collect(Collectors.toSet())),
+                "永久收货/退货事件缺少当前物理来源，不能释放");
     }
 
     /** 从真实采购申请行读取冻结总量；不执行新的分配或重新占用。 */

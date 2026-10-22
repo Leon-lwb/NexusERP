@@ -1,19 +1,23 @@
 package com.nexus.ai.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.ai.service.decision.*;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
 import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.satoken.utils.LoginHelper;
-import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 class AiDecisionControllerTest {
     @Test void runUsesServerSideIdentityAndReturnsSnowflakeIdWithoutRequestActor() {
@@ -33,7 +37,7 @@ class AiDecisionControllerTest {
             login.when(LoginHelper::getUsername).thenReturn("human");
             when(workflow.start(eq(request), any())).thenReturn(accepted);
             assertEquals(9007199254740994L, controller.run(request).getData().runId());
-            var trusted = org.mockito.ArgumentCaptor.forClass(DecisionActor.class);
+            var trusted = ArgumentCaptor.forClass(DecisionActor.class);
             verify(workflow).start(eq(request), trusted.capture());
             assertEquals("TENANT-A", trusted.getValue().tenantId());
             assertEquals(7L, trusted.getValue().userId());

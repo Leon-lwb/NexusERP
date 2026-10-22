@@ -1,10 +1,10 @@
 package com.nexus.common.ai.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.ai.domain.bo.AiProviderBo;
 import com.nexus.common.ai.domain.entity.AiProvider;
 import com.nexus.common.ai.domain.vo.AiProviderVo;
@@ -14,7 +14,11 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+
+import lombok.RequiredArgsConstructor;
+
 import org.jasypt.encryption.StringEncryptor;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -190,10 +194,10 @@ public class AiProviderServiceImpl implements IAiProviderService {
 
     /**
      * AI 厂商配置变更事件
-     * <p>厂商 apiKey/apiHost/providerType 变更后，已缓存的 ChatModel 仍持旧凭证，
-     * 监听器据此全量失效缓存（S2-D B 修复）</p>
+     *
+     * <p>厂商 apiKey/apiHost/providerType 变更后，已缓存的 ChatModel 仍持旧凭证， 监听器据此全量失效缓存（S2-D B 修复）
      */
-    public static class AiProviderChangeEvent extends org.springframework.context.ApplicationEvent {
+    public static class AiProviderChangeEvent extends ApplicationEvent {
         private final Long providerId;
 
         public AiProviderChangeEvent(Object source, Long providerId) {

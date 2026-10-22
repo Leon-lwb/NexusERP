@@ -1,13 +1,17 @@
 package com.nexus.mes.tg.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.mes.tg.domain.TgMaintenancePlan;
 
+import io.github.linpeilie.annotations.AutoMapper;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -48,7 +52,7 @@ public class TgMaintenancePlanBo extends BaseEntity {
     private Integer nextMaintainCount;
 
     /** 下次保养时长阈值(BY_HOURS) */
-    private java.math.BigDecimal nextMaintainHours;
+    private BigDecimal nextMaintainHours;
 
     /** 是否启用(1/0) */
     private String enabled;

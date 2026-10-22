@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.WorkOrderTrackingPolicyPort;
@@ -11,10 +12,13 @@ import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.wm.trace.ErpTraceContext;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
@@ -206,7 +210,7 @@ public class PrdWorkOrderTrackingPolicyService implements WorkOrderTrackingPolic
         require(
                 new ArrayList<>(policies.keySet()).equals(source.materialIds()),
                 "原始策略证据没有完整覆盖当前锁定WO范围");
-        var document = (com.fasterxml.jackson.databind.node.ObjectNode) tree(source.sourceJson());
+        var document = (ObjectNode) tree(source.sourceJson());
         document.set("adoption", json.valueToTree(audit));
         return persist(
                 tenant,

@@ -1,9 +1,14 @@
 package com.nexus.erp.wm.trace;
 
-import com.nexus.common.trace.*;
-import java.lang.reflect.Modifier;
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.trace.*;
+
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 
 /**
  * 取消 DTO 和不可伪造准备凭据的公共契约。
@@ -19,7 +24,7 @@ class ErpCompletionCancellationContractTest extends ErpCompletionCancellationTes
     @Test
     void auditExtrasRemainInTheVerifiedOwnerPayload() throws Exception {
         var payload = json.valueToTree(request);
-        ((com.fasterxml.jackson.databind.node.ObjectNode) payload)
+        ((ObjectNode) payload)
                 .put("commandId", "SYNTH-CANCEL-COMMAND")
                 .put("reason", "Operator requested correction")
                 .put("actorId", "9007199254741997")
@@ -65,7 +70,7 @@ class ErpCompletionCancellationContractTest extends ErpCompletionCancellationTes
 
     @Test
     void partialAuditMetadataCannotBeSilentlyDiscarded() throws Exception {
-        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(request);
+        var payload = (ObjectNode) json.valueToTree(request);
         payload.put("commandId", "SYNTH-PARTIAL-AUDIT");
         assertThrows(
                 Exception.class,
@@ -74,7 +79,7 @@ class ErpCompletionCancellationContractTest extends ErpCompletionCancellationTes
 
     @Test
     void auditMetadataRequiresANonblankReasonAndPositiveExactActor() throws Exception {
-        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(request);
+        var payload = (ObjectNode) json.valueToTree(request);
         payload.put("commandId", "SYNTH-AUDIT")
                 .put("reason", " ")
                 .put("actorId", "9007199254741997");
@@ -123,7 +128,7 @@ class ErpCompletionCancellationContractTest extends ErpCompletionCancellationTes
     @Test
     void proofHasNoPublicConstructorAndCannotBePreparedInsideTargetTransaction() {
         assertTrue(
-                java.util.Arrays.stream(CompletionCancellationProof.class.getDeclaredConstructors())
+                Arrays.stream(CompletionCancellationProof.class.getDeclaredConstructors())
                         .allMatch(c -> Modifier.isPrivate(c.getModifiers())));
         assertThrows(IllegalStateException.class, () -> et.execute(s -> proof()));
     }

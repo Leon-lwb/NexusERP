@@ -1,12 +1,16 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
 import com.nexus.erp.pu.service.PuRequirementAllocationPolicy;
+
 import org.junit.jupiter.api.Test;
+
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Date;
-import static org.junit.jupiter.api.Assertions.*;
 
 /** Pure arithmetic only: the service must obtain every quantity from locked persisted facts. */
 class PuCertifiedPurchaseLifecyclePolicyTest {
@@ -135,7 +139,7 @@ class PuCertifiedPurchaseLifecyclePolicyTest {
         return PuRequirementAllocationPolicy.commitToOrder(intent(), 701L, NOW).ledger();
     }
     private static PuRequirementAllocationPolicy.Change change(String name, Object... args) {
-        Class<?>[] types = java.util.Arrays.stream(args).map(Object::getClass).toArray(Class<?>[]::new);
+        Class<?>[] types = Arrays.stream(args).map(Object::getClass).toArray(Class<?>[]::new);
         var method = assertDoesNotThrow(() -> PuRequirementAllocationPolicy.class.getMethod(name, types),
             "Expected lifecycle RED: approved API not implemented: " + name);
         try {

@@ -2,12 +2,13 @@ package com.nexus.erp.fin.arap.mq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.domain.PayReceivedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
-import com.nexus.common.core.utils.StringUtils;
 import com.nexus.erp.fin.arap.constant.ArapConstants;
 import com.nexus.erp.fin.arap.domain.FinReceipt;
 import com.nexus.erp.fin.arap.domain.bo.FinSettlementBo;
@@ -19,8 +20,10 @@ import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
 import com.nexus.erp.so.service.ISoInvoiceService;
 import com.rabbitmq.client.Channel;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.dao.DuplicateKeyException;
@@ -131,7 +134,7 @@ public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage>
         // 3. FIFO 自动核销该客户最旧未清 AR 发票
         SoInvoiceBo soBo = new SoInvoiceBo();
         soBo.setClientId(message.getClientId());
-        soBo.setStatus(com.nexus.erp.so.service.ISoInvoiceService.STATUS_ISSUED);
+        soBo.setStatus(ISoInvoiceService.STATUS_ISSUED);
         List<SoInvoiceVo> invoices = soInvoiceService.selectList(soBo);
         invoices.sort(Comparator.comparing(v -> v.getInvoiceDate() != null ? v.getInvoiceDate() : new Date(0)));
         BigDecimal remaining = amount;
@@ -175,8 +178,9 @@ public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage>
     }
 
     /** RabbitMQ 监听 PAY_RECEIVED_QUEUE,委托 BaseMessageConsumer.processMessage 处理(含重试/死信) */
-    @RabbitListener(queues = com.nexus.common.mq.constant.QueueConstants.PAY_RECEIVED_QUEUE)
-    public void onMessage(PayReceivedMessage message, Channel channel, Message amqpMessage) throws Exception {
+    @RabbitListener(queues = QueueConstants.PAY_RECEIVED_QUEUE)
+    public void onMessage(PayReceivedMessage message, Channel channel, Message amqpMessage)
+            throws Exception {
         processMessage(message, channel, amqpMessage);
     }
 

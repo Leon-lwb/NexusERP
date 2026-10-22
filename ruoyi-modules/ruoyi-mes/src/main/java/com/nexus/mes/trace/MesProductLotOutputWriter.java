@@ -1,20 +1,24 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+import static com.nexus.mes.trace.MesTraceStore.number;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.MaterialPolicyPort;
 import com.nexus.mes.pro.domain.ProWorkOrder;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
-import static com.nexus.mes.trace.MesTraceStore.number;
 
 /**
  * 登记实际批次型产出；库存生产授权只规定额度上限，良品结论仍取自实际生产。
@@ -27,7 +31,7 @@ public class MesProductLotOutputWriter {
     private final MesTraceContext context;
     private final MesTraceStore events;
     private final MaterialPolicyPort policies;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
 
     /**
      * 按实际产品批次登记的一行合格或报废产出。

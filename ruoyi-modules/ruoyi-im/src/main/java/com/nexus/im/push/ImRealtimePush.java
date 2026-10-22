@@ -1,17 +1,23 @@
 package com.nexus.im.push;
 
 import cn.hutool.core.collection.CollUtil;
-import io.micrometer.core.instrument.Timer;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.nexus.common.sse.utils.SseMessageUtils;
+
 import com.nexus.common.sse.dto.SseMessageDto;
+import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.websocket.dto.WebSocketMessageDto;
 import com.nexus.common.websocket.utils.WebSocketUtils;
+
+import io.micrometer.core.instrument.Timer;
+
+import jakarta.annotation.PostConstruct;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -49,7 +55,7 @@ public class ImRealtimePush {
     /** P5-1: 异步推送线程池（@Lazy 防止初始化时序问题；单元测试中为 null） */
     @Autowired
     @Qualifier("imPushExecutor")
-    @org.springframework.context.annotation.Lazy
+    @Lazy
     private Executor imPushExecutor;
 
     /** P5-1: 异步推送开关，默认 true；故障时关闭回退到同步推送 */

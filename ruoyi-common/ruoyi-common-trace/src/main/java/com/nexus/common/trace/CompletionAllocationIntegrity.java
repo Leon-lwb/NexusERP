@@ -1,6 +1,8 @@
 package com.nexus.common.trace;
 
 import com.nexus.common.trace.port.CompletionAllocationPort;
+
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -103,7 +105,7 @@ public final class CompletionAllocationIntegrity {
                 require(
                         row.identityId() > 0
                                 && serials.add(row.identityId())
-                                && row.quantity().compareTo(java.math.BigDecimal.ONE) == 0,
+                                && row.quantity().compareTo(BigDecimal.ONE) == 0,
                         "组件SN必须是唯一整件实际消耗");
             }
         }

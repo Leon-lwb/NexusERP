@@ -1,29 +1,36 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.wm.mapper.WmCertifiedWarehouseReadMapper;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingAuthorizer;
+
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.web.bind.annotation.GetMapping;
+
 import java.lang.reflect.*;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.Locale;
 
 /** 隔离真实只读 Service/Mapper/Controller 合同；不连接数据库、Redis或真正写 Service。 */
 class WmCertifiedWarehouseReadTest {
     /** MySQL5.7实际1064已只读复现：日期常量带WHERE时必须有DUAL，不是H2/替身验收。 */
     @Test void databaseClockWithTenantPredicateUsesMysqlDualRatherThanFromlessWhere() throws Exception {
         Method m = WmCertifiedWarehouseReadMapper.class.getMethod("databaseDate", String.class);
-        String sql = String.join(" ", m.getAnnotation(Select.class).value()).toUpperCase(java.util.Locale.ROOT);
+        String sql =
+                String.join(" ", m.getAnnotation(Select.class).value()).toUpperCase(Locale.ROOT);
         assertTrue(sql.contains("FROM DUAL WHERE"));
         assertTrue(sql.contains("#{TENANT}=#{TENANT}"));
         assertFalse(sql.contains("FOR UPDATE"));
@@ -93,8 +100,13 @@ class WmCertifiedWarehouseReadTest {
         }
     }
     @Test void nativeWarehouseJsonPropertyMatchesActualClientContract() {
-        var detail=type("service.WmCertifiedWarehouseReadService$Detail");try{assertEquals("native",detail.getMethod("nativeDocument").getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class).value());}
-        catch(NoSuchMethodException missing){fail("缺少完整原生仓储头契约");}
+        var detail = type("service.WmCertifiedWarehouseReadService$Detail");
+        try {
+            assertEquals(
+                    "native",
+                    detail.getMethod("nativeDocument").getAnnotation(JsonProperty.class).value());
+        } catch (NoSuchMethodException missing) {
+            fail("缺少完整原生仓储头契约");}
     }
 
 }

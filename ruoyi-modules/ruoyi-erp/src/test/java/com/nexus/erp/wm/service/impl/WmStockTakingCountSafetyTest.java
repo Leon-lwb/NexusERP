@@ -1,5 +1,8 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.*;
 import com.baomidou.mybatisplus.core.config.GlobalConfig;
 import com.baomidou.mybatisplus.core.injector.DefaultSqlInjector;
@@ -9,8 +12,10 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmStockTakingLine;
 import com.nexus.erp.wm.domain.WmStockTakingPlan;
 import com.nexus.erp.wm.domain.bo.WmStockTakingPlanBo;
+import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmStockTakingLineMapper;
 import com.nexus.erp.wm.mapper.WmStockTakingPlanMapper;
+
 import org.apache.ibatis.logging.nologging.NoLoggingImpl;
 import org.apache.ibatis.mapping.Environment;
 import org.h2.jdbcx.JdbcDataSource;
@@ -24,10 +29,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class WmStockTakingCountSafetyTest {
     private JdbcDataSource source;
@@ -43,7 +47,20 @@ class WmStockTakingCountSafetyTest {
         c.addMapper(WmStockTakingPlanMapper.class); c.addMapper(WmStockTakingLineMapper.class); createTable(WmStockTakingPlan.class); createTable(WmStockTakingLine.class);
         var s = new SqlSessionTemplate(new MybatisSqlSessionFactoryBuilder().build(c)); plans = s.getMapper(WmStockTakingPlanMapper.class); lines = s.getMapper(WmStockTakingLineMapper.class);
         posting = mock(WmStockOperationServiceImpl.class);
-        var factory = new ProxyFactory(new WmStockTakingPlanServiceImpl(plans, lines, mock(com.nexus.erp.wm.mapper.WmMaterialStockMapper.class), posting, mock(WmServiceHelper.class))); factory.setProxyTargetClass(true); factory.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(source), new AnnotationTransactionAttributeSource())); service = (WmStockTakingPlanServiceImpl)factory.getProxy();
+        var factory =
+                new ProxyFactory(
+                        new WmStockTakingPlanServiceImpl(
+                                plans,
+                                lines,
+                                mock(WmMaterialStockMapper.class),
+                                posting,
+                                mock(WmServiceHelper.class)));
+        factory.setProxyTargetClass(true);
+        factory.addAdvice(
+                new TransactionInterceptor(
+                        new DataSourceTransactionManager(source),
+                        new AnnotationTransactionAttributeSource()));
+        service = (WmStockTakingPlanServiceImpl) factory.getProxy();
         WmStockTakingPlan p = new WmStockTakingPlan(); p.setPlanId(11L); p.setStatus("GENERATED"); p.setWarehouseId(2L); plans.insert(p);
         WmStockTakingLine l = new WmStockTakingLine(); l.setLineId(21L); l.setPlanId(11L); l.setMaterialId(23L); l.setBookQuantity(new BigDecimal("4")); l.setStatus("PENDING"); lines.insert(l);
     }

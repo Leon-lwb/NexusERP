@@ -9,6 +9,7 @@ import com.nexus.report.controller.ReportAssetController;
 import com.nexus.report.controller.ReportExceptionHandler;
 import com.nexus.report.controller.ReportRequestActor;
 import com.nexus.report.domain.ReportFault;
+import com.nexus.report.domain.ReportRecords;
 import com.nexus.report.extension.*;
 import com.nexus.report.runtime.RuntimeReviewFixture;
 
@@ -91,7 +92,7 @@ class ReportAssetTest {
                     fixture.owner,
                     "ASSET",
                     version.resourceId(),
-                    List.of(new com.nexus.report.domain.ReportRecords.Grant("USER", "8", "VIEW")));
+                    List.of(new ReportRecords.Grant("USER", "8", "VIEW")));
             var granted = metadata(service, fixture.viewer, version.id());
             assertEquals(200, granted.getStatus(), granted.getContentAsString());
             fixture.store.replaceAcl(fixture.owner, "ASSET", version.resourceId(), List.of());

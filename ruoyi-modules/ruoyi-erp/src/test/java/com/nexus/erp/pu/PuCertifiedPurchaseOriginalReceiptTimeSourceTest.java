@@ -1,17 +1,21 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.Operation;
+
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /** 只复用已获准封存时间值于合成身份/数量，不读取真实数据库或改写原结果hash。 */
 class PuCertifiedPurchaseOriginalReceiptTimeSourceTest {
@@ -65,7 +69,8 @@ class PuCertifiedPurchaseOriginalReceiptTimeSourceTest {
                 ()->assertThrows(ServiceException.class,()->f.adapter.recover(f.action,ACTOR),"倒序不能恢复原创建成功"));f.assertNoWrites();
         }
     }
-    @org.junit.jupiter.api.Test
+
+    @Test
     void r6ParameterCaptureMayPrecedeItsLaterDefaultInsertBySeveralStatements() throws Exception {
         try(var f=new PuCertifiedPurchaseOriginalReceiptTest.Fixture()) {
             f.advance(3);long epoch=f.physical.history.get(0).getOccurredAt().getTime();

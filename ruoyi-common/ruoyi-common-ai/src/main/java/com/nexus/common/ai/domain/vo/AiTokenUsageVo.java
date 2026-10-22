@@ -6,6 +6,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * AI Token 用量日统计视图对象
@@ -59,8 +60,8 @@ public class AiTokenUsageVo implements Serializable {
     private BigDecimal avgTokensPerRequest;
 
     /** 创建时间 */
-    private java.time.LocalDateTime createTime;
+    private LocalDateTime createTime;
 
     /** 更新时间 */
-    private java.time.LocalDateTime updateTime;
+    private LocalDateTime updateTime;
 }

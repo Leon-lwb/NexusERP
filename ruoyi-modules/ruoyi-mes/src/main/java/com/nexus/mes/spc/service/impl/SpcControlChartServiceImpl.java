@@ -14,14 +14,16 @@ import com.nexus.mes.pro.service.IProAndonService;
 import com.nexus.mes.spc.domain.SpcControlChart;
 import com.nexus.mes.spc.domain.SpcDataPoint;
 import com.nexus.mes.spc.domain.bo.SpcControlChartBo;
-import com.nexus.mes.spc.domain.vo.SpcDataPointVo;
 import com.nexus.mes.spc.domain.vo.SpcControlChartVo;
+import com.nexus.mes.spc.domain.vo.SpcDataPointVo;
 import com.nexus.mes.spc.mapper.SpcControlChartMapper;
 import com.nexus.mes.spc.mapper.SpcDataPointMapper;
 import com.nexus.mes.spc.service.ISpcControlChartService;
 import com.nexus.mes.spc.service.SpcCapabilityCalculator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -492,7 +495,7 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         BigDecimal statValue;
         BigDecimal rangeOrStd;
         int n;
-        java.util.Date collectTime;
+        Date collectTime;
     }
 
     /**

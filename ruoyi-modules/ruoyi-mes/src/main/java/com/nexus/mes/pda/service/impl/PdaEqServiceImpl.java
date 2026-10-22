@@ -1,5 +1,7 @@
 package com.nexus.mes.pda.service.impl;
 
+import cn.hutool.core.lang.Dict;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -19,7 +21,9 @@ import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaEqInspectionVo;
 import com.nexus.mes.pda.domain.vo.PdaEqItemVo;
 import com.nexus.mes.pda.service.IPdaEqService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,7 +121,7 @@ public class PdaEqServiceImpl implements IPdaEqService {
             return new ArrayList<>();
         }
         List<Map<String, Object>> items = new ArrayList<>();
-        for (cn.hutool.core.lang.Dict dict : JsonUtils.parseArrayMap(json)) {
+        for (Dict dict : JsonUtils.parseArrayMap(json)) {
             items.add(dict);
         }
         return items;

@@ -21,6 +21,8 @@ import com.nexus.mes.release.domain.ReleasePkgBomItem;
 import com.nexus.mes.release.domain.ReleasePkgConfig;
 import com.nexus.mes.release.domain.ReleasePkgFirmware;
 import com.nexus.mes.release.domain.bo.ReleasePackageBo;
+import com.nexus.mes.release.domain.bo.ReleasePkgBomItemBo;
+import com.nexus.mes.release.domain.bo.ReleasePkgFirmwareBo;
 import com.nexus.mes.release.domain.vo.ReleasePackageVo;
 import com.nexus.mes.release.mapper.ReleasePackageMapper;
 import com.nexus.mes.release.mapper.ReleasePkgBomItemMapper;
@@ -33,8 +35,10 @@ import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.WfCallBackServiceI;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -506,10 +510,10 @@ public class ReleasePackageServiceImpl implements IReleasePackageService, WfCall
      * BOM选配——actionType 合法; REPLACE/REMOVE 须填原物料; REPLACE/ADD 须填目标物料; ADD 须填单位用量
      */
     private void validateSubTables(ReleasePackageBo bo) {
-        List<com.nexus.mes.release.domain.bo.ReleasePkgFirmwareBo> mappings = bo.getFirmwareMappings();
+        List<ReleasePkgFirmwareBo> mappings = bo.getFirmwareMappings();
         if (mappings != null && !mappings.isEmpty()) {
             Set<String> locateKeys = new HashSet<>();
-            for (com.nexus.mes.release.domain.bo.ReleasePkgFirmwareBo m : mappings) {
+            for (ReleasePkgFirmwareBo m : mappings) {
                 if (m.getRoutingStepId() == null && m.getProcessId() == null) {
                     throw new ServiceException("固件映射[固件 " + m.getFirmwareCode() + "]须指定工艺路线步骤或工序(定位键)");
                 }
@@ -529,9 +533,9 @@ public class ReleasePackageServiceImpl implements IReleasePackageService, WfCall
                 }
             }
         }
-        List<com.nexus.mes.release.domain.bo.ReleasePkgBomItemBo> items = bo.getBomItems();
+        List<ReleasePkgBomItemBo> items = bo.getBomItems();
         if (items != null && !items.isEmpty()) {
-            for (com.nexus.mes.release.domain.bo.ReleasePkgBomItemBo item : items) {
+            for (ReleasePkgBomItemBo item : items) {
                 String action = item.getActionType();
                 if (!"REPLACE".equals(action) && !"ADD".equals(action) && !"REMOVE".equals(action)) {
                     throw new ServiceException("BOM选配操作类型非法: " + action + " (仅 REPLACE/ADD/REMOVE)");

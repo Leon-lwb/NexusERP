@@ -1,11 +1,18 @@
 package com.nexus.im.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
-import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.im.domain.ImConversationSetting;
 import com.nexus.im.domain.ImFavorite;
@@ -24,10 +31,13 @@ import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImChatSupport;
 import com.nexus.im.service.impl.support.ImConversationService;
+import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.mapper.SysUserMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,14 +49,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P6-G1: AppImController 高级交互接口测试。
@@ -68,21 +70,35 @@ import static org.mockito.Mockito.when;
  */
 class AppImControllerP6Test extends ImUnitTestBase {
 
-    @Mock private IImChatService imChatService;
-    @Mock private ISysUserNotificationService notificationService;
-    @Mock private SysUserMapper userMapper;
-    @Mock private ImMessageMapper messageMapper;
-    @Mock private ImGroupMapper groupMapper;
-    @Mock private ImGroupMemberMapper groupMemberMapper;
-    @Mock private SysUserNotificationMapper notificationMapper;
-    @Mock private ImFriendMapper friendMapper;
-    @Mock private ImRealtimePush imRealtimePush;
-    @Mock private ImConversationService conversationService;
-    @Mock private ImConversationSettingMapper conversationSettingMapper;
-    @Mock private ImFavoriteMapper favoriteMapper;
+    @Mock
+    private IImChatService imChatService;
+    @Mock
+    private ISysUserNotificationService notificationService;
+    @Mock
+    private SysUserMapper userMapper;
+    @Mock
+    private ImMessageMapper messageMapper;
+    @Mock
+    private ImGroupMapper groupMapper;
+    @Mock
+    private ImGroupMemberMapper groupMemberMapper;
+    @Mock
+    private SysUserNotificationMapper notificationMapper;
+    @Mock
+    private ImFriendMapper friendMapper;
+    @Mock
+    private ImRealtimePush imRealtimePush;
+    @Mock
+    private ImConversationService conversationService;
+    @Mock
+    private ImConversationSettingMapper conversationSettingMapper;
+    @Mock
+    private ImFavoriteMapper favoriteMapper;
 
-    @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
-    @Mock private com.nexus.im.service.impl.support.ImChatSupport chatSupport;
+    @Mock
+    private ImMessageVisibility visibility;
+    @Mock
+    private ImChatSupport chatSupport;
 
     @InjectMocks
     private AppImController controller;
@@ -517,7 +533,7 @@ class AppImControllerP6Test extends ImUnitTestBase {
         mockPage.setRecords(records);
         when(favoriteMapper.selectPage(any(), any())).thenReturn(mockPage);
 
-        TableDataInfo<ImFavorite> result = controller.favoriteList(com.nexus.im.support.ImTestFixture.pageQuery(10, 1));
+        TableDataInfo<ImFavorite> result = controller.favoriteList(ImTestFixture.pageQuery(10, 1));
 
         // 守护：调用 selectPage 1 次
         verify(favoriteMapper, times(1)).selectPage(any(), any(LambdaQueryWrapper.class));
@@ -540,7 +556,7 @@ class AppImControllerP6Test extends ImUnitTestBase {
         mockPage.setRecords(new ArrayList<>());
         when(favoriteMapper.selectPage(any(), any())).thenReturn(mockPage);
 
-        TableDataInfo<ImFavorite> result = controller.favoriteList(com.nexus.im.support.ImTestFixture.pageQuery(10, 1));
+        TableDataInfo<ImFavorite> result = controller.favoriteList(ImTestFixture.pageQuery(10, 1));
 
         assertThat(result.getRows()).isNullOrEmpty();
         assertThat(result.getTotal()).isEqualTo(0L);

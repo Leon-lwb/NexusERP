@@ -5,12 +5,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.SnItem;
+import com.nexus.common.trace.TrackingStage;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
 import java.util.*;
 
 /**
@@ -240,8 +244,7 @@ public class WmSerialBusinessAdapter {
                 continue;
             }
             var policy = store.snapshot(scope.type, scope.source, line).policy();
-            if (!policy.serialManaged()
-                    || policy.stage() != com.nexus.common.trace.TrackingStage.STRICT) {
+            if (!policy.serialManaged() || policy.stage() != TrackingStage.STRICT) {
                 continue;
             }
             if (!store.postedSelectionMatches(scope.type, scope.source, line, entry.getValue())) {

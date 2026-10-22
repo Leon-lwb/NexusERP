@@ -5,14 +5,14 @@ import static org.mockito.Mockito.*;
 
 import com.nexus.common.report.ReportActor;
 import com.nexus.common.report.ReportAuthorizationPort;
-import com.nexus.report.domain.ReportFault;
 import com.nexus.report.dashboard.DashboardRefreshQuota;
+import com.nexus.report.domain.ReportFault;
 import com.nexus.report.extension.ReportExtensionSchema;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.runtime.RuntimeReviewFixture;
 import com.nexus.report.subscription.ReportDeliveryService;
-import com.nexus.report.subscription.ReportSubscriptionProperties;
 import com.nexus.report.subscription.ReportSubscriptionAccessGuard;
+import com.nexus.report.subscription.ReportSubscriptionProperties;
 import com.nexus.report.subscription.ReportSubscriptionService;
 import com.nexus.report.subscription.SubscriptionDefinition;
 
@@ -27,6 +27,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -277,7 +278,7 @@ class TimestampColumnMapRowMapperTest {
         String[] names = {"identifier", "amount", "optional", "business_date"};
         int[] types = {Types.BIGINT, Types.DECIMAL, Types.VARCHAR, Types.DATE};
         var amount = new BigDecimal("9007199254740993.123400");
-        var date = java.sql.Date.valueOf("2026-10-18");
+        var date = Date.valueOf("2026-10-18");
         Object[] values = {Long.MAX_VALUE, amount, null, date};
         for (int index = 1; index <= names.length; index++) {
             when(metadata.getColumnLabel(index)).thenReturn(names[index - 1]);

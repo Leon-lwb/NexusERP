@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.iqc.ReceiptIqcSource;
 import com.nexus.common.mq.message.IqcCompletedMessage;
@@ -9,18 +13,17 @@ import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.wm.mapper.WmReceiptIqcEvidenceMapper;
 import com.nexus.erp.wm.mapper.WmReceiptIqcEvidenceMapper.*;
 import com.nexus.erp.wm.service.WmReceiptIqcEvidenceService;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 class WmReceiptIqcEvidenceServiceTest {
     static final String TENANT = "000007";
@@ -103,22 +106,23 @@ class WmReceiptIqcEvidenceServiceTest {
     EvidenceRow legacyEvidence(String result) {
         // 模拟先前已持久化的 V1 记录。其当前 ERP 单位及有效密码学摘要
         // 不能证明原生 MES 创建时来源，绝不能据此授权。
-        Object scope = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "requireScope", TENANT, 101L, 201L);
+        Object scope =
+                ReflectionTestUtils.invokeMethod(service, "requireScope", TENANT, 101L, 201L);
         EvidenceRow row = new EvidenceRow();
         row.setEvidenceId(701L); row.setTenantId(TENANT); row.setInspectionId(501L); row.setInspectionCode("IQC-501");
         row.setReceiveId(101L); row.setMaterialId(201L); row.setBaseUomId(mapper.selectMaterialForUpdate(TENANT, 201L).getBaseUomId());
         row.setQuantityScale(4); row.setInspectedQuantity(new BigDecimal("12.0000")); row.setInspectResult(result);
         row.setInspectorId(801L); row.setSourceKind("MES_QC_IQC_RECEIVE_MATERIAL_V1");
         row.setSourceVersion("QC_IQC_CURRENT_V1:" + "a".repeat(64)); row.setActualBodySha256("a".repeat(64));
-        row.setReceiptScopeSha256(org.springframework.test.util.ReflectionTestUtils.invokeMethod(scope, "sha256"));
+        row.setReceiptScopeSha256(ReflectionTestUtils.invokeMethod(scope, "sha256"));
         row.setFirstMessageId("event-501"); row.setSourceCreatedAt(new Date(now - 90000));
         row.setCompletedAt(new Date(now - 2000)); row.setSourceUpdatedAt(new Date(now - 2000));
         row.setObservedAt(new Date(now - 1000)); row.setCertifiedAt(new Date(now));
-        row.setEvidenceSha256(org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "evidenceSha", row));
+        row.setEvidenceSha256(ReflectionTestUtils.invokeMethod(service, "evidenceSha", row));
         return row;
     }
     Object readCurrentScope() {
-        return org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "requireScope", TENANT, 101L, 201L);
+        return ReflectionTestUtils.invokeMethod(service, "requireScope", TENANT, 101L, 201L);
     }
     void missingOrigin(Runnable action) {
         assertThatThrownBy(action::run).isInstanceOf(ServiceException.class).hasMessage("UNIT_ORIGIN_UNPROVEN");
@@ -181,11 +185,13 @@ class WmReceiptIqcEvidenceServiceTest {
     @Test void externalErpOrMasterTransactionCannotContainMesRead() {
         arrange("QUALIFIED");
         try (var tenant = tenant()) {
-            org.springframework.transaction.support.TransactionSynchronizationManager.setActualTransactionActive(true);
+            TransactionSynchronizationManager.setActualTransactionActive(true);
             try {
                 assertThatThrownBy(() -> service.consumeCompleted(message(), x -> { })).hasMessage("IQC_SOURCE_REQUIRES_FRESH_THREAD");
                 verifyNoInteractions(source, transactions);
-            } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clear(); }
+            } finally {
+                TransactionSynchronizationManager.clear();
+            }
         }
     }
     @Test void lockedReadRequiresOwnedRrBeforeAnyCatalogOrBusinessMapper() {
@@ -224,7 +230,7 @@ class WmReceiptIqcEvidenceServiceTest {
         when(source.readCompleted(TENANT, 501L)).thenReturn(observation("QUALIFIED", new BigDecimal("0.3000"), "a".repeat(64)));
         try (var tenant = tenant()) {
             Object scope = readCurrentScope();
-            BigDecimal total = org.springframework.test.util.ReflectionTestUtils.invokeMethod(scope, "quantity");
+            BigDecimal total = ReflectionTestUtils.invokeMethod(scope, "quantity");
             assertThat(total).isEqualByComparingTo("0.3");
             missingOrigin(() -> service.consumeCompleted(message(), x -> fail("must not project")));
         }

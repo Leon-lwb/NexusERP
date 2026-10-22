@@ -1,11 +1,24 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
-import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceSchemaVerifier;
+import com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper;
+import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
+
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -13,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -25,15 +39,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 /** 离线契约：使用模拟 Mapper，仅设置事务线程本地状态，绝不是真实数据库锁。 */
 @ExtendWith(MockitoExtension.class)
@@ -179,9 +184,11 @@ class PuRequirementMaterialLockServiceTest {
     void schemaRejectionOccursAtRealGuardWriteBoundary() {
         TransactionSynchronizationManager.setActualTransactionActive(true);
         try (MockedStatic<TenantHelper> ignored = tenant(TENANT)) {
-            org.mockito.Mockito.doThrow(new ServiceException("unproved schema")).when(schemaVerifier).requireTransactionalSources();
+            Mockito.doThrow(new ServiceException("unproved schema"))
+                    .when(schemaVerifier)
+                    .requireTransactionalSources();
             assertThrows(ServiceException.class, () -> service().lock(TENANT,List.of(1L)));
-            org.mockito.Mockito.verify(schemaVerifier).requireTransactionalSources();
+            Mockito.verify(schemaVerifier).requireTransactionalSources();
             verifyNoInteractions(mapper);
         }
     }
@@ -189,9 +196,9 @@ class PuRequirementMaterialLockServiceTest {
     @Test
     void activeThreadLocalCannotGrantRealSourceChainOwnership() {
         TransactionSynchronizationManager.setActualTransactionActive(true);
-        var schemaMapper = org.mockito.Mockito.mock(com.nexus.erp.pu.mapper.ErpPurchaseSourceSchemaMapper.class);
-        var qualification = new com.nexus.erp.pu.service.PuRequirementErpTransactionQualification(
-            org.mockito.Mockito.mock(org.apache.ibatis.session.SqlSessionFactory.class));
+        var schemaMapper = Mockito.mock(ErpPurchaseSourceSchemaMapper.class);
+        var qualification =
+                new PuRequirementErpTransactionQualification(Mockito.mock(SqlSessionFactory.class));
         var realVerifier = new ErpPurchaseSourceSchemaVerifier(schemaMapper,qualification);
         try (MockedStatic<TenantHelper> ignored = tenant(TENANT)) {
             assertThrows(ServiceException.class, () -> new PuRequirementMaterialLockService(mapper,realVerifier).lock(TENANT,List.of(1L)));

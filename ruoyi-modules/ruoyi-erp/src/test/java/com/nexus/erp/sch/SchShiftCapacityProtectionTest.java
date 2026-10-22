@@ -1,5 +1,9 @@
 package com.nexus.erp.sch;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -13,6 +17,7 @@ import com.nexus.erp.sch.mapper.SchPlanMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.service.impl.SchShiftServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -24,12 +29,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -53,8 +56,8 @@ class SchShiftCapacityProtectionTest {
         SchShiftBo request = new SchShiftBo();
         request.setShiftId(20L);
         request.setShiftName("late shift");
-        request.setStartTime(java.sql.Time.valueOf("09:00:00"));
-        request.setEndTime(java.sql.Time.valueOf("17:00:00"));
+        request.setStartTime(Time.valueOf("09:00:00"));
+        request.setEndTime(Time.valueOf("17:00:00"));
         request.setIsCrossDay(0);
 
         assertThrows(ServiceException.class, () -> subject.updateByBo(request));
@@ -80,8 +83,8 @@ class SchShiftCapacityProtectionTest {
         SchShift shift = new SchShift();
         shift.setShiftId(20L);
         shift.setTenantId("000000");
-        shift.setStartTime(java.sql.Time.valueOf("08:00:00"));
-        shift.setEndTime(java.sql.Time.valueOf("16:00:00"));
+        shift.setStartTime(Time.valueOf("08:00:00"));
+        shift.setEndTime(Time.valueOf("16:00:00"));
         shift.setIsCrossDay(0);
         return shift;
     }
@@ -90,7 +93,7 @@ class SchShiftCapacityProtectionTest {
         PrdCapacityCalendar calendar = new PrdCapacityCalendar();
         calendar.setCalendarId(70L);
         calendar.setShiftId(20L);
-        calendar.setCalendarDate(java.sql.Date.valueOf(LocalDate.of(2026, 9, 29)));
+        calendar.setCalendarDate(Date.valueOf(LocalDate.of(2026, 9, 29)));
         calendar.setTenantId("000000");
         calendar.setEffectiveHours(new BigDecimal("8.00"));
         calendar.setPlannedHours(BigDecimal.ZERO);

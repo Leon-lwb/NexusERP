@@ -1,17 +1,19 @@
 package com.nexus.ai.mcp.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.ai.domain.dto.McpToolTestResult;
 import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.ai.mcp.McpConfigSanitizer;
 import com.nexus.ai.mcp.McpEndpointPolicy;
 import com.nexus.ai.tool.BuiltinToolProvider;
 import com.nexus.ai.tool.BuiltinToolRegistry;
-import com.nexus.ai.domain.dto.McpToolTestResult;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.core.exception.ServiceException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * MCP 工具服务实现
@@ -201,7 +204,7 @@ public class McpToolServiceImpl {
 
                 if (existing != null) {
                     // 已存在，更新描述信息（保留状态不变）
-                    if (!java.util.Objects.equals(provider.getDescription(), existing.getDescription())) {
+                    if (!Objects.equals(provider.getDescription(), existing.getDescription())) {
                         existing.setDescription(provider.getDescription());
                         existing.setDisplayName(provider.getDisplayName());
                         aiToolMapper.updateById(existing);

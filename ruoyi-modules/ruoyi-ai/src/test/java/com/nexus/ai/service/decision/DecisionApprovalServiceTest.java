@@ -1,19 +1,35 @@
 package com.nexus.ai.service.decision;
 
-import com.nexus.common.ai.decision.dto.*;
-
-import com.nexus.common.ai.decision.dto.DecisionFreshnessResult;
-import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
-import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
-import com.nexus.common.ai.decision.enums.DecisionRunStatus;
-import com.nexus.common.core.exception.ServiceException;
-import org.junit.jupiter.api.Test;
-import java.util.List;
 import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
+import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
+import com.nexus.common.ai.decision.dto.*;
+import com.nexus.common.ai.decision.dto.DecisionActor;
+import com.nexus.common.ai.decision.dto.DecisionFreshnessResult;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.enums.DecisionRunStatus;
+import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
+import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.ai.domain.entity.AiDecisionAction;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.service.PermissionService;
+
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 
 class DecisionApprovalServiceTest {
     private final DecisionPersistenceService store = mock(DecisionPersistenceService.class);
@@ -22,26 +38,32 @@ class DecisionApprovalServiceTest {
     private final DecisionApprovalService service = new DecisionApprovalService(store, data, flows);
 
     @Test void revokedReviewPermissionCannotApproveDespiteOldSessionSnapshot() {
-        var rights = mock(com.nexus.common.core.service.PermissionService.class);
-        var events = mock(com.nexus.ai.service.sse.AiDecisionSseMessageHelper.class);
-        var reviewer = new DecisionApprovalService(store, data, flows, events,
-            mock(org.springframework.transaction.support.TransactionTemplate.class), rights);
-        when(rights.getMenuPermission(1L)).thenReturn(java.util.Set.of("ai:decision:run"));
+        var rights = mock(PermissionService.class);
+        var events = mock(AiDecisionSseMessageHelper.class);
+        var reviewer =
+                new DecisionApprovalService(
+                        store, data, flows, events, mock(TransactionTemplate.class), rights);
+        when(rights.getMenuPermission(1L)).thenReturn(Set.of("ai:decision:run"));
         assertThrows(ServiceException.class, () -> reviewer.approve(10L, approvalRequest(), actor()));
         verifyNoInteractions(store, data, flows);
     }
 
     @Test void approvalBindsReviewerBeforeDispatchAndEmitsStatus() {
-        var events = mock(com.nexus.ai.service.sse.AiDecisionSseMessageHelper.class);
-        var tx = mock(org.springframework.transaction.support.TransactionTemplate.class);
-        doAnswer(call -> { ((java.util.function.Consumer<org.springframework.transaction.TransactionStatus>) call.getArgument(0))
-            .accept(mock(org.springframework.transaction.TransactionStatus.class)); return null; })
-            .when(tx).executeWithoutResult(any());
+        var events = mock(AiDecisionSseMessageHelper.class);
+        var tx = mock(TransactionTemplate.class);
+        doAnswer(
+                        call -> {
+                            ((Consumer<TransactionStatus>) call.getArgument(0))
+                                    .accept(mock(TransactionStatus.class));
+                            return null;
+                        })
+                .when(tx)
+                .executeWithoutResult(any());
         var withEvents = new DecisionApprovalService(store, data, flows, events, tx);
         var run = waitingRun("hash-old");
         run.setBizType("SCHEDULE_PLAN"); run.setBizId(9001L); run.setVersion(0);
         when(store.requireRun(10L, "000000")).thenReturn(run);
-        var action = new com.nexus.common.ai.domain.entity.AiDecisionAction();
+        var action = new AiDecisionAction();
         action.setId(20L); action.setRunId(10L); action.setApprovalStatus("PROPOSED");
         action.setExecutionStatus("NOT_STARTED"); action.setPermissionCode("ai:decision:execute");
         action.setActionType("SEND_MANAGER_NOTIFICATION"); action.setExecutorCode("managerNotification");
@@ -61,8 +83,9 @@ class DecisionApprovalServiceTest {
     }
 
     @Test void approverWithoutExecutionPermissionIsRejectedBeforeAnySideEffect() {
-        var reviewer = new com.nexus.common.ai.decision.dto.DecisionActor("000000", 1L, "reviewer",
-            java.util.Set.of("ai:decision:run", "ai:decision:approve"));
+        var reviewer =
+                new DecisionActor(
+                        "000000", 1L, "reviewer", Set.of("ai:decision:run", "ai:decision:approve"));
         assertThrows(ServiceException.class, () -> service.approve(10L, approvalRequest(), reviewer));
         verifyNoInteractions(store, data, flows);
     }
@@ -73,7 +96,7 @@ class DecisionApprovalServiceTest {
         var approved = waitingRun("hash-old");
         approved.setStatus("APPROVED");
         when(store.requireRun(10L, "000000")).thenReturn(run, approved);
-        var action = new com.nexus.common.ai.domain.entity.AiDecisionAction();
+        var action = new AiDecisionAction();
         action.setId(20L); action.setRunId(10L); action.setApprovalStatus("PROPOSED");
         action.setExecutionStatus("NOT_STARTED"); action.setPermissionCode("ai:decision:execute");
         action.setActionType("SEND_MANAGER_NOTIFICATION"); action.setExecutorCode("managerNotification");
@@ -107,7 +130,7 @@ class DecisionApprovalServiceTest {
 
     @Test void ssePublishFailureAfterExecutionStartedDoesNotInvalidateApproval() {
         readyForApproval();
-        var events = mock(com.nexus.ai.service.sse.AiDecisionSseMessageHelper.class);
+        var events = mock(AiDecisionSseMessageHelper.class);
         var withEvents = new DecisionApprovalService(store, data, flows, events);
         when(flows.startExecution(any())).thenReturn(77L);
         doThrow(new IllegalStateException("redis temporarily down")).when(events)
@@ -122,7 +145,7 @@ class DecisionApprovalServiceTest {
         var run = waitingRun("hash-old");
         run.setBizType("SCHEDULE_PLAN"); run.setBizId(9001L); run.setVersion(0);
         when(store.requireRun(10L, "000000")).thenReturn(run);
-        var action = new com.nexus.common.ai.domain.entity.AiDecisionAction();
+        var action = new AiDecisionAction();
         action.setId(20L); action.setRunId(10L); action.setApprovalStatus("PROPOSED");
         action.setExecutionStatus("NOT_STARTED"); action.setPermissionCode("ai:decision:execute");
         action.setActionType("SEND_MANAGER_NOTIFICATION"); action.setExecutorCode("managerNotification");
@@ -147,7 +170,7 @@ class DecisionApprovalServiceTest {
     @Test void unsupportedOrTamperedActionCannotBindApproverOrDispatchExecution() {
         readyForApproval();
         var action = store.listActions(10L).get(0);
-        for (String type : java.util.Arrays.asList("PUBLISH_SCHEDULE_PLAN", "AUTO_APPROVE", null)) {
+        for (String type : Arrays.asList("PUBLISH_SCHEDULE_PLAN", "AUTO_APPROVE", null)) {
             action.setActionType(type);
             assertThrows(ServiceException.class, () -> service.approve(10L, approvalRequest(), actor()));
         }
@@ -253,8 +276,7 @@ class DecisionApprovalServiceTest {
         var action = historicalPurchaseAction();
         when(store.listActions(10L)).thenReturn(List.of(action));
 
-        var reviewer = new com.nexus.common.ai.decision.dto.DecisionActor("000000", 1L, "reviewer",
-            java.util.Set.of("ai:decision:approve"));
+        var reviewer = new DecisionActor("000000", 1L, "reviewer", Set.of("ai:decision:approve"));
         assertDoesNotThrow(() -> service.reject(10L, "旧采购来源未证实", reviewer));
         verify(store).setActionApproval(20L, "PROPOSED", "REJECTED", reviewer, "旧采购来源未证实");
         verify(store).transition(10L, DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.REJECTED);
@@ -262,8 +284,8 @@ class DecisionApprovalServiceTest {
         verifyNoInteractions(flows);
     }
 
-    private com.nexus.common.ai.domain.entity.AiDecisionAction historicalPurchaseAction() {
-        var action = new com.nexus.common.ai.domain.entity.AiDecisionAction();
+    private AiDecisionAction historicalPurchaseAction() {
+        var action = new AiDecisionAction();
         action.setId(20L); action.setRunId(10L); action.setTenantId("000000");
         action.setApprovalStatus("PROPOSED"); action.setExecutionStatus("NOT_STARTED");
         action.setActionType("CREATE_PURCHASE_REQUISITION_DRAFT");
@@ -310,8 +332,9 @@ class DecisionApprovalServiceTest {
     }
     @Test void expiredTermsOrChangedAllocationCannotApprove() {
         var reviewer = readyForPurchaseApproval();
-        doThrow(new com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException())
-            .when(data).requireFreshPurchaseContract(any(), any(), anyInt(), any());
+        doThrow(new DecisionPurchaseContractCodec.SourceChangedException())
+                .when(data)
+                .requireFreshPurchaseContract(any(), any(), anyInt(), any());
         var changed = assertThrows(ServiceException.class, () -> reviewer.approve(10L, approvalRequest(), actor()),
             "只有明确的来源变化异常才把采购审批标记失效");
         assertEquals("采购冻结来源已变化，须重新分析", changed.getMessage(), "公共差异信号须转换成固定安全的业务异常");
@@ -334,15 +357,17 @@ class DecisionApprovalServiceTest {
     }
     @Test void livePurchasePermissionCannotBeSuppliedByRequestComment() {
         var reviewer = readyForPurchaseApproval();
-        when(purchaseRights.getMenuPermission(1L)).thenReturn(java.util.Set.of("ai:decision:approve", "ai:decision:execute"));
+        when(purchaseRights.getMenuPermission(1L))
+                .thenReturn(Set.of("ai:decision:approve", "ai:decision:execute"));
         var request = approvalRequest(); request.setComment("pu:requisition:add 已核验 version=2");
         assertThrows(ServiceException.class, () -> reviewer.approve(10L, request, actor()));
         verify(data, never()).requireFreshPurchaseContract(any(), any(), anyInt(), any());
         verifyNoInteractions(purchaseTx, flows);
         verify(store, never()).bindExecutionActor(anyLong(), any());
     }
-    private org.springframework.transaction.support.TransactionTemplate purchaseTx;
-    private com.nexus.common.core.service.PermissionService purchaseRights;
+
+    private TransactionTemplate purchaseTx;
+    private PermissionService purchaseRights;
     private DeliveryContextSnapshot purchaseSnapshot;
     private DecisionApprovalService readyForPurchaseApproval() {
         var run = DecisionPurchaseContractGuardTest.v2Run(); run.setStatus("WAITING_APPROVAL");
@@ -351,20 +376,37 @@ class DecisionApprovalServiceTest {
         action.setApprovalStatus("PROPOSED"); action.setExecutionStatus("NOT_STARTED");
         when(store.requireRun(10L, "000000")).thenReturn(run);
         when(store.listActions(10L)).thenReturn(List.of(action));
-        purchaseSnapshot = new DeliveryContextSnapshot(new DecisionBusinessRef(
-            com.nexus.common.ai.decision.enums.DecisionBusinessType.WORK_ORDER, 9001L, "WO-9001"),
-            List.of(), List.of(), java.util.Map.of(), List.of(), List.of(), List.of(), java.util.Map.of(),
-            List.of(), java.util.Map.of(), List.of(), "hash-old", java.time.LocalDateTime.of(2026, 10, 6, 10, 0), List.of());
+        purchaseSnapshot =
+                new DeliveryContextSnapshot(
+                        new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 9001L, "WO-9001"),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        "hash-old",
+                        LocalDateTime.of(2026, 10, 6, 10, 0),
+                        List.of());
         when(store.requireSnapshot(10L, "000000")).thenReturn(purchaseSnapshot);
         when(data.canAccess(any(), any())).thenReturn(true);
         when(data.checkFreshness(any(), anyString(), any())).thenReturn(new DecisionFreshnessResult(true, "hash-old", List.of()));
         when(flows.startExecution(any())).thenReturn(77L);
-        purchaseRights = mock(com.nexus.common.core.service.PermissionService.class);
+        purchaseRights = mock(PermissionService.class);
         when(purchaseRights.getMenuPermission(1L)).thenReturn(actor().permissions());
-        purchaseTx = mock(org.springframework.transaction.support.TransactionTemplate.class);
-        doAnswer(call -> { ((java.util.function.Consumer<org.springframework.transaction.TransactionStatus>) call.getArgument(0))
-            .accept(mock(org.springframework.transaction.TransactionStatus.class)); return null; })
-            .when(purchaseTx).executeWithoutResult(any());
+        purchaseTx = mock(TransactionTemplate.class);
+        doAnswer(
+                        call -> {
+                            ((Consumer<TransactionStatus>) call.getArgument(0))
+                                    .accept(mock(TransactionStatus.class));
+                            return null;
+                        })
+                .when(purchaseTx)
+                .executeWithoutResult(any());
         return new DecisionApprovalService(store, data, flows, null, purchaseTx, purchaseRights);
     }
 

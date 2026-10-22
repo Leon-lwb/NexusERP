@@ -1,14 +1,17 @@
 package com.nexus.erp.support;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Bounded test-only translation of installation column DDL, never an SQL execution/safety parser. */
 public final class ErpDdlTestSupport {
@@ -87,7 +90,7 @@ public final class ErpDdlTestSupport {
     /** Only installation metadata for test mocks; production must still query information_schema. */
     public static List<Column> columns(String table) {
         List<Column> result = new ArrayList<>();
-        java.util.Set<String> names = new java.util.HashSet<>();
+        Set<String> names = new HashSet<>();
         for (String line : table.split("\\R")) {
             if (!line.stripLeading().startsWith("`")) continue;
             Matcher name = Pattern.compile("^\\s*`([^`]+)`\\s+(.+)$").matcher(line);
@@ -141,21 +144,25 @@ public final class ErpDdlTestSupport {
             + "`\\s*\\(([^)]*)\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$").matcher(table);
         assertTrue(index.find(), "Missing index: " + name);
         assertEquals(unique, index.group(1) != null, "Index uniqueness: " + name);
-        assertEquals(java.util.Arrays.stream(columns).map(c -> "`" + c + "`").toList(), indexColumns(index.group(2)),
-            "Index columns/order: " + name);
+        assertEquals(
+                Arrays.stream(columns).map(c -> "`" + c + "`").toList(),
+                indexColumns(index.group(2)),
+                "Index columns/order: " + name);
         assertFalse(index.find(), "Duplicate index: " + name);
     }
 
     public static void assertPrimaryKey(String table, String... columns) {
         Matcher key = Pattern.compile("(?im)^\\s*PRIMARY\\s+KEY\\s*\\(([^)]*)\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$").matcher(table);
         assertTrue(key.find(), "Missing primary key");
-        assertEquals(java.util.Arrays.stream(columns).map(c -> "`" + c + "`").toList(), indexColumns(key.group(1)),
-            "Primary key columns/order");
+        assertEquals(
+                Arrays.stream(columns).map(c -> "`" + c + "`").toList(),
+                indexColumns(key.group(1)),
+                "Primary key columns/order");
         assertFalse(key.find(), "Duplicate primary key");
     }
 
     public static void assertUniqueIndexColumns(String table, String... columns) {
-        List<String> expected = java.util.Arrays.stream(columns).map(c -> "`" + c + "`").toList();
+        List<String> expected = Arrays.stream(columns).map(c -> "`" + c + "`").toList();
         Matcher index = Pattern.compile("(?im)^\\s*UNIQUE\\s+(?:KEY|INDEX)\\s+`([^`]+)`\\s*\\(([^)]*)\\)(?:\\s+USING\\s+BTREE)?\\s*,?\\s*$").matcher(table);
         List<String> names = new ArrayList<>();
         while (index.find()) if (expected.equals(indexColumns(index.group(2)))) names.add(index.group(1));
@@ -164,7 +171,7 @@ public final class ErpDdlTestSupport {
     }
 
     private static List<String> indexColumns(String list) {
-        return java.util.Arrays.stream(list.split(",", -1)).map(String::strip).toList();
+        return Arrays.stream(list.split(",", -1)).map(String::strip).toList();
     }
 
 }

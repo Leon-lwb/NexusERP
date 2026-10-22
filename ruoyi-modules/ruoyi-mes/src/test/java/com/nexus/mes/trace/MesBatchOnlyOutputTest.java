@@ -1,10 +1,16 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.common.trace.*;
+
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 产品数量取自实际制造批次与报工，库存授权只规定可用额度上限。
@@ -17,7 +23,7 @@ class MesBatchOnlyOutputTest {
         f = new MesTraceBusinessTest();
         f.setup();
         f.mixed = new TrackingPolicy(true, false, true, 1L, TrackingStage.STRICT);
-        org.mockito.Mockito.when(f.policies.policy("000001", 100L)).thenReturn(f.mixed);
+        Mockito.when(f.policies.policy("000001", 100L)).thenReturn(f.mixed);
         f.jdbc.execute("ALTER TABLE pro_flow_card ADD completed_qty decimal(18,4) DEFAULT 0");
         f.jdbc.execute("ALTER TABLE pro_flow_card ADD scrap_qty decimal(18,4) DEFAULT 0");
         f.jdbc.execute("ALTER TABLE pro_flow_card_step ADD mes_wo_id bigint");
@@ -365,15 +371,13 @@ class MesBatchOnlyOutputTest {
     @Test
     void batchOnlyActualOutputUsesFrozenPolicyWhenCurrentMasterSaysSerialOnly() {
         long allocation = quota(7, 10, "IN_STOCK", "PASS");
-        var reads = new java.util.concurrent.atomic.AtomicInteger();
-        var prepared =
-                MesFrozenPolicyTestSupport.prepared(
-                        f, f.mixed, new java.util.concurrent.atomic.AtomicBoolean(), reads);
+        var reads = new AtomicInteger();
+        var prepared = MesFrozenPolicyTestSupport.prepared(f, f.mixed, new AtomicBoolean(), reads);
         var actual =
                 new MesProductLotOutputWriter(f.jdbc, f.context, f.events, f.policies, prepared);
-        org.mockito.Mockito.when(f.policies.policy("000001", 100L))
+        Mockito.when(f.policies.policy("000001", 100L))
                 .thenReturn(new TrackingPolicy(false, true, true, 99L, TrackingStage.STRICT));
-        org.mockito.Mockito.clearInvocations(f.policies);
+        Mockito.clearInvocations(f.policies);
         var ids =
                 f.inTx(
                         () ->
@@ -385,7 +389,7 @@ class MesBatchOnlyOutputTest {
                                         1L));
         assertEquals(1, ids.size());
         assertEquals(1, reads.get());
-        org.mockito.Mockito.verifyNoInteractions(f.policies);
+        Mockito.verifyNoInteractions(f.policies);
         assertEquals(
                 "GOOD",
                 f.jdbc.queryForObject("SELECT result FROM pro_product_lot_output", String.class));

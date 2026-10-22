@@ -9,18 +9,28 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
+import com.nexus.common.redis.utils.SchedulerFallbackUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mapper.MesSysTenantMapper;
 import com.nexus.mes.dc.domain.DcCollectionPoint;
 import com.nexus.mes.dc.domain.DcDataRecord;
 import com.nexus.mes.dc.mapper.DcCollectionPointMapper;
 import com.nexus.mes.dc.mapper.DcDataRecordMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -54,24 +64,24 @@ public class IotDataArchiveTask {
     private static final String DEFAULT_TENANT_ID = "000000";
 
     /**
-     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
-     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位， 避免同一任务被 SnailJob 与
+     * {@code @Scheduled} 双重调度。
      */
-    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    @Value("${snail-job.enabled:false}")
     private boolean snailJobEnabled;
 
     /**
      * 本地 {@code @Scheduled} 兜底入口（IOT-MES-01）。
-     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
-     * {@link #jobExecute}，IoT→MES 的 {@code dc_data_record} 归档链路因此完全断开
-     * （MES 的 SPC/采集点/健康趋势全部拿不到 IoT 数据）。cron 与 {@code sj_job} 种子一致
-     * （每 5 分钟，拉取 {@link #PULL_WINDOW_MINUTES} 分钟窗口，靠 {@code uk_point_collect_time} 去重）。
-     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     *
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调 {@link #jobExecute}，IoT→MES 的
+     * {@code dc_data_record} 归档链路因此完全断开 （MES 的 SPC/采集点/健康趋势全部拿不到 IoT 数据）。cron 与 {@code sj_job} 种子一致
+     * （每 5 分钟，拉取 {@link #PULL_WINDOW_MINUTES} 分钟窗口，靠 {@code uk_point_collect_time} 去重）。 Lock4j
+     * 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。
      */
-    @org.springframework.scheduling.annotation.Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */5 * * * ?")
     public void scheduledExecute() {
-        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
-            snailJobEnabled, "iotDataArchiveTask", 300000L, () -> jobExecute(null));
+        SchedulerFallbackUtils.runIfFallbackEnabled(
+                snailJobEnabled, "iotDataArchiveTask", 300000L, () -> jobExecute(null));
     }
 
     private static final String POINT_TYPE_AUTO = "AUTO";
@@ -274,7 +284,7 @@ public class IotDataArchiveTask {
                 if (rows > 0) {
                     count++;
                 }
-            } catch (org.springframework.dao.DuplicateKeyException dke) {
+            } catch (DuplicateKeyException dke) {
                 // 唯一索引 uk_point_collect_time 兜底去重
                 log.debug("[IoT归档任务] 重复记录跳过: pointId={}, collectTime={}",
                     point.getPointId(), collectTime);
@@ -312,14 +322,14 @@ public class IotDataArchiveTask {
         if (obj instanceof Date) {
             return (Date) obj;
         }
-        if (obj instanceof java.time.LocalDateTime) {
-            return java.sql.Timestamp.valueOf((java.time.LocalDateTime) obj);
+        if (obj instanceof LocalDateTime) {
+            return Timestamp.valueOf((LocalDateTime) obj);
         }
-        if (obj instanceof java.time.Instant) {
-            return Date.from((java.time.Instant) obj);
+        if (obj instanceof Instant) {
+            return Date.from((Instant) obj);
         }
         try {
-            return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(String.valueOf(obj));
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(String.valueOf(obj));
         } catch (Exception e) {
             return null;
         }

@@ -1,18 +1,41 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
+import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor;
+import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.trace.CompletionCancellationResult;
+import com.nexus.common.trace.CompletionManifest;
+import com.nexus.common.trace.MaterialTraceEvent;
+import com.nexus.common.trace.TraceHashes;
+import com.nexus.common.trace.TrackingPolicy;
+import com.nexus.common.trace.TrackingStage;
+import com.nexus.common.trace.WorkOrderTrackingPolicySnapshot;
+import com.nexus.common.trace.port.WorkOrderTrackingPolicyPort;
+import com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader;
 import com.nexus.mes.pro.domain.*;
 import com.nexus.mes.pro.domain.vo.*;
 import com.nexus.mes.pro.mapper.*;
 import com.nexus.mes.pro.service.impl.*;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.time.Instant;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 通过既有详情服务读取实际批次及事件日志，并验证电脑端序列化契约。
@@ -22,8 +45,8 @@ class MesProductionDetailFactsTest {
     ProFlowCardServiceImpl flow;
     ProWorkOrderServiceImpl work;
     MesProductionDetailFactsService details;
-    java.util.concurrent.atomic.AtomicBoolean unknownPolicy;
-    java.util.concurrent.atomic.AtomicInteger policyReads;
+    AtomicBoolean unknownPolicy;
+    AtomicInteger policyReads;
 
     @BeforeEach
     void setup() {
@@ -66,26 +89,23 @@ class MesProductionDetailFactsTest {
         when(orders.selectVoById(10L)).thenReturn(order);
         when(orderSteps.selectVoList(any())).thenReturn(List.of());
         when(bom.selectVoList(any())).thenReturn(List.of());
-        unknownPolicy = new java.util.concurrent.atomic.AtomicBoolean();
-        policyReads = new java.util.concurrent.atomic.AtomicInteger();
+        unknownPolicy = new AtomicBoolean();
+        policyReads = new AtomicInteger();
         var frozen = f.f.mixed;
-        com.nexus.common.trace.port.WorkOrderTrackingPolicyPort bank =
+        WorkOrderTrackingPolicyPort bank =
                 (tenant, woId, material) -> {
-                    assertFalse(
-                            org.springframework.transaction.support
-                                    .TransactionSynchronizationManager.isActualTransactionActive());
+                    assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
                     policyReads.incrementAndGet();
                     if (unknownPolicy.get()) {
-                        return com.nexus.common.trace.WorkOrderTrackingPolicySnapshot.unknown(
+                        return WorkOrderTrackingPolicySnapshot.unknown(
                                 tenant, woId, material, "legacy policy unknown");
                     }
-                    var time = java.time.Instant.parse("2026-10-18T00:00:00Z");
-                    return new com.nexus.common.trace.WorkOrderTrackingPolicySnapshot(
+                    var time = Instant.parse("2026-10-18T00:00:00Z");
+                    return new WorkOrderTrackingPolicySnapshot(
                             tenant,
                             woId,
                             material,
-                            com.nexus.common.trace.WorkOrderTrackingPolicySnapshot.Provenance
-                                    .ERP_RELEASE,
+                            WorkOrderTrackingPolicySnapshot.Provenance.ERP_RELEASE,
                             frozen,
                             1,
                             "a".repeat(64),
@@ -97,10 +117,7 @@ class MesProductionDetailFactsTest {
                             null,
                             null);
                 };
-        var reader =
-                proxy(
-                        new com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader(
-                                f.f.jdbc, f.f.context, bank));
+        var reader = proxy(new MesWorkOrderTrackingPolicyReader(f.f.jdbc, f.f.context, bank));
         var target = new MesProductionDetailFactsService(f.f.jdbc, f.f.json, f.f.context, reader);
         ReflectionTestUtils.setField(target, "traceRelayEnabled", true);
         details = proxy(target);
@@ -110,21 +127,16 @@ class MesProductionDetailFactsTest {
 
     @SuppressWarnings("unchecked")
     private <T> T proxy(T target) {
-        var factory = new org.springframework.aop.framework.ProxyFactory(target);
+        var factory = new ProxyFactory(target);
         factory.setProxyTargetClass(true);
         factory.addAdvisor(
-                new com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor(
-                        new com.baomidou.dynamic.datasource.aop
-                                .DynamicDataSourceAnnotationInterceptor(
-                                true,
-                                new com.baomidou.dynamic.datasource.processor
-                                        .DsSpelExpressionProcessor()),
-                        com.baomidou.dynamic.datasource.annotation.DS.class));
-        var tx = new org.springframework.transaction.interceptor.TransactionInterceptor();
+                new DynamicDataSourceAnnotationAdvisor(
+                        new DynamicDataSourceAnnotationInterceptor(
+                                true, new DsSpelExpressionProcessor()),
+                        DS.class));
+        var tx = new TransactionInterceptor();
         tx.setTransactionManager(f.f.tx.getTransactionManager());
-        tx.setTransactionAttributeSource(
-                new org.springframework.transaction.annotation
-                        .AnnotationTransactionAttributeSource());
+        tx.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         factory.addAdvice(tx);
         return (T) factory.getProxy();
     }
@@ -234,17 +246,11 @@ class MesProductionDetailFactsTest {
     void contextUsesOriginalWorkOrderPolicyWhenCurrentMasterDrifts() {
         f.quota(7, 10, "IN_STOCK", "PASS");
         when(f.f.policies.policy("000001", 100L))
-                .thenReturn(
-                        new com.nexus.common.trace.TrackingPolicy(
-                                false,
-                                true,
-                                false,
-                                99L,
-                                com.nexus.common.trace.TrackingStage.STRICT));
+                .thenReturn(new TrackingPolicy(false, true, false, 99L, TrackingStage.STRICT));
         clearInvocations(f.f.policies);
         var context = flow.selectById(11L).getSteps().get(0).getProductOutputContext();
         assertNotNull(context);
-        var policy = (com.nexus.common.trace.TrackingPolicy) context.get("policy");
+        var policy = (TrackingPolicy) context.get("policy");
         assertTrue(policy.batchManaged());
         assertFalse(policy.serialManaged());
         assertEquals(1L, policy.version());
@@ -289,17 +295,17 @@ class MesProductionDetailFactsTest {
         var result = cancellationResult(manifest, request);
         String body = f.f.events.encode(result);
         var typed =
-                new com.nexus.common.trace.MaterialTraceEvent(
+                new MaterialTraceEvent(
                         "pc-cancel-result",
                         "000001",
                         "ERP",
-                        com.nexus.common.trace.CompletionCancellationResult.EVENT_TYPE,
-                        com.nexus.common.trace.CompletionCancellationResult.AGGREGATE_TYPE,
+                        CompletionCancellationResult.EVENT_TYPE,
+                        CompletionCancellationResult.AGGREGATE_TYPE,
                         manifest.manifestId(),
                         request.aggregateVersion(),
                         1,
                         body,
-                        com.nexus.common.trace.TraceHashes.sha256(body));
+                        TraceHashes.sha256(body));
         f.f.inTx(() -> f.f.deliver(typed));
         assertEquals(
                 "CANCELLED",
@@ -388,15 +394,15 @@ class MesProductionDetailFactsTest {
         assertTrue(context.path("nextCursor").isNull());
     }
 
-    private com.nexus.common.trace.CompletionManifest freeze() {
+    private CompletionManifest freeze() {
         long allocation = f.quota(7, 10, "IN_STOCK", "PASS");
         f.output(101, 7, allocation, 10, "GOOD");
         return f.freeze(10, 0);
     }
 
-    private com.nexus.common.trace.MaterialTraceEvent event(String id) {
+    private MaterialTraceEvent event(String id) {
         var row = f.f.jdbc.queryForMap("SELECT * FROM mes_trace_outbox WHERE event_id=?", id);
-        return new com.nexus.common.trace.MaterialTraceEvent(
+        return new MaterialTraceEvent(
                 id,
                 "000001",
                 "MES",
@@ -409,8 +415,7 @@ class MesProductionDetailFactsTest {
                 MesTraceSql.text(row.get("content_hash")));
     }
 
-    private com.nexus.common.trace.MaterialTraceEvent cancel(
-            com.nexus.common.trace.CompletionManifest manifest) {
+    private MaterialTraceEvent cancel(CompletionManifest manifest) {
         return event(
                 f.f.inTx(
                         () ->
@@ -424,11 +429,10 @@ class MesProductionDetailFactsTest {
                                                 1L)));
     }
 
-    private com.nexus.common.trace.CompletionCancellationResult cancellationResult(
-            com.nexus.common.trace.CompletionManifest manifest,
-            com.nexus.common.trace.MaterialTraceEvent request) {
+    private CompletionCancellationResult cancellationResult(
+            CompletionManifest manifest, MaterialTraceEvent request) {
         var original = f.f.events.read(request.payload()).path("originalEvent");
-        return new com.nexus.common.trace.CompletionCancellationResult(
+        return new CompletionCancellationResult(
                 request.eventId(),
                 request.eventId(),
                 original.path("eventId").asText(),
@@ -440,8 +444,7 @@ class MesProductionDetailFactsTest {
                 "UNPOSTED_CANCELLED");
     }
 
-    private com.nexus.common.trace.MaterialTraceEvent ack(
-            com.nexus.common.trace.MaterialTraceEvent origin, Object result) {
+    private MaterialTraceEvent ack(MaterialTraceEvent origin, Object result) {
         String body =
                 f.f.events.encode(
                         Map.of(
@@ -451,8 +454,8 @@ class MesProductionDetailFactsTest {
                                 origin.contentHash(),
                                 "resultPayload",
                                 f.f.events.encode(result)));
-        return new com.nexus.common.trace.MaterialTraceEvent(
-                com.nexus.common.trace.TraceHashes.fingerprint("pc-ack", origin.eventId()),
+        return new MaterialTraceEvent(
+                TraceHashes.fingerprint("pc-ack", origin.eventId()),
                 "000001",
                 "ERP",
                 "TRACE_APPLIED",
@@ -461,6 +464,6 @@ class MesProductionDetailFactsTest {
                 origin.aggregateVersion(),
                 1,
                 body,
-                com.nexus.common.trace.TraceHashes.sha256(body));
+                TraceHashes.sha256(body));
     }
 }

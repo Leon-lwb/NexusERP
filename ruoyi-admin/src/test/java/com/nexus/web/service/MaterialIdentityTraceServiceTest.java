@@ -1,15 +1,20 @@
 package com.nexus.web.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.IdentityTraceReadPort;
+
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
+
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.LongStream;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class MaterialIdentityTraceServiceTest {
     MockedStatic<TenantHelper> tenant;
@@ -246,8 +251,8 @@ class MaterialIdentityTraceServiceTest {
                                                         101L,
                                                         7L,
                                                         8L,
-                                                        new java.math.BigDecimal("2"),
-                                                        java.math.BigDecimal.ONE))
+                                                        new BigDecimal("2"),
+                                                        BigDecimal.ONE))
                                         : List.of(),
                                 null,
                                 false);
@@ -306,8 +311,8 @@ class MaterialIdentityTraceServiceTest {
                                                                 id,
                                                                 id,
                                                                 8L,
-                                                                java.math.BigDecimal.ONE,
-                                                                java.math.BigDecimal.ZERO))
+                                                                BigDecimal.ONE,
+                                                                BigDecimal.ZERO))
                                         .toList();
                         boolean more = all.size() > l;
                         var rows = all.stream().limit(l).toList();
@@ -416,8 +421,8 @@ class MaterialIdentityTraceServiceTest {
                                                         1L,
                                                         7L,
                                                         8L,
-                                                        java.math.BigDecimal.ONE,
-                                                        java.math.BigDecimal.ZERO))
+                                                        BigDecimal.ONE,
+                                                        BigDecimal.ZERO))
                                         : List.of(),
                                 null,
                                 false);

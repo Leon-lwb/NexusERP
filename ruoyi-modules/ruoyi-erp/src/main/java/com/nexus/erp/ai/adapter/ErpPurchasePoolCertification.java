@@ -1,8 +1,8 @@
 package com.nexus.erp.ai.adapter;
 
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.*;
+import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseDemandAllocator.*;
 import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.*;
@@ -10,6 +10,7 @@ import com.nexus.erp.pu.service.PuRequirementCompetitionPoolReader.RawLockedFact
 
 import java.math.BigDecimal;
 import java.time.*;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -241,7 +242,9 @@ final class ErpPurchasePoolCertification {
             try {
                 Instant at = LocalDateTime.parse(receipt.postedAt().replace(' ', 'T')).toInstant(DATABASE_ZONE);
                 require(at.isAfter(Instant.EPOCH) && !at.isAfter(lineage.snapshotAt()), "原过账时点未知或在来源快照之后");
-            } catch (java.time.format.DateTimeParseException invalid) { throw failed("原过账时点不是有效日期"); }
+            } catch (DateTimeParseException invalid) {
+                throw failed("原过账时点不是有效日期");
+            }
             sum = sum.add(receipt.quantity());
         }
         require(equal(sum, proof.fulfilledBaseQty()), "逐原收货数量与账本履约净额不守恒");

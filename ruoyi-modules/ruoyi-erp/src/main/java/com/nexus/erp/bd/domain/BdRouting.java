@@ -1,13 +1,15 @@
 package com.nexus.erp.bd.domain;
 
 import cn.idev.excel.annotation.ExcelProperty;
+
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.tenant.core.TenantEntity;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -134,9 +136,7 @@ public class BdRouting extends TenantEntity {
      */
     private Long attr4;
 
-    /**
-     * 删除标志
-     */
-    @com.baomidou.mybatisplus.annotation.TableLogic
+    /** 删除标志 */
+    @TableLogic
     private String delFlag;
 }

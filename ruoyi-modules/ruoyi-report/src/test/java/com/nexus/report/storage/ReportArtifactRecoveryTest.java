@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
@@ -190,8 +193,8 @@ class ReportArtifactRecoveryTest {
      *
      * @param change 当前操作的 {@code change} 输入
      */
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"MISSING", "REPLACED"})
+    @ParameterizedTest
+    @ValueSource(strings = {"MISSING", "REPLACED"})
     void aDisappearingTenantDirectoryDoesNotResetProgressForLaterTenants(String change)
             throws Exception {
         var store = new LocalReportArtifactStore(directory, 1024 * 1024);
@@ -200,9 +203,7 @@ class ReportArtifactRecoveryTest {
         age(store.read("B", reference));
         var folders = new TrackedDirectory(List.of(directory.resolve("A"), directory.resolve("B")));
         Set<String> seen = new HashSet<>();
-        try (var files =
-                org.mockito.Mockito.mockStatic(
-                        Files.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+        try (var files = Mockito.mockStatic(Files.class, Mockito.CALLS_REAL_METHODS)) {
             files.when(() -> Files.newDirectoryStream(directory)).thenReturn(folders);
             files.when(() -> Files.newDirectoryStream(directory.resolve("A")))
                     .thenThrow(
@@ -232,9 +233,7 @@ class ReportArtifactRecoveryTest {
         age(candidate);
         var folders = new TrackedDirectory(List.of(directory.resolve("A")));
         var files = new TrackedDirectory(Collections.nCopies(1001, candidate));
-        try (var system =
-                org.mockito.Mockito.mockStatic(
-                        Files.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+        try (var system = Mockito.mockStatic(Files.class, Mockito.CALLS_REAL_METHODS)) {
             system.when(() -> Files.newDirectoryStream(directory)).thenReturn(folders);
             system.when(() -> Files.newDirectoryStream(directory.resolve("A"))).thenReturn(files);
             store.reap(Instant.now().minusSeconds(86400), (tenant, ref) -> true);

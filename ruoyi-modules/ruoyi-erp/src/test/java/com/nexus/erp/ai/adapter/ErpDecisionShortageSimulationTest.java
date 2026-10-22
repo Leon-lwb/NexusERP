@@ -1,16 +1,32 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.ArrivalFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.StockFact;
-import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
+import com.nexus.erp.prd.schedule.PrdShortageInput;
 import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -22,20 +38,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @Tag("dev")
 class ErpDecisionShortageSimulationTest {
@@ -202,12 +204,19 @@ class ErpDecisionShortageSimulationTest {
     void isolatesScenarioFailureButRejectsInvalidOverrideGlobally() {
         PrdShortageScenarioService delegate = new PrdShortageScenarioService();
         PrdShortageScenarioService broken = mock(PrdShortageScenarioService.class);
-        doAnswer(call -> {
-            if (call.<com.nexus.erp.prd.schedule.PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
-                throw new IllegalStateException("service unavailable");
-            }
-            return delegate.simulate(call.getArgument(0), call.getArgument(1), call.getArgument(2), call.getArgument(3));
-        }).when(broken).simulate(any(), any(), any(), eq(TODAY));
+        doAnswer(
+                        call -> {
+                            if (call.<PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
+                                throw new IllegalStateException("service unavailable");
+                            }
+                            return delegate.simulate(
+                                    call.getArgument(0),
+                                    call.getArgument(1),
+                                    call.getArgument(2),
+                                    call.getArgument(3));
+                        })
+                .when(broken)
+                .simulate(any(), any(), any(), eq(TODAY));
         ErpDecisionShortageSimulation isolated = new ErpDecisionShortageSimulation(broken);
         DeliveryContextSnapshot snapshot = snapshot(
             List.of(requirement(101L, TODAY, "10", 11L), requirement(102L, TODAY, "4", 22L)),
@@ -352,12 +361,20 @@ class ErpDecisionShortageSimulationTest {
     void failedMaterialWithOnlyNoRiskSuccessfulMaterialsThrowsIncomplete() {
         PrdShortageScenarioService delegate = new PrdShortageScenarioService();
         PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
-        doAnswer(call -> {
-            if (call.<com.nexus.erp.prd.schedule.PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
-                throw new ErpDecisionShortageSimulation.MaterialSimulationException("recoverable failure");
-            }
-            return delegate.simulate(call.getArgument(0), call.getArgument(1), call.getArgument(2), call.getArgument(3));
-        }).when(service).simulate(any(), any(), any(), eq(TODAY));
+        doAnswer(
+                        call -> {
+                            if (call.<PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
+                                throw new ErpDecisionShortageSimulation.MaterialSimulationException(
+                                        "recoverable failure");
+                            }
+                            return delegate.simulate(
+                                    call.getArgument(0),
+                                    call.getArgument(1),
+                                    call.getArgument(2),
+                                    call.getArgument(3));
+                        })
+                .when(service)
+                .simulate(any(), any(), any(), eq(TODAY));
         DeliveryContextSnapshot snapshot = snapshot(
             List.of(requirement(101L, TODAY, "5", 11L), requirement(102L, TODAY, "1", 22L)),
             List.of(stock(101L, "0", "0", "0"), stock(102L, "2", "0", "0")), List.of(), null);
@@ -552,12 +569,20 @@ class ErpDecisionShortageSimulationTest {
     void explicitlyRecoverableMaterialFailureKeepsKnownItemWithoutFullTotals() {
         PrdShortageScenarioService delegate = new PrdShortageScenarioService();
         PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
-        doAnswer(call -> {
-            if (call.<com.nexus.erp.prd.schedule.PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
-                throw new ErpDecisionShortageSimulation.MaterialSimulationException("recoverable failure");
-            }
-            return delegate.simulate(call.getArgument(0), call.getArgument(1), call.getArgument(2), call.getArgument(3));
-        }).when(service).simulate(any(), any(), any(), eq(TODAY));
+        doAnswer(
+                        call -> {
+                            if (call.<PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
+                                throw new ErpDecisionShortageSimulation.MaterialSimulationException(
+                                        "recoverable failure");
+                            }
+                            return delegate.simulate(
+                                    call.getArgument(0),
+                                    call.getArgument(1),
+                                    call.getArgument(2),
+                                    call.getArgument(3));
+                        })
+                .when(service)
+                .simulate(any(), any(), any(), eq(TODAY));
         DeliveryContextSnapshot snapshot = snapshot(
             List.of(requirement(101L, TODAY, "10", 11L), requirement(102L, TODAY, "4", 22L)),
             List.of(stock(101L, "0", "0", "0"), stock(102L, "1", "0", "0")), List.of(), null);

@@ -1,5 +1,9 @@
 package com.nexus.ai.service.facade;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.context.AiRequestContext;
@@ -13,6 +17,7 @@ import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.agent.AgentBuilder;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
@@ -22,12 +27,13 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.ModelProvider;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.ChatResponseMetadata;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.output.FinishReason;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -35,6 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +49,8 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+// 同名类型说明：本文件同时使用 dev.langchain4j.data.message.AiMessage 和
+// com.nexus.common.ai.domain.entity.AiMessage，后者保留全限定名以区分。
 
 /** 执行真实 Facade 的异步上下文、结果落库与 SSE 控制流，仅隔离模型/Agent 与持久化边界。 */
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -90,8 +96,12 @@ class AiServiceFacadeBulkQueryTest {
         for (Class<?> type : constructor.getParameterTypes()) {
             dependencies.computeIfAbsent(type, key -> key == Executor.class ? (Executor) Runnable::run : mock(key));
         }
-        AiServiceFacade facade = (AiServiceFacade) constructor.newInstance(java.util.Arrays.stream(constructor.getParameterTypes())
-            .map(dependencies::get).toArray());
+        AiServiceFacade facade =
+                (AiServiceFacade)
+                        constructor.newInstance(
+                                Arrays.stream(constructor.getParameterTypes())
+                                        .map(dependencies::get)
+                                        .toArray());
         ChatModel rawModel = mock(ChatModel.class);
         ChatRequestParameters parameters = ChatRequestParameters.builder().build();
         when(rawModel.defaultRequestParameters()).thenReturn(parameters);

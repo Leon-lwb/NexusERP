@@ -1,10 +1,24 @@
 package com.nexus.erp.prd.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.message.WorkOrderReleaseMessage;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.common.trace.CompletionManifest;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdWorkshop;
@@ -14,56 +28,52 @@ import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdWorkshopMapper;
 import com.nexus.erp.bd.service.IBdBomService;
+import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
-import lombok.RequiredArgsConstructor;
-import com.nexus.common.core.domain.R;
-import com.nexus.common.core.utils.MapstructUtils;
-import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.flowable.core.domain.ActStatus;
-import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
-import com.nexus.common.mybatis.core.page.PageQuery;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdWorkOrderBo;
 import com.nexus.erp.prd.domain.enums.WoStatusEnum;
 import com.nexus.erp.prd.domain.vo.PrdWorkOrderVo;
-import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
-import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
-import com.nexus.erp.prd.service.IPrdWorkOrderService;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
+import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
+import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
+import com.nexus.erp.prd.mapper.ProductionCompletionPostingMapper;
+import com.nexus.erp.prd.service.IPrdWorkOrderService;
+import com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService;
+import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
-import com.nexus.common.mq.constant.ExchangeConstants;
-import com.nexus.common.mq.constant.RoutingKeyConstants;
-import com.nexus.common.mq.producer.ReliableMessageProducer;
-import com.nexus.erp.mq.message.ProductionCompleteMessage;
-import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.erp.wm.service.IWmStockReservationService;
-import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 生产工单服务业务层实现
@@ -77,16 +87,16 @@ import java.util.Objects;
 @DS("erp")
 @Service("prdWorkOrderService")
 public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.prd.mapper.ProductionCompletionPostingMapper manifestSourceMapper;
+    @Autowired
+    private ProductionCompletionPostingMapper manifestSourceMapper;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService trackingPolicies;
+    @Autowired
+    private PrdWorkOrderTrackingPolicyService trackingPolicies;
 
-    @org.springframework.beans.factory.annotation.Value("${nexus.trace.relay.enabled:false}")
+    @Value("${nexus.trace.relay.enabled:false}")
     private boolean traceRelayEnabled;
 
     /**
@@ -358,17 +368,14 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
          * 事务提交后发送工单下达消息到MES队列
          */
         final PrdWorkOrder msgEntity = wo;
-        org.springframework.transaction.support.TransactionSynchronizationManager
-                .registerSynchronization(
-                        new TransactionSynchronization() {
-                            /**
-                             * 事务提交后回调：发送工单下达消息到 MES 队列
-                             */
-                            @Override
-                            public void afterCommit() {
-                                sendWorkOrderReleaseMessage(msgEntity, routingId);
-                            }
-                        });
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    /** 事务提交后回调：发送工单下达消息到 MES 队列 */
+                    @Override
+                    public void afterCommit() {
+                        sendWorkOrderReleaseMessage(msgEntity, routingId);
+                    }
+                });
     }
 
     /**
@@ -661,25 +668,23 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         completeInternal(woId, completeQty, scrapQty, true, null);
     }
 
-    /**
-     * 仅由冻结清单ERP入口调用；调用者已持有真实工单行锁且同事务复核清单。
-     */
+    /** 仅由冻结清单ERP入口调用；调用者已持有真实工单行锁且同事务复核清单。 */
     @Transactional(rollbackFor = Exception.class)
-    public void completeFromManifest(com.nexus.common.trace.CompletionManifest manifest) {
+    public void completeFromManifest(CompletionManifest manifest) {
         if (manifest == null
-                || !java.util.Set.of("FROZEN", "APPLIED", "RECEIVED").contains(manifest.status())
-                || !java.util.Objects.equals(TenantHelper.getTenantId(), manifest.tenantId())
+                || !Set.of("FROZEN", "APPLIED", "RECEIVED").contains(manifest.status())
+                || !Objects.equals(TenantHelper.getTenantId(), manifest.tenantId())
                 || manifest.goodQty() == null
                 || manifest.goodQty().signum() < 0
                 || manifest.scrapQty() == null
                 || manifest.scrapQty().signum() < 0
                 || manifest.goodQty().add(manifest.scrapQty()).signum() <= 0) {
-            throw new com.nexus.common.core.exception.ServiceException("最终冻结清单来源或数量无效");
+            throw new ServiceException("最终冻结清单来源或数量无效");
         }
         PrdWorkOrder wo =
                 manifestSourceMapper.lockWorkOrder(TenantHelper.getTenantId(), manifest.erpWoId());
         if (wo == null
-                || !java.util.Objects.equals(wo.getMaterialId(), manifest.materialId())
+                || !Objects.equals(wo.getMaterialId(), manifest.materialId())
                 || wo.getPlannedQty() == null
                 || wo.getCompletedQty() == null
                 || wo.getScrapQty() == null
@@ -689,7 +694,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
                                 .add(manifest.scrapQty())
                                 .compareTo(wo.getPlannedQty())
                         > 0) {
-            throw new com.nexus.common.core.exception.ServiceException("清单物料、原计划或剩余可完成数量不符");
+            throw new ServiceException("清单物料、原计划或剩余可完成数量不符");
         }
         completeInternal(manifest.erpWoId(), manifest.goodQty(), manifest.scrapQty(), false, wo);
     }
@@ -707,8 +712,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (publishLegacy
                 && serialInventory != null
                 && serialInventory.isStrictSerial(wo.getMaterialId())) {
-            throw new com.nexus.common.core.exception.ServiceException(
-                    "STRICT单件工单必须由最终冻结清单完成，不能触发旧数量MQ路径");
+            throw new ServiceException("STRICT单件工单必须由最终冻结清单完成，不能触发旧数量MQ路径");
         }
         WoStatusEnum currentStatus = WoStatusEnum.fromCode(wo.getWoStatus());
         if (currentStatus == null) {

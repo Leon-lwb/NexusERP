@@ -1,5 +1,8 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
@@ -7,10 +10,12 @@ import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.Head;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.Posting;
 import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.service.impl.WmStockOperationServiceImpl;
 import com.nexus.erp.wm.strategy.StockOperationStrategy;
 import com.nexus.erp.wm.strategy.StockOperationStrategyFactory;
 import com.nexus.erp.wm.strategy.impl.ProductionIssueStrategy;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.aop.framework.ProxyFactory;
@@ -21,13 +26,12 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.List;
+import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 /**
  * 使用真实服务及守卫的事务代理；JDBC 与来源端口使用测试替身，不连接数据库。
@@ -241,8 +245,7 @@ class WmStockOperationServiceImplTest {
             this(context -> {});
         }
 
-        Fixture(java.util.function.Consumer<AnnotationConfigApplicationContext> beforeRefresh)
-                throws Exception {
+        Fixture(Consumer<AnnotationConfigApplicationContext> beforeRefresh) throws Exception {
             tenants = mockStatic(TenantHelper.class);
             try {
                 tenants.when(TenantHelper::isEnable).thenReturn(true);
@@ -264,8 +267,7 @@ class WmStockOperationServiceImplTest {
                 context.registerBean(StockOperationStrategyFactory.class, () -> factory);
                 context.registerBean(ProductionIssueStrategy.class, () -> production);
                 context.registerBean(
-                        com.nexus.erp.wm.service.WmSerialInventoryService.class,
-                        () -> mock(com.nexus.erp.wm.service.WmSerialInventoryService.class));
+                        WmSerialInventoryService.class, () -> mock(WmSerialInventoryService.class));
                 context.registerBean(WmCertifiedReceiptMutationGuard.class, () -> guard);
                 context.registerBean(WmStockOperationServiceImpl.class);
                 beforeRefresh.accept(context);

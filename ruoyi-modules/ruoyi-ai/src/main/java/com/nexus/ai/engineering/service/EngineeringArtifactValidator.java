@@ -8,9 +8,12 @@ import com.nexus.ai.engineering.domain.EngineeringUploadRequest;
 import com.nexus.common.ai.engineering.*;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.imageio.ImageIO;
 
@@ -105,10 +108,8 @@ public final class EngineeringArtifactValidator {
         // 仅检查归档目录，永不解压到服务器；源工程始终以附件下载。
         int files = 0;
         long totalExpanded = 0;
-        try (var zip =
-                new java.util.zip.ZipInputStream(
-                        Files.newInputStream(path), StandardCharsets.UTF_8)) {
-            java.util.zip.ZipEntry entry;
+        try (var zip = new ZipInputStream(Files.newInputStream(path), StandardCharsets.UTF_8)) {
+            ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
                 require(++files <= 4096, 413, "UPLOAD_TOO_LARGE", "工程归档条目过多");
                 String name = entry.getName();
@@ -275,7 +276,7 @@ public final class EngineeringArtifactValidator {
                                         && !value.isNull()
                                         && (value.isTextual() || value.isNumber())
                                         && value.asText().matches("[0-9]{1,9}(\\.[0-9]{1,6})?")
-                                        && new java.math.BigDecimal(value.asText()).signum() > 0,
+                                        && new BigDecimal(value.asText()).signum() > 0,
                                 422,
                                 "ARTIFACT_FORMAT_INVALID",
                                 "BOM数量格式无效");

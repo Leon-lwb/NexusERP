@@ -1,12 +1,12 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.sch.domain.SchAttendance;
@@ -24,11 +24,16 @@ import com.nexus.erp.sch.mapper.SchPlanTeamMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.service.ISchPlanService;
+import com.nexus.system.strategy.AutoCodeUtil;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * 排班计划Service业务层处理
@@ -47,14 +52,14 @@ public class SchPlanServiceImpl implements ISchPlanService {
     private final SchEmployeeScheduleMapper schEmployeeScheduleMapper;
     private final SchPlanTeamMapper schPlanTeamMapper;
     private final SchAttendanceMapper schAttendanceMapper;
-    private final com.nexus.system.strategy.AutoCodeUtil autoCodeUtil;
+    private final AutoCodeUtil autoCodeUtil;
 
     /** 排班计划状态机(ERP-SCH-12): draft 草稿 → published 已发布 → closed 已关闭 */
-    private static final java.util.Set<String> ALLOWED_STATUS = java.util.Set.of("draft", "published", "closed");
+    private static final Set<String> ALLOWED_STATUS = Set.of("draft", "published", "closed");
 
     /** 周期类型字典 sch_plan_period_type */
-    private static final java.util.Set<String> ALLOWED_PERIOD_TYPES =
-        java.util.Set.of("week", "month", "quarter", "year");
+    private static final Set<String> ALLOWED_PERIOD_TYPES =
+            Set.of("week", "month", "quarter", "year");
 
     /**
      * 分页查询排班计划列表
@@ -109,7 +114,7 @@ public class SchPlanServiceImpl implements ISchPlanService {
         Long exist = baseMapper.selectCount(Wrappers.<SchPlan>lambdaQuery()
             .eq(SchPlan::getPlanCode, entity.getPlanCode()));
         if (exist != null && exist > 0) {
-            throw new com.nexus.common.core.exception.ServiceException("计划编码已存在: " + entity.getPlanCode());
+            throw new ServiceException("计划编码已存在: " + entity.getPlanCode());
         }
         normalizeDictValues(entity);
         return baseMapper.insert(entity);
@@ -165,9 +170,15 @@ public class SchPlanServiceImpl implements ISchPlanService {
         List<Long> idList = List.of(ids);
         // ERP-SCH-13: 排班明细一旦被考勤引用, 级联删除会让考勤 schedule_id 悬空、历史班次不可复现。
         // 删除前先拦截"已有考勤引用"的计划, 交由人工先处理考勤(或改为 closed 关闭而非删除)。
-        List<Long> scheduleIds = schEmployeeScheduleMapper.selectList(
-                Wrappers.<SchEmployeeSchedule>lambdaQuery().in(SchEmployeeSchedule::getPlanId, idList))
-            .stream().map(SchEmployeeSchedule::getScheduleId).filter(java.util.Objects::nonNull).toList();
+        List<Long> scheduleIds =
+                schEmployeeScheduleMapper
+                        .selectList(
+                                Wrappers.<SchEmployeeSchedule>lambdaQuery()
+                                        .in(SchEmployeeSchedule::getPlanId, idList))
+                        .stream()
+                        .map(SchEmployeeSchedule::getScheduleId)
+                        .filter(Objects::nonNull)
+                        .toList();
         if (!scheduleIds.isEmpty()) {
             Long referenced = schAttendanceMapper.selectCount(
                 Wrappers.<SchAttendance>lambdaQuery().in(SchAttendance::getScheduleId, scheduleIds));

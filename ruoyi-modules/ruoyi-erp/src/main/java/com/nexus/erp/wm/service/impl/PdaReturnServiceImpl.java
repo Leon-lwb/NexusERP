@@ -1,6 +1,7 @@
 package com.nexus.erp.wm.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -20,7 +21,11 @@ import com.nexus.erp.wm.mapper.WmMaterialReturnLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReturnMapper;
 import com.nexus.erp.wm.service.IPdaReturnService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,8 +44,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PdaReturnServiceImpl implements IPdaReturnService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     private final WmMaterialReturnMapper returnMapper;
     private final WmMaterialReturnLineMapper lineMapper;

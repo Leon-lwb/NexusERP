@@ -1,10 +1,12 @@
 package com.nexus.report.subscription;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.nexus.common.report.*;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.engine.ReportCompiler;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.runtime.ReportRuntimeService.SourceConstraint;
+import com.nexus.report.service.ReportDefinitionService;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -25,7 +27,7 @@ public final class ReportSubscriptionAccessGuard {
     private final ReportCompiler json;
 
     /** 固定报表绑定与当前权限校验服务。 */
-    private final com.nexus.report.service.ReportDefinitionService definitions;
+    private final ReportDefinitionService definitions;
 
     /**
      * 依赖身份端口和主库元数据，不依赖登录ThreadLocal或运行服务。
@@ -41,7 +43,7 @@ public final class ReportSubscriptionAccessGuard {
             JdbcTemplate jdbc,
             ReportAuthorizationPort authorization,
             ReportCompiler json,
-            com.nexus.report.service.ReportDefinitionService definitions) {
+            ReportDefinitionService definitions) {
         this.resources = resources;
         this.jdbc = jdbc;
         this.authorization = authorization;
@@ -74,8 +76,7 @@ public final class ReportSubscriptionAccessGuard {
         var fixedModel = json.read(fixed.json(), SubscriptionDefinition.class);
         var ownerBinding = definitions.fixedBinding(owner, fixedModel.reportVersionId());
         definitions.requireDatasetExport(owner, ownerBinding);
-        var dependency =
-                json.read(fixed.dependency(), com.fasterxml.jackson.databind.JsonNode.class);
+        var dependency = json.read(fixed.dependency(), JsonNode.class);
         if (!definitions
                 .fingerprint(owner, ownerBinding)
                 .equals(dependency.path("ownerFingerprint").asText()))

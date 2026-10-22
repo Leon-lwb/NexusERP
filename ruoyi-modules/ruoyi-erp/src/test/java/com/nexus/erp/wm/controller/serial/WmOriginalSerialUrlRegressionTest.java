@@ -1,18 +1,25 @@
 package com.nexus.erp.wm.controller.serial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.nexus.common.trace.TrackingPolicy;
+import com.nexus.common.trace.TrackingStage;
 import com.nexus.erp.wm.controller.*;
 import com.nexus.erp.wm.controller.app.AppPdaIssueController;
+import com.nexus.erp.wm.domain.bo.WmSerialSelectionBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.service.*;
+
 import org.junit.jupiter.api.Test;
-import java.util.List;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 通过真实旧controller URL/body和生产适配链验证，不以源码正则代替行为。
@@ -39,7 +46,7 @@ class WmOriginalSerialUrlRegressionTest {
                                 .content(
                                         "{\"commandId\":\"old-url-command\",\"wmMiscRecptLineList\":[{\"lineId\":\"11\",\"detailVersion\":\"opaque:事实/一\",\"snItems\":[{\"identityId\":\"9007199254740993\",\"batchId\":\"50\"}]}]}"))
                 .andExpect(status().isOk());
-        var capture = ArgumentCaptor.forClass(com.nexus.erp.wm.domain.bo.WmSerialSelectionBo.class);
+        var capture = ArgumentCaptor.forClass(WmSerialSelectionBo.class);
         verify(f.selections).freeze(capture.capture());
         var bo = capture.getValue();
         assertEquals(9007199254740993L, bo.getSnItems().get(0).identityId());
@@ -81,8 +88,8 @@ class WmOriginalSerialUrlRegressionTest {
                         1,
                         "fp",
                         "hash",
-                        java.math.BigDecimal.ONE,
-                        java.math.BigDecimal.ZERO,
+                        BigDecimal.ONE,
+                        BigDecimal.ZERO,
                         "POSTED",
                         null);
         f.frozen = List.of(f.item(101));
@@ -112,8 +119,8 @@ class WmOriginalSerialUrlRegressionTest {
                         1,
                         "fp",
                         "hash",
-                        java.math.BigDecimal.ONE,
-                        java.math.BigDecimal.ZERO,
+                        BigDecimal.ONE,
+                        BigDecimal.ZERO,
                         "POSTED",
                         null);
         f.frozen = List.of(f.item(101));
@@ -160,9 +167,7 @@ class WmOriginalSerialUrlRegressionTest {
     @Test
     void ordinaryQuantityRequestStillUsesOriginalUrlWithoutSnOrVersion() throws Exception {
         var f = new SerialAdapterFixture();
-        f.policy =
-                new com.nexus.common.trace.TrackingPolicy(
-                        false, false, true, 1L, com.nexus.common.trace.TrackingStage.AUDIT);
+        f.policy = new TrackingPolicy(false, false, true, 1L, TrackingStage.AUDIT);
         var stock = mock(IWmMiscRecptService.class);
         var mvc =
                 MockMvcBuilders.standaloneSetup(f.proxy(new WmMiscRecptController(stock)))

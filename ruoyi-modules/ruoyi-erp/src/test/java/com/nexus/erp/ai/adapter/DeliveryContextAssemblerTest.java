@@ -1,5 +1,23 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.support.DataSourceClassResolver;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -10,33 +28,37 @@ import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
+import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdRoutingStep;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.BdWorkstation;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.bd.mapper.BdWorkstationMapper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
-import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
+import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
-import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
-import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
-import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
-import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
+import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
@@ -50,10 +72,6 @@ import com.nexus.erp.pu.domain.PuVendorEvaluation;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuVendorEvaluationMapper;
-import com.nexus.erp.so.domain.SoSalesOrderHeader;
-import com.nexus.erp.so.domain.SoSalesOrderLine;
-import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
-import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.SchLeaveApply;
@@ -64,8 +82,13 @@ import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchLeaveApplyMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import com.nexus.erp.sch.mapper.SchTeamMapper;
+import com.nexus.erp.so.domain.SoSalesOrderHeader;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,10 +108,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -102,28 +127,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
-/**
- * ERP 工业决策上下文装配测试：作用域必须精确，展示快照与可重算指纹必须稳定；
- * 校验失败时必须拒绝。
- */
+/** ERP 工业决策上下文装配测试：作用域必须精确，展示快照与可重算指纹必须稳定； 校验失败时必须拒绝。 */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @Tag("dev")
@@ -156,7 +162,7 @@ class DeliveryContextAssemblerTest {
     @Mock
     private BdMaterialMapper materialMapper;
     @Mock
-    private com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper evidenceUnitMapper;
+    private BdUnitOfMeasureMapper evidenceUnitMapper;
     @Mock
     private BdRoutingMapper routingMapper;
     @Mock
@@ -1347,7 +1353,7 @@ class DeliveryContextAssemblerTest {
         List<Map<String, Object>> observedCalendars = (List<Map<String, Object>>) schedule.get("capacityCalendars");
         assertEquals("4.00", new BigDecimal((String) observedCalendars.get(0).get("ledgerHours"))
             .setScale(2).toPlainString());
-        var observed = com.nexus.common.ai.decision.util.SavedScheduleCapacity.measure(schedule);
+        var observed = SavedScheduleCapacity.measure(schedule);
         assertNotNull(observed, "only the owned booking plus a reconciled shared calendar proves utilization");
         assertEquals(0, new BigDecimal("50.0").compareTo(observed.maxUtilization()));
         verify(taskDayLoadMapper, atLeastOnce()).selectList(argThat(query ->
@@ -1405,9 +1411,10 @@ class DeliveryContextAssemblerTest {
         assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
             "an undisplayed task must still match its own process plus setup total");
         unshownTask.setProcessHours(new BigDecimal("0.50"));
-        assertNotNull(com.nexus.common.ai.decision.util.SavedScheduleCapacity.measure(
-            assembler.assemble(fixture.ref(), 14, fixture.actor()).currentSchedule()),
-            "a valid task from the same plan may be outside the decision's displayed work orders");
+        assertNotNull(
+                SavedScheduleCapacity.measure(
+                        assembler.assemble(fixture.ref(), 14, fixture.actor()).currentSchedule()),
+                "a valid task from the same plan may be outside the decision's displayed work orders");
         includeUnshownTask.set(false);
         calendar.setPlannedHours(new BigDecimal("4"));
         includeEarlierVerifiedDay.set(true);
@@ -1417,8 +1424,9 @@ class DeliveryContextAssemblerTest {
         var savedAcrossBoundary = assembler.assemble(fixture.ref(), 14, fixture.actor()).currentSchedule();
         assertEquals(2, ((List<?>) savedAcrossBoundary.get("taskDayLoads")).size());
         assertEquals(2, ((List<?>) savedAcrossBoundary.get("capacityBookings")).size());
-        assertNotNull(com.nexus.common.ai.decision.util.SavedScheduleCapacity.measure(savedAcrossBoundary),
-            "an older verified calendar may be outside today's APS input window without invalidating a published plan");
+        assertNotNull(
+                SavedScheduleCapacity.measure(savedAcrossBoundary),
+                "an older verified calendar may be outside today's APS input window without invalidating a published plan");
         String earlierHash = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
         earlierCalendar.setShiftId(700L);
         assertNotEquals(earlierHash, assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
@@ -1906,11 +1914,14 @@ class DeliveryContextAssemblerTest {
         assertEquals(new BigDecimal("2"), snapshot.arrivals().stream()
             .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow().remainingQty());
         // 缺失事实由专属证据拒绝类型表达，不再用已废弃的通用消息字符串判断。
-        var failure = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
-            () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
-                .simulate(snapshot, 14, null));
-        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE,
-            failure.reason());
+        var failure =
+                assertThrows(
+                        DecisionEvidenceException.class,
+                        () ->
+                                new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+                                        .simulate(snapshot, 14, null));
+        assertEquals(
+                DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, failure.reason());
     }
 
     @Test
@@ -1933,10 +1944,14 @@ class DeliveryContextAssemblerTest {
         assertNull(stock.safetyStock());
         assertFalse(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
         assertTrue(snapshot.warnings().contains("UNKNOWN_STOCK_SOURCE:501"));
-        var failure = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
-            () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService()).simulate(snapshot, 14, null));
-        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE,
-            failure.reason());
+        var failure =
+                assertThrows(
+                        DecisionEvidenceException.class,
+                        () ->
+                                new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+                                        .simulate(snapshot, 14, null));
+        assertEquals(
+                DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, failure.reason());
     }
 
 
@@ -1949,10 +1964,14 @@ class DeliveryContextAssemblerTest {
         var snapshot=assembler.assemble(f.ref(),14,f.actor());
         assertTrue(snapshot.stocks().stream().allMatch(x -> x.stockQty()==null && x.reservedQty()==null));
         assertTrue(snapshot.warnings().contains("UNKNOWN_STOCK_SOURCE:501"));
-        var rejected = assertThrows(com.nexus.common.ai.decision.exception.DecisionEvidenceException.class,
-            () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService()).simulate(snapshot, 14, null));
-        assertEquals(com.nexus.common.ai.decision.exception.DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE,
-            rejected.reason());
+        var rejected =
+                assertThrows(
+                        DecisionEvidenceException.class,
+                        () ->
+                                new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+                                        .simulate(snapshot, 14, null));
+        assertEquals(
+                DecisionEvidenceException.Reason.SHORTAGE_SIMULATION_INCOMPLETE, rejected.reason());
     }
 
     @Test
@@ -2384,8 +2403,9 @@ class DeliveryContextAssemblerTest {
     }
 
     private LocalDate toLocalDate(Date date) {
-        return java.time.Instant.ofEpochMilli(date.getTime())
-            .atZone(ZoneId.of("Asia/Shanghai")).toLocalDate();
+        return Instant.ofEpochMilli(date.getTime())
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toLocalDate();
     }
 
     private Date toDateTime(int year, int month, int day, int hour, int minute) {
@@ -2433,10 +2453,11 @@ class DeliveryContextAssemblerTest {
         detail.setTenantId("000000"); detail.setUnit("56");
         var master = material(501L, "0");
         master.setTenantId("000000"); master.setStatus(1L); master.setDelFlag("0");
-        var unit = new com.nexus.erp.bd.domain.BdUnitOfMeasure();
+        var unit = new BdUnitOfMeasure();
         unit.setUomId(56L); unit.setTenantId("000000"); unit.setStatus(1L); unit.setDelFlag("0");
         unit.setPrimaryId(56L); unit.setIsBase(1L); unit.setConversionRate(BigDecimal.ONE); unit.setQuantityScale(0);
-        unit.setConversionVersion("CONFIRMED_TEST_ROOT"); unit.setConversionVerifiedAt(new java.util.Date());
+        unit.setConversionVersion("CONFIRMED_TEST_ROOT");
+        unit.setConversionVerifiedAt(new Date());
         when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(801L, 701L)));
         when(requirementDetailMapper.selectList(any())).thenReturn(List.of(detail));
         when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(master));
@@ -2461,10 +2482,11 @@ class DeliveryContextAssemblerTest {
         detail.setTenantId("000000"); detail.setUnit("56");
         var master = material(501L, "0");
         master.setTenantId("000000"); master.setStatus(1L); master.setDelFlag("0");
-        var unit = new com.nexus.erp.bd.domain.BdUnitOfMeasure();
+        var unit = new BdUnitOfMeasure();
         unit.setUomId(56L); unit.setTenantId("000000"); unit.setStatus(1L); unit.setDelFlag("0");
         unit.setPrimaryId(56L); unit.setIsBase(1L); unit.setConversionRate(BigDecimal.ONE); unit.setQuantityScale(0);
-        unit.setConversionVersion("CONFIRMED_TEST_ROOT"); unit.setConversionVerifiedAt(new java.util.Date());
+        unit.setConversionVersion("CONFIRMED_TEST_ROOT");
+        unit.setConversionVerifiedAt(new Date());
         when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(801L, 701L)));
         when(requirementDetailMapper.selectList(any())).thenReturn(List.of(detail));
         when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(master));
@@ -2484,7 +2506,7 @@ class DeliveryContextAssemblerTest {
         assertTrue(changed.warnings().stream().anyMatch(w -> w.startsWith("UNKNOWN_ARRIVAL_UNIT:")));
         assertNotEquals(hash, changed.snapshotHash(), "不能把1000克默认成基础单位1000千克且保留旧指纹");
         arrivalLine.setUnit("56");
-        for (Long base : java.util.Arrays.asList(0L, null)) {
+        for (Long base : Arrays.asList(0L, null)) {
             unit.setIsBase(base);
             var invalid = assembler.assemble(fixture.ref(), 14, fixture.actor());
             assertNull(invalid.arrivals().get(0).getClass().getMethod("baseUomId").invoke(invalid.arrivals().get(0)));

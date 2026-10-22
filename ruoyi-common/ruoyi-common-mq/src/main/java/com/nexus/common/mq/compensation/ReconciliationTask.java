@@ -9,8 +9,13 @@ import com.nexus.common.mq.domain.BaseMessage;
 import com.nexus.common.mq.domain.MessageRecord;
 import com.nexus.common.mq.domain.MessageRecordMapper;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.redis.utils.SchedulerFallbackUtils;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -33,23 +38,23 @@ import java.util.List;
 public class ReconciliationTask {
 
     /**
-     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
-     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位， 避免同一任务被 SnailJob 与
+     * {@code @Scheduled} 双重调度。
      */
-    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    @Value("${snail-job.enabled:false}")
     private boolean snailJobEnabled;
 
     /**
      * 本地 {@code @Scheduled} 兜底入口。
-     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
-     * {@link #execute()}，发送滞留消息的对账兜底失效。cron 与 {@code sj_job} 种子等价
-     * （固定 60s → 每分钟）。对账体本身已按 (id, status=SENDING, retry_count) CAS 认领幂等，
-     * 另由 Lock4j 按任务名加锁防多实例重复。</p>
+     *
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调 {@link
+     * #execute()}，发送滞留消息的对账兜底失效。cron 与 {@code sj_job} 种子等价 （固定 60s → 每分钟）。对账体本身已按 (id,
+     * status=SENDING, retry_count) CAS 认领幂等， 另由 Lock4j 按任务名加锁防多实例重复。
      */
-    @org.springframework.scheduling.annotation.Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(cron = "0 */1 * * * ?")
     public void scheduledExecute() {
-        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
-            snailJobEnabled, "mqReconciliationTask", 120000L, this::execute);
+        SchedulerFallbackUtils.runIfFallbackEnabled(
+                snailJobEnabled, "mqReconciliationTask", 120000L, this::execute);
     }
 
     /** 滞留判定阈值: 发送后5分钟仍为 SENDING 视为发送滞留 */

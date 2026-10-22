@@ -4,14 +4,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.flow.state.FlowState;
+
 import org.springframework.context.expression.MapAccessor;
+import org.springframework.expression.AccessException;
 import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.TypedValue;
+import org.springframework.expression.spel.SpelEvaluationException;
+import org.springframework.expression.spel.SpelMessage;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.DataBindingPropertyAccessor;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -90,26 +98,29 @@ public class SpelFlowExpressionEvaluator {
      * 执行单条表达式（带超时）
      */
     private Object evaluateOne(String expression, Map<String, Object> root) {
-        Future<Object> future = executor.submit(() -> {
-            try {
-                // 只读安全模式：仅注册 DataBinding(JavaBean 属性) + 宽松 MapAccessor(Map 键访问)，
-                // 不注册 MethodResolver/TypeLocator —— 不能调方法、不能 new/静态引用（MVP 安全决策）
-                // 宽松 MapAccessor: 缺失键返回 null 而非抛 EL1008E（对齐 n8n 属性缺失→空串语义）
-                org.springframework.expression.spel.support.StandardEvaluationContext ctx =
-                    new org.springframework.expression.spel.support.StandardEvaluationContext();
-                ctx.setPropertyAccessors(java.util.List.of(
-                    DataBindingPropertyAccessor.forReadOnlyAccess(),
-                    new LenientMapAccessor()));
-                ctx.setMethodResolvers(java.util.List.of());
-                ctx.setTypeLocator(typeName -> {
-                    throw new org.springframework.expression.spel.SpelEvaluationException(
-                        org.springframework.expression.spel.SpelMessage.TYPE_NOT_FOUND, typeName);
-                });
-                return PARSER.parseExpression(expression).getValue(ctx, root);
-            } catch (Exception e) {
-                throw new SpelEvaluationRuntimeException(expression, e);
-            }
-        });
+        Future<Object> future =
+                executor.submit(
+                        () -> {
+                            try {
+                                // 只读安全模式：仅注册 DataBinding(JavaBean 属性) + 宽松 MapAccessor(Map 键访问)，
+                                // 不注册 MethodResolver/TypeLocator —— 不能调方法、不能 new/静态引用（MVP 安全决策）
+                                // 宽松 MapAccessor: 缺失键返回 null 而非抛 EL1008E（对齐 n8n 属性缺失→空串语义）
+                                StandardEvaluationContext ctx = new StandardEvaluationContext();
+                                ctx.setPropertyAccessors(
+                                        List.of(
+                                                DataBindingPropertyAccessor.forReadOnlyAccess(),
+                                                new LenientMapAccessor()));
+                                ctx.setMethodResolvers(List.of());
+                                ctx.setTypeLocator(
+                                        typeName -> {
+                                            throw new SpelEvaluationException(
+                                                    SpelMessage.TYPE_NOT_FOUND, typeName);
+                                        });
+                                return PARSER.parseExpression(expression).getValue(ctx, root);
+                            } catch (Exception e) {
+                                throw new SpelEvaluationRuntimeException(expression, e);
+                            }
+                        });
         try {
             return future.get(EXPRESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
@@ -164,7 +175,7 @@ public class SpelFlowExpressionEvaluator {
             return map;
         }
         if (node.isArray()) {
-            java.util.List<Object> list = new java.util.ArrayList<>();
+            List<Object> list = new ArrayList<>();
             node.forEach(n -> list.add(jsonToJava(n)));
             return list;
         }
@@ -195,21 +206,21 @@ public class SpelFlowExpressionEvaluator {
 
         @Override
         @SuppressWarnings("rawtypes")
-        public boolean canRead(org.springframework.expression.EvaluationContext context,
-                               Object target, String name) throws org.springframework.expression.AccessException {
+        public boolean canRead(EvaluationContext context, Object target, String name)
+                throws AccessException {
             return target instanceof Map;
         }
 
         @Override
         @SuppressWarnings("rawtypes")
-        public org.springframework.expression.TypedValue read(org.springframework.expression.EvaluationContext context,
-                                                              Object target, String name) throws org.springframework.expression.AccessException {
+        public TypedValue read(EvaluationContext context, Object target, String name)
+                throws AccessException {
             Map map = (Map) target;
             if (!map.containsKey(name)) {
                 // 缺失键 → null（SpEL 视为空值）
-                return org.springframework.expression.TypedValue.NULL;
+                return TypedValue.NULL;
             }
-            return new org.springframework.expression.TypedValue(map.get(name));
+            return new TypedValue(map.get(name));
         }
     }
 }

@@ -1,8 +1,17 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmBatch;
@@ -11,10 +20,12 @@ import com.nexus.erp.wm.domain.vo.WmBatchVo;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.service.WmBatchWriteGuard;
-import com.nexus.erp.wm.trace.ErpTraceContext;
 import com.nexus.erp.wm.service.impl.DailyCodeSequenceProvider;
 import com.nexus.erp.wm.service.impl.WmBatchServiceImpl;
+import com.nexus.erp.wm.trace.ErpTraceContext;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,21 +34,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.*;
 
 /**
  * 批次管理Service单元测试（重写：旧版反射已不存在的静态计数器字段，随并发修复整体替换）
@@ -46,11 +47,15 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class WmBatchServiceImplTest {
 
-    @Mock private WmBatchMapper baseMapper;
-    @Mock private DailyCodeSequenceProvider dailyCodeSequenceProvider;
+    @Mock
+    private WmBatchMapper baseMapper;
+    @Mock
+    private DailyCodeSequenceProvider dailyCodeSequenceProvider;
 
-    @Mock private WmMaterialReceiveLineMapper materialReceiveLineMapper;
-    @Mock private ErpTraceContext traceContext;
+    @Mock
+    private WmMaterialReceiveLineMapper materialReceiveLineMapper;
+    @Mock
+    private ErpTraceContext traceContext;
 
     private WmBatchServiceImpl wmBatchService;
 
@@ -193,15 +198,10 @@ class WmBatchServiceImplTest {
      */
     @Test
     void testCheckExpiry() {
-        when(baseMapper.update(
-                        isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
-                .thenReturn(1);
+        when(baseMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
         wmBatchService.checkExpiry();
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>>
-                captor =
-                        ArgumentCaptor.forClass(
-                                com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper
-                                        .class);
+        ArgumentCaptor<LambdaUpdateWrapper<WmBatch>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(baseMapper).update(isNull(), captor.capture());
         String fields = captor.getValue().getSqlSet();
         assertTrue(fields.contains("status="));
@@ -216,17 +216,11 @@ class WmBatchServiceImplTest {
      */
     @Test
     void testChangeStatus() {
-        when(baseMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
-                .thenReturn(batch("B202606010001"));
-        when(baseMapper.update(
-                        isNull(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
-                .thenReturn(1);
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(batch("B202606010001"));
+        when(baseMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
         wmBatchService.changeStatus(1L, "CLOSED");
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WmBatch>>
-                captor =
-                        ArgumentCaptor.forClass(
-                                com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper
-                                        .class);
+        ArgumentCaptor<LambdaUpdateWrapper<WmBatch>> captor =
+                ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(baseMapper).update(isNull(), captor.capture());
         assertTrue(captor.getValue().getSqlSet().contains("status="));
         assertFalse(captor.getValue().getSqlSet().contains("quantity"));

@@ -1,5 +1,33 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
@@ -9,18 +37,22 @@ import com.baomidou.dynamic.datasource.enums.SeataMode;
 import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException;
-import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
-import java.util.Set;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.p6spy.engine.spy.P6DataSource;
+import com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard;
+import com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper;
 import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
 import com.nexus.erp.pu.service.PuRequirementCompetitionPoolReader;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.pu.service.PuRequirementMaterialLockService;
+import com.p6spy.engine.spy.P6DataSource;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -44,12 +76,14 @@ import org.mybatis.spring.SqlSessionHolder;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.SqlSessionUtils;
 import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
+import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.Ordered;
 import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.datasource.DelegatingDataSource;
 import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
@@ -59,9 +93,9 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionSynchronizationUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -76,51 +110,32 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import javax.sql.DataSource;
 
 /**
- * 内部 ERP 物理事务入口的离线 RED 契约，不代表采购接线、数据库验收或用户进程已经加载。
- * 缺类通过测试内反射断言失败，而非 javac 引用不存在的类型。正例只调用真实入口，
- * 不由夹具补绑 router；真实 Spring、DefaultSqlSessionFactory 及 SqlSessionTemplate
- * 执行生命周期，仅数据源、JDBC 和 reader 业务依赖使用非联网模拟，不启动 Boot 或服务。
- * 本轮仅验证有界事务归属和正常 MyBatis 参与，不提供权限、来源或额度认证。
+ * 内部 ERP 物理事务入口的离线 RED 契约，不代表采购接线、数据库验收或用户进程已经加载。 缺类通过测试内反射断言失败，而非 javac 引用不存在的类型。正例只调用真实入口， 不由夹具补绑
+ * router；真实 Spring、DefaultSqlSessionFactory 及 SqlSessionTemplate 执行生命周期，仅数据源、JDBC 和 reader
+ * 业务依赖使用非联网模拟，不启动 Boot 或服务。 本轮仅验证有界事务归属和正常 MyBatis 参与，不提供权限、来源或额度认证。
  */
 @Tag("dev")
 class PuRequirementErpTransactionExecutorTest {
 
-    private static final String EXECUTOR = "com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor";
+    private static final String EXECUTOR =
+            "com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor";
     private static final String TENANT = "t-100";
     private static final Long MATERIAL = 139L;
     private static final LocalDate WINDOW_END = LocalDate.of(2026, 10, 1);
+
     /** 纯离线哨兵，不含真实 SQL、口令或业务数据。 */
-    private static final String PRIVATE_DIAGNOSTIC = "OFFLINE_SQL_PAYLOAD|OFFLINE_CREDENTIAL_PAYLOAD";
+    private static final String PRIVATE_DIAGNOSTIC =
+            "OFFLINE_SQL_PAYLOAD|OFFLINE_CREDENTIAL_PAYLOAD";
 
     @AfterEach
     void threadResourcesMustBeClean() {
@@ -128,7 +143,8 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void springConstructsNamedFactoryComponentWithoutBorrowOrGlobalTransactionManager() throws SQLException {
+    void springConstructsNamedFactoryComponentWithoutBorrowOrGlobalTransactionManager()
+            throws SQLException {
         Fixture fixture = new Fixture();
         assertNotNull(executorType().getAnnotation(Component.class));
         assertNotNull(fixture.entry());
@@ -136,28 +152,52 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void realEntryQualifiesActualReaderProxyAndMybatisFlushesSameConnectionBeforeCommit() throws SQLException {
+    void realEntryQualifiesActualReaderProxyAndMybatisFlushesSameConnectionBeforeCommit()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         fixture.checkOwnedAliasesAtJdbcCompletion = true;
         Object expected = new Object();
         DynamicDataSourceContextHolder.push("master");
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertSame(expected, entry.execute(TENANT, () -> {
-                fixture.assertOwnedWritableTransaction();
-                fixture.qualification.requireWritableErpTransaction();
-                assertNotNull(fixture.proxiedReader().materialPool(TENANT, MATERIAL, WINDOW_END));
-                assertEquals(List.of("guard", "lockRequirementDetails", "lockStocks", "lockOrderLines",
-                    "lockRequisitionLines", "lockAllocations"), fixture.readerTrace);
-                assertEquals("master", DynamicDataSourceContextHolder.peek(), "实际 @DS 代理应恢复外层路由");
-                fixture.stageBatch();
-                assertSame(fixture.configuration, fixture.sessionHolder().getSqlSession().getConfiguration());
-                assertSame(fixture.erpJdbc.connection, fixture.template.getConnection());
-                assertThrows(ServiceException.class, fixture.qualification::requireWritableErpTransaction,
-                    "不能通过放宽原资格对已绑定会话的拒绝实现入口末端核验");
-                fixture.observeCompletion();
-                return expected;
-            }), "回调值只能在真实提交及清理后返回");
+            assertSame(
+                    expected,
+                    entry.execute(
+                            TENANT,
+                            () -> {
+                                fixture.assertOwnedWritableTransaction();
+                                fixture.qualification.requireWritableErpTransaction();
+                                assertNotNull(
+                                        fixture.proxiedReader()
+                                                .materialPool(TENANT, MATERIAL, WINDOW_END));
+                                assertEquals(
+                                        List.of(
+                                                "guard",
+                                                "lockRequirementDetails",
+                                                "lockStocks",
+                                                "lockOrderLines",
+                                                "lockRequisitionLines",
+                                                "lockAllocations"),
+                                        fixture.readerTrace);
+                                assertEquals(
+                                        "master",
+                                        DynamicDataSourceContextHolder.peek(),
+                                        "实际 @DS 代理应恢复外层路由");
+                                fixture.stageBatch();
+                                assertSame(
+                                        fixture.configuration,
+                                        fixture.sessionHolder().getSqlSession().getConfiguration());
+                                assertSame(
+                                        fixture.erpJdbc.connection,
+                                        fixture.template.getConnection());
+                                assertThrows(
+                                        ServiceException.class,
+                                        fixture.qualification::requireWritableErpTransaction,
+                                        "不能通过放宽原资格对已绑定会话的拒绝实现入口末端核验");
+                                fixture.observeCompletion();
+                                return expected;
+                            }),
+                    "回调值只能在真实提交及清理后返回");
             assertEquals("master", DynamicDataSourceContextHolder.peek());
         } finally {
             DynamicDataSourceContextHolder.poll();
@@ -178,199 +218,435 @@ class PuRequirementErpTransactionExecutorTest {
     void explicitRepeatableReadChainRequalifiesOnlyItsOwnExistingSession() throws Exception {
         Fixture fixture = new Fixture();
         AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
-        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call -> isolation.get());
-        doAnswer(call -> { isolation.set(call.getArgument(0)); return null; })
-            .when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        when(fixture.erpJdbc.connection.getTransactionIsolation())
+                .thenAnswer(call -> isolation.get());
+        doAnswer(
+                        call -> {
+                            isolation.set(call.getArgument(0));
+                            return null;
+                        })
+                .when(fixture.erpJdbc.connection)
+                .setTransactionIsolation(anyInt());
         Entry entry = fixture.entry();
-        Method method = executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
+        Method method =
+                executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(ServiceException.class, fixture.qualification::requireSourceChainTransaction);
-            String result = (String) method.invoke(entry.bean(), TENANT, (Supplier<String>) () -> {
-                assertEquals(Integer.valueOf(Connection.TRANSACTION_REPEATABLE_READ),
-                    TransactionSynchronizationManager.getCurrentTransactionIsolationLevel());
-                fixture.qualification.requireSourceChainTransaction();
-                assertNotNull(fixture.proxiedReader().materialPool(TENANT, MATERIAL, WINDOW_END));
-                fixture.stageBatch();
-                // 原资格依然拒绝预绑定会话，新机制只认入口私有归属及真实同连接同步。
-                assertThrows(ServiceException.class, fixture.qualification::requireWritableErpTransaction);
-                assertDoesNotThrow(fixture.qualification::requireParticipatingWritableErpTransaction);
-                assertDoesNotThrow(fixture.qualification::requireSourceChainTransaction);
-                assertSame(fixture.erpJdbc.connection, fixture.template.getConnection());
-                return "certified-chain";
-            });
+            assertThrows(
+                    ServiceException.class, fixture.qualification::requireSourceChainTransaction);
+            String result =
+                    (String)
+                            method.invoke(
+                                    entry.bean(),
+                                    TENANT,
+                                    (Supplier<String>)
+                                            () -> {
+                                                assertEquals(
+                                                        Integer.valueOf(
+                                                                Connection
+                                                                        .TRANSACTION_REPEATABLE_READ),
+                                                        TransactionSynchronizationManager
+                                                                .getCurrentTransactionIsolationLevel());
+                                                fixture.qualification
+                                                        .requireSourceChainTransaction();
+                                                assertNotNull(
+                                                        fixture.proxiedReader()
+                                                                .materialPool(
+                                                                        TENANT,
+                                                                        MATERIAL,
+                                                                        WINDOW_END));
+                                                fixture.stageBatch();
+                                                // 原资格依然拒绝预绑定会话，新机制只认入口私有归属及真实同连接同步。
+                                                assertThrows(
+                                                        ServiceException.class,
+                                                        fixture.qualification
+                                                                ::requireWritableErpTransaction);
+                                                assertDoesNotThrow(
+                                                        fixture.qualification
+                                                                ::requireParticipatingWritableErpTransaction);
+                                                assertDoesNotThrow(
+                                                        fixture.qualification
+                                                                ::requireSourceChainTransaction);
+                                                assertSame(
+                                                        fixture.erpJdbc.connection,
+                                                        fixture.template.getConnection());
+                                                return "certified-chain";
+                                            });
             assertEquals("certified-chain", result);
-            assertThrows(ServiceException.class, fixture.qualification::requireSourceChainTransaction);
+            assertThrows(
+                    ServiceException.class, fixture.qualification::requireSourceChainTransaction);
         }
-        assertEquals(Connection.TRANSACTION_READ_COMMITTED, isolation.get(), "RR仅作用于本次连接事务，收尾恢复原隔离级别");
+        assertEquals(
+                Connection.TRANSACTION_READ_COMMITTED, isolation.get(), "RR仅作用于本次连接事务，收尾恢复原隔离级别");
         fixture.assertOnlyErpBorrowed(1);
         verify(fixture.erpJdbc.connection).commit();
     }
 
-    private PuRequirementErpTransactionExecutor sourceExecutor(Fixture fixture) throws SQLException {
-        AtomicInteger isolation=new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
-        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call->isolation.get());
-        doAnswer(call->{isolation.set(call.getArgument(0));return null;}).when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+    private PuRequirementErpTransactionExecutor sourceExecutor(Fixture fixture)
+            throws SQLException {
+        AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
+        when(fixture.erpJdbc.connection.getTransactionIsolation())
+                .thenAnswer(call -> isolation.get());
+        doAnswer(
+                        call -> {
+                            isolation.set(call.getArgument(0));
+                            return null;
+                        })
+                .when(fixture.erpJdbc.connection)
+                .setTransactionIsolation(anyInt());
         return new PuRequirementErpTransactionExecutor(fixture.sessionFactory);
     }
-    @Test void provenSourceChangeSurvivesRealOwnedRrOnlyAfterSuccessfulRollbackAndCleanup() throws SQLException {
-        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
-        var original=new SourceChangedException();original.initCause(new IllegalStateException(PRIVATE_DIAGNOSTIC));
+
+    @Test
+    void provenSourceChangeSurvivesRealOwnedRrOnlyAfterSuccessfulRollbackAndCleanup()
+            throws SQLException {
+        Fixture fixture = new Fixture();
+        var executor = sourceExecutor(fixture);
+        var original = new SourceChangedException();
+        original.initCause(new IllegalStateException(PRIVATE_DIAGNOSTIC));
         original.addSuppressed(new IllegalStateException(PRIVATE_DIAGNOSTIC));
-        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
-            var error=assertThrows(SourceChangedException.class,()->executor.executeRepeatableRead(TENANT,()->{
-                fixture.qualification.requireSourceChainTransaction();fixture.stageBatch();throw original;
-            }),"真实executor须在正常回滚清理后保留唯一可信来源变化类型");
-            assertEquals("采购冻结来源已变化，须重新分析",error.getMessage(),"只允许固定中文信号通过事务边界");
-            assertNull(error.getCause(),"不得带出原始cause或SQL诊断");
-            assertEquals(0,error.getSuppressed().length,"不得带出原始suppressed诊断");
-            fixture.assertRolledBack();verify(fixture.erpJdbc.statement,never()).executeBatch();assertCleanThread();
-            assertThrows(ServiceException.class,fixture.qualification::requireSourceChainTransaction,"异常收尾不得遗留owned许可");
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            var error =
+                    assertThrows(
+                            SourceChangedException.class,
+                            () ->
+                                    executor.executeRepeatableRead(
+                                            TENANT,
+                                            () -> {
+                                                fixture.qualification
+                                                        .requireSourceChainTransaction();
+                                                fixture.stageBatch();
+                                                throw original;
+                                            }),
+                            "真实executor须在正常回滚清理后保留唯一可信来源变化类型");
+            assertEquals("采购冻结来源已变化，须重新分析", error.getMessage(), "只允许固定中文信号通过事务边界");
+            assertNull(error.getCause(), "不得带出原始cause或SQL诊断");
+            assertEquals(0, error.getSuppressed().length, "不得带出原始suppressed诊断");
+            fixture.assertRolledBack();
+            verify(fixture.erpJdbc.statement, never()).executeBatch();
+            assertCleanThread();
+            assertThrows(
+                    ServiceException.class,
+                    fixture.qualification::requireSourceChainTransaction,
+                    "异常收尾不得遗留owned许可");
         }
         fixture.assertOnlyErpBorrowed(1);
     }
-    @Test void mandatoryScopeBeanSignalCrossesRealProxyAndOwnedRrRollbackBoundary() throws SQLException {
-        String tenantId="000000";
-        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
-        var mapper=mock(com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper.class);
-        var locks=mock(PuRequirementMaterialLockService.class);
-        var terminal=new com.nexus.erp.ai.adapter.mapper.ErpDecisionPurchaseScopeMapper.WorkSource(
-            11L,tenantId,31L,"MATERIAL_REQUIREMENT",51L,"COMPLETED","0");
-        when(mapper.pinScopeDefinition()).thenReturn(List.of());when(mapper.scopeTableEngine()).thenReturn("InnoDB");
-        when(mapper.findRootWorkOrder(tenantId,11L)).thenReturn(terminal);when(mapper.lockPlanWorkOrders(tenantId,31L)).thenReturn(List.of(terminal));
-        var target=new com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard(mapper,fixture.qualification,locks);
-        var proxyFactory=new org.springframework.aop.framework.ProxyFactory(target);proxyFactory.setProxyTargetClass(true);
-        proxyFactory.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(
-            new DataSourceTransactionManager(fixture.erp),new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
-        var proxy=(com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard)proxyFactory.getProxy();
-        try(MockedStatic<TenantHelper> ignored=tenant(true,tenantId)) {
-            var error=assertThrows(SourceChangedException.class,()->executor.executeRepeatableRead(tenantId,()->{
-                fixture.stageBatch();
-                try {
-                    proxy.requireRootSourcesLocked(tenantId,
-                        new com.nexus.common.ai.decision.dto.DecisionBusinessRef(com.nexus.common.ai.decision.enums.DecisionBusinessType.WORK_ORDER,11L,null),
-                        MATERIAL,Set.of(21L),WINDOW_END);
-                } catch(SourceChangedException proven) {
-                    verify(mapper).lockPlanWorkOrders(tenantId,31L);
-                    assertTrue(fixture.holder(fixture.erp).isRollbackOnly(),"必须实际经过MANDATORY代理标记的同一物理holder");
-                    throw proven;
-                }
-                throw new AssertionError("代理必须取得终态根事实并抛出可信变化信号");
-            }),"真实MANDATORY Bean标记回滚不能让来源类型在owned RR中消失");
-            assertEquals("采购冻结来源已变化，须重新分析",error.getMessage(),"事务外只能收到固定安全信号");
-            assertNull(error.getCause(),"Bean代理原异常链不能泄露");assertEquals(0,error.getSuppressed().length,"Bean代理诊断不能泄露");
-            fixture.assertRolledBack();assertCleanThread();
-        }
-        fixture.assertOnlyErpBorrowed(1);
-    }
-    @ParameterizedTest @ValueSource(strings={"ROLLBACK","CLOSE","BEFORE_COMPLETION","AFTER_COMPLETION"})
-    void failedRollbackOrCleanupNeverClaimsProvenSourceChange(String failurePoint) throws SQLException {
-        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
-        if("ROLLBACK".equals(failurePoint))doThrow(new SQLException(PRIVATE_DIAGNOSTIC)).when(fixture.erpJdbc.connection).rollback();
-        if("CLOSE".equals(failurePoint))doThrow(new SQLException(PRIVATE_DIAGNOSTIC)).when(fixture.erpJdbc.connection).close();
-        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
-            var error=assertThrows(ServiceException.class,()->executor.executeRepeatableRead(TENANT,()->{
-                fixture.qualification.requireSourceChainTransaction();fixture.stageBatch();
-                if(failurePoint.endsWith("COMPLETION"))TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
-                    @Override public void beforeCompletion(){if("BEFORE_COMPLETION".equals(failurePoint))throw new IllegalStateException(PRIVATE_DIAGNOSTIC);}
-                    @Override public void afterCompletion(int status){if("AFTER_COMPLETION".equals(failurePoint))throw new IllegalStateException(PRIVATE_DIAGNOSTIC);}
-                });
-                throw new SourceChangedException();
-            }),"回滚或清理故障不得被解释为可标STALE的已证明来源变化");
-            assertNull(error.getCause(),"事务未知失败仍须脱敏");assertEquals(0,error.getSuppressed().length,"不能携带底层诊断");
-            assertFalse(error.getMessage().contains(PRIVATE_DIAGNOSTIC),"不能暴露底层错误文本");
-            verify(fixture.erpJdbc.connection,never()).commit();assertCleanThread();
-        }
-        fixture.assertOnlyErpBorrowed(1);
-    }
-    @ParameterizedTest @ValueSource(booleans={false,true})
-    void synchronizationRegisteredDuringBeforeCompletionCannotClaimSafeSourceChange(boolean lateFails) throws SQLException {
-        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
-        AtomicBoolean lateRegistered=new AtomicBoolean(),lateCompleted=new AtomicBoolean();
-        // 只隔离本测试的日志输出，真正Spring注册、回调、吞异常路径照常执行；模拟敏感文本不写控制台。
-        var logger=(ch.qos.logback.classic.Logger)org.slf4j.LoggerFactory.getLogger(
-            org.springframework.transaction.support.TransactionSynchronizationUtils.class);
-        var captured=new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
-        boolean additive=logger.isAdditive();captured.start();logger.addAppender(captured);logger.setAdditive(false);
-        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
-            RuntimeException failure=assertThrows(RuntimeException.class,()->executor.executeRepeatableRead(TENANT,()->{
-                fixture.qualification.requireSourceChainTransaction();fixture.stageBatch();
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
-                    @Override public void beforeCompletion() {
-                        assertTrue(TransactionSynchronizationManager.isSynchronizationActive(),"必须在真实beforeCompletion注册新同步");
-                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
-                            @Override public void afterCompletion(int status) {
-                                assertEquals(TransactionSynchronization.STATUS_ROLLED_BACK,status,"迟同步必须确实收到真实Spring回滚完成回调");
-                                lateCompleted.set(true);
-                                if(lateFails)throw new IllegalStateException(PRIVATE_DIAGNOSTIC);
-                            }
-                        });
-                        lateRegistered.set(true);
-                    }
-                });
-                throw new SourceChangedException();
-            }),"已确认来源变化仍必须经过完整回滚清理证明");
-            assertTrue(lateRegistered.get(),"夹具必须实际迟注册同步，而非提前包装的普通同步");
-            assertTrue(lateCompleted.get(),"Spring必须实际执行迟注册afterCompletion，不能跳过清理来制造通过");
-            assertEquals(ServiceException.class,failure.getClass(),"未被初始观察覆盖的迟同步即使静默成功也只返回普通未确认安全失败");
-            assertNull(failure.getCause(),"不得带出迟同步原始cause");assertEquals(0,failure.getSuppressed().length,"不得带出迟同步suppressed");
-            assertFalse(failure.getMessage().contains(PRIVATE_DIAGNOSTIC),"返回异常不能暴露模拟敏感诊断");
-            for(var event:captured.list) {
-                assertFalse(event.getFormattedMessage().contains(PRIVATE_DIAGNOSTIC),"Spring日志不能直接打印迟同步敏感模拟文本");
-                for(var error=event.getThrowableProxy();error!=null;error=error.getCause())
-                    assertFalse(java.util.Objects.toString(error.getMessage(),"").contains(PRIVATE_DIAGNOSTIC),"迟同步日志异常链必须同样脱敏");
-            }
-            fixture.assertRolledBack();assertCleanThread();
-            verify(fixture.erpJdbc.statement,never()).executeBatch();
-        } finally {
-            logger.detachAppender(captured);logger.setAdditive(additive);captured.stop();
-        }
-        fixture.assertOnlyErpBorrowed(1);
-    }
-    @Test void sourceNamedRuntimeOrNonRrSignalCannotBypassSanitizedFailureBoundary() throws SQLException {
-        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
-        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
-            var error=assertThrows(ServiceException.class,()->executor.executeRepeatableRead(TENANT,()->{
-                fixture.stageBatch();var unknown=new IllegalStateException("采购冻结来源已变化，须重新分析");
-                unknown.initCause(new SourceChangedException());throw unknown;
-            }),"不可按文本或异常链内嵌类型放行普通Runtime");
-            assertNull(error.getCause(),"普通Runtime仍必须无cause");assertEquals(0,error.getSuppressed().length,"普通Runtime仍必须无suppressed");
+
+    @Test
+    void mandatoryScopeBeanSignalCrossesRealProxyAndOwnedRrRollbackBoundary() throws SQLException {
+        String tenantId = "000000";
+        Fixture fixture = new Fixture();
+        var executor = sourceExecutor(fixture);
+        var mapper = mock(ErpDecisionPurchaseScopeMapper.class);
+        var locks = mock(PuRequirementMaterialLockService.class);
+        var terminal =
+                new ErpDecisionPurchaseScopeMapper.WorkSource(
+                        11L, tenantId, 31L, "MATERIAL_REQUIREMENT", 51L, "COMPLETED", "0");
+        when(mapper.pinScopeDefinition()).thenReturn(List.of());
+        when(mapper.scopeTableEngine()).thenReturn("InnoDB");
+        when(mapper.findRootWorkOrder(tenantId, 11L)).thenReturn(terminal);
+        when(mapper.lockPlanWorkOrders(tenantId, 31L)).thenReturn(List.of(terminal));
+        var target = new ErpDecisionPurchaseScopeGuard(mapper, fixture.qualification, locks);
+        var proxyFactory = new ProxyFactory(target);
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(
+                new TransactionInterceptor(
+                        new DataSourceTransactionManager(fixture.erp),
+                        new AnnotationTransactionAttributeSource()));
+        var proxy = (ErpDecisionPurchaseScopeGuard) proxyFactory.getProxy();
+        try (MockedStatic<TenantHelper> ignored = tenant(true, tenantId)) {
+            var error =
+                    assertThrows(
+                            SourceChangedException.class,
+                            () ->
+                                    executor.executeRepeatableRead(
+                                            tenantId,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                try {
+                                                    proxy.requireRootSourcesLocked(
+                                                            tenantId,
+                                                            new DecisionBusinessRef(
+                                                                    DecisionBusinessType.WORK_ORDER,
+                                                                    11L,
+                                                                    null),
+                                                            MATERIAL,
+                                                            Set.of(21L),
+                                                            WINDOW_END);
+                                                } catch (SourceChangedException proven) {
+                                                    verify(mapper)
+                                                            .lockPlanWorkOrders(tenantId, 31L);
+                                                    assertTrue(
+                                                            fixture.holder(fixture.erp)
+                                                                    .isRollbackOnly(),
+                                                            "必须实际经过MANDATORY代理标记的同一物理holder");
+                                                    throw proven;
+                                                }
+                                                throw new AssertionError("代理必须取得终态根事实并抛出可信变化信号");
+                                            }),
+                            "真实MANDATORY Bean标记回滚不能让来源类型在owned RR中消失");
+            assertEquals("采购冻结来源已变化，须重新分析", error.getMessage(), "事务外只能收到固定安全信号");
+            assertNull(error.getCause(), "Bean代理原异常链不能泄露");
+            assertEquals(0, error.getSuppressed().length, "Bean代理诊断不能泄露");
+            fixture.assertRolledBack();
             assertCleanThread();
         }
-        Fixture ordinary=new Fixture();
-        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
-            assertThrows(ServiceException.class,()->new PuRequirementErpTransactionExecutor(ordinary.sessionFactory).execute(TENANT,()->{
-                throw new SourceChangedException();
-            }),"普通非来源RR入口不能转授来源变化许可");assertCleanThread();
+        fixture.assertOnlyErpBorrowed(1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ROLLBACK", "CLOSE", "BEFORE_COMPLETION", "AFTER_COMPLETION"})
+    void failedRollbackOrCleanupNeverClaimsProvenSourceChange(String failurePoint)
+            throws SQLException {
+        Fixture fixture = new Fixture();
+        var executor = sourceExecutor(fixture);
+        if ("ROLLBACK".equals(failurePoint))
+            doThrow(new SQLException(PRIVATE_DIAGNOSTIC))
+                    .when(fixture.erpJdbc.connection)
+                    .rollback();
+        if ("CLOSE".equals(failurePoint))
+            doThrow(new SQLException(PRIVATE_DIAGNOSTIC)).when(fixture.erpJdbc.connection).close();
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            var error =
+                    assertThrows(
+                            ServiceException.class,
+                            () ->
+                                    executor.executeRepeatableRead(
+                                            TENANT,
+                                            () -> {
+                                                fixture.qualification
+                                                        .requireSourceChainTransaction();
+                                                fixture.stageBatch();
+                                                if (failurePoint.endsWith("COMPLETION"))
+                                                    TransactionSynchronizationManager
+                                                            .registerSynchronization(
+                                                                    new TransactionSynchronization() {
+                                                                        @Override
+                                                                        public void
+                                                                                beforeCompletion() {
+                                                                            if ("BEFORE_COMPLETION"
+                                                                                    .equals(
+                                                                                            failurePoint))
+                                                                                throw new IllegalStateException(
+                                                                                        PRIVATE_DIAGNOSTIC);
+                                                                        }
+
+                                                                        @Override
+                                                                        public void afterCompletion(
+                                                                                int status) {
+                                                                            if ("AFTER_COMPLETION"
+                                                                                    .equals(
+                                                                                            failurePoint))
+                                                                                throw new IllegalStateException(
+                                                                                        PRIVATE_DIAGNOSTIC);
+                                                                        }
+                                                                    });
+                                                throw new SourceChangedException();
+                                            }),
+                            "回滚或清理故障不得被解释为可标STALE的已证明来源变化");
+            assertNull(error.getCause(), "事务未知失败仍须脱敏");
+            assertEquals(0, error.getSuppressed().length, "不能携带底层诊断");
+            assertFalse(error.getMessage().contains(PRIVATE_DIAGNOSTIC), "不能暴露底层错误文本");
+            verify(fixture.erpJdbc.connection, never()).commit();
+            assertCleanThread();
+        }
+        fixture.assertOnlyErpBorrowed(1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void synchronizationRegisteredDuringBeforeCompletionCannotClaimSafeSourceChange(
+            boolean lateFails) throws SQLException {
+        Fixture fixture = new Fixture();
+        var executor = sourceExecutor(fixture);
+        AtomicBoolean lateRegistered = new AtomicBoolean(), lateCompleted = new AtomicBoolean();
+        // 只隔离本测试的日志输出，真正Spring注册、回调、吞异常路径照常执行；模拟敏感文本不写控制台。
+        var logger = (Logger) LoggerFactory.getLogger(TransactionSynchronizationUtils.class);
+        var captured = new ListAppender<ILoggingEvent>();
+        boolean additive = logger.isAdditive();
+        captured.start();
+        logger.addAppender(captured);
+        logger.setAdditive(false);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            RuntimeException failure =
+                    assertThrows(
+                            RuntimeException.class,
+                            () ->
+                                    executor.executeRepeatableRead(
+                                            TENANT,
+                                            () -> {
+                                                fixture.qualification
+                                                        .requireSourceChainTransaction();
+                                                fixture.stageBatch();
+                                                TransactionSynchronizationManager
+                                                        .registerSynchronization(
+                                                                new TransactionSynchronization() {
+                                                                    @Override
+                                                                    public void beforeCompletion() {
+                                                                        assertTrue(
+                                                                                TransactionSynchronizationManager
+                                                                                        .isSynchronizationActive(),
+                                                                                "必须在真实beforeCompletion注册新同步");
+                                                                        TransactionSynchronizationManager
+                                                                                .registerSynchronization(
+                                                                                        new TransactionSynchronization() {
+                                                                                            @Override
+                                                                                            public
+                                                                                            void
+                                                                                                    afterCompletion(
+                                                                                                            int
+                                                                                                                    status) {
+                                                                                                assertEquals(
+                                                                                                        TransactionSynchronization
+                                                                                                                .STATUS_ROLLED_BACK,
+                                                                                                        status,
+                                                                                                        "迟同步必须确实收到真实Spring回滚完成回调");
+                                                                                                lateCompleted
+                                                                                                        .set(
+                                                                                                                true);
+                                                                                                if (lateFails)
+                                                                                                    throw new IllegalStateException(
+                                                                                                            PRIVATE_DIAGNOSTIC);
+                                                                                            }
+                                                                                        });
+                                                                        lateRegistered.set(true);
+                                                                    }
+                                                                });
+                                                throw new SourceChangedException();
+                                            }),
+                            "已确认来源变化仍必须经过完整回滚清理证明");
+            assertTrue(lateRegistered.get(), "夹具必须实际迟注册同步，而非提前包装的普通同步");
+            assertTrue(lateCompleted.get(), "Spring必须实际执行迟注册afterCompletion，不能跳过清理来制造通过");
+            assertEquals(
+                    ServiceException.class, failure.getClass(), "未被初始观察覆盖的迟同步即使静默成功也只返回普通未确认安全失败");
+            assertNull(failure.getCause(), "不得带出迟同步原始cause");
+            assertEquals(0, failure.getSuppressed().length, "不得带出迟同步suppressed");
+            assertFalse(failure.getMessage().contains(PRIVATE_DIAGNOSTIC), "返回异常不能暴露模拟敏感诊断");
+            for (var event : captured.list) {
+                assertFalse(
+                        event.getFormattedMessage().contains(PRIVATE_DIAGNOSTIC),
+                        "Spring日志不能直接打印迟同步敏感模拟文本");
+                for (var error = event.getThrowableProxy(); error != null; error = error.getCause())
+                    assertFalse(
+                            Objects.toString(error.getMessage(), "").contains(PRIVATE_DIAGNOSTIC),
+                            "迟同步日志异常链必须同样脱敏");
+            }
+            fixture.assertRolledBack();
+            assertCleanThread();
+            verify(fixture.erpJdbc.statement, never()).executeBatch();
+        } finally {
+            logger.detachAppender(captured);
+            logger.setAdditive(additive);
+            captured.stop();
+        }
+        fixture.assertOnlyErpBorrowed(1);
+    }
+
+    @Test
+    void sourceNamedRuntimeOrNonRrSignalCannotBypassSanitizedFailureBoundary() throws SQLException {
+        Fixture fixture = new Fixture();
+        var executor = sourceExecutor(fixture);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            var error =
+                    assertThrows(
+                            ServiceException.class,
+                            () ->
+                                    executor.executeRepeatableRead(
+                                            TENANT,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                var unknown =
+                                                        new IllegalStateException(
+                                                                "采购冻结来源已变化，须重新分析");
+                                                unknown.initCause(new SourceChangedException());
+                                                throw unknown;
+                                            }),
+                            "不可按文本或异常链内嵌类型放行普通Runtime");
+            assertNull(error.getCause(), "普通Runtime仍必须无cause");
+            assertEquals(0, error.getSuppressed().length, "普通Runtime仍必须无suppressed");
+            assertCleanThread();
+        }
+        Fixture ordinary = new Fixture();
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            assertThrows(
+                    ServiceException.class,
+                    () ->
+                            new PuRequirementErpTransactionExecutor(ordinary.sessionFactory)
+                                    .execute(
+                                            TENANT,
+                                            () -> {
+                                                throw new SourceChangedException();
+                                            }),
+                    "普通非来源RR入口不能转授来源变化许可");
+            assertCleanThread();
         }
     }
-    @Test void sourceSignalAfterCommittedJdbcIsNotReadDifferenceOrRollbackSuccess() throws SQLException {
-        Fixture fixture=new Fixture();var executor=sourceExecutor(fixture);
-        try(MockedStatic<TenantHelper> ignored=tenant(true,TENANT)) {
-            var error=assertThrows(ServiceException.class,()->executor.executeRepeatableRead(TENANT,()->{
-                fixture.stageBatch();TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
-                    @Override public void afterCommit(){throw new SourceChangedException();}
-                });return "已返回正常读结果";
-            }),"提交后同步抛信号不能伪装正常回滚的来源变化");
-            assertNull(error.getCause(),"提交结果异常仍保持安全失败");verify(fixture.erpJdbc.connection).commit();assertCleanThread();
+
+    @Test
+    void sourceSignalAfterCommittedJdbcIsNotReadDifferenceOrRollbackSuccess() throws SQLException {
+        Fixture fixture = new Fixture();
+        var executor = sourceExecutor(fixture);
+        try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
+            var error =
+                    assertThrows(
+                            ServiceException.class,
+                            () ->
+                                    executor.executeRepeatableRead(
+                                            TENANT,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                TransactionSynchronizationManager
+                                                        .registerSynchronization(
+                                                                new TransactionSynchronization() {
+                                                                    @Override
+                                                                    public void afterCommit() {
+                                                                        throw new SourceChangedException();
+                                                                    }
+                                                                });
+                                                return "已返回正常读结果";
+                                            }),
+                            "提交后同步抛信号不能伪装正常回滚的来源变化");
+            assertNull(error.getCause(), "提交结果异常仍保持安全失败");
+            verify(fixture.erpJdbc.connection).commit();
+            assertCleanThread();
         }
     }
+
     @Test
     void callbackFailureCannotLeakRepeatableReadChainOwnership() throws Exception {
         Fixture fixture = new Fixture();
         AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
-        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call -> isolation.get());
-        doAnswer(call -> { isolation.set(call.getArgument(0)); return null; })
-            .when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        when(fixture.erpJdbc.connection.getTransactionIsolation())
+                .thenAnswer(call -> isolation.get());
+        doAnswer(
+                        call -> {
+                            isolation.set(call.getArgument(0));
+                            return null;
+                        })
+                .when(fixture.erpJdbc.connection)
+                .setTransactionIsolation(anyInt());
         Entry entry = fixture.entry();
-        Method method = executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
+        Method method =
+                executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            InvocationTargetException failure = assertThrows(InvocationTargetException.class,
-                () -> method.invoke(entry.bean(), TENANT, (Supplier<String>) () -> {
-                    fixture.stageBatch(); fixture.qualification.requireParticipatingWritableErpTransaction();
-                    throw new ServiceException("deliberate rollback");
-                }));
+            InvocationTargetException failure =
+                    assertThrows(
+                            InvocationTargetException.class,
+                            () ->
+                                    method.invoke(
+                                            entry.bean(),
+                                            TENANT,
+                                            (Supplier<String>)
+                                                    () -> {
+                                                        fixture.stageBatch();
+                                                        fixture.qualification
+                                                                .requireParticipatingWritableErpTransaction();
+                                                        throw new ServiceException(
+                                                                "deliberate rollback");
+                                                    }));
             assertTrue(failure.getCause() instanceof ServiceException);
-            assertThrows(ServiceException.class, fixture.qualification::requireSourceChainTransaction);
+            assertThrows(
+                    ServiceException.class, fixture.qualification::requireSourceChainTransaction);
         }
         verify(fixture.erpJdbc.connection).rollback();
         assertEquals(Connection.TRANSACTION_READ_COMMITTED, isolation.get());
@@ -378,83 +654,147 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void sourceChainIsolationDriftAfterLastQualificationCannotCommit(boolean afterMybatisFlush) throws Exception {
+    void sourceChainIsolationDriftAfterLastQualificationCannotCommit(boolean afterMybatisFlush)
+            throws Exception {
         Fixture fixture = new Fixture();
         AtomicInteger isolation = new AtomicInteger(Connection.TRANSACTION_READ_COMMITTED);
-        when(fixture.erpJdbc.connection.getTransactionIsolation()).thenAnswer(call -> isolation.get());
-        doAnswer(call -> { isolation.set(call.getArgument(0)); return null; })
-            .when(fixture.erpJdbc.connection).setTransactionIsolation(anyInt());
+        when(fixture.erpJdbc.connection.getTransactionIsolation())
+                .thenAnswer(call -> isolation.get());
+        doAnswer(
+                        call -> {
+                            isolation.set(call.getArgument(0));
+                            return null;
+                        })
+                .when(fixture.erpJdbc.connection)
+                .setTransactionIsolation(anyInt());
         AtomicBoolean driftObserved = new AtomicBoolean();
         Entry entry = fixture.entry();
-        Method method = executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
+        Method method =
+                executorType().getMethod("executeRepeatableRead", String.class, Supplier.class);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            InvocationTargetException failure = assertThrows(InvocationTargetException.class,
-                () -> method.invoke(entry.bean(), TENANT, (Supplier<String>) () -> {
-                    fixture.stageBatch(); fixture.qualification.requireSourceChainTransaction();
-                    Runnable drift = () -> { isolation.set(Connection.TRANSACTION_READ_COMMITTED); driftObserved.set(true); };
-                    if (afterMybatisFlush) {
-                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                            @Override public int getOrder() { return Ordered.LOWEST_PRECEDENCE - 1; }
-                            @Override public void beforeCommit(boolean readOnly) {
-                                assertTrue(fixture.events.contains("erp.flush"),"必须是真实MyBatis flush之后的漂移");
-                                drift.run();
-                            }
-                        });
-                    } else { drift.run(); }
-                    return "must-not-commit";
-                }));
+            InvocationTargetException failure =
+                    assertThrows(
+                            InvocationTargetException.class,
+                            () ->
+                                    method.invoke(
+                                            entry.bean(),
+                                            TENANT,
+                                            (Supplier<String>)
+                                                    () -> {
+                                                        fixture.stageBatch();
+                                                        fixture.qualification
+                                                                .requireSourceChainTransaction();
+                                                        Runnable drift =
+                                                                () -> {
+                                                                    isolation.set(
+                                                                            Connection
+                                                                                    .TRANSACTION_READ_COMMITTED);
+                                                                    driftObserved.set(true);
+                                                                };
+                                                        if (afterMybatisFlush) {
+                                                            TransactionSynchronizationManager
+                                                                    .registerSynchronization(
+                                                                            new TransactionSynchronization() {
+                                                                                @Override
+                                                                                public int
+                                                                                        getOrder() {
+                                                                                    return Ordered
+                                                                                                    .LOWEST_PRECEDENCE
+                                                                                            - 1;
+                                                                                }
+
+                                                                                @Override
+                                                                                public void
+                                                                                        beforeCommit(
+                                                                                                boolean
+                                                                                                        readOnly) {
+                                                                                    assertTrue(
+                                                                                            fixture
+                                                                                                    .events
+                                                                                                    .contains(
+                                                                                                            "erp.flush"),
+                                                                                            "必须是真实MyBatis"
+                                                                                                + " flush之后的漂移");
+                                                                                    drift.run();
+                                                                                }
+                                                                            });
+                                                        } else {
+                                                            drift.run();
+                                                        }
+                                                        return "must-not-commit";
+                                                    }));
             assertTrue(failure.getCause() instanceof ServiceException);
-            assertTrue(driftObserved.get(),"不能将早期夹具/入口故障冒充晚期隔离漂移拒绝");
-            assertThrows(ServiceException.class,fixture.qualification::requireSourceChainTransaction);
+            assertTrue(driftObserved.get(), "不能将早期夹具/入口故障冒充晚期隔离漂移拒绝");
+            assertThrows(
+                    ServiceException.class, fixture.qualification::requireSourceChainTransaction);
         }
-        fixture.assertRolledBack(); fixture.assertOnlyErpBorrowed(1);
-        assertEquals(Connection.TRANSACTION_READ_COMMITTED,isolation.get());
+        fixture.assertRolledBack();
+        fixture.assertOnlyErpBorrowed(1);
+        assertEquals(Connection.TRANSACTION_READ_COMMITTED, isolation.get());
     }
 
     @Test
-    void explicitItemRegistrationStartsTransactionOnItsRealPhysicalDatasource() throws SQLException {
+    void explicitItemRegistrationStartsTransactionOnItsRealPhysicalDatasource()
+            throws SQLException {
         Fixture fixture = new Fixture();
-        ItemDataSource registered = new ItemDataSource("erp", fixture.erp, fixture.erp, false, false, SeataMode.AT);
+        ItemDataSource registered =
+                new ItemDataSource("erp", fixture.erp, fixture.erp, false, false, SeataMode.AT);
         fixture.routing.getDataSources().put("erp", registered);
         Entry entry = fixture.entry();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertEquals("physical", entry.execute(TENANT, () -> {
-                fixture.assertOwnedWritableTransaction();
-                assertNull(TransactionSynchronizationManager.getResource(registered));
-                fixture.qualification.requireWritableErpTransaction();
-                fixture.stageBatch();
-                return "physical";
-            }));
+            assertEquals(
+                    "physical",
+                    entry.execute(
+                            TENANT,
+                            () -> {
+                                fixture.assertOwnedWritableTransaction();
+                                assertNull(
+                                        TransactionSynchronizationManager.getResource(registered));
+                                fixture.qualification.requireWritableErpTransaction();
+                                fixture.stageBatch();
+                                return "physical";
+                            }));
         }
         fixture.assertOnlyErpBorrowed(1);
         fixture.assertNoIdentityGuessing();
     }
 
     /**
-     * 标准 Item/P6 链必须兼容当前 p6spy=true 配置，不要求用户关闭全局 Spy。
-     * 本正例选择内部专属事务直取真实 Hikari 的最小拓扑：此路径不借 P6 connection，
-     * 因而不能声称产生了该连接的 Spy 日志；不修改全局 Spy 或安全审计配置。
+     * 标准 Item/P6 链必须兼容当前 p6spy=true 配置，不要求用户关闭全局 Spy。 本正例选择内部专属事务直取真实 Hikari 的最小拓扑：此路径不借 P6
+     * connection， 因而不能声称产生了该连接的 Spy 日志；不修改全局 Spy 或安全审计配置。
      */
     @Test
-    void knownItemP6RegistrationUsesSamePhysicalHikariWithoutBorrowingSpyConnection() throws SQLException {
+    void knownItemP6RegistrationUsesSamePhysicalHikariWithoutBorrowingSpyConnection()
+            throws SQLException {
         Fixture fixture = new Fixture();
         P6DataSource checkedSpy = spy(new P6DataSource(fixture.erp));
         assertEquals(P6DataSource.class, checkedSpy.getClass(), "已依赖 inline mock 保持精确已核类型");
-        ItemDataSource registered = new ItemDataSource("erp", fixture.erp, checkedSpy, true, false, SeataMode.AT);
+        ItemDataSource registered =
+                new ItemDataSource("erp", fixture.erp, checkedSpy, true, false, SeataMode.AT);
         fixture.routing.getDataSources().put("erp", registered);
         Entry entry = fixture.entry();
         fixture.checkOwnedAliasesAtJdbcCompletion = true;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertEquals("p6-config-supported", entry.execute(TENANT, () -> {
-                fixture.assertOwnedWritableTransaction();
-                assertNull(TransactionSynchronizationManager.getResource(registered));
-                assertNull(TransactionSynchronizationManager.getResource(checkedSpy));
-                fixture.qualification.requireWritableErpTransaction();
-                assertNotNull(fixture.proxiedReader().materialPool(TENANT, MATERIAL, WINDOW_END));
-                fixture.stageBatch();
-                assertSame(fixture.erpJdbc.connection, fixture.template.getConnection());
-                return "p6-config-supported";
-            }));
+            assertEquals(
+                    "p6-config-supported",
+                    entry.execute(
+                            TENANT,
+                            () -> {
+                                fixture.assertOwnedWritableTransaction();
+                                assertNull(
+                                        TransactionSynchronizationManager.getResource(registered));
+                                assertNull(
+                                        TransactionSynchronizationManager.getResource(checkedSpy));
+                                fixture.qualification.requireWritableErpTransaction();
+                                assertNotNull(
+                                        fixture.proxiedReader()
+                                                .materialPool(TENANT, MATERIAL, WINDOW_END));
+                                fixture.stageBatch();
+                                assertSame(
+                                        fixture.erpJdbc.connection,
+                                        fixture.template.getConnection());
+                                return "p6-config-supported";
+                            }));
         }
         fixture.assertOnlyErpBorrowed(1);
         verify(checkedSpy, never()).getConnection();
@@ -467,20 +807,26 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void callbackFailureOrRollbackOnlyCannotReturnSuccessOrFlushBatch(boolean rollbackOnly) throws SQLException {
+    void callbackFailureOrRollbackOnlyCannotReturnSuccessOrFlushBatch(boolean rollbackOnly)
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         fixture.checkOwnedAliasesAtJdbcCompletion = true;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                fixture.observeCompletion();
-                if (!rollbackOnly) {
-                    throw new ServiceException("离线业务校验拒绝");
-                }
-                fixture.holder(fixture.erp).setRollbackOnly();
-                return "must-not-return";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        fixture.stageBatch();
+                                        fixture.observeCompletion();
+                                        if (!rollbackOnly) {
+                                            throw new ServiceException("离线业务校验拒绝");
+                                        }
+                                        fixture.holder(fixture.erp).setRollbackOnly();
+                                        return "must-not-return";
+                                    }));
         }
         fixture.assertRolledBack();
         verify(fixture.erpJdbc.statement, never()).executeBatch();
@@ -502,26 +848,38 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void independentCallAfterRollbackUsesFreshConnectionAndCleansEachLifecycle() throws SQLException {
+    void independentCallAfterRollbackUsesFreshConnectionAndCleansEachLifecycle()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         JdbcEndpoint next = fixture.newEndpoint("erp-next");
         fixture.availableErpConnections.addLast(next);
         fixture.checkOwnedAliasesAtJdbcCompletion = true;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                fixture.holder(fixture.erp).setRollbackOnly();
-                return "discard";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        fixture.stageBatch();
+                                        fixture.holder(fixture.erp).setRollbackOnly();
+                                        return "discard";
+                                    }));
             assertCleanThread();
-            assertEquals("next", entry.execute(TENANT, () -> {
-                fixture.assertOwnedWritableTransaction();
-                assertSame(next.connection, fixture.holder(fixture.erp).getConnection());
-                fixture.stageBatch();
-                assertSame(next.connection, fixture.template.getConnection());
-                return "next";
-            }));
+            assertEquals(
+                    "next",
+                    entry.execute(
+                            TENANT,
+                            () -> {
+                                fixture.assertOwnedWritableTransaction();
+                                assertSame(
+                                        next.connection,
+                                        fixture.holder(fixture.erp).getConnection());
+                                fixture.stageBatch();
+                                assertSame(next.connection, fixture.template.getConnection());
+                                return "next";
+                            }));
         }
         verify(fixture.erpJdbc.connection, times(1)).rollback();
         verify(fixture.erpJdbc.connection, never()).commit();
@@ -533,21 +891,33 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void nestedEntryIsRejectedBeforeAdditionalBorrowWithoutDamagingOuterTransaction() throws SQLException {
+    void nestedEntryIsRejectedBeforeAdditionalBorrowWithoutDamagingOuterTransaction()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         AtomicBoolean innerCalled = new AtomicBoolean();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertEquals("outer", entry.execute(TENANT, () -> {
-                Map<Object, Object> before = TransactionSynchronizationManager.getResourceMap();
-                assertThrows(ServiceException.class, () -> entry.execute(TENANT, () -> {
-                    innerCalled.set(true);
-                    return null;
-                }));
-                assertEquals(before, TransactionSynchronizationManager.getResourceMap());
-                fixture.qualification.requireWritableErpTransaction();
-                return "outer";
-            }));
+            assertEquals(
+                    "outer",
+                    entry.execute(
+                            TENANT,
+                            () -> {
+                                Map<Object, Object> before =
+                                        TransactionSynchronizationManager.getResourceMap();
+                                assertThrows(
+                                        ServiceException.class,
+                                        () ->
+                                                entry.execute(
+                                                        TENANT,
+                                                        () -> {
+                                                            innerCalled.set(true);
+                                                            return null;
+                                                        }));
+                                assertEquals(
+                                        before, TransactionSynchronizationManager.getResourceMap());
+                                fixture.qualification.requireWritableErpTransaction();
+                                return "outer";
+                            }));
         }
         assertFalse(innerCalled.get());
         fixture.assertOnlyErpBorrowed(1);
@@ -556,8 +926,8 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @MethodSource("invalidTenants")
-    void tenantMustBeEnabledPresentAndMatchBeforeBorrow(boolean enabled, String current, String requested)
-        throws SQLException {
+    void tenantMustBeEnabledPresentAndMatchBeforeBorrow(
+            boolean enabled, String current, String requested) throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         try (MockedStatic<TenantHelper> ignored = tenant(enabled, current)) {
@@ -567,19 +937,22 @@ class PuRequirementErpTransactionExecutorTest {
 
     static Stream<Arguments> invalidTenants() {
         return Stream.of(
-            Arguments.of(false, TENANT, TENANT), Arguments.of(true, null, TENANT),
-            Arguments.of(true, "", TENANT), Arguments.of(true, "other-tenant", TENANT),
-            Arguments.of(true, TENANT, null), Arguments.of(true, TENANT, " "),
-            Arguments.of(true, TENANT, "other-tenant"));
+                Arguments.of(false, TENANT, TENANT),
+                Arguments.of(true, null, TENANT),
+                Arguments.of(true, "", TENANT),
+                Arguments.of(true, "other-tenant", TENANT),
+                Arguments.of(true, TENANT, null),
+                Arguments.of(true, TENANT, " "),
+                Arguments.of(true, TENANT, "other-tenant"));
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void existingActiveFlagOrSynchronizationIsRejectedWithoutClearingCallerState(boolean synchronization)
-        throws SQLException {
+    void existingActiveFlagOrSynchronizationIsRejectedWithoutClearingCallerState(
+            boolean synchronization) throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
-        TransactionSynchronization marker = new TransactionSynchronization() { };
+        TransactionSynchronization marker = new TransactionSynchronization() {};
         if (synchronization) {
             TransactionSynchronizationManager.initSynchronization();
             TransactionSynchronizationManager.registerSynchronization(marker);
@@ -588,10 +961,14 @@ class PuRequirementErpTransactionExecutorTest {
         }
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
             fixture.assertRejectedBeforeBorrow(entry, TENANT);
-            assertEquals(synchronization, TransactionSynchronizationManager.isSynchronizationActive());
-            assertEquals(!synchronization, TransactionSynchronizationManager.isActualTransactionActive());
+            assertEquals(
+                    synchronization, TransactionSynchronizationManager.isSynchronizationActive());
+            assertEquals(
+                    !synchronization,
+                    TransactionSynchronizationManager.isActualTransactionActive());
             if (synchronization) {
-                assertEquals(List.of(marker), TransactionSynchronizationManager.getSynchronizations());
+                assertEquals(
+                        List.of(marker), TransactionSynchronizationManager.getSynchronizations());
             }
         } finally {
             if (synchronization) {
@@ -604,19 +981,23 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @EnumSource(ExistingResource.class)
-    void anyExistingResourceIsRetainedAndRejectedBeforeBorrow(ExistingResource kind) throws SQLException {
+    void anyExistingResourceIsRetainedAndRejectedBeforeBorrow(ExistingResource kind)
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
-        Object key = switch (kind) {
-            case MASTER -> fixture.master;
-            case ERP -> fixture.erp;
-            case ROUTER -> fixture.routing;
-            case SQL_SESSION -> fixture.sessionFactory;
-            case UNKNOWN -> new Object();
-        };
+        Object key =
+                switch (kind) {
+                    case MASTER -> fixture.master;
+                    case ERP -> fixture.erp;
+                    case ROUTER -> fixture.routing;
+                    case SQL_SESSION -> fixture.sessionFactory;
+                    case UNKNOWN -> new Object();
+                };
         SqlSession session = mock(SqlSession.class);
-        Object caller = kind == ExistingResource.SQL_SESSION ? new SqlSessionHolder(session, ExecutorType.SIMPLE, null)
-            : new Object();
+        Object caller =
+                kind == ExistingResource.SQL_SESSION
+                        ? new SqlSessionHolder(session, ExecutorType.SIMPLE, null)
+                        : new Object();
         TransactionSynchronizationManager.bindResource(key, caller);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
             fixture.assertRejectedBeforeBorrow(entry, TENANT);
@@ -629,28 +1010,41 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void realExternalMasterTransactionIsNotJoinedSuspendedOrAugmented(boolean readOnly) throws SQLException {
+    void realExternalMasterTransactionIsNotJoinedSuspendedOrAugmented(boolean readOnly)
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
-        TransactionTemplate caller = new TransactionTemplate(new DataSourceTransactionManager(fixture.master));
+        TransactionTemplate caller =
+                new TransactionTemplate(new DataSourceTransactionManager(fixture.master));
         caller.setReadOnly(readOnly);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            caller.execute(status -> {
-                Map<Object, Object> resources = TransactionSynchronizationManager.getResourceMap();
-                List<TransactionSynchronization> synchronizations = TransactionSynchronizationManager.getSynchronizations();
-                try {
-                    fixture.assertRejectedBeforeCallback(entry, TENANT);
-                    assertEquals(resources, TransactionSynchronizationManager.getResourceMap());
-                    assertEquals(synchronizations, TransactionSynchronizationManager.getSynchronizations());
-                    assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
-                    assertEquals(readOnly, TransactionSynchronizationManager.isCurrentTransactionReadOnly());
-                    assertNull(TransactionSynchronizationManager.getResource(fixture.erp));
-                    assertNull(TransactionSynchronizationManager.getResource(fixture.routing));
-                } finally {
-                    status.setRollbackOnly();
-                }
-                return null;
-            });
+            caller.execute(
+                    status -> {
+                        Map<Object, Object> resources =
+                                TransactionSynchronizationManager.getResourceMap();
+                        List<TransactionSynchronization> synchronizations =
+                                TransactionSynchronizationManager.getSynchronizations();
+                        try {
+                            fixture.assertRejectedBeforeCallback(entry, TENANT);
+                            assertEquals(
+                                    resources, TransactionSynchronizationManager.getResourceMap());
+                            assertEquals(
+                                    synchronizations,
+                                    TransactionSynchronizationManager.getSynchronizations());
+                            assertTrue(
+                                    TransactionSynchronizationManager.isActualTransactionActive());
+                            assertEquals(
+                                    readOnly,
+                                    TransactionSynchronizationManager
+                                            .isCurrentTransactionReadOnly());
+                            assertNull(TransactionSynchronizationManager.getResource(fixture.erp));
+                            assertNull(
+                                    TransactionSynchronizationManager.getResource(fixture.routing));
+                        } finally {
+                            status.setRollbackOnly();
+                        }
+                        return null;
+                    });
         }
         verify(fixture.erp, never()).getConnection();
         verify(fixture.master, times(1)).getConnection();
@@ -660,8 +1054,8 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @EnumSource(ExternalErpTransaction.class)
-    void externalErpTransactionsCannotBeConvertedIntoEntryOwnedTransactions(ExternalErpTransaction kind)
-        throws SQLException {
+    void externalErpTransactionsCannotBeConvertedIntoEntryOwnedTransactions(
+            ExternalErpTransaction kind) throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         boolean routerOnly = kind == ExternalErpTransaction.ROUTER_ONLY;
@@ -669,34 +1063,42 @@ class PuRequirementErpTransactionExecutorTest {
         DynamicDataSourceContextHolder.push("erp");
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
             DataSource source = routerOnly ? fixture.routing : fixture.erp;
-            TransactionTemplate caller = new TransactionTemplate(new DataSourceTransactionManager(source));
-            caller.execute(status -> {
-                ConnectionHolder original = fixture.holder(source);
-                if (alias) {
-                    /** 仅为拒绝外部补绑的反例，绝不作为新入口的正例或生产证明。 */
-                    TransactionSynchronizationManager.bindResource(fixture.routing, original);
-                }
-                try {
-                    if (alias) {
-                        fixture.qualification.requireWritableErpTransaction();
-                    }
-                    Map<Object, Object> resources = TransactionSynchronizationManager.getResourceMap();
-                    fixture.assertRejectedBeforeCallback(entry, TENANT);
-                    assertEquals(resources, TransactionSynchronizationManager.getResourceMap());
-                    assertSame(original, fixture.holder(source));
-                    if (routerOnly) {
-                        assertNull(TransactionSynchronizationManager.getResource(fixture.erp));
-                    } else if (!alias) {
-                        assertNull(TransactionSynchronizationManager.getResource(fixture.routing));
-                    }
-                } finally {
-                    if (alias) {
-                        releaseCallerResource(fixture.routing, original);
-                    }
-                    status.setRollbackOnly();
-                }
-                return null;
-            });
+            TransactionTemplate caller =
+                    new TransactionTemplate(new DataSourceTransactionManager(source));
+            caller.execute(
+                    status -> {
+                        ConnectionHolder original = fixture.holder(source);
+                        if (alias) {
+                            /** 仅为拒绝外部补绑的反例，绝不作为新入口的正例或生产证明。 */
+                            TransactionSynchronizationManager.bindResource(
+                                    fixture.routing, original);
+                        }
+                        try {
+                            if (alias) {
+                                fixture.qualification.requireWritableErpTransaction();
+                            }
+                            Map<Object, Object> resources =
+                                    TransactionSynchronizationManager.getResourceMap();
+                            fixture.assertRejectedBeforeCallback(entry, TENANT);
+                            assertEquals(
+                                    resources, TransactionSynchronizationManager.getResourceMap());
+                            assertSame(original, fixture.holder(source));
+                            if (routerOnly) {
+                                assertNull(
+                                        TransactionSynchronizationManager.getResource(fixture.erp));
+                            } else if (!alias) {
+                                assertNull(
+                                        TransactionSynchronizationManager.getResource(
+                                                fixture.routing));
+                            }
+                        } finally {
+                            if (alias) {
+                                releaseCallerResource(fixture.routing, original);
+                            }
+                            status.setRollbackOnly();
+                        }
+                        return null;
+                    });
         } finally {
             DynamicDataSourceContextHolder.poll();
         }
@@ -718,15 +1120,22 @@ class PuRequirementErpTransactionExecutorTest {
 
     @ParameterizedTest
     @EnumSource(InvalidTopology.class)
-    void invalidFactoryOrRegistryFailsClosedBeforeCallbackAndBorrow(InvalidTopology topology) throws SQLException {
+    void invalidFactoryOrRegistryFailsClosedBeforeCallbackAndBorrow(InvalidTopology topology)
+            throws SQLException {
         executorType();
         Fixture fixture = new Fixture(topology);
         AtomicBoolean called = new AtomicBoolean();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> fixture.entry().execute(TENANT, () -> {
-                called.set(true);
-                return null;
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            fixture.entry()
+                                    .execute(
+                                            TENANT,
+                                            () -> {
+                                                called.set(true);
+                                                return null;
+                                            }));
         }
         assertFalse(called.get());
         fixture.assertNoBorrow();
@@ -736,26 +1145,36 @@ class PuRequirementErpTransactionExecutorTest {
     /** 标准委托与不继承 DelegatingDataSource 的自定义包装均不得当作已核物理池。 */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void unreviewedErpWrapperIsRejectedBeforeErpOrMasterBorrow(boolean customWrapper) throws SQLException {
+    void unreviewedErpWrapperIsRejectedBeforeErpOrMasterBorrow(boolean customWrapper)
+            throws SQLException {
         Fixture fixture = new Fixture();
-        DataSource wrapper = customWrapper ? new UnreviewedDataSourceWrapper(fixture.master)
-            : new DelegatingDataSource(fixture.master);
+        DataSource wrapper =
+                customWrapper
+                        ? new UnreviewedDataSourceWrapper(fixture.master)
+                        : new DelegatingDataSource(fixture.master);
         fixture.routing.getDataSources().put("erp", wrapper);
         Entry entry = fixture.entry();
         AtomicBoolean called = new AtomicBoolean();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertAll("未知包装必须在 callback 和任一物理借连接之前拒绝，不按 catalog 猜 ERP",
-                () -> assertThrows(ServiceException.class, () -> entry.execute(TENANT, () -> {
-                    called.set(true);
-                    return "must-not-run";
-                })),
-                () -> assertFalse(called.get(), "拒绝不能等到包装已借 master 之后"),
-                () -> verify(fixture.erp, never()).getConnection(),
-                () -> verify(fixture.master, never()).getConnection(),
-                () -> verify(fixture.erpJdbc.connection, never()).commit(),
-                () -> verify(fixture.masterJdbc.connection, never()).commit(),
-                fixture::assertNoIdentityGuessing,
-                PuRequirementErpTransactionExecutorTest::assertCleanThread);
+            assertAll(
+                    "未知包装必须在 callback 和任一物理借连接之前拒绝，不按 catalog 猜 ERP",
+                    () ->
+                            assertThrows(
+                                    ServiceException.class,
+                                    () ->
+                                            entry.execute(
+                                                    TENANT,
+                                                    () -> {
+                                                        called.set(true);
+                                                        return "must-not-run";
+                                                    })),
+                    () -> assertFalse(called.get(), "拒绝不能等到包装已借 master 之后"),
+                    () -> verify(fixture.erp, never()).getConnection(),
+                    () -> verify(fixture.master, never()).getConnection(),
+                    () -> verify(fixture.erpJdbc.connection, never()).commit(),
+                    () -> verify(fixture.masterJdbc.connection, never()).commit(),
+                    fixture::assertNoIdentityGuessing,
+                    PuRequirementErpTransactionExecutorTest::assertCleanThread);
         }
     }
 
@@ -763,20 +1182,40 @@ class PuRequirementErpTransactionExecutorTest {
     @ParameterizedTest
     @EnumSource(InvalidP6Registration.class)
     void unreviewedOrMismatchedP6RegistrationCannotBorrowErpOrMaster(InvalidP6Registration invalid)
-        throws SQLException {
+            throws SQLException {
         Fixture fixture = new Fixture();
-        DataSource decorated = switch (invalid) {
-            case UNKNOWN_WRAPPER -> new UnreviewedDataSourceWrapper(fixture.master);
-            case P6_SUBCLASS -> new UnreviewedP6DataSource(fixture.erp, fixture.master);
-            case UNKNOWN_P6_INNER -> new P6DataSource(new UnreviewedDataSourceWrapper(fixture.erp));
-            case WRONG_INNER_POOL -> new P6DataSource(fixture.master);
-            case SEATA, SHARED_ERP_POOL -> new P6DataSource(fixture.erp);
-        };
-        fixture.routing.getDataSources().put("erp", new ItemDataSource("erp", fixture.erp, decorated,
-            true, invalid == InvalidP6Registration.SEATA, SeataMode.AT));
+        DataSource decorated =
+                switch (invalid) {
+                    case UNKNOWN_WRAPPER -> new UnreviewedDataSourceWrapper(fixture.master);
+                    case P6_SUBCLASS -> new UnreviewedP6DataSource(fixture.erp, fixture.master);
+                    case UNKNOWN_P6_INNER ->
+                            new P6DataSource(new UnreviewedDataSourceWrapper(fixture.erp));
+                    case WRONG_INNER_POOL -> new P6DataSource(fixture.master);
+                    case SEATA, SHARED_ERP_POOL -> new P6DataSource(fixture.erp);
+                };
+        fixture.routing
+                .getDataSources()
+                .put(
+                        "erp",
+                        new ItemDataSource(
+                                "erp",
+                                fixture.erp,
+                                decorated,
+                                true,
+                                invalid == InvalidP6Registration.SEATA,
+                                SeataMode.AT));
         if (invalid == InvalidP6Registration.SHARED_ERP_POOL) {
-            fixture.routing.getDataSources().put("master", new ItemDataSource("master", fixture.erp,
-                new P6DataSource(fixture.erp), true, false, SeataMode.AT));
+            fixture.routing
+                    .getDataSources()
+                    .put(
+                            "master",
+                            new ItemDataSource(
+                                    "master",
+                                    fixture.erp,
+                                    new P6DataSource(fixture.erp),
+                                    true,
+                                    false,
+                                    SeataMode.AT));
         }
         Entry entry = fixture.entry();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
@@ -790,22 +1229,44 @@ class PuRequirementErpTransactionExecutorTest {
     @ParameterizedTest
     @EnumSource(ConfigurationDrift.class)
     void registryOrEnvironmentIdentityDriftCannotCommitOrBorrowReplacement(ConfigurationDrift drift)
-        throws SQLException {
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         DataSource replacement = mock(DataSource.class);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                switch (drift) {
-                    case PHYSICAL -> fixture.routing.getDataSources().put("erp", replacement);
-                    case REGISTRATION -> fixture.routing.getDataSources().put("erp",
-                        new ItemDataSource("erp", fixture.erp, fixture.erp, false, false, SeataMode.AT));
-                    case ENVIRONMENT -> fixture.configuration.setEnvironment(new Environment(
-                        "offline-replaced", new SpringManagedTransactionFactory(), fixture.routing));
-                }
-                return "discard";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        fixture.stageBatch();
+                                        switch (drift) {
+                                            case PHYSICAL ->
+                                                    fixture.routing
+                                                            .getDataSources()
+                                                            .put("erp", replacement);
+                                            case REGISTRATION ->
+                                                    fixture.routing
+                                                            .getDataSources()
+                                                            .put(
+                                                                    "erp",
+                                                                    new ItemDataSource(
+                                                                            "erp",
+                                                                            fixture.erp,
+                                                                            fixture.erp,
+                                                                            false,
+                                                                            false,
+                                                                            SeataMode.AT));
+                                            case ENVIRONMENT ->
+                                                    fixture.configuration.setEnvironment(
+                                                            new Environment(
+                                                                    "offline-replaced",
+                                                                    new SpringManagedTransactionFactory(),
+                                                                    fixture.routing));
+                                        }
+                                        return "discard";
+                                    }));
         }
         fixture.assertRolledBack();
         verify(replacement, never()).getConnection();
@@ -813,16 +1274,22 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void unknownResourceAddedByCallbackIsRetainedWhileOwnedTransactionRollsBack() throws SQLException {
+    void unknownResourceAddedByCallbackIsRetainedWhileOwnedTransactionRollsBack()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         Object key = new Object();
         Object value = new Object();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                TransactionSynchronizationManager.bindResource(key, value);
-                return "discard";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        TransactionSynchronizationManager.bindResource(key, value);
+                                        return "discard";
+                                    }));
             assertOnlyCallerResource(key, value);
         } finally {
             releaseCallerResource(key, value);
@@ -832,17 +1299,27 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void replacedRoutingAliasIsRejectedWithoutOverwritingOrRemovingCallerHolder() throws SQLException {
+    void replacedRoutingAliasIsRejectedWithoutOverwritingOrRemovingCallerHolder()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         Connection callerConnection = mock(Connection.class);
         ConnectionHolder caller = new ConnectionHolder(callerConnection);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                assertSame(fixture.holder(fixture.erp), TransactionSynchronizationManager.unbindResource(fixture.routing));
-                TransactionSynchronizationManager.bindResource(fixture.routing, caller);
-                return "discard";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        assertSame(
+                                                fixture.holder(fixture.erp),
+                                                TransactionSynchronizationManager.unbindResource(
+                                                        fixture.routing));
+                                        TransactionSynchronizationManager.bindResource(
+                                                fixture.routing, caller);
+                                        return "discard";
+                                    }));
             assertOnlyCallerResource(fixture.routing, caller);
             verifyNoInteractions(callerConnection);
         } finally {
@@ -853,27 +1330,35 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     @Test
-    void lateBeforeCommitResourceMutationAfterMybatisFlushStillPreventsJdbcCommit() throws SQLException {
+    void lateBeforeCommitResourceMutationAfterMybatisFlushStillPreventsJdbcCommit()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         Object key = new Object();
         Object value = new Object();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public int getOrder() {
-                        return Ordered.LOWEST_PRECEDENCE - 1;
-                    }
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        fixture.stageBatch();
+                                        TransactionSynchronizationManager.registerSynchronization(
+                                                new TransactionSynchronization() {
+                                                    @Override
+                                                    public int getOrder() {
+                                                        return Ordered.LOWEST_PRECEDENCE - 1;
+                                                    }
 
-                    @Override
-                    public void beforeCommit(boolean readOnly) {
-                        TransactionSynchronizationManager.bindResource(key, value);
-                    }
-                });
-                return "discard";
-            }));
+                                                    @Override
+                                                    public void beforeCommit(boolean readOnly) {
+                                                        TransactionSynchronizationManager
+                                                                .bindResource(key, value);
+                                                    }
+                                                });
+                                        return "discard";
+                                    }));
             assertOnlyCallerResource(key, value);
         } finally {
             releaseCallerResource(key, value);
@@ -885,8 +1370,9 @@ class PuRequirementErpTransactionExecutorTest {
 
     /** late factory 替换必须拒绝提交；Spring 吞掉 beforeCompletion 异常并不构成事务保护。 */
     @Test
-    void lateFactoryReplacementAfterRealMybatisFlushCannotCommitEvenIfBeforeCompletionExceptionIsSwallowed()
-        throws SQLException {
+    void
+            lateFactoryReplacementAfterRealMybatisFlushCannotCommitEvenIfBeforeCompletionExceptionIsSwallowed()
+                    throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         SqlSession foreignSession = mock(SqlSession.class);
@@ -900,45 +1386,75 @@ class PuRequirementErpTransactionExecutorTest {
         RuntimeException rejection = null;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
             try {
-                returned = entry.execute(TENANT, () -> {
-                    fixture.stageBatch();
-                    SqlSessionHolder original = fixture.sessionHolder();
-                    assertEquals(DefaultSqlSession.class, original.getSqlSession().getClass());
-                    assertSame(fixture.configuration, original.getSqlSession().getConfiguration());
-                    assertFalse(fixture.events.contains("erp.flush"), "callback 只排队，不提前伪造 late 阶段 flush");
-                    fixture.observeCompletion();
-                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                        @Override
-                        public int getOrder() {
-                            return Ordered.LOWEST_PRECEDENCE - 1;
-                        }
+                returned =
+                        entry.execute(
+                                TENANT,
+                                () -> {
+                                    fixture.stageBatch();
+                                    SqlSessionHolder original = fixture.sessionHolder();
+                                    assertEquals(
+                                            DefaultSqlSession.class,
+                                            original.getSqlSession().getClass());
+                                    assertSame(
+                                            fixture.configuration,
+                                            original.getSqlSession().getConfiguration());
+                                    assertFalse(
+                                            fixture.events.contains("erp.flush"),
+                                            "callback 只排队，不提前伪造 late 阶段 flush");
+                                    fixture.observeCompletion();
+                                    TransactionSynchronizationManager.registerSynchronization(
+                                            new TransactionSynchronization() {
+                                                @Override
+                                                public int getOrder() {
+                                                    return Ordered.LOWEST_PRECEDENCE - 1;
+                                                }
 
-                        @Override
-                        public void beforeCommit(boolean readOnly) {
-                            assertTrue(callbackFinished.get(), "必须在正常 callback 返回及 prepare 核验之后触发");
-                            assertTrue(fixture.events.contains("erp.flush"), "必须已由真实 MyBatis beforeCommit flush");
-                            assertEquals(0, fixture.erpJdbc.pending.get(), "批语句必须已实际送到非联网 JDBC");
-                            assertDoesNotThrow(() -> verify(fixture.erpJdbc.statement, times(1)).executeBatch());
-                            assertSame(original, fixture.sessionHolder());
-                            realFlushObserved.set(true);
-                            assertSame(original, TransactionSynchronizationManager.unbindResource(fixture.sessionFactory));
-                            TransactionSynchronizationManager.bindResource(fixture.sessionFactory, foreign);
-                            fixture.events.add("late.factory.replace");
-                            lateReplacement.set(true);
-                        }
+                                                @Override
+                                                public void beforeCommit(boolean readOnly) {
+                                                    assertTrue(
+                                                            callbackFinished.get(),
+                                                            "必须在正常 callback 返回及 prepare 核验之后触发");
+                                                    assertTrue(
+                                                            fixture.events.contains("erp.flush"),
+                                                            "必须已由真实 MyBatis beforeCommit flush");
+                                                    assertEquals(
+                                                            0,
+                                                            fixture.erpJdbc.pending.get(),
+                                                            "批语句必须已实际送到非联网 JDBC");
+                                                    assertDoesNotThrow(
+                                                            () ->
+                                                                    verify(
+                                                                                    fixture.erpJdbc
+                                                                                            .statement,
+                                                                                    times(1))
+                                                                            .executeBatch());
+                                                    assertSame(original, fixture.sessionHolder());
+                                                    realFlushObserved.set(true);
+                                                    assertSame(
+                                                            original,
+                                                            TransactionSynchronizationManager
+                                                                    .unbindResource(
+                                                                            fixture.sessionFactory));
+                                                    TransactionSynchronizationManager.bindResource(
+                                                            fixture.sessionFactory, foreign);
+                                                    fixture.events.add("late.factory.replace");
+                                                    lateReplacement.set(true);
+                                                }
 
-                        @Override
-                        public void beforeCompletion() {
-                            if (lateReplacement.get()) {
-                                beforeCompletionThrew.set(true);
-                                fixture.events.add("late.beforeCompletion.throw");
-                                throw new IllegalStateException("离线模拟 beforeCompletion 异常，不等于阻止提交");
-                            }
-                        }
-                    });
-                    callbackFinished.set(true);
-                    return "must-not-return";
-                });
+                                                @Override
+                                                public void beforeCompletion() {
+                                                    if (lateReplacement.get()) {
+                                                        beforeCompletionThrew.set(true);
+                                                        fixture.events.add(
+                                                                "late.beforeCompletion.throw");
+                                                        throw new IllegalStateException(
+                                                                "离线模拟 beforeCompletion 异常，不等于阻止提交");
+                                                    }
+                                                }
+                                            });
+                                    callbackFinished.set(true);
+                                    return "must-not-return";
+                                });
             } catch (RuntimeException failure) {
                 rejection = failure;
             }
@@ -952,18 +1468,22 @@ class PuRequirementErpTransactionExecutorTest {
             fixture.assertNoIdentityGuessing();
             String observedReturn = returned;
             RuntimeException observedRejection = rejection;
-            assertAll("late factory violation 必须在真实 JDBC 提交前失败，而不是仅抛一个被 Spring 吞掉的异常",
-                () -> assertNull(observedReturn, "不能返回已经执行完的 callback 值"),
-                () -> assertNotNull(observedRejection, "入口必须报告拒绝，不能被 beforeCompletion 吞异常后成功"),
-                () -> verify(fixture.erpJdbc.connection, never()).commit(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).close(),
-                () -> assertTrue(fixture.erpJdbc.closed.get(), "自有物理连接必须清理完成"),
-                () -> verify(fixture.erpJdbc.statement, times(1)).executeBatch(),
-                () -> verify(foreignSession, never()).getConnection(),
-                () -> verify(foreignSession, never()).close(),
-                () -> assertTrue(fixture.events.contains("completion.1"), "必须实际完成 rollback 生命周期"),
-                () -> assertOnlyCallerResource(fixture.sessionFactory, foreign));
+            assertAll(
+                    "late factory violation 必须在真实 JDBC 提交前失败，而不是仅抛一个被 Spring 吞掉的异常",
+                    () -> assertNull(observedReturn, "不能返回已经执行完的 callback 值"),
+                    () -> assertNotNull(observedRejection, "入口必须报告拒绝，不能被 beforeCompletion 吞异常后成功"),
+                    () -> verify(fixture.erpJdbc.connection, never()).commit(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).close(),
+                    () -> assertTrue(fixture.erpJdbc.closed.get(), "自有物理连接必须清理完成"),
+                    () -> verify(fixture.erpJdbc.statement, times(1)).executeBatch(),
+                    () -> verify(foreignSession, never()).getConnection(),
+                    () -> verify(foreignSession, never()).close(),
+                    () ->
+                            assertTrue(
+                                    fixture.events.contains("completion.1"),
+                                    "必须实际完成 rollback 生命周期"),
+                    () -> assertOnlyCallerResource(fixture.sessionFactory, foreign));
         } finally {
             releaseCallerResource(fixture.sessionFactory, foreign);
         }
@@ -971,7 +1491,8 @@ class PuRequirementErpTransactionExecutorTest {
 
     /** 同序回调先注册时，原生 MyBatis 清理前的最后一次资源替换仍必须阻止物理提交。 */
     @Test
-    void factoryReplacementBetweenOwnedObservationAndNativeMybatisCleanupCannotCommit() throws SQLException {
+    void factoryReplacementBetweenOwnedObservationAndNativeMybatisCleanupCannotCommit()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         SqlSession foreignSession = mock(SqlSession.class);
@@ -984,34 +1505,59 @@ class PuRequirementErpTransactionExecutorTest {
         RuntimeException rejection = null;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
             try {
-                returned = entry.execute(TENANT, () -> {
-                    /** 在真实会话前注册同序同步，确保替换发生在入口观察后、原生解绑前。 */
-                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                        @Override
-                        public int getOrder() {
-                            return org.springframework.jdbc.datasource.DataSourceUtils.CONNECTION_SYNCHRONIZATION_ORDER - 1;
-                        }
+                returned =
+                        entry.execute(
+                                TENANT,
+                                () -> {
+                                    /** 在真实会话前注册同序同步，确保替换发生在入口观察后、原生解绑前。 */
+                                    TransactionSynchronizationManager.registerSynchronization(
+                                            new TransactionSynchronization() {
+                                                @Override
+                                                public int getOrder() {
+                                                    return DataSourceUtils
+                                                                    .CONNECTION_SYNCHRONIZATION_ORDER
+                                                            - 1;
+                                                }
 
-                        @Override
-                        public void beforeCompletion() {
-                            assertTrue(callbackFinished.get(), "必须在正常回调和全部提交前校验之后触发");
-                            assertTrue(fixture.events.contains("erp.flush"), "必须已经发生真实 MyBatis 提交前刷新");
-                            assertEquals(0, fixture.erpJdbc.pending.get(), "语句已实际发送到离线 JDBC");
-                            SqlSessionHolder original = fixture.sessionHolder();
-                            assertEquals(DefaultSqlSession.class, original.getSqlSession().getClass());
-                            assertSame(fixture.configuration, original.getSqlSession().getConfiguration());
-                            nativeFlushObserved.set(true);
-                            assertSame(original, TransactionSynchronizationManager.unbindResource(fixture.sessionFactory));
-                            TransactionSynchronizationManager.bindResource(fixture.sessionFactory, foreign);
-                            fixture.events.add("between.owned.and.mybatis.replace");
-                            replacementReached.set(true);
-                        }
-                    });
-                    fixture.stageBatch();
-                    fixture.observeCompletion();
-                    callbackFinished.set(true);
-                    return "must-not-return";
-                });
+                                                @Override
+                                                public void beforeCompletion() {
+                                                    assertTrue(
+                                                            callbackFinished.get(),
+                                                            "必须在正常回调和全部提交前校验之后触发");
+                                                    assertTrue(
+                                                            fixture.events.contains("erp.flush"),
+                                                            "必须已经发生真实 MyBatis 提交前刷新");
+                                                    assertEquals(
+                                                            0,
+                                                            fixture.erpJdbc.pending.get(),
+                                                            "语句已实际发送到离线 JDBC");
+                                                    SqlSessionHolder original =
+                                                            fixture.sessionHolder();
+                                                    assertEquals(
+                                                            DefaultSqlSession.class,
+                                                            original.getSqlSession().getClass());
+                                                    assertSame(
+                                                            fixture.configuration,
+                                                            original.getSqlSession()
+                                                                    .getConfiguration());
+                                                    nativeFlushObserved.set(true);
+                                                    assertSame(
+                                                            original,
+                                                            TransactionSynchronizationManager
+                                                                    .unbindResource(
+                                                                            fixture.sessionFactory));
+                                                    TransactionSynchronizationManager.bindResource(
+                                                            fixture.sessionFactory, foreign);
+                                                    fixture.events.add(
+                                                            "between.owned.and.mybatis.replace");
+                                                    replacementReached.set(true);
+                                                }
+                                            });
+                                    fixture.stageBatch();
+                                    fixture.observeCompletion();
+                                    callbackFinished.set(true);
+                                    return "must-not-return";
+                                });
             } catch (RuntimeException failure) {
                 rejection = failure;
             }
@@ -1022,18 +1568,19 @@ class PuRequirementErpTransactionExecutorTest {
             fixture.assertOnlyErpBorrowed(1);
             String observedReturn = returned;
             RuntimeException observedRejection = rejection;
-            assertAll("提交前任何资源替换不能被原生清理抹去后当作正常解绑",
-                () -> assertNull(observedReturn),
-                () -> assertNotNull(observedRejection),
-                () -> verify(fixture.erpJdbc.connection, never()).commit(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).close(),
-                () -> assertTrue(fixture.erpJdbc.closed.get()),
-                () -> verify(fixture.erpJdbc.statement, times(1)).executeBatch(),
-                () -> verify(foreignSession, never()).getConnection(),
-                () -> verify(foreignSession, never()).close(),
-                () -> assertTrue(fixture.events.contains("completion.1")),
-                () -> assertOnlyCallerResource(fixture.sessionFactory, foreign));
+            assertAll(
+                    "提交前任何资源替换不能被原生清理抹去后当作正常解绑",
+                    () -> assertNull(observedReturn),
+                    () -> assertNotNull(observedRejection),
+                    () -> verify(fixture.erpJdbc.connection, never()).commit(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).close(),
+                    () -> assertTrue(fixture.erpJdbc.closed.get()),
+                    () -> verify(fixture.erpJdbc.statement, times(1)).executeBatch(),
+                    () -> verify(foreignSession, never()).getConnection(),
+                    () -> verify(foreignSession, never()).close(),
+                    () -> assertTrue(fixture.events.contains("completion.1")),
+                    () -> assertOnlyCallerResource(fixture.sessionFactory, foreign));
         } finally {
             releaseCallerResource(fixture.sessionFactory, foreign);
         }
@@ -1042,7 +1589,8 @@ class PuRequirementErpTransactionExecutorTest {
     /** 异常或待回滚分支也须保留原生清理前晚到的外来工厂引用，不得只保护正常提交路径。 */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void lateForeignFactoryDuringCallbackFailureOrRollbackOnlySurvivesCleanup(boolean rollbackOnly) throws SQLException {
+    void lateForeignFactoryDuringCallbackFailureOrRollbackOnlySurvivesCleanup(boolean rollbackOnly)
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         SqlSession foreignSession = mock(SqlSession.class);
@@ -1051,46 +1599,74 @@ class PuRequirementErpTransactionExecutorTest {
         AtomicBoolean callbackReached = new AtomicBoolean();
         AtomicBoolean replacementReached = new AtomicBoolean();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public int getOrder() {
-                        return org.springframework.jdbc.datasource.DataSourceUtils.CONNECTION_SYNCHRONIZATION_ORDER - 1;
-                    }
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        TransactionSynchronizationManager.registerSynchronization(
+                                                new TransactionSynchronization() {
+                                                    @Override
+                                                    public int getOrder() {
+                                                        return DataSourceUtils
+                                                                        .CONNECTION_SYNCHRONIZATION_ORDER
+                                                                - 1;
+                                                    }
 
-                    @Override
-                    public void beforeCompletion() {
-                        assertTrue(callbackReached.get(), "异常必须发生在真实会话参与之后");
-                        assertFalse(fixture.events.contains("erp.flush"), "回调异常不能提前执行提交前刷新");
-                        SqlSessionHolder original = fixture.sessionHolder();
-                        assertEquals(DefaultSqlSession.class, original.getSqlSession().getClass());
-                        assertSame(fixture.configuration, original.getSqlSession().getConfiguration());
-                        assertSame(original, TransactionSynchronizationManager.unbindResource(fixture.sessionFactory));
-                        TransactionSynchronizationManager.bindResource(fixture.sessionFactory, foreign);
-                        replacementReached.set(true);
-                    }
-                });
-                fixture.stageBatch();
-                fixture.observeCompletion();
-                callbackReached.set(true);
-                if (rollbackOnly) {
-                    fixture.holder(fixture.erp).setRollbackOnly();
-                    return "must-not-return";
-                }
-                throw new IllegalStateException("离线模拟正常业务回调异常");
-            }));
+                                                    @Override
+                                                    public void beforeCompletion() {
+                                                        assertTrue(
+                                                                callbackReached.get(),
+                                                                "异常必须发生在真实会话参与之后");
+                                                        assertFalse(
+                                                                fixture.events.contains(
+                                                                        "erp.flush"),
+                                                                "回调异常不能提前执行提交前刷新");
+                                                        SqlSessionHolder original =
+                                                                fixture.sessionHolder();
+                                                        assertEquals(
+                                                                DefaultSqlSession.class,
+                                                                original.getSqlSession()
+                                                                        .getClass());
+                                                        assertSame(
+                                                                fixture.configuration,
+                                                                original.getSqlSession()
+                                                                        .getConfiguration());
+                                                        assertSame(
+                                                                original,
+                                                                TransactionSynchronizationManager
+                                                                        .unbindResource(
+                                                                                fixture.sessionFactory));
+                                                        TransactionSynchronizationManager
+                                                                .bindResource(
+                                                                        fixture.sessionFactory,
+                                                                        foreign);
+                                                        replacementReached.set(true);
+                                                    }
+                                                });
+                                        fixture.stageBatch();
+                                        fixture.observeCompletion();
+                                        callbackReached.set(true);
+                                        if (rollbackOnly) {
+                                            fixture.holder(fixture.erp).setRollbackOnly();
+                                            return "must-not-return";
+                                        }
+                                        throw new IllegalStateException("离线模拟正常业务回调异常");
+                                    }));
             assertTrue(callbackReached.get());
             assertTrue(replacementReached.get(), "必须到达原生回滚清理前的真实替换");
-            assertAll("回滚成功不等于可以删除调用方资源",
-                () -> verify(fixture.erpJdbc.connection, never()).commit(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).close(),
-                () -> assertTrue(fixture.erpJdbc.closed.get()),
-                () -> verify(fixture.erpJdbc.statement, never()).executeBatch(),
-                () -> verify(foreignSession, never()).getConnection(),
-                () -> verify(foreignSession, never()).close(),
-                () -> assertTrue(fixture.events.contains("completion.1")),
-                () -> assertOnlyCallerResource(fixture.sessionFactory, foreign));
+            assertAll(
+                    "回滚成功不等于可以删除调用方资源",
+                    () -> verify(fixture.erpJdbc.connection, never()).commit(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).close(),
+                    () -> assertTrue(fixture.erpJdbc.closed.get()),
+                    () -> verify(fixture.erpJdbc.statement, never()).executeBatch(),
+                    () -> verify(foreignSession, never()).getConnection(),
+                    () -> verify(foreignSession, never()).close(),
+                    () -> assertTrue(fixture.events.contains("completion.1")),
+                    () -> assertOnlyCallerResource(fixture.sessionFactory, foreign));
         } finally {
             releaseCallerResource(fixture.sessionFactory, foreign);
         }
@@ -1100,26 +1676,35 @@ class PuRequirementErpTransactionExecutorTest {
     /** 回滚驱动故障不能覆盖回调的原始致命错误；不把关闭完成当作回滚已成功。 */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void callbackFatalIdentitySurvivesJdbcRollbackFailure(boolean virtualMachineError) throws SQLException {
+    void callbackFatalIdentitySurvivesJdbcRollbackFailure(boolean virtualMachineError)
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
-        Error original = virtualMachineError ? new OutOfMemoryError("离线模拟致命对象，不耗尽内存") : new ThreadDeath();
+        Error original =
+                virtualMachineError ? new OutOfMemoryError("离线模拟致命对象，不耗尽内存") : new ThreadDeath();
         doThrow(new SQLException(PRIVATE_DIAGNOSTIC)).when(fixture.erpJdbc.connection).rollback();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            Throwable observed = assertThrows(Throwable.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                throw original;
-            }));
-            assertAll("原对象传播与回滚成功是两个不同事实",
-                () -> assertSame(original, observed),
-                () -> assertNull(original.getCause()),
-                () -> assertEquals(0, original.getSuppressed().length),
-                () -> verify(fixture.erpJdbc.connection, never()).commit(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
-                () -> verify(fixture.erpJdbc.connection, times(1)).close(),
-                () -> assertTrue(fixture.erpJdbc.closed.get()),
-                () -> verify(fixture.erpJdbc.statement, never()).executeBatch(),
-                PuRequirementErpTransactionExecutorTest::assertCleanThread);
+            Throwable observed =
+                    assertThrows(
+                            Throwable.class,
+                            () ->
+                                    entry.execute(
+                                            TENANT,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                throw original;
+                                            }));
+            assertAll(
+                    "原对象传播与回滚成功是两个不同事实",
+                    () -> assertSame(original, observed),
+                    () -> assertNull(original.getCause()),
+                    () -> assertEquals(0, original.getSuppressed().length),
+                    () -> verify(fixture.erpJdbc.connection, never()).commit(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).rollback(),
+                    () -> verify(fixture.erpJdbc.connection, times(1)).close(),
+                    () -> assertTrue(fixture.erpJdbc.closed.get()),
+                    () -> verify(fixture.erpJdbc.statement, never()).executeBatch(),
+                    PuRequirementErpTransactionExecutorTest::assertCleanThread);
         }
         fixture.assertOnlyErpBorrowed(1);
     }
@@ -1132,10 +1717,16 @@ class PuRequirementErpTransactionExecutorTest {
         SqlSessionHolder caller = new SqlSessionHolder(session, ExecutorType.SIMPLE, null);
         caller.setSynchronizedWithTransaction(true);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                TransactionSynchronizationManager.bindResource(fixture.sessionFactory, caller);
-                return "discard";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        TransactionSynchronizationManager.bindResource(
+                                                fixture.sessionFactory, caller);
+                                        return "discard";
+                                    }));
             assertOnlyCallerResource(fixture.sessionFactory, caller);
             verify(session, never()).getConnection();
             verify(session, never()).close();
@@ -1148,7 +1739,8 @@ class PuRequirementErpTransactionExecutorTest {
 
     /** 先建立真实 MyBatis 同步并执行离线 JDBC，再替换 factory 绑定，覆盖原生解绑生命周期。 */
     @Test
-    void replacedFactoryHolderAfterRealMybatisParticipationSurvivesRollbackCleanup() throws SQLException {
+    void replacedFactoryHolderAfterRealMybatisParticipationSurvivesRollbackCleanup()
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         SqlSession foreignSession = mock(SqlSession.class);
@@ -1156,23 +1748,56 @@ class PuRequirementErpTransactionExecutorTest {
         foreign.setSynchronizedWithTransaction(true);
         AtomicBoolean realParticipation = new AtomicBoolean();
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                assertEquals(1, fixture.template.flushStatements().size(), "真实 MyBatis 执行一次非联网 JDBC 批语句");
-                SqlSessionHolder original = fixture.sessionHolder();
-                assertEquals(DefaultSqlSession.class, original.getSqlSession().getClass());
-                assertSame(fixture.configuration, original.getSqlSession().getConfiguration());
-                assertSame(fixture.erpJdbc.connection, fixture.template.getConnection());
-                assertEquals(1L, TransactionSynchronizationManager.getSynchronizations().stream()
-                    .filter(synchronization -> synchronization.getClass().getEnclosingClass() == SqlSessionUtils.class
-                        && "SqlSessionSynchronization".equals(synchronization.getClass().getSimpleName())).count(),
-                    "必须由真实 SqlSessionTemplate 已经注册同步，不能仅手绑一个普通 holder");
-                fixture.observeCompletion();
-                realParticipation.set(true);
-                assertSame(original, TransactionSynchronizationManager.unbindResource(fixture.sessionFactory));
-                TransactionSynchronizationManager.bindResource(fixture.sessionFactory, foreign);
-                return "discard";
-            }));
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            entry.execute(
+                                    TENANT,
+                                    () -> {
+                                        fixture.stageBatch();
+                                        assertEquals(
+                                                1,
+                                                fixture.template.flushStatements().size(),
+                                                "真实 MyBatis 执行一次非联网 JDBC 批语句");
+                                        SqlSessionHolder original = fixture.sessionHolder();
+                                        assertEquals(
+                                                DefaultSqlSession.class,
+                                                original.getSqlSession().getClass());
+                                        assertSame(
+                                                fixture.configuration,
+                                                original.getSqlSession().getConfiguration());
+                                        assertSame(
+                                                fixture.erpJdbc.connection,
+                                                fixture.template.getConnection());
+                                        assertEquals(
+                                                1L,
+                                                TransactionSynchronizationManager
+                                                        .getSynchronizations()
+                                                        .stream()
+                                                        .filter(
+                                                                synchronization ->
+                                                                        synchronization
+                                                                                                .getClass()
+                                                                                                .getEnclosingClass()
+                                                                                        == SqlSessionUtils
+                                                                                                .class
+                                                                                && "SqlSessionSynchronization"
+                                                                                        .equals(
+                                                                                                synchronization
+                                                                                                        .getClass()
+                                                                                                        .getSimpleName()))
+                                                        .count(),
+                                                "必须由真实 SqlSessionTemplate 已经注册同步，不能仅手绑一个普通 holder");
+                                        fixture.observeCompletion();
+                                        realParticipation.set(true);
+                                        assertSame(
+                                                original,
+                                                TransactionSynchronizationManager.unbindResource(
+                                                        fixture.sessionFactory));
+                                        TransactionSynchronizationManager.bindResource(
+                                                fixture.sessionFactory, foreign);
+                                        return "discard";
+                                    }));
             assertTrue(realParticipation.get(), "必须到达真实会话执行后的 factory 替换路径");
             fixture.assertRolledBack();
             verify(fixture.erpJdbc.statement, times(1)).executeBatch();
@@ -1184,8 +1809,10 @@ class PuRequirementErpTransactionExecutorTest {
             assertBefore(fixture.events, "erp.rollback", "completion.1");
             assertBefore(fixture.events, "completion.1", "erp.close");
             assertOnlyCallerResource(fixture.sessionFactory, foreign);
-            assertSame(foreign, TransactionSynchronizationManager.getResource(fixture.sessionFactory),
-                "原 MyBatis beforeCompletion/afterCompletion 不能删除外来 factory holder");
+            assertSame(
+                    foreign,
+                    TransactionSynchronizationManager.getResource(fixture.sessionFactory),
+                    "原 MyBatis beforeCompletion/afterCompletion 不能删除外来 factory holder");
         } finally {
             releaseCallerResource(fixture.sessionFactory, foreign);
         }
@@ -1211,10 +1838,16 @@ class PuRequirementErpTransactionExecutorTest {
         fixture.erpJdbc.flushFailure = new SQLException(PRIVATE_DIAGNOSTIC);
         fixture.checkOwnedAliasesAtJdbcCompletion = true;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertNoDiagnosticLeak(assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                return "discard";
-            })));
+            assertNoDiagnosticLeak(
+                    assertThrows(
+                            RuntimeException.class,
+                            () ->
+                                    entry.execute(
+                                            TENANT,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                return "discard";
+                                            })));
         }
         fixture.assertRolledBack();
         verify(fixture.erpJdbc.statement, times(1)).executeBatch();
@@ -1223,16 +1856,22 @@ class PuRequirementErpTransactionExecutorTest {
 
     @Test
     void jdbcCommitFailureCannotReturnCallbackValueAndCleansResourcesWithoutLeakingDiagnostics()
-        throws SQLException {
+            throws SQLException {
         Fixture fixture = new Fixture();
         Entry entry = fixture.entry();
         fixture.erpJdbc.commitFailure = new SQLException(PRIVATE_DIAGNOSTIC);
         fixture.checkOwnedAliasesAtJdbcCompletion = true;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            assertNoDiagnosticLeak(assertThrows(RuntimeException.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                return "discard";
-            })));
+            assertNoDiagnosticLeak(
+                    assertThrows(
+                            RuntimeException.class,
+                            () ->
+                                    entry.execute(
+                                            TENANT,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                return "discard";
+                                            })));
         }
         verify(fixture.erpJdbc.connection, times(1)).commit();
         verify(fixture.erpJdbc.connection, times(1)).close();
@@ -1285,19 +1924,47 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     private enum InvalidP6Registration {
-        UNKNOWN_WRAPPER, P6_SUBCLASS, UNKNOWN_P6_INNER, WRONG_INNER_POOL, SEATA, SHARED_ERP_POOL
+        UNKNOWN_WRAPPER,
+        P6_SUBCLASS,
+        UNKNOWN_P6_INNER,
+        WRONG_INNER_POOL,
+        SEATA,
+        SHARED_ERP_POOL
     }
 
-    private enum ExistingResource { MASTER, ERP, ROUTER, SQL_SESSION, UNKNOWN }
+    private enum ExistingResource {
+        MASTER,
+        ERP,
+        ROUTER,
+        SQL_SESSION,
+        UNKNOWN
+    }
 
-    private enum ExternalErpTransaction { PHYSICAL_ONLY, ROUTER_ONLY, EXTERNALLY_ALIASED }
+    private enum ExternalErpTransaction {
+        PHYSICAL_ONLY,
+        ROUTER_ONLY,
+        EXTERNALLY_ALIASED
+    }
 
-    private enum ConfigurationDrift { PHYSICAL, REGISTRATION, ENVIRONMENT }
+    private enum ConfigurationDrift {
+        PHYSICAL,
+        REGISTRATION,
+        ENVIRONMENT
+    }
 
     private enum InvalidTopology {
-        MISSING_ERP, ERP_GROUP, SHARED_PHYSICAL, ROUTER_AS_ERP, LAZY_ERP, TRANSACTION_AWARE_ERP,
-        SEATA_ITEM, NO_ENVIRONMENT, NON_SPRING_TRANSACTION_FACTORY, OTHER_MYBATIS_DATASOURCE,
-        MISSING_GUARD_MAPPER, MISSING_POOL_MAPPER
+        MISSING_ERP,
+        ERP_GROUP,
+        SHARED_PHYSICAL,
+        ROUTER_AS_ERP,
+        LAZY_ERP,
+        TRANSACTION_AWARE_ERP,
+        SEATA_ITEM,
+        NO_ENVIRONMENT,
+        NON_SPRING_TRANSACTION_FACTORY,
+        OTHER_MYBATIS_DATASOURCE,
+        MISSING_GUARD_MAPPER,
+        MISSING_POOL_MAPPER
     }
 
     /** RED 缺类必须是断言失败；不让负例把缺类当作预期业务拒绝而通过。 */
@@ -1327,8 +1994,8 @@ class PuRequirementErpTransactionExecutorTest {
     }
 
     /**
-     * 只建立内存注册表与非联网 JDBC。正例事务和 router 别名始终由待测入口建立。
-     * 两个工厂 Bean 故意都不设 Primary，校验入口实际使用 sqlSessionFactory 命名配置。
+     * 只建立内存注册表与非联网 JDBC。正例事务和 router 别名始终由待测入口建立。 两个工厂 Bean 故意都不设 Primary，校验入口实际使用
+     * sqlSessionFactory 命名配置。
      */
     private static final class Fixture {
         private final List<String> events = new ArrayList<>();
@@ -1344,7 +2011,8 @@ class PuRequirementErpTransactionExecutorTest {
         private final SqlSessionFactory sessionFactory;
         private final SqlSessionTemplate template;
         private final PuRequirementErpTransactionQualification qualification;
-        private final PuRequirementMaterialLockService guard = mock(PuRequirementMaterialLockService.class);
+        private final PuRequirementMaterialLockService guard =
+                mock(PuRequirementMaterialLockService.class);
         private final PuRequirementCompetitionPoolMapper mapper;
         private boolean checkOwnedAliasesAtJdbcCompletion;
 
@@ -1356,23 +2024,30 @@ class PuRequirementErpTransactionExecutorTest {
             erpJdbc = newEndpoint("erp");
             masterJdbc = newEndpoint("master");
             availableErpConnections.addLast(erpJdbc);
-            when(erp.getConnection()).thenAnswer(ignored -> {
-                events.add("erp.borrow");
-                JdbcEndpoint borrowed = availableErpConnections.pollFirst();
-                if (borrowed == null) {
-                    throw new SQLException("离线夹具禁止额外借连接");
-                }
-                return borrowed.connection;
-            });
-            when(master.getConnection()).thenAnswer(ignored -> {
-                events.add("master.borrow");
-                return masterJdbc.connection;
-            });
+            when(erp.getConnection())
+                    .thenAnswer(
+                            ignored -> {
+                                events.add("erp.borrow");
+                                JdbcEndpoint borrowed = availableErpConnections.pollFirst();
+                                if (borrowed == null) {
+                                    throw new SQLException("离线夹具禁止额外借连接");
+                                }
+                                return borrowed.connection;
+                            });
+            when(master.getConnection())
+                    .thenAnswer(
+                            ignored -> {
+                                events.add("master.borrow");
+                                return masterJdbc.connection;
+                            });
             routing.setPrimary("master");
             routing.setStrict(true);
             routing.addDataSource("master", master);
             routing.addDataSource("erp", erp);
-            configuration = new Configuration(new Environment("offline", new SpringManagedTransactionFactory(), routing));
+            configuration =
+                    new Configuration(
+                            new Environment(
+                                    "offline", new SpringManagedTransactionFactory(), routing));
             if (invalid != InvalidTopology.MISSING_POOL_MAPPER) {
                 configuration.addMapper(PuRequirementCompetitionPoolMapper.class);
             }
@@ -1383,20 +2058,32 @@ class PuRequirementErpTransactionExecutorTest {
             sessionFactory = new DefaultSqlSessionFactory(configuration);
             template = new SqlSessionTemplate(sessionFactory, ExecutorType.BATCH);
             qualification = new PuRequirementErpTransactionQualification(sessionFactory);
-            mapper = mock(PuRequirementCompetitionPoolMapper.class, invocation -> {
-                String name = invocation.getMethod().getName();
-                if (!name.startsWith("lock")) {
-                    return Answers.RETURNS_DEFAULTS.answer(invocation);
-                }
-                assertEquals("erp", DynamicDataSourceContextHolder.peek(), "必须经过实际 @DS 代理");
-                readerTrace.add(name);
-                return List.of();
-            });
-            doAnswer(invocation -> {
-                assertEquals("erp", DynamicDataSourceContextHolder.peek(), "guard 必须经过实际 @DS 代理");
-                readerTrace.add("guard");
-                return Map.of(MATERIAL, 0);
-            }).when(guard).lock(anyString(), anyCollection());
+            mapper =
+                    mock(
+                            PuRequirementCompetitionPoolMapper.class,
+                            invocation -> {
+                                String name = invocation.getMethod().getName();
+                                if (!name.startsWith("lock")) {
+                                    return Answers.RETURNS_DEFAULTS.answer(invocation);
+                                }
+                                assertEquals(
+                                        "erp",
+                                        DynamicDataSourceContextHolder.peek(),
+                                        "必须经过实际 @DS 代理");
+                                readerTrace.add(name);
+                                return List.of();
+                            });
+            doAnswer(
+                            invocation -> {
+                                assertEquals(
+                                        "erp",
+                                        DynamicDataSourceContextHolder.peek(),
+                                        "guard 必须经过实际 @DS 代理");
+                                readerTrace.add("guard");
+                                return Map.of(MATERIAL, 0);
+                            })
+                    .when(guard)
+                    .lock(anyString(), anyCollection());
             if (invalid != null) {
                 invalidate(invalid);
             }
@@ -1408,32 +2095,58 @@ class PuRequirementErpTransactionExecutorTest {
                 case ERP_GROUP -> routing.addDataSource("erp_replica", mock(DataSource.class));
                 case SHARED_PHYSICAL -> routing.getDataSources().put("master", erp);
                 case ROUTER_AS_ERP -> routing.getDataSources().put("erp", routing);
-                case LAZY_ERP -> routing.getDataSources().put("erp", new LazyConnectionDataSourceProxy(erp));
-                case TRANSACTION_AWARE_ERP -> routing.getDataSources().put("erp", new TransactionAwareDataSourceProxy(erp));
-                case SEATA_ITEM -> routing.getDataSources().put("erp",
-                    new ItemDataSource("erp", erp, erp, false, true, SeataMode.AT));
+                case LAZY_ERP ->
+                        routing.getDataSources().put("erp", new LazyConnectionDataSourceProxy(erp));
+                case TRANSACTION_AWARE_ERP ->
+                        routing.getDataSources()
+                                .put("erp", new TransactionAwareDataSourceProxy(erp));
+                case SEATA_ITEM ->
+                        routing.getDataSources()
+                                .put(
+                                        "erp",
+                                        new ItemDataSource(
+                                                "erp", erp, erp, false, true, SeataMode.AT));
                 case NO_ENVIRONMENT -> configuration.setEnvironment(null);
-                case NON_SPRING_TRANSACTION_FACTORY -> configuration.setEnvironment(
-                    new Environment("offline", new JdbcTransactionFactory(), routing));
-                case OTHER_MYBATIS_DATASOURCE -> configuration.setEnvironment(
-                    new Environment("offline", new SpringManagedTransactionFactory(), master));
-                case MISSING_GUARD_MAPPER, MISSING_POOL_MAPPER -> { }
+                case NON_SPRING_TRANSACTION_FACTORY ->
+                        configuration.setEnvironment(
+                                new Environment("offline", new JdbcTransactionFactory(), routing));
+                case OTHER_MYBATIS_DATASOURCE ->
+                        configuration.setEnvironment(
+                                new Environment(
+                                        "offline", new SpringManagedTransactionFactory(), master));
+                case MISSING_GUARD_MAPPER, MISSING_POOL_MAPPER -> {}
             }
         }
 
         Entry entry() {
             Class<?> type = executorType();
-            assertDoesNotThrow(() -> type.getConstructor(SqlSessionFactory.class), "约定 constructor(SqlSessionFactory)");
-            Method execute = assertDoesNotThrow(() -> type.getMethod("execute", String.class, Supplier.class),
-                "约定 execute(String tenantId, Supplier<T>)，不接受 scope 布尔或外部事务");
-            try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
-                context.registerBean("sqlSessionFactory", SqlSessionFactory.class, () -> sessionFactory);
-                context.registerBean("unrelatedFactory", SqlSessionFactory.class, () -> new DefaultSqlSessionFactory(
-                    new Configuration(new Environment("unrelated", new JdbcTransactionFactory(), master))));
+            assertDoesNotThrow(
+                    () -> type.getConstructor(SqlSessionFactory.class),
+                    "约定 constructor(SqlSessionFactory)");
+            Method execute =
+                    assertDoesNotThrow(
+                            () -> type.getMethod("execute", String.class, Supplier.class),
+                            "约定 execute(String tenantId, Supplier<T>)，不接受 scope 布尔或外部事务");
+            try (AnnotationConfigApplicationContext context =
+                    new AnnotationConfigApplicationContext()) {
+                context.registerBean(
+                        "sqlSessionFactory", SqlSessionFactory.class, () -> sessionFactory);
+                context.registerBean(
+                        "unrelatedFactory",
+                        SqlSessionFactory.class,
+                        () ->
+                                new DefaultSqlSessionFactory(
+                                        new Configuration(
+                                                new Environment(
+                                                        "unrelated",
+                                                        new JdbcTransactionFactory(),
+                                                        master))));
                 context.register(PuRequirementErpTransactionQualification.class, type);
                 context.refresh();
-                assertEquals(0, context.getBeansOfType(PlatformTransactionManager.class).size(),
-                    "不能引入或替换全局 TM Bean");
+                assertEquals(
+                        0,
+                        context.getBeansOfType(PlatformTransactionManager.class).size(),
+                        "不能引入或替换全局 TM Bean");
                 return new Entry(context.getBean(type), execute);
             }
         }
@@ -1447,7 +2160,10 @@ class PuRequirementErpTransactionExecutorTest {
         void stageBatch() {
             template.getMapper(OfflineBatchMapper.class).stage();
             assertTrue(sessionHolder().isSynchronizedWithTransaction());
-            assertSame(holder(erp).getConnection(), template.getConnection(), "真实 MyBatis 只复用入口已借物理连接");
+            assertSame(
+                    holder(erp).getConnection(),
+                    template.getConnection(),
+                    "真实 MyBatis 只复用入口已借物理连接");
         }
 
         SqlSessionHolder sessionHolder() {
@@ -1477,32 +2193,43 @@ class PuRequirementErpTransactionExecutorTest {
         }
 
         PuRequirementCompetitionPoolReader proxiedReader() {
-            PuRequirementCompetitionPoolReader reader = new PuRequirementCompetitionPoolReader(mapper, guard, qualification);
+            PuRequirementCompetitionPoolReader reader =
+                    new PuRequirementCompetitionPoolReader(mapper, guard, qualification);
             TransactionInterceptor transactions = new TransactionInterceptor();
             transactions.setTransactionManager(new DataSourceTransactionManager(routing));
             transactions.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
             ProxyFactory proxy = new ProxyFactory(reader);
             proxy.setProxyTargetClass(true);
-            proxy.addAdvisor(new DynamicDataSourceAnnotationAdvisor(
-                new DynamicDataSourceAnnotationInterceptor(true, new DsSpelExpressionProcessor()), DS.class));
+            proxy.addAdvisor(
+                    new DynamicDataSourceAnnotationAdvisor(
+                            new DynamicDataSourceAnnotationInterceptor(
+                                    true, new DsSpelExpressionProcessor()),
+                            DS.class));
             proxy.addAdvice(transactions);
             return (PuRequirementCompetitionPoolReader) proxy.getProxy();
         }
 
         RuntimeException assertRejectedBeforeCallback(Entry entry, String requested) {
             AtomicBoolean called = new AtomicBoolean();
-            RuntimeException failure = assertThrows(RuntimeException.class, () -> entry.execute(requested, () -> {
-                called.set(true);
-                return "must-not-run";
-            }));
+            RuntimeException failure =
+                    assertThrows(
+                            RuntimeException.class,
+                            () ->
+                                    entry.execute(
+                                            requested,
+                                            () -> {
+                                                called.set(true);
+                                                return "must-not-run";
+                                            }));
             assertFalse(called.get(), "拒绝必须先于 callback 内可能存在的业务写入");
             verifyNoInteractions(guard, mapper);
             return failure;
         }
 
         void assertRejectedBeforeBorrow(Entry entry, String requested) throws SQLException {
-            assertTrue(assertRejectedBeforeCallback(entry, requested) instanceof ServiceException,
-                "入口前置拒绝应为固定业务错误");
+            assertTrue(
+                    assertRejectedBeforeCallback(entry, requested) instanceof ServiceException,
+                    "入口前置拒绝应为固定业务错误");
             assertNoBorrow();
         }
 
@@ -1532,12 +2259,13 @@ class PuRequirementErpTransactionExecutorTest {
         }
 
         void observeCompletion() {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCompletion(int status) {
-                    events.add("completion." + status);
-                }
-            });
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCompletion(int status) {
+                            events.add("completion." + status);
+                        }
+                    });
         }
 
         void atJdbcCompletion(Connection connection) {
@@ -1550,7 +2278,8 @@ class PuRequirementErpTransactionExecutorTest {
 
         void atJdbcClose() {
             if (checkOwnedAliasesAtJdbcCompletion) {
-                assertNull(TransactionSynchronizationManager.getResource(routing), "实际连接关闭前解绑自有路由别名");
+                assertNull(
+                        TransactionSynchronizationManager.getResource(routing), "实际连接关闭前解绑自有路由别名");
                 assertNull(TransactionSynchronizationManager.getResource(erp));
                 assertNull(TransactionSynchronizationManager.getResource(sessionFactory));
             }
@@ -1572,58 +2301,79 @@ class PuRequirementErpTransactionExecutorTest {
             when(connection.getAutoCommit()).thenAnswer(ignored -> autoCommit.get());
             when(connection.isReadOnly()).thenAnswer(ignored -> readOnly.get());
             when(connection.isClosed()).thenAnswer(ignored -> closed.get());
-            doAnswer(invocation -> {
-                autoCommit.set(invocation.getArgument(0));
-                return null;
-            }).when(connection).setAutoCommit(anyBoolean());
-            doAnswer(invocation -> {
-                readOnly.set(invocation.getArgument(0));
-                return null;
-            }).when(connection).setReadOnly(anyBoolean());
-            when(connection.prepareStatement(anyString())).thenAnswer(ignored -> {
-                fixture.events.add(name + ".prepare");
-                return statement;
-            });
+            doAnswer(
+                            invocation -> {
+                                autoCommit.set(invocation.getArgument(0));
+                                return null;
+                            })
+                    .when(connection)
+                    .setAutoCommit(anyBoolean());
+            doAnswer(
+                            invocation -> {
+                                readOnly.set(invocation.getArgument(0));
+                                return null;
+                            })
+                    .when(connection)
+                    .setReadOnly(anyBoolean());
+            when(connection.prepareStatement(anyString()))
+                    .thenAnswer(
+                            ignored -> {
+                                fixture.events.add(name + ".prepare");
+                                return statement;
+                            });
             when(statement.getConnection()).thenReturn(connection);
-            doAnswer(ignored -> {
-                fixture.events.add(name + ".addBatch");
-                pending.incrementAndGet();
-                return null;
-            }).when(statement).addBatch();
-            when(statement.executeBatch()).thenAnswer(ignored -> {
-                fixture.events.add(name + ".flush");
-                if (flushFailure != null) {
-                    throw flushFailure;
-                }
-                int[] counts = new int[pending.getAndSet(0)];
-                Arrays.fill(counts, 1);
-                return counts;
-            });
-            doAnswer(ignored -> {
-                fixture.atJdbcCompletion(connection);
-                fixture.events.add(name + ".commit");
-                if (commitFailure != null) {
-                    throw commitFailure;
-                }
-                return null;
-            }).when(connection).commit();
-            doAnswer(ignored -> {
-                fixture.atJdbcCompletion(connection);
-                fixture.events.add(name + ".rollback");
-                return null;
-            }).when(connection).rollback();
-            doAnswer(ignored -> {
-                fixture.atJdbcClose();
-                fixture.events.add(name + ".close");
-                closed.set(true);
-                return null;
-            }).when(connection).close();
+            doAnswer(
+                            ignored -> {
+                                fixture.events.add(name + ".addBatch");
+                                pending.incrementAndGet();
+                                return null;
+                            })
+                    .when(statement)
+                    .addBatch();
+            when(statement.executeBatch())
+                    .thenAnswer(
+                            ignored -> {
+                                fixture.events.add(name + ".flush");
+                                if (flushFailure != null) {
+                                    throw flushFailure;
+                                }
+                                int[] counts = new int[pending.getAndSet(0)];
+                                Arrays.fill(counts, 1);
+                                return counts;
+                            });
+            doAnswer(
+                            ignored -> {
+                                fixture.atJdbcCompletion(connection);
+                                fixture.events.add(name + ".commit");
+                                if (commitFailure != null) {
+                                    throw commitFailure;
+                                }
+                                return null;
+                            })
+                    .when(connection)
+                    .commit();
+            doAnswer(
+                            ignored -> {
+                                fixture.atJdbcCompletion(connection);
+                                fixture.events.add(name + ".rollback");
+                                return null;
+                            })
+                    .when(connection)
+                    .rollback();
+            doAnswer(
+                            ignored -> {
+                                fixture.atJdbcClose();
+                                fixture.events.add(name + ".close");
+                                closed.set(true);
+                                return null;
+                            })
+                    .when(connection)
+                    .close();
         }
     }
 
     /**
-     * 先独立核对回滚、解绑及下一次提交，最后核对致命错误对象恒等传播。
-     * 用 assertThrows(Throwable.class) 安全捕获模拟对象，以免当前包装行为提前中断生命周期
+     * 先独立核对回滚、解绑及下一次提交，最后核对致命错误对象恒等传播。 用 assertThrows(Throwable.class) 安全捕获模拟对象，以免当前包装行为提前中断生命周期
      * 断言；最终 assertSame 严格拒绝 ServiceException 或任何替代/包装对象，不弱化传播要求。
      */
     private static void assertFatalRollbackAndReuse(Error fatal) throws SQLException {
@@ -1635,12 +2385,18 @@ class PuRequirementErpTransactionExecutorTest {
         AtomicBoolean callbackReachedFatal = new AtomicBoolean();
         Throwable propagated;
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
-            propagated = assertThrows(Throwable.class, () -> entry.execute(TENANT, () -> {
-                fixture.stageBatch();
-                fixture.observeCompletion();
-                callbackReachedFatal.set(true);
-                throw fatal;
-            }));
+            propagated =
+                    assertThrows(
+                            Throwable.class,
+                            () ->
+                                    entry.execute(
+                                            TENANT,
+                                            () -> {
+                                                fixture.stageBatch();
+                                                fixture.observeCompletion();
+                                                callbackReachedFatal.set(true);
+                                                throw fatal;
+                                            }));
             assertTrue(callbackReachedFatal.get(), "必须实际到达模拟致命错误，而不是工厂或夹具失败");
             fixture.assertRolledBack();
             verify(fixture.erpJdbc.statement, never()).executeBatch();
@@ -1649,13 +2405,19 @@ class PuRequirementErpTransactionExecutorTest {
             assertBefore(fixture.events, "completion.1", "erp.close");
             assertCleanThread();
 
-            assertEquals("after-fatal", entry.execute(TENANT, () -> {
-                fixture.assertOwnedWritableTransaction();
-                assertSame(next.connection, fixture.holder(fixture.erp).getConnection());
-                fixture.stageBatch();
-                assertSame(next.connection, fixture.template.getConnection());
-                return "after-fatal";
-            }));
+            assertEquals(
+                    "after-fatal",
+                    entry.execute(
+                            TENANT,
+                            () -> {
+                                fixture.assertOwnedWritableTransaction();
+                                assertSame(
+                                        next.connection,
+                                        fixture.holder(fixture.erp).getConnection());
+                                fixture.stageBatch();
+                                assertSame(next.connection, fixture.template.getConnection());
+                                return "after-fatal";
+                            }));
             assertCleanThread();
         }
         fixture.assertRolledBack();
@@ -1681,12 +2443,16 @@ class PuRequirementErpTransactionExecutorTest {
     private static void assertBefore(List<String> trace, String first, String second) {
         int firstIndex = trace.indexOf(first);
         int secondIndex = trace.indexOf(second);
-        assertTrue(firstIndex >= 0 && secondIndex > firstIndex, "生命周期顺序必须为 " + first + " → " + second + "：" + trace);
+        assertTrue(
+                firstIndex >= 0 && secondIndex > firstIndex,
+                "生命周期顺序必须为 " + first + " → " + second + "：" + trace);
     }
 
     private static void assertOnlyCallerResource(Object key, Object value) {
-        assertEquals(Map.of(key, value), TransactionSynchronizationManager.getResourceMap(),
-            "只清理入口拥有的资源，不覆盖或移除未知调用方资源");
+        assertEquals(
+                Map.of(key, value),
+                TransactionSynchronizationManager.getResourceMap(),
+                "只清理入口拥有的资源，不覆盖或移除未知调用方资源");
         assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
         assertFalse(TransactionSynchronizationManager.isSynchronizationActive());
     }
@@ -1701,17 +2467,19 @@ class PuRequirementErpTransactionExecutorTest {
     private static void assertNoDiagnosticLeak(Throwable failure) {
         StringWriter rendered = new StringWriter();
         failure.printStackTrace(new PrintWriter(rendered));
-        assertFalse(rendered.toString().contains(PRIVATE_DIAGNOSTIC),
-            "对外异常、cause 或 suppressed 中不能泄漏底层 SQL/凭证哨兵");
+        assertFalse(
+                rendered.toString().contains(PRIVATE_DIAGNOSTIC),
+                "对外异常、cause 或 suppressed 中不能泄漏底层 SQL/凭证哨兵");
     }
 
     private static void assertCleanThread() {
-        assertAll("用例必须独立且不泄漏线程资源；不强制 clear 来掩盖入口清理缺陷",
-            () -> assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty()),
-            () -> assertFalse(TransactionSynchronizationManager.isActualTransactionActive()),
-            () -> assertFalse(TransactionSynchronizationManager.isSynchronizationActive()),
-            () -> assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly()),
-            () -> assertNull(DynamicDataSourceContextHolder.peek()),
-            () -> assertNull(TransactionContext.getXID()));
+        assertAll(
+                "用例必须独立且不泄漏线程资源；不强制 clear 来掩盖入口清理缺陷",
+                () -> assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty()),
+                () -> assertFalse(TransactionSynchronizationManager.isActualTransactionActive()),
+                () -> assertFalse(TransactionSynchronizationManager.isSynchronizationActive()),
+                () -> assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly()),
+                () -> assertNull(DynamicDataSourceContextHolder.peek()),
+                () -> assertNull(TransactionContext.getXID()));
     }
 }

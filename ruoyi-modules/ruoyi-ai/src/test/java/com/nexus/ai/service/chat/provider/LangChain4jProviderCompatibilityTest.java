@@ -1,11 +1,15 @@
 package com.nexus.ai.service.chat.provider;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.sun.net.httpserver.HttpServer;
+
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
@@ -15,6 +19,7 @@ import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,8 +38,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 使用真实 SDK 与回环合成服务验证协议、流式回调和监听器；不访问厂商网络。 */
 @Timeout(30)
@@ -73,7 +76,8 @@ class LangChain4jProviderCompatibilityTest {
         var listener = new Probe();
         try (var endpoint = new Endpoint(200, "application/json", wire.response())) {
             var model = provider(wire.protocol(), listener).buildChatModel(config(wire.protocol(), endpoint.url()), 0.2);
-            var response = model.chat(ChatRequest.builder().messages(dev.langchain4j.data.message.UserMessage.from("查询库存")).build());
+            var response =
+                    model.chat(ChatRequest.builder().messages(UserMessage.from("查询库存")).build());
             assertEquals(ANSWER, response.aiMessage().text());
             assertNotNull(response.tokenUsage());
             assertEquals(5, response.tokenUsage().totalTokenCount());
@@ -94,12 +98,31 @@ class LangChain4jProviderCompatibilityTest {
         var terminals = new AtomicInteger();
         try (var endpoint = new Endpoint(200, wire.protocol().equals("OLLAMA_NATIVE") ? "application/x-ndjson" : "text/event-stream", wire.stream())) {
             var model = provider(wire.protocol(), listener).buildStreamingChatModel(config(wire.protocol(), endpoint.url()), request());
-            model.chat(ChatRequest.builder().messages(dev.langchain4j.data.message.UserMessage.from("查询库存")).build(), new StreamingChatResponseHandler() {
-                @Override public void onPartialResponse(String text) { chunks.add(text); }
-                @Override public void onPartialThinking(PartialThinking value) { thinking.add(value.text()); }
-                @Override public void onCompleteResponse(ChatResponse response) { terminals.incrementAndGet(); done.complete(response); }
-                @Override public void onError(Throwable error) { terminals.incrementAndGet(); done.completeExceptionally(error); }
-            });
+            model.chat(
+                    ChatRequest.builder().messages(UserMessage.from("查询库存")).build(),
+                    new StreamingChatResponseHandler() {
+                        @Override
+                        public void onPartialResponse(String text) {
+                            chunks.add(text);
+                        }
+
+                        @Override
+                        public void onPartialThinking(PartialThinking value) {
+                            thinking.add(value.text());
+                        }
+
+                        @Override
+                        public void onCompleteResponse(ChatResponse response) {
+                            terminals.incrementAndGet();
+                            done.complete(response);
+                        }
+
+                        @Override
+                        public void onError(Throwable error) {
+                            terminals.incrementAndGet();
+                            done.completeExceptionally(error);
+                        }
+                    });
             ChatResponse response = done.get(10, TimeUnit.SECONDS);
             assertEquals(ANSWER, String.join("", chunks));
             assertEquals(ANSWER, response.aiMessage().text());
@@ -120,12 +143,28 @@ class LangChain4jProviderCompatibilityTest {
         var failed = new CompletableFuture<Throwable>();
         var successes = new AtomicInteger();
         try (var endpoint = new Endpoint(400, "application/json", "{\"error\":{\"message\":\"offline rejection\",\"type\":\"invalid_request_error\",\"code\":400},\"message\":\"offline rejection\"}")) {
-            provider(wire.protocol(), listener).buildStreamingChatModel(config(wire.protocol(), endpoint.url()), request())
-                .chat(ChatRequest.builder().messages(dev.langchain4j.data.message.UserMessage.from("查询库存")).build(), new StreamingChatResponseHandler() {
-                    @Override public void onPartialResponse(String text) { fail("错误响应不能产生正文"); }
-                    @Override public void onCompleteResponse(ChatResponse response) { successes.incrementAndGet(); failed.completeExceptionally(new AssertionError("unexpected success")); }
-                    @Override public void onError(Throwable error) { failed.complete(error); }
-                });
+            provider(wire.protocol(), listener)
+                    .buildStreamingChatModel(config(wire.protocol(), endpoint.url()), request())
+                    .chat(
+                            ChatRequest.builder().messages(UserMessage.from("查询库存")).build(),
+                            new StreamingChatResponseHandler() {
+                                @Override
+                                public void onPartialResponse(String text) {
+                                    fail("错误响应不能产生正文");
+                                }
+
+                                @Override
+                                public void onCompleteResponse(ChatResponse response) {
+                                    successes.incrementAndGet();
+                                    failed.completeExceptionally(
+                                            new AssertionError("unexpected success"));
+                                }
+
+                                @Override
+                                public void onError(Throwable error) {
+                                    failed.complete(error);
+                                }
+                            });
             assertNotNull(failed.get(10, TimeUnit.SECONDS));
             assertEquals(0, successes.get());
             assertEquals(0, listener.responses.get());
@@ -193,7 +232,8 @@ class LangChain4jProviderCompatibilityTest {
     }
 
     private record Wire(String protocol, String path, String capPointer, String response, String stream) {
-        @Override public String toString() { return protocol; }
+        @Override
+        public String toString() { return protocol; }
     }
 
     private static Stream<Wire> wireProtocols() {
@@ -226,8 +266,10 @@ class LangChain4jProviderCompatibilityTest {
     private static final class Probe implements ChatModelListener {
         private final AtomicInteger responses = new AtomicInteger();
         private final AtomicInteger errors = new AtomicInteger();
-        @Override public void onResponse(ChatModelResponseContext context) { responses.incrementAndGet(); }
-        @Override public void onError(ChatModelErrorContext context) { errors.incrementAndGet(); }
+        @Override
+        public void onResponse(ChatModelResponseContext context) { responses.incrementAndGet(); }
+        @Override
+        public void onError(ChatModelErrorContext context) { errors.incrementAndGet(); }
     }
 
     private record Captured(String path, JsonNode body) { }
@@ -252,6 +294,7 @@ class LangChain4jProviderCompatibilityTest {
             server.start();
         }
         private String url() { return "http://127.0.0.1:" + server.getAddress().getPort(); }
-        @Override public void close() { server.stop(0); executor.shutdownNow(); }
+        @Override
+        public void close() { server.stop(0); executor.shutdownNow(); }
     }
 }

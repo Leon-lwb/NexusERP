@@ -2,19 +2,29 @@ package com.nexus.mes.eq.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqMaintenancePlan;
+import com.nexus.mes.eq.domain.EqMaintenanceRecord;
 import com.nexus.mes.eq.domain.bo.EqMaintenancePlanBo;
+import com.nexus.mes.eq.domain.bo.EqMaintenanceRecordBo;
+import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.domain.vo.EqMaintenancePlanVo;
+import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
 import com.nexus.mes.eq.mapper.EqMaintenancePlanMapper;
+import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
+import com.nexus.mes.eq.service.IEqEquipmentService;
 import com.nexus.mes.eq.service.IEqMaintenancePlanService;
+import com.nexus.mes.eq.service.IEqMaintenanceRecordService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,21 +33,13 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.mes.eq.domain.EqMaintenanceRecord;
-import com.nexus.mes.eq.domain.bo.EqMaintenanceRecordBo;
-import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
-import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
-import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
-import com.nexus.mes.eq.service.IEqEquipmentService;
-import com.nexus.mes.eq.service.IEqMaintenanceRecordService;
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /**
  * MES设备保养计划 Service 业务层实现
- * <p>
- * 下次保养日期自动计算: 用户未显式指定 nextDate 时, nextDate = today + cycleDays;
- * cycleDays 为空时按 maintenanceType 默认周期(DAILY=1/WEEKLY=7/MONTHLY=30/QUARTERLY=90/YEARLY=365)。
+ *
+ * <p>下次保养日期自动计算: 用户未显式指定 nextDate 时, nextDate = today + cycleDays; cycleDays 为空时按 maintenanceType
+ * 默认周期(DAILY=1/WEEKLY=7/MONTHLY=30/QUARTERLY=90/YEARLY=365)。
  *
  * @author Nexus
  */
@@ -203,7 +205,7 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
             // 未知类型兜底 30 天
             cycleDays = 30;
         }
-        java.util.Date newNextDate = java.sql.Date.valueOf(LocalDate.now().plusDays(cycleDays));
+        Date newNextDate = java.sql.Date.valueOf(LocalDate.now().plusDays(cycleDays));
 
         // 1. CAS 先占位: 条件更新含 status='ACTIVE', 影响 0 行说明并发/重复提交已被别的请求完成,
         //    此时直接抛异常, 保证"只产生一条保养记录、只推进一次周期"(MES-EQ-07)

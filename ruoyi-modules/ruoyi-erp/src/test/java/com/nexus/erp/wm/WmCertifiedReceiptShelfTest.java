@@ -1,12 +1,16 @@
 package com.nexus.erp.wm;
-import org.junit.jupiter.api.*;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.Head;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
+
+import org.junit.jupiter.api.*;
+
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.util.Set;
 
 /** 出生冻结不能阻断真正上架；同原生预检后只转状态，不能提前写库存或释放占用。 */
 class WmCertifiedReceiptShelfTest {
@@ -36,8 +40,21 @@ class WmCertifiedReceiptShelfTest {
         assertTrue(mockingDetails(f.mapper).getInvocations().stream().noneMatch(i->i.getMethod().getName().equals("insertStock")));
     }
     @Test void shelfReplayOfActualShelvedHeadDoesNotRewriteOrPost() {
-        var h=f.head;f.head=new Head(h.tenantId(),h.receiveId(),h.receiveCode(),h.orderId(),h.vendorId(),"SHELVED",
-            h.warehouseId(),h.areaId(),h.locationId(),h.receiveAt(),f.NOW.subtract(new java.math.BigDecimal("5000")),h.delFlag());
+        var h=f.head;
+        f.head =
+                new Head(
+                        h.tenantId(),
+                        h.receiveId(),
+                        h.receiveCode(),
+                        h.orderId(),
+                        h.vendorId(),
+                        "SHELVED",
+                        h.warehouseId(),
+                        h.areaId(),
+                        h.locationId(),
+                        h.receiveAt(),
+                        f.NOW.subtract(new BigDecimal("5000")),
+                        h.delFlag());
         assertDoesNotThrow(this::shelf);verify(f.mapper,never()).markShelved(anyString(),anyLong(),anyString(),anyLong());
         verifyNoInteractions(f.notifications);assertTrue(mockingDetails(f.mapper).getInvocations().stream().noneMatch(i->i.getMethod().getName().equals("insertStock")));
     }

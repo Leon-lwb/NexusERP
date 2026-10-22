@@ -1,5 +1,6 @@
 package com.nexus.ai.engineering.task;
 
+import com.nexus.ai.engineering.service.EngineeringArtifactUploadService;
 import com.nexus.ai.engineering.service.EngineeringTaskService;
 
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "nexus.ai.engineering", name = "enabled", havingValue = "true")
 public class EngineeringTaskMaintenance {
     private final EngineeringTaskService tasks;
-    private final com.nexus.ai.engineering.service.EngineeringArtifactUploadService uploads;
+    private final EngineeringArtifactUploadService uploads;
 
     /** 每三十秒终结超期任务，关闭功能时不会装配或访问工程表。 */
     @Scheduled(fixedDelay = 30000, initialDelay = 30000)

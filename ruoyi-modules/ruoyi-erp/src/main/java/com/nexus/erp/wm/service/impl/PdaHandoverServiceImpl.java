@@ -1,6 +1,7 @@
 package com.nexus.erp.wm.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -26,7 +27,11 @@ import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IPdaHandoverService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,8 +51,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PdaHandoverServiceImpl implements IPdaHandoverService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     private final WmMaterialHandoverMapper handoverMapper;
     private final WmMaterialHandoverLineMapper lineMapper;

@@ -1,13 +1,18 @@
 package com.nexus.erp.wm.trace;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.trace.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
 import java.util.*;
+import java.util.Date;
 
 /**
  * 可查询的业务表与权限均由服务端固定配置，原始扫描值只能作为查询参数。
@@ -170,7 +175,7 @@ public class ErpDocumentCodeResolver {
             }
             Object expiry = carrier.get("expire_time");
             if (!"ACTIVE".equals(carrier.get("status"))
-                    || expiry instanceof java.util.Date date && date.before(new java.util.Date())) {
+                    || expiry instanceof Date date && date.before(new Date())) {
                 throw new CarrierRejected("原单据条码已停用或过期");
             }
             if (carrier.get("sn_id") != null

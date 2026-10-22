@@ -7,9 +7,10 @@ import com.nexus.ai.service.decision.DecisionPersistenceService;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.flow.node.FlowExecutionContext;
+
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -24,16 +25,20 @@ public class DecisionPolicyGuardNodeProvider extends AbstractIndustrialNodeProvi
                                            DecisionAnalysisAssemblyService analysis, ObjectMapper mapper) {
         super(support); this.persistence = persistence; this.analysis = analysis; this.mapper = mapper;
     }
-    @Override public String getNodeType() { return "industrial.decisionGuard"; }
-    @Override protected Object run(FlowExecutionContext ctx, DecisionActor actor) {
+    @Override
+    public String getNodeType() { return "industrial.decisionGuard"; }
+    @Override
+    protected Object run(FlowExecutionContext ctx, DecisionActor actor) {
         long id = support.requireRunId(ctx);
         var row = persistence.requireRun(id, actor.tenantId());
         var shortage = support.read(ctx.getState().get("nodes.shortage.output"), ShortageSimulationResult.class);
         JsonNode ranked = ctx.getState().get("nodes.rank.output.scenarios");
         if (ranked == null || !ranked.isArray() || ranked.isEmpty()) throw new ServiceException("缺少可信方案排名");
         List<DecisionScenario> scenarios;
-        try { scenarios = mapper.readerForListOf(DecisionScenario.class).readValue(ranked); }
-        catch (java.io.IOException badInput) { throw new ServiceException("方案排名无法解码"); }
+        try { scenarios = mapper.readerForListOf(DecisionScenario.class).readValue(ranked);
+        } catch (IOException badInput) {
+            throw new ServiceException("方案排名无法解码");
+        }
         List<RetrievalHit> hits = List.of();
         if (ctx.getGraph() != null && ctx.getGraph().getNodes().containsKey("rag")) {
             try {

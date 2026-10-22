@@ -1,15 +1,19 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.MaterialPolicyPort;
 import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.io.IOException;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 来源证明查询独立于目标业务夹具验证，避免测试替身掩盖真实来源条件。
@@ -376,7 +380,7 @@ class MesErpSourceReaderTest {
                         + " wm_trace_material_reservation_line(reservation_line_id,tenant_id,reservation_id,erp_batch_id,quantity)"
                         + " VALUES(81,'TENANT_CASE',80,500,4)");
             assertThrows(RuntimeException.class, () -> reader.verifyEvent(e));
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new AssertionError(error);
         }
     }

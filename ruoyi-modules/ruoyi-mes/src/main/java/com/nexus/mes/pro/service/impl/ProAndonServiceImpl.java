@@ -2,6 +2,7 @@ package com.nexus.mes.pro.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -28,8 +29,10 @@ import com.nexus.mes.pro.mapper.ProAndonMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.service.IProAndonService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -320,7 +324,7 @@ public class ProAndonServiceImpl implements IProAndonService {
      * 生成安灯编号: AND + yyyyMMdd + 时间戳后4位
      */
     private String generateAndonNo() {
-        java.time.LocalDate today = java.time.LocalDate.now();
+        LocalDate today = LocalDate.now();
         long suffix = System.currentTimeMillis() % 10000L;
         return "AND-" + today.toString().replace("-", "") + "-" + String.format("%04d", suffix);
     }

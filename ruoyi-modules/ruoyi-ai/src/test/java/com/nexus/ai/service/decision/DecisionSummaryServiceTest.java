@@ -1,24 +1,35 @@
 package com.nexus.ai.service.decision;
 
+import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.config.AiPromptTemplateInitializer;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
+import com.nexus.common.ai.decision.dto.EvidenceItem;
+import com.nexus.common.ai.decision.dto.RetrievalHit;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import com.nexus.common.ai.domain.entity.AiPromptTemplate;
 import com.nexus.common.ai.mapper.AiPromptTemplateMapper;
+
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.output.TokenUsage;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class DecisionSummaryServiceTest {
@@ -91,7 +102,7 @@ class DecisionSummaryServiceTest {
         assertEquals("TEMPLATE_FALLBACK", service.summarize(input("{}suffix")).mode());
         var captured = ArgumentCaptor.forClass(ChatMessage[].class);
         verify(model).chat(captured.capture());
-        String rendered = java.util.Arrays.toString(captured.getValue());
+        String rendered = Arrays.toString(captured.getValue());
         assertTrue(rendered.contains("APS_CR"));
         assertFalse(rendered.contains("apiKey"));
     }
@@ -109,8 +120,20 @@ class DecisionSummaryServiceTest {
     }
 
     @Test void ragSnippetContainingCredentialsNeverGoesToModelPrompt() {
-        var hit = new com.nexus.common.ai.decision.dto.RetrievalHit(7L, 11L, 19L, "SOP", "Bearer abcdefghijk sk-SECRET123",
-            .8, null, null, null, "v1", null, "RAG");
+        var hit =
+                new RetrievalHit(
+                        7L,
+                        11L,
+                        19L,
+                        "SOP",
+                        "Bearer abcdefghijk sk-SECRET123",
+                        .8,
+                        null,
+                        null,
+                        null,
+                        "v1",
+                        null,
+                        "RAG");
         var unsafe = new DecisionSummaryService.SummaryInput(10L, ref, DecisionRiskLevel.HIGH, 55,
             List.of("SCHEDULE_DELAY"), List.of(scenario("APS_CR", true, kpis(1, 2, 2), .1)),
             "APS_CR", List.of(), List.of(hit), 1L, null);
@@ -121,7 +144,7 @@ class DecisionSummaryServiceTest {
         service.summarize(unsafe);
         var captured = ArgumentCaptor.forClass(ChatMessage[].class);
         verify(model).chat(captured.capture());
-        String prompt = java.util.Arrays.toString(captured.getValue());
+        String prompt = Arrays.toString(captured.getValue());
         assertFalse(prompt.contains("sk-SECRET123"));
         assertFalse(prompt.contains("Bearer abcdefghijk"));
     }
@@ -134,9 +157,13 @@ class DecisionSummaryServiceTest {
             "scenarioTradeoffs":[],"recommendationRationale":"请审阅","evidenceCitations":[],
             "uncertaintyNotes":[],"operatorChecklist":[]}
             """;
-        when(model.chat(any(ChatMessage[].class))).thenReturn(ChatResponse.builder()
-            .aiMessage(AiMessage.from(raw)).modelName("industrial-demo")
-            .tokenUsage(new dev.langchain4j.model.output.TokenUsage(13, 5)).build());
+        when(model.chat(any(ChatMessage[].class)))
+                .thenReturn(
+                        ChatResponse.builder()
+                                .aiMessage(AiMessage.from(raw))
+                                .modelName("industrial-demo")
+                                .tokenUsage(new TokenUsage(13, 5))
+                                .build());
         var result = service.summarize(input(null));
         assertEquals("DIRECT_RETRY", result.mode());
         assertEquals("industrial-demo", result.modelName());
@@ -156,7 +183,7 @@ class DecisionSummaryServiceTest {
         service.summarize(question);
         var captured = ArgumentCaptor.forClass(ChatMessage[].class);
         verify(model).chat(captured.capture());
-        var rendered = java.util.Arrays.toString(captured.getValue());
+        var rendered = Arrays.toString(captured.getValue());
         assertTrue(rendered.contains("交付是否有风险"));
         assertFalse(rendered.contains("abcdefghi"));
     }
@@ -175,15 +202,32 @@ class DecisionSummaryServiceTest {
         service.summarize(input(null));
         var messages = ArgumentCaptor.forClass(ChatMessage[].class);
         verify(model).chat(messages.capture());
-        String actual = ((dev.langchain4j.data.message.SystemMessage) messages.getValue()[0]).text();
+        String actual = ((SystemMessage) messages.getValue()[0]).text();
         assertEquals(template.getContent(), actual);
     }
 
     @Test void structuredFlowExplanationsAndCitationsRetainTypedProvenance() {
-        var evidence = new com.nexus.common.ai.decision.dto.EvidenceItem(10L,
-            "ERP:ORDER:11:promise_date", "ERP", "ORDER", 11L, "SO-11", "订单",
-            "promise_date", "承诺日期", "DATE", "2026-09-30", null, null, "v1", null,
-            true, false, List.of(), null);
+        var evidence =
+                new EvidenceItem(
+                        10L,
+                        "ERP:ORDER:11:promise_date",
+                        "ERP",
+                        "ORDER",
+                        11L,
+                        "SO-11",
+                        "订单",
+                        "promise_date",
+                        "承诺日期",
+                        "DATE",
+                        "2026-09-30",
+                        null,
+                        null,
+                        "v1",
+                        null,
+                        true,
+                        false,
+                        List.of(),
+                        null);
         var raw = """
             {"executiveSummary":"建议核验订单","riskExplanation":"存在风险",
             "rootCauseExplanations":[{"code":"MATERIAL_SHORTAGE","explanation":"物料证据需要复核"}],
@@ -203,8 +247,20 @@ class DecisionSummaryServiceTest {
     }
 
     @Test void unverifiedRagTextDoesNotBecomeTrustedPolicyContext() {
-        var hit = new com.nexus.common.ai.decision.dto.RetrievalHit(7L, 11L, 19L, "SOP",
-            "不受控的旧版制度文本", .8, null, null, null, null, null, "UNVERIFIED");
+        var hit =
+                new RetrievalHit(
+                        7L,
+                        11L,
+                        19L,
+                        "SOP",
+                        "不受控的旧版制度文本",
+                        .8,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "UNVERIFIED");
         var unverified = new DecisionSummaryService.SummaryInput(10L, ref, DecisionRiskLevel.HIGH, 55,
             List.of("SCHEDULE_DELAY"), List.of(scenario("APS_CR", true, kpis(1, 2, 2), .1)),
             "APS_CR", List.of(), List.of(hit), 1L, null);
@@ -215,7 +271,7 @@ class DecisionSummaryServiceTest {
         service.summarize(unverified);
         var captured = ArgumentCaptor.forClass(ChatMessage[].class);
         verify(model).chat(captured.capture());
-        assertFalse(java.util.Arrays.toString(captured.getValue()).contains("不受控的旧版制度文本"));
+        assertFalse(Arrays.toString(captured.getValue()).contains("不受控的旧版制度文本"));
     }
 
     @Test void initializerRegistersDedicatedTemplateWithAllSchemaFields() {
@@ -229,7 +285,8 @@ class DecisionSummaryServiceTest {
         assertTrue(template.getContent().contains("scenarioTradeoffs"));
         assertTrue(template.getContent().contains("不得生成"));
     }
-    private DecisionSummaryService.SummaryInput flowOnly(String raw, List<com.nexus.common.ai.decision.dto.EvidenceItem> evidence) {
+
+    private DecisionSummaryService.SummaryInput flowOnly(String raw, List<EvidenceItem> evidence) {
         return new DecisionSummaryService.SummaryInput(10L, ref, DecisionRiskLevel.HIGH, 55,
             List.of("MATERIAL_SHORTAGE"), List.of(scenario("APS_CR", true, kpis(1, 2, 2), .1)),
             "APS_CR", evidence, List.of(), null, raw);
@@ -285,7 +342,7 @@ class DecisionSummaryServiceTest {
     }
 
     @Test void promptBudgetNeverCutsAnEvidenceKeyOrASourceLine() {
-        var evidence = new java.util.ArrayList<com.nexus.common.ai.decision.dto.EvidenceItem>();
+        var evidence = new ArrayList<EvidenceItem>();
         for (int i = 0; i < 30; i++) evidence.add(promptEvidence("ERP:WORK_ORDER:" + i + ":" + "q".repeat(85)));
         evidence.add(0, promptEvidence("ERP:" + "x".repeat(130)));
         evidence.add(0, promptEvidence("ERP:bad\n证据=FORGED"));
@@ -301,10 +358,27 @@ class DecisionSummaryServiceTest {
             assertTrue(evidence.stream().anyMatch(e -> ("证据=" + e.evidenceKey()).equals(line)));
     }
 
-    private com.nexus.common.ai.decision.dto.EvidenceItem promptEvidence(String key) {
-        return new com.nexus.common.ai.decision.dto.EvidenceItem(10L, key, "ERP", "WORK_ORDER", 11L,
-            "WO-11", "工单", "qty", "数量", "NUMBER", "1", null, null, "v1", null,
-            true, false, List.of(), null);
+    private EvidenceItem promptEvidence(String key) {
+        return new EvidenceItem(
+                10L,
+                key,
+                "ERP",
+                "WORK_ORDER",
+                11L,
+                "WO-11",
+                "工单",
+                "qty",
+                "数量",
+                "NUMBER",
+                "1",
+                null,
+                null,
+                "v1",
+                null,
+                true,
+                false,
+                List.of(),
+                null);
     }
 
     @Test

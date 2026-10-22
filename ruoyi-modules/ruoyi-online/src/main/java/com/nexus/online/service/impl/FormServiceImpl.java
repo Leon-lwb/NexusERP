@@ -1,30 +1,10 @@
 package com.nexus.online.service.impl;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
 import com.alibaba.fastjson2.JSONObject;
-
-import com.nexus.common.core.exception.ServiceException;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -43,6 +23,23 @@ import com.nexus.online.service.IFormService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * online表单 服务层实现
@@ -153,7 +150,7 @@ public class FormServiceImpl implements IFormService {
     }
 
     private Set<String> buildAllowedColumns(GenTable table, boolean excludePk) {
-        Set<String> cols = new java.util.HashSet<>();
+        Set<String> cols = new HashSet<>();
         String pkName = "";
         if (excludePk && table != null && table.getColumns() != null) {
             // 获取主键名

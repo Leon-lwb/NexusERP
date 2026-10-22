@@ -1,12 +1,16 @@
 package com.nexus.erp.bd.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.erp.bd.domain.BdSerialNumberRule;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import jakarta.validation.constraints.NotBlank;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.mybatis.core.domain.BaseEntity;
-import com.nexus.erp.bd.domain.BdSerialNumberRule;
 
 /**
  * 产品序列号/条码规则业务对象 bd_serial_number_rule
@@ -25,11 +29,8 @@ public class BdSerialNumberRuleBo extends BaseEntity {
      */
     private Long ruleId;
 
-    /**
-     * 冻结编号规则的并发版本，已预留号码仍按原快照重放。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 冻结编号规则的并发版本，已预留号码仍按原快照重放。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long ruleVersion;
 
     /**

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.lt.domain.LtLot;
 import com.nexus.mes.lt.domain.LtSnBinding;
 import com.nexus.mes.lt.domain.bo.LtSnBindingBo;
@@ -15,9 +16,11 @@ import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.lt.service.ILtSnBindingService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
-import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.mes.trace.MesSnCreationWriter;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +45,7 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
     private final LtSnBindingMapper baseMapper;
     private final LtLotMapper lotMapper;
     private final ProSnMapper snMapper;
-    private final com.nexus.mes.trace.MesSnCreationWriter productLots;
+    private final MesSnCreationWriter productLots;
 
     /**
      * 分页查询SN批次绑定列表

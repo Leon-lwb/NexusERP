@@ -3,7 +3,8 @@ package com.nexus.erp.fin.cost.poster;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.mybatis.utils.IdGeneratorUtil;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.fin.cost.constant.CostConstants;
 import com.nexus.erp.fin.gl.constant.GlConstants;
 import com.nexus.erp.fin.gl.domain.GlAccount;
@@ -19,17 +20,17 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 存货成本过账 Poster。
@@ -48,7 +49,7 @@ public class CostPoster {
 
     private final WmMaterialStockTxMapper stockTxMapper;
     private final WmMaterialStockMapper stockMapper;
-    private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
+    private final BdMaterialMapper materialMapper;
     private final GlAccountMapper accountMapper;
     private final GlPeriodMapper periodMapper;
     private final IGlPeriodService periodService;
@@ -143,7 +144,7 @@ public class CostPoster {
         WmMaterialStock stock = stockMapper.selectById(tx.getMaterialStockId());
         Long materialType = stock != null ? stock.getMaterialType() : null;
         if (materialType == null && stock != null && stock.getMaterialId() != null) {
-            com.nexus.erp.bd.domain.BdMaterial material = materialMapper.selectById(stock.getMaterialId());
+            BdMaterial material = materialMapper.selectById(stock.getMaterialId());
             materialType = material != null ? material.getMaterialType() : null;
         }
         long type = materialType == null ? 0L : materialType;

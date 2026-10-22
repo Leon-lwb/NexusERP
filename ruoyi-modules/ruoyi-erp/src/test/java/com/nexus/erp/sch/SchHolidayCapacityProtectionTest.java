@@ -1,5 +1,9 @@
 package com.nexus.erp.sch;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -13,25 +17,28 @@ import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.bo.SchHolidayBo;
 import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.service.impl.SchHolidayServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DeadlockLoserDataAccessException;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+// 同名类型说明：本文件同时使用 java.sql.Date 和 java.util.Date，后者保留全限定名以区分。
 
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -79,14 +86,28 @@ class SchHolidayCapacityProtectionTest {
 
         ArgumentCaptor<Wrapper<SchHoliday>> dates = wrapperCaptor();
         verify(holidayMapper, times(2)).selectList(dates.capture());
-        assertEquals(List.of(old, DAY), dates.getAllValues().stream().map(query -> {
-            query.getSqlSegment();
-            return ((AbstractWrapper<?, ?, ?>) query).getParamNameValuePairs().values().stream()
-                .filter(java.util.Date.class::isInstance).map(java.util.Date.class::cast)
-                .map(date -> java.time.Instant.ofEpochMilli(date.getTime())
-                    .atZone(java.time.ZoneId.of("Asia/Shanghai")).toLocalDate())
-                .min(LocalDate::compareTo).orElseThrow();
-        }).toList());
+        assertEquals(
+                List.of(old, DAY),
+                dates.getAllValues().stream()
+                        .map(
+                                query -> {
+                                    query.getSqlSegment();
+                                    return ((AbstractWrapper<?, ?, ?>) query)
+                                            .getParamNameValuePairs().values().stream()
+                                                    .filter(java.util.Date.class::isInstance)
+                                                    .map(java.util.Date.class::cast)
+                                                    .map(
+                                                            date ->
+                                                                    Instant.ofEpochMilli(
+                                                                                    date.getTime())
+                                                                            .atZone(
+                                                                                    ZoneId.of(
+                                                                                            "Asia/Shanghai"))
+                                                                            .toLocalDate())
+                                                    .min(LocalDate::compareTo)
+                                                    .orElseThrow();
+                                })
+                        .toList());
         verify(holidayMapper, never()).updateById(any(SchHoliday.class));
     }
 
@@ -117,14 +138,20 @@ class SchHolidayCapacityProtectionTest {
         lenient().when(holidayMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
         PrdCapacityCalendar high = calendar("0.00");
         high.setCalendarId(100L);
-        high.setCalendarDate(java.sql.Date.valueOf(old));
+        high.setCalendarDate(Date.valueOf(old));
         PrdCapacityCalendar low = calendar("0.00");
-        lenient().when(calendarMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
-            Wrapper<?> query = invocation.getArgument(0);
-            query.getSqlSegment();
-            return ((AbstractWrapper<?, ?, ?>) query).getParamNameValuePairs().containsValue(java.sql.Date.valueOf(old))
-                ? List.of(high) : List.of(low);
-        });
+        lenient()
+                .when(calendarMapper.selectList(any(Wrapper.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Wrapper<?> query = invocation.getArgument(0);
+                            query.getSqlSegment();
+                            return ((AbstractWrapper<?, ?, ?>) query)
+                                            .getParamNameValuePairs()
+                                            .containsValue(Date.valueOf(old))
+                                    ? List.of(high)
+                                    : List.of(low);
+                        });
         lenient().when(calendarMapper.selectOne(any(Wrapper.class))).thenAnswer(invocation -> {
             Wrapper<?> query = invocation.getArgument(0);
             query.getSqlSegment();
@@ -138,7 +165,7 @@ class SchHolidayCapacityProtectionTest {
         assertEquals(1, subject.updateByBo(bo));
 
         ArgumentCaptor<Wrapper<PrdCapacityCalendar>> locks = wrapperCaptor();
-        org.mockito.InOrder order = inOrder(calendarMapper);
+        InOrder order = inOrder(calendarMapper);
         order.verify(calendarMapper, times(2)).selectOne(locks.capture());
         assertEquals(List.of(70L, 100L), locks.getAllValues().stream().map(query -> {
             query.getSqlSegment();
@@ -187,7 +214,7 @@ class SchHolidayCapacityProtectionTest {
 
     private SchHolidayBo bo(LocalDate date) {
         SchHolidayBo bo = new SchHolidayBo();
-        bo.setHolidayDate(java.sql.Date.valueOf(date));
+        bo.setHolidayDate(Date.valueOf(date));
         bo.setIsWorkingDay(0);
         return bo;
     }
@@ -196,7 +223,7 @@ class SchHolidayCapacityProtectionTest {
         SchHoliday holiday = new SchHoliday();
         holiday.setHolidayId(1L);
         holiday.setTenantId("000000");
-        holiday.setHolidayDate(java.sql.Date.valueOf(date));
+        holiday.setHolidayDate(Date.valueOf(date));
         holiday.setIsWorkingDay(0);
         return holiday;
     }
@@ -205,7 +232,7 @@ class SchHolidayCapacityProtectionTest {
         PrdCapacityCalendar calendar = new PrdCapacityCalendar();
         calendar.setCalendarId(70L);
         calendar.setTenantId("000000");
-        calendar.setCalendarDate(java.sql.Date.valueOf(DAY));
+        calendar.setCalendarDate(Date.valueOf(DAY));
         calendar.setPlannedHours(new BigDecimal(planned));
         return calendar;
     }

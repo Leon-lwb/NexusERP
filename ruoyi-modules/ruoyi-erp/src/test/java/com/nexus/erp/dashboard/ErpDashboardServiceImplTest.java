@@ -1,17 +1,27 @@
 package com.nexus.erp.dashboard;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.mapper.BdClientMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.dashboard.controller.ErpDashboardController;
 import com.nexus.erp.dashboard.domain.vo.ErpDashboardStatsVo;
 import com.nexus.erp.dashboard.service.impl.ErpDashboardServiceImpl;
+import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.wm.domain.WmStockAlert;
 import com.nexus.erp.wm.mapper.WmStockAlertMapper;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,13 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Method;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 首页统计单元测试（ERP-DASH-01）
@@ -66,7 +69,7 @@ class ErpDashboardServiceImplTest {
         // 服务内部使用 LambdaQueryWrapper（selectCount/in），MP 需实体列缓存，单测无 Spring 需手工注册
         MybatisConfiguration configuration = new MybatisConfiguration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
-        TableInfoHelper.initTableInfo(assistant, com.nexus.erp.so.domain.SoSalesOrderHeader.class);
+        TableInfoHelper.initTableInfo(assistant, SoSalesOrderHeader.class);
         TableInfoHelper.initTableInfo(assistant, WmStockAlert.class);
     }
 

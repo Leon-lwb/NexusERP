@@ -3,15 +3,20 @@ package com.nexus.report.runtime;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.report.*;
+import com.nexus.report.domain.ReportDsl;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.engine.*;
 import com.nexus.report.storage.ReportArtifactStore;
+import com.nexus.report.version.ReportEngineExecutor;
+import com.nexus.report.version.V1ReportEngineExecutor;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /** 逐行 JSON 快照保留精确标识符和十进制值，支持有界分页与流式导出。 */
 public final class ReportSnapshotStore {
@@ -105,7 +110,7 @@ public final class ReportSnapshotStore {
                 parameters,
                 cancellation,
                 maximum,
-                new com.nexus.report.version.V1ReportEngineExecutor(new ReportCompiler(json)));
+                new V1ReportEngineExecutor(new ReportCompiler(json)));
     }
 
     /**
@@ -127,7 +132,7 @@ public final class ReportSnapshotStore {
             Map<String, Object> parameters,
             ReportCancellation cancellation,
             int maximum,
-            com.nexus.report.version.ReportEngineExecutor executor) {
+            ReportEngineExecutor executor) {
         return create(
                 compiled, provider, actor, parameters, cancellation, maximum, executor, rows -> {});
     }
@@ -152,12 +157,12 @@ public final class ReportSnapshotStore {
             Map<String, Object> parameters,
             ReportCancellation cancellation,
             int maximum,
-            com.nexus.report.version.ReportEngineExecutor executor,
-            java.util.function.LongConsumer progress) {
+            ReportEngineExecutor executor,
+            LongConsumer progress) {
         if (maximum < 1 || maximum > 100000) throw ReportFault.capacity();
         cancellation.check();
         int limit =
-                compiled.dsl().kind() == com.nexus.report.domain.ReportDsl.Kind.DOCUMENT
+                compiled.dsl().kind() == ReportDsl.Kind.DOCUMENT
                         ? Math.min(maximum, 5000)
                         : maximum;
         Path temporary = artifacts.temporary(actor.tenantId(), "rows");
@@ -165,8 +170,8 @@ public final class ReportSnapshotStore {
         long[] count = {0};
         var calculator = executor;
         var accumulator = executor.summaries(compiled);
-        java.util.concurrent.atomic.AtomicReference<List<ReportCalculator.SummaryValue>>
-                calculatedSummaries = new java.util.concurrent.atomic.AtomicReference<>();
+        AtomicReference<List<ReportCalculator.SummaryValue>> calculatedSummaries =
+                new AtomicReference<>();
         try (var writer =
                 new BufferedWriter(
                         new OutputStreamWriter(

@@ -1,5 +1,7 @@
 package com.nexus.common.mq.iqc;
 
+import com.nexus.common.core.exception.ServiceException;
+
 import java.math.BigDecimal;
 
 /**
@@ -17,7 +19,7 @@ public interface ReceiptIqcSource {
 
     /** 只读回出生时的原生绑定；旧实现没有出生事实，不能用当前单位升级。 */
     default BornInspection readCompletedBorn(String tenantId, Long inspectionId) {
-        throw new com.nexus.common.core.exception.ServiceException("UNIT_ORIGIN_UNPROVEN");
+        throw new ServiceException("UNIT_ORIGIN_UNPROVEN");
     }
 
     /** 与新建IQC同一物理事务产生的原始绑定，不接受调用方上传为持久化输入。 */

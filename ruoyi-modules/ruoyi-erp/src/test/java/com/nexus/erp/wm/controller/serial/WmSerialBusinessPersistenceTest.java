@@ -1,21 +1,30 @@
 package com.nexus.erp.wm.controller.serial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.trace.*;
 import com.nexus.erp.wm.controller.*;
+import com.nexus.erp.wm.controller.app.AppPdaReturnController;
 import com.nexus.erp.wm.domain.*;
+import com.nexus.erp.wm.domain.bo.WmMiscRecptBo;
+import com.nexus.erp.wm.domain.vo.WmMaterialReceiveDetailVo;
 import com.nexus.erp.wm.domain.vo.WmMiscRecptVo;
+import com.nexus.erp.wm.domain.vo.pda.PdaReturnDetailVo;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.*;
+import com.nexus.erp.wm.service.impl.WmServiceHelper;
+import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 草稿真实存储、原mapper行ID映射、刷新续扫及后台无HTTP执行回归。
@@ -44,7 +53,7 @@ class WmSerialBusinessPersistenceTest {
         when(stock.insertByBo(any()))
                 .thenAnswer(
                         call -> {
-                            var bo = (com.nexus.erp.wm.domain.bo.WmMiscRecptBo) call.getArgument(0);
+                            var bo = (WmMiscRecptBo) call.getArgument(0);
                             var head = new WmMiscRecpt();
                             heads.insert(head);
                             var row = bo.getWmMiscRecptLineList().get(0);
@@ -108,9 +117,9 @@ class WmSerialBusinessPersistenceTest {
                             return 1;
                         });
         var lines = f.proxy(lineTarget);
-        var codes = mock(com.nexus.system.strategy.AutoCodeUtil.class);
+        var codes = mock(AutoCodeUtil.class);
         when(codes.genSerialCode(eq("WM_RETURN_CODE"), isNull())).thenReturn("RETURN-REAL");
-        var helper = new com.nexus.erp.wm.service.impl.WmServiceHelper(codes, null, null, null);
+        var helper = new WmServiceHelper(codes, null, null, null);
         var mvc =
                 MockMvcBuilders.standaloneSetup(
                                 f.proxy(new WmMaterialReturnController(heads, lines, helper)))
@@ -133,16 +142,15 @@ class WmSerialBusinessPersistenceTest {
         var f = new SerialAdapterFixture();
         f.store.saveDraft("WM_MATERIAL_RETURN", 10L, 11L, "pda-return-read", List.of(f.item(101)));
         var pda = mock(IPdaReturnService.class);
-        var detail = new com.nexus.erp.wm.domain.vo.pda.PdaReturnDetailVo();
+        var detail = new PdaReturnDetailVo();
         detail.setReturnId(10L);
-        var row = new com.nexus.erp.wm.domain.vo.pda.PdaReturnDetailVo.PdaReturnLineVo();
+        var row = new PdaReturnDetailVo.PdaReturnLineVo();
         row.setLineId(11L);
         row.setMaterialCode("MATERIAL-REAL");
         detail.setLines(List.of(row));
         when(pda.detail(10L)).thenReturn(detail);
         var mvc =
-                MockMvcBuilders.standaloneSetup(
-                                new com.nexus.erp.wm.controller.app.AppPdaReturnController(pda))
+                MockMvcBuilders.standaloneSetup(new AppPdaReturnController(pda))
                         .setControllerAdvice(new WmSerialDetailAdvice(f.store, f.json))
                         .build();
         mvc.perform(get("/app/pda/wm/return/10"))
@@ -161,7 +169,7 @@ class WmSerialBusinessPersistenceTest {
                 "detail-read",
                 List.of(new SnItem(101L, null, 40L, null, 50L)));
         var service = mock(IWmMaterialReceiveDetailService.class);
-        var row = new com.nexus.erp.wm.domain.vo.WmMaterialReceiveDetailVo();
+        var row = new WmMaterialReceiveDetailVo();
         row.setDetailId(200L);
         row.setReceiveId(10L);
         row.setLineId(11L);

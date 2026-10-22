@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.report.DatasetDescriptor;
 import com.nexus.common.report.TypedValue;
 import com.nexus.report.config.ReportProperties;
 import com.nexus.report.domain.*;
@@ -357,7 +358,7 @@ public class ReportDefinitionController {
      */
     @SaCheckPermission("report:dataset:manage")
     @GetMapping("/datasets/providers")
-    public R<List<com.nexus.common.report.DatasetDescriptor>> providers() {
+    public R<List<DatasetDescriptor>> providers() {
         return R.ok(definitions.providers(actors.current()));
     }
 

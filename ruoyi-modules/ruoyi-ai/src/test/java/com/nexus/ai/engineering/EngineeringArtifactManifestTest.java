@@ -9,7 +9,13 @@ import com.nexus.common.ai.engineering.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.imageio.ImageIO;
 
 class EngineeringArtifactManifestTest {
     static class Artifacts extends EngineeringArtifactUploadTest.Uploads {
@@ -45,8 +51,8 @@ class EngineeringArtifactManifestTest {
 
         byte[] zip() throws Exception {
             var out = new ByteArrayOutputStream();
-            try (var zip = new java.util.zip.ZipOutputStream(out)) {
-                zip.putNextEntry(new java.util.zip.ZipEntry("project.eprj3"));
+            try (var zip = new ZipOutputStream(out)) {
+                zip.putNextEntry(new ZipEntry("project.eprj3"));
                 zip.write("{}".getBytes());
                 zip.closeEntry();
             }
@@ -55,11 +61,7 @@ class EngineeringArtifactManifestTest {
 
         byte[] png() throws Exception {
             var out = new ByteArrayOutputStream();
-            javax.imageio.ImageIO.write(
-                    new java.awt.image.BufferedImage(
-                            1, 1, java.awt.image.BufferedImage.TYPE_INT_RGB),
-                    "PNG",
-                    out);
+            ImageIO.write(new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), "PNG", out);
             return out.toByteArray();
         }
     }
@@ -169,7 +171,7 @@ class EngineeringArtifactManifestTest {
             assertEquals("DEGRADED", manifest.modelGroups().get(0).status());
             assertTrue(manifest.modelGroups().get(0).uniformMaterial());
             assertEquals(
-                    java.util.List.of(missingTexture ? "model/missing.png" : "model/board.mtl"),
+                    List.of(missingTexture ? "model/missing.png" : "model/board.mtl"),
                     manifest.modelGroups().get(0).missingPaths());
             assertNull(
                     f.repository

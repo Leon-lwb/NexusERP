@@ -1,22 +1,29 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.*;
 import com.nexus.mes.pro.domain.ProWorkOrder;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
 
 /**
  * 最终交付清单不可变；单页仅是分页片段，整体核验必须读取全部分页。
@@ -33,9 +40,9 @@ public class MesCompletionManifestService
     private final MaterialPolicyPort policies;
     private final MesProductLotOutputWriter productOutputs;
     private final SerialIdentityPort canonicalIdentities;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
 
-    @org.springframework.beans.factory.annotation.Value("${nexus.trace.relay.enabled:false}")
+    @Value("${nexus.trace.relay.enabled:false}")
     private boolean traceRelayEnabled;
 
     /**
@@ -620,7 +627,7 @@ public class MesCompletionManifestService
                             && Objects.equals(
                                     prior.get("material_hash"), body.path("materialHash").asText()),
                     "Cancelled completion belongs to a different work order or material snapshot");
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("Invalid durable cancellation evidence", error);
         }
         return text(source.get("event_id"));
@@ -639,7 +646,7 @@ public class MesCompletionManifestService
     private record MaterialSource(
             Map<String, Object> allocation,
             Map<String, Object> inbox,
-            com.fasterxml.jackson.databind.JsonNode evidence,
+            JsonNode evidence,
             TrackingPolicy policy,
             long version,
             String eventId) {}
@@ -935,12 +942,12 @@ public class MesCompletionManifestService
         return batches.iterator().next();
     }
 
-    private com.fasterxml.jackson.databind.JsonNode readProof(Map<String, Object> allocation) {
+    private JsonNode readProof(Map<String, Object> allocation) {
         try {
             String body = text(allocation.get("evidence_json"));
             need(TraceHashes.sha256(body).equals(allocation.get("evidence_hash")), "批次映射摘要不一致");
             return json.readTree(body);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("批次映射无效");
         }
     }

@@ -1,6 +1,11 @@
 package com.nexus.ai.service.rag;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -28,6 +33,8 @@ import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -37,6 +44,7 @@ import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +54,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
 import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -71,10 +80,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 知识处理真实执行器的隔离故障矩阵，补充既有顺序任务和直接内联替身未覆盖的交错、取消与恢复。
@@ -897,20 +902,37 @@ class KnowledgeProcessServiceExecutorFaultMatrixTest {
                 }
                 return 1;
             });
-            when(documents.update(org.mockito.ArgumentMatchers.<AiKnowledgeDocument>any(),
-                org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any()))
-                .thenAnswer(invocation -> conditionalUpdate(invocation.getArgument(0), invocation.getArgument(1)));
-            when(chunks.delete(org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any())).thenAnswer(invocation -> {
-                LambdaQueryWrapper<AiKnowledgeChunk> condition = invocation.getArgument(0);
-                Object documentId = columnValue(condition.getSqlSegment(), "document_id", condition.getParamNameValuePairs());
-                assertEquals(TENANT, TenantHelper.getTenantId());
-                synchronized (stateLock) {
-                    int before = chunkRows.size();
-                    chunkRows.values().removeIf(chunk -> Objects.equals(documentId, chunk.getDocumentId()));
-                    chunkDeletes.incrementAndGet();
-                    return before - chunkRows.size();
-                }
-            });
+            when(documents.update(
+                            ArgumentMatchers.<AiKnowledgeDocument>any(),
+                            ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any()))
+                    .thenAnswer(
+                            invocation ->
+                                    conditionalUpdate(
+                                            invocation.getArgument(0), invocation.getArgument(1)));
+            when(chunks.delete(ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any()))
+                    .thenAnswer(
+                            invocation -> {
+                                LambdaQueryWrapper<AiKnowledgeChunk> condition =
+                                        invocation.getArgument(0);
+                                Object documentId =
+                                        columnValue(
+                                                condition.getSqlSegment(),
+                                                "document_id",
+                                                condition.getParamNameValuePairs());
+                                assertEquals(TENANT, TenantHelper.getTenantId());
+                                synchronized (stateLock) {
+                                    int before = chunkRows.size();
+                                    chunkRows
+                                            .values()
+                                            .removeIf(
+                                                    chunk ->
+                                                            Objects.equals(
+                                                                    documentId,
+                                                                    chunk.getDocumentId()));
+                                    chunkDeletes.incrementAndGet();
+                                    return before - chunkRows.size();
+                                }
+                            });
             when(chunks.insert(any(AiKnowledgeChunk.class))).thenAnswer(invocation -> {
                 AiKnowledgeChunk chunk = invocation.getArgument(0);
                 chunk.setId((long) nextChunkId.incrementAndGet());
@@ -1063,8 +1085,8 @@ class KnowledgeProcessServiceExecutorFaultMatrixTest {
 
         /** 仅使用小型合成文本和文档元数据，复用真实文档过滤器执行删除。 */
         private static TextSegment segment(String content, long documentId) {
-            return TextSegment.from(content, new dev.langchain4j.data.document.Metadata()
-                .put("documentId", Long.toString(documentId)));
+            return TextSegment.from(
+                    content, new Metadata().put("documentId", Long.toString(documentId)));
         }
 
         /** 模拟 Mapper 持久化值与调用方对象分离，防止引用共享制造虚假的向量回写成功。 */

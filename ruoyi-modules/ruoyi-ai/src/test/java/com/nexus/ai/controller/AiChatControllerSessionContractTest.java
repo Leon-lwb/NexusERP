@@ -1,19 +1,21 @@
 package com.nexus.ai.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.nexus.ai.service.facade.AiServiceFacade;
 import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiSessionService;
 import com.nexus.common.satoken.utils.LoginHelper;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class AiChatControllerSessionContractTest {
     @Test
@@ -82,7 +84,7 @@ class AiChatControllerSessionContractTest {
             assertEquals(200, controller.history(9007199254740993L).getCode());
             var order = inOrder(sessions, messages);
             order.verify(sessions).selectById(9007199254740993L);
-            order.verify(messages).selectList(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class));
+            order.verify(messages).selectList(any(Wrapper.class));
             verifyNoMoreInteractions(messages);
         }
     }

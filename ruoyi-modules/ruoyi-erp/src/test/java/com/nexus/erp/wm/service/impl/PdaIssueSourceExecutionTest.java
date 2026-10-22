@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -17,19 +21,17 @@ import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.strategy.StockOperationStrategyFactory;
 import com.nexus.erp.wm.strategy.impl.ProductionIssueStrategy;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 真实 PDA、领料执行器和库存策略串联；只模拟映射器边界，不执行 SQL 或连接数据库。 */
 @Tag("dev")
@@ -73,7 +75,7 @@ class PdaIssueSourceExecutionTest {
 
     @Test void scannedQcIdentityIsExactlyTheRealDeductedAndLoggedBatch() {
         assertEquals(Boolean.TRUE, service.pick(PdaIssueServiceImplTest.ISSUE_ID, fixture.bo()).getOk(), "唯一真实来源应能通过既有完整扣库链");
-        var query = org.mockito.ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        var query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(stockMapper, atLeastOnce().description("预检和真实策略均须查询绑定后的库存范围")).selectList(query.capture());
         for (LambdaQueryWrapper<?> wrapper : query.getAllValues()) {
             String sql = wrapper.getSqlSegment();
@@ -88,7 +90,7 @@ class PdaIssueSourceExecutionTest {
         verify(batchMapper, description("批次累计必须就是质检门禁核过的真实批次"))
             .increaseIssuedQty(PdaIssueServiceImplTest.BATCH_ID, PdaIssueServiceImplTest.MATERIAL_ID,
                 PdaIssueServiceImplTest.TENANT, new BigDecimal("2"));
-        var transaction = org.mockito.ArgumentCaptor.forClass(WmMaterialStockTx.class);
+        var transaction = ArgumentCaptor.forClass(WmMaterialStockTx.class);
         verify(txMapper, description("真实策略应写一条对应来源的流水")).insert(transaction.capture());
         assertEquals(PdaIssueServiceImplTest.BATCH_ID, transaction.getValue().getBatchId(), "流水必须追溯被质检的真实批次");
         assertEquals(PdaIssueServiceImplTest.LOCATION_ID, transaction.getValue().getLocationId(), "流水必须追溯实际库位");
@@ -108,7 +110,7 @@ class PdaIssueSourceExecutionTest {
         PdaPickBo request = fixture.bo(); request.setBatchCode(null);
         assertEquals(Boolean.TRUE, service.pick(PdaIssueServiceImplTest.ISSUE_ID, request).getOk(), "真实无批次库存可沿原链扣减");
         verifyNoInteractions(batchMapper);
-        var transaction = org.mockito.ArgumentCaptor.forClass(WmMaterialStockTx.class);
+        var transaction = ArgumentCaptor.forClass(WmMaterialStockTx.class);
         verify(txMapper, description("非批次出库仍须保留实际库存流水")).insert(transaction.capture());
         assertNull(transaction.getValue().getBatchId(), "非批次流水不能伪造批次标识");
         assertNull(fixture.target.getBatchId(), "领料行仍保留真实非批次空标识");

@@ -1,5 +1,6 @@
 package com.nexus.mes.eq.service;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
@@ -87,14 +88,13 @@ public interface IEqRepairService {
 
     /**
      * 作废/撤销维修单(误报修/重复报修闭环出口)。
-     * <p>
-     * 状态守卫用条件更新(CAS)限定 {@code status IN ('REPORTED','REPAIRING')}, 已完工/已作废
-     * 的单不可作废(影响 0 行抛 {@link com.nexus.common.core.exception.ServiceException})。
-     * 作废成功后调用 {@code resetToNormalIfNoActiveRepair}: 若该设备已无其他活跃报修则
-     * 释放 FAULT 回 NORMAL, 消除"误报修使设备永久 FAULT"的问题(MES-EQ-06)。
+     *
+     * <p>状态守卫用条件更新(CAS)限定 {@code status IN ('REPORTED','REPAIRING')}, 已完工/已作废 的单不可作废(影响 0 行抛 {@link
+     * ServiceException})。 作废成功后调用 {@code resetToNormalIfNoActiveRepair}: 若该设备已无其他活跃报修则 释放 FAULT 回
+     * NORMAL, 消除"误报修使设备永久 FAULT"的问题(MES-EQ-06)。
      *
      * @param repairId 维修ID
-     * @param reason   作废原因(可空, 非空时写入 remark 留痕)
+     * @param reason 作废原因(可空, 非空时写入 remark 留痕)
      */
     void cancelRepair(Long repairId, String reason);
 

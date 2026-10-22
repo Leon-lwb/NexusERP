@@ -9,13 +9,20 @@ import com.nexus.report.engine.*;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.zip.ZipFile;
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 
 /** 报表Exporter测试，负责当前模块对应的契约或处理职责。 */
 class ReportExporterTest {
@@ -218,7 +225,7 @@ class ReportExporterTest {
         new ReportSpreadsheetExporter().layout(displayedPlan(), out, new ReportCancellation());
         try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(out.toByteArray()))) {
             var sheet = workbook.getSheetAt(0);
-            var values = new ArrayList<org.apache.poi.ss.usermodel.Cell>();
+            var values = new ArrayList<Cell>();
             for (var row : sheet) for (var cell : row) values.add(cell);
             assertTrue(
                     values.stream()
@@ -262,8 +269,8 @@ class ReportExporterTest {
             assertNull(sheet.getRow(0).getCell(0));
             assertTrue(sheet.getColumnWidth(0) > 0);
             assertNotNull(workbook.getPrintArea(0));
-            assertEquals(0, sheet.getMargin(org.apache.poi.ss.usermodel.Sheet.TopMargin), 0.0001);
-            assertEquals(0, sheet.getMargin(org.apache.poi.ss.usermodel.Sheet.LeftMargin), 0.0001);
+            assertEquals(0, sheet.getMargin(Sheet.TopMargin), 0.0001);
+            assertEquals(0, sheet.getMargin(Sheet.LeftMargin), 0.0001);
             double height = 0;
             for (var row : sheet) {
                 assertTrue(row.getHeightInPoints() <= 409);
@@ -316,9 +323,9 @@ class ReportExporterTest {
     @Test
     void streamsOneHundredThousandRowsIntoAValidXlsxWithoutMaterializingAWorkbook()
             throws Exception {
-        var file = java.nio.file.Files.createTempFile("report-stream-", ".xlsx");
+        var file = Files.createTempFile("report-stream-", ".xlsx");
         try {
-            try (var output = java.nio.file.Files.newOutputStream(file)) {
+            try (var output = Files.newOutputStream(file)) {
                 new ReportSpreadsheetExporter()
                         .data(
                                 dsl(),
@@ -330,26 +337,26 @@ class ReportExporterTest {
                                 new ReportCancellation());
             }
             int rows = 0;
-            try (var zip = new java.util.zip.ZipFile(file.toFile())) {
+            try (var zip = new ZipFile(file.toFile())) {
                 var entry = zip.getEntry("xl/worksheets/sheet1.xml");
                 assertNotNull(entry);
                 try (var input = zip.getInputStream(entry)) {
-                    var factory = javax.xml.stream.XMLInputFactory.newFactory();
-                    factory.setProperty(javax.xml.stream.XMLInputFactory.SUPPORT_DTD, false);
+                    var factory = XMLInputFactory.newFactory();
+                    factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
                     factory.setProperty("javax.xml.stream.isSupportingExternalEntities", false);
                     var xml = factory.createXMLStreamReader(input);
                     while (xml.hasNext()) {
                         int event = xml.next();
-                        if (event == javax.xml.stream.XMLStreamConstants.START_ELEMENT
+                        if (event == XMLStreamConstants.START_ELEMENT
                                 && xml.getLocalName().equals("row")) rows++;
                     }
                     xml.close();
                 }
             }
             assertEquals(100001, rows);
-            assertTrue(java.nio.file.Files.size(file) > 1000);
+            assertTrue(Files.size(file) > 1000);
         } finally {
-            java.nio.file.Files.deleteIfExists(file);
+            Files.deleteIfExists(file);
         }
     }
 

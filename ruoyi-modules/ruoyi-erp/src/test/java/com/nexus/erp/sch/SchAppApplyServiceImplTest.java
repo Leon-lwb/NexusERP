@@ -1,9 +1,24 @@
 package com.nexus.erp.sch;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.sch.domain.SchAttendance;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchLeaveApply;
+import com.nexus.erp.sch.domain.SchOutdoorPunch;
 import com.nexus.erp.sch.domain.SchSupplementApply;
 import com.nexus.erp.sch.domain.bo.SchApplyApproveBo;
 import com.nexus.erp.sch.domain.bo.SchLeaveApplyBo;
@@ -18,11 +33,9 @@ import com.nexus.erp.sch.mapper.SchOutdoorPunchMapper;
 import com.nexus.erp.sch.mapper.SchSupplementApplyMapper;
 import com.nexus.erp.sch.service.ISchPunchRuleService;
 import com.nexus.erp.sch.service.impl.SchAppApplyServiceImpl;
-import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,23 +49,13 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * SchAppApplyServiceImpl 单元测试
@@ -227,14 +230,16 @@ class SchAppApplyServiceImplTest {
     void submitOutdoor_success() {
         when(schPunchRuleService.selectList(any(SchPunchRuleBo.class)))
             .thenReturn(List.of(rule(1, 7L, 1, 0)));
-        when(outdoorPunchMapper.insert(any(com.nexus.erp.sch.domain.SchOutdoorPunch.class))).thenAnswer(inv -> {
-            inv.getArgument(0, com.nexus.erp.sch.domain.SchOutdoorPunch.class).setPunchId(601L);
-            return 1;
-        });
+        when(outdoorPunchMapper.insert(any(SchOutdoorPunch.class)))
+                .thenAnswer(
+                        inv -> {
+                            inv.getArgument(0, SchOutdoorPunch.class).setPunchId(601L);
+                            return 1;
+                        });
 
         Long punchId = service.submitOutdoorPunch(WORKER_ID, WORKER_NAME, outdoorBo(null));
         assertEquals(601L, punchId);
-        verify(outdoorPunchMapper).insert(any(com.nexus.erp.sch.domain.SchOutdoorPunch.class));
+        verify(outdoorPunchMapper).insert(any(SchOutdoorPunch.class));
     }
 
     private SchOutdoorPunchBo outdoorBo(String photo) {
@@ -273,7 +278,7 @@ class SchAppApplyServiceImplTest {
         verify(leaveApplyMapper).insert(captor.capture());
         SchLeaveApply saved = captor.getValue();
         assertEquals("pending", saved.getApplyStatus());
-        assertEquals(0, saved.getDurationDays().compareTo(new java.math.BigDecimal("3")));
+        assertEquals(0, saved.getDurationDays().compareTo(new BigDecimal("3")));
         assertTrue(saved.getLeaveNo().startsWith("QJ"));
     }
 
@@ -438,7 +443,7 @@ class SchAppApplyServiceImplTest {
             .thenReturn(List.of(rule(1, 7L, 1, 0)));
         when(supplementApplyMapper.selectCount(any())).thenReturn(0L);
         when(supplementApplyMapper.insert(any(SchSupplementApply.class)))
-            .thenThrow(new org.springframework.dao.DuplicateKeyException("Duplicate entry 'BC...'"));
+                .thenThrow(new DuplicateKeyException("Duplicate entry 'BC...'"));
 
         String yesterday = LocalDate.now().minusDays(1).toString();
         ServiceException ex = assertThrows(ServiceException.class,

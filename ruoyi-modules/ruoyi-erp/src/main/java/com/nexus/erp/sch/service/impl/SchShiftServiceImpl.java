@@ -1,17 +1,17 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.prd.domain.PrdCapacityCalendar;
-import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
+import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.prd.domain.PrdCapacityCalendar;
+import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchPlan;
 import com.nexus.erp.sch.domain.SchShift;
@@ -23,12 +23,14 @@ import com.nexus.erp.sch.mapper.SchPlanMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.service.ISchShiftService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import java.util.List;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * 班次定义服务业务层处理
@@ -97,7 +99,7 @@ public class SchShiftServiceImpl implements ISchShiftService {
         /** 计划必须存在(原实现 planId 无效时 shiftCode 为 null, 违反 NOT NULL 报 SQL 异常) */
         SchPlan schPlan = schPlanMapper.selectById(entity.getPlanId());
         if (schPlan == null) {
-            throw new com.nexus.common.core.exception.ServiceException("所属排班计划不存在: planId=" + entity.getPlanId());
+            throw new ServiceException("所属排班计划不存在: planId=" + entity.getPlanId());
         }
         if (StringUtils.isBlank(entity.getShiftCode())) {
             /** 编码 = 计划编码-序号; 取现存最大序号+1(原 count+1 在删除过班次后必与现存编码撞 uk_shift_code) */
@@ -114,7 +116,7 @@ public class SchShiftServiceImpl implements ISchShiftService {
         Long exist = baseMapper.selectCount(Wrappers.<SchShift>lambdaQuery()
             .eq(SchShift::getShiftCode, entity.getShiftCode()));
         if (exist != null && exist > 0) {
-            throw new com.nexus.common.core.exception.ServiceException("班次编码已存在: " + entity.getShiftCode());
+            throw new ServiceException("班次编码已存在: " + entity.getShiftCode());
         }
         return baseMapper.insert(entity);
     }
@@ -153,12 +155,12 @@ public class SchShiftServiceImpl implements ISchShiftService {
         Long inTeamSchedule = schTeamScheduleMapper.selectCount(Wrappers.<SchTeamSchedule>lambdaQuery()
             .in(SchTeamSchedule::getShiftId, idList));
         if (inTeamSchedule != null && inTeamSchedule > 0) {
-            throw new com.nexus.common.core.exception.ServiceException("班次已被班组排班模板引用, 请先删除对应排班");
+            throw new ServiceException("班次已被班组排班模板引用, 请先删除对应排班");
         }
         Long inEmployee = schEmployeeScheduleMapper.selectCount(Wrappers.<SchEmployeeSchedule>lambdaQuery()
             .in(SchEmployeeSchedule::getShiftId, idList));
         if (inEmployee != null && inEmployee > 0) {
-            throw new com.nexus.common.core.exception.ServiceException("班次已被员工排班明细引用, 请先删除对应排班明细");
+            throw new ServiceException("班次已被员工排班明细引用, 请先删除对应排班明细");
         }
         return baseMapper.deleteBatchIds(idList);
     }

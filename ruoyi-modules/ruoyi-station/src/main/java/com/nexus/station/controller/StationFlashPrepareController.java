@@ -1,14 +1,15 @@
 package com.nexus.station.controller;
 
 import cn.hutool.core.io.IoUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.factory.OssFactory;
-import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.flash.domain.Firmware;
 import com.nexus.mes.flash.mapper.FirmwareMapper;
@@ -17,16 +18,19 @@ import com.nexus.mes.flash.provider.FlashContext;
 import com.nexus.mes.flash.provider.FlashTypeProvider;
 import com.nexus.mes.flash.provider.FlashTypeRegistry;
 import com.nexus.mes.flash.provider.ResourceAllocation;
-import com.nexus.mes.flash.service.IMesResourcePoolService;
 import com.nexus.mes.flash.service.IFlashRecordService;
+import com.nexus.mes.flash.service.IMesResourcePoolService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.system.domain.vo.SysOssVo;
 import com.nexus.system.service.ISysOssService;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -183,13 +187,14 @@ public class StationFlashPrepareController {
         if (fw.getOssId() == null) {
             throw new ServiceException("固件未上传文件: " + fw.getFirmwareCode());
         }
-        // sys_oss 位于 ry-vue(master) 库: @DS("mes") 已切线程数据源, 手动 push master 读取(FirmwareServiceImpl 先例)
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.push("master");
+        // sys_oss 位于 ry-vue(master) 库: @DS("mes") 已切线程数据源, 手动 push master 读取(FirmwareServiceImpl
+        // 先例)
+        DynamicDataSourceContextHolder.push("master");
         SysOssVo ossVo;
         try {
             ossVo = sysOssService.getById(fw.getOssId());
         } finally {
-            com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.poll();
+            DynamicDataSourceContextHolder.poll();
         }
         if (ossVo == null || StringUtils.isBlank(ossVo.getFileName())) {
             throw new ServiceException("固件文件记录不存在: ossId=" + fw.getOssId());

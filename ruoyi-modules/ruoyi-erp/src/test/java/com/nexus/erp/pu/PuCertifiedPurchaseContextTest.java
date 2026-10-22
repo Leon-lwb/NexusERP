@@ -1,21 +1,28 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.pu.controller.PuCertifiedPurchaseController;
-import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService;
-import com.nexus.erp.pu.service.PuCertifiedPurchaseAuthorizer;
-import com.nexus.common.ai.decision.dto.DecisionActor;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.bind.annotation.GetMapping;
-import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+
+import com.nexus.common.ai.decision.dto.DecisionActor;
+import com.nexus.erp.pu.controller.PuCertifiedPurchaseController;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseAuthorizer;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.*;
 
 /** 共享登录变化时的只读身份复核，不调用会清动态租户的通用getInfo。 */
 class PuCertifiedPurchaseContextTest {
     @Test void endpointUsesLiveProtectedContextInsteadOfCachedClientIdentity() throws Exception {
         var method = PuCertifiedPurchaseController.class.getMethod("context");
         assertArrayEquals(new String[]{"/context"}, method.getAnnotation(GetMapping.class).value());
-        assertArrayEquals(new String[]{"pu:requisition:add"}, method.getAnnotation(cn.dev33.satoken.annotation.SaCheckPermission.class).value());
+        assertArrayEquals(
+                new String[] {"pu:requisition:add"},
+                method.getAnnotation(SaCheckPermission.class).value());
     }
     @Test void contextReadOnlyConsultsTheCurrentAuthorizerAndNeverInitializesBusinessState() throws Exception {
         var constructor = PuCertifiedPurchaseWriteService.class.getConstructors()[0];

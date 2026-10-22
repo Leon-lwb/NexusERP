@@ -19,6 +19,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.stream.Stream;
 
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
+
 /** JDBC 日期值转换与既有精确传输契约的回归测试。 */
 class TypedValueDateTest {
     @Test

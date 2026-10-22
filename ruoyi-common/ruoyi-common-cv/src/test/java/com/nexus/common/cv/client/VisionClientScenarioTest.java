@@ -1,25 +1,27 @@
 package com.nexus.common.cv.client;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.cv.config.CvProperties;
 import com.nexus.common.cv.domain.DetectDtos.ProductDetectResult;
 import com.nexus.common.cv.exception.VisionException;
 import com.sun.net.httpserver.HttpServer;
-import org.springframework.context.support.GenericApplicationContext;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.context.support.GenericApplicationContext;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
 /** Real multipart HTTP regression on a loopback stub; no Vision process or database required. */
 class VisionClientScenarioTest {
@@ -217,7 +219,7 @@ class VisionClientScenarioTest {
     }
 
     private static void equal(Object expected, Object actual) {
-        check(java.util.Objects.equals(expected, actual), "Expected " + expected + " but got " + actual);
+        check(Objects.equals(expected, actual), "Expected " + expected + " but got " + actual);
     }
 
 }

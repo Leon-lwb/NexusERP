@@ -9,14 +9,21 @@ import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.IWmStockReservationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * 库存预留服务实现
@@ -29,8 +36,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class WmStockReservationServiceImpl implements IWmStockReservationService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 流水类型：预留
@@ -117,7 +124,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         }
         if (reserved.compareTo(reserveQty) < 0) {
             // 预留不足显式抛异常，禁止静默部分预留（调用方无法感知会导致销售承诺落空）
-            throw new com.nexus.common.core.exception.ServiceException(
+            throw new ServiceException(
                     "库存预留不足: 需求=" + reserveQty + ", 实际可预留=" + reserved + ", 物料ID=" + materialId);
         }
         return reserved;
@@ -167,7 +174,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         List<WmMaterialStockTx> txs = txMapper.selectList(wrapper);
 
         // 按库存行聚合净预留额：RESERVE 为正，CONSUME_RESERVE / UNRESERVE 为负
-        java.util.Map<Long, BigDecimal> netByStock = new java.util.TreeMap<>();
+        Map<Long, BigDecimal> netByStock = new TreeMap<>();
         for (WmMaterialStockTx tx : txs) {
             if (tx.getMaterialStockId() == null || tx.getTxQuantity() == null) {
                 continue;
@@ -178,7 +185,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         }
 
         BigDecimal released = BigDecimal.ZERO;
-        for (java.util.Map.Entry<Long, BigDecimal> entry : netByStock.entrySet()) {
+        for (Map.Entry<Long, BigDecimal> entry : netByStock.entrySet()) {
             Long stockId = entry.getKey();
             BigDecimal netQty = entry.getValue();
             if (netQty == null || netQty.compareTo(BigDecimal.ZERO) <= 0) {
@@ -189,7 +196,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             WmMaterialStock stock = stockMapper.selectOne(Wrappers.<WmMaterialStock>lambdaQuery()
                 .eq(WmMaterialStock::getStockId, stockId).last("FOR UPDATE"));
             if (stock == null) {
-                throw new com.nexus.common.core.exception.ServiceException("预留库存记录不存在");
+                throw new ServiceException("预留库存记录不存在");
             }
             List<WmMaterialStockTx> current = txMapper.selectList(Wrappers.<WmMaterialStockTx>lambdaQuery()
                 .in(WmMaterialStockTx::getTxType, TX_TYPE_RESERVE, TX_TYPE_CONSUME_RESERVE, TX_TYPE_UNRESERVE)
@@ -197,7 +204,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
                 .eq(WmMaterialStockTx::getSourceDocId, sourceDocId)
                 .eq(WmMaterialStockTx::getMaterialStockId, stockId)
                 .orderByAsc(WmMaterialStockTx::getTxId).last("FOR UPDATE"));
-            java.util.Map<Long, BigDecimal> currentByLine = new java.util.LinkedHashMap<>();
+            Map<Long, BigDecimal> currentByLine = new LinkedHashMap<>();
             for (WmMaterialStockTx tx : current) {
                 if (!stockId.equals(tx.getMaterialStockId()) || tx.getTxQuantity() == null) continue;
                 currentByLine.merge(tx.getSourceDocLineId(), TX_TYPE_RESERVE.equals(tx.getTxType())
@@ -206,11 +213,11 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             BigDecimal totalRemaining = currentByLine.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
             if (totalRemaining.signum() <= 0) continue;
             if (currentByLine.values().stream().anyMatch(value -> value.signum() < 0)) {
-                throw new com.nexus.common.core.exception.ServiceException("历史预留释放缺少可核对的来源行，请先核对来源台账");
+                throw new ServiceException("历史预留释放缺少可核对的来源行，请先核对来源台账");
             }
             // 整单释放也按真实来源行逐笔落账，后续按行释放才能得到相同净额。
             boolean firstLine = true;
-            for (java.util.Map.Entry<Long, BigDecimal> balance : currentByLine.entrySet()) {
+            for (Map.Entry<Long, BigDecimal> balance : currentByLine.entrySet()) {
                 if (sourceDocLineId != null && !sourceDocLineId.equals(balance.getKey())) continue;
                 BigDecimal amount = balance.getValue();
                 if (amount.signum() <= 0) continue;
@@ -218,7 +225,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
                     .eq(WmMaterialStock::getStockId, stockId).last("FOR UPDATE"));
                 firstLine = false;
                 if (stock == null || stockMapper.releaseReserved(stock.getStockId(), amount, stock.getVersion()) != 1) {
-                    throw new com.nexus.common.core.exception.ServiceException("释放预留失败，请重新核对来源库存");
+                    throw new ServiceException("释放预留失败，请重新核对来源库存");
                 }
                 released = released.add(amount);
                 recordStockTx(stock, amount, TX_TYPE_UNRESERVE, sourceDocType, sourceDocId, balance.getKey());

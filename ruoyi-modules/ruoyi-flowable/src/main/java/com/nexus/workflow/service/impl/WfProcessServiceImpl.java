@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.service.UserService;
 import com.nexus.common.core.utils.DateUtils;
@@ -33,15 +34,14 @@ import com.nexus.common.flowable.factory.FlowServiceFactory;
 import com.nexus.common.flowable.flow.FindNextNodeUtil;
 import com.nexus.common.flowable.flow.FlowableUtils;
 import com.nexus.common.flowable.utils.ModelUtils;
-import com.nexus.common.flowable.utils.ProcessFormUtils;
 import com.nexus.common.flowable.utils.ProcessUtils;
 import com.nexus.common.flowable.utils.TaskUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.domain.SysRole;
+import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.CommonService;
 import com.nexus.system.service.ISysUserService;
 import com.nexus.workflow.domain.WfCustomForm;
@@ -49,17 +49,16 @@ import com.nexus.workflow.domain.WfDeployForm;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.domain.dto.FlowNextDto;
 import com.nexus.workflow.domain.vo.*;
+import com.nexus.workflow.handler.ProcessAccessGuard;
 import com.nexus.workflow.mapper.WfCategoryMapper;
 import com.nexus.workflow.mapper.WfDeployFormMapper;
 import com.nexus.workflow.service.IWfCustomFormService;
 import com.nexus.workflow.service.IWfMyBusinessService;
 import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.util.WfParticipantNameResolver;
-import com.nexus.workflow.handler.ProcessAccessGuard;
 import com.nexus.workflow.service.IWfTaskService;
-import com.nexus.workflow.service.WfCommonService;
 import com.nexus.workflow.service.WfCallBackServiceI;
-import com.nexus.common.core.domain.model.LoginUser;
+import com.nexus.workflow.service.WfCommonService;
+import com.nexus.workflow.util.WfParticipantNameResolver;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,11 +66,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.ObjectUtils;
-import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.bpmn.BpmnAutoLayout;
+import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
-import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.*;
+import org.flowable.bpmn.model.Process;
 import org.flowable.engine.*;
 import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.history.HistoricActivityInstanceQuery;
@@ -1037,8 +1036,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
             try {
                 if (StringUtils.isNotEmpty(dataId)) {
-                    wfMyBusinessService.remove(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WfMyBusiness>()
-                        .eq(WfMyBusiness::getDataId, dataId));
+                    wfMyBusinessService.remove(
+                            new LambdaQueryWrapper<WfMyBusiness>()
+                                    .eq(WfMyBusiness::getDataId, dataId));
                 }
             } catch (Exception ignore) {
             }
@@ -1291,8 +1291,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 			                     Map<String, Object> variables, List<String> userlist) {
 		String definitionld = processDefinition.getId();        //获取bpm（模型）对象
         BpmnModel bpmnModel = repositoryService.getBpmnModel(definitionld);
-        //传节点定义key获取当前节点
-        List<org.flowable.bpmn.model.Process> processes =  bpmnModel.getProcesses();
+        // 传节点定义key获取当前节点
+        List<Process> processes = bpmnModel.getProcesses();
         //只处理发起人后面排它网关再后面是会签的情况，其它目前不考虑
         //List<UserTask> userTasks = process.findFlowElementsOfType(UserTask.class);
         List<FlowNode> flowNodes = processes.get(0).findFlowElementsOfType(FlowNode.class);

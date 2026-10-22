@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 /** 每次工程操作均读取当前用户、租户与权限，配对快照不能代替实时授权。 */
 @Component
 @RequiredArgsConstructor
@@ -26,8 +28,7 @@ public class EngineeringAccess {
     /** 从浏览器认证会话建立服务端身份。 */
     public EngineeringActor current(String permission, boolean toolRequired) {
         return requireActor(
-                new EngineeringActor(
-                        LoginHelper.getTenantId(), LoginHelper.getUserId(), java.util.Set.of()),
+                new EngineeringActor(LoginHelper.getTenantId(), LoginHelper.getUserId(), Set.of()),
                 permission,
                 toolRequired);
     }

@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,10 +14,13 @@ import com.nexus.erp.wm.domain.bo.WmMaterialReceiveDetailBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveDetailVo;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveDetailService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -24,12 +28,14 @@ import java.util.List;
  *
  * @author nexus
  */
-@lombok.RequiredArgsConstructor
+@RequiredArgsConstructor
 @DS("erp")
 @Service
-public class WmMaterialReceiveDetailServiceImpl extends ServiceImpl<WmMaterialReceiveDetailMapper, WmMaterialReceiveDetail> implements IWmMaterialReceiveDetailService {
+public class WmMaterialReceiveDetailServiceImpl
+        extends ServiceImpl<WmMaterialReceiveDetailMapper, WmMaterialReceiveDetail>
+        implements IWmMaterialReceiveDetailService {
 
-    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
      * 分页查询物料领用明细列表

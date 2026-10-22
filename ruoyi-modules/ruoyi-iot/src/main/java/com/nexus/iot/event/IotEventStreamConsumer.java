@@ -2,13 +2,19 @@ package com.nexus.iot.event;
 
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.iot.command.service.IIotDeviceCommandService;
 import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.service.IIotDeviceService;
 import com.nexus.iot.event.service.IIotDeviceEventService;
+import com.nexus.iot.ota.service.IIotOtaTaskService;
 import com.nexus.iot.pipeline.IotPipelineProperties;
-import com.nexus.iot.command.service.IIotDeviceCommandService;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.redisson.api.RStream;
 import org.redisson.api.StreamMessageId;
 import org.redisson.api.stream.StreamCreateGroupArgs;
@@ -16,9 +22,6 @@ import org.redisson.api.stream.StreamReadGroupArgs;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -57,12 +60,13 @@ public class IotEventStreamConsumer {
     private final IIotDeviceService deviceService;
     private final IIotDeviceEventService deviceEventService;
     private final IIotDeviceCommandService deviceCommandService;
+
     /**
      * OTA 升级任务服务（旁路联动）：{@code OTA_*} 事件同步更新 {@code iot_ota_task} 的进度/结果。
-     * <p>仅对事件码以 {@code OTA_} 开头的事件生效，其余事件直接返回；实现内部吞异常，
-     * 不影响事件落库与消费循环。
+     *
+     * <p>仅对事件码以 {@code OTA_} 开头的事件生效，其余事件直接返回；实现内部吞异常， 不影响事件落库与消费循环。
      */
-    private final com.nexus.iot.ota.service.IIotOtaTaskService deviceOtaTaskService;
+    private final IIotOtaTaskService deviceOtaTaskService;
 
     private RStream<Object, Object> stream;
     private ExecutorService executor;

@@ -2,21 +2,30 @@ package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmMiscRecpt;
 import com.nexus.erp.wm.domain.WmMiscRecptLine;
-import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.service.IInventoryValuationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * 杂项入库策略
@@ -29,8 +38,8 @@ import java.util.Date;
 @Slf4j
 @Component
 public class MiscRecptStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：杂项入库
@@ -52,29 +61,25 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
      */
     private final WmMaterialStockMapper stockMapper;
 
-    /**
-     * 库存计价服务(F3-a:入库按标准成本计价)
-     */
-    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+    /** 库存计价服务(F3-a:入库按标准成本计价) */
+    private final IInventoryValuationService valuationService;
 
-    /**
-     * 物料基础数据 Mapper(取标准成本)
-     */
-    private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
+    /** 物料基础数据 Mapper(取标准成本) */
+    private final BdMaterialMapper materialMapper;
 
     /**
      * 构造杂项入库策略实例
      *
      * @param stockTxMapper 库存事务Mapper
-     * @param stockMapper   库存Mapper
+     * @param stockMapper 库存Mapper
      * @param valuationService 库存计价服务
      * @param materialMapper 物料Mapper
      */
     public MiscRecptStrategy(
             WmMaterialStockTxMapper stockTxMapper,
             WmMaterialStockMapper stockMapper,
-            com.nexus.erp.wm.service.IInventoryValuationService valuationService,
-            com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper) {
+            IInventoryValuationService valuationService,
+            BdMaterialMapper materialMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
         this.valuationService = valuationService;
@@ -103,16 +108,21 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
         WmMiscRecpt recpt = (WmMiscRecpt) args[1];
         Date now = (Date) args[2];
         String sourceType = line.getPostingSourceType() == null ? SOURCE_DOC_TYPE_MISC_RECPT : line.getPostingSourceType();
-        if (!java.util.Set.of(SOURCE_DOC_TYPE_MISC_RECPT, "WM_MATERIAL_RETURN", "WM_MATERIAL_HANDOVER").contains(sourceType)) {
+        if (!Set.of(SOURCE_DOC_TYPE_MISC_RECPT, "WM_MATERIAL_RETURN", "WM_MATERIAL_HANDOVER")
+                .contains(sourceType)) {
             throw new ServiceException("杂项入库来源类型未授权");
         }
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                        WmSerialPostingRequest.in(
                                 sourceType,
                                 recpt.getRecptId(),
                                 line.getLineId(),
-                                "WM_MATERIAL_RETURN".equals(sourceType) ? "RETURN_IN" : "WM_MATERIAL_HANDOVER".equals(sourceType) ? "HANDOVER" : "MISC_RECPT",
+                                "WM_MATERIAL_RETURN".equals(sourceType)
+                                        ? "RETURN_IN"
+                                        : "WM_MATERIAL_HANDOVER".equals(sourceType)
+                                                ? "HANDOVER"
+                                                : "MISC_RECPT",
                                 line.getMaterialId(),
                                 line.getQuantity(),
                                 recpt.getWarehouseId(),
@@ -203,7 +213,7 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
      * 杂项入库计价:优先标准成本,其次参考价,无价格按 0
      */
     private BigDecimal resolveMiscUnitCost(Long materialId) {
-        com.nexus.erp.bd.domain.BdMaterial material = materialMapper.selectById(materialId);
+        BdMaterial material = materialMapper.selectById(materialId);
         if (material == null) {
             return BigDecimal.ZERO;
         }

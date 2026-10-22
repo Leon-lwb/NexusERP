@@ -1,17 +1,21 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
+
 import java.util.*;
 import java.util.stream.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class MesSerialVisibilityServiceTest {
     ProSnMapper mapper;
@@ -69,9 +73,7 @@ class MesSerialVisibilityServiceTest {
                             assertTrue(wrapper.getSqlSegment().contains("tenant_id"));
                             assertTrue(wrapper.getSqlSegment().contains("identity_id"));
                             var values =
-                                    ((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<
-                                                            ?, ?, ?>)
-                                                    wrapper)
+                                    ((AbstractWrapper<?, ?, ?>) wrapper)
                                             .getParamNameValuePairs()
                                             .values();
                             assertTrue(values.contains("000001"));

@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.TreeMap;
 
 /** 仅加载已审 classpath 模板目录；默认空目录，不能从模型提供的 URL 动态下载模板。 */
 @Component
@@ -27,8 +29,7 @@ public class EngineeringTemplateCatalog {
                                     EngineeringJson.read(
                                                     new String(
                                                             in.readAllBytes(),
-                                                            java.nio.charset.StandardCharsets
-                                                                    .UTF_8),
+                                                            StandardCharsets.UTF_8),
                                                     Catalog.class)
                                             .templates());
         } catch (IOException | RuntimeException e) {
@@ -54,7 +55,7 @@ public class EngineeringTemplateCatalog {
                         .findFirst()
                         .orElse(null);
         require(template != null, 422, "TEMPLATE_UNAVAILABLE", "模板尚未审核或该版本不可用");
-        var result = new java.util.TreeMap<String, Object>();
+        var result = new TreeMap<String, Object>();
         if (command.parameters() != null) result.putAll(command.parameters());
         template.parameters()
                 .forEach(

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.KeyFactory;
+import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
@@ -63,7 +64,7 @@ public final class ReleaseManifestTool {
             Path privateKey = Path.of(args[1]);
             if (Files.isSymbolicLink(privateKey) || Files.size(privateKey) > 4096) throw new AttestationFailure("ATTESTATION_SIGN_KEY_UNAVAILABLE");
             byte[] keyBytes = Files.readAllBytes(privateKey);
-            java.security.PrivateKey key;
+            PrivateKey key;
             try { key = KeyFactory.getInstance("Ed25519").generatePrivate(new PKCS8EncodedKeySpec(keyBytes)); }
             finally { Arrays.fill(keyBytes, (byte) 0); }
             byte[] content = createProcurementV2(args[2], args[3], Path.of(args[4]), Arrays.stream(args).skip(6).map(Path::of).toList());

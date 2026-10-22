@@ -1,5 +1,12 @@
 package com.nexus.ai.service.decision;
 
+import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.service.chat.ChatModelFactory;
@@ -11,6 +18,7 @@ import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
 import com.nexus.common.ai.domain.entity.AiDecisionAction;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -19,16 +27,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 实测服务级检查，不宣称验证外部模型、数据库或 HTTP 夹具。
@@ -172,19 +179,35 @@ class DeliveryDecisionBenchmarkTest {
     @ParameterizedTest(name = "{0} golden decision contract")
     @MethodSource("allCases")
     void eachCaseUsesMockedScopedFactsAndRealScoringRankingGuardAndProposals(
-        String caseId, com.fasterxml.jackson.databind.JsonNode fixture) {
+            String caseId, JsonNode fixture) {
         var facts = fixture.path("facts");
         String tenant = "000000";
         long businessId = Long.parseLong(fixture.path("bizId").asText());
         var ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER,
             businessId, fixture.path("bizCode").asText());
         IndustrialDecisionDataPort data = mock(IndustrialDecisionDataPort.class);
-        var supplier = new DeliveryContextSnapshot.SupplierMetricFact(700L,
-            BigDecimal.valueOf(facts.path("supplierOnTimeRate").asDouble()),
-            facts.path("supplierSampleCount").asInt(), java.time.LocalDateTime.of(2026, 9, 26, 10, 0));
-        var snapshot = new DeliveryContextSnapshot(ref, List.of(), List.of(), Map.of(), List.of(),
-            List.of(), List.of(), Map.of(), List.of(), Map.of(), List.of(supplier),
-            "fixture-" + caseId, java.time.LocalDateTime.of(2026, 9, 26, 10, 0), List.of());
+        var supplier =
+                new DeliveryContextSnapshot.SupplierMetricFact(
+                        700L,
+                        BigDecimal.valueOf(facts.path("supplierOnTimeRate").asDouble()),
+                        facts.path("supplierSampleCount").asInt(),
+                        LocalDateTime.of(2026, 9, 26, 10, 0));
+        var snapshot =
+                new DeliveryContextSnapshot(
+                        ref,
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(supplier),
+                        "fixture-" + caseId,
+                        LocalDateTime.of(2026, 9, 26, 10, 0),
+                        List.of());
         when(data.loadDeliveryContext(eq(ref), eq(30), eq(actor()))).thenReturn(snapshot);
         DeliveryContextSnapshot scoped = data.loadDeliveryContext(ref, 30, actor());
         assertEquals(ref, scoped.rootBusinessRef(), caseId);
@@ -199,7 +222,7 @@ class DeliveryDecisionBenchmarkTest {
         var expectedRisk = fixture.path("expectedRiskLevel");
         assertEquals(expectedRisk.isNull() ? null : DecisionRiskLevel.valueOf(expectedRisk.asText()), risk.level(), caseId);
         assertEquals(fixture.path("expectedConfidence").asText(), risk.confidence(), caseId);
-        var expectedCauses = new java.util.ArrayList<String>();
+        var expectedCauses = new ArrayList<String>();
         fixture.path("expectedRootCauses").forEach(code -> expectedCauses.add(code.asText()));
         assertEquals(expectedCauses, risk.rootCauseCodes(), caseId);
         if (risk.level() == null) {
@@ -227,17 +250,38 @@ class DeliveryDecisionBenchmarkTest {
         if (causesForActions.contains("DELIVERY_DELAY")) causesForActions.add("SCHEDULE_DELAY");
         boolean delayedArrival = facts.path("purchaseArrivalDelayDays").asInt() > 0;
         if (delayedArrival) causesForActions.add("PURCHASE_DELAY");
-        var lines = shortage == 0 ? List.<Map<String, Object>>of()
-            : List.<Map<String, Object>>of(new java.util.LinkedHashMap<>(Map.of(
-                "materialId", String.valueOf(businessId + 1000), "gap", String.valueOf(shortage),
-                "requiredDate", "2026-10-03")));
+        var lines =
+                shortage == 0
+                        ? List.<Map<String, Object>>of()
+                        : List.<Map<String, Object>>of(
+                                new LinkedHashMap<>(
+                                        Map.of(
+                                                "materialId",
+                                                String.valueOf(businessId + 1000),
+                                                "gap",
+                                                String.valueOf(shortage),
+                                                "requiredDate",
+                                                "2026-10-03")));
         if (delayedArrival && !lines.isEmpty()) lines.get(0).put("purchaseLineId", String.valueOf(businessId + 2000));
-        List<DecisionActionProposal> actions = new DecisionActionProposalService().propose(
-            new DecisionActionProposalService.ProposalInput(10L, tenant, ref, risk.level(), causesForActions,
-                recommendedCode, delayedArrival, lines, null, List.of(String.valueOf(businessId)),
-                java.time.LocalDate.of(2026, 9, 26), 30, null));
+        List<DecisionActionProposal> actions =
+                new DecisionActionProposalService()
+                        .propose(
+                                new DecisionActionProposalService.ProposalInput(
+                                        10L,
+                                        tenant,
+                                        ref,
+                                        risk.level(),
+                                        causesForActions,
+                                        recommendedCode,
+                                        delayedArrival,
+                                        lines,
+                                        null,
+                                        List.of(String.valueOf(businessId)),
+                                        LocalDate.of(2026, 9, 26),
+                                        30,
+                                        null));
         var actualTypes = actions.stream().map(action -> action.actionType().name()).toList();
-        var required = new java.util.ArrayList<String>();
+        var required = new ArrayList<String>();
         fixture.path("requiredActions").forEach(type -> required.add(type.asText()));
         assertEquals(required, actualTypes, caseId);
         fixture.path("forbiddenActions").forEach(type -> assertFalse(actualTypes.contains(type.asText()), caseId));
@@ -311,12 +355,13 @@ class DeliveryDecisionBenchmarkTest {
         }
         assertEquals(40, ids.size());
     }
-    private static List<DecisionScenario> simulatedCandidates(com.fasterxml.jackson.databind.JsonNode facts, String caseId) {
+
+    private static List<DecisionScenario> simulatedCandidates(JsonNode facts, String caseId) {
         int delay = facts.path("tardinessDays").asInt();
         int gap = facts.path("shortageQty").asInt();
         int load = facts.path("maxUtilization").asInt();
         boolean coveredArrival = facts.path("purchaseArrivalDelayDays").asInt() > 0;
-        var candidates = new java.util.ArrayList<DecisionScenario>();
+        var candidates = new ArrayList<DecisionScenario>();
         for (String code : List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR", "APS_CR_EXPEDITE")) {
             boolean baseline = "BASELINE_CURRENT".equals(code);
             boolean expedite = "APS_CR_EXPEDITE".equals(code);

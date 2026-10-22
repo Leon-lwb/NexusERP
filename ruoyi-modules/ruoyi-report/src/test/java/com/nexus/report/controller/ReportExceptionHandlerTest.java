@@ -19,6 +19,7 @@ import com.nexus.report.storage.ReportArtifactStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -147,7 +148,7 @@ class ReportExceptionHandlerTest {
      *
      * @return 当前处理返回的固定结果
      */
-    private org.springframework.mock.web.MockHttpServletResponse request() throws Exception {
+    private MockHttpServletResponse request() throws Exception {
         return mvc.perform(
                         post("/report/runtime/runs")
                                 .contentType("application/json")

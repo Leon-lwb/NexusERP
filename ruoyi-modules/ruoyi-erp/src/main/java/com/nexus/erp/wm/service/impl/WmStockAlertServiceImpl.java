@@ -4,8 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -22,12 +20,17 @@ import com.nexus.erp.wm.domain.vo.WmStockAlertVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmStockAlertMapper;
 import com.nexus.erp.wm.service.IWmStockAlertService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 安全库存预警Service业务层处理
@@ -217,7 +220,7 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
 
         if (existingAlerts != null) {
             for (WmStockAlert alert : existingAlerts) {
-                if (!java.util.Objects.equals(alert.getAlertType(), currentAlertType)) {
+                if (!Objects.equals(alert.getAlertType(), currentAlertType)) {
                     alert.setHandledFlag(1);
                     alert.setHandledTime(now);
                     alert.setHandledRemark("库存状态变更，自动关闭");

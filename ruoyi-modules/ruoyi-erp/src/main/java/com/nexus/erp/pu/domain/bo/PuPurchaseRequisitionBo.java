@@ -1,13 +1,18 @@
 package com.nexus.erp.pu.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.nexus.common.core.validate.AddGroup;
+import com.nexus.common.core.validate.EditGroup;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.erp.pu.domain.PuPurchaseRequisition;
 import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 import java.util.List;
@@ -26,10 +31,14 @@ import java.util.List;
 @AutoMapper(target = PuPurchaseRequisition.class, reverseConvertGenerate = false)
 public class PuPurchaseRequisitionBo extends BaseEntity {
 
-    @NotNull(message = "采购申请ID不能为空", groups = {com.nexus.common.core.validate.EditGroup.class})
+    @NotNull(
+            message = "采购申请ID不能为空",
+            groups = {EditGroup.class})
     private Long requisitionId;
 
-    @NotBlank(message = "采购申请单号不能为空", groups = {com.nexus.common.core.validate.AddGroup.class, com.nexus.common.core.validate.EditGroup.class})
+    @NotBlank(
+            message = "采购申请单号不能为空",
+            groups = {AddGroup.class, EditGroup.class})
     private String requisitionNo;
 
     /** 采购申请名称 */

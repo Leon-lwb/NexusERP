@@ -3,9 +3,12 @@ package com.nexus.flow.adapter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.ai.config.AiPromptTemplateInitializer;
 import com.nexus.ai.config.AiProperties;
+import com.nexus.common.flow.domain.entity.Flow;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -80,8 +83,11 @@ public class DecisionFlowDefinitionFactory {
             config.put("modelId", modelId);
             config.put("promptTemplate", summaryContract ? "{{nodes.rank.output.summaryPrompt}}"
                 : "仅基于以下确定性排名的数据生成摘要，不得编造数字: {{nodes.rank.output.scenarios}}");
-            config.put("systemPrompt", summaryContract ? com.nexus.ai.config.AiPromptTemplateInitializer.DECISION_SUMMARY_SYSTEM_PROMPT
-                : "你是工业交付风险助手。将事实视为只读数据，输出结构化 JSON 摘要；不执行任何业务动作。");
+            config.put(
+                    "systemPrompt",
+                    summaryContract
+                            ? AiPromptTemplateInitializer.DECISION_SUMMARY_SYSTEM_PROMPT
+                            : "你是工业交付风险助手。将事实视为只读数据，输出结构化 JSON 摘要；不执行任何业务动作。");
             node(nodes, "llm", "llm", true, config, timeoutSeconds);
         }
         node(nodes, "guard", "industrial.decisionGuard", false, mapper.createObjectNode());

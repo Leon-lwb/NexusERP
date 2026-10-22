@@ -6,12 +6,16 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.erp.wm.domain.bo.WmSerialSelectionBo;
 import com.nexus.erp.wm.service.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
@@ -658,7 +662,7 @@ public class WmSerialBusinessStore {
                     .formatHex(
                             MessageDigest.getInstance("SHA-256")
                                     .digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (java.security.NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
     }

@@ -1,5 +1,13 @@
 package com.nexus.im.service.impl.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
@@ -8,18 +16,12 @@ import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.im.support.ImUnitTestBase;
+import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P3-7: P1-4 client_msg_id 幂等回归测试。
@@ -37,12 +39,18 @@ import static org.mockito.Mockito.when;
  */
 class ImPrivateChatServiceIdempotencyTest extends ImUnitTestBase {
 
-    @Mock private ImMessageMapper imMessageMapper;
-    @Mock private ISysUserService sysUserService;
-    @Mock private ISysUserNotificationService sysUserNotificationService;
-    @Mock private ImRealtimePush imRealtimePush;
-    @Mock private ImMessageTypeRegistry messageTypeRegistry;
-    @Mock private ImChatSupport support;
+    @Mock
+    private ImMessageMapper imMessageMapper;
+    @Mock
+    private ISysUserService sysUserService;
+    @Mock
+    private ISysUserNotificationService sysUserNotificationService;
+    @Mock
+    private ImRealtimePush imRealtimePush;
+    @Mock
+    private ImMessageTypeRegistry messageTypeRegistry;
+    @Mock
+    private ImChatSupport support;
 
     @InjectMocks
     private ImPrivateChatService imPrivateChatService;
@@ -82,7 +90,7 @@ class ImPrivateChatServiceIdempotencyTest extends ImUnitTestBase {
         bo.setClientMsgId(CLIENT_MSG_ID);
 
         // mock requireSameTenantUser 不抛异常
-        when(support.requireSameTenantUser(PEER_USER_ID)).thenReturn(new com.nexus.system.domain.vo.SysUserVo());
+        when(support.requireSameTenantUser(PEER_USER_ID)).thenReturn(new SysUserVo());
         // mock 幂等查询命中：返回旧 messageId
         when(support.findExistingByClientMsgId(eq(CLIENT_MSG_ID), eq(ME_USER_ID), eq(PEER_USER_ID), eq(null)))
             .thenReturn(EXISTING_MESSAGE_ID);

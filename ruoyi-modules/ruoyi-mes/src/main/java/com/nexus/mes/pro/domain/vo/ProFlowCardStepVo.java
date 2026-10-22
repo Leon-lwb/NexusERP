@@ -1,14 +1,18 @@
 package com.nexus.mes.pro.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
+
 import com.nexus.mes.pro.domain.ProFlowCardStep;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * MES流转卡工序记录视图对象 pro_flow_card_step
@@ -21,12 +25,11 @@ import java.util.Date;
 @AutoMapper(target = ProFlowCardStep.class)
 public class ProFlowCardStepVo implements Serializable {
 
-    /**
-     * 当前实际工序的产品lot、原生产分配与已登记产出；证据不足时为空。
-     */
-    private java.util.Map<String, Object> productOutputContext;
+    /** 当前实际工序的产品lot、原生产分配与已登记产出；证据不足时为空。 */
+    private Map<String, Object> productOutputContext;
 
-    @Serial private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 工序记录ID

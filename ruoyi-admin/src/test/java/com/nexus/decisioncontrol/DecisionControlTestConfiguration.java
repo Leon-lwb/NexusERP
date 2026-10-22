@@ -3,16 +3,20 @@ package com.nexus.decisioncontrol;
 import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Set;
 
 /**
  * 仅存在于外部测试类目录，不提供控制器、生产环境配置或业务状态变更。
@@ -23,8 +27,9 @@ public class DecisionControlTestConfiguration {
     @Bean
     static BeanPostProcessor processor(Environment env) {
         if (!Arrays.asList(env.getActiveProfiles()).contains("decision-control-test")
-            || Arrays.stream(env.getActiveProfiles()).anyMatch(p -> !java.util.Set.of("dev", "decision-control-test").contains(p))
-            || !"true".equals(env.getProperty("decision.control.enabled")))
+                || Arrays.stream(env.getActiveProfiles())
+                        .anyMatch(p -> !Set.of("dev", "decision-control-test").contains(p))
+                || !"true".equals(env.getProperty("decision.control.enabled")))
             throw new IllegalStateException("CONTROL requires explicit test profile and opt-in");
         String schemaDate = null;
         for (String ds : new String[]{"master", "erp", "mes", "iot"}) {
@@ -48,7 +53,8 @@ public class DecisionControlTestConfiguration {
         if (!Files.isDirectory(directory) || Files.isSymbolicLink(directory))
             throw new IllegalStateException("CONTROL marker directory must already exist and be local");
         return new BeanPostProcessor() {
-            @Override public Object postProcessAfterInitialization(Object bean, String name) {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String name) {
                 if (!(bean instanceof IndustrialDecisionDataPort)) return bean;
                 return Proxy.newProxyInstance(IndustrialDecisionDataPort.class.getClassLoader(),
                     new Class<?>[]{IndustrialDecisionDataPort.class}, (proxy, method, args) -> {
@@ -76,7 +82,7 @@ public class DecisionControlTestConfiguration {
         };
     }
 
-    private static String phase(Path directory, Long actionId) throws java.io.IOException {
+    private static String phase(Path directory, Long actionId) throws IOException {
         Path file = directory.resolve("fault.txt");
         if (!Files.exists(file)) return "";
         if (Files.isSymbolicLink(file) || Files.size(file) > 80)

@@ -1,21 +1,24 @@
 package com.nexus.flow.node.ai;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.ai.service.chat.ChatModelFactory;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.flow.state.FlowTemplateRenderer;
+
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.TokenUsage;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -84,7 +87,7 @@ public class LlmNodeProvider implements FlowNodeProvider {
         }
 
         // 构建消息
-        List<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>();
+        List<ChatMessage> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             messages.add(new SystemMessage(systemPrompt));
         }

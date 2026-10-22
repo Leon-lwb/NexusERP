@@ -1,6 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
 import cn.hutool.crypto.SecureUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.ai.decision.dto.DecisionActor;
@@ -16,34 +17,36 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.json.utils.JsonUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdRoutingStep;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.BdWorkstation;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.bd.mapper.BdWorkstationMapper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
+import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
-import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
-import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
-import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
-import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
+import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
@@ -56,10 +59,6 @@ import com.nexus.erp.pu.domain.PuVendorEvaluation;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuVendorEvaluationMapper;
-import com.nexus.erp.so.domain.SoSalesOrderHeader;
-import com.nexus.erp.so.domain.SoSalesOrderLine;
-import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
-import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.SchLeaveApply;
@@ -70,15 +69,22 @@ import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchLeaveApplyMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import com.nexus.erp.sch.mapper.SchTeamMapper;
+import com.nexus.erp.so.domain.SoSalesOrderHeader;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -100,9 +106,9 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * 装配 ERP 工业交付决策上下文，并生成可在审批前重算的关键业务指纹。
- */
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
+
+/** 装配 ERP 工业交付决策上下文，并生成可在审批前重算的关键业务指纹。 */
 @Component
 @RequiredArgsConstructor
 @DS("erp")
@@ -132,7 +138,7 @@ public class DeliveryContextAssembler {
     private final PrdProductionPlanMapper productionPlanMapper;
     private final WmMaterialStockMapper stockMapper;
     private final BdMaterialMapper materialMapper;
-    private final com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper evidenceUnitMapper;
+    private final BdUnitOfMeasureMapper evidenceUnitMapper;
     private final BdRoutingMapper routingMapper;
     private final BdRoutingStepMapper routingStepMapper;
     private final PrdCapacityCalendarMapper capacityCalendarMapper;
@@ -652,8 +658,10 @@ public class DeliveryContextAssembler {
         StockBundle stocks = loadStocks(materialIds);
         var unitIds = stocks.materials().stream().map(BdMaterial::getBaseUomId)
             .filter(id -> id != null && id > 0).distinct().sorted().toList();
-        var evidenceUnits = unitIds.isEmpty() ? List.<com.nexus.erp.bd.domain.BdUnitOfMeasure>of()
-            : safeList(evidenceUnitMapper.selectBatchIds(unitIds));
+        var evidenceUnits =
+                unitIds.isEmpty()
+                        ? List.<BdUnitOfMeasure>of()
+                        : safeList(evidenceUnitMapper.selectBatchIds(unitIds));
         PurchaseBundle purchases = loadPurchases(materialIds, horizonEnd, warnings);
         List<SupplierMetricFact> supplierMetrics = loadSupplierMetrics(purchases.vendorIds(), warnings);
         ScheduleSelection schedule = loadCurrentSchedule(scope, warnings);
@@ -1365,10 +1373,17 @@ public class DeliveryContextAssembler {
     }
 
     /** 数量不换算；只有原MRP单位与已确认根基本单位一致时才保留排名单位身份。 */
-    private List<RequirementFact> buildRequirementFacts(List<RequirementLink> rows, List<BdMaterial> materials,
-            List<com.nexus.erp.bd.domain.BdUnitOfMeasure> units, List<String> warnings, String tenantId, Date observedAt) {
+    private List<RequirementFact> buildRequirementFacts(
+            List<RequirementLink> rows,
+            List<BdMaterial> materials,
+            List<BdUnitOfMeasure> units,
+            List<String> warnings,
+            String tenantId,
+            Date observedAt) {
         var masters = materials.stream().collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a));
-        var byId = units.stream().collect(Collectors.toMap(com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId, u -> u, (a, b) -> a));
+        var byId =
+                units.stream()
+                        .collect(Collectors.toMap(BdUnitOfMeasure::getUomId, u -> u, (a, b) -> a));
         return rows.stream()
             .filter(row -> row.netQuantity().signum() > 0)
             .map(row -> new RequirementFact(
@@ -1384,16 +1399,27 @@ public class DeliveryContextAssembler {
             .toList();
     }
 
-    private Long verifiedRequirementUnit(RequirementLink row, Map<Long, BdMaterial> materials,
-            Map<Long, com.nexus.erp.bd.domain.BdUnitOfMeasure> units, List<String> warnings, String tenant, Date observedAt) {
+    private Long verifiedRequirementUnit(
+            RequirementLink row,
+            Map<Long, BdMaterial> materials,
+            Map<Long, BdUnitOfMeasure> units,
+            List<String> warnings,
+            String tenant,
+            Date observedAt) {
         Long unit = verifiedBaseQuantityUnit(row.detail().getMaterialId(), row.detail().getUnit(), row.netQuantity(), materials, units, tenant, observedAt);
         if (unit == null) warnings.add("UNKNOWN_REQUIREMENT_UNIT:" + row.detail().getDetailId());
         return unit;
     }
 
     /** 原单位和数量都需匹配已确认根单位；不从名称猜ID、不为采购供给擅自换算。 */
-    private Long verifiedBaseQuantityUnit(Long materialId, String originalUnit, BigDecimal quantity, Map<Long, BdMaterial> materials,
-            Map<Long, com.nexus.erp.bd.domain.BdUnitOfMeasure> units, String tenant, Date observedAt) {
+    private Long verifiedBaseQuantityUnit(
+            Long materialId,
+            String originalUnit,
+            BigDecimal quantity,
+            Map<Long, BdMaterial> materials,
+            Map<Long, BdUnitOfMeasure> units,
+            String tenant,
+            Date observedAt) {
         var material = materials.get(materialId);
         var unit = material == null ? null : units.get(material.getBaseUomId());
         if (material != null && unit != null && Objects.equals(tenant, material.getTenantId())
@@ -1464,12 +1490,19 @@ public class DeliveryContextAssembler {
             && quantity.precision() - quantity.scale() <= 14;
     }
 
-    private List<ArrivalFact> buildArrivalFacts(PurchaseBundle purchases,
-                                                 Set<Long> materialIds,
-                                                 LocalDate horizonEnd, List<BdMaterial> materials,
-                                                 List<com.nexus.erp.bd.domain.BdUnitOfMeasure> units, String tenant, List<String> warnings, Date observedAt) {
+    private List<ArrivalFact> buildArrivalFacts(
+            PurchaseBundle purchases,
+            Set<Long> materialIds,
+            LocalDate horizonEnd,
+            List<BdMaterial> materials,
+            List<BdUnitOfMeasure> units,
+            String tenant,
+            List<String> warnings,
+            Date observedAt) {
         var masters = materials.stream().collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a));
-        var byId = units.stream().collect(Collectors.toMap(com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId, u -> u, (a, b) -> a));
+        var byId =
+                units.stream()
+                        .collect(Collectors.toMap(BdUnitOfMeasure::getUomId, u -> u, (a, b) -> a));
         Map<Long, PuPurchaseOrder> orderById = purchases.orders().stream()
             .collect(Collectors.toMap(PuPurchaseOrder::getOrderId, order -> order));
         List<ArrivalFact> arrivals = new ArrayList<>();
@@ -2089,11 +2122,36 @@ public class DeliveryContextAssembler {
         CriticalSourceVersions sourceVersions = buildCriticalSourceVersions(context.sourceFacts());
         CriticalSchedule currentSchedule = buildCriticalSchedule(context.schedule(), context.currentSchedule());
         return new CriticalFreshnessFingerprint(
-            root, orders, orderLines, workOrders, workOrderSalesLinks, requirementHeaders, requirements,
-            stocks, materials, context.evidenceUnits().stream().sorted(Comparator.comparing(com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId))
-                .map(u -> new CriticalQuantityUnit(u.getUomId(), u.getTenantId(), u.getPrimaryId(), u.getIsBase(), u.getStatus(), u.getDelFlag(),
-                    canonicalDecimal(u.getConversionRate()), u.getQuantityScale(), u.getConversionVersion(), toIsoDateTime(u.getConversionVerifiedAt()))).toList(),
-            purchaseOrders, purchaseLines, apsInput, sourceVersions, currentSchedule);
+                root,
+                orders,
+                orderLines,
+                workOrders,
+                workOrderSalesLinks,
+                requirementHeaders,
+                requirements,
+                stocks,
+                materials,
+                context.evidenceUnits().stream()
+                        .sorted(Comparator.comparing(BdUnitOfMeasure::getUomId))
+                        .map(
+                                u ->
+                                        new CriticalQuantityUnit(
+                                                u.getUomId(),
+                                                u.getTenantId(),
+                                                u.getPrimaryId(),
+                                                u.getIsBase(),
+                                                u.getStatus(),
+                                                u.getDelFlag(),
+                                                canonicalDecimal(u.getConversionRate()),
+                                                u.getQuantityScale(),
+                                                u.getConversionVersion(),
+                                                toIsoDateTime(u.getConversionVerifiedAt())))
+                        .toList(),
+                purchaseOrders,
+                purchaseLines,
+                apsInput,
+                sourceVersions,
+                currentSchedule);
     }
 
     private CriticalApsInput buildCriticalApsInput(DecisionScope scope, ScheduleInput input) {
@@ -2326,16 +2384,14 @@ public class DeliveryContextAssembler {
         if (value instanceof java.sql.Date sqlDate) {
             return sqlDate.toLocalDate();
         }
-        return java.time.Instant.ofEpochMilli(value.getTime())
-            .atZone(BUSINESS_ZONE).toLocalDate();
+        return Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
     private static LocalDateTime toLocalDateTime(Date value) {
         if (value == null) {
             return null;
         }
-        return java.time.Instant.ofEpochMilli(value.getTime())
-            .atZone(BUSINESS_ZONE).toLocalDateTime();
+        return Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalDateTime();
     }
 
     private static String toIsoDate(Date value) {
@@ -2648,24 +2704,23 @@ public class DeliveryContextAssembler {
     }
 
     private record LoadedContext(
-        ScheduleInput apsInput,
-        List<RequirementLink> requirementRows,
-        List<WmMaterialStock> stockRows,
-        List<BdMaterial> materials,
-        List<com.nexus.erp.bd.domain.BdUnitOfMeasure> evidenceUnits,
-        List<PuPurchaseOrder> purchaseOrders,
-        List<PuPurchaseOrderLine> purchaseLines,
-        ScheduleSelection schedule,
-        SourceFacts sourceFacts,
-        Map<Long, List<RoutingStepFact>> routingByMaterial,
-        Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
-        List<LocalDate> holidays,
-        Map<String, Object> currentSchedule,
-        List<SupplierMetricFact> supplierMetrics,
-        List<String> warnings,
-        String tenantId, Date observedAt
-    ) {
-    }
+            ScheduleInput apsInput,
+            List<RequirementLink> requirementRows,
+            List<WmMaterialStock> stockRows,
+            List<BdMaterial> materials,
+            List<BdUnitOfMeasure> evidenceUnits,
+            List<PuPurchaseOrder> purchaseOrders,
+            List<PuPurchaseOrderLine> purchaseLines,
+            ScheduleSelection schedule,
+            SourceFacts sourceFacts,
+            Map<Long, List<RoutingStepFact>> routingByMaterial,
+            Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
+            List<LocalDate> holidays,
+            Map<String, Object> currentSchedule,
+            List<SupplierMetricFact> supplierMetrics,
+            List<String> warnings,
+            String tenantId,
+            Date observedAt) {}
 
     private record CriticalFreshnessFingerprint(
         CriticalRootRef root,

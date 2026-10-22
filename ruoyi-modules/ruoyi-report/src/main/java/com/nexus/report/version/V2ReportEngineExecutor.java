@@ -1,9 +1,12 @@
 package com.nexus.report.version;
 
 import com.nexus.common.report.*;
+import com.nexus.report.asset.ReportAssetService;
 import com.nexus.report.domain.*;
 import com.nexus.report.engine.*;
 import com.nexus.report.pivot.*;
+import com.nexus.report.print.PrintLayoutEnhancer;
+import com.nexus.report.print.PrintPlanner;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -14,7 +17,7 @@ public final class V2ReportEngineExecutor implements ReportEngineExecutor {
     private final ReportCompiler compiler;
 
     /** 保存当前assets状态或配置。 */
-    private final com.nexus.report.asset.ReportAssetService assets;
+    private final ReportAssetService assets;
 
     /**
      * 建立本执行器自己的编译与精确运算入口。
@@ -31,8 +34,7 @@ public final class V2ReportEngineExecutor implements ReportEngineExecutor {
      * @param compiler 当前契约的compiler配置或状态
      * @param assets 当前契约的assets配置或状态
      */
-    public V2ReportEngineExecutor(
-            ReportCompiler compiler, com.nexus.report.asset.ReportAssetService assets) {
+    public V2ReportEngineExecutor(ReportCompiler compiler, ReportAssetService assets) {
         this.compiler = compiler;
         this.assets = assets;
     }
@@ -112,7 +114,7 @@ public final class V2ReportEngineExecutor implements ReportEngineExecutor {
                         dsl.datasetVersionId(),
                         dsl.columns(),
                         dsl.parameters(),
-                        new com.nexus.report.print.PrintPlanner().paper(dsl),
+                        new PrintPlanner().paper(dsl),
                         dsl.headerRows(),
                         dsl.footerRows(),
                         dsl.summaries(),
@@ -127,7 +129,7 @@ public final class V2ReportEngineExecutor implements ReportEngineExecutor {
                 throw ReportFault.invalid("交叉表使用专用轴和指标，不混合公式与固定区");
             required.addAll(new PivotPlanner().validate(dsl.pivot(), descriptor));
         }
-        required.addAll(new com.nexus.report.print.PrintPlanner().validate(dsl, descriptor));
+        required.addAll(new PrintPlanner().validate(dsl, descriptor));
         for (String field : required) {
             String permission = descriptor.field(field).permission();
             if (permission != null && !permission.isBlank() && !actor.has(permission))
@@ -229,8 +231,7 @@ public final class V2ReportEngineExecutor implements ReportEngineExecutor {
             rendered = projection.data();
         }
         if (report.dsl().print() != null)
-            return new com.nexus.report.print.PrintLayoutEnhancer()
-                    .layout(report, data, parameters, font);
+            return new PrintLayoutEnhancer().layout(report, data, parameters, font);
         var plan = new DocumentLayoutEngine().layout(projected, rendered, parameters, font);
         return new RenderPlan(
                 2,

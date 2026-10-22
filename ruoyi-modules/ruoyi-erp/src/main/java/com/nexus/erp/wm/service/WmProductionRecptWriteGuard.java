@@ -4,17 +4,23 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.common.trace.CompletionManifest;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmProductionRecpt;
 import com.nexus.erp.wm.mapper.WmProductionRecptGuardMapper;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -26,10 +32,10 @@ import java.util.function.Supplier;
 @Service
 @RequiredArgsConstructor
 public class WmProductionRecptWriteGuard {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmBatchProductionReceiptProofService batchProof;
+    @Autowired
+    private WmBatchProductionReceiptProofService batchProof;
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmSerialInventoryProofService serialProof;
 
     private final WmProductionRecptGuardMapper mapper;
@@ -195,7 +201,7 @@ public class WmProductionRecptWriteGuard {
             throw new ServiceException("生产入库数据库业务日期未知");
         }
         LocalDate date =
-                java.time.Instant.ofEpochMilli(receipt.getRecptDate().getTime())
+                Instant.ofEpochMilli(receipt.getRecptDate().getTime())
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate();
         require(!date.isAfter(today), "生产入库日期不能在未来");
@@ -217,11 +223,8 @@ public class WmProductionRecptWriteGuard {
         }
     }
 
-    /**
-     * 全报废是零库存结果，单独验证原计划和根单位，不制造零数量收货单。
-     */
-    public void validateNoGoodOutput(
-            PrdWorkOrder wo, com.nexus.common.trace.CompletionManifest manifest) {
+    /** 全报废是零库存结果，单独验证原计划和根单位，不制造零数量收货单。 */
+    public void validateNoGoodOutput(PrdWorkOrder wo, CompletionManifest manifest) {
         require(
                 Set.of("RELEASED", "IN_PROGRESS").contains(wo.getWoStatus())
                         && quantity(wo.getPlannedQty())
@@ -366,7 +369,7 @@ public class WmProductionRecptWriteGuard {
                         && tx.getTxAmount() != null
                         && equal(
                                 expected.multiply(tx.getUnitCost())
-                                        .setScale(4, java.math.RoundingMode.HALF_UP),
+                                        .setScale(4, RoundingMode.HALF_UP),
                                 tx.getTxAmount()),
                 "生产入库库存流水数量、单位、成本或来源维度不符");
         WmMaterialStock stock = io(() -> mapper.lockStock(tenant(), tx.getMaterialStockId()));

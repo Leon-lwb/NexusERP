@@ -1,12 +1,18 @@
 package com.nexus.mes.ncr.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.mes.ncr.domain.bo.NcrDisposeSignBo;
 import com.nexus.mes.ncr.service.INcrOrderService;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,10 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Method;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.Arrays;
 
 /**
  * NcrOrderController 签署处置端点单元测试
@@ -32,8 +35,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class NcrOrderControllerTest {
 
-    @Mock private INcrOrderService ncrOrderService;
-    @InjectMocks private NcrOrderController controller;
+    @Mock
+    private INcrOrderService ncrOrderService;
+    @InjectMocks
+    private NcrOrderController controller;
 
     private static NcrDisposeSignBo bo(String disposition, String remark, String authMethod, String credential) {
         NcrDisposeSignBo bo = new NcrDisposeSignBo();
@@ -92,8 +97,9 @@ class NcrOrderControllerTest {
         Log log = m.getAnnotation(Log.class);
         assertNotNull(log, "签署处置是授权动作, 必须留操作日志");
         // 凭证绝不允许进操作日志（全局排除清单之外再显式声明一道，双保险）
-        assertTrue(java.util.Arrays.asList(log.excludeParamNames()).contains("credential"),
-            "@Log 必须声明 excludeParamNames 排除 credential");
+        assertTrue(
+                Arrays.asList(log.excludeParamNames()).contains("credential"),
+                "@Log 必须声明 excludeParamNames 排除 credential");
     }
 
     // ==================== MES-NCR-06: 无签名入口只允许可逆处置 ====================

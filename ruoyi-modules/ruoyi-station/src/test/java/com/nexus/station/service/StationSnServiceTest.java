@@ -1,13 +1,22 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+import com.nexus.mes.trace.MesSerialReferenceService;
+import com.nexus.station.domain.MesSnBindLog;
 import com.nexus.station.domain.dto.StationSnDtos;
 import com.nexus.station.mapper.StationSnBindLogMapper;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,11 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-
 /**
  * StationSnService 单元测试 — 关键件绑定/解绑/防环(C5/C6)。
  *
@@ -38,10 +42,14 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class StationSnServiceTest {
 
-    @Mock private ProSnMapper proSnMapper;
-    @Mock private StationSnBindLogMapper bindLogMapper;
-    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    @InjectMocks private StationSnService service;
+    @Mock
+    private ProSnMapper proSnMapper;
+    @Mock
+    private StationSnBindLogMapper bindLogMapper;
+    @Mock
+    private MesSerialReferenceService serialReferences;
+    @InjectMocks
+    private StationSnService service;
 
     private MockedStatic<TenantHelper> tenantHelperMock;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
@@ -55,12 +63,11 @@ class StationSnServiceTest {
                             String code = call.getArgument(0);
                             ProSn row =
                                     proSnMapper.selectOne(
-                                            com.baomidou.mybatisplus.core.toolkit.Wrappers
-                                                    .<ProSn>lambdaQuery()
+                                            Wrappers.<ProSn>lambdaQuery()
                                                     .eq(ProSn::getSnCode, code));
                             return row == null
                                     ? null
-                                    : new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                    : new MesSerialReferenceService.Resolved(
                                             "000000",
                                             row.getIdentityId(),
                                             row.getSnId(),
@@ -87,12 +94,12 @@ class StationSnServiceTest {
         parent.setIdentityId(101L);
         component.setIdentityId(102L);
         doReturn(
-                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                        new MesSerialReferenceService.Resolved(
                                 "000000", 101L, 1L, "ERP-P", "LOCAL-P", null, parent))
                 .when(serialReferences)
                 .resolve("ERP-P");
         doReturn(
-                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                        new MesSerialReferenceService.Resolved(
                                 "000000", 102L, 2L, "ERP-C", "LOCAL-C", null, component))
                 .when(serialReferences)
                 .resolve("ERP-C");
@@ -101,8 +108,7 @@ class StationSnServiceTest {
         dto.setParentSnCode("ERP-P");
         dto.setComponentSnCodes(List.of("ERP-C"));
         assertEquals(1, service.bind(dto).get("boundQty"));
-        ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> log =
-                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+        ArgumentCaptor<MesSnBindLog> log = ArgumentCaptor.forClass(MesSnBindLog.class);
         verify(bindLogMapper).insert(log.capture());
         assertEquals(1L, log.getValue().getParentSnId());
         assertEquals(2L, log.getValue().getComponentSnId());
@@ -137,8 +143,7 @@ class StationSnServiceTest {
         assertEquals(1, data.get("boundQty"));
         // 组件挂到父SN(条件含 isNull(parent_sn_id) 防并发重复绑)
         verify(proSnMapper).update(any(), any());
-        ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
-                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+        ArgumentCaptor<MesSnBindLog> logCaptor = ArgumentCaptor.forClass(MesSnBindLog.class);
         verify(bindLogMapper).insert(logCaptor.capture());
         assertEquals("BIND", logCaptor.getValue().getAction());
         assertEquals("SN-P", logCaptor.getValue().getParentSnCode());
@@ -163,7 +168,7 @@ class StationSnServiceTest {
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.bind(dto));
         assertTrue(ex.getMessage().contains("已被并发绑定"), "应提示并发绑定冲突: " + ex.getMessage());
-        verify(bindLogMapper, never()).insert(any(com.nexus.station.domain.MesSnBindLog.class));
+        verify(bindLogMapper, never()).insert(any(MesSnBindLog.class));
     }
 
     @Test
@@ -237,10 +242,9 @@ class StationSnServiceTest {
         assertTrue(data.isEmpty());
         // 解绑 + 重绑两次 update, UNBIND + REBIND 两条留痕
         verify(proSnMapper, times(2)).update(any(), any());
-        ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
-                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+        ArgumentCaptor<MesSnBindLog> logCaptor = ArgumentCaptor.forClass(MesSnBindLog.class);
         verify(bindLogMapper, times(2)).insert(logCaptor.capture());
-        List<com.nexus.station.domain.MesSnBindLog> logs = logCaptor.getAllValues();
+        List<MesSnBindLog> logs = logCaptor.getAllValues();
         assertEquals("UNBIND", logs.get(0).getAction());
         assertEquals("REBIND", logs.get(1).getAction());
         assertEquals("SN-NEW", logs.get(1).getComponentSnCode());
@@ -269,8 +273,7 @@ class StationSnServiceTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> service.unbind(dto));
         assertTrue(ex.getMessage().contains("已被并发绑定"), "应提示并发绑定冲突: " + ex.getMessage());
         // 只写了解绑那一条 UNBIND 日志, 不得出现 REBIND
-        ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
-                ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+        ArgumentCaptor<MesSnBindLog> logCaptor = ArgumentCaptor.forClass(MesSnBindLog.class);
         verify(bindLogMapper, times(1)).insert(logCaptor.capture());
         assertEquals("UNBIND", logCaptor.getValue().getAction());
     }
@@ -286,7 +289,7 @@ class StationSnServiceTest {
         dto.setComponentSnCode("SN-C");
         dto.setReason("wrong component");
         assertThrows(ServiceException.class, () -> service.unbind(dto));
-        verify(bindLogMapper, never()).insert(any(com.nexus.station.domain.MesSnBindLog.class));
+        verify(bindLogMapper, never()).insert(any(MesSnBindLog.class));
     }
 
     @Test

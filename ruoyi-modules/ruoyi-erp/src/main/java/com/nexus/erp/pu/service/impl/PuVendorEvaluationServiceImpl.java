@@ -4,8 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -26,6 +24,10 @@ import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
 import com.nexus.erp.pu.mapper.PuVendorEvaluationMapper;
 import com.nexus.erp.pu.service.IPuVendorEvaluationService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,19 +38,25 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /**
  * 供应商评估服务实现类
- * <p>
- * 实现供应商绩效评估的核心业务逻辑，包括：
+ *
+ * <p>实现供应商绩效评估的核心业务逻辑，包括：
+ *
  * <ul>
- *   <li>CRUD 操作：分页查询、新增、修改、删除</li>
- *   <li>评估计算：按供应商单条计算、批量全量计算</li>
+ *   <li>CRUD 操作：分页查询、新增、修改、删除
+ *   <li>评估计算：按供应商单条计算、批量全量计算
  * </ul>
- * 评估算法基于交货及时率（40%）、质量合格率（35%）、价格竞争力（25%）加权计算综合评分，
- * 并按得分划分为 A/B/C/D 四个等级。
+ *
+ * 评估算法基于交货及时率（40%）、质量合格率（35%）、价格竞争力（25%）加权计算综合评分， 并按得分划分为 A/B/C/D 四个等级。
  *
  * @author nexus
  */
@@ -396,11 +404,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         }
         BigDecimal vendorAvg = vendorTotal.divide(new BigDecimal(vendorCount), SCORE_SCALE, RoundingMode.HALF_UP);
 
-        List<Long> materialIds = priceLines.stream()
-            .map(PuPurchaseOrderLine::getMaterialId)
-            .filter(java.util.Objects::nonNull)
-            .distinct()
-            .collect(java.util.stream.Collectors.toList());
+        List<Long> materialIds =
+                priceLines.stream()
+                        .map(PuPurchaseOrderLine::getMaterialId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
         BigDecimal marketAvg = BigDecimal.ZERO;
         int marketCount = 0;
         if (!materialIds.isEmpty()) {
@@ -449,7 +458,7 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
     @Override
     public Map<String, Integer> selectLevelDistribution() {
         List<PuVendorEvaluation> all = baseMapper.selectList(new LambdaQueryWrapper<>());
-        Map<String, Integer> distribution = new java.util.LinkedHashMap<>();
+        Map<String, Integer> distribution = new LinkedHashMap<>();
         distribution.put("A", 0);
         distribution.put("B", 0);
         distribution.put("C", 0);

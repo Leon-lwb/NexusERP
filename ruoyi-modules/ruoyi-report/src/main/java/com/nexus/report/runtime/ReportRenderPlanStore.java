@@ -1,5 +1,6 @@
 package com.nexus.report.runtime;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,8 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
@@ -83,9 +86,7 @@ public final class ReportRenderPlanStore {
             String snapshotChecksum,
             String fontChecksum,
             RenderPlan plan,
-            @com.fasterxml.jackson.annotation.JsonInclude(
-                            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-                    String fontReference) {
+            @JsonInclude(JsonInclude.Include.NON_NULL) String fontReference) {
         /**
          * 保留第一版归档构造契约。
          *
@@ -221,7 +222,7 @@ public final class ReportRenderPlanStore {
             ReportCancellation cancellation,
             Function<Path, RenderPlan> measure) {
         var font = fonts.ensure(tenant, source, cancellation);
-        var result = new java.util.concurrent.atomic.AtomicReference<RenderPlan>();
+        var result = new AtomicReference<RenderPlan>();
         fonts.withFont(
                 tenant,
                 font.reference(),
@@ -385,7 +386,7 @@ public final class ReportRenderPlanStore {
             stored = json.readValue(new BudgetInput(input, JSON_LIMIT), StoredPlan.class);
         }
         if (stored == null
-                || !java.util.Set.of(1, 2).contains(stored.formatVersion())
+                || !Set.of(1, 2).contains(stored.formatVersion())
                 || !engine.equals(stored.engine())
                 || !runId.equals(stored.runId())
                 || snapshotChecksum == null

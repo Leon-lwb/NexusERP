@@ -1,5 +1,9 @@
 package com.nexus.mes.label.listener;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -13,16 +17,17 @@ import com.nexus.mes.label.service.LabelRenderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.event.SnCreatedEvent;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
-import org.mockito.MockedStatic;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionalEventListener;
+
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 同步事件只保存任务，存储异常必须传播以回滚造码事务。
@@ -113,9 +118,7 @@ class SnLabelPrintEventListenerTest {
     @Test
     void listenerHasSynchronousEventAnnotationAndNoAfterCommitFallback() throws Exception {
         var method = SnLabelPrintEventListener.class.getMethod("onSnCreated", SnCreatedEvent.class);
-        assertNotNull(method.getAnnotation(org.springframework.context.event.EventListener.class));
-        assertNull(
-                method.getAnnotation(
-                        org.springframework.transaction.event.TransactionalEventListener.class));
+        assertNotNull(method.getAnnotation(EventListener.class));
+        assertNull(method.getAnnotation(TransactionalEventListener.class));
     }
 }

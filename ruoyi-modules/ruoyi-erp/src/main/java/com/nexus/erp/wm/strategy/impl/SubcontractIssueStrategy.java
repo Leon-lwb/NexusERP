@@ -5,18 +5,24 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.WmSubcontractIssueLine;
 import com.nexus.erp.wm.domain.vo.AllocatedStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -33,8 +39,8 @@ import java.util.List;
 @Slf4j
 @Component
 public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：委外发料
@@ -102,7 +108,7 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
         Date now = (Date) args[2];
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                        WmSerialPostingRequest.out(
                                 "WM_SUBCONTRACT_ISSUE",
                                 line.getIssueId(),
                                 line.getLineId(),
@@ -155,7 +161,7 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
                 WmMaterialStock::getStockId);
         List<WmMaterialStock> stocks = stockMapper.selectList(lqw);
 
-        List<AllocatedStock> allocs = new java.util.ArrayList<>();
+        List<AllocatedStock> allocs = new ArrayList<>();
         BigDecimal remaining = line.getIssueQty();
         for (WmMaterialStock s : stocks) {
             if (remaining.compareTo(BigDecimal.ZERO) <= 0) {

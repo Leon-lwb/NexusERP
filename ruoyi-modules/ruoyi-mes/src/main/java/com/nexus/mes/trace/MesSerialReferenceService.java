@@ -1,17 +1,23 @@
 package com.nexus.mes.trace;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.common.trace.port.CodeResolverPort;
-import com.nexus.common.trace.*;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.util.*;
 import static com.nexus.mes.trace.MesTraceContext.need;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.trace.*;
+import com.nexus.common.trace.port.CodeResolverPort;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.*;
 
 /**
  * 将已授权的正式身份或别名解析到制造本地单件，保留重码歧义及完整来源。
@@ -52,14 +58,9 @@ public class MesSerialReferenceService {
         need(reference != null, "Submission requires its verified local identity");
         context.requireTenant(reference.tenantId());
         need(
-                org.springframework.transaction.support.TransactionSynchronizationManager
-                                .isActualTransactionActive()
-                        && !org.springframework.transaction.support
-                                .TransactionSynchronizationManager.isCurrentTransactionReadOnly()
-                        && "mes"
-                                .equals(
-                                        com.baomidou.dynamic.datasource.toolkit
-                                                .DynamicDataSourceContextHolder.peek()),
+                TransactionSynchronizationManager.isActualTransactionActive()
+                        && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+                        && "mes".equals(DynamicDataSourceContextHolder.peek()),
                 "Submission status requires the source MES transaction");
         var current =
                 mapper.selectList(

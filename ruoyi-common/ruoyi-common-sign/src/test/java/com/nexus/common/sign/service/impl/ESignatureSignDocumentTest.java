@@ -1,10 +1,15 @@
 package com.nexus.common.sign.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
+import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sign.constants.DocVerifyVerdict;
 import com.nexus.common.sign.constants.SealStatus;
 import com.nexus.common.sign.constants.SealType;
@@ -30,6 +35,11 @@ import com.nexus.common.sign.support.pdf.PdfDocumentVerifier;
 import com.nexus.common.sign.support.pdf.PdfTestSupport;
 import com.nexus.common.sign.support.pdf.SelfSignedCertificateFactory;
 import com.nexus.common.sign.util.Sm3Utils;
+
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,16 +58,17 @@ import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * {@code signDocument} / {@code verifyDocument} 服务层测试（P2a-2）。
@@ -97,24 +108,37 @@ class ESignatureSignDocumentTest {
     private static byte[] signedFixture;
     private static String signedFixtureHash;
 
-    @Mock private EsSignatureMapper signatureMapper;
-    @Mock private EsSealMapper sealMapper;
-    @Mock private EsSealGrantMapper grantMapper;
-    @Mock private SignAuthVerifier authVerifier;
-    @Mock private LockTemplate lockTemplate;
-    @Mock private EsSignDocumentMapper documentMapper;
-    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
-    @Mock private OssContentAccessor ossContentAccessor;
+    @Mock
+    private EsSignatureMapper signatureMapper;
+    @Mock
+    private EsSealMapper sealMapper;
+    @Mock
+    private EsSealGrantMapper grantMapper;
+    @Mock
+    private SignAuthVerifier authVerifier;
+    @Mock
+    private LockTemplate lockTemplate;
+    @Mock
+    private EsSignDocumentMapper documentMapper;
+    @Mock
+    private ObjectProvider<OssContentAccessor> ossAccessorProvider;
+    @Mock
+    private OssContentAccessor ossContentAccessor;
 
-    @Captor private ArgumentCaptor<EsSignature> sigCaptor;
-    @Captor private ArgumentCaptor<EsSignDocument> docCaptor;
-    @Captor private ArgumentCaptor<byte[]> storedBytesCaptor;
-    @Captor private ArgumentCaptor<String> fileNameCaptor;
-    @Captor private ArgumentCaptor<String> contentTypeCaptor;
+    @Captor
+    private ArgumentCaptor<EsSignature> sigCaptor;
+    @Captor
+    private ArgumentCaptor<EsSignDocument> docCaptor;
+    @Captor
+    private ArgumentCaptor<byte[]> storedBytesCaptor;
+    @Captor
+    private ArgumentCaptor<String> fileNameCaptor;
+    @Captor
+    private ArgumentCaptor<String> contentTypeCaptor;
 
     private ESignatureServiceImpl service;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
-    private MockedStatic<com.nexus.common.satoken.utils.LoginHelper> loginHelperMock;
+    private MockedStatic<LoginHelper> loginHelperMock;
 
     @BeforeAll
     static void buildFixtures() {
@@ -144,10 +168,10 @@ class ESignatureSignDocumentTest {
         }
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(EsSignature.class)).thenReturn(cols);
 
-        loginHelperMock = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(ME);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getTenantId).thenReturn(TENANT);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getDeptId).thenReturn(MY_DEPT);
+        loginHelperMock = mockStatic(LoginHelper.class);
+        loginHelperMock.when(LoginHelper::getUserId).thenReturn(ME);
+        loginHelperMock.when(LoginHelper::getTenantId).thenReturn(TENANT);
+        loginHelperMock.when(LoginHelper::getDeptId).thenReturn(MY_DEPT);
 
         when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(newLock());
         when(signatureMapper.selectOne(any())).thenReturn(null);
@@ -539,7 +563,7 @@ class ESignatureSignDocumentTest {
         assertTrue(annotation.rollbackFor().length > 0, "必须对所有异常回滚");
         assertTrue(List.of(annotation.rollbackFor()).contains(Exception.class),
             "回滚范围必须覆盖 Exception，否则会出现「有签名文件、没有台账」");
-        assertTrue(java.lang.reflect.Modifier.isPublic(method.getModifiers()));
+        assertTrue(Modifier.isPublic(method.getModifiers()));
     }
 
     // ---------------------------------------------------------------- verifyDocument
@@ -727,20 +751,20 @@ class ESignatureSignDocumentTest {
 
     /** 在签名之后追加一个真实增量修订（改页面）。 */
     private static byte[] appendRevision(byte[] signed) {
-        try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(signed)) {
-            org.apache.pdfbox.pdmodel.PDPage page = doc.getPage(0);
-            try (org.apache.pdfbox.pdmodel.PDPageContentStream cs =
-                     new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, page,
-                         org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode.APPEND, true)) {
-                cs.setNonStrokingColor(java.awt.Color.RED);
+        try (PDDocument doc = Loader.loadPDF(signed)) {
+            PDPage page = doc.getPage(0);
+            try (PDPageContentStream cs =
+                    new PDPageContentStream(
+                            doc, page, PDPageContentStream.AppendMode.APPEND, true)) {
+                cs.setNonStrokingColor(Color.RED);
                 cs.addRect(20, 100, 200, 200);
                 cs.fill();
             }
-            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
             doc.saveIncremental(out);
             return out.toByteArray();
-        } catch (java.io.IOException e) {
-            throw new java.io.UncheckedIOException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

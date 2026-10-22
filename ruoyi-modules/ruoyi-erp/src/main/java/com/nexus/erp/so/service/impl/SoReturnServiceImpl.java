@@ -4,13 +4,12 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.so.domain.SoReturn;
@@ -25,13 +24,19 @@ import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoReturnService;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,8 +57,8 @@ import java.util.Map;
 @DS("erp")
 @Service("soReturnService")
 public class SoReturnServiceImpl implements ISoReturnService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     private final SoReturnMapper baseMapper;
     private final SoReturnLineMapper lineMapper;
@@ -445,7 +450,7 @@ public class SoReturnServiceImpl implements ISoReturnService {
     private void postReturnStock(SoReturn soReturn, SoReturnLine line, Date now) {
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                        WmSerialPostingRequest.in(
                                 "SO_RETURN",
                                 soReturn.getReturnId(),
                                 line.getLineId(),
@@ -459,7 +464,7 @@ public class SoReturnServiceImpl implements ISoReturnService {
             return;
         }
         if (line.getReturnQuantity() == null
-                || line.getReturnQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                || line.getReturnQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("退货数量必须大于0");
         }
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
@@ -471,11 +476,11 @@ public class SoReturnServiceImpl implements ISoReturnService {
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         WmMaterialStock stock = stockMapper.selectOne(lqw);
 
-        java.math.BigDecimal beforeQuantity =
+        BigDecimal beforeQuantity =
                 stock == null || stock.getStockQuantity() == null
-                        ? java.math.BigDecimal.ZERO
+                        ? BigDecimal.ZERO
                         : stock.getStockQuantity();
-        java.math.BigDecimal afterQuantity = beforeQuantity.add(line.getReturnQuantity());
+        BigDecimal afterQuantity = beforeQuantity.add(line.getReturnQuantity());
 
         if (stock == null) {
             stock = new WmMaterialStock();

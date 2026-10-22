@@ -1,19 +1,26 @@
 package com.nexus.mes.trace;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.trace.*;
-import com.nexus.mes.pro.event.SnCreatedEvent;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.*;
 import static com.nexus.mes.trace.MesTraceContext.need;
 import static com.nexus.mes.trace.MesTraceSql.*;
 import static com.nexus.mes.trace.MesTraceStore.number;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.trace.*;
+import com.nexus.mes.pro.event.SnCreatedEvent;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * 仅在库存身份预留已提交后进入本地制造写入，业务行锁及写入效果均留在制造库。
@@ -62,9 +69,7 @@ public class MesSnCreationWriter {
      * @param quantity 原请求预期创建的制造单件数量。
      * @return 原命令已经创建的制造单件主键集合；没有原记录时返回空。
      */
-    @Transactional(
-            readOnly = true,
-            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public List<Long> replay(Request request, int quantity) {
         context.requireTenant(context.tenant());
         MesTraceSql.command(request.commandId());
@@ -89,7 +94,7 @@ public class MesSnCreationWriter {
         var result = new ArrayList<Long>();
         events.result(row)
                 .path("localSnIds")
-                .forEach(n -> result.add(new java.math.BigDecimal(n.asText()).longValueExact()));
+                .forEach(n -> result.add(new BigDecimal(n.asText()).longValueExact()));
         return result;
     }
 
@@ -139,14 +144,14 @@ public class MesSnCreationWriter {
             var ids = new ArrayList<Long>();
             events.result(command)
                     .path("localSnIds")
-                    .forEach(n -> ids.add(new java.math.BigDecimal(n.asText()).longValueExact()));
+                    .forEach(n -> ids.add(new BigDecimal(n.asText()).longValueExact()));
             return ids;
         }
         if (sourceProof != null) {
             events.subcontractProof(sourceProof);
         }
         Map<String, Object> wo = null, card = null;
-        com.fasterxml.jackson.databind.JsonNode subcontractFact = null;
+        JsonNode subcontractFact = null;
         if (request.mesWoId() != null) {
             wo =
                     one(
@@ -185,7 +190,7 @@ public class MesSnCreationWriter {
                             tenant,
                             request.sourceId());
             need(
-                    java.math.BigDecimal.valueOf(existing + reservation.identities().size())
+                    BigDecimal.valueOf(existing + reservation.identities().size())
                                     .compareTo(MesMaterialTraceWriter.decimal(proof, "quantity"))
                             <= 0,
                     "委外发号超过真实委外数量");
@@ -213,7 +218,7 @@ public class MesSnCreationWriter {
                             tenant,
                             request.cardId());
             need(
-                    java.math.BigDecimal.valueOf(existing + reservation.identities().size())
+                    BigDecimal.valueOf(existing + reservation.identities().size())
                                     .compareTo(qty(card.get("planned_qty")))
                             <= 0,
                     "SN生成数量超过实际流转卡计划量");
@@ -237,7 +242,7 @@ public class MesSnCreationWriter {
                                     request.productLotId())
                             .size();
             need(
-                    java.math.BigDecimal.valueOf(count + reservation.identities().size())
+                    BigDecimal.valueOf(count + reservation.identities().size())
                                     .compareTo(qty(lot.get("quantity")))
                             <= 0,
                     "成品批次SN数量超过批次数量");
@@ -401,7 +406,7 @@ public class MesSnCreationWriter {
                                 lotId)
                         .size();
         need(
-                java.math.BigDecimal.valueOf(count + 1).compareTo(qty(lot.get("quantity"))) <= 0,
+                BigDecimal.valueOf(count + 1).compareTo(qty(lot.get("quantity"))) <= 0,
                 "成品批次SN分配超过实际批次数量");
         var command =
                 events.command(

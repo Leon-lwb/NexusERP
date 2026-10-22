@@ -1,11 +1,16 @@
 package com.nexus.erp.wm;
 
-import com.nexus.common.core.exception.ServiceException;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.domain.WmBatch;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+
+import java.math.BigDecimal;
 
 /**
  * 已停用是既有身份的元数据状态，既不能推翻原入库结果，也不能据此授权新入库。
@@ -96,9 +101,7 @@ class WmInactiveBatchReceiptReplayTest {
                                 f.jdbc.queryForObject(
                                         "SELECT * FROM wm_batch WHERE tenant_id='t1' AND"
                                                 + " batch_id=50 FOR UPDATE",
-                                        org.springframework.jdbc.core.BeanPropertyRowMapper
-                                                .newInstance(
-                                                        com.nexus.erp.wm.domain.WmBatch.class)));
+                                        BeanPropertyRowMapper.newInstance(WmBatch.class)));
         return f;
     }
 }

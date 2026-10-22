@@ -3,6 +3,7 @@ package com.nexus.erp.prd.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
@@ -18,27 +19,30 @@ import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// 同名类型说明：本文件同时使用 java.sql.Date 和 java.util.Date，后者保留全限定名以区分。
+
 /**
  * 供应链缺料风险预测 Service 实现
- * <p>
- * 数据聚合(全部 ry-erp 库, @DS("erp")):
- * 毛需求 = MRP 明细未发料余量(requiredQuantity − issuedQuantity, 按 requiredDate 聚合);
- * 库存 = Σ(stockQuantity − reservedQuantity)(按物料汇总);
- * 在途 = 采购订单行(orderQuantity − receivedQuantity, 已审批/部分收货状态, 按主表 expectedArrivalDate 聚合)。
- * 结果缓存 Redis 30 分钟(key 含租户), 推演型不落库。
- * </p>
+ *
+ * <p>数据聚合(全部 ry-erp 库, @DS("erp")): 毛需求 = MRP 明细未发料余量(requiredQuantity − issuedQuantity, 按
+ * requiredDate 聚合); 库存 = Σ(stockQuantity − reservedQuantity)(按物料汇总); 在途 = 采购订单行(orderQuantity −
+ * receivedQuantity, 已审批/部分收货状态, 按主表 expectedArrivalDate 聚合)。 结果缓存 Redis 30 分钟(key 含租户), 推演型不落库。
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -78,7 +82,7 @@ public class PrdShortageRiskServiceImpl implements IPrdShortageRiskService {
 
     private String buildCacheKey(int days) {
         // 租户由 MyBatis-Plus 多租户插件在下述查询中自动隔离, 缓存 key 需自行带上租户
-        String tenantId = com.nexus.common.tenant.helper.TenantHelper.getTenantId();
+        String tenantId = TenantHelper.getTenantId();
         return "erp:shortage:predict:" + tenantId + ":" + days;
     }
 
@@ -87,19 +91,29 @@ public class PrdShortageRiskServiceImpl implements IPrdShortageRiskService {
         LocalDate horizon = today.plusDays(days);
 
         // 1. 毛需求: MRP 明细未发料余量(需求日在推演期内)
-        List<PrdMaterialRequirementDetail> details = requirementDetailMapper.selectList(
-            Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
-                .isNotNull(PrdMaterialRequirementDetail::getRequiredDate)
-                .ge(PrdMaterialRequirementDetail::getRequiredDate, java.sql.Date.valueOf(today))
-                .le(PrdMaterialRequirementDetail::getRequiredDate, java.sql.Date.valueOf(horizon))
-                .gt(PrdMaterialRequirementDetail::getRequiredQuantity, BigDecimal.ZERO));
+        List<PrdMaterialRequirementDetail> details =
+                requirementDetailMapper.selectList(
+                        Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
+                                .isNotNull(PrdMaterialRequirementDetail::getRequiredDate)
+                                .ge(
+                                        PrdMaterialRequirementDetail::getRequiredDate,
+                                        Date.valueOf(today))
+                                .le(
+                                        PrdMaterialRequirementDetail::getRequiredDate,
+                                        Date.valueOf(horizon))
+                                .gt(
+                                        PrdMaterialRequirementDetail::getRequiredQuantity,
+                                        BigDecimal.ZERO));
 
         // 2. 在途: 已审批/部分收货采购订单的未收货行(按预计到货日聚合; 到货日空的按今天即到)
-        List<PuPurchaseOrder> orders = purchaseOrderMapper.selectList(
-            Wrappers.lambdaQuery(PuPurchaseOrder.class)
-                .in(PuPurchaseOrder::getStatus, "APPROVED", "PARTIALLY_RECEIVED")
-                .isNotNull(PuPurchaseOrder::getExpectedArrivalDate)
-                .le(PuPurchaseOrder::getExpectedArrivalDate, java.sql.Date.valueOf(horizon)));
+        List<PuPurchaseOrder> orders =
+                purchaseOrderMapper.selectList(
+                        Wrappers.lambdaQuery(PuPurchaseOrder.class)
+                                .in(PuPurchaseOrder::getStatus, "APPROVED", "PARTIALLY_RECEIVED")
+                                .isNotNull(PuPurchaseOrder::getExpectedArrivalDate)
+                                .le(
+                                        PuPurchaseOrder::getExpectedArrivalDate,
+                                        Date.valueOf(horizon)));
         Map<Long, PuPurchaseOrder> orderMap = new HashMap<>();
         for (PuPurchaseOrder order : orders) {
             orderMap.put(order.getOrderId(), order);
@@ -224,6 +238,6 @@ public class PrdShortageRiskServiceImpl implements IPrdShortageRiskService {
         if (date == null) {
             return null;
         }
-        return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 }

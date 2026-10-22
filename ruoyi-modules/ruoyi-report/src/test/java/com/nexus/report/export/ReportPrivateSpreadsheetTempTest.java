@@ -8,6 +8,7 @@ import com.nexus.report.storage.*;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 import java.io.*;
 import java.nio.file.*;
@@ -84,9 +85,8 @@ class ReportPrivateSpreadsheetTempTest {
     @Test
     void cancellationWhileCreatingGzipWriterClosesTheRawFileStream() throws Exception {
         var cancellation = new ReportCancellation();
-        var artifacts =
-                org.mockito.Mockito.spy(new LocalReportArtifactStore(directory, 10 * 1024 * 1024));
-        org.mockito.Mockito.doAnswer(
+        var artifacts = Mockito.spy(new LocalReportArtifactStore(directory, 10 * 1024 * 1024));
+        Mockito.doAnswer(
                         call -> {
                             Path file = (Path) call.callRealMethod();
                             cancellation.cancel("CANCELLED");

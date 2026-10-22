@@ -2,15 +2,20 @@ package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.WmStockTakingLine;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +33,8 @@ import java.util.Date;
 @Slf4j
 @Component
 public class CountAdjustStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：盘点调整
@@ -99,7 +104,7 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         }
         var serialRequest =
                 txFlag > 0
-                        ? com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                        ? WmSerialPostingRequest.in(
                                 "WM_STOCK_TAKING",
                                 line.getPlanId(),
                                 line.getLineId(),
@@ -110,7 +115,7 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
                                 line.getLocationId(),
                                 line.getBatchId(),
                                 null)
-                        : com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                        : WmSerialPostingRequest.out(
                                 "WM_STOCK_TAKING",
                                 line.getPlanId(),
                                 line.getLineId(),

@@ -5,6 +5,8 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.flash.domain.bo.TestItemBo;
 import com.nexus.mes.flash.domain.vo.TestItemVo;
 
+import java.util.List;
+
 /**
  * MES测试项标准 Service 接口
  * <p>按物料/固件范围配置测试标准(限值/目标/ENUM合格值/必测), 供测试记录开单时快照引用。</p>
@@ -48,8 +50,6 @@ public interface ITestItemService {
      */
     Boolean deleteByIds(Long[] testItemIds);
 
-    /**
-     * 按物料+固件范围查询可用测试项(开单快照/前端下拉)
-     */
-    java.util.List<TestItemVo> selectByMaterial(Long materialId, Long firmwareId);
+    /** 按物料+固件范围查询可用测试项(开单快照/前端下拉) */
+    List<TestItemVo> selectByMaterial(Long materialId, Long firmwareId);
 }

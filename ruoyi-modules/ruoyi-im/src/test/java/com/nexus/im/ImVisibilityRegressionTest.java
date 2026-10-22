@@ -1,21 +1,32 @@
 package com.nexus.im;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.im.controller.AppImController;
 import com.nexus.im.domain.*;
+import com.nexus.im.domain.vo.ImConversationVo;
 import com.nexus.im.mapper.*;
+import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.*;
 import com.nexus.im.service.*;
 import com.nexus.im.service.impl.support.*;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.im.task.ImMessageClearTask;
+import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.*;
+
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
+import org.apache.ibatis.session.Configuration;
 import org.junit.jupiter.api.*;
 import org.mockito.*;
 import org.redisson.api.*;
@@ -23,11 +34,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 验证隐藏状态、消息可见范围、通知保存期以及群成员间已读隔离。 */
 class ImVisibilityRegressionTest extends ImUnitTestBase {
@@ -75,7 +83,7 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
         loginAs(PEER_USER_ID);
         visibility.hiddenIds();
         verify(redis).getSetCache("im:hidden:1:200");
-        tenantHelperMock.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("2");
+        tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("2");
         visibility.hiddenIds();
         verify(redis).getSetCache("im:hidden:2:200");
     }
@@ -186,7 +194,7 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
         var peer = ImBehaviorRegressionTest.JSON.valueToTree(app.syncMessages(0L).getData());
         assertThat(peer.path("hiddenMessageIds").size()).isEqualTo(1);
         assertThat(peer.path("hiddenMessageIds").get(0).asText()).isEqualTo(String.valueOf(HIDDEN + 1));
-        tenantHelperMock.when(com.nexus.common.tenant.helper.TenantHelper::getTenantId).thenReturn("2");
+        tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("2");
         var tenant = ImBehaviorRegressionTest.JSON.valueToTree(app.syncMessages(0L).getData());
         assertThat(tenant.path("hiddenMessageIds").size()).isEqualTo(1);
         assertThat(tenant.path("hiddenMessageIds").get(0).asText()).isEqualTo(String.valueOf(HIDDEN + 2));
@@ -204,9 +212,18 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
 
     @Test
     void privateHistory_excludesHiddenBeforePagination() {
-        var privateChat = new ImPrivateChatService(messages, userService, notifications, push,
-            mock(com.nexus.im.msgtype.ImMessageTypeRegistry.class), support, cache, metrics, notificationMapper);
-        var peer = new com.nexus.system.domain.vo.SysUserVo();
+        var privateChat =
+                new ImPrivateChatService(
+                        messages,
+                        userService,
+                        notifications,
+                        push,
+                        mock(ImMessageTypeRegistry.class),
+                        support,
+                        cache,
+                        metrics,
+                        notificationMapper);
+        var peer = new SysUserVo();
         peer.setUserId(PEER_USER_ID);
         when(userService.selectUserById(PEER_USER_ID)).thenReturn(peer);
         Page<ImMessage> page = new Page<>(1, 20);
@@ -247,8 +264,19 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
         });
         when(messages.selectList(any())).thenReturn(List.of(message));
         when(notificationMapper.update(any(), any())).thenAnswer(inv -> { mine.setReadFlag("1"); return 1; });
-        var groupChat = new ImGroupChatService(messages, groups, members, userService, notifications, push,
-            mock(com.nexus.im.msgtype.ImMessageTypeRegistry.class), support, cache, metrics, notificationMapper);
+        var groupChat =
+                new ImGroupChatService(
+                        messages,
+                        groups,
+                        members,
+                        userService,
+                        notifications,
+                        push,
+                        mock(ImMessageTypeRegistry.class),
+                        support,
+                        cache,
+                        metrics,
+                        notificationMapper);
         assertThat(groupChat.markGroupRead(GROUP)).isEqualTo(1);
         assertThat(groupChat.markGroupRead(GROUP)).isZero();
         assertThat(others.getReadFlag()).isEqualTo("0");
@@ -273,8 +301,9 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
     void messageCleanup_retainsGroupNotificationReadStateFor180Days() {
         when(messages.delete(any())).thenReturn(0);
         when(notificationMapper.delete(any())).thenReturn(0);
-        tenantHelperMock.when(() -> com.nexus.common.tenant.helper.TenantHelper.ignore(any(java.util.function.Supplier.class)))
-            .thenAnswer(inv -> ((java.util.function.Supplier<?>) inv.getArgument(0)).get());
+        tenantHelperMock
+                .when(() -> TenantHelper.ignore(any(Supplier.class)))
+                .thenAnswer(inv -> ((Supplier<?>) inv.getArgument(0)).get());
         new ImMessageClearTask(messages, notificationMapper).clearExpiredMessages();
         ArgumentCaptor<LambdaQueryWrapper<SysUserNotification>> queries = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(notificationMapper, atLeastOnce()).delete(queries.capture());
@@ -288,7 +317,7 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
     @Test
     void cachedConversation_rechecksGroupMembership() {
         when(hiddenSet.readAll()).thenReturn(Set.of());
-        var old = new com.nexus.im.domain.vo.ImConversationVo();
+        var old = new ImConversationVo();
         old.setChatType("GROUP");
         old.setTargetId(GROUP.toString());
         old.setLastContent("不应继续展示的群消息");
@@ -335,11 +364,13 @@ class ImVisibilityRegressionTest extends ImUnitTestBase {
     }
 
     private String boundSql(Select select, Map<String, Object> params) {
-        return new XMLLanguageDriver().createSqlSource(new org.apache.ibatis.session.Configuration(),
-            String.join(" ", select.value()), Map.class).getBoundSql(params).getSql();
+        return new XMLLanguageDriver()
+                .createSqlSource(new Configuration(), String.join(" ", select.value()), Map.class)
+                .getBoundSql(params)
+                .getSql();
     }
 
-    private com.nexus.common.mybatis.core.page.PageQuery pageQuery() {
+    private PageQuery pageQuery() {
         return ImTestFixture.pageQuery(20, 1);
     }
 

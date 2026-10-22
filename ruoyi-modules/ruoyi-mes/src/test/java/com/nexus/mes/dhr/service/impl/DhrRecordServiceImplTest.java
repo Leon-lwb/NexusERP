@@ -1,5 +1,21 @@
 package com.nexus.mes.dhr.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -25,7 +41,9 @@ import com.nexus.mes.dhr.support.DhrSignatureAccessor;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.testsupport.SpringStaticBootstrap;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -45,22 +63,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * DHR 批记录 Service 单元测试。
@@ -87,13 +89,20 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class DhrRecordServiceImplTest {
 
-    @Mock private DhrRecordMapper baseMapper;
-    @Mock private DhrSectionMapper sectionMapper;
-    @Mock private IDhrAggregateService aggregateService;
-    @Mock private DhrSignatureAccessor signatureAccessor;
-    @Mock private ProWorkOrderMapper workOrderMapper;
-    @Mock private ESignatureService eSignatureService;
-    @InjectMocks private DhrRecordServiceImpl service;
+    @Mock
+    private DhrRecordMapper baseMapper;
+    @Mock
+    private DhrSectionMapper sectionMapper;
+    @Mock
+    private IDhrAggregateService aggregateService;
+    @Mock
+    private DhrSignatureAccessor signatureAccessor;
+    @Mock
+    private ProWorkOrderMapper workOrderMapper;
+    @Mock
+    private ESignatureService eSignatureService;
+    @InjectMocks
+    private DhrRecordServiceImpl service;
 
     private MockedStatic<LoginHelper> loginHelperMock;
 
@@ -114,7 +123,7 @@ class DhrRecordServiceImplTest {
         loginHelperMock.when(LoginHelper::getUsername).thenReturn("tester");
     }
 
-    @org.junit.jupiter.api.AfterEach
+    @AfterEach
     void tearDown() {
         if (loginHelperMock != null) {
             loginHelperMock.close();

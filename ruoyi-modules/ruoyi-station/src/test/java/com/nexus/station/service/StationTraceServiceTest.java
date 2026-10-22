@@ -1,5 +1,13 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
@@ -13,8 +21,9 @@ import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.station.domain.MesSnBindLog;
 import com.nexus.station.domain.MesStationReport;
-import com.nexus.station.mapper.StationSnBindLogMapper;
 import com.nexus.station.mapper.StationReportMapper;
+import com.nexus.station.mapper.StationSnBindLogMapper;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,18 +33,11 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 
 /**
  * StationTraceService 单元测试 — SN 全履历时间线聚合(C13)。
@@ -45,13 +47,20 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 @ExtendWith(MockitoExtension.class)
 class StationTraceServiceTest {
 
-    @Mock private ProSnMapper proSnMapper;
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private FlashRecordMapper flashRecordMapper;
-    @Mock private TestRecordMapper testRecordMapper;
-    @Mock private StationReportMapper reportMapper;
-    @Mock private StationSnBindLogMapper bindLogMapper;
-    @InjectMocks private StationTraceService service;
+    @Mock
+    private ProSnMapper proSnMapper;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private FlashRecordMapper flashRecordMapper;
+    @Mock
+    private TestRecordMapper testRecordMapper;
+    @Mock
+    private StationReportMapper reportMapper;
+    @Mock
+    private StationSnBindLogMapper bindLogMapper;
+    @InjectMocks
+    private StationTraceService service;
 
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
 
@@ -252,7 +261,7 @@ class StationTraceServiceTest {
     }
 
     private Date date(String s) {
-        return new Date(java.sql.Timestamp.valueOf(s).getTime());
+        return new Date(Timestamp.valueOf(s).getTime());
     }
 
     @Test

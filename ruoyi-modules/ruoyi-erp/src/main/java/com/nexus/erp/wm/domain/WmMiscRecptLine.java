@@ -1,12 +1,15 @@
 package com.nexus.erp.wm.domain;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.tenant.core.TenantEntity;
 
 import java.math.BigDecimal;
 
@@ -22,10 +25,9 @@ import java.math.BigDecimal;
 public class WmMiscRecptLine extends TenantEntity {
 
     /** 仅供受控库存入口传递真实来源，不接受客户端输入。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    @JsonIgnore
+    @TableField(exist = false)
     private String postingSourceType;
-
 
     /**
      * 行ID

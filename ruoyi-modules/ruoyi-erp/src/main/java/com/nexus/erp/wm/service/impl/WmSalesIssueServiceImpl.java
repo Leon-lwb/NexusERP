@@ -1,10 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
@@ -19,32 +18,39 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.domain.WmSalesIssueLine;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.bo.WmSalesIssueBo;
 import com.nexus.erp.wm.domain.bo.WmSalesIssueLineBo;
-import com.nexus.erp.wm.domain.vo.WmSalesIssueVo;
 import com.nexus.erp.wm.domain.vo.WmSalesIssueLineVo;
+import com.nexus.erp.wm.domain.vo.WmSalesIssueVo;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
-import com.nexus.erp.wm.mapper.WmBatchMapper;
-import com.nexus.erp.wm.service.SalesIssueSourceGuard;
-import com.nexus.erp.so.domain.SoSalesOrderLine;
-import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
-import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
+import com.nexus.erp.wm.service.SalesIssueSourceGuard;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.workflow.domain.WfMyBusiness;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -67,8 +73,8 @@ import java.util.Set;
 @DS("erp")
 @Service("wmSalesIssueService")
 public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 基础数据访问映射器（Mapper）
@@ -115,10 +121,8 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      */
     private final SoSalesOrderLineMapper salesOrderLineMapper;
 
-    /**
-     * 库存计价服务（ERP-WM-01: 出库成本结转，与 SalesOutStrategy 完全同口径）
-     */
-    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+    /** 库存计价服务（ERP-WM-01: 出库成本结转，与 SalesOutStrategy 完全同口径） */
+    private final IInventoryValuationService valuationService;
 
     /**
      * 实际出库入口的来源校验与订单悲观锁。
@@ -338,7 +342,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                             ? BigDecimal.ZERO
                             : serialSource.getReservedQty();
             var serialRequest =
-                    com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                    WmSerialPostingRequest.out(
                                     "WM_SALES_ISSUE",
                                     issueId,
                                     line.getLineId(),

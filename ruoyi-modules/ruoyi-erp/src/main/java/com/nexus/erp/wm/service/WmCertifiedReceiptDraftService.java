@@ -8,10 +8,15 @@ import com.nexus.erp.pu.service.*;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper.*;
 import com.nexus.system.strategy.AutoCodeUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -33,8 +38,9 @@ public class WmCertifiedReceiptDraftService {
     private final PuCertifiedPurchaseOrderWorkflowService orders;
     private final WmCertifiedReceiptDraftMapper mapper;
     private final AutoCodeUtil codes;
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmCertifiedArrivalNoticeService arrivals;
+
     public WmCertifiedReceiptDraftService(WmCertifiedReceiptPostingAuthorizer auth,PuRequirementErpTransactionExecutor tx,
         PuRequirementErpTransactionQualification qualification,PuRequirementMaterialLockService locks,
         PuCertifiedPurchaseOrderWorkflowService orders,WmCertifiedReceiptDraftMapper mapper,AutoCodeUtil codes) {
@@ -101,5 +107,42 @@ public class WmCertifiedReceiptDraftService {
     private static boolean quantity(BigDecimal n){if(n==null||n.signum()<=0)return false;var v=n.stripTrailingZeros();return v.scale()<=4&&(long)v.precision()-v.scale()<=14;}
     private static boolean positive(Long n){return n!=null&&n>0;}
     private static void require(boolean value,String reason){if(!value)throw new ServiceException("认证收货创建拒绝："+reason);}
-    private static String hash(DecisionActor a,Request r){try{var h=MessageDigest.getInstance("SHA-256");for(String s:List.of(a.tenantId(),a.userId().toString(),r.requestKey(),r.orderId().toString(),r.expectedOrderVersion().toString(),r.purchaseLineId().toString(),r.quantity().stripTrailingZeros().toPlainString(),r.warehouseId().toString(),r.areaId().toString(),r.locationId().toString(),r.actualArrivalDate().toString(),Objects.toString(r.remark(),""))){byte[]b=s.getBytes(StandardCharsets.UTF_8);h.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());h.update(b);}if(r.noticeId()!=null){for(String s:List.of("certified-notice-v1",r.noticeId().toString(),r.noticeLineId().toString())){byte[]b=s.getBytes(StandardCharsets.UTF_8);h.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());h.update(b);}}return HexFormat.of().formatHex(h.digest());}catch(java.security.NoSuchAlgorithmException e){throw new ServiceException("请求摘要算法不可用");}}
+
+    private static String hash(DecisionActor a, Request r) {
+        try {
+            var h = MessageDigest.getInstance("SHA-256");
+            for (String s :
+                    List.of(
+                            a.tenantId(),
+                            a.userId().toString(),
+                            r.requestKey(),
+                            r.orderId().toString(),
+                            r.expectedOrderVersion().toString(),
+                            r.purchaseLineId().toString(),
+                            r.quantity().stripTrailingZeros().toPlainString(),
+                            r.warehouseId().toString(),
+                            r.areaId().toString(),
+                            r.locationId().toString(),
+                            r.actualArrivalDate().toString(),
+                            Objects.toString(r.remark(), ""))) {
+                byte[] b = s.getBytes(StandardCharsets.UTF_8);
+                h.update(ByteBuffer.allocate(4).putInt(b.length).array());
+                h.update(b);
+            }
+            if (r.noticeId() != null) {
+                for (String s :
+                        List.of(
+                                "certified-notice-v1",
+                                r.noticeId().toString(),
+                                r.noticeLineId().toString())) {
+                    byte[] b = s.getBytes(StandardCharsets.UTF_8);
+                    h.update(ByteBuffer.allocate(4).putInt(b.length).array());
+                    h.update(b);
+                }
+            }
+            return HexFormat.of().formatHex(h.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new ServiceException("请求摘要算法不可用");
+        }
+    }
 }

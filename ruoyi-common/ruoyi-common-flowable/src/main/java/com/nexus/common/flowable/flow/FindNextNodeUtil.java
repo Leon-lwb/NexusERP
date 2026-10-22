@@ -8,9 +8,9 @@ import com.greenpineyu.fel.context.FelContext;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.flowable.bpmn.model.Process;
 import org.apache.commons.lang3.StringUtils;
 import org.flowable.bpmn.model.*;
+import org.flowable.bpmn.model.Process;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.repository.ProcessDefinition;
 
@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+// 同名类型说明：本文件同时使用 org.flowable.bpmn.model.Task 和 org.flowable.task.api.Task，后者保留全限定名以区分。
 
 /**
  * @author wanghuan

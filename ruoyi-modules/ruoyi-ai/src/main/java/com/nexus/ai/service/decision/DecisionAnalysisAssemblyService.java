@@ -2,22 +2,25 @@ package com.nexus.ai.service.decision;
 
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
-import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
-import com.nexus.common.ai.domain.entity.AiDecisionRun;
-import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
+import com.nexus.common.ai.domain.entity.AiDecisionRun;
+import com.nexus.common.core.exception.ServiceException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 服务端确定性终局分析；大模型仅提供文字，不参与数值计算。
@@ -83,10 +86,15 @@ public class DecisionAnalysisAssemblyService {
         double rate = supplier.stream().map(DeliveryContextSnapshot.SupplierMetricFact::onTimeRate)
             .mapToDouble(BigDecimal::doubleValue).average().orElse(0);
         int sample = supplier.stream().mapToInt(DeliveryContextSnapshot.SupplierMetricFact::sampleCount).sum();
-        Integer firstShortageDays = shortage.hasRisk() && shortage.earliestShortageDate() != null
-            ? (int) Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(snapshot.snapshotAt().toLocalDate(),
-                shortage.earliestShortageDate()))
-            : shortage.hasRisk() ? null : Integer.MAX_VALUE;
+        Integer firstShortageDays =
+                shortage.hasRisk() && shortage.earliestShortageDate() != null
+                        ? (int)
+                                Math.max(
+                                        0,
+                                        ChronoUnit.DAYS.between(
+                                                snapshot.snapshotAt().toLocalDate(),
+                                                shortage.earliestShortageDate()))
+                        : shortage.hasRisk() ? null : Integer.MAX_VALUE;
         var risk = scoring.score(new DeliveryRiskScoringService.RiskInput(
             baseline.kpis().totalTardinessDays(), firstShortageDays, utilization, rate, sample,
             !snapshot.currentSchedule().isEmpty(), snapshot.workOrders().stream().allMatch(work ->
@@ -123,9 +131,12 @@ public class DecisionAnalysisAssemblyService {
                 scenario.inputHash(), scenario.delayedOrders(), scenario.bottleneckResources()));
         }
         var normalized = evidenceService.normalize(evidence);
-        String recommended = linked.stream().filter(s -> s.feasible() && s.kpis() != null)
-            .min(java.util.Comparator.comparingInt(DecisionScenario::rank)).map(DecisionScenario::scenarioCode)
-            .orElse(null);
+        String recommended =
+                linked.stream()
+                        .filter(s -> s.feasible() && s.kpis() != null)
+                        .min(Comparator.comparingInt(DecisionScenario::rank))
+                        .map(DecisionScenario::scenarioCode)
+                        .orElse(null);
         DecisionBusinessRef ref = snapshot.rootBusinessRef();
         var summary = summaries.summarize(new DecisionSummaryService.SummaryInput(run.getId(), ref,
             risk.level(), risk.score(), risk.rootCauseCodes(), List.copyOf(linked), recommended, normalized,
@@ -142,9 +153,13 @@ public class DecisionAnalysisAssemblyService {
                 risk.level(), risk.score(), risk.rootCauseCodes(), List.copyOf(linked), recommended, normalized,
                 List.of(), null, null));
             List<String> warnings = new ArrayList<>(result.warnings());
-            warnings.add("SUMMARY_GUARD_REJECTED:" + checked.violations().stream()
-                .map(DecisionPolicyGuardService.PolicyViolation::code).distinct().sorted()
-                .collect(java.util.stream.Collectors.joining(",")));
+            warnings.add(
+                    "SUMMARY_GUARD_REJECTED:"
+                            + checked.violations().stream()
+                                    .map(DecisionPolicyGuardService.PolicyViolation::code)
+                                    .distinct()
+                                    .sorted()
+                                    .collect(Collectors.joining(",")));
             result = new DecisionResult(result.runId(), result.businessRef(), result.riskScore(), result.riskLevel(),
                 result.confidenceLevel(), result.rootCauseCodes(), result.baselineKpis(), result.scenarios(),
                 result.recommendedScenarioCode(), summaryText(safe), result.evidence(), result.actions(), List.copyOf(warnings));
@@ -173,7 +188,7 @@ public class DecisionAnalysisAssemblyService {
         text.put("uncertaintyNotes", summary.uncertaintyNotes());
         text.put("operatorChecklist", summary.operatorChecklist());
         text.put("summaryMode", summary.mode());
-        return java.util.Collections.unmodifiableMap(text);
+        return Collections.unmodifiableMap(text);
     }
 
     /** 比例只引用逐物料的缺口、需求分母和已核验基础单位，不引用混单位总和。 */
@@ -201,10 +216,27 @@ public class DecisionAnalysisAssemblyService {
         // 完整且明确为空的需求集合仍须绑定已核验快照，不能拿缺失清单当零缺口。
         if (parents.isEmpty()) parents.addAll(rootKeys);
         String ratioKey = "DERIVED:CALC:" + scope + ":shortage_gap_ratio";
-        evidence.add(new EvidenceItem(run.getId(), ratioKey, "DERIVED", "CALC", null, scope,
-            null, "shortage_gap_ratio", "逐物料等权缺口比例", "NUMBER", k.shortageGapRatio().toPlainString(),
-            "ratio", snapshot.snapshotAt(), snapshot.snapshotHash(), BigDecimal.ONE, true, false,
-            List.copyOf(new java.util.LinkedHashSet<>(parents)), null));
+        evidence.add(
+                new EvidenceItem(
+                        run.getId(),
+                        ratioKey,
+                        "DERIVED",
+                        "CALC",
+                        null,
+                        scope,
+                        null,
+                        "shortage_gap_ratio",
+                        "逐物料等权缺口比例",
+                        "NUMBER",
+                        k.shortageGapRatio().toPlainString(),
+                        "ratio",
+                        snapshot.snapshotAt(),
+                        snapshot.snapshotHash(),
+                        BigDecimal.ONE,
+                        true,
+                        false,
+                        List.copyOf(new LinkedHashSet<>(parents)),
+                        null));
         keys.add(ratioKey);
     }
 

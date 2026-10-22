@@ -7,6 +7,8 @@ import com.nexus.erp.ai.adapter.ErpPurchaseInventorySourceVerifier.InventorySnap
 import com.nexus.erp.pu.mapper.ErpPurchaseStockLineageMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseStockLineageMapper.*;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,9 +84,12 @@ public class ErpPurchaseStockLineageVerifier {
         this(mapper,inventoryVerifier,transactionQualification,null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public ErpPurchaseStockLineageVerifier(ErpPurchaseStockLineageMapper mapper,ErpPurchaseInventorySourceVerifier inventoryVerifier,
-            PuRequirementErpTransactionQualification transactionQualification,ErpCertifiedSourceBirthReader birthReader){
+    @Autowired
+    public ErpPurchaseStockLineageVerifier(
+            ErpPurchaseStockLineageMapper mapper,
+            ErpPurchaseInventorySourceVerifier inventoryVerifier,
+            PuRequirementErpTransactionQualification transactionQualification,
+            ErpCertifiedSourceBirthReader birthReader) {
         this.birthReader=birthReader;
         this.mapper = Objects.requireNonNull(mapper);
         this.inventoryVerifier = Objects.requireNonNull(inventoryVerifier);

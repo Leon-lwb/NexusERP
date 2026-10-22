@@ -2,8 +2,17 @@ package com.nexus.ai.engineering;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.jupiter.api.Test;
+import com.nexus.ai.engineering.domain.EngineeringLease;
+import com.nexus.ai.engineering.domain.EngineeringTaskEvent;
+import com.nexus.ai.engineering.service.EngineeringTaskService;
+import com.nexus.common.ai.engineering.EngineeringException;
+import com.nexus.common.ai.engineering.EngineeringStage;
 
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+
+import java.util.Set;
 import java.util.concurrent.*;
 
 class EngineeringTaskLeaseJdbcTest {
@@ -49,10 +58,10 @@ class EngineeringTaskLeaseJdbcTest {
         var c = f.pair();
         var principal = f.online(c);
         var task = f.tasks.createDraft(f.actor, f.command(c.deviceId(), "rollback"));
-        var repository = org.mockito.Mockito.spy(f.repository);
+        var repository = Mockito.spy(f.repository);
         var entered = new CountDownLatch(1);
         var canceled = new CountDownLatch(1);
-        org.mockito.Mockito.doAnswer(
+        Mockito.doAnswer(
                         invocation -> {
                             if (invocation
                                     .getArgument(0, String.class)
@@ -63,11 +72,9 @@ class EngineeringTaskLeaseJdbcTest {
                             return invocation.callRealMethod();
                         })
                 .when(repository)
-                .update(
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.any(Object[].class));
+                .update(ArgumentMatchers.anyString(), ArgumentMatchers.any(Object[].class));
         var tasks =
-                new com.nexus.ai.engineering.service.EngineeringTaskService(
+                new EngineeringTaskService(
                         repository,
                         f.devices,
                         f.access,
@@ -84,8 +91,7 @@ class EngineeringTaskLeaseJdbcTest {
             canceled.countDown();
             var error =
                     assertThrows(ExecutionException.class, () -> result.get(5, TimeUnit.SECONDS));
-            assertInstanceOf(
-                    com.nexus.common.ai.engineering.EngineeringException.class, error.getCause());
+            assertInstanceOf(EngineeringException.class, error.getCause());
             assertNull(
                     f.repository
                             .device(f.actor.tenantId(), f.actor.userId(), principal.deviceId())
@@ -113,13 +119,12 @@ class EngineeringTaskLeaseJdbcTest {
                                             .complete(
                                                     f.principal,
                                                     id,
-                                                    new com.nexus.ai.engineering.domain
-                                                            .EngineeringLease(
+                                                    new EngineeringLease(
                                                             f.claim.attempt(),
                                                             f.claim.leaseToken(),
                                                             f.claim.revision()))
                                             .state();
-                                } catch (com.nexus.common.ai.engineering.EngineeringException e) {
+                                } catch (EngineeringException e) {
                                     return "CONFLICT";
                                 }
                             });
@@ -137,28 +142,28 @@ class EngineeringTaskLeaseJdbcTest {
                 f.tasks.event(
                         f.principal,
                         id,
-                        new com.nexus.ai.engineering.domain.EngineeringTaskEvent(
+                        new EngineeringTaskEvent(
                                 f.claim.attempt(),
                                 f.claim.leaseToken(),
                                 current.revision(),
                                 1,
-                                com.nexus.common.ai.engineering.EngineeringStage.FINALIZING,
+                                EngineeringStage.FINALIZING,
                                 "取消已确认",
                                 true,
                                 null));
             var terminal = f.tasks.detail(f.actor, id);
-            assertTrue(java.util.Set.of("SUCCEEDED", "CANCELED").contains(terminal.state()));
+            assertTrue(Set.of("SUCCEEDED", "CANCELED").contains(terminal.state()));
             assertNull(
                     f.repository
                             .device(f.actor.tenantId(), f.actor.userId(), f.principal.deviceId())
                             .getBusyTaskId());
             assertThrows(
-                    com.nexus.common.ai.engineering.EngineeringException.class,
+                    EngineeringException.class,
                     () ->
                             f.artifacts.complete(
                                     f.principal,
                                     id,
-                                    new com.nexus.ai.engineering.domain.EngineeringLease(
+                                    new EngineeringLease(
                                             f.claim.attempt(),
                                             f.claim.leaseToken(),
                                             terminal.revision())));

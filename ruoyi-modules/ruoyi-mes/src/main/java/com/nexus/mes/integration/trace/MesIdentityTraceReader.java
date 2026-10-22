@@ -1,16 +1,22 @@
 package com.nexus.mes.integration.trace;
 
+import static com.nexus.common.trace.TraceReadValues.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.IdentityTraceReadPort;
+import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.mes.trace.MesTraceContext;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
+import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.common.trace.TraceReadValues.*;
 
 /**
  * 读取产品、实际组件消耗及生产质量事实，明确区分单件分配与工单可能影响。
@@ -21,7 +27,7 @@ import static com.nexus.common.trace.TraceReadValues.*;
 public class MesIdentityTraceReader implements IdentityTraceReadPort {
     private final JdbcTemplate jdbc;
     private final MesTraceContext context;
-    private final com.nexus.common.trace.port.SerialIdentityPort canonicalIdentities;
+    private final SerialIdentityPort canonicalIdentities;
 
     @Override
     public String sourceModule() {
@@ -440,10 +446,8 @@ public class MesIdentityTraceReader implements IdentityTraceReadPort {
                 limit);
     }
 
-    private static java.math.BigDecimal decimal(Object value) {
-        return value == null
-                ? java.math.BigDecimal.ZERO
-                : new java.math.BigDecimal(value.toString());
+    private static BigDecimal decimal(Object value) {
+        return value == null ? BigDecimal.ZERO : new BigDecimal(value.toString());
     }
 
     private static TracePage<Long> idPage(List<Long> rows, int limit) {

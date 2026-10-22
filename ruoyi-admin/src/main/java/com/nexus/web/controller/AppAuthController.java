@@ -4,8 +4,8 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import cn.hutool.http.HttpUtil;
+
 import com.nexus.common.core.constant.Constants;
 import com.nexus.common.core.constant.GlobalConstants;
 import com.nexus.common.core.constant.SystemConstants;
@@ -15,11 +15,12 @@ import com.nexus.common.core.domain.model.PasswordLoginBody;
 import com.nexus.common.core.domain.model.SmsLoginBody;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.json.utils.JsonUtils;
-import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.ratelimiter.annotation.RateLimiter;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.system.domain.bo.SysTenantBo;
+import com.nexus.system.domain.bo.SysUserBo;
 import com.nexus.system.domain.vo.SysClientVo;
 import com.nexus.system.domain.vo.SysTenantVo;
 import com.nexus.system.domain.vo.SysUserVo;
@@ -28,11 +29,17 @@ import com.nexus.system.service.ISysTenantService;
 import com.nexus.system.service.ISysUserService;
 import com.nexus.web.domain.vo.LoginVo;
 import com.nexus.web.domain.vo.TenantListVo;
-import me.zhyd.oauth.cache.AuthStateCache;
 import com.nexus.web.service.IAuthStrategy;
 import com.nexus.web.service.SysLoginService;
-import org.springframework.beans.factory.annotation.Value;
+
 import jakarta.validation.constraints.Pattern;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import me.zhyd.oauth.cache.AuthStateCache;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +47,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * App移动端认证控制器
@@ -202,7 +210,9 @@ public class AppAuthController {
         loginBodyMap.put("tenantId", tenantId);
         loginBodyMap.put("source", source);
         loginBodyMap.put("socialCode", socialCode);
-        loginBodyMap.put("socialState", StrUtil.isNotBlank(socialState) ? socialState : java.util.UUID.randomUUID().toString());
+        loginBodyMap.put(
+                "socialState",
+                StrUtil.isNotBlank(socialState) ? socialState : UUID.randomUUID().toString());
 
         SysClientVo client = clientService.queryByClientId(APP_CLIENT_ID);
         if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
@@ -322,7 +332,7 @@ public class AppAuthController {
             String tokenUrl = String.format(
                 "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s",
                 client.getAppid(), client.getAppSecret());
-            String tokenResp = cn.hutool.http.HttpUtil.get(tokenUrl);
+            String tokenResp = HttpUtil.get(tokenUrl);
             Map<String, Object> tokenMap = JsonUtils.parseMap(tokenResp);
             String accessToken = (String) tokenMap.get("access_token");
             if (StrUtil.isBlank(accessToken)) {
@@ -334,7 +344,7 @@ public class AppAuthController {
             String phoneUrl = "https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=" + accessToken;
             Map<String, String> phoneBody = new HashMap<>();
             phoneBody.put("code", phoneCode);
-            String phoneResp = cn.hutool.http.HttpUtil.post(phoneUrl, JsonUtils.toJsonString(phoneBody), 5000);
+            String phoneResp = HttpUtil.post(phoneUrl, JsonUtils.toJsonString(phoneBody), 5000);
             Map<String, Object> phoneMap = JsonUtils.parseMap(phoneResp);
             Object phoneInfo = phoneMap.get("phone_info");
             if (ObjectUtil.isNull(phoneInfo)) {
@@ -355,7 +365,7 @@ public class AppAuthController {
             if (ObjectUtil.isNull(user)) {
                 return R.fail("用户不存在");
             }
-            com.nexus.system.domain.bo.SysUserBo userBo = new com.nexus.system.domain.bo.SysUserBo();
+            SysUserBo userBo = new SysUserBo();
             userBo.setUserId(userId);
             userBo.setPhonenumber(phoneNumber);
             userBo.setUpdateBy(userId);

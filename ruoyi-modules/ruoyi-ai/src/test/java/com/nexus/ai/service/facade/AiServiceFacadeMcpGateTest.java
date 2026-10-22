@@ -1,32 +1,39 @@
 package com.nexus.ai.service.facade;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.agent.McpDocumentAgent;
+import com.nexus.ai.mcp.service.ToolProviderFactory;
 import com.nexus.ai.observability.AiAgentListener;
 import com.nexus.ai.observability.OutputChannel;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.chat.PersistentChatMemoryStore;
 import com.nexus.ai.service.prompt.PromptTemplateService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
-import com.nexus.ai.mcp.service.ToolProviderFactory;
-import com.nexus.common.ai.domain.entity.AiTool;
+import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.dto.AiChatRequest;
-import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.ai.mapper.AiMessageMapper;
+import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.agent.AgentBuilder;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorAgentService;
-import dev.langchain4j.agent.tool.ToolExecutionRequest;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.tool.ToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutionResult;
+import dev.langchain4j.service.tool.ToolExecutor;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.service.tool.ToolProviderResult;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -35,14 +42,11 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** Facade Gate 真实控制流测试；所有 Agent、模型、Mapper、SSE 均 mock，不调用运行服务。 */
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -126,8 +130,12 @@ class AiServiceFacadeMcpGateTest {
         for (Class<?> type : constructor.getParameterTypes()) {
             dependencies.computeIfAbsent(type, key -> key == Executor.class ? (Executor) Runnable::run : mock(key));
         }
-        AiServiceFacade facade = (AiServiceFacade) constructor.newInstance(java.util.Arrays.stream(constructor.getParameterTypes())
-            .map(dependencies::get).toArray());
+        AiServiceFacade facade =
+                (AiServiceFacade)
+                        constructor.newInstance(
+                                Arrays.stream(constructor.getParameterTypes())
+                                        .map(dependencies::get)
+                                        .toArray());
         AiToolMapper toolMapper = (AiToolMapper) dependencies.get(AiToolMapper.class);
         if (toolMapper != null) {
             AiTool audited = new AiTool();
@@ -213,13 +221,13 @@ class AiServiceFacadeMcpGateTest {
             AiMessageMapper messages = (AiMessageMapper) dependencies.get(AiMessageMapper.class);
             AiAgentListener listener = (AiAgentListener) dependencies.get(AiAgentListener.class);
             if (expectedSuccess) {
-                verify(messages).insert(any(com.nexus.common.ai.domain.entity.AiMessage.class));
+                verify(messages).insert(any(AiMessage.class));
                 sse.verify(() -> AiSseMessageHelper.sendContent(7L, finalResult));
                 sse.verify(() -> AiSseMessageHelper.sendDone(7L));
                 verify(channel).complete();
                 verify(channel, never()).completeWithError(any());
             } else {
-                verify(messages, never()).insert(any(com.nexus.common.ai.domain.entity.AiMessage.class));
+                verify(messages, never()).insert(any(AiMessage.class));
                 sse.verify(() -> AiSseMessageHelper.sendContent(anyLong(), any()), never());
                 sse.verify(() -> AiSseMessageHelper.sendDone(anyLong()), never());
                 verify(channel, never()).complete();

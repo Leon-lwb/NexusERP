@@ -4,12 +4,16 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.StrUtil;
+
 import org.springframework.util.AntPathMatcher;
 
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.core.utils.StringUtils 和
+// org.apache.commons.lang3.StringUtils，后者保留全限定名以区分。
 
 /**
  * 字符串工具类

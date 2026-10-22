@@ -1,11 +1,27 @@
 package com.nexus.flow.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nexus.flow.engine.FlowEngine;
+import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flow.domain.bo.FlowBo;
+import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.common.flow.domain.entity.FlowInstance;
+import com.nexus.common.flow.domain.vo.FlowVersionVo;
+import com.nexus.common.flow.domain.vo.FlowVo;
+import com.nexus.common.flow.service.IFlowInstanceService;
+import com.nexus.common.flow.service.IFlowService;
+import com.nexus.common.flow.service.IFlowVersionService;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.common.web.core.BaseController;
 import com.nexus.flow.adapter.DecisionFlowAccessGuard;
+import com.nexus.flow.engine.FlowEngine;
 import com.nexus.flow.model.FlowEdgeDef;
 import com.nexus.flow.model.FlowGraph;
 import com.nexus.flow.model.FlowNodeDef;
@@ -14,25 +30,17 @@ import com.nexus.flow.node.FlowNodeProvider;
 import com.nexus.flow.node.FlowNodeRegistry;
 import com.nexus.flow.node.NodeParamSchema;
 import com.nexus.flow.state.FlowState;
-import com.nexus.common.flow.domain.bo.FlowBo;
-import com.nexus.common.flow.domain.entity.Flow;
-import com.nexus.common.flow.domain.entity.FlowInstance;
-import com.nexus.common.flow.domain.vo.FlowVo;
-import com.nexus.common.flow.domain.vo.FlowVersionVo;
-import com.nexus.common.flow.service.IFlowInstanceService;
-import com.nexus.common.flow.service.IFlowService;
-import com.nexus.common.flow.service.IFlowVersionService;
-import com.nexus.common.core.domain.R;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.mybatis.core.page.PageQuery;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.common.web.core.BaseController;
+import com.nexus.flow.template.FlowTemplateCatalog;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +68,9 @@ public class FlowController extends BaseController {
     private final FlowEngine flowEngine;
     /** 流程节点注册中心（node-types 元数据） */
     private final FlowNodeRegistry flowNodeRegistry;
+
     /** 内置流程模板目录（templates 接口） */
-    private final com.nexus.flow.template.FlowTemplateCatalog flowTemplateCatalog;
+    private final FlowTemplateCatalog flowTemplateCatalog;
 
     /**
      * 分页查询流程列表
@@ -99,7 +108,7 @@ public class FlowController extends BaseController {
     @GetMapping("/node-types")
     public R<List<Map<String, Object>>> nodeTypes() {
         Collection<FlowNodeProvider> providers = flowNodeRegistry.getAll();
-        List<Map<String, Object>> list = new java.util.ArrayList<>();
+        List<Map<String, Object>> list = new ArrayList<>();
         for (FlowNodeProvider provider : providers) {
             Map<String, Object> node = new LinkedHashMap<>();
             node.put("type", provider.getNodeType());
@@ -207,8 +216,12 @@ public class FlowController extends BaseController {
     @SaCheckPermission("ai:flow:remove")
     @DeleteMapping("/{flowIds}")
     public R<Void> remove(@PathVariable Long[] flowIds) {
-        if (flowIds == null || java.util.Arrays.stream(flowIds).anyMatch(id ->
-            DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(id))))
+        if (flowIds == null
+                || Arrays.stream(flowIds)
+                        .anyMatch(
+                                id ->
+                                        DecisionFlowAccessGuard.protectedFlow(
+                                                aiFlowService.selectById(id))))
             return R.fail("工业系统流程不可通用删除");
         return toAjax(aiFlowService.deleteByIds(flowIds));
     }
@@ -645,14 +658,15 @@ public class FlowController extends BaseController {
             Long instanceId = flowEngine.start(flow, input, "WEBHOOK", tenantIdStr, userId, null);
             // x-wait: true → 同步等待终态（最多 60s）并返回完整结果
             if ("true".equalsIgnoreCase(waitHeader) || "1".equals(waitHeader)) {
-                Map<String, Object> result = new java.util.HashMap<>();
+                Map<String, Object> result = new HashMap<>();
                 result.put("instanceId", instanceId);
                 long deadline = System.currentTimeMillis() + 60000;
                 FlowInstance inst = null;
                 while (System.currentTimeMillis() < deadline) {
                     try {
-                        inst = com.nexus.common.tenant.helper.TenantHelper.dynamic(tenantIdStr,
-                            () -> instanceService.selectById(instanceId));
+                        inst =
+                                TenantHelper.dynamic(
+                                        tenantIdStr, () -> instanceService.selectById(instanceId));
                     } catch (Exception ignore) {
                         // 忽略瞬时查询异常
                     }

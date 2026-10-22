@@ -3,11 +3,13 @@ package com.nexus.ai.service.query;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.common.report.ReportActor;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -17,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
 
 /**
  * ERP 表结构缓存管理器
@@ -726,10 +730,8 @@ public class ErpTableSchemaManager {
 
     // ==================== 内部类 ====================
 
-    /**
-     * 表结构信息
-     */
-    @lombok.Data
+    /** 表结构信息 */
+    @Data
     public static class TableStructure {
         /** 表名 */
         private String tableName;
@@ -747,10 +749,8 @@ public class ErpTableSchemaManager {
         private String ddl;
     }
 
-    /**
-     * 列信息
-     */
-    @lombok.Data
+    /** 列信息 */
+    @Data
     public static class ColumnInfo {
         /** 列名 */
         private String columnName;
@@ -768,10 +768,8 @@ public class ErpTableSchemaManager {
         private String enumValues;
     }
 
-    /**
-     * 外键关系
-     */
-    @lombok.Data
+    /** 外键关系 */
+    @Data
     public static class ForeignKeyRelation {
         /** 本表列名 */
         private String columnName;

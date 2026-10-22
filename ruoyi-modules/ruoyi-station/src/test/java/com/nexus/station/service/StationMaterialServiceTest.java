@@ -1,5 +1,17 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
@@ -13,6 +25,7 @@ import com.nexus.station.domain.MesMaterialLoad;
 import com.nexus.station.domain.dto.StationMaterialLoadDto;
 import com.nexus.station.mapper.MesMaterialLoadMapper;
 import com.nexus.station.mapper.StationErpBatchMapper;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,22 +36,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 
 /**
  * StationMaterialService 单元测试 — 上料防错比对与台账(C19/C20)。
@@ -309,8 +310,8 @@ class StationMaterialServiceTest {
         line.setChildMaterialId(materialId);
         line.setChildMaterialCode(code);
         line.setChildMaterialName(name);
-        line.setQuantityPerParent(new java.math.BigDecimal("2.00"));
-        line.setTotalQuantity(new java.math.BigDecimal("2.04"));
+        line.setQuantityPerParent(new BigDecimal("2.00"));
+        line.setTotalQuantity(new BigDecimal("2.04"));
         line.setProcessCode(processCode);
         line.setWorkstationCode("GZZ0002");
         return line;

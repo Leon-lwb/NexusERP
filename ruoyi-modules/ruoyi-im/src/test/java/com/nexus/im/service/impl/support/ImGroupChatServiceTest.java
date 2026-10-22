@@ -1,5 +1,16 @@
 package com.nexus.im.service.impl.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,12 +19,15 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.im.constants.ImPayloadConstants;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
+import com.nexus.im.domain.ImMessage;
+import com.nexus.im.domain.SysUserNotification;
 import com.nexus.im.domain.bo.ImGroupCreateBo;
 import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.vo.ImGroupMemberVo;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
+import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
@@ -22,13 +36,15 @@ import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -40,21 +56,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import org.mockito.ArgumentMatchers;
 
 /**
  * P3-4 + P3-6: P2-4 TOCTOU + P2-5 批量插入 + P2-6 listGroupMembers 批量化回归测试。
@@ -85,16 +88,26 @@ import org.mockito.ArgumentMatchers;
  */
 class ImGroupChatServiceTest extends ImUnitTestBase {
 
-    @Mock private ImMessageMapper imMessageMapper;
-    @Mock private ImGroupMapper imGroupMapper;
-    @Mock private ImGroupMemberMapper imGroupMemberMapper;
-    @Mock private ISysUserService sysUserService;
-    @Mock private ISysUserNotificationService sysUserNotificationService;
-    @Mock private ImRealtimePush imRealtimePush;
-    @Mock private ImMessageTypeRegistry messageTypeRegistry;
-    @Mock private ImChatSupport support;
-    @Mock private ImConversationCache conversationCache;
-    @Mock private com.nexus.im.mapper.SysUserNotificationMapper notificationMapper;
+    @Mock
+    private ImMessageMapper imMessageMapper;
+    @Mock
+    private ImGroupMapper imGroupMapper;
+    @Mock
+    private ImGroupMemberMapper imGroupMemberMapper;
+    @Mock
+    private ISysUserService sysUserService;
+    @Mock
+    private ISysUserNotificationService sysUserNotificationService;
+    @Mock
+    private ImRealtimePush imRealtimePush;
+    @Mock
+    private ImMessageTypeRegistry messageTypeRegistry;
+    @Mock
+    private ImChatSupport support;
+    @Mock
+    private ImConversationCache conversationCache;
+    @Mock
+    private SysUserNotificationMapper notificationMapper;
 
     @InjectMocks
     private ImGroupChatService imGroupChatService;
@@ -125,7 +138,7 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, ImGroupMember.class);
         TableInfoHelper.initTableInfo(assistant, ImGroup.class);
-        TableInfoHelper.initTableInfo(assistant, com.nexus.im.domain.ImMessage.class);
+        TableInfoHelper.initTableInfo(assistant, ImMessage.class);
     }
 
     @BeforeEach
@@ -335,9 +348,10 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
         lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
 
         // 50 个群成员（含群主 ME_USER_ID 和 49 个其他用户）
-        List<ImGroupMember> members = LongStream.rangeClosed(MEMBER_101, MEMBER_101 + 48)
-            .mapToObj(uid -> ImTestFixture.buildGroupMember(GROUP_ID, uid))
-            .collect(java.util.stream.Collectors.toList());
+        List<ImGroupMember> members =
+                LongStream.rangeClosed(MEMBER_101, MEMBER_101 + 48)
+                        .mapToObj(uid -> ImTestFixture.buildGroupMember(GROUP_ID, uid))
+                        .collect(Collectors.toList());
         members.add(ImTestFixture.buildGroupMember(GROUP_ID, ME_USER_ID));
         when(imGroupMemberMapper.selectList(any())).thenReturn(members);
 
@@ -450,10 +464,11 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
 
     private void prepareUnread(int count, int senderCount) {
         when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
-        List<com.nexus.im.domain.SysUserNotification> notices = new ArrayList<>();
-        List<com.nexus.im.domain.ImMessage> messages = new ArrayList<>();
+        List<SysUserNotification> notices = new ArrayList<>();
+        List<ImMessage> messages = new ArrayList<>();
         for (long i = 1; i <= count; i++) {
-            com.nexus.im.domain.SysUserNotification notice = ImTestFixture.buildNotification(2000L + i, ME_USER_ID, "im_group");
+            SysUserNotification notice =
+                    ImTestFixture.buildNotification(2000L + i, ME_USER_ID, "im_group");
             notice.setRefId(String.valueOf(1000L + i));
             notices.add(notice);
             messages.add(ImTestFixture.buildMessage(1000L + i, MEMBER_101 + (i - 1) % senderCount, null, GROUP_ID, "消息"));

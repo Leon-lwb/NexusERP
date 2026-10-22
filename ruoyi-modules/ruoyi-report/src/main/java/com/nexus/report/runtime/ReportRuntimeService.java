@@ -1,18 +1,29 @@
 package com.nexus.report.runtime;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.report.*;
+import com.nexus.common.report.DatasetQueryValidator;
 import com.nexus.report.config.ReportProperties;
 import com.nexus.report.domain.*;
 import com.nexus.report.domain.ReportRecords.*;
 import com.nexus.report.engine.*;
+import com.nexus.report.export.ReportSpreadsheetExporter;
 import com.nexus.report.mapper.JdbcReportStore;
+import com.nexus.report.pivot.AggregationExecutor;
+import com.nexus.report.pivot.PivotProjection;
 import com.nexus.report.service.ReportDefinitionService;
 import com.nexus.report.service.ReportDefinitionService.Binding;
 import com.nexus.report.storage.ReportArtifactStore;
 
+import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /** 每次交付重新检查固定版本、输入、数据范围及工作线程持有的租约。 */
 public class ReportRuntimeService {
@@ -69,7 +80,7 @@ public class ReportRuntimeService {
      * @param value 当前受控操作的value输入
      */
     public void metrics(ReportRuntimeMetrics value) {
-        this.metrics = java.util.Objects.requireNonNull(value);
+        this.metrics = Objects.requireNonNull(value);
     }
 
     /**
@@ -137,9 +148,7 @@ public class ReportRuntimeService {
             String checksum,
             List<ReportCalculator.SummaryValue> summaries,
             String planChecksum,
-            @com.fasterxml.jackson.annotation.JsonInclude(
-                            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-                    SourceConstraint constraint) {
+            @JsonInclude(JsonInclude.Include.NON_NULL) SourceConstraint constraint) {
         /**
          * 保留第一版运行配置构造方式。
          *
@@ -223,7 +232,7 @@ public class ReportRuntimeService {
      *
      * @param guard 当前契约的guard配置或状态
      */
-    public void constraints(java.util.function.BiConsumer<ReportActor, SourceConstraint> guard) {
+    public void constraints(BiConsumer<ReportActor, SourceConstraint> guard) {
         Objects.requireNonNull(guard);
         constraintGuard = (actor, source, runId) -> guard.accept(actor, source);
     }
@@ -250,7 +259,7 @@ public class ReportRuntimeService {
                     (name, value) ->
                             result.put(
                                     name,
-                                    value instanceof java.math.BigDecimal decimal
+                                    value instanceof BigDecimal decimal
                                             ? decimal.toPlainString()
                                             : value instanceof Number ? value.toString() : value));
         return Collections.unmodifiableMap(result);
@@ -365,11 +374,9 @@ public class ReportRuntimeService {
      * @param budget 当前操作的 {@code budget} 输入
      * @return 当前处理返回的固定结果
      */
-    public com.nexus.report.export.ReportSpreadsheetExporter spreadsheetExporter(
-            Access previous, long budget) {
+    public ReportSpreadsheetExporter spreadsheetExporter(Access previous, long budget) {
         var access = recheck(previous);
-        return new com.nexus.report.export.ReportSpreadsheetExporter(
-                artifacts, access.actor().tenantId(), budget);
+        return new ReportSpreadsheetExporter(artifacts, access.actor().tenantId(), budget);
     }
 
     /**
@@ -379,7 +386,7 @@ public class ReportRuntimeService {
      * @param code 业务编码
      * @return 当前处理返回的固定结果
      */
-    public java.util.List<ReportDefinitionService.BusinessTemplate> businessTemplates(
+    public List<ReportDefinitionService.BusinessTemplate> businessTemplates(
             ReportActor actor, String code) {
         return definitions.businessTemplates(actor, code);
     }
@@ -635,7 +642,7 @@ public class ReportRuntimeService {
      * @param id 固定标识，按字符串传输以保留完整精度
      * @return 当前受控处理的固定结果
      */
-    public com.nexus.report.pivot.AggregationExecutor.Result pivot(ReportActor actor, String id) {
+    public AggregationExecutor.Result pivot(ReportActor actor, String id) {
         var access = access(actor, id, PREVIEW, "VIEW");
         var result = pivotResult(access);
         recheck(access);
@@ -652,12 +659,12 @@ public class ReportRuntimeService {
      * @param size 当前契约的size配置或状态
      * @return 当前受控处理的固定结果
      */
-    public com.nexus.report.pivot.AggregationExecutor.Drill drill(
+    public AggregationExecutor.Drill drill(
             ReportActor actor, String id, String coordinate, int offset, int size) {
         var access = access(actor, id, PREVIEW, "VIEW");
         var rows = pivotRows(access);
         var result =
-                new com.nexus.report.pivot.AggregationExecutor()
+                new AggregationExecutor()
                         .drill(
                                 access.binding().compiled().dsl().pivot(),
                                 access.binding().compiled().descriptor(),
@@ -675,10 +682,10 @@ public class ReportRuntimeService {
      * @param previous 当前契约的previous配置或状态
      * @return 当前受控处理的固定结果
      */
-    public com.nexus.report.pivot.PivotProjection.Projection pivotProjection(Access previous) {
+    public PivotProjection.Projection pivotProjection(Access previous) {
         var access = recheck(previous);
         var result =
-                new com.nexus.report.pivot.PivotProjection()
+                new PivotProjection()
                         .project(access.binding().compiled().dsl(), pivotResult(access));
         recheck(access);
         return result;
@@ -690,8 +697,8 @@ public class ReportRuntimeService {
      * @param access 当前契约的access配置或状态
      * @return 当前受控处理的固定结果
      */
-    private com.nexus.report.pivot.AggregationExecutor.Result pivotResult(Access access) {
-        return new com.nexus.report.pivot.AggregationExecutor()
+    private AggregationExecutor.Result pivotResult(Access access) {
+        return new AggregationExecutor()
                 .aggregate(
                         access.binding().compiled().dsl().pivot(),
                         access.binding().compiled().descriptor(),
@@ -940,9 +947,7 @@ public class ReportRuntimeService {
      * @param action 受控资源操作
      */
     public void withLayoutFont(
-            Access previous,
-            ReportCancellation cancellation,
-            java.util.function.Consumer<java.nio.file.Path> action) {
+            Access previous, ReportCancellation cancellation, Consumer<Path> action) {
         cancellation.check();
         Access access = recheck(previous);
         ready(access.run());
@@ -1073,8 +1078,7 @@ public class ReportRuntimeService {
         var parameters =
                 source == null
                         ? definitions.parameters(binding, input)
-                        : com.nexus.common.report.DatasetQueryValidator.parameters(
-                                binding.compiled().descriptor(), input);
+                        : DatasetQueryValidator.parameters(binding.compiled().descriptor(), input);
         String scope = definitions.fingerprint(current, binding);
         if (source != null) constraintGuard.check(current, source, null);
         var payload = new Payload(parameters, artifacts.storeId(), null, List.of(), null, source);
@@ -1389,7 +1393,7 @@ public class ReportRuntimeService {
      */
     public void each(
             Access previous,
-            java.util.function.Consumer<Map<String, TypedValue>> consumer,
+            Consumer<Map<String, TypedValue>> consumer,
             ReportCancellation cancellation) {
         cancellation.check();
         Access access = recheck(previous);

@@ -1,5 +1,11 @@
 package com.nexus.erp.prd.schedule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.nexus.erp.prd.schedule.ScheduleModel.ResourceLoad;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleResult;
@@ -7,21 +13,18 @@ import com.nexus.erp.prd.schedule.ScheduleModel.ScheduledTask;
 import com.nexus.erp.prd.schedule.ScheduleModel.StepInfo;
 import com.nexus.erp.prd.schedule.ScheduleModel.Strategy;
 import com.nexus.erp.prd.schedule.ScheduleModel.WoInfo;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * APS 排程引擎单元测试（纯算法，不依赖 Spring 或数据库）
@@ -309,11 +312,13 @@ class PrdScheduleEngineTest {
         schedule.setHolidays(Set.of(D1.plusDays(1)));
         ScheduledTask task = PrdScheduleEngine.schedule(schedule).getTasks().get(0);
 
-        var getter = java.util.Arrays.stream(ScheduledTask.class.getMethods())
-            .filter(method -> method.getName().equals("getDayLoads"))
-            .findFirst().orElse(null);
-        org.junit.jupiter.api.Assertions.assertNotNull(getter,
-            "a saved schedule must expose the engine's per-day resource load facts");
+        var getter =
+                Arrays.stream(ScheduledTask.class.getMethods())
+                        .filter(method -> method.getName().equals("getDayLoads"))
+                        .findFirst()
+                        .orElse(null);
+        Assertions.assertNotNull(
+                getter, "a saved schedule must expose the engine's per-day resource load facts");
         @SuppressWarnings("unchecked")
         Map<LocalDate, BigDecimal> observed = (Map<LocalDate, BigDecimal>) getter.invoke(task);
         assertEquals(Map.of(D1, BigDecimal.ONE, D1.plusDays(2), BigDecimal.valueOf(2)), observed);

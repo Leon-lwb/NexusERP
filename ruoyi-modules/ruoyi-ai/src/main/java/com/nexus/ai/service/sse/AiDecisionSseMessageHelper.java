@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.ai.decision.dto.DecisionOutcome;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 /**
  * 基于已有分布式 SSE 通道发送单次运行有序决策事件。
@@ -19,12 +21,14 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class AiDecisionSseMessageHelper {
     private final ObjectMapper mapper;
-    private final java.util.function.Consumer<SseMessageDto> publisher;
+    private final Consumer<SseMessageDto> publisher;
+
     @Autowired
     public AiDecisionSseMessageHelper(ObjectMapper mapper) {
         this(mapper, SseMessageUtils::publishMessage);
     }
-    AiDecisionSseMessageHelper(ObjectMapper mapper, java.util.function.Consumer<SseMessageDto> publisher) {
+
+    AiDecisionSseMessageHelper(ObjectMapper mapper, Consumer<SseMessageDto> publisher) {
         this.mapper = mapper; this.publisher = publisher;
     }
     private final Map<Long, AtomicLong> sequences = new ConcurrentHashMap<>();

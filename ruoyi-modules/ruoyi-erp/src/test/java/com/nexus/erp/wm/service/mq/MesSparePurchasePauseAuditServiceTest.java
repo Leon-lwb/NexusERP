@@ -1,11 +1,18 @@
 package com.nexus.erp.wm.service.mq;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.domain.DeadLetterRecord;
 import com.nexus.common.mq.domain.DeadLetterRecordMapper;
+import com.nexus.common.web.core.BigNumberSerializer;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,10 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -85,8 +88,8 @@ class MesSparePurchasePauseAuditServiceTest {
             return 1;
         });
         ObjectMapper global = new ObjectMapper();
-        var module = new com.fasterxml.jackson.databind.module.SimpleModule();
-        module.addSerializer(Long.class, com.nexus.common.web.core.BigNumberSerializer.instance);
+        var module = new SimpleModule();
+        module.addSerializer(Long.class, BigNumberSerializer.instance);
         global.registerModule(module);
         var original = new LinkedHashMap<>(payload());
         original.put("materialId", 2100000000000000123L);

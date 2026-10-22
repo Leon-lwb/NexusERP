@@ -1,5 +1,15 @@
 package com.nexus.erp.prd;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.erp.bd.domain.BdBom;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdUnitOfMeasure;
@@ -22,12 +32,14 @@ import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoSalesOrderLineService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -36,19 +48,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
-/**
- * 生产计划转工单数量口径回归测试。
- */
+/** 生产计划转工单数量口径回归测试。 */
 @ExtendWith(MockitoExtension.class)
 @Tag("dev")
 class PrdProductionPlanServiceImplTest {
@@ -332,7 +334,7 @@ class PrdProductionPlanServiceImplTest {
         verify(prdWorkOrderMapper).selectCount(any());
         verify(autoCodeUtil, never()).genSerialCode(any(), any());
         verify(prdWorkOrderMapper, never()).insert(any(PrdWorkOrder.class));
-        org.mockito.Mockito.verifyNoMoreInteractions(prdWorkOrderMapper);
+        Mockito.verifyNoMoreInteractions(prdWorkOrderMapper);
     }
 
     private static PrdProductionPlan workOrderPlan() {

@@ -1,19 +1,23 @@
 package com.nexus.im.service.impl.support;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HtmlUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
-import java.util.Objects;
+import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.im.constants.ImPayloadConstants;
 import com.nexus.im.domain.ImMessage;
+import com.nexus.im.domain.SysUserNotification;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
 import com.nexus.im.mapper.ImMessageMapper;
+import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.msgtype.ImMessageTypeHandler;
 import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImEnvelopeHelper;
@@ -22,18 +26,18 @@ import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+
 import org.springframework.dao.DuplicateKeyException;
-import com.nexus.common.json.utils.JsonUtils;
-import com.nexus.im.mapper.SysUserNotificationMapper;
-import com.nexus.im.domain.SysUserNotification;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * P1-7: 私聊子 Service
@@ -114,7 +118,7 @@ public class ImPrivateChatService {
                 // P6 M4 修复：image/file 等非 text 消息的 content 是原样透传 JSON，可能含 <script> 等 HTML 标签，
                 // 统一调用 HtmlUtil.cleanHtmlTag 净化（与 TextMessageHandler.sanitize 路径一致），防止 XSS。
                 String snippet = truncate(origin.getContent(), 200);
-                snippet = cn.hutool.http.HtmlUtil.cleanHtmlTag(snippet);
+                snippet = HtmlUtil.cleanHtmlTag(snippet);
                 msg.setReplySnippet(snippet);
             }
         }

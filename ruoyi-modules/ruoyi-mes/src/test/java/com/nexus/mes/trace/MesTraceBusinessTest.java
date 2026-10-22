@@ -1,21 +1,37 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
+import com.nexus.common.trace.port.CompletionAllocationPort;
 import com.nexus.common.trace.port.MaterialPolicyPort;
+import com.nexus.common.trace.port.SerialIdentityPort;
+import com.nexus.common.trace.port.TraceEventHandler;
+import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
+
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 class MesTraceBusinessTest {
     JdbcTemplate jdbc;
@@ -63,7 +79,7 @@ class MesTraceBusinessTest {
                         jdbc, json, context, new MesTraceJournalService(jdbc, json, context));
         policies = mock(MaterialPolicyPort.class);
         when(policies.policy("000001", 100L)).thenReturn(mixed);
-        var identities = mock(com.nexus.common.trace.port.SerialIdentityPort.class);
+        var identities = mock(SerialIdentityPort.class);
         when(identities.find(anyString(), anyLong()))
                 .thenAnswer(
                         i ->
@@ -88,11 +104,7 @@ class MesTraceBusinessTest {
         materials = new MesMaterialTraceWriter(jdbc, json, context, events, manifests);
         sns =
                 new MesSnCreationWriter(
-                        jdbc,
-                        json,
-                        context,
-                        events,
-                        mock(org.springframework.context.ApplicationEventPublisher.class));
+                        jdbc, json, context, events, mock(ApplicationEventPublisher.class));
         jdbc.execute(
                 "CREATE TABLE pro_work_order(mes_wo_id bigint primary key,tenant_id"
                     + " varchar(20),erp_wo_id bigint,wo_no varchar(64),material_id bigint,wo_status"
@@ -240,7 +252,7 @@ class MesTraceBusinessTest {
         DynamicDataSourceContextHolder.clear();
     }
 
-    <T> T inTx(java.util.function.Supplier<T> work) {
+    <T> T inTx(Supplier<T> work) {
         return tx.execute(s -> work.get());
     }
 
@@ -821,9 +833,7 @@ class MesTraceBusinessTest {
                 1, jdbc.queryForObject("SELECT COUNT(*) FROM lt_sn_consumption", Integer.class));
     }
 
-    List<Boolean> concurrently(
-            java.util.function.Supplier<?> first, java.util.function.Supplier<?> second)
-            throws Exception {
+    List<Boolean> concurrently(Supplier<?> first, Supplier<?> second) throws Exception {
         var pool = Executors.newFixedThreadPool(2);
         var start = new CountDownLatch(1);
         try {
@@ -858,7 +868,7 @@ class MesTraceBusinessTest {
         var port = proxiedJournal();
         var event = erp("rollback", "ERP_TEST", 3, Map.of("id", 1));
         var handler =
-                new com.nexus.common.trace.port.TraceEventHandler() {
+                new TraceEventHandler() {
                     public String targetModule() {
                         return "MES";
                     }
@@ -899,7 +909,7 @@ class MesTraceBusinessTest {
         var port = proxiedJournal();
         var event = erp("once", "ERP_TEST", 3, Map.of("id", 1));
         var handler =
-                new com.nexus.common.trace.port.TraceEventHandler() {
+                new TraceEventHandler() {
                     public String targetModule() {
                         return "MES";
                     }
@@ -924,15 +934,12 @@ class MesTraceBusinessTest {
     }
 
     MesTraceJournalService proxiedJournal() {
-        var factory =
-                new org.springframework.aop.framework.ProxyFactory(
-                        new MesTraceJournalService(jdbc, json, context));
+        var factory = new ProxyFactory(new MesTraceJournalService(jdbc, json, context));
         factory.setProxyTargetClass(true);
         factory.addAdvice(
-                new org.springframework.transaction.interceptor.TransactionInterceptor(
+                new TransactionInterceptor(
                         new DataSourceTransactionManager(jdbc.getDataSource()),
-                        new org.springframework.transaction.annotation
-                                .AnnotationTransactionAttributeSource()));
+                        new AnnotationTransactionAttributeSource()));
         return (MesTraceJournalService) factory.getProxy();
     }
 
@@ -1227,9 +1234,9 @@ class MesTraceBusinessTest {
 
     @Test
     void reserveRunsOutsideMesTransactionAndLocalFailureCanReplayWithoutDuplicatingIdentity() {
-        var identities = mock(com.nexus.common.trace.port.SerialIdentityPort.class);
-        var cards = mock(com.nexus.mes.pro.mapper.ProFlowCardMapper.class);
-        var card = new com.nexus.mes.pro.domain.ProFlowCard();
+        var identities = mock(SerialIdentityPort.class);
+        var cards = mock(ProFlowCardMapper.class);
+        var card = new ProFlowCard();
         card.setTenantId("000001");
         card.setCardId(11L);
         card.setMesWoId(10L);
@@ -1239,9 +1246,7 @@ class MesTraceBusinessTest {
                 .thenAnswer(
                         i -> {
                             assertFalse(
-                                    org.springframework.transaction.support
-                                            .TransactionSynchronizationManager
-                                            .isActualTransactionActive());
+                                    TransactionSynchronizationManager.isActualTransactionActive());
                             return new SerialReservation(
                                     5L,
                                     "generate",
@@ -1251,13 +1256,12 @@ class MesTraceBusinessTest {
                                                     900L, "CANONICAL", 100L, null, null)),
                                     "RESERVED");
                         });
-        var factory = new org.springframework.aop.framework.ProxyFactory(sns);
+        var factory = new ProxyFactory(sns);
         factory.setProxyTargetClass(true);
         factory.addAdvice(
-                new org.springframework.transaction.interceptor.TransactionInterceptor(
+                new TransactionInterceptor(
                         new DataSourceTransactionManager(jdbc.getDataSource()),
-                        new org.springframework.transaction.annotation
-                                .AnnotationTransactionAttributeSource()));
+                        new AnnotationTransactionAttributeSource()));
         var writer = (MesSnCreationWriter) factory.getProxy();
         var orchestrator =
                 new MesSerialOrchestrator(
@@ -1473,7 +1477,7 @@ class MesTraceBusinessTest {
                 0, jdbc.queryForObject("SELECT COUNT(*) FROM lt_lot_allocation", Integer.class));
     }
 
-    com.nexus.common.trace.port.CompletionAllocationPort materialPort() {
+    CompletionAllocationPort materialPort() {
         return manifests;
     }
 
@@ -1496,7 +1500,7 @@ class MesTraceBusinessTest {
                 Set.of(first, second),
                 rows.stream()
                         .map(CompletionMaterialAllocation::allocationId)
-                        .collect(java.util.stream.Collectors.toSet()));
+                        .collect(Collectors.toSet()));
         assertFalse(rows.stream().anyMatch(r -> r.allocationId().equals(quota)));
         assertEquals(
                 0,
@@ -2085,7 +2089,7 @@ class MesTraceBusinessTest {
         String first = new String(Character.toChars(0x1F600)),
                 last = new String(Character.toChars(0x1F601));
         String tenant = first.repeat(20), other = first.repeat(19) + last;
-        assertEquals(80, tenant.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+        assertEquals(80, tenant.getBytes(StandardCharsets.UTF_8).length);
         assertTrue(
                 jdbc.queryForObject(
                         "SELECT CAST(? AS BINARY(80))=CAST(? AS BINARY(80))",

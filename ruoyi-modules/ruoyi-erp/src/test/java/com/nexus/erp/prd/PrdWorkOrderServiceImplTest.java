@@ -1,9 +1,23 @@
 package com.nexus.erp.prd;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
@@ -12,22 +26,22 @@ import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
-import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
-import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
-import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
-import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
+import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.PrdWorkOrderTrackingPolicyService;
+import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
 import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.domain.WfMyBusiness;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,42 +57,42 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 @Tag("dev")
 class PrdWorkOrderServiceImplTest {
 
-    @Mock private PrdWorkOrderMapper baseMapper;
-    @Mock private PrdProductionPlanMapper prdProductionPlanMapper;
-    @Mock private PrdMaterialRequirementMapper requirementMapper;
-    @Mock private PrdMaterialRequirementDetailMapper detailMapper;
-    @Mock private WmProductionIssueMapper productionIssueMapper;
-    @Mock private WmProductionIssueLineMapper productionIssueLineMapper;
-    @Mock private AutoCodeUtil autoCodeUtil;
-    @Mock private ReliableMessageProducer messageProducer;
-    @Mock private IBdBomService bomService;
-    @Mock private IWmStockReservationService stockReservationService;
+    @Mock
+    private PrdWorkOrderMapper baseMapper;
+    @Mock
+    private PrdProductionPlanMapper prdProductionPlanMapper;
+    @Mock
+    private PrdMaterialRequirementMapper requirementMapper;
+    @Mock
+    private PrdMaterialRequirementDetailMapper detailMapper;
+    @Mock
+    private WmProductionIssueMapper productionIssueMapper;
+    @Mock
+    private WmProductionIssueLineMapper productionIssueLineMapper;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
+    @Mock
+    private ReliableMessageProducer messageProducer;
+    @Mock
+    private IBdBomService bomService;
+    @Mock
+    private IWmStockReservationService stockReservationService;
 
-    @Mock private PrdWorkOrderTrackingPolicyService trackingPolicies;
+    @Mock
+    private PrdWorkOrderTrackingPolicyService trackingPolicies;
 
-    @InjectMocks private PrdWorkOrderServiceImpl workOrderService;
+    @InjectMocks
+    private PrdWorkOrderServiceImpl workOrderService;
 
     @BeforeAll
     static void initTableInfo() {
@@ -545,7 +559,7 @@ class PrdWorkOrderServiceImplTest {
 
         var workers = Executors.newFixedThreadPool(2);
         try {
-            java.util.concurrent.Callable<Boolean> caller =
+            Callable<Boolean> caller =
                     () -> {
                         TransactionSynchronizationManager.initSynchronization();
                         try {

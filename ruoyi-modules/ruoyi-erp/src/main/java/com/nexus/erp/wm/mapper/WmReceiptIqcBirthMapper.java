@@ -4,15 +4,21 @@ import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.nexus.common.mq.iqc.IqcNativeSchema.Column;
 import com.nexus.common.mq.iqc.IqcNativeSchema.IndexPart;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
+
 import lombok.Data;
+
 import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Options;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 /** 原生永久出生登记；调用者必须持有ERP独占可重复读事务，不能由客户端DTO直接认证。 */
 public interface WmReceiptIqcBirthMapper {
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
-    @InterceptorIgnore(tenantLine="true", dataPermission="true")
-    @Select("""
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
+    @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
+    @Select(
+            """
         SELECT c.TABLE_NAME AS table_name,t.ENGINE AS engine,c.COLUMN_NAME AS column_name,
                c.DATA_TYPE AS data_type,c.NUMERIC_PRECISION AS numeric_precision,
                c.NUMERIC_SCALE AS numeric_scale,c.IS_NULLABLE AS is_nullable
@@ -22,15 +28,18 @@ public interface WmReceiptIqcBirthMapper {
         ORDER BY c.ORDINAL_POSITION
         """)
     List<Column> columns();
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
-    @InterceptorIgnore(tenantLine="true", dataPermission="true")
-    @Select("""
+
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
+    @InterceptorIgnore(tenantLine = "true", dataPermission = "true")
+    @Select(
+            """
         SELECT TABLE_NAME AS table_name,INDEX_NAME AS index_name,NON_UNIQUE AS non_unique,
                SEQ_IN_INDEX AS seq_in_index,COLUMN_NAME AS column_name,SUB_PART AS sub_part,INDEX_TYPE AS index_type
         FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='wm_receipt_iqc_birth'
         ORDER BY INDEX_NAME,SEQ_IN_INDEX
         """)
     List<IndexPart> indexes();
+
     @Select("""
         SELECT * FROM wm_receipt_iqc_birth
         WHERE tenant_id=#{tenant} AND receive_id=#{receive} AND material_id=#{material} FOR UPDATE
@@ -62,7 +71,9 @@ public interface WmReceiptIqcBirthMapper {
     }
     @Data class BirthRow {
         private String tenantId; private Long birthId; private Long receiveId; private Long materialId;
-        private Long baseUomId; private Integer quantityScale; private java.math.BigDecimal quantity;
+        private Long baseUomId;
+        private Integer quantityScale;
+        private BigDecimal quantity;
         private String receiptScopeSha256; private String birthSha256; private long capturedAt;
         private String receiveCode; private String materialCode; private String materialName;
         private Long vendorId; private String vendorName;

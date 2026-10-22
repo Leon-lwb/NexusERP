@@ -1,5 +1,10 @@
 package com.nexus.im.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
@@ -12,21 +17,18 @@ import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImChatSupport;
+import com.nexus.im.service.impl.support.ImMessageVisibility;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.mapper.SysUserMapper;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P4-4: App syncToken 增量同步回归测试。
@@ -48,18 +50,29 @@ import static org.mockito.Mockito.when;
  */
 class AppImControllerSyncTest extends ImUnitTestBase {
 
-    @Mock private IImChatService imChatService;
-    @Mock private ISysUserNotificationService notificationService;
-    @Mock private SysUserMapper userMapper;
-    @Mock private ImMessageMapper messageMapper;
-    @Mock private ImGroupMapper groupMapper;
-    @Mock private ImGroupMemberMapper groupMemberMapper;
-    @Mock private SysUserNotificationMapper notificationMapper;
-    @Mock private ImFriendMapper friendMapper;
-    @Mock private ImRealtimePush imRealtimePush;
+    @Mock
+    private IImChatService imChatService;
+    @Mock
+    private ISysUserNotificationService notificationService;
+    @Mock
+    private SysUserMapper userMapper;
+    @Mock
+    private ImMessageMapper messageMapper;
+    @Mock
+    private ImGroupMapper groupMapper;
+    @Mock
+    private ImGroupMemberMapper groupMemberMapper;
+    @Mock
+    private SysUserNotificationMapper notificationMapper;
+    @Mock
+    private ImFriendMapper friendMapper;
+    @Mock
+    private ImRealtimePush imRealtimePush;
 
-    @Mock private com.nexus.im.service.impl.support.ImMessageVisibility visibility;
-    @Mock private com.nexus.im.service.impl.support.ImChatSupport chatSupport;
+    @Mock
+    private ImMessageVisibility visibility;
+    @Mock
+    private ImChatSupport chatSupport;
 
     @InjectMocks
     private AppImController controller;

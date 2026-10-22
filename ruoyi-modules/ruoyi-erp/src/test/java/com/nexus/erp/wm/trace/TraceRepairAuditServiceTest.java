@@ -1,13 +1,17 @@
 package com.nexus.erp.wm.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.*;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class TraceRepairAuditServiceTest {
     JdbcTemplate jdbc;
@@ -63,11 +67,11 @@ class TraceRepairAuditServiceTest {
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM wm_sn", Integer.class));
         assertEquals(
                 0,
-                new java.math.BigDecimal("2")
+                new BigDecimal("2")
                         .compareTo(
                                 jdbc.queryForObject(
                                         "SELECT stock_quantity FROM wm_material_stock",
-                                        java.math.BigDecimal.class)));
+                                        BigDecimal.class)));
         var detail = tx.execute(s -> service.detail((String) result.get("runId")));
         assertEquals(result.get("runId"), detail.get("runId"));
     }

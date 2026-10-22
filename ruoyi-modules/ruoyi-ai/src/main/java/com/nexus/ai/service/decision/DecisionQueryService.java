@@ -1,30 +1,38 @@
 package com.nexus.ai.service.decision;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.ai.decision.dto.DecisionResult;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
-import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
-import com.nexus.common.core.service.PermissionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.nexus.common.ai.decision.dto.DecisionResult;
 import com.nexus.common.ai.decision.dto.DeliveryRiskRunRequest;
-import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
 import com.nexus.common.ai.domain.entity.AiDecisionAction;
+import com.nexus.common.ai.domain.entity.AiDecisionEvidence;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.ai.domain.vo.AiDecisionRunVo;
 import com.nexus.common.ai.mapper.AiDecisionRunMapper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.service.PermissionService;
 import com.nexus.common.flow.domain.entity.FlowNodeRun;
 import com.nexus.common.flow.mapper.FlowNodeRunMapper;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
@@ -76,7 +84,8 @@ public class DecisionQueryService {
         checkRead(runId, actor);
         return view(runId, actor.tenantId());
     }
-    public List<com.nexus.common.ai.domain.entity.AiDecisionEvidence> evidence(Long runId, DecisionActor actor) {
+
+    public List<AiDecisionEvidence> evidence(Long runId, DecisionActor actor) {
         checkRead(runId, actor);
         return evidence(runId, actor.tenantId());
     }
@@ -131,8 +140,12 @@ public class DecisionQueryService {
     }
 
     TableDataInfo<AiDecisionRunVo> list(String tenant, String status, String riskLevel, PageQuery query) {
-        return listInternal(tenant, status, riskLevel, query,
-            java.util.Arrays.stream(DecisionBusinessType.values()).map(Enum::name).toList());
+        return listInternal(
+                tenant,
+                status,
+                riskLevel,
+                query,
+                Arrays.stream(DecisionBusinessType.values()).map(Enum::name).toList());
     }
     private TableDataInfo<AiDecisionRunVo> listInternal(String tenant, String status,
                                                         String riskLevel, PageQuery query,
@@ -151,8 +164,8 @@ public class DecisionQueryService {
             .eq("tenant_id", tenant).eq("scene_code", DecisionPersistenceService.SCENE_CODE)
             .in("biz_type", visibleTypes).eq(statusFilter != null, "status", statusFilter).eq(riskFilter != null, "risk_level", riskFilter)
             .orderByDesc("create_time").orderByDesc("id");
-        com.baomidou.mybatisplus.core.metadata.IPage<AiDecisionRunVo> selected =
-            runs.selectSummaryPage(bounded.<AiDecisionRun>build(), conditions);
+        IPage<AiDecisionRunVo> selected =
+                runs.selectSummaryPage(bounded.<AiDecisionRun>build(), conditions);
         return TableDataInfo.build(selected);
     }
 
@@ -189,7 +202,7 @@ public class DecisionQueryService {
             "actionBlockReasons", Map.copyOf(blockReasons));
     }
 
-    public List<com.nexus.common.ai.domain.entity.AiDecisionEvidence> evidence(Long runId, String tenant) {
+    public List<AiDecisionEvidence> evidence(Long runId, String tenant) {
         persistence.requireRun(runId, tenant);
         checkedTenant(tenant);
         return persistence.listEvidence(runId);
@@ -202,7 +215,8 @@ public class DecisionQueryService {
         if (run.getStartedAt() != null) timeline.add(event("RUN", "RUNNING", null, run.getStartedAt()));
         if (run.getAnalysisFinishedAt() != null)
             timeline.add(event("ANALYSIS", "READY", null, run.getAnalysisFinishedAt()));
-        for (Long flowId : java.util.Arrays.asList(run.getAnalysisFlowInstanceId(), run.getExecutionFlowInstanceId())) {
+        for (Long flowId :
+                Arrays.asList(run.getAnalysisFlowInstanceId(), run.getExecutionFlowInstanceId())) {
             if (flowId == null) continue;
             List<FlowNodeRun> trace = nodes.selectList(Wrappers.<FlowNodeRun>lambdaQuery()
                 .select(FlowNodeRun::getNodeId, FlowNodeRun::getStatus, FlowNodeRun::getStartTime)
@@ -217,14 +231,18 @@ public class DecisionQueryService {
         return List.copyOf(timeline);
     }
 
-    private Map<String, Object> event(String type, String status, String code, java.time.LocalDateTime at) {
-        return event(type, status, code, at == null ? null : Date.from(at.atZone(java.time.ZoneId.systemDefault()).toInstant()));
+    private Map<String, Object> event(String type, String status, String code, LocalDateTime at) {
+        return event(
+                type,
+                status,
+                code,
+                at == null ? null : Date.from(at.atZone(ZoneId.systemDefault()).toInstant()));
     }
     private Map<String, Object> event(String type, String status, String code, Date at) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", type); body.put("status", status); body.put("code", code);
         body.put("time", at == null ? null : at.getTime());
-        return java.util.Collections.unmodifiableMap(body);
+        return Collections.unmodifiableMap(body);
     }
 
     public String exportMarkdown(Long runId, String tenant) {
@@ -292,7 +310,7 @@ public class DecisionQueryService {
                 selected.add(code.asText());
             });
             request.setScenarioCodes(List.copyOf(selected));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException broken) {
+        } catch (JsonProcessingException broken) {
             throw new ServiceException("旧决策运行的分析范围无法解码");
         }
         request.setForceRestart(true);

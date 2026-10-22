@@ -3,8 +3,12 @@ package com.nexus.erp.wm.trace;
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -134,7 +138,7 @@ public class ErpTraceEventHandler implements TraceEventHandler {
 
     private static long nonnegative(JsonNode node, String key) {
         try {
-            long value = new java.math.BigDecimal(required(node, key)).longValueExact();
+            long value = new BigDecimal(required(node, key)).longValueExact();
             require(value >= 0, "事件数量无效：" + key);
             return value;
         } catch (ArithmeticException e) {
@@ -144,7 +148,7 @@ public class ErpTraceEventHandler implements TraceEventHandler {
 
     private static Long positive(JsonNode node, String key) {
         try {
-            long value = new java.math.BigDecimal(required(node, key)).longValueExact();
+            long value = new BigDecimal(required(node, key)).longValueExact();
             require(value > 0, "事件ID或数量无效：" + key);
             return value;
         } catch (ArithmeticException e) {

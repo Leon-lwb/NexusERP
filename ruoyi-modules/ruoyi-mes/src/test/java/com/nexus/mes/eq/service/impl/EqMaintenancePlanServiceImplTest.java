@@ -1,5 +1,9 @@
 package com.nexus.mes.eq.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -14,13 +18,14 @@ import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
 import com.nexus.mes.eq.mapper.EqMaintenancePlanMapper;
 import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -29,11 +34,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 @Tag("local")
 @Tag("dev")
@@ -137,7 +141,7 @@ class EqMaintenancePlanServiceImplTest {
     void insertByBoUsesProvidedNextDateWhenSet() {
         when(baseMapper.selectVoById(any())).thenReturn(new EqMaintenancePlanVo());
 
-        Date futureDate = java.sql.Date.valueOf(java.time.LocalDate.now().plusDays(60));
+        Date futureDate = java.sql.Date.valueOf(LocalDate.now().plusDays(60));
         EqMaintenancePlanBo bo = new EqMaintenancePlanBo();
         bo.setPlanName("测试");
         bo.setEquipmentId(1L);

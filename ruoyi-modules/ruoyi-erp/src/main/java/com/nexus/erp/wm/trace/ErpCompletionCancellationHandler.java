@@ -3,7 +3,10 @@ package com.nexus.erp.wm.trace;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.*;
+
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -51,7 +54,7 @@ public class ErpCompletionCancellationHandler implements TraceEventHandler {
         }
         try {
             return json.writeValueAsString(cancellation.cancel(proof));
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("取消应用结果不能冻结", e);
         }
     }

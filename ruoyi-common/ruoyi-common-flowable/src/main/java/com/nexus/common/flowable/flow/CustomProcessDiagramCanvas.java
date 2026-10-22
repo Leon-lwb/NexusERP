@@ -5,19 +5,21 @@ import org.flowable.bpmn.model.GraphicInfo;
 import org.flowable.image.impl.DefaultProcessDiagramCanvas;
 import org.flowable.image.util.ReflectUtil;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineBreakMeasurer;
 import java.awt.font.TextAttribute;
 import java.awt.font.TextLayout;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
+
+import javax.imageio.ImageIO;
 
 /**
  * @author XuanXuan
@@ -67,28 +69,50 @@ public class CustomProcessDiagramCanvas extends DefaultProcessDiagramCanvas {
             int sourceY = yPoints[i - 1];
             int targetX = xPoints[i];
             int targetY = yPoints[i];
-            java.awt.geom.Line2D.Double line = new java.awt.geom.Line2D.Double((double) sourceX, (double) sourceY, (double) targetX, (double) targetY);
+            Line2D.Double line =
+                    new Line2D.Double(
+                            (double) sourceX, (double) sourceY, (double) targetX, (double) targetY);
             this.g.draw(line);
         }
 
-        java.awt.geom.Line2D.Double line;
+        Line2D.Double line;
         if (isDefault) {
-            line = new java.awt.geom.Line2D.Double((double) xPoints[0], (double) yPoints[0], (double) xPoints[1], (double) yPoints[1]);
+            line =
+                    new Line2D.Double(
+                            (double) xPoints[0],
+                            (double) yPoints[0],
+                            (double) xPoints[1],
+                            (double) yPoints[1]);
             this.drawDefaultSequenceFlowIndicator(line, scaleFactor);
         }
 
         if (conditional) {
-            line = new java.awt.geom.Line2D.Double((double) xPoints[0], (double) yPoints[0], (double) xPoints[1], (double) yPoints[1]);
+            line =
+                    new Line2D.Double(
+                            (double) xPoints[0],
+                            (double) yPoints[0],
+                            (double) xPoints[1],
+                            (double) yPoints[1]);
             this.drawConditionalSequenceFlowIndicator(line, scaleFactor);
         }
 
         if (associationDirection.equals(AssociationDirection.ONE) || associationDirection.equals(AssociationDirection.BOTH)) {
-            line = new java.awt.geom.Line2D.Double((double) xPoints[xPoints.length - 2], (double) yPoints[xPoints.length - 2], (double) xPoints[xPoints.length - 1], (double) yPoints[xPoints.length - 1]);
+            line =
+                    new Line2D.Double(
+                            (double) xPoints[xPoints.length - 2],
+                            (double) yPoints[xPoints.length - 2],
+                            (double) xPoints[xPoints.length - 1],
+                            (double) yPoints[xPoints.length - 1]);
             this.drawArrowHead(line, scaleFactor);
         }
 
         if (associationDirection.equals(AssociationDirection.BOTH)) {
-            line = new java.awt.geom.Line2D.Double((double) xPoints[1], (double) yPoints[1], (double) xPoints[0], (double) yPoints[0]);
+            line =
+                    new Line2D.Double(
+                            (double) xPoints[1],
+                            (double) yPoints[1],
+                            (double) xPoints[0],
+                            (double) yPoints[0]);
             this.drawArrowHead(line, scaleFactor);
         }
 

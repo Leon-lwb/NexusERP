@@ -1,12 +1,16 @@
 package com.nexus.common.ai.decision;
 
-import org.junit.jupiter.api.Test;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
-@org.junit.jupiter.api.Tag("dev")
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
+import java.util.Set;
+
+@Tag("dev")
 class DecisionEvidenceExceptionTest {
     @Test void onlyFinalTypedFiniteReasonsExposeFixedPublicCodesAndMessages() throws Exception {
         var type = assertDoesNotThrow(() -> Class.forName("com.nexus.common.ai.decision.exception.DecisionEvidenceException"));
@@ -14,7 +18,7 @@ class DecisionEvidenceExceptionTest {
         var reasonType = Class.forName(type.getName() + "$Reason");
         var expected = Set.of("ROUTING_EVIDENCE_MISSING", "SCHEDULE_EVIDENCE_MISSING",
             "SHORTAGE_SIMULATION_INCOMPLETE", "CAPACITY_EVIDENCE_MISSING", "NO_ANALYZABLE_WORK_ORDER");
-        var codes = new java.util.HashSet<String>();
+        var codes = new HashSet<String>();
         for (Object reason : reasonType.getEnumConstants()) {
             var rejected = (RuntimeException) type.getConstructor(reasonType).newInstance(reason);
             assertSame(reason, type.getMethod("reason").invoke(rejected));

@@ -1,15 +1,16 @@
 package com.nexus.erp.prd;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.common.redis.utils.RedisUtils;
-import com.nexus.erp.mq.consumer.ProductionBackflushConsumer;
-import com.rabbitmq.client.Channel;
-import org.redisson.api.RedissonClient;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.mq.consumer.ProductionBackflushConsumer;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.ProductionCompletionPostingMapper;
@@ -21,6 +22,8 @@ import com.nexus.erp.wm.domain.WmProductionRecpt;
 import com.nexus.erp.wm.domain.vo.PutawayLocation;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.impl.WmProductionRecptServiceImpl;
+import com.rabbitmq.client.Channel;
+
 import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.MockedStatic;
+import org.redisson.api.RedissonClient;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -35,20 +41,18 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 /**
  * 完工持久守卫和真实 Spring 代理事务测试。
@@ -540,7 +544,12 @@ class ProductionCompletionPostingServiceTest {
     }
 
     private String sql(String method, Class<?>... types) throws Exception {
-        return String.join(" ", ProductionCompletionPostingMapper.class.getMethod(method, types).getAnnotation(Select.class).value())
-            .toLowerCase(java.util.Locale.ROOT);
+        return String.join(
+                        " ",
+                        ProductionCompletionPostingMapper.class
+                                .getMethod(method, types)
+                                .getAnnotation(Select.class)
+                                .value())
+                .toLowerCase(Locale.ROOT);
     }
 }

@@ -2,6 +2,7 @@ package com.nexus.im.service.impl.support;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
@@ -10,9 +11,11 @@ import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.factory.OssFactory;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
+import com.nexus.im.domain.SysUserNotification;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.system.domain.vo.SysOssVo;
@@ -20,9 +23,12 @@ import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
 import com.nexus.system.service.ISysUserService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,7 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.time.Duration;
 
 /**
  * P1-7: IM 聊天共享辅助组件
@@ -90,9 +95,10 @@ public class ImChatSupport {
     }
 
     /** 仅覆盖当前请求返回的群消息对象，不修改共享持久化记录。 */
-    public static void applyGroupReadState(List<ImMessage> records, List<com.nexus.im.domain.SysUserNotification> notices) {
+    public static void applyGroupReadState(
+            List<ImMessage> records, List<SysUserNotification> notices) {
         Map<String, String> flags = new LinkedHashMap<>();
-        for (com.nexus.im.domain.SysUserNotification notice : notices) {
+        for (SysUserNotification notice : notices) {
             flags.merge(notice.getRefId(), notice.getReadFlag(), (a, b) -> "1".equals(a) || "1".equals(b) ? "1" : "0");
         }
         records.stream().filter(m -> m.getGroupId() != null)
@@ -465,7 +471,7 @@ public class ImChatSupport {
             try {
                 List<Long> mentions = JsonUtils.parseArray(msg.getMentionUserIds(), Long.class);
                 row.put("mentionUserIds", mentions);
-                row.put("mentioned", mentions.contains(com.nexus.common.satoken.utils.LoginHelper.getUserId()));
+                row.put("mentioned", mentions.contains(LoginHelper.getUserId()));
             } catch (RuntimeException e) {
                 // 历史损坏的提及字段不能阻断整页消息加载。
                 row.put("mentionUserIds", Collections.emptyList());

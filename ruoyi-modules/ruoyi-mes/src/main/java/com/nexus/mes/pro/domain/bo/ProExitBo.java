@@ -1,11 +1,15 @@
 package com.nexus.mes.pro.domain.bo;
 
+import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.mes.trace.MesProductLotOutputWriter;
+
 import jakarta.validation.constraints.NotNull;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import com.nexus.common.mybatis.core.domain.BaseEntity;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * MES工序出站业务对象(P0-3)
@@ -23,10 +27,8 @@ public class ProExitBo extends BaseEntity {
      */
     private String productOutputCommandId;
 
-    /**
-     * 根据实际产品批次登记批次型产出，再执行流转卡与工单最终汇总。
-     */
-    private java.util.List<com.nexus.mes.trace.MesProductLotOutputWriter.OutputLine> productOutputs;
+    /** 根据实际产品批次登记批次型产出，再执行流转卡与工单最终汇总。 */
+    private List<MesProductLotOutputWriter.OutputLine> productOutputs;
 
     /**
      * 流转卡ID

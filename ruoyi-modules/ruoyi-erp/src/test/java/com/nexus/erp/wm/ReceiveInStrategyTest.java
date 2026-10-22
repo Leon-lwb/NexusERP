@@ -1,5 +1,11 @@
 package com.nexus.erp.wm;
 
+import static com.nexus.erp.wm.WmStockOperationServiceImplTest.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -13,7 +19,9 @@ import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.impl.ReceiveInStrategy;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -24,15 +32,12 @@ import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.List;
+import java.util.function.Consumer;
 
-import static com.nexus.erp.wm.WmStockOperationServiceImplTest.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 /**
  * 验证真实的旧库存写入策略；不连接数据库，也不调用认证过账执行器。
@@ -237,8 +242,7 @@ class ReceiveInStrategyTest {
             this(context -> {});
         }
 
-        Fixture(java.util.function.Consumer<AnnotationConfigApplicationContext> beforeRefresh)
-                throws Exception {
+        Fixture(Consumer<AnnotationConfigApplicationContext> beforeRefresh) throws Exception {
             tenants = mockStatic(TenantHelper.class);
             try {
                 // 仅初始化元数据：真实 MyBatis 的 Lambda 条件封装必须在无数据库及启动扫描的情况下可用。
@@ -302,8 +306,7 @@ class ReceiveInStrategyTest {
                 context.registerBean(BdMaterialMapper.class, () -> materials);
                 context.registerBean(WmCertifiedReceiptMutationGuard.class, () -> guard);
                 context.registerBean(
-                        com.nexus.erp.wm.service.WmSerialInventoryService.class,
-                        () -> mock(com.nexus.erp.wm.service.WmSerialInventoryService.class));
+                        WmSerialInventoryService.class, () -> mock(WmSerialInventoryService.class));
                 context.registerBean(ReceiveInStrategy.class);
                 beforeRefresh.accept(context);
                 context.refresh();

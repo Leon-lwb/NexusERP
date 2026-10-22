@@ -1,16 +1,14 @@
 package com.nexus.mes.lt.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.mes.trace.*;
-import com.nexus.common.trace.port.MaterialPolicyPort;
-import org.springframework.transaction.annotation.Propagation;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.trace.port.MaterialPolicyPort;
 import com.nexus.mes.lt.domain.LtWoConsumption;
 import com.nexus.mes.lt.domain.bo.LtWoConsumptionBo;
 import com.nexus.mes.lt.domain.bo.LtWoPickBo;
@@ -19,10 +17,14 @@ import com.nexus.mes.lt.domain.vo.LtWoConsumptionVo;
 import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.lt.service.ILtWoConsumptionService;
-import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.mes.trace.*;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -44,7 +46,7 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
     private final ILtLotService lotService;
     private final MesMaterialTraceWriter traceWriter;
     private final MaterialPolicyPort policies;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
     private final MesTraceContext traceContext;
 
     /**

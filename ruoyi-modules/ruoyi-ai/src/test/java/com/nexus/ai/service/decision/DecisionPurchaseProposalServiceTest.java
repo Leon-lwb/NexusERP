@@ -1,6 +1,10 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
@@ -10,14 +14,15 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class DecisionPurchaseProposalServiceTest {
     private final DecisionPersistenceService store = mock(DecisionPersistenceService.class);
@@ -78,7 +83,7 @@ class DecisionPurchaseProposalServiceTest {
                 DecisionActionProposalService.class).newInstance(store, port, proposals);
             return (List<DecisionPurchaseContractV2>) type.getMethod("freezeForRun", Long.class, DecisionActor.class)
                 .invoke(service, runId, actor);
-        } catch (java.lang.reflect.InvocationTargetException error) {
+        } catch (InvocationTargetException error) {
             if (error.getCause() instanceof RuntimeException cause) throw cause;
             throw new AssertionError("冻结入口出现非预期异常", error.getCause());
         } catch (ReflectiveOperationException error) { throw new AssertionError("缺少约定的冻结运行接口", error); }
@@ -217,7 +222,7 @@ class DecisionPurchaseProposalServiceTest {
                 DecisionActionProposalService.class).newInstance(store, port, proposals);
             return (List<DecisionActionProposal>) type.getMethod("propose", Long.class,
                 DecisionActionProposalService.ProposalInput.class).invoke(service, runId, input);
-        } catch (java.lang.reflect.InvocationTargetException error) {
+        } catch (InvocationTargetException error) {
             if (error.getCause() instanceof RuntimeException cause) throw cause;
             throw new AssertionError("采购提案服务出现非预期异常", error.getCause());
         } catch (ReflectiveOperationException error) { throw new AssertionError("缺少服务端采购提案接线接口", error); }

@@ -1,6 +1,7 @@
 package com.nexus.mes.qc.service;
 
 import cn.hutool.core.util.IdUtil;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
@@ -15,6 +16,7 @@ import com.nexus.mes.qc.domain.vo.QcIqcVo;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.Binding;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.NativeColumn;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
@@ -28,7 +30,6 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -36,12 +37,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.sql.DataSource;
 
 /**
  * IQC 原生出生调度入口，不加入调用方数据源或事务。先在独立 MES 只读 RR 中探测：
@@ -347,7 +351,8 @@ public class QcReceiptIqcBirthService {
     private static void requireUnique(List<IqcNativeSchema.IndexPart> indexes, String name, List<String> expected) {
         Map<String, List<IqcNativeSchema.IndexPart>> grouped = new HashMap<>();
         for (var index : indexes) if ("qc_receipt_iqc_birth".equals(index.getTableName())) {
-            grouped.computeIfAbsent(index.getIndexName(), ignored -> new java.util.ArrayList<>()).add(index);
+                grouped.computeIfAbsent(index.getIndexName(), ignored -> new ArrayList<>())
+                        .add(index);
         }
         for (var entry : grouped.entrySet()) {
             if (name != null && !name.equals(entry.getKey())) continue;

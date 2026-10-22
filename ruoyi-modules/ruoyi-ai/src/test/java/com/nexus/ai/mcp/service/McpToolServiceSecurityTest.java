@@ -1,15 +1,18 @@
 package com.nexus.ai.mcp.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
+
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.List;
 
 /** MCP 写入仅采用当前租户边界；脱敏回显按 JSON 结构恢复。 */
 class McpToolServiceSecurityTest {
@@ -83,7 +86,7 @@ class McpToolServiceSecurityTest {
     @Test
     void deletingAnInvisibleIdMustNotInvalidateAnotherTenantsClient() {
         when(mapper.selectById(1L)).thenReturn(null);
-        assertEquals(0, service.deleteTools(java.util.List.of(1L)));
+        assertEquals(0, service.deleteTools(List.of(1L)));
         verify(manager, never()).refreshClient(any());
     }
 

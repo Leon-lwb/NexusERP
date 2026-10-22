@@ -1,21 +1,25 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.LineageSnapshot;
+import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseInventorySourceVerifier.InventorySnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.*;
+import com.nexus.erp.pu.mapper.ErpPurchaseStockLineageMapper;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.*;
 import com.nexus.erp.pu.service.*;
+
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
+
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 /** 实际来源服务调用与真实分配/数量策略的接线回归；来源Mapper为替身，不是实库验收。 */
 class ErpPurchaseSourceCertificationServiceTest {
@@ -206,10 +210,34 @@ class ErpPurchaseSourceCertificationServiceTest {
     private Map<Long,BigDecimal> owned=Map.of();
     private BigDecimal provenStockQuantityOverride;
     private ErpPurchaseStockLineageVerifier.StockLineageSnapshot stockSnapshot() {
-        var stocks=rawFixture.stocks().stream().map(row->new ErpPurchaseStockLineageVerifier.CertifiedStockLineage(
-            new com.nexus.erp.pu.mapper.ErpPurchaseStockLineageMapper.StockRow(row.getStockId(),row.getTenantId(),row.getMaterialId(),row.getBaseUomId(),
-                1L,2L,null,null,null,provenStockQuantityOverride==null?row.getStockQuantity():provenStockQuantityOverride,
-                row.getReservedQuantity(),row.getFrozenFlag(),row.getVersion(),row.getDelFlag(),null,null),false,List.of(),Map.of())).toList();
+        var stocks =
+                rawFixture.stocks().stream()
+                        .map(
+                                row ->
+                                        new ErpPurchaseStockLineageVerifier.CertifiedStockLineage(
+                                                new ErpPurchaseStockLineageMapper.StockRow(
+                                                        row.getStockId(),
+                                                        row.getTenantId(),
+                                                        row.getMaterialId(),
+                                                        row.getBaseUomId(),
+                                                        1L,
+                                                        2L,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        provenStockQuantityOverride == null
+                                                                ? row.getStockQuantity()
+                                                                : provenStockQuantityOverride,
+                                                        row.getReservedQuantity(),
+                                                        row.getFrozenFlag(),
+                                                        row.getVersion(),
+                                                        row.getDelFlag(),
+                                                        null,
+                                                        null),
+                                                false,
+                                                List.of(),
+                                                Map.of()))
+                        .toList();
         return new ErpPurchaseStockLineageVerifier.StockLineageSnapshot(inventoryValue,owned,Map.of(),stocks,Set.of(900L),Map.of("tx:900","proof-v1"));
     }
     @Test void sourceChainMustRejectRawPoolAndOriginalStockLineageMismatch() {

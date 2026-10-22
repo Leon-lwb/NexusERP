@@ -1,5 +1,13 @@
 package com.nexus.im.mapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
@@ -8,8 +16,8 @@ import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerIntercept
 import com.nexus.common.tenant.handle.PlusTenantLineHandler;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.tenant.properties.TenantProperties;
-import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.SysUserNotification;
+import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImMetrics;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
@@ -19,9 +27,11 @@ import com.nexus.im.service.impl.support.ImGroupChatService;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.service.ISysUserService;
+
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.select.ParenthesedSelect;
 import net.sf.jsqlparser.statement.select.PlainSelect;
+
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -37,14 +47,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /** 真正的 Mapper 动态 SQL、租户处理器和插件改写，仅最终 Executor 使用内存替身。 */
 class ImMessageTenantPluginTest extends ImUnitTestBase {
@@ -131,10 +133,19 @@ class ImMessageTenantPluginTest extends ImUnitTestBase {
         when(support.isGroupMember(GROUP, ME_USER_ID)).thenReturn(true);
         when(support.hiddenMessageIds()).thenReturn(Set.of(HIDDEN));
         when(notifications.selectList(any())).thenReturn(List.of());
-        var service = new ImGroupChatService(messages, groups, members, mock(ISysUserService.class),
-            mock(ISysUserNotificationService.class), mock(ImRealtimePush.class),
-            mock(com.nexus.im.msgtype.ImMessageTypeRegistry.class), support, mock(ImConversationCache.class),
-            mock(ImMetrics.class), notifications);
+        var service =
+                new ImGroupChatService(
+                        messages,
+                        groups,
+                        members,
+                        mock(ISysUserService.class),
+                        mock(ISysUserNotificationService.class),
+                        mock(ImRealtimePush.class),
+                        mock(ImMessageTypeRegistry.class),
+                        support,
+                        mock(ImConversationCache.class),
+                        mock(ImMetrics.class),
+                        notifications);
         service.markGroupRead(GROUP);
         ArgumentCaptor<LambdaQueryWrapper<SysUserNotification>> wrapper = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
         verify(notifications).selectList(wrapper.capture());

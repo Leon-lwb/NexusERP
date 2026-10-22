@@ -2,6 +2,8 @@ package com.nexus.common.trace;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import java.util.Set;
+
 /**
  * 同源业务事务内冻结的事件；版本在来源模块和业务聚合范围内递增。
  *
@@ -34,7 +36,7 @@ public record MaterialTraceEvent(
                 || tenantId == null
                 || tenantId.isBlank()
                 || tenantId.length() > 20
-                || !java.util.Set.of("ERP", "MES").contains(sourceModule)
+                || !Set.of("ERP", "MES").contains(sourceModule)
                 || eventType == null
                 || eventType.isBlank()
                 || eventType.length() > 64

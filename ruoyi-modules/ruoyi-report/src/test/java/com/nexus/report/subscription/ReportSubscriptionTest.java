@@ -9,15 +9,23 @@ import com.nexus.report.domain.ReportRecords.*;
 import com.nexus.report.engine.*;
 import com.nexus.report.export.ReportExportRenderer;
 import com.nexus.report.extension.*;
+import com.nexus.report.mapper.JdbcReportStore;
 import com.nexus.report.runtime.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 import java.nio.file.*;
+import java.sql.Timestamp;
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** 订阅分别使用接收人身份，调度、导出和站内领取都保持幂等与重新授权。 */
 class ReportSubscriptionTest {
@@ -124,8 +132,7 @@ class ReportSubscriptionTest {
             subscriptions.publish(f.owner, draft.id(), draft.revision());
             Instant scheduled = Instant.parse("2026-10-15T00:00:00Z");
             f.jdbc.update(
-                    "UPDATE rpt_subscription_schedule SET next_at=?",
-                    java.sql.Timestamp.from(scheduled));
+                    "UPDATE rpt_subscription_schedule SET next_at=?", Timestamp.from(scheduled));
             subscriptions.dispatchDue(scheduled);
             subscriptions.dispatchDue(scheduled);
             assertEquals(
@@ -252,8 +259,7 @@ class ReportSubscriptionTest {
             var draft = service.create(f.owner, "QUEUE_SUB", "队列隔离", model);
             service.publish(f.owner, draft.id(), draft.revision());
             Instant now = Instant.parse("2026-10-15T00:00:00Z");
-            f.jdbc.update(
-                    "UPDATE rpt_subscription_schedule SET next_at=?", java.sql.Timestamp.from(now));
+            f.jdbc.update("UPDATE rpt_subscription_schedule SET next_at=?", Timestamp.from(now));
             assertDoesNotThrow(() -> service.dispatchDue(now));
             assertEquals(
                     2,
@@ -443,8 +449,7 @@ class ReportSubscriptionTest {
             var draft = service.create(f.owner, "ZERO_CATCHUP", "零补跑", model);
             service.publish(f.owner, draft.id(), draft.revision());
             Instant due = Instant.parse("2026-10-15T00:00:00Z");
-            f.jdbc.update(
-                    "UPDATE rpt_subscription_schedule SET next_at=?", java.sql.Timestamp.from(due));
+            f.jdbc.update("UPDATE rpt_subscription_schedule SET next_at=?", Timestamp.from(due));
             service.dispatchDue(due.plusMillis(10));
             assertEquals(
                     1,
@@ -474,8 +479,7 @@ class ReportSubscriptionTest {
             var draft = service.create(f.owner, "DEFAULT_DATE", "冻结隐含日期", model);
             service.publish(f.owner, draft.id(), draft.revision());
             Instant due = Instant.parse("2025-02-05T01:00:00Z");
-            f.jdbc.update(
-                    "UPDATE rpt_subscription_schedule SET next_at=?", java.sql.Timestamp.from(due));
+            f.jdbc.update("UPDATE rpt_subscription_schedule SET next_at=?", Timestamp.from(due));
             service.dispatchDue(due.plusMillis(10));
             var job = f.runtime.jobs(f.owner).get(0);
             var payload = f.runtime.payload(f.store.run("A", job.runId()).orElseThrow());
@@ -510,7 +514,7 @@ class ReportSubscriptionTest {
             f.store.cancel(f.owner, blocker.id());
             f.jdbc.update(
                     "UPDATE rpt_subscription_run SET next_retry_at=?",
-                    java.sql.Timestamp.from(Instant.now().minusSeconds(1)));
+                    Timestamp.from(Instant.now().minusSeconds(1)));
             var deliveries =
                     new ReportDeliveryService(
                             resources,
@@ -663,7 +667,9 @@ class ReportSubscriptionTest {
             var execution = service.executions(fixture.owner, draft.id()).get(0);
             fixture.jdbc.update("UPDATE rpt_export_job SET state='FAILED',error_code='ARTIFACT_STORE_UNAVAILABLE',attempts=3 WHERE job_id=?",
                     Long.parseLong(execution.job()));
-            assertTrue(com.nexus.report.mapper.JdbcReportStore.manualRetryable(fixture.runtime.job(fixture.owner, execution.job())));
+            assertTrue(
+                    JdbcReportStore.manualRetryable(
+                            fixture.runtime.job(fixture.owner, execution.job())));
             service.cancel(fixture.owner, execution.id());
             assertEquals("CANCELLED", service.executions(fixture.owner, draft.id()).get(0).state());
             assertThrows(ReportFault.class, () -> fixture.runtime.retry(fixture.owner, execution.job()));
@@ -750,24 +756,27 @@ class ReportSubscriptionTest {
             var execution = service.executions(fixture.owner, draft.id()).get(0);
             var deliveries = new ReportDeliveryService(resources, fixture.jdbc, fixture.store, fixture.definitions,
                     fixture.runtime, fixture.compiler, properties, null);
-            var entered = new java.util.concurrent.CountDownLatch(1);
-            var resume = new java.util.concurrent.CountDownLatch(1);
-            fixture.onDefinitionRead = () -> {
-                entered.countDown();
-                try { assertTrue(resume.await(5, java.util.concurrent.TimeUnit.SECONDS)); }
-                catch (InterruptedException failure) { throw new IllegalStateException(failure); }
-            };
-            var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+            var entered = new CountDownLatch(1);
+            var resume = new CountDownLatch(1);
+            fixture.onDefinitionRead =
+                    () -> {
+                        entered.countDown();
+                        try {
+                            assertTrue(resume.await(5, TimeUnit.SECONDS));
+                        } catch (InterruptedException failure) {
+                            throw new IllegalStateException(failure);
+                        }
+                    };
+            var executor = Executors.newFixedThreadPool(2);
             try {
                 var reconcile = executor.submit(deliveries::reconcile);
-                assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+                assertTrue(entered.await(5, TimeUnit.SECONDS));
                 fixture.onDefinitionRead = () -> {};
                 var cancel = executor.submit(() -> service.cancel(fixture.owner, execution.id()));
-                assertThrows(java.util.concurrent.TimeoutException.class,
-                        () -> cancel.get(150, java.util.concurrent.TimeUnit.MILLISECONDS));
+                assertThrows(TimeoutException.class, () -> cancel.get(150, TimeUnit.MILLISECONDS));
                 resume.countDown();
-                reconcile.get(5, java.util.concurrent.TimeUnit.SECONDS);
-                cancel.get(5, java.util.concurrent.TimeUnit.SECONDS);
+                reconcile.get(5, TimeUnit.SECONDS);
+                cancel.get(5, TimeUnit.SECONDS);
                 deliveries.reconcile();
                 assertEquals("CANCELLED", service.executions(fixture.owner, draft.id()).get(0).state());
                 assertEquals("CANCELLED", deliveries.list(fixture.owner).get(0).state());
@@ -802,32 +811,30 @@ class ReportSubscriptionTest {
             f.store.cancel(f.owner, blocker.id());
             f.jdbc.update(
                     "UPDATE rpt_subscription_run SET next_retry_at=?",
-                    java.sql.Timestamp.from(Instant.now().minusSeconds(1)));
-            var entered = new java.util.concurrent.CountDownLatch(1);
-            var resume = new java.util.concurrent.CountDownLatch(1);
+                    Timestamp.from(Instant.now().minusSeconds(1)));
+            var entered = new CountDownLatch(1);
+            var resume = new CountDownLatch(1);
             f.onDefinitionRead =
                     () -> {
                         entered.countDown();
                         try {
-                            if (!resume.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                            if (!resume.await(5, TimeUnit.SECONDS))
                                 throw new IllegalStateException("测试准备等待超时");
                         } catch (InterruptedException failure) {
                             Thread.currentThread().interrupt();
                             throw new IllegalStateException(failure);
                         }
                     };
-            var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+            var executor = Executors.newFixedThreadPool(2);
             try {
                 var prepare = executor.submit(service::drain);
-                assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+                assertTrue(entered.await(5, TimeUnit.SECONDS));
                 f.onDefinitionRead = () -> {};
                 var cancel = executor.submit(() -> service.cancel(f.owner, executionId));
-                assertThrows(
-                        java.util.concurrent.TimeoutException.class,
-                        () -> cancel.get(150, java.util.concurrent.TimeUnit.MILLISECONDS));
+                assertThrows(TimeoutException.class, () -> cancel.get(150, TimeUnit.MILLISECONDS));
                 resume.countDown();
-                prepare.get(5, java.util.concurrent.TimeUnit.SECONDS);
-                cancel.get(5, java.util.concurrent.TimeUnit.SECONDS);
+                prepare.get(5, TimeUnit.SECONDS);
+                cancel.get(5, TimeUnit.SECONDS);
                 var execution = service.executions(f.owner, draft.id()).get(0);
                 assertEquals("CANCELLED", execution.state());
                 assertEquals("CANCELLED", f.store.job("A", execution.job()).orElseThrow().state());
@@ -891,8 +898,7 @@ class ReportSubscriptionTest {
             var draft = service.create(f.owner, "RELATIVE_DATE_SUB", "相对日期订阅", model);
             service.publish(f.owner, draft.id(), draft.revision());
             Instant due = Instant.parse("2027-10-15T16:00:00Z");
-            f.jdbc.update(
-                    "UPDATE rpt_subscription_schedule SET next_at=?", java.sql.Timestamp.from(due));
+            f.jdbc.update("UPDATE rpt_subscription_schedule SET next_at=?", Timestamp.from(due));
             service.dispatchDue(due.plusMillis(1));
             assertTrue(service.schedule(f.owner, draft.id()).enabled());
             assertEquals("QUEUED", service.executions(f.owner, draft.id()).get(0).state());
@@ -916,10 +922,9 @@ class ReportSubscriptionTest {
                     "XLSX_DATA",
                     Map.of(),
                     "full");
-            var serviceRef =
-                    new java.util.concurrent.atomic.AtomicReference<ReportSubscriptionService>();
+            var serviceRef = new AtomicReference<ReportSubscriptionService>();
             var intercept =
-                    new org.springframework.jdbc.core.JdbcTemplate(f.jdbc.getDataSource()) {
+                    new JdbcTemplate(f.jdbc.getDataSource()) {
                         /**
                          * 在补偿更新前模拟已提交取消，精确覆盖锁释放后的窗口。
                          *
@@ -983,8 +988,7 @@ class ReportSubscriptionTest {
             complete(f, job);
             props.setNotificationsEnabled(false);
             Instant due = Instant.parse("2026-10-15T01:00:00Z");
-            f.jdbc.update(
-                    "UPDATE rpt_subscription_schedule SET next_at=?", java.sql.Timestamp.from(due));
+            f.jdbc.update("UPDATE rpt_subscription_schedule SET next_at=?", Timestamp.from(due));
             service.dispatchDue(due.plusMillis(1));
             assertTrue(service.schedule(f.owner, draft.id()).enabled());
             assertEquals(2, service.executions(f.owner, draft.id()).size());

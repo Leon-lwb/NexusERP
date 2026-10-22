@@ -1,8 +1,18 @@
 package com.nexus.erp.pu;
 
-import com.nexus.workflow.domain.WfMyBusiness;
-
-import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -20,12 +30,16 @@ import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.pu.service.PuPurchaseReceivingService;
 import com.nexus.erp.pu.service.impl.PuPurchaseOrderServiceImpl;
 import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -43,20 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 /** 来源订单只允许通过申请原子转单创建；所有 Mapper 均为 Mock，不连接数据库。 */
 @ExtendWith(MockitoExtension.class)
@@ -116,7 +116,8 @@ class PuPurchaseOrderServiceImplTest {
             () -> { WfMyBusiness flow = new WfMyBusiness(); flow.setDataId("42"); flow.setActStatus("pass"); orderService.afterFlowHandle(flow); }
         );
         for (Runnable mutation : mutations) {
-            org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, mutation::run));
+            Assertions.assertSame(
+                    protectedError, assertThrows(ServiceException.class, mutation::run));
         }
         verifyNoInteractions(baseMapper, lineMapper, vendorMapper, autoCodeUtil, processService, purchaseReceivingService);
     }
@@ -126,7 +127,9 @@ class PuPurchaseOrderServiceImplTest {
         PuPurchaseOrderBo bo = manualOrderBo(); bo.setOrderId(42L);
         ServiceException protectedError = new ServiceException("protected-document");
         lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderEdit(42L, null, bo.getLineList());
-        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, () -> orderService.updateByBo(bo)));
+        Assertions.assertSame(
+                protectedError,
+                assertThrows(ServiceException.class, () -> orderService.updateByBo(bo)));
         verifyNoInteractions(baseMapper, lineMapper, vendorMapper, autoCodeUtil);
     }
 
@@ -134,7 +137,11 @@ class PuPurchaseOrderServiceImplTest {
     void mixedLegacyAndProtectedOrderDeleteIsPreflightedBeforeFirstWrite() {
         ServiceException protectedError = new ServiceException("protected-document");
         lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyOrderMutation(43L);
-        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, () -> orderService.deleteByIds(new Long[]{42L,43L})));
+        Assertions.assertSame(
+                protectedError,
+                assertThrows(
+                        ServiceException.class,
+                        () -> orderService.deleteByIds(new Long[] {42L, 43L})));
         verifyNoInteractions(baseMapper, lineMapper);
     }
 

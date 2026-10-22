@@ -17,10 +17,14 @@ import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmSpareStockPostingService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.service.mq.MesSpareErpMessage;
 import com.nexus.erp.wm.service.mq.WmSpareStockDedupGuard;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,8 +61,8 @@ import java.util.List;
 @DS("erp")
 @RequiredArgsConstructor
 public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 入库流水类型

@@ -1,14 +1,17 @@
 package com.nexus.erp.wm.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.erp.wm.domain.WmSubcontractIssue;
 
+import io.github.linpeilie.annotations.AutoMapper;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 委外发料单业务对象
@@ -51,5 +54,5 @@ public class WmSubcontractIssueBo extends BaseEntity {
     private String remark;
 
     /** 发料单行列表(创建时提交) */
-    private java.util.List<WmSubcontractIssueLineBo> lines;
+    private List<WmSubcontractIssueLineBo> lines;
 }

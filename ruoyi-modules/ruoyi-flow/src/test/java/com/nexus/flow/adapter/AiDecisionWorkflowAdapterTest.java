@@ -1,37 +1,62 @@
 package com.nexus.flow.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.ai.decision.dto.DecisionWorkflowStartCommand;
-import com.nexus.common.ai.domain.entity.AiModel;
-import com.nexus.common.ai.service.IAiModelService;
-import com.nexus.common.flow.domain.entity.Flow;
-import com.nexus.common.flow.mapper.FlowMapper;
-import com.nexus.flow.engine.FlowEngine;
-import com.nexus.flow.node.FlowNodeRegistry;
-import com.nexus.common.core.exception.ServiceException;
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.config.AiProperties;
+import com.nexus.common.ai.decision.dto.DecisionWorkflowStartCommand;
+import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.service.IAiModelService;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.common.flow.mapper.FlowInstanceMapper;
+import com.nexus.common.flow.mapper.FlowMapper;
+import com.nexus.flow.engine.FlowEngine;
+import com.nexus.flow.model.FlowGraph;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.FlowNodeRegistry;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DuplicateKeyException;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.Spliterators;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 class AiDecisionWorkflowAdapterTest {
-    @org.junit.jupiter.api.BeforeAll
+    @BeforeAll
     static void initializeFlowTableInfo() {
-        var assistant = new org.apache.ibatis.builder.MapperBuilderAssistant(
-            new com.baomidou.mybatisplus.core.MybatisConfiguration(), "");
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, Flow.class);
+        var assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, Flow.class);
     }
     private final ObjectMapper mapper = new ObjectMapper();
-    private final com.nexus.ai.config.AiProperties properties = new com.nexus.ai.config.AiProperties();
+    private final AiProperties properties = new AiProperties();
     private final DecisionFlowDefinitionFactory factory = new DecisionFlowDefinitionFactory(mapper, properties);
     private final FlowMapper flows = mock(FlowMapper.class);
     private final FlowNodeRegistry providers = mock(FlowNodeRegistry.class);
     private final FlowEngine engine = mock(FlowEngine.class);
-    private final com.nexus.common.flow.mapper.FlowInstanceMapper instances = mock(com.nexus.common.flow.mapper.FlowInstanceMapper.class);
+    private final FlowInstanceMapper instances = mock(FlowInstanceMapper.class);
     private final IAiModelService models = mock(IAiModelService.class);
     private final AiDecisionWorkflowAdapter adapter = new AiDecisionWorkflowAdapter(factory, flows, instances, providers, engine, models, mapper, properties);
-    private final DecisionWorkflowStartCommand command = new DecisionWorkflowStartCommand(99L,
-        "system_delivery_risk_analysis", "000000", 7L, "worker", java.util.Map.of("runId", "99"));
+    private final DecisionWorkflowStartCommand command =
+            new DecisionWorkflowStartCommand(
+                    99L,
+                    "system_delivery_risk_analysis",
+                    "000000",
+                    7L,
+                    "worker",
+                    Map.of("runId", "99"));
 
     @Test void tamperedSystemTemplateCannotBeSilentlyMigratedOrRun() {
         var stored = factory.analysisFlow(null, null);
@@ -41,7 +66,7 @@ class AiDecisionWorkflowAdapterTest {
         var newer = new AiModel(); newer.setId(22L); newer.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(newer);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(stored);
         assertThrows(ServiceException.class, () -> adapter.startAnalysis(command));
         verify(flows, never()).update(isNull(), any());
@@ -55,7 +80,7 @@ class AiDecisionWorkflowAdapterTest {
         var newer = new AiModel(); newer.setId(22L); newer.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(newer);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(previous);
         when(flows.update(isNull(), any())).thenReturn(1);
         adapter.validateAnalysis(command);
@@ -70,7 +95,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(old);
         when(flows.update(isNull(), any())).thenReturn(1);
         adapter.validateAnalysis(command);
@@ -86,7 +111,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(stored);
         when(flows.update(isNull(), any())).thenReturn(1);
         adapter.validateAnalysis(command);
@@ -101,7 +126,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(old);
         when(flows.update(isNull(), any())).thenReturn(1);
         adapter.validateAnalysis(command);
@@ -116,7 +141,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(old);
         when(flows.update(isNull(), any())).thenReturn(1);
         adapter.validateAnalysis(command);
@@ -131,7 +156,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(old);
         assertThrows(ServiceException.class, () -> adapter.validateAnalysis(command));
         verify(flows, never()).update(isNull(), any());
@@ -145,7 +170,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.selectOne(any())).thenReturn(old);
         assertThrows(ServiceException.class, () -> adapter.validateAnalysis(command));
         verify(flows, never()).update(isNull(), any());
@@ -156,21 +181,26 @@ class AiDecisionWorkflowAdapterTest {
         config.setPolicyKnowledgeId(7L);
         properties.setDecision(config);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         when(flows.insert(any(Flow.class))).thenAnswer(call -> {
             ((Flow) call.getArgument(0)).setId(101L); return 1;
         });
         adapter.validateAnalysis(command);
-        var captured = org.mockito.ArgumentCaptor.forClass(Flow.class);
+        var captured = ArgumentCaptor.forClass(Flow.class);
         verify(flows).insert(captured.capture());
-        assertEquals(7L, com.nexus.flow.model.FlowGraph.parse(captured.getValue().getConfigJson())
-            .getNode("rag").getConfig().get("knowledgeId").asLong());
+        assertEquals(
+                7L,
+                FlowGraph.parse(captured.getValue().getConfigJson())
+                        .getNode("rag")
+                        .getConfig()
+                        .get("knowledgeId")
+                        .asLong());
     }
 
     @Test void concurrentCanonicalFirstPublicationRecoversOnlyTheVerifiedWinningRow() {
         var winner = racingWinner(false);
         when(flows.selectOne(any())).thenReturn(null, winner);
-        when(flows.insert(any(Flow.class))).thenThrow(new org.springframework.dao.DuplicateKeyException("race"));
+        when(flows.insert(any(Flow.class))).thenThrow(new DuplicateKeyException("race"));
         assertDoesNotThrow(() -> adapter.validateAnalysis(command));
         verify(flows, times(2)).selectOne(any());
         verify(flows, never()).update(isNull(), any());
@@ -180,7 +210,7 @@ class AiDecisionWorkflowAdapterTest {
     @Test void concurrentPublicationNeverAdmitsTamperedWinningGraph() {
         var winner = racingWinner(true);
         when(flows.selectOne(any())).thenReturn(null, winner);
-        when(flows.insert(any(Flow.class))).thenThrow(new org.springframework.dao.DuplicateKeyException("race"));
+        when(flows.insert(any(Flow.class))).thenThrow(new DuplicateKeyException("race"));
         assertThrows(ServiceException.class, () -> adapter.validateAnalysis(command));
         verify(flows, never()).update(isNull(), any());
         verifyNoInteractions(engine);
@@ -189,7 +219,8 @@ class AiDecisionWorkflowAdapterTest {
     @Test void duplicateKeyWithoutVisibleTenantWinnerStillFailsClosed() {
         racingWinner(false);
         when(flows.selectOne(any())).thenReturn(null);
-        when(flows.insert(any(Flow.class))).thenThrow(new org.springframework.dao.DuplicateKeyException("unrelated ID collision"));
+        when(flows.insert(any(Flow.class)))
+                .thenThrow(new DuplicateKeyException("unrelated ID collision"));
         assertThrows(ServiceException.class, () -> adapter.validateAnalysis(command));
         verify(flows, never()).update(isNull(), any());
         verifyNoInteractions(engine);
@@ -212,7 +243,7 @@ class AiDecisionWorkflowAdapterTest {
         var model = new AiModel(); model.setId(22L); model.setStatus("0");
         when(models.selectDefaultModel()).thenReturn(model);
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenReturn(mock(com.nexus.flow.node.FlowNodeProvider.class));
+        when(providers.getProvider(anyString())).thenReturn(mock(FlowNodeProvider.class));
         return winner;
     }
 
@@ -224,11 +255,13 @@ class AiDecisionWorkflowAdapterTest {
 
     @Test void validatedSystemGraphIsPersistedBeforeDispatchWithExactRunIdOnly() {
         when(providers.contains(anyString())).thenReturn(true);
-        when(providers.getProvider(anyString())).thenAnswer(call -> {
-            com.nexus.flow.node.FlowNodeProvider p = mock(com.nexus.flow.node.FlowNodeProvider.class);
-            return p;
-        });
-        var persisted = new java.util.concurrent.atomic.AtomicReference<Flow>();
+        when(providers.getProvider(anyString()))
+                .thenAnswer(
+                        call -> {
+                            FlowNodeProvider p = mock(FlowNodeProvider.class);
+                            return p;
+                        });
+        var persisted = new AtomicReference<Flow>();
         when(flows.selectOne(any())).thenAnswer(call -> persisted.get());
         when(flows.insert(any(Flow.class))).thenAnswer(call -> {
             Flow row = call.getArgument(0);
@@ -238,16 +271,22 @@ class AiDecisionWorkflowAdapterTest {
         when(engine.start(any(), any(), anyString(), anyString(), anyLong(), anyString())).thenReturn(199L);
         Long id = adapter.startAnalysis(command);
         assertEquals(199L, id);
-        var captured = org.mockito.ArgumentCaptor.forClass(Flow.class);
+        var captured = ArgumentCaptor.forClass(Flow.class);
         verify(flows).insert(captured.capture());
         Flow saved = captured.getValue();
         assertEquals("PUBLISHED", saved.getStatus());
         assertTrue(saved.getFlowKey().startsWith("system_delivery_risk_analysis_v1_"));
         assertEquals(101L, saved.getId());
-        var graph = com.nexus.flow.model.FlowGraph.parse(saved.getConfigJson());
+        var graph = FlowGraph.parse(saved.getConfigJson());
         assertTrue(graph.getNodes().containsKey("context"));
-        var input = org.mockito.ArgumentCaptor.forClass(com.fasterxml.jackson.databind.JsonNode.class);
+        var input = ArgumentCaptor.forClass(JsonNode.class);
         verify(engine).start(eq(saved), input.capture(), eq("DECISION"), eq("000000"), eq(7L), eq("worker"));
-        assertEquals(java.util.Set.of("runId"), java.util.stream.StreamSupport.stream(java.util.Spliterators.spliteratorUnknownSize(input.getValue().fieldNames(), 0), false).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(
+                Set.of("runId"),
+                StreamSupport.stream(
+                                Spliterators.spliteratorUnknownSize(
+                                        input.getValue().fieldNames(), 0),
+                                false)
+                        .collect(Collectors.toSet()));
     }
 }

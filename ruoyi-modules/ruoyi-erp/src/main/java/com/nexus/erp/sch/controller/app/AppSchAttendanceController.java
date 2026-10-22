@@ -1,18 +1,16 @@
 package com.nexus.erp.sch.controller.app;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import cn.hutool.core.util.StrUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import com.nexus.erp.sch.domain.SchAttendance;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchHoliday;
@@ -36,6 +34,11 @@ import com.nexus.erp.sch.service.ISchEmployeeScheduleService;
 import com.nexus.erp.sch.service.ISchPunchRuleService;
 import com.nexus.erp.sch.service.ISchShiftService;
 import com.nexus.erp.sch.service.ISchWorkerService;
+
+import jakarta.validation.Valid;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -43,6 +46,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.Base64;
+import java.util.Collections;
 
 /**
  * app打卡考勤控制器
@@ -171,7 +176,7 @@ public class AppSchAttendanceController {
             String faceBase64Str = ((String) faceImage).contains(",")
                 ? ((String) faceImage).split(",", 2)[1]
                 : ((String) faceImage);
-            faceBytes = java.util.Base64.getDecoder().decode(faceBase64Str);
+            faceBytes = Base64.getDecoder().decode(faceBase64Str);
         }
         if (data.get("attendanceId") != null) {
             schAttendanceService.asyncFaceVerify(
@@ -364,7 +369,7 @@ public class AppSchAttendanceController {
         if (workerList.isEmpty()) {
             Map<String, Object> emptyData = new HashMap<>();
             emptyData.put("total", 0);
-            emptyData.put("rows", java.util.Collections.emptyList());
+            emptyData.put("rows", Collections.emptyList());
             return R.ok(emptyData);
         }
         SchWorker currentWorker = workerList.get(0);
@@ -430,7 +435,7 @@ public class AppSchAttendanceController {
     public R<?> getRecentAttendance(@RequestParam(defaultValue = "10") Integer limit) {
         List<SchWorker> workerList = getWorkerList();
         if (workerList.isEmpty()) {
-            return R.ok(java.util.Collections.emptyList());
+            return R.ok(Collections.emptyList());
         }
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
@@ -653,7 +658,7 @@ public class AppSchAttendanceController {
         if (workerList.isEmpty()) {
             Map<String, Object> emptyData = new HashMap<>();
             emptyData.put("total", 0);
-            emptyData.put("rows", java.util.Collections.emptyList());
+            emptyData.put("rows", Collections.emptyList());
             return R.ok(emptyData);
         }
         SchWorker currentWorker = workerList.get(0);
@@ -677,13 +682,13 @@ public class AppSchAttendanceController {
     private List<SchWorker> getWorkerList() {
         Long userId;
         try {
-            userId = com.nexus.common.satoken.utils.LoginHelper.getUserId();
+            userId = LoginHelper.getUserId();
         } catch (Exception e) {
             // 无登录上下文(开放接口/内部调用): 不返回任何工人, 由调用方按"未绑定"处理
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         if (userId == null) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         return workerMapper.selectList(Wrappers.<SchWorker>lambdaQuery()
             .eq(SchWorker::getUserId, userId));

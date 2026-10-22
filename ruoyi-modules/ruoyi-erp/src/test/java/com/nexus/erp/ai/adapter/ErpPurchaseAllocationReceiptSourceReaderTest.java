@@ -1,26 +1,34 @@
 package com.nexus.erp.ai.adapter;
 
+import static com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.ai.adapter.mapper.ErpPurchaseAllocationReceiptSourceMapper;
 import com.nexus.erp.ai.adapter.mapper.ErpPurchaseAllocationReceiptSourceMapper.*;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
+
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Test;
-import com.nexus.common.core.exception.ServiceException;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.ObjectProvider;
-import com.nexus.common.tenant.helper.TenantHelper;
+
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.*;
-import static com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /** 所有来源和永久重放均为离线替身，不创建数据源或连接外部服务。 */
 class ErpPurchaseAllocationReceiptSourceReaderTest {
@@ -143,7 +151,10 @@ class ErpPurchaseAllocationReceiptSourceReaderTest {
     @ValueSource(strings = {"1.1234567", "1.0000000", "-1", "-0.000001", "0", "0.000000", "999999999999999999999.123456"})
     void databaseSecondsRejectUnknownPrecisionNonpositiveOrUnsupportedRange(String value) throws Exception {
         var method=ErpPurchaseAllocationReceiptSourceReader.class.getDeclaredMethod("secondsInstant",BigDecimal.class);method.setAccessible(true);
-        var failure=assertThrows(java.lang.reflect.InvocationTargetException.class,()->method.invoke(null,value==null?null:new BigDecimal(value)));
+        var failure =
+                assertThrows(
+                        InvocationTargetException.class,
+                        () -> method.invoke(null, value == null ? null : new BigDecimal(value)));
         assertInstanceOf(ServiceException.class,failure.getCause());
     }
 
@@ -197,7 +208,10 @@ class ErpPurchaseAllocationReceiptSourceReaderTest {
     @ValueSource(strings={"1.1234", "1.123456", "-1", "0"})
     void databaseMillisRejectUnknownPrecisionAndNonpositiveValues(String value) throws Exception {
         var method=ErpPurchaseAllocationReceiptSourceReader.class.getDeclaredMethod("millisInstant",BigDecimal.class);method.setAccessible(true);
-        var failure=assertThrows(java.lang.reflect.InvocationTargetException.class,()->method.invoke(null,value==null?null:new BigDecimal(value)));
+        var failure =
+                assertThrows(
+                        InvocationTargetException.class,
+                        () -> method.invoke(null, value == null ? null : new BigDecimal(value)));
         assertInstanceOf(ServiceException.class,failure.getCause());
     }
 
@@ -209,14 +223,19 @@ class ErpPurchaseAllocationReceiptSourceReaderTest {
     @Test
     void mapperOnlyUsesUncachedCurrentReadsWithoutStateDeletionOrQuantityFilters() {
         for(var method:ErpPurchaseAllocationReceiptSourceMapper.class.getDeclaredMethods()) {
-            var select=method.getAnnotation(org.apache.ibatis.annotations.Select.class);assertNotNull(select);
-            var options=method.getAnnotation(org.apache.ibatis.annotations.Options.class);assertNotNull(options);
-            assertFalse(options.useCache());assertEquals(org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE,options.flushCache());
+            var select = method.getAnnotation(Select.class);
+            assertNotNull(select);
+            var options = method.getAnnotation(Options.class);
+            assertNotNull(options);
+            assertFalse(options.useCache());
+            assertEquals(Options.FlushCachePolicy.TRUE, options.flushCache());
             String sql=String.join(" ",select.value()).toLowerCase(Locale.ROOT);
             assertFalse(sql.contains("delete "));assertFalse(sql.contains("insert "));assertFalse(sql.contains("update "));
             if(!method.getName().equals("clock")) {assertTrue(sql.contains("for update"));assertFalse(sql.substring(sql.indexOf("where")).contains("del_flag"));}
         }
-        assertNotNull(ErpPurchaseAllocationReceiptSourceMapper.class.getAnnotation(com.baomidou.mybatisplus.annotation.InterceptorIgnore.class));
+        assertNotNull(
+                ErpPurchaseAllocationReceiptSourceMapper.class.getAnnotation(
+                        InterceptorIgnore.class));
     }
 
     static void withTenant(Runnable action) {

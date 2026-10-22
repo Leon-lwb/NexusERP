@@ -1,9 +1,13 @@
 package com.nexus.erp.wm;
 
-import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
-import org.junit.jupiter.api.Test;
-import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
+
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 
 /** 摘要只校验原生绑定完整性，不能仅凭DTO或摘要授予写权限。 */
 class ReceiptIqcBirthSupportTest {
@@ -29,7 +33,11 @@ class ReceiptIqcBirthSupportTest {
         Birth original = birth(401L, new BigDecimal("12"), null);
         Birth valid = birth(401L, new BigDecimal("12"), hash(original));
         assertDoesNotThrow(() -> validate.invoke(null, valid));
-        assertThrows(java.lang.reflect.InvocationTargetException.class, () -> validate.invoke(null, birth(401L, new BigDecimal("13"), valid.birthSha256())));
+        assertThrows(
+                InvocationTargetException.class,
+                () ->
+                        validate.invoke(
+                                null, birth(401L, new BigDecimal("13"), valid.birthSha256())));
     }
     @Test void bindingIncludesNativeInspectionIdentity() throws Exception {
         var kind = Class.forName("com.nexus.common.mq.iqc.ReceiptIqcBirthSupport");

@@ -1,15 +1,23 @@
 package com.nexus.erp.wm.controller.serial;
 
 import com.fasterxml.jackson.databind.*;
+
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * 读取并重放原JSON，兼容旧BO/entity和原先没有RequestBody参数的执行URL。
@@ -30,9 +38,7 @@ public class WmSerialPayloadFilter extends OncePerRequestFilter {
                         == null
                 || !("POST".equals(request.getMethod()) || "PUT".equals(request.getMethod()))
                 || request.getContentType() != null
-                        && !request.getContentType()
-                                .toLowerCase(java.util.Locale.ROOT)
-                                .contains("json");
+                        && !request.getContentType().toLowerCase(Locale.ROOT).contains("json");
     }
 
     @Override
@@ -105,9 +111,9 @@ public class WmSerialPayloadFilter extends OncePerRequestFilter {
                     }
 
                     @Override
-                    public java.util.Enumeration<String> getHeaders(String name) {
+                    public Enumeration<String> getHeaders(String name) {
                         return "X-Idempotent-Key".equalsIgnoreCase(name) && key != null
-                                ? java.util.Collections.enumeration(java.util.List.of(key))
+                                ? Collections.enumeration(List.of(key))
                                 : super.getHeaders(name);
                     }
                 },

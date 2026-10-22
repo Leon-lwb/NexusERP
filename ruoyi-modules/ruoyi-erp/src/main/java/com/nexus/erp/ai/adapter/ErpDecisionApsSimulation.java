@@ -3,16 +3,16 @@ package com.nexus.erp.ai.adapter;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.ai.decision.dto.ApsScenarioCompareResult;
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
-import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
+import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.ArrivalFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
@@ -26,7 +26,9 @@ import com.nexus.erp.prd.schedule.ScheduleModel.ScheduledTask;
 import com.nexus.erp.prd.schedule.ScheduleModel.StepInfo;
 import com.nexus.erp.prd.schedule.ScheduleModel.Strategy;
 import com.nexus.erp.prd.schedule.ScheduleModel.WoInfo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -38,6 +40,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -50,6 +53,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** 只读快照与显式工单范围的内存 APS 比较；租户、数据源和授权由调用方 Port 保证。 */
 @Component
@@ -613,9 +618,10 @@ public class ErpDecisionApsSimulation {
             .thenComparing(row -> JsonUtils.toJsonString(new TreeMap<>(row)));
 
     private static List<Map<String, Object>> limitPreview(List<Map<String, Object>> rows) {
-        return rows.stream().limit(50)
-            .map(row -> java.util.Collections.unmodifiableMap(new LinkedHashMap<>(removeNulls(row))))
-            .toList();
+        return rows.stream()
+                .limit(50)
+                .map(row -> Collections.unmodifiableMap(new LinkedHashMap<>(removeNulls(row))))
+                .toList();
     }
 
     private static Map<String, Object> removeNulls(Map<String, Object> map) {

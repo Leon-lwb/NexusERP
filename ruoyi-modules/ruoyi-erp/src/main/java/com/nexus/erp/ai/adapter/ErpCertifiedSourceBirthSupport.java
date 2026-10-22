@@ -1,14 +1,19 @@
 package com.nexus.erp.ai.adapter;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.*;
+
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Objects;
 
 /** 出生的内部固定类型、父链及摘要规则；不对外签发独立核验器或客户端资格旗号。 */
@@ -53,15 +58,22 @@ final class ErpCertifiedSourceBirthSupport {
     }
     static String hash(Object... values){
         try{var digest=MessageDigest.getInstance("SHA-256");for(Object value:values){byte[] bytes=canonical(value).getBytes(StandardCharsets.UTF_8);
-            digest.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.length).array());digest.update(bytes);}
+                digest.update(ByteBuffer.allocate(4).putInt(bytes.length).array());
+                digest.update(bytes);
+            }
             return HexFormat.of().formatHex(digest.digest());
-        }catch(java.security.NoSuchAlgorithmException impossible){throw rejected("来源摘要算法不可用");}
+        } catch (NoSuchAlgorithmException impossible) {
+            throw rejected("来源摘要算法不可用");
+        }
     }
     private static String canonical(Object value){
         if(value==null)return "N;";
         if(value instanceof BigDecimal n)return "D:"+n.stripTrailingZeros().toPlainString()+";";
         if(value instanceof CharSequence s){StringBuilder r=new StringBuilder("S:").append(s.length()).append(':');
-            for(int i=0;i<s.length();i++)r.append(String.format(java.util.Locale.ROOT,"%04x",(int)s.charAt(i)));return r.append(';').toString();}
+            for (int i = 0; i < s.length(); i++)
+                r.append(String.format(Locale.ROOT, "%04x", (int) s.charAt(i)));
+            return r.append(';').toString();
+        }
         if(value.getClass().isRecord()){
             StringBuilder r=new StringBuilder("R:").append(value.getClass().getName()).append(':');
             try{for(var c:value.getClass().getRecordComponents())r.append(canonical(c.getName())).append(canonical(c.getAccessor().invoke(value)));}

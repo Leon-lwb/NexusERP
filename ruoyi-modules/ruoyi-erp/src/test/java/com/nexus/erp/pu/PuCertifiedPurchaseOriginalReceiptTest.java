@@ -1,9 +1,16 @@
 package com.nexus.erp.pu;
 
+import static com.nexus.erp.pu.PuCertifiedPurchaseLifecycleServiceTest.hash;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
 import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.ai.adapter.*;
 import com.nexus.erp.pu.domain.*;
 import com.nexus.erp.pu.domain.bo.PuCertifiedPurchaseCommand;
@@ -13,17 +20,16 @@ import com.nexus.erp.pu.mapper.PuCertifiedPurchaseWriteMapper.*;
 import com.nexus.erp.pu.service.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static com.nexus.erp.pu.PuCertifiedPurchaseLifecycleServiceTest.hash;
+import java.util.function.Supplier;
 
 /** 使用合成永久创建事实和真实领域推进；不访问实际数据库、登录服务或业务接口。 */
 class PuCertifiedPurchaseOriginalReceiptTest {
@@ -154,7 +160,16 @@ class PuCertifiedPurchaseOriginalReceiptTest {
     @Test void composedVerificationUsesExactlyOneOwnedRepeatableReadCallback() throws Exception {
         try(var f=new Fixture()) {
             f.advance(3);f.clearWrites();clearInvocations(f.physical.executor);boolean[] owned={false};
-            when(f.physical.executor.executeRepeatableRead(eq(T),any())).thenAnswer(a->{owned[0]=true;try{return ((java.util.function.Supplier<?>)a.getArgument(1)).get();}finally{owned[0]=false;}});
+            when(f.physical.executor.executeRepeatableRead(eq(T), any()))
+                    .thenAnswer(
+                            a -> {
+                                owned[0] = true;
+                                try {
+                                    return ((Supplier<?>) a.getArgument(1)).get();
+                                } finally {
+                                    owned[0] = false;
+                                }
+                            });
             doAnswer(a->{assertTrue(owned[0],"全部生命周期和原生订单来源核验必须处于同一个专属 ERP RR 回调");return null;}).when(f.physical.qualification).requireSourceChainTransaction();
             assertSame(f.original,f.adapter.verify(f.action,f.original,ACTOR),"单个专属事务完成核验且不改信封");
             verify(f.physical.executor,times(1)).executeRepeatableRead(eq(T),any());f.assertNoWrites();
@@ -277,15 +292,27 @@ class PuCertifiedPurchaseOriginalReceiptTest {
         OrderApprovalSource quote(String confirmed){return new OrderApprovalSource(T,801L,1501L,1801L,1,new BigDecimal("113"),new BigDecimal("100"),new BigDecimal("13"),
             "2026-10-12",201L,501L,key,"d".repeat(64),nativeQuote.quoteHash(),902L,903L,confirmed,"pu:order:terms:confirm",NOW);}
         void apply(Operation op,Long line){applyAs(op,line,901L);}
-        void applyAs(Operation op,Long line,long actor){physical.login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(actor);
-            try{physical.service.applyLocked(new Command(T,actor,201L,allocation,key,physical.row.getVersion(),op,line));}
-            finally{physical.login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(901L);}}
+
+        void applyAs(Operation op, Long line, long actor) {
+            physical.login.when(LoginHelper::getUserId).thenReturn(actor);
+            try{physical.service.applyLocked(new Command(T,actor,201L,allocation,key,physical.row.getVersion(),op,line));
+            } finally {
+                physical.login.when(LoginHelper::getUserId).thenReturn(901L);
+            }
+        }
+
         void approve(){approveAs(901L);}
         void approveAs(long actor){reqStatus="APPROVED";reqVersion++;requisitionUpdatedBy=actor;approvalUpdatedBy=actor;
             req=new RequisitionLine(T,401L,601L,201L,"501",BigDecimal.TEN,BigDecimal.TEN,"MRP",301L,"2026-10-08","0");applyAs(Operation.APPROVE,null,actor);}
-        void applyOrderAs(Operation operation,long actor){physical.login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(actor);
-            try{physical.service.applyOrderForWorkflowLocked(new OrderCommand(T,actor,201L,key,801L,operation,Map.of(allocation,physical.row.getVersion())));}
-            finally{physical.login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(901L);}}
+
+        void applyOrderAs(Operation operation, long actor) {
+            physical.login.when(LoginHelper::getUserId).thenReturn(actor);
+            try{physical.service.applyOrderForWorkflowLocked(new OrderCommand(T,actor,201L,key,801L,operation,Map.of(allocation,physical.row.getVersion())));
+            } finally {
+                physical.login.when(LoginHelper::getUserId).thenReturn(901L);
+            }
+        }
+
         void transferAs(long actor){transferActor=actor;reqStatus="ORDERED";reqVersion++;requisitionUpdatedBy=actor;orderStatus="DRAFT";
             physical.orderLine=new OrderLine(T,701L,801L,401L,201L,"501",BigDecimal.TEN,BigDecimal.ZERO,BigDecimal.ZERO,"PENDING","0");applyAs(Operation.TRANSFER_TO_ORDER,701L,actor);}
         void advance(int stage){

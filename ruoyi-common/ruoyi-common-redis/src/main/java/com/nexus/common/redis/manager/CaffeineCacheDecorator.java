@@ -1,9 +1,13 @@
 package com.nexus.common.redis.manager;
 
 import com.nexus.common.core.utils.SpringUtils;
+
 import org.springframework.cache.Cache;
 
 import java.util.concurrent.Callable;
+
+// 同名类型说明：本文件同时使用 org.springframework.cache.Cache 和
+// com.github.benmanes.caffeine.cache.Cache，后者保留全限定名以区分。
 
 /**
  * Cache 装饰器模式(用于扩展 Caffeine 一级缓存)

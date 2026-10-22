@@ -1,12 +1,16 @@
 package com.nexus.mes.eq.domain.bo;
 
+import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.mes.eq.domain.EqRepair;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import jakarta.validation.constraints.NotNull;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import com.nexus.common.mybatis.core.domain.BaseEntity;
-import com.nexus.mes.eq.domain.EqRepair;
+import java.math.BigDecimal;
 
 /**
  * MES设备维修记录业务对象 eq_repair
@@ -49,10 +53,10 @@ public class EqRepairBo extends BaseEntity {
     private String repairerName;
 
     /** 停机时长(小时) */
-    private java.math.BigDecimal downtimeHours;
+    private BigDecimal downtimeHours;
 
     /** 维修成本 */
-    private java.math.BigDecimal repairCost;
+    private BigDecimal repairCost;
 
     /** 状态 */
     private String status;

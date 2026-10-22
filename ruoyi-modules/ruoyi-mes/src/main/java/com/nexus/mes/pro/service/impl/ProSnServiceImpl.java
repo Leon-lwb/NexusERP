@@ -1,15 +1,15 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.mes.trace.*;
-import com.nexus.common.trace.TraceHashes;
-import org.springframework.transaction.annotation.Propagation;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.trace.TraceHashes;
+import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.bo.ProSnBo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardStepVo;
@@ -17,9 +17,13 @@ import com.nexus.mes.pro.domain.vo.ProSnVo;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProSnService;
+import com.nexus.mes.trace.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -213,7 +217,7 @@ public class ProSnServiceImpl implements IProSnService {
      */
     @Override
     public void shipSn(Long snId) {
-        throw new com.nexus.common.core.exception.ServiceException("发货状态只由ERP已过账发货事件投影，不能手动标记");
+        throw new ServiceException("发货状态只由ERP已过账发货事件投影，不能手动标记");
     }
 
     /**
@@ -234,13 +238,9 @@ public class ProSnServiceImpl implements IProSnService {
         if (sn.getCardId() != null) {
             List<ProFlowCardStepVo> steps =
                     stepMapper.selectVoList(
-                            Wrappers.<com.nexus.mes.pro.domain.ProFlowCardStep>lambdaQuery()
-                                    .eq(
-                                            com.nexus.mes.pro.domain.ProFlowCardStep::getCardId,
-                                            sn.getCardId())
-                                    .orderByAsc(
-                                            com.nexus.mes.pro.domain.ProFlowCardStep
-                                                    ::getSequenceNum));
+                            Wrappers.<ProFlowCardStep>lambdaQuery()
+                                    .eq(ProFlowCardStep::getCardId, sn.getCardId())
+                                    .orderByAsc(ProFlowCardStep::getSequenceNum));
             for (ProFlowCardStepVo step : steps) {
                 Map<String, Object> m = new HashMap<>();
                 m.put("stepRecordId", step.getStepRecordId());

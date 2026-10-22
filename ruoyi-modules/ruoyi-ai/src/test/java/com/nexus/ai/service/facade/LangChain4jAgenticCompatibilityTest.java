@@ -1,7 +1,10 @@
 package com.nexus.ai.service.facade;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.context.AiRequestContext;
+
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -11,18 +14,18 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 假模型驱动真实 Supervisor 与 ERP 子 Agent，验证多轮工具及复用线程的身份清理。 */
 @Timeout(20)
@@ -35,7 +38,8 @@ class LangChain4jAgenticCompatibilityTest {
         var modelCalls = new AtomicInteger();
         var tools = new ReadOnlyTool();
         ChatModel planner = new ChatModel() {
-            @Override public ChatResponse doChat(ChatRequest request) {
+            @Override
+            public ChatResponse doChat(ChatRequest request) {
                 assertIdentity();
                 return text(plans.getAndIncrement() == 0
                     ? "{\"agentName\":\"query\",\"arguments\":{\"query\":\"核对库存\"}}"
@@ -43,7 +47,8 @@ class LangChain4jAgenticCompatibilityTest {
             }
         };
         ChatModel worker = new ChatModel() {
-            @Override public ChatResponse doChat(ChatRequest request) {
+            @Override
+            public ChatResponse doChat(ChatRequest request) {
                 assertIdentity();
                 int call = modelCalls.getAndIncrement();
                 if (call < 2) return ChatResponse.builder().aiMessage(AiMessage.from(ToolExecutionRequest.builder()
@@ -74,12 +79,14 @@ class LangChain4jAgenticCompatibilityTest {
     @Test
     void childModelFailurePropagatesAndWorkerIdentityIsCleared() throws Exception {
         ChatModel planner = new ChatModel() {
-            @Override public ChatResponse doChat(ChatRequest request) {
+            @Override
+            public ChatResponse doChat(ChatRequest request) {
                 return text("{\"agentName\":\"query\",\"arguments\":{\"query\":\"核对库存\"}}");
             }
         };
         ChatModel failed = new ChatModel() {
-            @Override public ChatResponse doChat(ChatRequest request) {
+            @Override
+            public ChatResponse doChat(ChatRequest request) {
                 assertIdentity();
                 throw new IllegalStateException("offline-model-failure");
             }
@@ -94,7 +101,8 @@ class LangChain4jAgenticCompatibilityTest {
                         .responseStrategy(SupervisorResponseStrategy.LAST).maxAgentsInvocations(2).build().invoke("核对库存");
                 } finally { AiRequestContext.clear(); }
             });
-            var error = assertThrows(java.util.concurrent.ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+            var error =
+                    assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
             assertTrue(causeContains(error, "offline-model-failure"));
             assertThreadCleared(executor);
         } finally { executor.shutdownNow(); }

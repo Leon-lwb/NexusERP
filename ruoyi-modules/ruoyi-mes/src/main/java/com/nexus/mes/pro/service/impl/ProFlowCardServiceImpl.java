@@ -7,13 +7,15 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.flash.domain.FlashRecord;
 import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.mapper.FlashRecordMapper;
@@ -43,18 +45,24 @@ import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesProductLotOutputWriter;
+import com.nexus.mes.trace.MesProductionDetailFactsService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -104,9 +112,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final LockTemplate lockTemplate;
 
     private final IProWorkOrderService proWorkOrderService;
-    private final com.nexus.mes.trace.MesProductLotOutputWriter productLotOutputs;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    private final com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
+    private final MesProductLotOutputWriter productLotOutputs;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesProductionDetailFactsService detailFacts;
 
     /**
      * IPQC 服务：关键工序报工时自动建过程检验单
@@ -143,10 +151,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      */
     private final MesFlashTypeMapper mesFlashTypeMapper;
 
-    /**
-     * JSON 解析(step_flash_config 多类型绑定)
-     */
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    /** JSON 解析(step_flash_config 多类型绑定) */
+    private final ObjectMapper objectMapper;
 
     /**
      * 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭
@@ -218,10 +224,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
                 step.setProductOutputContext(null);
             }
         }
-        if (org.springframework.transaction.support.TransactionSynchronizationManager
-                        .isActualTransactionActive()
-                && !org.springframework.transaction.support.TransactionSynchronizationManager
-                        .isCurrentTransactionReadOnly()) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
             return;
         }
         var facts = detailFacts.productOutputs(vo.getCardId(), vo.getMesWoId(), vo.getMaterialId());
@@ -654,9 +658,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         List<FlashBinding> bindings = new ArrayList<>();
         if (StringUtils.isNotBlank(woStep.getStepFlashConfig())) {
             try {
-                com.fasterxml.jackson.databind.JsonNode arr =
-                        objectMapper.readTree(woStep.getStepFlashConfig());
-                for (com.fasterxml.jackson.databind.JsonNode b : arr) {
+                JsonNode arr = objectMapper.readTree(woStep.getStepFlashConfig());
+                for (JsonNode b : arr) {
                     if (b.has("contentRefId") && b.get("contentRefId").canConvertToLong()) {
                         bindings.add(
                                 new FlashBinding(
@@ -1123,7 +1126,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
                     bo.getCardId(),
                     bo.getStepRecordId(),
                     bo.getProductOutputs(),
-                    com.nexus.common.satoken.utils.LoginHelper.getUserId());
+                    LoginHelper.getUserId());
         }
         doCompleteStep(
                 bo.getCardId(),

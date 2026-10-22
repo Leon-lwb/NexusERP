@@ -12,20 +12,25 @@ import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.bo.pda.PdaPickBo;
 import com.nexus.erp.wm.mapper.PdaIssueSourceMapper;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+
 import org.springframework.jdbc.datasource.ConnectionHolder;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+
+import javax.sql.DataSource;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** PDA 领料的只读来源门禁；所有核验完成前不修改领料行或调用扣库。 */
 @Service

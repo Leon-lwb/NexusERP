@@ -5,15 +5,18 @@ import com.nexus.ai.service.config.IAiConfigService;
 import com.nexus.ai.service.query.ErpTableSchemaManager;
 import com.nexus.ai.service.rag.VectorStoreService;
 import com.nexus.common.ai.domain.bo.AiConfigBo;
-import com.nexus.common.ai.domain.vo.AiConfigVo;
 import com.nexus.common.ai.domain.entity.AiConfig;
+import com.nexus.common.ai.domain.vo.AiConfigVo;
 import com.nexus.common.ai.mapper.AiConfigMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
@@ -21,9 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * AI 运行参数配置服务实现
@@ -130,7 +134,7 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         decisionVo.setAnalysisTimeoutSeconds(decision.getAnalysisTimeoutSeconds());
         decisionVo.setActionTimeoutSeconds(decision.getActionTimeoutSeconds());
         decisionVo.setStaleThresholdSeconds(decision.getStaleThresholdSeconds());
-        decisionVo.setRequireApprovalLevels(new java.util.ArrayList<>(decision.getRequireApprovalLevels()));
+        decisionVo.setRequireApprovalLevels(new ArrayList<>(decision.getRequireApprovalLevels()));
         decisionVo.setAllowAutoLowRiskNotify(decision.isAllowAutoLowRiskNotify());
         decisionVo.setBenchmarkMode(decision.isBenchmarkMode());
         decisionVo.setDefaultHorizonDays(decision.getDefaultHorizonDays());
@@ -342,12 +346,12 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
     /** 请求字段映射为运行态配置；未提供决策组的旧客户端需要先更新表单。 */
     private AiProperties.DecisionConfig toDecisionConfig(AiConfigBo.DecisionBo bo) {
         if (bo == null || bo.getRisk() == null || bo.getRanking() == null) {
-            throw new com.nexus.common.core.exception.ServiceException("工业决策配置、风险分值及方案权重不能为空");
+            throw new ServiceException("工业决策配置、风险分值及方案权重不能为空");
         }
         AiProperties.DecisionConfig config = JsonUtils.parseObject(
             JsonUtils.toJsonString(bo), AiProperties.DecisionConfig.class);
         if (config == null) {
-            throw new com.nexus.common.core.exception.ServiceException("工业决策配置无法解析");
+            throw new ServiceException("工业决策配置无法解析");
         }
         return config;
     }
@@ -355,10 +359,16 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
     /** 持久化或重载前检查两个评分维度；拒绝无穷和无效比例。 */
     private void validateDecisionWeights(AiProperties.DecisionConfig config) {
         List<String> required = config.getRequireApprovalLevels();
-        if (required == null || !required.contains("HIGH") || !required.contains("CRITICAL")
-            || required.stream().anyMatch(level -> level == null
-                || !java.util.Set.of("LOW", "MEDIUM", "HIGH", "CRITICAL").contains(level))) {
-            throw new com.nexus.common.core.exception.ServiceException("高风险及严重风险必须保留人工审批");
+        if (required == null
+                || !required.contains("HIGH")
+                || !required.contains("CRITICAL")
+                || required.stream()
+                        .anyMatch(
+                                level ->
+                                        level == null
+                                                || !Set.of("LOW", "MEDIUM", "HIGH", "CRITICAL")
+                                                        .contains(level))) {
+            throw new ServiceException("高风险及严重风险必须保留人工审批");
         }
         var risk = config.getRisk();
         if (risk == null
@@ -368,7 +378,7 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
             || risk.getSupplierPoints() < 0 || risk.getSupplierPoints() > 100
             || ((long) risk.getTardinessPoints() + risk.getShortagePoints()
                 + risk.getCapacityPoints() + risk.getSupplierPoints()) != 100L) {
-            throw new com.nexus.common.core.exception.ServiceException("决策风险分值必须在0到100且合计为100");
+            throw new ServiceException("决策风险分值必须在0到100且合计为100");
         }
         var ranking = config.getRanking();
         if (ranking == null || !Double.isFinite(ranking.weightSum())
@@ -377,7 +387,7 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
             || ranking.getShortageWeight() < 0 || ranking.getUtilizationWeight() < 0
             || ranking.getActionCostWeight() < 0 || ranking.getPlanChangeWeight() < 0
             || ranking.getInfeasibleWeight() < 0) {
-            throw new com.nexus.common.core.exception.ServiceException("决策方案排名权重必须非负且合计为1");
+            throw new ServiceException("决策方案排名权重必须非负且合计为1");
         }
         if (config.getMaxConcurrentRuns() < 1 || config.getMaxConcurrentRuns() > 16
             || config.getMaxScenarios() < 2 || config.getMaxScenarios() > 8
@@ -387,7 +397,7 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
             || config.getDefaultHorizonDays() < 1 || config.getMaxHorizonDays() > 90
             || config.getDefaultHorizonDays() > config.getMaxHorizonDays()
             || (config.getPolicyKnowledgeId() != null && config.getPolicyKnowledgeId() <= 0)) {
-            throw new com.nexus.common.core.exception.ServiceException("工业决策并发、方案数或推演跨度不合法");
+            throw new ServiceException("工业决策并发、方案数或推演跨度不合法");
         }
     }
 

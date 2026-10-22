@@ -1,14 +1,17 @@
 package com.nexus.flow.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.flow.domain.bo.FlowBo;
 import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.common.flow.domain.entity.FlowInstance;
 import com.nexus.common.flow.service.*;
 import com.nexus.flow.engine.FlowEngine;
 import com.nexus.flow.node.FlowNodeRegistry;
 import com.nexus.flow.template.FlowTemplateCatalog;
+
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class DecisionFlowControllerSecurityTest {
     private final IFlowService flows = mock(IFlowService.class);
@@ -38,7 +41,7 @@ class DecisionFlowControllerSecurityTest {
         var request = new FlowController.FlowNodeTestRequest();
         request.setFlowId(1L); request.setNodeId("context");
         assertNotEquals(200, controller.nodeTest(request).getCode());
-        var instance = new com.nexus.common.flow.domain.entity.FlowInstance();
+        var instance = new FlowInstance();
         instance.setId(19L); instance.setConfigSnapshot(protectedFlow.getConfigJson());
         var instances = mock(IFlowInstanceService.class);
         var ctrl = new FlowController(flows, mock(IFlowVersionService.class), instances, engine,

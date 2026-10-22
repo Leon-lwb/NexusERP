@@ -5,6 +5,7 @@ import com.nexus.report.domain.ReportDsl;
 import com.nexus.report.engine.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** 把交叉结果投影为三种导出共同消费的精确二维表。 */
 public final class PivotProjection {
@@ -44,7 +45,7 @@ public final class PivotProjection {
                 String label =
                         result.columns().get(c).stream()
                                 .map(value -> value.value() == null ? "（空）" : value.displayText())
-                                .collect(java.util.stream.Collectors.joining(" / "));
+                                .collect(Collectors.joining(" / "));
                 columns.add(
                         new ReportDsl.Column(
                                 "cell_" + c + "_" + m,

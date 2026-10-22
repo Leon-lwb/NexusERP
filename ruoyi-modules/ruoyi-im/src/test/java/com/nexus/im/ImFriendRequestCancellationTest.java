@@ -1,5 +1,9 @@
 package com.nexus.im;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nexus.common.core.exception.ServiceException;
@@ -14,18 +18,19 @@ import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
+
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.util.*;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 好友申请撤销的身份、关联、状态和实际事务提交时序回归，不连接外部服务。 */
 class ImFriendRequestCancellationTest extends ImUnitTestBase {
@@ -234,10 +239,9 @@ class ImFriendRequestCancellationTest extends ImUnitTestBase {
     }
 
     private AppImController transactionalApp(ImBehaviorRegressionTest.MemoryTransactions tx) {
-        var proxy = new org.springframework.aop.framework.ProxyFactory(app);
+        var proxy = new ProxyFactory(app);
         proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(tx,
-            new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
+        proxy.addAdvice(new TransactionInterceptor(tx, new AnnotationTransactionAttributeSource()));
         return (AppImController) proxy.getProxy();
     }
 

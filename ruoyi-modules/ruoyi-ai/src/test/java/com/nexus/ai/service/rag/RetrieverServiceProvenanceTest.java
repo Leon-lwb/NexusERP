@@ -1,8 +1,14 @@
 package com.nexus.ai.service.rag;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.service.decision.DecisionEvidenceService;
 import com.nexus.ai.service.kg.GraphStoreStrategy;
 import com.nexus.common.ai.decision.dto.RetrievalHit;
+import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.domain.entity.AiKnowledgeDocument;
 import com.nexus.common.ai.domain.vo.AiKnowledgeVo;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
@@ -10,21 +16,20 @@ import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.tenant.helper.TenantHelper;
-import org.mockito.MockedStatic;
-import org.springframework.jdbc.core.RowMapper;
+
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class RetrieverServiceProvenanceTest {
@@ -98,7 +103,7 @@ class RetrieverServiceProvenanceTest {
         try (MockedStatic<TenantHelper> tenants = mockStatic(TenantHelper.class)) {
             tenants.when(TenantHelper::getTenantId).thenReturn("TENANT-A");
             service.retrieveHits(7L, "问答");
-            var sql = org.mockito.ArgumentCaptor.forClass(String.class);
+            var sql = ArgumentCaptor.forClass(String.class);
             verify(jdbc).query(sql.capture(), any(RowMapper.class),
                 eq(7L), eq("TENANT-A"), eq("问答"), eq("问答"), eq(5));
             assertTrue(sql.getValue().contains("tenant_id = ?"));
@@ -113,7 +118,7 @@ class RetrieverServiceProvenanceTest {
         var oldVector = match(1001L, 11L, "旧索引文本", .91);
         when(vectors.search(eq(7L), eq("问答"), eq(5), eq(0.5), eq("embed")))
             .thenReturn(List.of(oldVector));
-        var latest = new com.nexus.common.ai.domain.entity.AiKnowledgeChunk();
+        var latest = new AiKnowledgeChunk();
         latest.setId(1001L); latest.setKnowledgeId(7L); latest.setDocumentId(12L);
         latest.setContent("当前文档文本");
         try (MockedStatic<TenantHelper> tenants = mockStatic(TenantHelper.class)) {
@@ -148,14 +153,15 @@ class RetrieverServiceProvenanceTest {
         when(vectors.search(eq(7L), eq("问答"), eq(5), eq(0.5), eq("embed")))
             .thenReturn(List.of(staleVector));
         when(documents.selectList(any())).thenReturn(List.of(document(11L, "正式制度")));
-        var stored = new com.nexus.common.ai.domain.entity.AiKnowledgeChunk();
+        var stored = new AiKnowledgeChunk();
         stored.setId(1001L); stored.setDocumentId(11L); stored.setKnowledgeId(7L);
         stored.setContent("新版制度正文");
         when(chunks.selectList(any())).thenReturn(List.of(stored));
         var hit = service.retrieveHits(7L, "问答").get(0);
         assertEquals("UNVERIFIED", hit.sourceType());
-        assertThrows(IllegalArgumentException.class, () ->
-            new com.nexus.ai.service.decision.DecisionEvidenceService().fromRetrievalHits(List.of(hit)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new DecisionEvidenceService().fromRetrievalHits(List.of(hit)));
     }
 
     @Test
@@ -173,8 +179,8 @@ class RetrieverServiceProvenanceTest {
         assertNull(hit.version());
     }
 
-    private static com.nexus.common.ai.domain.entity.AiKnowledgeChunk stored(long id, long document, String content) {
-        var chunk = new com.nexus.common.ai.domain.entity.AiKnowledgeChunk();
+    private static AiKnowledgeChunk stored(long id, long document, String content) {
+        var chunk = new AiKnowledgeChunk();
         chunk.setId(id); chunk.setKnowledgeId(7L); chunk.setDocumentId(document); chunk.setContent(content);
         return chunk;
     }

@@ -2,26 +2,33 @@ package com.nexus.erp.bd.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdMaterialCategory;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.bo.BdMaterialBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.mapper.BdMaterialCategoryMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.bd.service.IBdMaterialService;
+import com.nexus.erp.wm.trace.MaterialTrackingPolicyGuard;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,7 +52,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     private final BdUnitOfMeasureMapper uomMapper;
     private final BdMaterialCategoryMapper categoryMapper;
     private final BdServiceHelper bd;
-    private final com.nexus.erp.wm.trace.MaterialTrackingPolicyGuard trackingGuard;
+    private final MaterialTrackingPolicyGuard trackingGuard;
 
     /**
      * 查询物料产品主分页列表
@@ -118,10 +125,10 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdMaterialBo bo) {
-        String tenant = com.nexus.common.tenant.helper.TenantHelper.getTenantId();
+        String tenant = TenantHelper.getTenantId();
         BdMaterial old = baseMapper.lockTracking(tenant, bo.getMaterialId());
         if (old == null) {
-            throw new com.nexus.common.core.exception.ServiceException("物料不存在或不在当前租户范围");
+            throw new ServiceException("物料不存在或不在当前租户范围");
         }
         BdMaterial entity = MapstructUtils.convert(bo, BdMaterial.class);
         trackingGuard.prepare(old, entity, bo.getTrackingVersion());
@@ -334,8 +341,8 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
                 uomMapper.selectBatchIds(uomIds).stream()
                         .collect(
                                 Collectors.toMap(
-                                        com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId,
-                                        com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomName,
+                                        BdUnitOfMeasure::getUomId,
+                                        BdUnitOfMeasure::getUomName,
                                         (v1, v2) -> v1));
         for (BdMaterialVo vo : list) {
             if (vo.getBaseUomId() != null) {

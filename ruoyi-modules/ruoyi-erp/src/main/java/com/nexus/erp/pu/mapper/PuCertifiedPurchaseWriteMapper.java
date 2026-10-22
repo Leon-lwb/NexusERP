@@ -1,7 +1,10 @@
 package com.nexus.erp.pu.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.nexus.erp.pu.domain.PuRequirementAllocationEvent;
+
 import org.apache.ibatis.annotations.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -30,11 +33,12 @@ public interface PuCertifiedPurchaseWriteMapper {
         + "WHERE tenant_id=#{tenantId} AND requisition_id=#{id} ORDER BY line_id FOR UPDATE")
     List<LineReceipt> lockLines(@Param("tenantId") String tenantId, @Param("id") Long id);
 
-    @Options(flushCache=Options.FlushCachePolicy.TRUE, useCache=false)
-    @Select("SELECT * FROM pu_requirement_allocation_event WHERE tenant_id=#{tenantId} AND allocation_id=#{allocationId} "
-        + "AND event_type='CREATE' ORDER BY event_id FOR UPDATE")
-    List<com.nexus.erp.pu.domain.PuRequirementAllocationEvent> lockCreationEvents(@Param("tenantId") String tenantId,
-        @Param("allocationId") Long allocationId);
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+    @Select(
+            "SELECT * FROM pu_requirement_allocation_event WHERE tenant_id=#{tenantId} AND allocation_id=#{allocationId} "
+                    + "AND event_type='CREATE' ORDER BY event_id FOR UPDATE")
+    List<PuRequirementAllocationEvent> lockCreationEvents(
+            @Param("tenantId") String tenantId, @Param("allocationId") Long allocationId);
 
     @Options(flushCache=Options.FlushCachePolicy.TRUE, useCache=false)
     @Select("SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() "

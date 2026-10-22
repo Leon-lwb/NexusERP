@@ -7,11 +7,13 @@ import com.nexus.report.engine.RenderPlan;
 
 import org.apache.pdfbox.pdmodel.*;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.graphics.state.RenderingMode;
 
 import java.awt.Color;
 import java.io.*;
 import java.nio.file.Path;
+import java.util.Base64;
 
 /** PDF 消费服务端固定坐标及断行，不再执行另一套布局。 */
 public final class ReportPdfExporter {
@@ -76,11 +78,10 @@ public final class ReportPdfExporter {
                         var raster = plan.rasters().get(media.resource());
                         if (raster == null) throw new ReportFault("PLAN_INVALID", "计划媒体资源缺失", 409);
                         var image =
-                                org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
-                                        .createFromByteArray(
-                                                document,
-                                                java.util.Base64.getDecoder().decode(raster.png()),
-                                                media.resource());
+                                PDImageXObject.createFromByteArray(
+                                        document,
+                                        Base64.getDecoder().decode(raster.png()),
+                                        media.resource());
                         canvas.drawImage(
                                 image,
                                 (float) media.x(),

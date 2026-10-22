@@ -1,6 +1,11 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
@@ -11,6 +16,8 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,15 +25,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Tag("dev")
@@ -39,14 +43,22 @@ class ErpIndustrialDecisionDataAdapterTest {
         REF, List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
         List.of(), Map.of(), List.of(), "old-hash", LocalDateTime.of(2026, 9, 24, 10, 0), List.of());
 
-    @Mock private DeliveryContextAssembler assembler;
-    @Mock private ErpDecisionShortageSimulation shortage;
-    @Mock private ErpDecisionApsSimulation aps;
-    @Mock private ErpDecisionFreshnessChecker freshness;
-    @Mock private ErpDecisionActionExecutor executor;
-    @Mock private ErpCertifiedPurchaseDecisionAdapter purchase;
-    @Mock private ErpDecisionPurchaseContractService contracts;
-    @InjectMocks private ErpIndustrialDecisionDataAdapter adapter;
+    @Mock
+    private DeliveryContextAssembler assembler;
+    @Mock
+    private ErpDecisionShortageSimulation shortage;
+    @Mock
+    private ErpDecisionApsSimulation aps;
+    @Mock
+    private ErpDecisionFreshnessChecker freshness;
+    @Mock
+    private ErpDecisionActionExecutor executor;
+    @Mock
+    private ErpCertifiedPurchaseDecisionAdapter purchase;
+    @Mock
+    private ErpDecisionPurchaseContractService contracts;
+    @InjectMocks
+    private ErpIndustrialDecisionDataAdapter adapter;
 
     @Test void freezeUsesPersistedSnapshotOnlyAfterOrdinaryFreshnessAndReadAccess() {
         withTenant(()->{
@@ -318,7 +330,7 @@ class ErpIndustrialDecisionDataAdapterTest {
 
     @Test
     void realCertifiedAdapterKeepsOldPayloadRejectedAfterTargetTenantAndPermissionsCheck() {
-        var writer = mock(com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService.class);
+        var writer = mock(PuCertifiedPurchaseWriteService.class);
         var realPurchase = new ErpCertifiedPurchaseDecisionAdapter(writer);
         var boundary = new ErpIndustrialDecisionDataAdapter(assembler, shortage, aps, freshness, executor, realPurchase);
         var actor = new DecisionActor("000001", 7L, "tester", PERMISSIONS);
@@ -338,9 +350,9 @@ class ErpIndustrialDecisionDataAdapterTest {
 
     @Test
     void facadeDoesNotIntroduceOuterTransactionAroundPurchaseWriter() {
-        assertNull(ErpIndustrialDecisionDataAdapter.class.getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+        assertNull(ErpIndustrialDecisionDataAdapter.class.getAnnotation(Transactional.class));
         for (var method : ErpIndustrialDecisionDataAdapter.class.getDeclaredMethods()) {
-            assertNull(method.getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+            assertNull(method.getAnnotation(Transactional.class));
         }
     }
 

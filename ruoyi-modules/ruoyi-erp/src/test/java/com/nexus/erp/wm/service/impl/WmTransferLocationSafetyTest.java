@@ -1,6 +1,11 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
@@ -9,17 +14,16 @@ import com.nexus.erp.wm.domain.*;
 import com.nexus.erp.wm.domain.bo.WmTransferBo;
 import com.nexus.erp.wm.domain.vo.WmTransferVo;
 import com.nexus.erp.wm.mapper.*;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.math.BigDecimal;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WmTransferLocationSafetyTest {
@@ -78,12 +82,15 @@ class WmTransferLocationSafetyTest {
 
     private void configureMasterData() {
         lenient().when(warehouseMapper.selectById(any())).thenAnswer(i -> warehouse(((Number)i.getArgument(0)).longValue()));
-        lenient().when(locationMapper.selectOne(any())).thenAnswer(i -> {
-            var query = (com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<?>)i.getArgument(0);
-            query.getSqlSegment();
-            String values = query.getParamNameValuePairs().values().toString();
-            return values.contains("L020") ? location(20L, 2L) : location(1L, 1L);
-        });
+        lenient()
+                .when(locationMapper.selectOne(any()))
+                .thenAnswer(
+                        i -> {
+                            var query = (LambdaQueryWrapper<?>) i.getArgument(0);
+                            query.getSqlSegment();
+                            String values = query.getParamNameValuePairs().values().toString();
+                            return values.contains("L020") ? location(20L, 2L) : location(1L, 1L);
+                        });
         lenient().when(areaMapper.selectById(any())).thenAnswer(i -> { WmStorageArea a = new WmStorageArea(); a.setAreaId(((Number)i.getArgument(0)).longValue()); a.setAreaCode("A0005"); a.setAreaName("机加工半成品区"); return a; });
     }
     private WmWarehouse warehouse(Long id) { WmWarehouse w = new WmWarehouse(); w.setWarehouseId(id); w.setWarehouseCode("WH00" + id); w.setWarehouseName(id == 1L ? "原料仓库" : "半成品仓库"); w.setStatus(1L); return w; }

@@ -1,5 +1,6 @@
 package com.nexus.common.sign.service;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.sign.domain.dto.DocSignCommand;
 import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.domain.vo.DocumentVerifyVo;
@@ -106,21 +107,21 @@ public interface ESignatureService {
     /**
      * 文档级验签：校验 {@code es_signature.doc_oss_id} 指向的签署后 PDF 的完整性。
      *
-     * <p>做<b>两条互补且缺一不可</b>的检查（PDFBox 没有任何验签 API，全部自研）：</p>
+     * <p>做<b>两条互补且缺一不可</b>的检查（PDFBox 没有任何验签 API，全部自研）：
+     *
      * <ol>
-     *   <li><b>CMS/PKCS#7 验签</b> —— 覆盖区间内被等长改写时抛
-     *       {@code CMSSignerDigestMismatchException}，这是「文档已被修改」的精确信号；</li>
-     *   <li><b>ByteRange 覆盖 + 增量修订检查</b> —— 签名后追加裸字节或追加真实修订时
-     *       CMS 验签<b>依然通过</b>，只有覆盖检查能发现；并用「未覆盖区是否出现新的
-     *       {@code startxref}/{@code %%EOF}」区分「追加修订」（实质篡改）与「裸字节」（提示级）。</li>
+     *   <li><b>CMS/PKCS#7 验签</b> —— 覆盖区间内被等长改写时抛 {@code
+     *       CMSSignerDigestMismatchException}，这是「文档已被修改」的精确信号；
+     *   <li><b>ByteRange 覆盖 + 增量修订检查</b> —— 签名后追加裸字节或追加真实修订时 CMS
+     *       验签<b>依然通过</b>，只有覆盖检查能发现；并用「未覆盖区是否出现新的 {@code startxref}/{@code
+     *       %%EOF}」区分「追加修订」（实质篡改）与「裸字节」（提示级）。
      * </ol>
      *
-     * <p>另叠加一条台账级旁证：重算签署后文件的 SM3 与 {@code es_signature.doc_hash} 比对。</p>
+     * <p>另叠加一条台账级旁证：重算签署后文件的 SM3 与 {@code es_signature.doc_hash} 比对。
      *
      * @param signatureId 签名记录ID（必须是 {@link #signDocument} 产出的含文档签名）
      * @return 验签结果（含结论、两条检查的通过情况与观测值）
-     * @throws com.nexus.common.core.exception.ServiceException 记录不存在 / 不含文档 /
-     *         文档内容缺失 / 文档不是 PDF 或无法解析
+     * @throws ServiceException 记录不存在 / 不含文档 / 文档内容缺失 / 文档不是 PDF 或无法解析
      */
     DocumentVerifyVo verifyDocument(Long signatureId);
 }

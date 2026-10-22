@@ -1,32 +1,5 @@
 package com.nexus.erp.so;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.extra.spring.SpringUtil;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.so.domain.SoCustomerOrder;
-import com.nexus.erp.so.domain.SoSalesOrderHeader;
-import com.nexus.erp.so.domain.bo.SoCustomerOrderBo;
-import com.nexus.erp.so.mapper.SoCustomerOrderMapper;
-import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
-import com.nexus.erp.so.service.impl.SoCustomerOrderServiceImpl;
-import com.nexus.system.strategy.AutoCodeUtil;
-import io.github.linpeilie.Converter;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +11,37 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.extra.spring.SpringUtil;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.so.domain.SoCustomerOrder;
+import com.nexus.erp.so.domain.SoSalesOrderHeader;
+import com.nexus.erp.so.domain.bo.SoCustomerOrderBo;
+import com.nexus.erp.so.mapper.SoCustomerOrderMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
+import com.nexus.erp.so.service.impl.SoCustomerOrderServiceImpl;
+import com.nexus.system.strategy.AutoCodeUtil;
+
+import io.github.linpeilie.Converter;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
+
+import java.util.List;
 
 /**
  * 客户订单 Service 单元测试（加固轮）。
@@ -174,8 +178,8 @@ class SoCustomerOrderServiceImplTest {
         SoCustomerOrderBo bo = new SoCustomerOrderBo();
         bo.setCoNo("CO-DUP");
         when(baseMapper.insert(any(SoCustomerOrder.class)))
-            .thenThrow(new org.springframework.dao.DuplicateKeyException("uk_co_no"));
+                .thenThrow(new DuplicateKeyException("uk_co_no"));
 
-        assertThrows(org.springframework.dao.DuplicateKeyException.class, () -> customerOrderService.insertByBo(bo));
+        assertThrows(DuplicateKeyException.class, () -> customerOrderService.insertByBo(bo));
     }
 }

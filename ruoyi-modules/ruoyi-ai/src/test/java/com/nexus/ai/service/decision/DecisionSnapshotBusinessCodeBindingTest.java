@@ -1,6 +1,12 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -11,8 +17,10 @@ import com.nexus.common.ai.domain.entity.*;
 import com.nexus.common.ai.mapper.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.json.config.JacksonConfig;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,26 +31,27 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+// 同名类型说明：本文件同时使用 com.nexus.common.json.config.JacksonConfig 和
+// com.nexus.common.web.config.JacksonConfig，后者保留全限定名以区分。
 
 /** 复现正常新运行初始根码为空的真实入口形状，不以人工填码的夹具掩盖绑定缺口。 */
 class DecisionSnapshotBusinessCodeBindingTest {
     private static final String TENANT = "000007";
     private static final String CODE = "SCGD202610060010";
     private final AiDecisionRunMapper runs = mock(AiDecisionRunMapper.class);
-    private final ObjectMapper mapper = new ObjectMapper()
-        .registerModule(new com.nexus.common.json.config.JacksonConfig().registerJavaTimeModule())
-        .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
+    private final ObjectMapper mapper =
+            new ObjectMapper()
+                    .registerModule(new JacksonConfig().registerJavaTimeModule())
+                    .registerModule(
+                            new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
     private final DecisionPersistenceService store = new DecisionPersistenceService(runs,
         mock(AiDecisionEvidenceMapper.class), mock(AiDecisionActionMapper.class),
         new DecisionRunStateMachine(), new DecisionEvidenceService(), mapper);
 
     @BeforeAll static void initializeMetadata() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(), ""), AiDecisionRun.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), AiDecisionRun.class);
     }
 
     @Test void normalStartNullCodeBindsTrustedErpCodeTogetherWithSnapshot() {

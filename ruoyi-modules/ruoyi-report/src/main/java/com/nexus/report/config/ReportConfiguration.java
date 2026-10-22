@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.service.DictService;
 import com.nexus.common.report.*;
 import com.nexus.common.report.catalog.ReportEntityCatalogProvider;
+import com.nexus.report.asset.ReportAssetService;
+import com.nexus.report.batch.ReportBatchPdfService;
+import com.nexus.report.batch.ReportBatchService;
+import com.nexus.report.dashboard.ReportDashboardService;
 import com.nexus.report.dataset.ReportDatasetResolver;
 import com.nexus.report.dataset.ReportDictionaryDatasetProvider;
 import com.nexus.report.dataset.ReportDictionaryLabels;
@@ -18,9 +22,19 @@ import com.nexus.report.service.ReportDefinitionService;
 import com.nexus.report.service.ReportLookupService;
 import com.nexus.report.service.ReportTemplatePackageService;
 import com.nexus.report.storage.*;
+import com.nexus.report.subscription.ReportDeliveryNotificationAdapter;
+import com.nexus.report.subscription.ReportDeliveryService;
+import com.nexus.report.subscription.ReportSubscriptionAccessGuard;
+import com.nexus.report.subscription.ReportSubscriptionProperties;
+import com.nexus.report.subscription.ReportSubscriptionService;
 import com.nexus.report.version.*;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -28,6 +42,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** 装配报表执行器、契约、授权、私有存储、运行与后台导出服务。 */
 @Configuration
@@ -36,7 +52,7 @@ import java.util.List;
     ReportProperties.class,
     ReportQueryProperties.class,
     ReportStorageProperties.class,
-    com.nexus.report.subscription.ReportSubscriptionProperties.class
+    ReportSubscriptionProperties.class
 })
 public class ReportConfiguration {
     /**
@@ -46,13 +62,8 @@ public class ReportConfiguration {
      * @return 当前处理返回的固定结果
      */
     @Bean
-    public ReportRuntimeMetrics reportRuntimeMetrics(
-            org.springframework.beans.factory.ObjectProvider<
-                            io.micrometer.core.instrument.MeterRegistry>
-                    registries) {
-        return new ReportRuntimeMetrics(
-                registries.getIfAvailable(
-                        io.micrometer.core.instrument.simple.SimpleMeterRegistry::new));
+    public ReportRuntimeMetrics reportRuntimeMetrics(ObjectProvider<MeterRegistry> registries) {
+        return new ReportRuntimeMetrics(registries.getIfAvailable(SimpleMeterRegistry::new));
     }
 
     /**
@@ -118,7 +129,7 @@ public class ReportConfiguration {
      */
     @Bean
     public ReportEngineExecutor reportV2Executor(
-            ReportCompiler compiler, com.nexus.report.asset.ReportAssetService assets) {
+            ReportCompiler compiler, ReportAssetService assets) {
         return new V2ReportEngineExecutor(compiler, assets);
     }
 
@@ -134,7 +145,7 @@ public class ReportConfiguration {
             List<ReportEngineExecutor> executors, ReportProperties properties) {
         return new ReportEngineRegistry(
                 executors,
-                java.util.Map.of(1, ReportCompiler.ENGINE_VERSION, 2, "2.0.0"),
+                Map.of(1, ReportCompiler.ENGINE_VERSION, 2, "2.0.0"),
                 properties.getDisabledEngines());
     }
 
@@ -224,7 +235,7 @@ public class ReportConfiguration {
                 quota,
                 properties.getMaxArtifactBytes(),
                 "node_"
-                        + com.nexus.report.service.ReportDefinitionService.hash(
+                        + ReportDefinitionService.hash(
                                         System.getenv()
                                                         .getOrDefault(
                                                                 "COMPUTERNAME",
@@ -328,7 +339,7 @@ public class ReportConfiguration {
                         store, definitions, compiler, snapshots, artifacts, properties, json);
         runtime.metrics(metrics);
         runtime.runConstraints(
-                new com.nexus.report.subscription.ReportSubscriptionAccessGuard(
+                new ReportSubscriptionAccessGuard(
                                 resources, jdbc, authorization, compiler, definitions)
                         ::checkRun);
         if (storage.isManifestEnabled())
@@ -373,15 +384,15 @@ public class ReportConfiguration {
      * @return 当前受控处理的固定结果
      */
     @Bean
-    public com.nexus.report.subscription.ReportSubscriptionService reportSubscriptionService(
+    public ReportSubscriptionService reportSubscriptionService(
             ReportResourceStore resources,
             JdbcTemplate jdbc,
             JdbcReportStore store,
             ReportDefinitionService definitions,
             ReportRuntimeService runtime,
             ReportCompiler compiler,
-            com.nexus.report.subscription.ReportSubscriptionProperties properties) {
-        return new com.nexus.report.subscription.ReportSubscriptionService(
+            ReportSubscriptionProperties properties) {
+        return new ReportSubscriptionService(
                 resources, jdbc, store, definitions, runtime, compiler, properties);
     }
 
@@ -393,8 +404,8 @@ public class ReportConfiguration {
      */
     @Bean
     public ReportDeliveryNotificationPort reportDeliveryNotificationPort(
-            org.springframework.context.ApplicationEventPublisher events) {
-        return new com.nexus.report.subscription.ReportDeliveryNotificationAdapter(events);
+            ApplicationEventPublisher events) {
+        return new ReportDeliveryNotificationAdapter(events);
     }
 
     /**
@@ -411,16 +422,16 @@ public class ReportConfiguration {
      * @return 当前受控处理的固定结果
      */
     @Bean
-    public com.nexus.report.subscription.ReportDeliveryService reportDeliveryService(
+    public ReportDeliveryService reportDeliveryService(
             ReportResourceStore resources,
             JdbcTemplate jdbc,
             JdbcReportStore store,
             ReportDefinitionService definitions,
             ReportRuntimeService runtime,
             ReportCompiler compiler,
-            com.nexus.report.subscription.ReportSubscriptionProperties properties,
+            ReportSubscriptionProperties properties,
             ReportDeliveryNotificationPort notifications) {
-        return new com.nexus.report.subscription.ReportDeliveryService(
+        return new ReportDeliveryService(
                 resources, jdbc, store, definitions, runtime, compiler, properties, notifications);
     }
 
@@ -435,14 +446,13 @@ public class ReportConfiguration {
      * @return 当前受控处理的固定结果
      */
     @Bean
-    public com.nexus.report.dashboard.ReportDashboardService reportDashboardService(
+    public ReportDashboardService reportDashboardService(
             ReportResourceStore resources,
             JdbcTemplate jdbc,
             JdbcReportStore store,
             ReportDefinitionService definitions,
             ReportCompiler compiler) {
-        return new com.nexus.report.dashboard.ReportDashboardService(
-                resources, jdbc, store, definitions, compiler);
+        return new ReportDashboardService(resources, jdbc, store, definitions, compiler);
     }
 
     /**
@@ -457,15 +467,14 @@ public class ReportConfiguration {
      * @return 当前受控处理的固定结果
      */
     @Bean
-    public com.nexus.report.batch.ReportBatchService reportBatchService(
+    public ReportBatchService reportBatchService(
             ReportResourceStore resources,
             JdbcTemplate jdbc,
             JdbcReportStore store,
             ReportDefinitionService definitions,
             ReportRuntimeService runtime,
             ReportCompiler compiler) {
-        return new com.nexus.report.batch.ReportBatchService(
-                resources, jdbc, store, definitions, runtime, compiler);
+        return new ReportBatchService(resources, jdbc, store, definitions, runtime, compiler);
     }
 
     /**
@@ -477,10 +486,11 @@ public class ReportConfiguration {
      * @return 不创建第二套队列的PDF合并服务
      */
     @Bean
-    public com.nexus.report.batch.ReportBatchPdfService reportBatchPdfService(
-            com.nexus.report.batch.ReportBatchService batches,
-            ReportArtifactStore artifacts, ReportProperties properties) {
-        return new com.nexus.report.batch.ReportBatchPdfService(batches, artifacts, properties);
+    public ReportBatchPdfService reportBatchPdfService(
+            ReportBatchService batches,
+            ReportArtifactStore artifacts,
+            ReportProperties properties) {
+        return new ReportBatchPdfService(batches, artifacts, properties);
     }
 
     /**
@@ -493,13 +503,12 @@ public class ReportConfiguration {
      * @return 当前受控处理的固定结果
      */
     @Bean
-    public com.nexus.report.asset.ReportAssetService reportAssetService(
+    public ReportAssetService reportAssetService(
             ReportResourceStore resources,
             ReportArtifactStore artifacts,
             ReportAuthorizationPort authorization,
             ReportCompiler compiler) {
-        return new com.nexus.report.asset.ReportAssetService(
-                resources, artifacts, authorization, compiler);
+        return new ReportAssetService(resources, artifacts, authorization, compiler);
     }
 
     /**
@@ -517,7 +526,7 @@ public class ReportConfiguration {
                 catalogs.versions().stream()
                         .flatMap(v -> catalogs.require(v).entities().stream())
                         .map(e -> e.table())
-                        .collect(java.util.stream.Collectors.toSet()));
+                        .collect(Collectors.toSet()));
         return executor;
     }
 

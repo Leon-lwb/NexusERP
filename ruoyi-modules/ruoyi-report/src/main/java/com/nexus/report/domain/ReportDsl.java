@@ -1,5 +1,9 @@
 package com.nexus.report.domain;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nexus.report.pivot.PivotDefinition;
+import com.nexus.report.print.PrintDefinition;
+
 import java.util.*;
 
 /**
@@ -35,12 +39,8 @@ public record ReportDsl(
         List<BandRow> footerRows,
         List<Summary> summaries,
         Boolean repeatHeader,
-        @com.fasterxml.jackson.annotation.JsonInclude(
-                        com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-                com.nexus.report.pivot.PivotDefinition pivot,
-        @com.fasterxml.jackson.annotation.JsonInclude(
-                        com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-                com.nexus.report.print.PrintDefinition print) {
+        @JsonInclude(JsonInclude.Include.NON_NULL) PivotDefinition pivot,
+        @JsonInclude(JsonInclude.Include.NON_NULL) PrintDefinition print) {
     /**
      * 保留第一版构造契约，旧模板不增加空扩展字段。
      *
@@ -122,7 +122,7 @@ public record ReportDsl(
             List<BandRow> footerRows,
             List<Summary> summaries,
             Boolean repeatHeader,
-            com.nexus.report.pivot.PivotDefinition pivot) {
+            PivotDefinition pivot) {
         this(
                 schemaVersion,
                 code,

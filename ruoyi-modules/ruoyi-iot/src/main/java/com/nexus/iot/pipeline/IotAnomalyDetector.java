@@ -6,11 +6,14 @@ import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.iot.alert.domain.IotAlertConstants;
 import com.nexus.iot.alert.service.IIotAlertRecordService;
 import com.nexus.iot.device.domain.IotDeviceData;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 
 /**
@@ -72,9 +75,14 @@ public class IotAnomalyDetector {
                 alert.setDeviceCode(data.getDeviceCode());
                 alert.setAlertType("ANOMALY");
                 alert.setAlertLevel(level);
-                alert.setAlertMessage(String.format("设备 %s 属性 %s 统计异常：当前 %s 偏离基线 %s 个标准差(z=%.2f)",
-                    data.getDeviceCode(), data.getPropertyCode(), data.getNumericValue(),
-                    state.mean().setScale(2, java.math.RoundingMode.HALF_UP), z));
+                alert.setAlertMessage(
+                        String.format(
+                                "设备 %s 属性 %s 统计异常：当前 %s 偏离基线 %s 个标准差(z=%.2f)",
+                                data.getDeviceCode(),
+                                data.getPropertyCode(),
+                                data.getNumericValue(),
+                                state.mean().setScale(2, RoundingMode.HALF_UP),
+                                z));
                 alert.setValue(data.getNumericValue());
                 alert.setThreshold(state.mean());
                 alert.setTenantId(data.getTenantId());

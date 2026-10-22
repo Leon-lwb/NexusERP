@@ -1,6 +1,10 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.support.ErpDdlTestSupport;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -9,6 +13,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.nexus.erp.bd.domain.BdMaterialVendor;
 import com.nexus.erp.bd.domain.BdUnitOfMeasure;
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -17,6 +23,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -30,12 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 仅源码契约：绝不打开数据库，也不执行 SQL。 */
 @Tag("dev")
@@ -215,7 +216,7 @@ class PuRequirementP1MappingContractTest {
         return mapper;
     }
 
-    private static String sql(Method method, Class<? extends java.lang.annotation.Annotation> annotation) {
+    private static String sql(Method method, Class<? extends Annotation> annotation) {
         if (annotation == Insert.class) {
             assertNotNull(method.getAnnotation(Insert.class));
             return String.join(" ", method.getAnnotation(Insert.class).value());

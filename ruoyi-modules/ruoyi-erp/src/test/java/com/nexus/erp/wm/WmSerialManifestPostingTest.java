@@ -1,5 +1,8 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -7,20 +10,28 @@ import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.ProductionManifestPostingPort;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.*;
 import com.nexus.erp.prd.service.impl.*;
 import com.nexus.erp.wm.domain.*;
+import com.nexus.erp.wm.domain.bo.WmProductionRecptBo;
 import com.nexus.erp.wm.domain.vo.*;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.*;
+import com.nexus.erp.wm.strategy.impl.ProductionCompletionStrategy;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 class WmSerialManifestPostingTest {
     WmSerialInventoryRepository store;
@@ -148,8 +159,7 @@ class WmSerialManifestPostingTest {
         when(receipts.insertByBo(any()))
                 .thenAnswer(
                         a -> {
-                            ((com.nexus.erp.wm.domain.bo.WmProductionRecptBo) a.getArgument(0))
-                                    .setRecptId(5L);
+                            ((WmProductionRecptBo) a.getArgument(0)).setRecptId(5L);
                             return 1;
                         });
         when(guard.lockReceipt(5L))
@@ -164,7 +174,7 @@ class WmSerialManifestPostingTest {
         when(receiptMapper.update(isNull(), any())).thenReturn(1);
         when(inventory.freeze(any(), anyString(), eq(1L), eq(7L), anyList())).thenReturn(100L);
         when(proof.verifyPosted("PRD_WORK_ORDER", 1L, null, "PRODUCTION_IN")).thenReturn(100L);
-        var jdbc = mock(org.springframework.jdbc.core.JdbcTemplate.class);
+        var jdbc = mock(JdbcTemplate.class);
         ReflectionTestUtils.setField(store, "jdbc", jdbc);
         when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
         when(store.identity(102L))
@@ -245,8 +255,8 @@ class WmSerialManifestPostingTest {
         }
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"APPLIED", "RECEIVED"})
+    @ParameterizedTest
+    @ValueSource(strings = {"APPLIED", "RECEIVED"})
     void immutableTerminalManifestReplayVerifiesOriginalGroupAndNeverCreditsMovedStock(
             String state) {
         manifest =
@@ -321,8 +331,7 @@ class WmSerialManifestPostingTest {
         when(receipts.insertByBo(any()))
                 .thenAnswer(
                         a -> {
-                            ((com.nexus.erp.wm.domain.bo.WmProductionRecptBo) a.getArgument(0))
-                                    .setRecptId(5L);
+                            ((WmProductionRecptBo) a.getArgument(0)).setRecptId(5L);
                             return 1;
                         });
         when(guard.lockReceipt(5L))
@@ -426,8 +435,7 @@ class WmSerialManifestPostingTest {
         when(receipts.insertByBo(any()))
                 .thenAnswer(
                         a -> {
-                            ((com.nexus.erp.wm.domain.bo.WmProductionRecptBo) a.getArgument(0))
-                                    .setRecptId(5L);
+                            ((WmProductionRecptBo) a.getArgument(0)).setRecptId(5L);
                             return 1;
                         });
         when(guard.lockReceipt(5L))
@@ -435,10 +443,8 @@ class WmSerialManifestPostingTest {
         when(receiptMapper.update(isNull(), any())).thenReturn(1);
         when(store.authorizedProductionBatchCode(eq(1L), eq(2L), anyLong(), eq(30L)))
                 .thenAnswer(a -> "B" + a.getArgument(2));
-        var frozen = new java.util.concurrent.atomic.AtomicReference<List<SnItem>>();
-        var group =
-                new java.util.concurrent.atomic.AtomicReference<
-                        WmSerialInventoryRepository.Group>();
+        var frozen = new AtomicReference<List<SnItem>>();
+        var group = new AtomicReference<WmSerialInventoryRepository.Group>();
         when(store.group(any())).thenAnswer(a -> group.get());
         when(store.items(100L)).thenAnswer(a -> frozen.get());
         when(store.prepare(any(), anyString(), anyLong(), anyString(), anyString(), anyList()))
@@ -521,14 +527,14 @@ class WmSerialManifestPostingTest {
         var txMapper = mock(WmMaterialStockTxMapper.class);
         var batchMapper = mock(WmBatchMapper.class);
         var strategy =
-                new com.nexus.erp.wm.strategy.impl.ProductionCompletionStrategy(
+                new ProductionCompletionStrategy(
                         txMapper,
                         stockMapper,
-                        mock(com.nexus.erp.bd.mapper.BdMaterialMapper.class),
+                        mock(BdMaterialMapper.class),
                         mock(WmWarehouseMapper.class),
                         mock(WmStorageLocationMapper.class),
                         mock(WmStorageAreaMapper.class),
-                        mock(com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper.class),
+                        mock(BdUnitOfMeasureMapper.class),
                         batchMapper);
         ReflectionTestUtils.setField(strategy, "serialInventory", actualInventory);
         doAnswer(
@@ -650,8 +656,7 @@ class WmSerialManifestPostingTest {
         when(receipts.insertByBo(any()))
                 .thenAnswer(
                         a -> {
-                            ((com.nexus.erp.wm.domain.bo.WmProductionRecptBo) a.getArgument(0))
-                                    .setRecptId(5L);
+                            ((WmProductionRecptBo) a.getArgument(0)).setRecptId(5L);
                             return 1;
                         });
         when(guard.lockReceipt(5L))

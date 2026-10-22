@@ -1,17 +1,20 @@
 package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.ai.domain.vo.AiTokenUsageVo;
 import com.nexus.common.ai.service.IAiTokenUsageService;
 import com.nexus.common.core.domain.R;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,9 +102,10 @@ public class AiTokenUsageController {
         long totalInputTokens = usageList.stream().mapToLong(v -> v.getTotalInputTokens() != null ? v.getTotalInputTokens() : 0L).sum();
         long totalOutputTokens = usageList.stream().mapToLong(v -> v.getTotalOutputTokens() != null ? v.getTotalOutputTokens() : 0L).sum();
         int totalRequests = usageList.stream().mapToInt(v -> v.getRequestCount() != null ? v.getRequestCount() : 0).sum();
-        java.math.BigDecimal totalCost = usageList.stream()
-            .map(v -> v.getTotalCost() != null ? v.getTotalCost() : java.math.BigDecimal.ZERO)
-            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        BigDecimal totalCost =
+                usageList.stream()
+                        .map(v -> v.getTotalCost() != null ? v.getTotalCost() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         result.put("totalTokens", totalTokens);
         result.put("totalInputTokens", totalInputTokens);

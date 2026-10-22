@@ -2,23 +2,25 @@ package com.nexus.ai.service.decision;
 
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 import com.nexus.common.ai.decision.dto.*;
-import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
-import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRunStatus;
 import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -221,9 +223,16 @@ public class DeliveryRiskDecisionOrchestrator {
         DecisionRunStatus status;
         try { status = DecisionRunStatus.valueOf(row.getStatus()); }
         catch (RuntimeException invalid) { throw new ServiceException("决策运行状态无效"); }
-        return new DecisionRunAcceptedVo(row.getId(), status, row.getSceneCode(),
-            row.getCreateTime() == null ? LocalDateTime.now() :
-                row.getCreateTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
+        return new DecisionRunAcceptedVo(
+                row.getId(),
+                status,
+                row.getSceneCode(),
+                row.getCreateTime() == null
+                        ? LocalDateTime.now()
+                        : row.getCreateTime()
+                                .toInstant()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime());
     }
 
     private void validate(DeliveryRiskRunRequest request, DecisionActor actor) {

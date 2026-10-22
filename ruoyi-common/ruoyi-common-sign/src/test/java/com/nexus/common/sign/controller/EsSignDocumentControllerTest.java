@@ -1,6 +1,11 @@
 package com.nexus.common.sign.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.idempotent.annotation.RepeatSubmit;
 import com.nexus.common.log.annotation.Log;
@@ -13,6 +18,7 @@ import com.nexus.common.sign.domain.vo.DocumentVerifyVo;
 import com.nexus.common.sign.domain.vo.EsSignDocumentVo;
 import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.common.sign.service.IESSignDocumentService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -39,16 +45,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * {@code EsSignDocumentController} 的接口层测试（P2a-3）。
@@ -83,9 +86,12 @@ class EsSignDocumentControllerTest {
     /** 权限种子的真值来源：初始化脚本 */
     private static final String SEED_FILE = "script/sql/ry-vue.sql";
 
-    @Mock private IESSignDocumentService documentService;
-    @Mock private ESignatureService signatureService;
-    @Captor private ArgumentCaptor<DocSignCommand> signCmdCaptor;
+    @Mock
+    private IESSignDocumentService documentService;
+    @Mock
+    private ESignatureService signatureService;
+    @Captor
+    private ArgumentCaptor<DocSignCommand> signCmdCaptor;
 
     private EsSignDocumentController controller;
 
@@ -193,7 +199,7 @@ class EsSignDocumentControllerTest {
             "sign", "/system/sign/document/{docId}/sign",
             "verify", "/system/sign/document/signature/{signatureId}/verify");
 
-        Map<String, String> actual = new java.util.HashMap<>();
+        Map<String, String> actual = new HashMap<>();
         for (Method m : EsSignDocumentController.class.getDeclaredMethods()) {
             if (m.getAnnotation(GetMapping.class) != null || m.getAnnotation(PostMapping.class) != null) {
                 actual.put(m.getName(), fullPath(m));

@@ -1,20 +1,22 @@
 package com.nexus.mes.common.mq;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.message.IpqcCompletedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.scheduling.annotation.Async;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 /**
  * MesMqSendService 质检回写投递方式守卫测试（审计 MES-QC-01）
@@ -33,12 +35,9 @@ class MesMqSendServiceTest {
             Long.class, String.class, Long.class, Long.class, String.class, String.class,
             BigDecimal.class, BigDecimal.class, Long.class, String.class, Date.class, String.class);
 
-        assertNull(iqc.getAnnotation(org.springframework.scheduling.annotation.Async.class),
-            "IQC 回写不得为 @Async fire-and-forget");
-        assertNull(oqc.getAnnotation(org.springframework.scheduling.annotation.Async.class),
-            "OQC 回写不得为 @Async fire-and-forget");
-        assertNull(ipqc.getAnnotation(org.springframework.scheduling.annotation.Async.class),
-            "IPQC 回写不得为 @Async fire-and-forget");
+        assertNull(iqc.getAnnotation(Async.class), "IQC 回写不得为 @Async fire-and-forget");
+        assertNull(oqc.getAnnotation(Async.class), "OQC 回写不得为 @Async fire-and-forget");
+        assertNull(ipqc.getAnnotation(Async.class), "IPQC 回写不得为 @Async fire-and-forget");
     }
     @Test
     void ipqcMessageCarriesOriginalInspectionTimeAndDoesNotRetainCallerDate() throws Exception {

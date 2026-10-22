@@ -1,13 +1,14 @@
 package com.nexus.erp.wm.service;
 
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.service.*;
+import com.nexus.erp.wm.domain.vo.WmArrivalNoticeVo;
 import com.nexus.erp.wm.mapper.WmCertifiedArrivalNoticeMapper;
 import com.nexus.erp.wm.mapper.WmCertifiedArrivalNoticeMapper.*;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptDraftMapper;
@@ -15,15 +16,21 @@ import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper;
 import com.nexus.erp.wm.service.impl.WmServiceHelper;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.WfCallBackServiceI;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.*;
+
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 认证订单独立单行通知。永久创建命令证明来源，标签/历史通知不能升级。
@@ -43,8 +50,9 @@ public class WmCertifiedArrivalNoticeService implements WfCallBackServiceI {
     private final PuCertifiedPurchaseOrderWorkflowService orders;
     private final WmCertifiedReceiptPostingAuthorizer auth;
     private final WmServiceHelper wm;
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmCertifiedArrivalWorkflowPort workflow;
+
     public WmCertifiedArrivalNoticeService(WmCertifiedArrivalNoticeMapper mapper,WmCertifiedReceiptDraftMapper receipts,
         PuRequirementErpTransactionExecutor tx,PuRequirementErpTransactionQualification qualification,
         PuRequirementMaterialLockService locks,PuCertifiedPurchaseOrderWorkflowService orders,
@@ -91,9 +99,16 @@ public class WmCertifiedArrivalNoticeService implements WfCallBackServiceI {
     /** 正常 Flowable 提交要求真实审批任务，不产生普通收货。 */
     public boolean submit(Long id,String flowId) {
         DecisionActor actor=auth.requireArrivalSubmit();String t=actor.tenantId();tenant(t);need(text(flowId,64),"必须选择实际审批流程");
-        com.nexus.erp.wm.domain.vo.WmArrivalNoticeVo n=tx.executeRepeatableRead(t,()->{
-            Notice value=lockQualified(t,id,false);need(Set.of("DRAFT","REJECTED").contains(value.status()),"只允许通知草稿/驳回提交");return viewLocked(t,id);
-        });
+        WmArrivalNoticeVo n =
+                tx.executeRepeatableRead(
+                        t,
+                        () -> {
+                            Notice value = lockQualified(t, id, false);
+                            need(
+                                    Set.of("DRAFT", "REJECTED").contains(value.status()),
+                                    "只允许通知草稿/驳回提交");
+                            return viewLocked(t, id);
+                        });
         Map<String,Object> variables=new HashMap<>();variables.put("dataId",id.toString());variables.put("noticeId",id);
         variables.put("noticeCode",n.getNoticeCode());variables.put("noticeName",n.getNoticeName());
         variables.put("vendorId",n.getVendorId());variables.put("vendorName",n.getVendorName());variables.put("arrivalDate",n.getArrivalDate());variables.put("requireTaskOnStart",true);
@@ -105,7 +120,8 @@ public class WmCertifiedArrivalNoticeService implements WfCallBackServiceI {
         DecisionActor actor=auth.requireArrivalSubmit();String t=actor.tenantId();tenant(t);need(positive(id),"通知身份无效");
         fresh(t,()->{applyVerifiedWorkflow(t,id,null,null,null);return null;});return true;
     }
-    @Override public void afterFlowHandle(WfMyBusiness business) {
+    @Override
+    public void afterFlowHandle(WfMyBusiness business) {
         need(business!=null&&business.getDataId()!=null&&"wmCertifiedArrivalNoticeService".equals(business.getServiceImplName())
             &&text(business.getProcessInstanceId(),128)&&text(business.getProcessDefinitionId(),128),"回调缺少实例/业务关联");
         String t=TenantHelper.getTenantId();tenant(t);Long id=Long.valueOf(business.getDataId());need(positive(id),"回调通知身份无效");
@@ -199,24 +215,86 @@ public class WmCertifiedArrivalNoticeService implements WfCallBackServiceI {
     private Notice readNotice(String t,Long id){tenant(t);need(positive(id),"通知身份无效");Notice n=mapper.lockNotice(t,id);validateNotice(t,id,n);return n;}
     private void validateNotice(String t,Long id,Notice n){need(n!=null&&t.equals(n.tenantId())&&id.equals(n.noticeId())&&positive(n.noticeLineId())&&positive(n.orderId())&&positive(n.purchaseLineId())&&positive(n.materialId())&&positive(n.vendorId())&&text(n.baseUomId(),64)&&text(n.noticeCode(),64)&&"0".equals(n.headDeleted())&&"0".equals(n.lineDeleted()),"缺少通知永久创建来源");quantity(n.quantity());exactNative(n.quantity());need(n.receivedQty()!=null&&n.receivedQty().signum()>=0&&n.receivedQty().compareTo(n.quantity())<=0,"原通知已收量未知/超额");exactNative(n.receivedQty());}
     private void requireStructure(){mapper.pinDefinitions();var engines=mapper.tableEngines();need(engines!=null&&engines.size()==3&&engines.stream().allMatch("InnoDB"::equals),"通知/永久命令必须为事务表");}
+
     /** 不 CAST 浮点为伪精确 decimal；旧 DOUBLE 只接受范围内无损整数，小数明确拒绝。 */
-    private void exactNative(BigDecimal q){need(q!=null,"通知数量为空");var columns=mapper.decimalColumns();need(columns!=null&&columns.size()==2&&columns.stream().map(DecimalColumn::columnName).collect(java.util.stream.Collectors.toSet()).equals(Set.of("quantity_arrival","received_qty")),"数量列定义未知");BigDecimal v=q.stripTrailingZeros();for(var c:columns){need(c.numericPrecision()!=null&&c.numericScale()!=null&&c.numericPrecision()>c.numericScale()&&c.numericScale()>=0,"数量列精度未知");need((long)v.precision()-v.scale()<=c.numericPrecision()-c.numericScale(),"通知数量整数位超容量");if("decimal".equals(c.dataType()))need(v.scale()<=c.numericScale(),"数量无法无损存储，禁止取整/舍入");else need("double".equals(c.dataType())&&v.scale()<=0&&v.abs().compareTo(new BigDecimal("9007199254740991"))<=0,"旧浮点通知列仅允许无损整数，请先审查精度迁移");}}
+    private void exactNative(BigDecimal q) {
+        need(q != null, "通知数量为空");
+        var columns = mapper.decimalColumns();
+        need(
+                columns != null
+                        && columns.size() == 2
+                        && columns.stream()
+                                .map(DecimalColumn::columnName)
+                                .collect(Collectors.toSet())
+                                .equals(Set.of("quantity_arrival", "received_qty")),
+                "数量列定义未知");
+        BigDecimal v = q.stripTrailingZeros();
+        for (var c : columns) {
+            need(
+                    c.numericPrecision() != null
+                            && c.numericScale() != null
+                            && c.numericPrecision() > c.numericScale()
+                            && c.numericScale() >= 0,
+                    "数量列精度未知");
+            need(
+                    (long) v.precision() - v.scale() <= c.numericPrecision() - c.numericScale(),
+                    "通知数量整数位超容量");
+            if ("decimal".equals(c.dataType()))
+                need(v.scale() <= c.numericScale(), "数量无法无损存储，禁止取整/舍入");
+            else
+                need(
+                        "double".equals(c.dataType())
+                                && v.scale() <= 0
+                                && v.abs().compareTo(new BigDecimal("9007199254740991")) <= 0,
+                        "旧浮点通知列仅允许无损整数，请先审查精度迁移");
+        }
+    }
+
     private static void quantity(BigDecimal q){need(q!=null&&q.signum()>0&&q.stripTrailingZeros().scale()<=4&&(long)q.stripTrailingZeros().precision()-q.stripTrailingZeros().scale()<=14,"通知数量必须为原生精确正数");}
     private static void tenant(String t){need(t!=null&&t.matches("[0-9]{6,20}")&&TenantHelper.isEnable()&&t.equals(TenantHelper.getTenantId()),"通知租户不一致");}
     private static boolean positive(Long x){return x!=null&&x>0;}
     private static boolean text(String x,int max){return x!=null&&!x.isBlank()&&x.length()<=max;}
     private static ServiceException fail(String reason){return new ServiceException("认证到货拒绝："+reason);}
     private static void need(boolean ok,String reason){if(!ok)throw fail(reason);}
-    private static String hash(DecisionActor a,Request r){try{MessageDigest d=MessageDigest.getInstance("SHA-256");for(String s:List.of(a.tenantId(),a.userId().toString(),r.requestKey(),r.orderId().toString(),r.expectedOrderVersion().toString(),r.purchaseLineId().toString(),r.quantity().stripTrailingZeros().toPlainString(),r.noticeName(),r.arrivalDate().toString(),Objects.toString(r.remark(),""))){byte[] v=s.getBytes(StandardCharsets.UTF_8);d.update(java.nio.ByteBuffer.allocate(4).putInt(v.length).array());d.update(v);}return HexFormat.of().formatHex(d.digest());}catch(java.security.NoSuchAlgorithmException e){throw fail("摘要算法不可用");}}
+
+    private static String hash(DecisionActor a, Request r) {
+        try {
+            MessageDigest d = MessageDigest.getInstance("SHA-256");
+            for (String s :
+                    List.of(
+                            a.tenantId(),
+                            a.userId().toString(),
+                            r.requestKey(),
+                            r.orderId().toString(),
+                            r.expectedOrderVersion().toString(),
+                            r.purchaseLineId().toString(),
+                            r.quantity().stripTrailingZeros().toPlainString(),
+                            r.noticeName(),
+                            r.arrivalDate().toString(),
+                            Objects.toString(r.remark(), ""))) {
+                byte[] v = s.getBytes(StandardCharsets.UTF_8);
+                d.update(ByteBuffer.allocate(4).putInt(v.length).array());
+                d.update(v);
+            }
+            return HexFormat.of().formatHex(d.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw fail("摘要算法不可用");
+        }
+    }
+
     /** master 事务/路由不能靠 DS 伪装，另起上下文使用同一既有 ERP 独占执行器。 */
     private static <T> T fresh(String tenant,Supplier<T> job){if(TransactionSynchronizationManager.isActualTransactionActive()||TransactionSynchronizationManager.isSynchronizationActive()||!TransactionSynchronizationManager.getResourceMap().isEmpty()||DynamicDataSourceContextHolder.peek()!=null)return CompletableFuture.supplyAsync(()->TenantHelper.dynamic(tenant,job)).join();return job.get();}
-    @Override public Object getBusinessDataById(String id){String t=TenantHelper.getTenantId();return fresh(t,()->tx.executeRepeatableRead(t,()->{readNotice(t,Long.valueOf(id));return viewLocked(t,Long.valueOf(id));}));}
+    @Override
+    public Object getBusinessDataById(String id){String t=TenantHelper.getTenantId();return fresh(t,()->tx.executeRepeatableRead(t,()->{readNotice(t,Long.valueOf(id));return viewLocked(t,Long.valueOf(id));}));}
+
     /** 保留原业务头/行视图供既有审批表单使用，不另造不兼容的表单 DTO。 */
-    private com.nexus.erp.wm.domain.vo.WmArrivalNoticeVo viewLocked(String t,Long id){
+    private WmArrivalNoticeVo viewLocked(String t, Long id) {
         var view=mapper.viewHeader(t,id);need(view!=null&&id.equals(view.getNoticeId()),"原通知业务视图未知");
         var lines=mapper.viewLines(t,id);need(lines!=null&&!lines.isEmpty(),"原通知业务行视图未知");
         view.setWmArrivalNoticeLineList(lines);return view;
     }
-    @Override public Map<String,Object> flowValuesOfTask(String key,Map<String,Object> values){return null;}
-    @Override public List<String> flowCandidateUsernamesOfTask(String key,Map<String,Object> values){return null;}
+    @Override
+    public Map<String,Object> flowValuesOfTask(String key,Map<String,Object> values){return null;}
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String key,Map<String,Object> values){return null;}
 }

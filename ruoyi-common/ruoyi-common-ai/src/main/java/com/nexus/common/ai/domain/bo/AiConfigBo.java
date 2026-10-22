@@ -9,6 +9,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+
 import lombok.Data;
 
 import java.util.List;
@@ -220,18 +222,24 @@ public class AiConfigBo {
 
     @Data
     public static class DecisionBo {
-        @NotNull private Boolean enabled;
+        @NotNull
+        private Boolean enabled;
         @NotNull @Min(1) @Max(16) private Integer maxConcurrentRuns;
         @NotNull @Min(2) @Max(8) private Integer maxScenarios;
         @NotNull @Min(10) @Max(300) private Integer analysisTimeoutSeconds;
         @NotNull @Min(5) @Max(120) private Integer actionTimeoutSeconds;
         @NotNull @Min(30) @Max(3600) private Integer staleThresholdSeconds;
-        @NotEmpty private List<@NotBlank @Pattern(regexp = "LOW|MEDIUM|HIGH|CRITICAL") String> requireApprovalLevels;
-        @NotNull private Boolean allowAutoLowRiskNotify;
-        @NotNull private Boolean benchmarkMode;
+        @NotEmpty
+        private List<@NotBlank @Pattern(regexp = "LOW|MEDIUM|HIGH|CRITICAL") String> requireApprovalLevels;
+        @NotNull
+        private Boolean allowAutoLowRiskNotify;
+        @NotNull
+        private Boolean benchmarkMode;
         @NotNull @Min(1) @Max(90) private Integer defaultHorizonDays;
         @NotNull @Min(1) @Max(90) private Integer maxHorizonDays;
-        @jakarta.validation.constraints.Positive private Long policyKnowledgeId;
+
+        @Positive
+        private Long policyKnowledgeId;
         @NotNull @Valid private DecisionRiskBo risk;
         @NotNull @Valid private DecisionRankingBo ranking;
     }

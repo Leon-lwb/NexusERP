@@ -14,11 +14,14 @@ import com.nexus.mes.tg.domain.vo.TgMaintenanceRecordVo;
 import com.nexus.mes.tg.mapper.TgMaintenanceRecordMapper;
 import com.nexus.mes.tg.service.ITgMaintenanceRecordService;
 import com.nexus.mes.tg.service.ITgToolingService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -94,7 +97,7 @@ public class TgMaintenanceRecordServiceImpl implements ITgMaintenanceRecordServi
         if (ids == null || ids.length == 0) {
             return false;
         }
-        List<Long> idList = java.util.Arrays.asList(ids);
+        List<Long> idList = Arrays.asList(ids);
         Long exist = baseMapper.selectCount(Wrappers.<TgMaintenanceRecord>lambdaQuery()
             .in(TgMaintenanceRecord::getRecordId, idList));
         if (exist == null || exist == 0) {

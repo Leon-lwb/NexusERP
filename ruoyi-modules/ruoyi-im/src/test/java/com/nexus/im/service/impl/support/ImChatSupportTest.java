@@ -1,5 +1,13 @@
 package com.nexus.im.service.impl.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,10 +17,12 @@ import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
+import com.nexus.system.domain.vo.SysOssVo;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
 import com.nexus.system.service.ISysUserService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,18 +30,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P3-6: P2-2 buildSenderMessagePage 批量化回归测试。
@@ -50,11 +51,16 @@ import static org.mockito.Mockito.when;
  */
 class ImChatSupportTest extends ImUnitTestBase {
 
-    @Mock private ImMessageMapper imMessageMapper;
-    @Mock private ImGroupMemberMapper imGroupMemberMapper;
-    @Mock private ISysUserService sysUserService;
-    @Mock private ISysOssService sysOssService;
-    @Mock private SysUserMapper sysUserMapper;
+    @Mock
+    private ImMessageMapper imMessageMapper;
+    @Mock
+    private ImGroupMemberMapper imGroupMemberMapper;
+    @Mock
+    private ISysUserService sysUserService;
+    @Mock
+    private ISysOssService sysOssService;
+    @Mock
+    private SysUserMapper sysUserMapper;
 
     @InjectMocks
     private ImChatSupport imChatSupport;
@@ -162,7 +168,7 @@ class ImChatSupportTest extends ImUnitTestBase {
         when(sysUserMapper.selectVoByIds(anyCollection())).thenReturn(List.of(u1));
 
         // mock sysOssService.listByIds：返回 1 个 OSS URL
-        com.nexus.system.domain.vo.SysOssVo oss = new com.nexus.system.domain.vo.SysOssVo();
+        SysOssVo oss = new SysOssVo();
         oss.setOssId(AVATAR_OSS_1);
         oss.setUrl("https://oss.example.com/avatar-101.png");
         when(sysOssService.listByIds(anyCollection())).thenReturn(List.of(oss));

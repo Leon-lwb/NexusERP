@@ -1,9 +1,14 @@
 package com.nexus.mes.common.mq.consumer;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.rabbitmq.client.Channel;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,9 +18,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.math.BigDecimal;
 
 @ExtendWith(MockitoExtension.class)
 class WorkOrderReleaseConsumerTest {
@@ -47,7 +50,7 @@ class WorkOrderReleaseConsumerTest {
         message.setWoId(100L);
         message.setWoNo("WO-20250727-001");
         message.setMaterialCode("MAT-001");
-        message.setPlannedQty(java.math.BigDecimal.TEN);
+        message.setPlannedQty(BigDecimal.TEN);
 
         // Mock TenantHelper.dynamic to actually execute the runnable
         tenantHelperMock.when(() -> TenantHelper.dynamic(anyString(), any(Runnable.class)))

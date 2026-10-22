@@ -10,9 +10,14 @@ import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveExecutorService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
 import com.nexus.workflow.domain.WfMyBusiness;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -31,8 +36,8 @@ import java.util.Map;
 @Service
 public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
 
-    private final com.nexus.erp.wm.service.WmCertifiedReceiptPostingService certifiedPosting;
-    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    private final WmCertifiedReceiptPostingService certifiedPosting;
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /** 物料领用业务服务，提供物料领用相关能力 */
     private final IWmMaterialReceiveCrudService crudService;
@@ -233,7 +238,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      * @return 影响行数
      */
     @Override
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public int updateById(WmMaterialReceive entity) {
         certifiedReceiptGuard.requireUnposted(entity.getReceiveId());
         return materialReceiveMapper.updateById(entity);

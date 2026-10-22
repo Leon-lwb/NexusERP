@@ -9,6 +9,7 @@ import com.nexus.report.runtime.RuntimeReviewFixture;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -320,8 +321,8 @@ class ReportLookupSecurityTest {
         var actor =
                 RuntimeReviewFixture.actor(
                         8, Set.of("report:runtime:preview", "wm:stock:list"), ReportScope.all(8));
-        var definitions = org.mockito.Mockito.mock(ReportDefinitionService.class);
-        var versions = org.mockito.Mockito.mock(ReportDatasetVersionService.class);
+        var definitions = Mockito.mock(ReportDefinitionService.class);
+        var versions = Mockito.mock(ReportDatasetVersionService.class);
         var descriptor =
                 new DatasetDescriptor(
                         "SECURE_TEST",
@@ -335,8 +336,8 @@ class ReportLookupSecurityTest {
                                 new DatasetParameter(
                                         "other", "其他必填", ValueType.STRING, true, null)),
                         List.of());
-        org.mockito.Mockito.when(definitions.resolve("A", 8)).thenReturn(actor);
-        org.mockito.Mockito.when(versions.forLookup(actor, "v"))
+        Mockito.when(definitions.resolve("A", 8)).thenReturn(actor);
+        Mockito.when(versions.forLookup(actor, "v"))
                 .thenReturn(
                         new ReportDatasetVersionService.View(
                                 "v", "d", "SECURE_TEST", 1, true, descriptor));

@@ -1,10 +1,17 @@
 package com.nexus.im.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.core.event.UserNotificationEvent;
 import com.nexus.im.domain.SysUserNotification;
 import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
+import com.nexus.im.service.impl.support.ImConversationCache;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,11 +22,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 用户通知落库回归测试 —— 跳转链接（contentUrl）必须持久化。
@@ -63,7 +65,11 @@ class SysUserNotificationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new SysUserNotificationServiceImpl(notificationMapper, imRealtimePush, Mockito.mock(com.nexus.im.service.impl.support.ImConversationCache.class));
+        service =
+                new SysUserNotificationServiceImpl(
+                        notificationMapper,
+                        imRealtimePush,
+                        Mockito.mock(ImConversationCache.class));
         envelopeHelperMock = Mockito.mockStatic(ImEnvelopeHelper.class);
         // 模拟 MyBatis-Plus 在 insert 时回填主键（真实环境由雪花 ID 生成器完成），
         // 否则 envelope 构造处 Long → long 拆箱会 NPE

@@ -1,5 +1,8 @@
 package com.nexus.ai.service.query;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.prompt.PromptTemplateService;
@@ -10,6 +13,7 @@ import com.nexus.common.ai.domain.entity.AiPromptTemplate;
 import com.nexus.common.ai.service.IAiPromptTemplateService;
 import com.nexus.common.report.*;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -17,9 +21,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.stream.Collectors;
 
 /** 私有缓存可以无身份预热；工具、提示词及直接元数据输出均按当前服务端授权过滤。 */
 class ErpSchemaAuthorizationTest {
@@ -76,8 +78,11 @@ class ErpSchemaAuthorizationTest {
         assertNull(manager.getTableSchema("bd_material"));
         assertNull(manager.getTableSchema("wm_unregistered"));
         var snapshot = manager.getTableSchema("wm_material_stock");
-        assertEquals(Set.of("stock_id", "material_id", "material_code", "stock_quantity"), snapshot.getColumns().stream()
-            .map(ErpTableSchemaManager.ColumnInfo::getColumnName).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(
+                Set.of("stock_id", "material_id", "material_code", "stock_quantity"),
+                snapshot.getColumns().stream()
+                        .map(ErpTableSchemaManager.ColumnInfo::getColumnName)
+                        .collect(Collectors.toSet()));
         assertNull(snapshot.getDdl());
         assertTrue(snapshot.getForeignKeys().isEmpty());
         for (String output : List.of(manager.getAllTablesSummary(), manager.getCoreSchemaSummary(),

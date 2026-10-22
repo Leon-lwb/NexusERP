@@ -1,18 +1,24 @@
 package com.nexus.station.controller;
 
 import cn.hutool.core.io.IoUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.oss.core.OssClient;
+import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.sop.domain.SopDocument;
 import com.nexus.station.service.StationSopService;
 import com.nexus.system.domain.vo.SysOssVo;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -96,7 +102,7 @@ public class StationSopController {
         Map<String, Object> resolved = stationSopService.resolveDownload(sopId);
         SopDocument doc = (SopDocument) resolved.get("doc");
         SysOssVo ossVo = (SysOssVo) resolved.get("ossVo");
-        com.nexus.common.oss.core.OssClient ossClient = com.nexus.common.oss.factory.OssFactory.instance(ossVo.getService());
+        OssClient ossClient = OssFactory.instance(ossVo.getService());
         String fileName = "sop-" + doc.getSopCode() + "-v" + doc.getCurrentVersion();
         try (InputStream in = ossClient.getObjectContent(ossVo.getFileName())) {
             response.setContentType(contentTypeOf(doc.getFileType()));

@@ -1,5 +1,9 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.*;
@@ -7,13 +11,14 @@ import com.nexus.erp.bd.domain.*;
 import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.*;
 import com.nexus.erp.pu.service.*;
+
 import org.junit.jupiter.api.*;
+
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** 库存、原流水和完整采购三层必须独立复读真实持久出生；Mapper 替身不代表实库/API验收。 */
 class ErpCertifiedSourceEmptyChainTest {
@@ -76,7 +81,8 @@ class ErpCertifiedSourceEmptyChainTest {
         when(catalogs.readLocked(T,1001L,401L)).thenReturn(new CatalogSnapshot(original.tenantId(),original.vendorId(),original.relationId(),NOW,"+08:00",original.material(),
             new SupplierTerms(terms.tenantId(),terms.materialId(),terms.termsId(),terms.orderUomId(),terms.moqUomId(),terms.verifiedMoqQty(),terms.orderMultiple(),terms.allowSplit(),terms.unitsPerPack(),terms.termsVersion(),terms.effectiveAt(),NOW.plusSeconds(1),terms.verifiedAt(),true),
             original.baseUnit(),original.orderUnit(),original.moqUnit(),original.sourceVersions()));
-        var calls=new java.util.concurrent.atomic.AtomicInteger();var delayed=new java.util.concurrent.atomic.AtomicBoolean();
+        var calls = new AtomicInteger();
+        var delayed = new AtomicBoolean();
         when(born.mapper.lockBirth(T,1001L)).thenAnswer(c->{if(calls.incrementAndGet()>=4)delayed.set(true);return born.birth;});
         when(stock.selectDatabaseClock()).thenAnswer(c->new ErpPurchaseInventorySourceMapper.DatabaseClock(BigDecimal.valueOf(NOW.plusSeconds(delayed.get()?10:0).getEpochSecond()),"+08:00"));
         assertThrows(ServiceException.class,()->source.prepareLocked(T,1001L,401L,END,Set.of(101L)));

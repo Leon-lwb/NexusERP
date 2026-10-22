@@ -3,6 +3,7 @@ package com.nexus.ai.context;
 import com.nexus.ai.service.sse.AiSseMessageHelper.SourceCard;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -54,7 +55,7 @@ public final class SearchSourceHolder {
         }
         SOURCES.remove();
         List<SourceCard> deduped = new ArrayList<>();
-        var seen = new java.util.HashSet<String>();
+        var seen = new HashSet<String>();
         for (SourceCard source : sources) {
             if (source.url() != null && seen.add(source.url())) {
                 deduped.add(source);

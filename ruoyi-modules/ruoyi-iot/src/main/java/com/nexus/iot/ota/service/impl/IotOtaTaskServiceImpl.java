@@ -6,8 +6,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -26,6 +24,7 @@ import com.nexus.iot.device.mapper.IotDeviceMapper;
 import com.nexus.iot.device.mapper.IotProductMapper;
 import com.nexus.iot.device.service.IIotDeviceService;
 import com.nexus.iot.firmware.domain.IotFirmware;
+import com.nexus.iot.firmware.domain.IotFirmwareStatus;
 import com.nexus.iot.firmware.mapper.IotFirmwareMapper;
 import com.nexus.iot.ota.domain.IotOtaStatus;
 import com.nexus.iot.ota.domain.IotOtaTask;
@@ -36,6 +35,10 @@ import com.nexus.iot.ota.domain.vo.IotOtaBatchResultVo;
 import com.nexus.iot.ota.domain.vo.IotOtaVersionCheckVo;
 import com.nexus.iot.ota.mapper.IotOtaTaskMapper;
 import com.nexus.iot.ota.service.IIotOtaTaskService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -542,7 +545,7 @@ public class IotOtaTaskServiceImpl implements IIotOtaTaskService {
         if (firmware == null) {
             throw new ServiceException("固件不存在：" + firmwareId);
         }
-        if (!com.nexus.iot.firmware.domain.IotFirmwareStatus.isReleasable(firmware.getStatus())) {
+        if (!IotFirmwareStatus.isReleasable(firmware.getStatus())) {
             throw new ServiceException("固件[" + firmware.getFirmwareName() + " " + firmware.getVersion()
                 + "]当前状态为 " + firmware.getStatus() + "，仅已发布(RELEASED)固件可下发升级任务");
         }

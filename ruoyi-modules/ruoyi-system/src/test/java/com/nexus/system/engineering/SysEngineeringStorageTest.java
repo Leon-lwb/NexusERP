@@ -3,7 +3,9 @@ package com.nexus.system.engineering;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.nexus.common.ai.domain.entity.AiEngineeringArtifact;
 import com.nexus.common.ai.engineering.*;
+import com.nexus.common.ai.mapper.AiEngineeringArtifactMapper;
 import com.nexus.common.oss.core.OssClient;
 import com.nexus.common.oss.enums.AccessPolicyType;
 import com.nexus.common.oss.factory.OssFactory;
@@ -11,22 +13,24 @@ import com.nexus.system.domain.SysOss;
 import com.nexus.system.mapper.SysOssMapper;
 import com.nexus.system.service.ISysOssConfigService;
 
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.h2.jdbcx.JdbcDataSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.*;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class SysEngineeringStorageTest {
     @TempDir Path temp;
 
     @Test
     void coldStartInitializesConfigurationBeforePrivateBucketValidation() {
-        var initialized = new java.util.concurrent.atomic.AtomicBoolean(false);
+        var initialized = new AtomicBoolean(false);
         var configs = mock(ISysOssConfigService.class);
         doAnswer(call -> {
             initialized.set(true);
@@ -39,10 +43,12 @@ class SysEngineeringStorageTest {
                 if (!initialized.get()) throw new IllegalStateException("OSS cache is cold");
                 return client;
             });
-            var adapter = new SysEngineeringStorageAdapter(
-                    mock(SysOssMapper.class),
-                    mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class),
-                    "private-engineering", configs);
+            var adapter =
+                    new SysEngineeringStorageAdapter(
+                            mock(SysOssMapper.class),
+                            mock(AiEngineeringArtifactMapper.class),
+                            "private-engineering",
+                            configs);
             assertDoesNotThrow(adapter::verifyConfiguration);
             verify(configs).init();
         }
@@ -52,7 +58,7 @@ class SysEngineeringStorageTest {
     void publicOrImplicitBucketIsRejectedBeforeAnyUpload() {
         var client = mock(OssClient.class);
         var mapper = mock(SysOssMapper.class);
-        var artifacts = mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class);
+        var artifacts = mock(AiEngineeringArtifactMapper.class);
         try (var factory = mockStatic(OssFactory.class)) {
             factory.when(() -> OssFactory.instance("private-engineering")).thenReturn(client);
             var adapter =
@@ -73,7 +79,7 @@ class SysEngineeringStorageTest {
     void objectNamespaceIsGeneratedByServerAndMetadataNeverContainsPublicUrl() throws Exception {
         var client = mock(OssClient.class);
         var mapper = mock(SysOssMapper.class);
-        var artifacts = mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class);
+        var artifacts = mock(AiEngineeringArtifactMapper.class);
         when(client.getAccessPolicy()).thenReturn(AccessPolicyType.PRIVATE);
         var path = temp.resolve("file.obj");
         Files.writeString(path, "v 0 0 0\n");
@@ -83,7 +89,7 @@ class SysEngineeringStorageTest {
                     new SysEngineeringStorageAdapter(
                             mapper, artifacts, "private-engineering", mock(ISysOssConfigService.class));
             adapter.verifyConfiguration();
-            var reservation = new com.nexus.common.ai.domain.entity.AiEngineeringArtifact();
+            var reservation = new AiEngineeringArtifact();
             reservation.setArtifactId(9L);
             reservation.setOssId(9L);
             reservation.setTenantId("000001");
@@ -108,7 +114,7 @@ class SysEngineeringStorageTest {
                                     "text/plain",
                                     "board.obj"));
             assertEquals("engineering/000001/7/8/9", stored.objectKey());
-            var captor = org.mockito.ArgumentCaptor.forClass(SysOss.class);
+            var captor = ArgumentCaptor.forClass(SysOss.class);
             verify(mapper).insert(captor.capture());
             assertEquals("", captor.getValue().getUrl());
             assertEquals("000001", captor.getValue().getTenantId());
@@ -129,7 +135,7 @@ class SysEngineeringStorageTest {
     void unconfirmedDeletionRequiresPositiveArtifactStateProof() throws Exception {
         var client = mock(OssClient.class);
         var mapper = mock(SysOssMapper.class);
-        var artifacts = mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class);
+        var artifacts = mock(AiEngineeringArtifactMapper.class);
         when(client.getAccessPolicy()).thenReturn(AccessPolicyType.PRIVATE);
         var metadata = new SysOss();
         metadata.setOssId(9L);
@@ -167,7 +173,7 @@ class SysEngineeringStorageTest {
                 + " url varchar(500) not null, ext1 varchar(255), service varchar(64))");
         var client = mock(OssClient.class);
         var mapper = mock(SysOssMapper.class);
-        var artifacts = mock(com.nexus.common.ai.mapper.AiEngineeringArtifactMapper.class);
+        var artifacts = mock(AiEngineeringArtifactMapper.class);
         when(client.getAccessPolicy()).thenReturn(AccessPolicyType.PRIVATE);
         when(mapper.insert(any(SysOss.class))).thenAnswer(call -> {
             var metadata = call.getArgument(0, SysOss.class);
@@ -177,7 +183,7 @@ class SysEngineeringStorageTest {
         });
         var staged = temp.resolve(type + ".validated");
         Files.writeString(staged, "validated synthetic artifact");
-        var reservation = new com.nexus.common.ai.domain.entity.AiEngineeringArtifact();
+        var reservation = new AiEngineeringArtifact();
         reservation.setArtifactId(9L);
         reservation.setOssId(9L);
         reservation.setTenantId("000001");

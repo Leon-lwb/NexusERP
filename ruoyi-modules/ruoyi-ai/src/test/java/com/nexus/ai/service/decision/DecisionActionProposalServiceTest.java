@@ -1,14 +1,20 @@
 package com.nexus.ai.service.decision;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("dev")
 class DecisionActionProposalServiceTest {
@@ -28,10 +34,15 @@ class DecisionActionProposalServiceTest {
         var result = frozenProposals(input, List.of(contract));
         assertEquals(1, result.size(), "一个真实物料供应商合同产生一个动作");
         var action = result.get(0);
-        assertEquals(com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(10L, contract),
-            action.payload(), "动作保存完整且同份的唯一 wire 合同");
-        assertEquals(com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.idempotencyKey(
-            "000000", 10L, input.target(), contract), action.idempotencyKey(), "只允许公共 helper 生成永久键");
+        assertEquals(
+                DecisionPurchaseContractCodec.toPayload(10L, contract),
+                action.payload(),
+                "动作保存完整且同份的唯一 wire 合同");
+        assertEquals(
+                DecisionPurchaseContractCodec.idempotencyKey(
+                        "000000", 10L, input.target(), contract),
+                action.idempotencyKey(),
+                "只允许公共 helper 生成永久键");
         assertTrue(action.approvalRequired(), "采购草稿审批守卫不可取消");
     }
 
@@ -51,11 +62,30 @@ class DecisionActionProposalServiceTest {
         var frozen = DecisionPurchaseProposalServiceTest.contract(100L, 200L);
         assertThrows(RuntimeException.class, () -> frozenProposals(frozenInput(), List.of(frozen, frozen)),
             "重复合同不能产生同键采购");
-        var zero = new DecisionPurchaseContractV2(frozen.materialId(), frozen.vendorId(), frozen.windowEnd(),
-            frozen.materialVersion(), frozen.vendorVersion(), frozen.supplierTermsId(), frozen.supplierTermsVersion(),
-            frozen.baseUomId(), frozen.baseUomVersion(), frozen.orderUomId(), frozen.orderUomVersion(), frozen.conversionVersion(),
-            frozen.requirementDetailIds(), List.of(new DecisionPurchaseContractV2.Line(1100L, 1L,
-                java.math.BigDecimal.ZERO, 1L, java.math.BigDecimal.ZERO, LocalDate.of(2026, 10, 3))), frozen.expectedSourceFingerprint());
+        var zero =
+                new DecisionPurchaseContractV2(
+                        frozen.materialId(),
+                        frozen.vendorId(),
+                        frozen.windowEnd(),
+                        frozen.materialVersion(),
+                        frozen.vendorVersion(),
+                        frozen.supplierTermsId(),
+                        frozen.supplierTermsVersion(),
+                        frozen.baseUomId(),
+                        frozen.baseUomVersion(),
+                        frozen.orderUomId(),
+                        frozen.orderUomVersion(),
+                        frozen.conversionVersion(),
+                        frozen.requirementDetailIds(),
+                        List.of(
+                                new DecisionPurchaseContractV2.Line(
+                                        1100L,
+                                        1L,
+                                        BigDecimal.ZERO,
+                                        1L,
+                                        BigDecimal.ZERO,
+                                        LocalDate.of(2026, 10, 3))),
+                        frozen.expectedSourceFingerprint());
         assertThrows(RuntimeException.class, () -> frozenProposals(frozenInput(), List.of(zero)), "空正额度不能生成采购");
     }
 
@@ -72,7 +102,7 @@ class DecisionActionProposalServiceTest {
             var method = DecisionActionProposalService.class.getMethod("propose",
                 DecisionActionProposalService.ProposalInput.class, List.class);
             return (List<DecisionActionProposal>) method.invoke(service, input, contracts);
-        } catch (java.lang.reflect.InvocationTargetException error) {
+        } catch (InvocationTargetException error) {
             if (error.getCause() instanceof RuntimeException cause) throw cause;
             throw new AssertionError("冻结合同提案抛出非预期异常", error.getCause());
         } catch (ReflectiveOperationException error) { throw new AssertionError("缺少强类型冻结合同提案接口", error); }
@@ -86,8 +116,14 @@ class DecisionActionProposalServiceTest {
         var action = frozenProposals(input, List.of(source)).get(0);
         assertEquals(79, action.idempotencyKey().length(), "完整雪花标识的公共键必须固定为七十九字符");
         assertTrue(action.idempotencyKey().matches("AI_PURCHASE_V2:[0-9a-f]{64}"), "新版键必须为完整哈希而非截断原标识");
-        var changedLine = new DecisionPurchaseContractV2.Line(source.frozenLines().get(0).detailId(), 1L,
-            new java.math.BigDecimal("4"), 1L, new java.math.BigDecimal("4"), LocalDate.of(2026, 10, 3));
+        var changedLine =
+                new DecisionPurchaseContractV2.Line(
+                        source.frozenLines().get(0).detailId(),
+                        1L,
+                        new BigDecimal("4"),
+                        1L,
+                        new BigDecimal("4"),
+                        LocalDate.of(2026, 10, 3));
         var changedQuantity = new DecisionPurchaseContractV2(source.materialId(), source.vendorId(), source.windowEnd(),
             source.materialVersion(), source.vendorVersion(), source.supplierTermsId(), source.supplierTermsVersion(),
             source.baseUomId(), source.baseUomVersion(), source.orderUomId(), source.orderUomVersion(), source.conversionVersion(),

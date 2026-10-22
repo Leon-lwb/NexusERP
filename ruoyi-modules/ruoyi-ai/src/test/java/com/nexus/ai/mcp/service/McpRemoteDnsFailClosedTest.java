@@ -1,5 +1,9 @@
 package com.nexus.ai.mcp.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.mcp.service.impl.McpMarketServiceImpl;
 import com.nexus.ai.tool.BuiltinToolRegistry;
@@ -9,14 +13,13 @@ import com.nexus.common.ai.mapper.AiMcpMarketMapper;
 import com.nexus.common.ai.mapper.AiMcpMarketToolMapper;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.core.exception.ServiceException;
+
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
+
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.net.InetAddress;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /** 当前真实MCP库没有DNS/HTTP-client注入入口：域名REMOTE明确拒绝，数字IP能力保留。 */
 class McpRemoteDnsFailClosedTest {
@@ -53,6 +56,12 @@ class McpRemoteDnsFailClosedTest {
         assertDoesNotThrow(()->service.addTool(request));verify(mapper).insert(request);assertTrue(request.getConfigJson().contains(url));
     }
 
-    private org.mockito.MockedStatic<InetAddress> publicDns() throws Exception {InetAddress address=InetAddress.getByAddress(new byte[]{93,(byte)184,(byte)216,34});var dns=mockStatic(InetAddress.class);dns.when(()->InetAddress.getAllByName(HOST)).thenReturn(new InetAddress[]{address});return dns;}
+    private MockedStatic<InetAddress> publicDns() throws Exception {
+        InetAddress address = InetAddress.getByAddress(new byte[] {93, (byte) 184, (byte) 216, 34});
+        var dns = mockStatic(InetAddress.class);
+        dns.when(() -> InetAddress.getAllByName(HOST)).thenReturn(new InetAddress[] {address});
+        return dns;
+    }
+
     private AiTool tool(String url){AiTool tool=new AiTool();tool.setId(1L);tool.setToolName("review_docs");tool.setToolType("REMOTE");tool.setStatus("0");tool.setConfigJson("{\"baseUrl\":\""+url+"\"}");return tool;}
 }

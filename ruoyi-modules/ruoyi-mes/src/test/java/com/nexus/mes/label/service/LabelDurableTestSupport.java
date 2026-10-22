@@ -1,30 +1,35 @@
 package com.nexus.mes.label.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelPrintTask;
 import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.regex.Pattern;
 
 /**
  * 标签持久化测试公共夹具，仅使用随机命名的内存数据库和模拟打印机。
@@ -63,10 +68,7 @@ class LabelDurableTestSupport {
                         inv -> {
                             assertTrue(
                                     TransactionSynchronizationManager.isActualTransactionActive());
-                            assertEquals(
-                                    "mes",
-                                    com.baomidou.dynamic.datasource.toolkit
-                                            .DynamicDataSourceContextHolder.peek());
+                            assertEquals("mes", DynamicDataSourceContextHolder.peek());
                             return null;
                         })
                 .when(guard)
@@ -92,7 +94,7 @@ class LabelDurableTestSupport {
         jdbc.execute("DROP ALL OBJECTS");
         login.close();
         spring.close();
-        com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder.clear();
+        DynamicDataSourceContextHolder.clear();
     }
 
     void createTable(String name) throws Exception {
@@ -105,10 +107,8 @@ class LabelDurableTestSupport {
         jdbc.execute(ddl);
     }
 
-    /**
-     * 从测试工作目录向上定位同一工作树的生成DDL，兼容Surefire模块目录。
-     */
-    private static Path installSchema() throws java.io.IOException {
+    /** 从测试工作目录向上定位同一工作树的生成DDL，兼容Surefire模块目录。 */
+    private static Path installSchema() throws IOException {
         Path start = Path.of("").toAbsolutePath().normalize();
         for (Path directory = start; directory != null; directory = directory.getParent()) {
             Path schema = directory.resolve("script/sql/ry-mes.sql");
@@ -116,7 +116,7 @@ class LabelDurableTestSupport {
                 return schema;
             }
         }
-        throw new java.nio.file.NoSuchFileException("无法从测试目录定位MES安装DDL: " + start);
+        throw new NoSuchFileException("无法从测试目录定位MES安装DDL: " + start);
     }
 
     int count(String name) {
@@ -145,7 +145,7 @@ class LabelDurableTestSupport {
 
     String table(String sql, String name) {
         var matcher =
-                java.util.regex.Pattern.compile(
+                Pattern.compile(
                                 "CREATE TABLE(?: IF NOT EXISTS)? `"
                                         + name
                                         + "` \\([\\s\\S]*?\\n\\)[^;]*;")

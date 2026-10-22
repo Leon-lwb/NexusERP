@@ -7,6 +7,7 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -22,15 +23,18 @@ import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.service.IProDispatchService;
 import com.nexus.mes.pro.service.IProFlowCardService;
 import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * MES派工 Service 业务层实现
@@ -53,7 +57,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     private final ProFlowCardMapper flowCardMapper;
     private final IProFlowCardService proFlowCardService;
     private final LockTemplate lockTemplate;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
 
     @Override
     /**
@@ -210,8 +214,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
                         Wrappers.<ProDispatch>lambdaQuery()
                                 .eq(ProDispatch::getDispatchId, dispatchId)
                                 .last("FOR UPDATE"));
-        if (dispatch != null
-                && !java.util.Objects.equals(reference.getCardId(), dispatch.getCardId())) {
+        if (dispatch != null && !Objects.equals(reference.getCardId(), dispatch.getCardId())) {
             throw new ServiceException("派工锁定后的父卡发生变化");
         }
         if (dispatch == null) {
@@ -326,8 +329,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
                         Wrappers.<ProDispatch>lambdaQuery()
                                 .eq(ProDispatch::getDispatchId, dispatchId)
                                 .last("FOR UPDATE"));
-        if (dispatch != null
-                && !java.util.Objects.equals(reference.getCardId(), dispatch.getCardId())) {
+        if (dispatch != null && !Objects.equals(reference.getCardId(), dispatch.getCardId())) {
             throw new ServiceException("派工锁定后的父卡发生变化");
         }
         if (dispatch == null) {

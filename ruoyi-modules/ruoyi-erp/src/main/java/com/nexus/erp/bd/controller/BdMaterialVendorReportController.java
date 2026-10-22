@@ -1,7 +1,9 @@
 package com.nexus.erp.bd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import lombok.RequiredArgsConstructor;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.bd.domain.BdMaterial;
@@ -9,9 +11,11 @@ import com.nexus.erp.bd.domain.BdMaterialVendor;
 import com.nexus.erp.bd.domain.vo.PriceComparisonVo;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdMaterialVendorMapper;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 import java.util.Map;
@@ -51,12 +55,12 @@ public class BdMaterialVendorReportController extends BaseController {
         String materialCode = material != null ? material.getMaterialCode() : null;
         String materialName = material != null ? material.getMaterialName() : null;
 
-        List<BdMaterialVendor> list = materialVendorMapper.selectList(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BdMaterialVendor>()
-                .eq(BdMaterialVendor::getMaterialId, materialId)
-                .eq(BdMaterialVendor::getStatus, 1L)
-                .orderByAsc(BdMaterialVendor::getPrice)
-        );
+        List<BdMaterialVendor> list =
+                materialVendorMapper.selectList(
+                        new LambdaQueryWrapper<BdMaterialVendor>()
+                                .eq(BdMaterialVendor::getMaterialId, materialId)
+                                .eq(BdMaterialVendor::getStatus, 1L)
+                                .orderByAsc(BdMaterialVendor::getPrice));
         List<PriceComparisonVo> voList = list.stream().map(entity -> {
             PriceComparisonVo vo = convertToPriceVo(entity);
             vo.setMaterialCode(materialCode);
@@ -76,12 +80,12 @@ public class BdMaterialVendorReportController extends BaseController {
     @SaCheckPermission("bd:materialVendor:list")
     @GetMapping("/vendorMaterials")
     public R<List<PriceComparisonVo>> vendorMaterials(@RequestParam Long vendorId) {
-        List<BdMaterialVendor> list = materialVendorMapper.selectList(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BdMaterialVendor>()
-                .eq(BdMaterialVendor::getVendorId, vendorId)
-                .eq(BdMaterialVendor::getStatus, 1L)
-                .orderByAsc(BdMaterialVendor::getMaterialId)
-        );
+        List<BdMaterialVendor> list =
+                materialVendorMapper.selectList(
+                        new LambdaQueryWrapper<BdMaterialVendor>()
+                                .eq(BdMaterialVendor::getVendorId, vendorId)
+                                .eq(BdMaterialVendor::getStatus, 1L)
+                                .orderByAsc(BdMaterialVendor::getMaterialId));
         // 批量查询物料信息
         List<Long> materialIds = list.stream()
             .map(BdMaterialVendor::getMaterialId)
@@ -120,13 +124,13 @@ public class BdMaterialVendorReportController extends BaseController {
         String materialCode = material != null ? material.getMaterialCode() : null;
         String materialName = material != null ? material.getMaterialName() : null;
 
-        List<BdMaterialVendor> list = materialVendorMapper.selectList(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BdMaterialVendor>()
-                .eq(BdMaterialVendor::getMaterialId, materialId)
-                .eq(BdMaterialVendor::getStatus, 1L)
-                .orderByAsc(BdMaterialVendor::getPrice)
-                .last("LIMIT " + limit)
-        );
+        List<BdMaterialVendor> list =
+                materialVendorMapper.selectList(
+                        new LambdaQueryWrapper<BdMaterialVendor>()
+                                .eq(BdMaterialVendor::getMaterialId, materialId)
+                                .eq(BdMaterialVendor::getStatus, 1L)
+                                .orderByAsc(BdMaterialVendor::getPrice)
+                                .last("LIMIT " + limit));
         List<PriceComparisonVo> voList = list.stream().map(entity -> {
             PriceComparisonVo vo = convertToPriceVo(entity);
             vo.setMaterialCode(materialCode);

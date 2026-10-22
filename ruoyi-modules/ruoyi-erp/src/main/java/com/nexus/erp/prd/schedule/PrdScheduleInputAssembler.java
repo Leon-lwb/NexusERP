@@ -27,19 +27,21 @@ import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchLeaveApplyMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
 import com.nexus.erp.sch.mapper.SchTeamMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -51,11 +53,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
+
 /**
  * APS 排程输入装配器。
- * <p>
- * 统一装配正式排产与 What-if 所需的工单、工艺路线、设备产能、节假日及人力产能，
- * 不负责排程结果持久化。
+ *
+ * <p>统一装配正式排产与 What-if 所需的工单、工艺路线、设备产能、节假日及人力产能， 不负责排程结果持久化。
  *
  * @author nexus
  */
@@ -621,8 +624,7 @@ public class PrdScheduleInputAssembler {
         if (date instanceof java.sql.Date sqlDate) {
             return sqlDate.toLocalDate();
         }
-        return java.time.Instant.ofEpochMilli(date.getTime())
-            .atZone(BUSINESS_ZONE).toLocalDate();
+        return Instant.ofEpochMilli(date.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
     private Date startOfDay(LocalDate date) {

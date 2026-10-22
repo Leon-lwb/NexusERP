@@ -1,6 +1,11 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
@@ -11,6 +16,7 @@ import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.erp.wm.service.impl.WmProductionIssueServiceImpl;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -22,10 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WmProductionIssueWarehouseTest {
@@ -187,6 +189,10 @@ class WmProductionIssueWarehouseTest {
         verify(stockMapper).selectList(captor.capture());
         String sql = captor.getValue().getSqlSegment();
         assertTrue(sql.contains("warehouse_id"), sql);
-        assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) captor.getValue()).getParamNameValuePairs().containsValue(warehouseId), sql);
+        assertTrue(
+                ((AbstractWrapper<?, ?, ?>) captor.getValue())
+                        .getParamNameValuePairs()
+                        .containsValue(warehouseId),
+                sql);
     }
 }

@@ -1,7 +1,12 @@
 package com.nexus.erp.bd;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -12,7 +17,9 @@ import com.nexus.erp.bd.domain.bo.BdMaterialVendorBo;
 import com.nexus.erp.bd.mapper.*;
 import com.nexus.erp.bd.service.impl.BdMaterialVendorServiceImpl;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,10 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 条款普通编辑事实变更必须撤销认证，备注与展示优先级不得伪造新的认证。 */
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +45,8 @@ class BdMaterialVendorCertificationEditTest {
     static void prepare() {
         spring = mockStatic(SpringUtil.class);
         spring.when(() -> SpringUtil.getBean(Converter.class)).thenReturn(new Converter() {
-            @Override public <S, T> T convert(S source, Class<T> target) { return BeanUtil.copyProperties(source, target); }
+            @Override
+            public <S, T> T convert(S source, Class<T> target) { return BeanUtil.copyProperties(source, target); }
         });
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), BdMaterialVendor.class);
     }
@@ -57,7 +61,7 @@ class BdMaterialVendorCertificationEditTest {
         login = mockStatic(LoginHelper.class);
         login.when(LoginHelper::getUserId).thenReturn(9401L);
         when(executor.executeRepeatableRead(eq("000000"), any()))
-            .thenAnswer(call -> ((java.util.function.Supplier<?>) call.getArgument(1)).get());
+                .thenAnswer(call -> ((Supplier<?>) call.getArgument(1)).get());
         BdMaterialVendor existing = new BdMaterialVendor();
         existing.setRelationId(9301L); existing.setTenantId("000000"); existing.setMaterialId(9101L);
         existing.setVendorId(9201L); existing.setDelFlag("0"); existing.setTermsVersion("terms-old");

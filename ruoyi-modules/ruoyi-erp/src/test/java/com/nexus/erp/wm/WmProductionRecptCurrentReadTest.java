@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -8,6 +12,7 @@ import com.nexus.erp.wm.domain.WmProductionRecpt;
 import com.nexus.erp.wm.domain.bo.WmProductionRecptBo;
 import com.nexus.erp.wm.mapper.WmProductionRecptGuardMapper;
 import com.nexus.erp.wm.service.impl.WmProductionRecptServiceImpl;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -19,17 +24,16 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 /**
  * 真实入口、守卫、MyBatis 映射 SQL 和 REQUIRED 代理的离线读视图反例。
@@ -87,7 +91,9 @@ class WmProductionRecptCurrentReadTest {
         wo.setActualEndDate(null);
         WmProductionRecptBo draft = new WmProductionRecptBo();
         draft.setWoId(201L); draft.setQuantity(d(quantity));
-        draft.setWarehouseId(3L); draft.setLocationId(28L); draft.setRecptDate(new java.util.Date());
+        draft.setWarehouseId(3L);
+        draft.setLocationId(28L);
+        draft.setRecptDate(new Date());
         service.insertByBo(draft);
         assertEquals("DRAFT", this.<WmProductionRecpt>field("stored").getStatus(), "先建立合法零效果草稿");
         WmProductionRecptGuardMapper source = field("source");
@@ -209,7 +215,9 @@ class WmProductionRecptCurrentReadTest {
 
         private void commitReportAndCompletion() {
             currentApproved = d("2");
-            wo.setCompletedQty(d("6")); wo.setWoStatus("COMPLETED"); wo.setActualEndDate(new java.util.Date());
+            wo.setCompletedQty(d("6"));
+            wo.setWoStatus("COMPLETED");
+            wo.setActualEndDate(new Date());
         }
 
         private PreparedStatement statement(String sql) throws SQLException {
@@ -280,10 +288,16 @@ class WmProductionRecptCurrentReadTest {
             AtomicInteger cursor = new AtomicInteger(-1);
             AtomicBoolean wasNull = new AtomicBoolean();
             when(result.next()).thenAnswer(call -> cursor.incrementAndGet() < rows.size());
-            java.util.function.Function<Object, Object> value = key -> {
-                int index = key instanceof Integer ? (Integer) key - 1 : columns.indexOf(key.toString().toLowerCase(Locale.ROOT));
-                Object v = rows.get(cursor.get())[index]; wasNull.set(v == null); return v;
-            };
+            Function<Object, Object> value =
+                    key -> {
+                        int index =
+                                key instanceof Integer
+                                        ? (Integer) key - 1
+                                        : columns.indexOf(key.toString().toLowerCase(Locale.ROOT));
+                        Object v = rows.get(cursor.get())[index];
+                        wasNull.set(v == null);
+                        return v;
+                    };
             when(result.wasNull()).thenAnswer(call -> wasNull.get());
             when(result.getBigDecimal(anyInt())).thenAnswer(call -> value.apply(call.getArgument(0)));
             when(result.getBigDecimal(anyString())).thenAnswer(call -> value.apply(call.getArgument(0)));

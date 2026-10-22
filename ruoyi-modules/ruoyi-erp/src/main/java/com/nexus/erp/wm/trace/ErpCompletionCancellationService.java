@@ -6,13 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.jdbc.JdbcTraceJournal;
 import com.nexus.common.trace.port.CompletionCancellationPort;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Clob;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -102,7 +106,7 @@ public class ErpCompletionCancellationService implements CompletionCancellationP
                 CompletionCancellationResult previous;
                 try {
                     previous = json.treeToValue(applied, CompletionCancellationResult.class);
-                } catch (java.io.IOException e) {
+                } catch (IOException e) {
                     throw new IllegalStateException("原取消终态无效", e);
                 }
                 require(
@@ -234,7 +238,7 @@ public class ErpCompletionCancellationService implements CompletionCancellationP
     private String encode(Object value) {
         try {
             return json.writeValueAsString(value);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("取消结果无法冻结", e);
         }
     }
@@ -244,7 +248,7 @@ public class ErpCompletionCancellationService implements CompletionCancellationP
             JsonNode node = json.readTree(value);
             require(node != null && node.isObject(), "取消证明必须是对象");
             return node;
-        } catch (java.io.IOException | IllegalArgumentException e) {
+        } catch (IOException | IllegalArgumentException e) {
             throw new IllegalStateException("取消证明载荷无效", e);
         }
     }
@@ -275,7 +279,7 @@ public class ErpCompletionCancellationService implements CompletionCancellationP
         if (value instanceof Clob clob) {
             try {
                 return clob.getSubString(1, Math.toIntExact(clob.length()));
-            } catch (java.sql.SQLException e) {
+            } catch (SQLException e) {
                 throw new IllegalStateException("取消证明不可读", e);
             }
         }

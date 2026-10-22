@@ -1,17 +1,35 @@
 package com.nexus.erp.wm.trace;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.trace.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.transaction.support.TransactionTemplate;
-import java.time.LocalDate;
-import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.trace.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.ConnectionHolder;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLTransactionRollbackException;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class ErpSerialIdentityServiceTest {
     JdbcTemplate jdbc;
@@ -264,9 +282,7 @@ class ErpSerialIdentityServiceTest {
                 ErpSerialIdentityService.class.getMethod(
                         "confirmWithinInbox", String.class, Long.class, String.class, String.class);
         assertEquals(
-                org.springframework.transaction.annotation.Propagation.MANDATORY,
-                method.getAnnotation(org.springframework.transaction.annotation.Transactional.class)
-                        .propagation());
+                Propagation.MANDATORY, method.getAnnotation(Transactional.class).propagation());
         assertThrows(
                 RuntimeException.class,
                 () ->
@@ -435,10 +451,9 @@ class ErpSerialIdentityServiceTest {
         service.reserve(
                 "T1", new SerialReservationCommand("late-initial", 1L, 1, 9L, "ERP_MANUAL", null));
         JdbcTemplate recording = recordingService();
-        var injected = new java.util.concurrent.atomic.AtomicBoolean();
+        var injected = new AtomicBoolean();
         var competing = new TransactionTemplate(tx.getTransactionManager());
-        competing.setPropagationBehavior(
-                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        competing.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         doAnswer(
                         call -> {
                             String sql = call.getArgument(0);
@@ -505,26 +520,25 @@ class ErpSerialIdentityServiceTest {
                 List.of(
                         new SerialReservationCommand("parallel-a", 1L, 3, 9L, "ERP_MANUAL", null),
                         new SerialReservationCommand("parallel-b", 2L, 3, 10L, "ERP_MANUAL", null));
-        var ready = new java.util.concurrent.CountDownLatch(2);
-        var start = new java.util.concurrent.CountDownLatch(1);
-        var workers = java.util.concurrent.Executors.newFixedThreadPool(2);
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        var workers = Executors.newFixedThreadPool(2);
         try {
-            var results = new ArrayList<java.util.concurrent.Future<SerialReservation>>();
+            var results = new ArrayList<Future<SerialReservation>>();
             for (var command : commands) {
                 results.add(
                         workers.submit(
                                 () -> {
                                     ready.countDown();
-                                    assertTrue(
-                                            start.await(5, java.util.concurrent.TimeUnit.SECONDS));
+                                    assertTrue(start.await(5, TimeUnit.SECONDS));
                                     return service.reserve("T1", command);
                                 }));
             }
-            assertTrue(ready.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
             start.countDown();
             var codes = new HashSet<String>();
             for (int i = 0; i < results.size(); i++) {
-                var result = results.get(i).get(10, java.util.concurrent.TimeUnit.SECONDS);
+                var result = results.get(i).get(10, TimeUnit.SECONDS);
                 assertEquals(3, result.identities().size());
                 assertEquals(commands.get(i).materialId(), result.identities().get(0).materialId());
                 assertTrue(
@@ -556,7 +570,7 @@ class ErpSerialIdentityServiceTest {
         } finally {
             start.countDown();
             workers.shutdownNow();
-            assertTrue(workers.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS));
+            assertTrue(workers.awaitTermination(5, TimeUnit.SECONDS));
         }
     }
 
@@ -624,22 +638,21 @@ class ErpSerialIdentityServiceTest {
     @Test
     void sequenceInitializationDeadlockRetriesOnlyInFreshErpTransactions() throws Exception {
         JdbcTemplate recording = recordingService();
-        var connections = new ArrayList<java.sql.Connection>();
+        var connections = new ArrayList<Connection>();
         doAnswer(
                         call -> {
                             String sql = call.getArgument(0);
                             if (sql.contains("FROM wm_serial_sequence")
                                     && sql.endsWith("FOR UPDATE")) {
                                 var holder =
-                                        (org.springframework.jdbc.datasource.ConnectionHolder)
-                                                org.springframework.transaction.support
-                                                        .TransactionSynchronizationManager
-                                                        .getResource(jdbc.getDataSource());
+                                        (ConnectionHolder)
+                                                TransactionSynchronizationManager.getResource(
+                                                        jdbc.getDataSource());
                                 connections.add(holder.getConnection());
                                 if (connections.size() == 1) {
-                                    throw new org.springframework.dao.CannotAcquireLockException(
+                                    throw new CannotAcquireLockException(
                                             "synthetic MySQL deadlock",
-                                            new java.sql.SQLTransactionRollbackException(
+                                            new SQLTransactionRollbackException(
                                                     "deadlock", "40001", 1213));
                                 }
                             }
@@ -666,29 +679,26 @@ class ErpSerialIdentityServiceTest {
     @Test
     void persistentLockFailureStopsAfterThreeIndependentAttempts() {
         JdbcTemplate recording = recordingService();
-        var connections = new ArrayList<java.sql.Connection>();
+        var connections = new ArrayList<Connection>();
         doAnswer(
                         call -> {
                             String sql = call.getArgument(0);
                             if (sql.contains("FROM wm_serial_sequence")
                                     && sql.endsWith("FOR UPDATE")) {
                                 var holder =
-                                        (org.springframework.jdbc.datasource.ConnectionHolder)
-                                                org.springframework.transaction.support
-                                                        .TransactionSynchronizationManager
-                                                        .getResource(jdbc.getDataSource());
+                                        (ConnectionHolder)
+                                                TransactionSynchronizationManager.getResource(
+                                                        jdbc.getDataSource());
                                 connections.add(holder.getConnection());
-                                throw new org.springframework.dao.CannotAcquireLockException(
+                                throw new CannotAcquireLockException(
                                         "synthetic timeout",
-                                        new java.sql.SQLException("timeout", "HY000", 1205));
+                                        new SQLException("timeout", "HY000", 1205));
                             }
                             return call.callRealMethod();
                         })
                 .when(recording)
                 .queryForList(anyString(), any(Object[].class));
-        assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> reserve("retry-limit", 2));
+        assertThrows(ServiceException.class, () -> reserve("retry-limit", 2));
         assertEquals(3, connections.size());
         assertEquals(3, new HashSet<>(connections).size());
         assertEquals(
@@ -730,9 +740,7 @@ class ErpSerialIdentityServiceTest {
     void inactiveMaterialBusinessFailureIsNotRetried() {
         JdbcTemplate recording = recordingService();
         jdbc.update("UPDATE bd_material SET status=0");
-        assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> reserve("business-failure", 1));
+        assertThrows(ServiceException.class, () -> reserve("business-failure", 1));
         long reads =
                 mockingDetails(recording).getInvocations().stream()
                         .filter(

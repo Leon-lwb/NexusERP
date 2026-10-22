@@ -1,5 +1,11 @@
 package com.nexus.erp.wm.controller.serial;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.satoken.pda.PdaIdempotentAspect;
@@ -7,21 +13,21 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.wm.controller.app.AppPdaIssueController;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.service.IPdaIssueService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.*;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.*;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.mock.web.*;
-import org.springframework.http.MediaType;
+
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * 真正的原PDA幂等切面必须观察到适配事务已经提交；Redis仅为内存模拟。
@@ -153,7 +159,7 @@ class WmSerialPdaIdempotencyTest {
         var request = new MockHttpServletRequest("POST", "/app/pda/wm/issue/10/finish");
         request.addHeader("X-Idempotent-Key", "old-quantity-key");
         request.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        request.setContent("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        request.setContent("{}".getBytes(StandardCharsets.UTF_8));
         new WmSerialPayloadFilter(new ObjectMapper())
                 .doFilter(
                         request,
@@ -161,22 +167,18 @@ class WmSerialPdaIdempotencyTest {
                         (r, s) ->
                                 assertEquals(
                                         "old-quantity-key",
-                                        ((jakarta.servlet.http.HttpServletRequest) r)
-                                                .getHeader("X-Idempotent-Key")));
+                                        ((HttpServletRequest) r).getHeader("X-Idempotent-Key")));
     }
 
     static String key(WmSerialPayloadFilter filter, String body) throws Exception {
         var request = new MockHttpServletRequest("POST", "/app/pda/wm/issue/10/finish");
         request.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        request.setContent(body.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        request.setContent(body.getBytes(StandardCharsets.UTF_8));
         String[] key = {null};
         filter.doFilter(
                 request,
                 new MockHttpServletResponse(),
-                (r, s) ->
-                        key[0] =
-                                ((jakarta.servlet.http.HttpServletRequest) r)
-                                        .getHeader("X-Idempotent-Key"));
+                (r, s) -> key[0] = ((HttpServletRequest) r).getHeader("X-Idempotent-Key"));
         return key[0];
     }
 }

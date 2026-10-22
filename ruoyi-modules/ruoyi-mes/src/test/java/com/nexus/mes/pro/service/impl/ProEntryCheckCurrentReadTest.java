@@ -1,10 +1,16 @@
 package com.nexus.mes.pro.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.lt.service.ILtLotService;
@@ -21,6 +27,7 @@ import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
 import com.nexus.mes.sop.service.ISopViewLogService;
 import com.nexus.mes.tg.service.ITgToolingService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
@@ -50,11 +57,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
-
 /**
  * 校验入口的当前读回归：私有 H2 只提供真实 Spring 事务，Mapper 替身区分快照与当前状态。
  * 门禁、数量及所属卡的业务结果必须随读法变化；不把替身视作 MySQL 的并发锁证明。
@@ -65,16 +67,26 @@ class ProEntryCheckCurrentReadTest {
     private static final long CARD_ID = 100L;
     private static final long PROCESS_ID = 200L;
 
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private ProStepCheckRuleMapper ruleMapper;
-    @Mock private ProAndonMapper andonMapper;
-    @Mock private QcIpqcMapper qcIpqcMapper;
-    @Mock private EqEquipmentMapper eqEquipmentMapper;
-    @Mock private ISopProcessBindingService sopBindingService;
-    @Mock private ISopViewLogService sopViewLogService;
-    @Mock private ITgToolingService tgToolingService;
-    @Mock private ILtLotService ltLotService;
-    @InjectMocks private ProEntryCheckServiceImpl service;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private ProStepCheckRuleMapper ruleMapper;
+    @Mock
+    private ProAndonMapper andonMapper;
+    @Mock
+    private QcIpqcMapper qcIpqcMapper;
+    @Mock
+    private EqEquipmentMapper eqEquipmentMapper;
+    @Mock
+    private ISopProcessBindingService sopBindingService;
+    @Mock
+    private ISopViewLogService sopViewLogService;
+    @Mock
+    private ITgToolingService tgToolingService;
+    @Mock
+    private ILtLotService ltLotService;
+    @InjectMocks
+    private ProEntryCheckServiceImpl service;
 
     private MockedStatic<TenantHelper> tenant;
     private JdbcDataSource dataSource;
@@ -200,8 +212,14 @@ class ProEntryCheckCurrentReadTest {
     @Test
     void changedParentReferenceRejectsWriteBeforeAnyLockingStepRead() {
         snapshotStep.setCardId(999L);
-        assertThrows(com.nexus.common.core.exception.ServiceException.class,
-            () -> inContext("mes", true, false, () -> service.runEntryChecks(STEP_ID, entry())));
+        assertThrows(
+                ServiceException.class,
+                () ->
+                        inContext(
+                                "mes",
+                                true,
+                                false,
+                                () -> service.runEntryChecks(STEP_ID, entry())));
         verify(stepMapper).selectById(STEP_ID);
         verify(stepMapper, never()).selectOne(any());
         verifyNoInteractions(ruleMapper);

@@ -9,11 +9,18 @@ import com.nexus.report.runtime.*;
 import com.nexus.report.storage.*;
 import com.nexus.report.version.*;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryType;
+import java.math.BigDecimal;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.zip.ZipFile;
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 
 /** 独立的合成数据容量探针，不读取应用配置或业务数据库。 */
 public class ReportCapacityBenchmark {
@@ -85,7 +92,7 @@ public class ReportCapacityBenchmark {
                     public void stream(
                             ReportExecutionContext c,
                             DatasetQuery q,
-                            java.util.function.Consumer<Map<String, Object>> consume) {
+                            Consumer<Map<String, Object>> consume) {
                         for (int i = 0; i < rows; i++) {
                             c.cancellation().check();
                             consume.accept(row(i));
@@ -105,7 +112,7 @@ public class ReportCapacityBenchmark {
                                     "value" + i,
                                     i % 2 == 0
                                             ? Long.toString(Long.MAX_VALUE - number)
-                                            : new java.math.BigDecimal("9007199254740993.005"));
+                                            : new BigDecimal("9007199254740993.005"));
                         return value;
                     }
                 };
@@ -150,12 +157,12 @@ public class ReportCapacityBenchmark {
             try (var archive = new ZipFile(data.toFile());
                     var input =
                             archive.getInputStream(archive.getEntry("xl/worksheets/sheet1.xml"))) {
-                var xml = javax.xml.stream.XMLInputFactory.newFactory();
-                xml.setProperty(javax.xml.stream.XMLInputFactory.SUPPORT_DTD, false);
+                var xml = XMLInputFactory.newFactory();
+                xml.setProperty(XMLInputFactory.SUPPORT_DTD, false);
                 xml.setProperty("javax.xml.stream.isSupportingExternalEntities", false);
                 var reader = xml.createXMLStreamReader(input);
                 while (reader.hasNext())
-                    if (reader.next() == javax.xml.stream.XMLStreamConstants.START_ELEMENT
+                    if (reader.next() == XMLStreamConstants.START_ELEMENT
                             && reader.getLocalName().equals("row")) spreadsheetRows++;
                 reader.close();
             }
@@ -194,7 +201,7 @@ public class ReportCapacityBenchmark {
                             try (var output = Files.newOutputStream(pdf)) {
                                 new ReportPdfExporter()
                                         .write(stored.plan(), output, font, cancellation);
-                            } catch (java.io.IOException e) {
+                            } catch (IOException e) {
                                 throw new IllegalStateException(e);
                             }
                         });
@@ -211,7 +218,7 @@ public class ReportCapacityBenchmark {
             if (temporary != 0) throw new IllegalStateException("temporary_leak");
             long peakHeap =
                     ManagementFactory.getMemoryPoolMXBeans().stream()
-                            .filter(p -> p.getType() == java.lang.management.MemoryType.HEAP)
+                            .filter(p -> p.getType() == MemoryType.HEAP)
                             .mapToLong(p -> p.getPeakUsage().getUsed())
                             .sum();
             System.out.println(

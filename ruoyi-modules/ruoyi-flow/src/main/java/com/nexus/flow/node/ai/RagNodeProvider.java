@@ -1,19 +1,22 @@
 package com.nexus.flow.node.ai;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.common.ai.decision.dto.RetrievalHit;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.flow.state.FlowTemplateRenderer;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * RAG 检索节点执行器
@@ -70,14 +73,14 @@ public class RagNodeProvider implements FlowNodeProvider {
             "节点 " + ctx.getNodeName() + " 的 queryTemplate");
 
         // 可选参数覆盖
-        java.util.Map<String, Object> overrides = null;
+        Map<String, Object> overrides = null;
         if (config.has("topK") && !config.get("topK").isNull()) {
-            overrides = new java.util.HashMap<>();
+            overrides = new HashMap<>();
             overrides.put("topK", config.get("topK").asInt());
         }
         if (config.has("minScore") && !config.get("minScore").isNull()) {
             if (overrides == null) {
-                overrides = new java.util.HashMap<>();
+                overrides = new HashMap<>();
             }
             overrides.put("minScore", config.get("minScore").asDouble());
         }

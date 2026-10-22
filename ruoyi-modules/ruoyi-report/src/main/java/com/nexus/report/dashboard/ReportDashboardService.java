@@ -6,13 +6,16 @@ import com.nexus.report.engine.*;
 import com.nexus.report.extension.ReportResourceStore;
 import com.nexus.report.mapper.JdbcReportStore;
 import com.nexus.report.pivot.AggregationExecutor;
+import com.nexus.report.runtime.ReportRuntimeService;
 import com.nexus.report.service.ReportDefinitionService;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** 仪表盘独立发布，组件按当前用户权限分别计算，不共享跨用户缓存。 */
 public final class ReportDashboardService {
@@ -173,7 +176,7 @@ public final class ReportDashboardService {
         var visible =
                 binding.compiled().dsl().columns().stream()
                         .map(ReportDsl.Column::field)
-                        .collect(java.util.stream.Collectors.toSet());
+                        .collect(Collectors.toSet());
         return new Source(
                 version.id(),
                 version.reportId(),
@@ -509,7 +512,7 @@ public final class ReportDashboardService {
                                 null,
                                 0,
                                 null,
-                                com.nexus.report.runtime.ReportRuntimeService.code(failure)));
+                                ReportRuntimeService.code(failure)));
             }
         }
         var after = current(current, "report:dashboard:list");
@@ -738,7 +741,7 @@ public final class ReportDashboardService {
                         current.tenantId(),
                         current.userId(),
                         Long.parseLong(id));
-            } catch (org.springframework.dao.DuplicateKeyException duplicate) {
+            } catch (DuplicateKeyException duplicate) {
             }
         } else
             jdbc.update(
@@ -761,7 +764,7 @@ public final class ReportDashboardService {
                 resources.list("DASHBOARD", current).stream()
                         .filter(d -> d.status().equals("PUBLISHED"))
                         .map(ReportResourceStore.Draft::id)
-                        .collect(java.util.stream.Collectors.toSet());
+                        .collect(Collectors.toSet());
         return jdbc
                 .queryForList(
                         "SELECT dashboard_id FROM rpt_dashboard_favorite WHERE tenant_id=? AND"

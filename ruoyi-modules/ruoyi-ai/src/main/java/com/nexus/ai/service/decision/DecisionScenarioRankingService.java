@@ -4,11 +4,16 @@ import com.nexus.ai.config.AiProperties;
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
+import com.nexus.common.core.exception.ServiceException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,18 +33,25 @@ public class DecisionScenarioRankingService {
     private final AiProperties properties;
 
     /** 实际Flow先绑定服务端运行与快照，再重算比例；模型和ERP不能自行指定运行身份。 */
-    public List<DecisionScenario> rank(Long runId, com.nexus.common.ai.decision.dto.DeliveryContextSnapshot snapshot,
-            int horizonDays, List<DecisionScenario> scenarios) {
-        if (runId == null || runId <= 0 || snapshot == null || horizonDays < 1 || horizonDays > 90 || scenarios == null)
-            throw new com.nexus.common.core.exception.ServiceException("排名缺少服务端冻结运行范围");
+    public List<DecisionScenario> rank(
+            Long runId,
+            DeliveryContextSnapshot snapshot,
+            int horizonDays,
+            List<DecisionScenario> scenarios) {
+        if (runId == null
+                || runId <= 0
+                || snapshot == null
+                || horizonDays < 1
+                || horizonDays > 90
+                || scenarios == null) throw new ServiceException("排名缺少服务端冻结运行范围");
         List<DecisionScenario> bound = new ArrayList<>();
         for (var scenario : scenarios) {
-            if (scenario == null) throw new com.nexus.common.core.exception.ServiceException("排名候选缺失");
+            if (scenario == null) throw new ServiceException("排名候选缺失");
             var k = scenario.kpis();
             if (k == null || k.shortageBasis() == null) { bound.add(scenario); continue; }
             var old = k.shortageBasis();
             if (old.runId() != null && !runId.toString().equals(old.runId()))
-                throw new com.nexus.common.core.exception.ServiceException("推演依据属于其他运行");
+                throw new ServiceException("推演依据属于其他运行");
             var basis = new DecisionShortageBasis(runId.toString(), old.snapshotEvidenceKey(), old.windowStart(), old.windowEnd(),
                 old.requirements(), old.gaps(), old.simulationEvidenceKey());
             var frozen = new DecisionKpiSet(k.impactedOrderCount(), k.delayedWorkOrderCount(), k.totalTardinessDays(), k.maxTardinessDays(),
@@ -258,8 +270,12 @@ public class DecisionScenarioRankingService {
             list.forEach(item -> copy.add(deepValue(item)));
             return Collections.unmodifiableList(copy);
         }
-        if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean
-            || value instanceof java.time.temporal.Temporal || value instanceof Enum<?>) return value;
+        if (value == null
+                || value instanceof String
+                || value instanceof Number
+                || value instanceof Boolean
+                || value instanceof Temporal
+                || value instanceof Enum<?>) return value;
         throw new IllegalArgumentException("方案包含不可复制的可变值");
     }
 

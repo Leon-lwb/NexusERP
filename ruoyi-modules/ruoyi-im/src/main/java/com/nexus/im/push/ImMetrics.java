@@ -3,10 +3,14 @@ package com.nexus.im.push;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * P4-9: IM 可观测性指标（Micrometer）。
@@ -87,7 +91,7 @@ public class ImMetrics {
     public void registerPushExecutor(ExecutorService executor) {
         // Micrometer 内置绑定器：注册后自动采集 active/queued/completed/pool.size
         // 注意：必须用带 executor bean name 的重载，避免与全局 executor 指标冲突
-        new ExecutorServiceMetrics(executor, "imPushExecutor", java.util.List.of()).bindTo(registry);
+        new ExecutorServiceMetrics(executor, "imPushExecutor", List.of()).bindTo(registry);
     }
 
     // ==================== P5-2: 缓存命中率监控 ====================
@@ -111,6 +115,6 @@ public class ImMetrics {
 
     /** 记录 DB 查询耗时分布（所有查询都记录，配合 slow 阈值识别慢查询） */
     public void recordDbQueryLatency(long elapsedMs) {
-        registry.timer("im.db.query.latency").record(elapsedMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        registry.timer("im.db.query.latency").record(elapsedMs, TimeUnit.MILLISECONDS);
     }
 }

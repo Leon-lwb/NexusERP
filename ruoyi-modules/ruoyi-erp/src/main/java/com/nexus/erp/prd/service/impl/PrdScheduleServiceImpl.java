@@ -3,19 +3,19 @@ package com.nexus.erp.prd.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
-import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
+import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
@@ -26,8 +26,8 @@ import com.nexus.erp.prd.domain.vo.ScheduleGanttVo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
-import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleEngine;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
@@ -44,37 +44,41 @@ import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.SchShift;
 import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.HashSet;
-import java.util.TreeMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /**
  * APS 智能排产服务实现。
- * <p>
- * 排程输入统一由 {@link PrdScheduleInputAssembler} 装配；本服务负责调用排程引擎以及方案/任务持久化、
- * 发布和删除。
+ *
+ * <p>排程输入统一由 {@link PrdScheduleInputAssembler} 装配；本服务负责调用排程引擎以及方案/任务持久化、 发布和删除。
  *
  * @author nexus
  */
@@ -747,8 +751,9 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     }
 
     private LocalTime shiftTime(Date value) {
-        return value instanceof java.sql.Time time ? time.toLocalTime()
-            : Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalTime();
+        return value instanceof Time time
+                ? time.toLocalTime()
+                : Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalTime();
     }
 
     private record ResourceDay(String type, Long id, LocalDate date) { }
@@ -811,9 +816,11 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] planIds) {
-        if (planIds == null || planIds.length == 0 || java.util.Arrays.stream(planIds).anyMatch(id -> id == null || id <= 0))
+        if (planIds == null
+                || planIds.length == 0
+                || Arrays.stream(planIds).anyMatch(id -> id == null || id <= 0))
             throw new ServiceException("排程方案ID无效");
-        List<Long> orderedIds = java.util.Arrays.stream(planIds).distinct().sorted().toList();
+        List<Long> orderedIds = Arrays.stream(planIds).distinct().sorted().toList();
         String tenantId = scheduleTenantId();
         lockDeletionWorkOrdersAndTasks(orderedIds, tenantId);
         /** 已发布方案、或任何仍有占用凭据的候选方案都不能直接删除。 */

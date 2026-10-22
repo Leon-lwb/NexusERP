@@ -1,14 +1,21 @@
 package com.nexus.mes.pro.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.mapper.FlashRecordMapper;
 import com.nexus.mes.flash.mapper.MesFlashTypeMapper;
@@ -18,6 +25,8 @@ import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
+import com.nexus.mes.pro.domain.bo.ProExitBo;
+import com.nexus.mes.pro.domain.vo.ProCheckResultVo;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
@@ -28,6 +37,10 @@ import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesProductLotOutputWriter;
+import com.nexus.mes.trace.MesProductionDetailFactsService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,10 +59,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 /**
  * ProFlowCardServiceImpl 卡完工聚合单测
  * <p>覆盖 MES-PRO-01(手工完工门禁 / 完工数取工序实际报工 / 一次性入账幂等 + 自愈)
@@ -60,31 +69,50 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProFlowCardServiceImplTest {
 
-    @Mock private com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
-    @Mock private ProFlowCardMapper baseMapper;
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private ProWorkOrderMapper workOrderMapper;
-    @Mock private ProWorkOrderStepMapper workOrderStepMapper;
-    @Mock private LockTemplate lockTemplate;
-    @Mock private IProWorkOrderService proWorkOrderService;
-    @Mock private IQcIpqcService iqcIpqcService;
-    @Mock private IProEntryCheckService proEntryCheckService;
-    @Mock private ISopProcessBindingService sopBindingService;
-    @Mock private INcrOrderService ncrOrderService;
-    @Mock private ProSnMapper proSnMapper;
-    @Mock private FlashRecordMapper flashRecordMapper;
-    @Mock private MesFlashTypeMapper mesFlashTypeMapper;
-    @Mock private ObjectMapper objectMapper;
+    @Mock
+    private MesProductionDetailFactsService detailFacts;
+    @Mock
+    private ProFlowCardMapper baseMapper;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private ProWorkOrderMapper workOrderMapper;
+    @Mock
+    private ProWorkOrderStepMapper workOrderStepMapper;
+    @Mock
+    private LockTemplate lockTemplate;
+    @Mock
+    private IProWorkOrderService proWorkOrderService;
+    @Mock
+    private IQcIpqcService iqcIpqcService;
+    @Mock
+    private IProEntryCheckService proEntryCheckService;
+    @Mock
+    private ISopProcessBindingService sopBindingService;
+    @Mock
+    private INcrOrderService ncrOrderService;
+    @Mock
+    private ProSnMapper proSnMapper;
+    @Mock
+    private FlashRecordMapper flashRecordMapper;
+    @Mock
+    private MesFlashTypeMapper mesFlashTypeMapper;
+    @Mock
+    private ObjectMapper objectMapper;
 
-    @Mock private ProWorkOrderStepProgressService progressService;
+    @Mock
+    private ProWorkOrderStepProgressService progressService;
 
-    @Mock private com.nexus.mes.trace.MesProductLotOutputWriter productLotOutputs;
+    @Mock
+    private MesProductLotOutputWriter productLotOutputs;
 
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks private ProFlowCardServiceImpl service;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
+    @InjectMocks
+    private ProFlowCardServiceImpl service;
 
     private MockedStatic<SpringUtils> aopProxyMock;
-    private MockedStatic<com.nexus.common.tenant.helper.TenantHelper> tenantMock;
+    private MockedStatic<TenantHelper> tenantMock;
 
     @BeforeAll
     static void initTableInfo() {
@@ -101,10 +129,8 @@ class ProFlowCardServiceImplTest {
     @BeforeEach
     void setUp() {
         // 纯单测无容器: SpringUtils.getAopProxy 返回当前实例(等价于经代理调用)
-        tenantMock = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class);
-        tenantMock
-                .when(com.nexus.common.tenant.helper.TenantHelper::getTenantId)
-                .thenReturn("000000");
+        tenantMock = mockStatic(TenantHelper.class);
+        tenantMock.when(TenantHelper::getTenantId).thenReturn("000000");
         aopProxyMock = mockStatic(SpringUtils.class, withSettings().lenient());
         aopProxyMock.when(() -> SpringUtils.getAopProxy(any())).thenReturn(service);
         lenient()
@@ -120,11 +146,7 @@ class ProFlowCardServiceImplTest {
                 .when(stepMapper.selectOne(any()))
                 .thenAnswer(
                         i -> {
-                            var query =
-                                    (com.baomidou.mybatisplus.core.conditions.query
-                                                            .LambdaQueryWrapper<
-                                                    ProFlowCardStep>)
-                                            i.getArgument(0);
+                            var query = (LambdaQueryWrapper<ProFlowCardStep>) i.getArgument(0);
                             query.getSqlSegment();
                             Long id =
                                     query.getParamNameValuePairs().values().stream()
@@ -148,7 +170,7 @@ class ProFlowCardServiceImplTest {
 
     @Test
     void exitClassifiesPhysicalProductLotsBeforeStepCanAggregateAndFreeze() {
-        var bo = new com.nexus.mes.pro.domain.bo.ProExitBo();
+        var bo = new ProExitBo();
         bo.setCardId(11L);
         bo.setStepRecordId(31L);
         bo.setGoodQty(BigDecimal.TEN);
@@ -156,10 +178,8 @@ class ProFlowCardServiceImplTest {
         bo.setScrapQty(BigDecimal.ZERO);
         bo.setProductOutputCommandId("exit-output");
         bo.setProductOutputs(
-                List.of(
-                        new com.nexus.mes.trace.MesProductLotOutputWriter.OutputLine(
-                                7L, 9L, BigDecimal.TEN, "GOOD")));
-        var checks = new com.nexus.mes.pro.domain.vo.ProCheckResultVo();
+                List.of(new MesProductLotOutputWriter.OutputLine(7L, 9L, BigDecimal.TEN, "GOOD")));
+        var checks = new ProCheckResultVo();
         checks.setPassed(true);
         when(proEntryCheckService.runExitChecks(31L, bo)).thenReturn(checks);
         lenient()
@@ -171,8 +191,8 @@ class ProFlowCardServiceImplTest {
                                 eq(bo.getProductOutputs()),
                                 eq(1L)))
                 .thenThrow(new ServiceException("output registration refused"));
-        try (var auth = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
-            auth.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(1L);
+        try (var auth = mockStatic(LoginHelper.class)) {
+            auth.when(LoginHelper::getUserId).thenReturn(1L);
             var error = assertThrows(ServiceException.class, () -> service.doExit(bo));
             assertEquals("output registration refused", error.getMessage());
         }

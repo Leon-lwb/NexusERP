@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.strategy.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -12,12 +16,14 @@ import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.impl.MovingAverageValuationServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Answers;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
@@ -33,10 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 生产领料金额与批次累计回归：使用真实策略、真实移动平均计价和无外部资源的事务代理。
@@ -72,29 +74,43 @@ class ProductionIssueCostAndBatchStrategyTest {
         stockMapper = mock(WmMaterialStockMapper.class);
         txMapper = mock(WmMaterialStockTxMapper.class);
         // 记录真实 Mapper 调用并模拟原子更新结果，不读取外部数据库。
-        batchMapper = mock(WmBatchMapper.class, invocation -> {
-            if (!"increaseIssuedQty".equals(invocation.getMethod().getName())) {
-                return org.mockito.Answers.RETURNS_DEFAULTS.answer(invocation);
-            }
-            BatchCall call = new BatchCall(invocation.getArgument(0), invocation.getArgument(1),
-                invocation.getArgument(2), invocation.getArgument(3));
-            batchCalls.add(call);
-            if (Objects.equals(call.batchId(), blockedBatch)) {
-                return 0;
-            }
-            BatchState batch = ledger.batches.get(call.batchId());
-            if (batch == null || !Objects.equals(batch.materialId(), call.materialId())
-                || !Objects.equals(batch.tenantId(), call.tenantId()) || call.quantity().signum() <= 0) {
-                return 0;
-            }
-            BigDecimal issued = batch.issued().add(call.quantity());
-            if (issued.compareTo(batch.received()) > 0) {
-                return 0;
-            }
-            ledger.batches.put(call.batchId(), new BatchState(batch.materialId(), batch.tenantId(),
-                batch.received(), issued));
-            return 1;
-        });
+        batchMapper =
+                mock(
+                        WmBatchMapper.class,
+                        invocation -> {
+                            if (!"increaseIssuedQty".equals(invocation.getMethod().getName())) {
+                                return Answers.RETURNS_DEFAULTS.answer(invocation);
+                            }
+                            BatchCall call =
+                                    new BatchCall(
+                                            invocation.getArgument(0),
+                                            invocation.getArgument(1),
+                                            invocation.getArgument(2),
+                                            invocation.getArgument(3));
+                            batchCalls.add(call);
+                            if (Objects.equals(call.batchId(), blockedBatch)) {
+                                return 0;
+                            }
+                            BatchState batch = ledger.batches.get(call.batchId());
+                            if (batch == null
+                                    || !Objects.equals(batch.materialId(), call.materialId())
+                                    || !Objects.equals(batch.tenantId(), call.tenantId())
+                                    || call.quantity().signum() <= 0) {
+                                return 0;
+                            }
+                            BigDecimal issued = batch.issued().add(call.quantity());
+                            if (issued.compareTo(batch.received()) > 0) {
+                                return 0;
+                            }
+                            ledger.batches.put(
+                                    call.batchId(),
+                                    new BatchState(
+                                            batch.materialId(),
+                                            batch.tenantId(),
+                                            batch.received(),
+                                            issued));
+                            return 1;
+                        });
         when(stockMapper.selectById(anyLong())).thenAnswer(invocation -> ledger.stock(invocation.getArgument(0)));
         when(stockMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> ledger.stocks.keySet().stream()
             .map(ledger::stock).toList());
@@ -352,9 +368,13 @@ class ProductionIssueCostAndBatchStrategyTest {
             this.ledger = ledger;
         }
 
-        @Override protected Object doGetTransaction() { return new Object(); }
-        @Override protected void doBegin(Object transaction, TransactionDefinition definition) { before = ledger.snapshot(); }
-        @Override protected void doCommit(DefaultTransactionStatus status) { commits++; }
-        @Override protected void doRollback(DefaultTransactionStatus status) { ledger.restore(before); rollbacks++; }
+        @Override
+        protected Object doGetTransaction() { return new Object(); }
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) { before = ledger.snapshot(); }
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) { commits++; }
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) { ledger.restore(before); rollbacks++; }
     }
 }

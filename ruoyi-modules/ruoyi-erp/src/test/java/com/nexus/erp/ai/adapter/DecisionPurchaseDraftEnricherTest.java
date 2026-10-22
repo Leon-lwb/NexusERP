@@ -1,4 +1,7 @@
 package com.nexus.erp.ai.adapter;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.bd.domain.BdMaterial;
@@ -7,13 +10,15 @@ import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
-import org.junit.jupiter.api.Test;
+import com.nexus.erp.pu.domain.vo.PuPurchaseRequisitionVo;
+
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+
 @Tag("dev") class DecisionPurchaseDraftEnricherTest {
     private final BdMaterialMapper materials=mock(BdMaterialMapper.class);
     private final BdUnitOfMeasureMapper units=mock(BdUnitOfMeasureMapper.class);
@@ -53,7 +58,7 @@ import static org.mockito.Mockito.*;
     @Test void supplementalVerificationRejectsTamperedAuditOrMaterialSnapshot() {
         profile();var m=material();m.setBaseUomId(null);when(materials.selectById(101L)).thenReturn(m);
         var b=draft();enricher.enrich(b,actor);
-        var v=new com.nexus.erp.pu.domain.vo.PuPurchaseRequisitionVo();
+        var v = new PuPurchaseRequisitionVo();
         v.setDeptId(b.getDeptId());v.setDeptName(b.getDeptName());v.setCreateDept(b.getCreateDept());v.setCreateBy(b.getCreateBy());
         v.setPuPurchaseRequisitionLineList(b.getPuPurchaseRequisitionLineList());
         assertTrue(enricher.matchesPersisted(v,actor));

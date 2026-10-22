@@ -1,9 +1,14 @@
 package com.nexus.erp.wm.controller.serial;
 
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.*;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.erp.wm.domain.WmSerialPostingRequest;
+import com.nexus.erp.wm.domain.bo.WmSerialSelectionBo;
 import com.nexus.erp.wm.service.*;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.aop.framework.ProxyFactory;
@@ -11,11 +16,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
-import javax.sql.DataSource;
-import java.sql.Connection;
+
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.*;
-import static org.mockito.Mockito.*;
+
+import javax.sql.DataSource;
 
 /**
  * JDBC仅模拟存储，事务使用真实Spring代理和连接管理，不连接外部数据库。
@@ -266,9 +272,7 @@ class SerialAdapterFixture {
         when(selections.freeze(any()))
                 .thenAnswer(
                         call -> {
-                            var bo =
-                                    (com.nexus.erp.wm.domain.bo.WmSerialSelectionBo)
-                                            call.getArgument(0);
+                            var bo = (WmSerialSelectionBo) call.getArgument(0);
                             var prior = commandRows.get(bo.getCommandId());
                             if (prior != null) {
                                 Long id =
@@ -276,8 +280,7 @@ class SerialAdapterFixture {
                                 if (!Objects.equals(prior.get("source_hash"), bo.getDetailVersion())
                                         || !WmSerialBusinessStore.sameItems(
                                                 bo.getSnItems(), frozenHistory.get(id))) {
-                                    throw new com.nexus.common.core.exception.ServiceException(
-                                            "同一命令内容不一致");
+                                    throw new ServiceException("同一命令内容不一致");
                                 }
                                 events.add("replay-proof");
                                 return id;

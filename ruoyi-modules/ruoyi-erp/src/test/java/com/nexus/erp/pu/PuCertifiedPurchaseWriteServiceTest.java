@@ -1,26 +1,33 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
 import com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard;
-import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
+import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader;
+import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedLine;
-import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
 import com.nexus.erp.pu.domain.PuRequirementAllocationEvent;
+import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
 import com.nexus.erp.pu.domain.bo.PuCertifiedPurchaseCommand;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
 import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.service.*;
+
 import org.junit.jupiter.api.*;
 import org.mockito.*;
+import org.mockito.stubbing.Answer;
+
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Supplier;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class PuCertifiedPurchaseWriteServiceTest {
     private static final String TENANT="000000", KEY="formal-procurement-case-0001", HASH="a".repeat(64);
@@ -83,13 +90,44 @@ class PuCertifiedPurchaseWriteServiceTest {
         CertifiedPurchaseScope scope=mock(CertifiedPurchaseScope.class);
         when(scope.tenantId()).thenReturn(TENANT);when(scope.materialId()).thenReturn(139L);when(scope.vendorId()).thenReturn(9L);
         when(scope.windowEnd()).thenReturn(DAY);when(scope.sourceFingerprint()).thenReturn(HASH);
-        var at=java.time.Instant.parse("2026-10-02T00:00:00Z");
-        var rootUnit=new com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.TrustedUnit(TENANT,"4","4","MASS",BigDecimal.ONE,"unit-v1",4,at,true);
-        var terms=new com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.SupplierTerms(TENANT,"139","700","4","4",new BigDecimal("0.0001"),
-            new BigDecimal("0.0001"),true,BigDecimal.ONE,"terms-v1",at.minusSeconds(1),at.plusSeconds(31536000),at,true);
-        when(scope.catalog()).thenReturn(new com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot(TENANT,"9","700",at,"+08:00",
-            new com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.Material(TENANT,"139","4",true),terms,rootUnit,rootUnit,rootUnit,
-            Map.of("material:139","a".repeat(64),"vendor:9","b".repeat(64))));
+        var at = Instant.parse("2026-10-02T00:00:00Z");
+        var rootUnit =
+                new ErpPurchaseQuantityPolicy.TrustedUnit(
+                        TENANT, "4", "4", "MASS", BigDecimal.ONE, "unit-v1", 4, at, true);
+        var terms =
+                new ErpPurchaseQuantityPolicy.SupplierTerms(
+                        TENANT,
+                        "139",
+                        "700",
+                        "4",
+                        "4",
+                        new BigDecimal("0.0001"),
+                        new BigDecimal("0.0001"),
+                        true,
+                        BigDecimal.ONE,
+                        "terms-v1",
+                        at.minusSeconds(1),
+                        at.plusSeconds(31536000),
+                        at,
+                        true);
+        when(scope.catalog())
+                .thenReturn(
+                        new ErpPurchaseCatalogSourceReader.CatalogSnapshot(
+                                TENANT,
+                                "9",
+                                "700",
+                                at,
+                                "+08:00",
+                                new ErpPurchaseQuantityPolicy.Material(TENANT, "139", "4", true),
+                                terms,
+                                rootUnit,
+                                rootUnit,
+                                rootUnit,
+                                Map.of(
+                                        "material:139",
+                                        "a".repeat(64),
+                                        "vendor:9",
+                                        "b".repeat(64))));
         when(scope.lines()).thenReturn(List.of(new CertifiedLine(21L,DAY,new BigDecimal("5.4292"),new BigDecimal("5.4292"),4L,4L),
             new CertifiedLine(22L,DAY,new BigDecimal("1.0000"),BigDecimal.ONE,4L,4L)));
         when(certification.prepareLocked(TENANT,139L,9L,DAY,Set.of(21L,22L))).thenReturn(scope);
@@ -317,10 +355,12 @@ class PuCertifiedPurchaseWriteServiceTest {
             try{return ((Supplier<?>)invocation.getArgument(1)).get();}finally{inside[0]=false;}
         });
         when(numbers.reserveRequisitionNumber()).thenAnswer(invocation->{assertFalse(inside[0],"master编号必须在ERP事务外保留");return "PR-OFFLINE-001";});
-        org.mockito.stubbing.Answer<Integer> written=invocation->{
-            assertTrue(inside[0],"头、行、占用、事件、command都必须在最后ERP事务内写");
-            assertEquals(2,count[0],"所有业务写入须加入相同最后ERP RR");return 1;
-        };
+        Answer<Integer> written =
+                invocation -> {
+                    assertTrue(inside[0], "头、行、占用、事件、command都必须在最后ERP事务内写");
+                    assertEquals(2, count[0], "所有业务写入须加入相同最后ERP RR");
+                    return 1;
+                };
         when(mapper.insertDocument(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any())).thenAnswer(written);
         when(mapper.insertLine(any(),any(),any(),any(),any(),any(),any(),any(),any())).thenAnswer(written);
         when(ledger.insert(any())).thenAnswer(written);when(events.insert(any())).thenAnswer(written);

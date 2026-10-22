@@ -1,30 +1,5 @@
 package com.nexus.iot.forward;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.iot.device.domain.IotDeviceData;
-import com.nexus.iot.device.domain.vo.IotDeviceVo;
-import com.nexus.iot.device.service.IIotDeviceService;
-import com.nexus.iot.forward.domain.IotForwardLog;
-import com.nexus.iot.forward.domain.IotForwardRule;
-import com.nexus.iot.forward.mapper.IotForwardLogMapper;
-import com.nexus.iot.forward.mapper.IotForwardRuleMapper;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -37,6 +12,34 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.iot.device.domain.IotDeviceData;
+import com.nexus.iot.device.domain.vo.IotDeviceVo;
+import com.nexus.iot.device.service.IIotDeviceService;
+import com.nexus.iot.forward.domain.IotForwardLog;
+import com.nexus.iot.forward.domain.IotForwardRule;
+import com.nexus.iot.forward.mapper.IotForwardLogMapper;
+import com.nexus.iot.forward.mapper.IotForwardRuleMapper;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * IoT 数据转发单元测试（§4#6）。
@@ -69,8 +72,9 @@ class IotForwardDispatcherTest {
         logMapper = mock(IotForwardLogMapper.class);
         httpClient = mock(IotForwardHttpClient.class);
         deviceService = mock(IIotDeviceService.class);
-        dispatcher = new IotForwardDispatcher(ruleMapper, logMapper, httpClient, deviceService,
-            new com.fasterxml.jackson.databind.ObjectMapper());
+        dispatcher =
+                new IotForwardDispatcher(
+                        ruleMapper, logMapper, httpClient, deviceService, new ObjectMapper());
 
         tenantMock = mockStatic(TenantHelper.class);
         tenantMock.when(TenantHelper::getTenantId).thenReturn(TENANT);
@@ -330,7 +334,7 @@ class IotForwardDispatcherTest {
         int claimed = dispatcher.retryFailed();
 
         assertEquals(1, claimed);
-        verify(logMapper, org.mockito.Mockito.atLeastOnce()).update(any(), any());
+        verify(logMapper, Mockito.atLeastOnce()).update(any(), any());
     }
 
     /** 重试扫描：CAS 未领取到（其他实例已处理）→ 不投递。 */

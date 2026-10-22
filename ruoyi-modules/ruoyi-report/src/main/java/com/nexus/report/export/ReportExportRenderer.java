@@ -2,6 +2,7 @@ package com.nexus.report.export;
 
 import com.nexus.common.report.ReportCancellation;
 import com.nexus.report.config.ReportProperties;
+import com.nexus.report.domain.ReportDsl;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.domain.ReportRecords.ExportJob;
 import com.nexus.report.engine.*;
@@ -65,8 +66,7 @@ public final class ReportExportRenderer implements ReportExportWorker.Renderer {
             OutputStream output,
             ReportCancellation cancellation) {
         if (job.format().equals("XLSX_DATA")
-                && access.binding().compiled().dsl().kind()
-                        == com.nexus.report.domain.ReportDsl.Kind.PIVOT) {
+                && access.binding().compiled().dsl().kind() == ReportDsl.Kind.PIVOT) {
             var projection = runtime.pivotProjection(access);
             runtime.spreadsheetExporter(access, temporaryBudget)
                     .data(

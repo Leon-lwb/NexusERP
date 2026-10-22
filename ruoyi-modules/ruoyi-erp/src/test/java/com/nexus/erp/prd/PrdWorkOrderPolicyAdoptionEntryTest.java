@@ -1,13 +1,18 @@
 package com.nexus.erp.prd;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.controller.PrdWorkOrderPolicyAdoptionController;
 import com.nexus.erp.prd.service.*;
+
 import org.junit.jupiter.api.*;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+
+import java.util.List;
 
 class PrdWorkOrderPolicyAdoptionEntryTest {
     @Test
@@ -38,7 +43,7 @@ class PrdWorkOrderPolicyAdoptionEntryTest {
             throws Exception {
         try (var f = new PrdWorkOrderPolicyAdoptionServiceTest.Fixture()) {
             var result = entry(f).preview(1L);
-            assertEquals(java.util.List.of(10L, 20L, 30L), result.materialIds());
+            assertEquals(List.of(10L, 20L, 30L), result.materialIds());
             assertEquals(0, f.db.count());
             assertEquals(
                     0,
@@ -62,8 +67,7 @@ class PrdWorkOrderPolicyAdoptionEntryTest {
     void aPermissionFailureCannotReachBankWritesThroughTheCallableEntry() throws Exception {
         try (var f = new PrdWorkOrderPolicyAdoptionServiceTest.Fixture()) {
             f.authorize();
-            when(f.authorizer.requireApprover())
-                    .thenThrow(new com.nexus.common.core.exception.ServiceException("denied"));
+            when(f.authorizer.requireApprover()).thenThrow(new ServiceException("denied"));
             assertThrows(RuntimeException.class, () -> entry(f).apply(700L, "adopt-700", 1));
             assertEquals(0, f.db.count());
             assertEquals(1, f.version());

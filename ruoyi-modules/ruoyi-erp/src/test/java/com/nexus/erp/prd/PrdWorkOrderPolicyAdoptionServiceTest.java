@@ -1,20 +1,26 @@
 package com.nexus.erp.prd;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.*;
 import com.nexus.common.trace.*;
 import com.nexus.erp.prd.service.*;
+import com.nexus.erp.wm.trace.ErpTraceContext;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
+
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 经审批的原档策略仅用于后续业务，当前主数据不能替代历史原档。
@@ -220,11 +226,7 @@ class PrdWorkOrderPolicyAdoptionServiceTest {
                 mock(PrdWorkOrderPolicyAdoptionAuthorizer.class);
         final ObjectMapper json = new ObjectMapper();
         final ObjectNode source = json.createObjectNode();
-        final Instant
-                approved =
-                        Instant.now()
-                                .minusSeconds(20)
-                                .truncatedTo(java.time.temporal.ChronoUnit.MILLIS),
+        final Instant approved = Instant.now().minusSeconds(20).truncatedTo(ChronoUnit.MILLIS),
                 expires = approved.plusSeconds(3600);
         final PrdWorkOrderPolicyAdoptionService service;
         String decision = "APPROVED";
@@ -241,10 +243,7 @@ class PrdWorkOrderPolicyAdoptionServiceTest {
                             + " BIGINT,approved_at TIMESTAMP(3),expires_at TIMESTAMP(3),status"
                             + " VARCHAR(16),version BIGINT,applied_at TIMESTAMP(3),snapshot_hash"
                             + " VARCHAR(64),UNIQUE(tenant_id,command_id))");
-                var context =
-                        (com.nexus.erp.wm.trace.ErpTraceContext)
-                                org.springframework.test.util.ReflectionTestUtils.getField(
-                                        db.target, "context");
+                var context = (ErpTraceContext) ReflectionTestUtils.getField(db.target, "context");
                 when(authorizer.requireApprover()).thenReturn(22L);
                 var target =
                         new PrdWorkOrderPolicyAdoptionService(

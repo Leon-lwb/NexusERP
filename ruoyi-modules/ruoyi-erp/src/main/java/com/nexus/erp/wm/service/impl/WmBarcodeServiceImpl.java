@@ -1,9 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -18,10 +18,14 @@ import com.nexus.erp.wm.domain.vo.WmBarcodeVo;
 import com.nexus.erp.wm.mapper.WmBarcodeConfigMapper;
 import com.nexus.erp.wm.mapper.WmBarcodeMapper;
 import com.nexus.erp.wm.service.IWmBarcodeService;
+import com.nexus.erp.wm.trace.WmBarcodeIdentityGuard;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -57,7 +61,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      */
     private final BarcodeSequenceProvider barcodeSequenceProvider;
 
-    private final com.nexus.erp.wm.trace.WmBarcodeIdentityGuard identities;
+    private final WmBarcodeIdentityGuard identities;
 
     /**
      * 分页查询条码列表
@@ -138,7 +142,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         int count = 0;
-        for (Long id : java.util.Arrays.stream(ids).distinct().sorted().toList()) {
+        for (Long id : Arrays.stream(ids).distinct().sorted().toList()) {
             identities.lock(id);
             WmBarcode disabled = new WmBarcode();
             disabled.setBarcodeId(id);

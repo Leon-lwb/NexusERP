@@ -1,16 +1,25 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.*;
+
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.*;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.UUID;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 使用隔离内存数据库验证采购收货映射与来源守卫。
@@ -108,25 +117,17 @@ class WmCertifiedReceiptPostingMapperTest {
     @Test
     void physicalStockAndTransactionMustNotSilentlyDefaultToZeroValue() throws Exception {
         var stock =
-                java.util.Arrays.stream(WmCertifiedReceiptPostingMapper.class.getMethods())
+                Arrays.stream(WmCertifiedReceiptPostingMapper.class.getMethods())
                         .filter(m -> m.getName().equals("insertStock"))
                         .findFirst()
                         .orElseThrow();
         var transaction =
-                java.util.Arrays.stream(WmCertifiedReceiptPostingMapper.class.getMethods())
+                Arrays.stream(WmCertifiedReceiptPostingMapper.class.getMethods())
                         .filter(m -> m.getName().equals("insertTransaction"))
                         .findFirst()
                         .orElseThrow();
-        String stockSql =
-                String.join(
-                        " ",
-                        stock.getAnnotation(org.apache.ibatis.annotations.Insert.class).value());
-        String txSql =
-                String.join(
-                        " ",
-                        transaction
-                                .getAnnotation(org.apache.ibatis.annotations.Insert.class)
-                                .value());
+        String stockSql = String.join(" ", stock.getAnnotation(Insert.class).value());
+        String txSql = String.join(" ", transaction.getAnnotation(Insert.class).value());
         assertTrue(
                 stockSql.contains("unit_cost") && stockSql.contains("total_cost"),
                 "真实采购不能写默认零价值库存");
@@ -138,12 +139,12 @@ class WmCertifiedReceiptPostingMapperTest {
      */
     @Test
     void postingMustCheckActualOrderApprovalProofNotOnlyPositivePrice() throws Exception {
-        java.nio.file.Path root = java.nio.file.Path.of("").toAbsolutePath();
-        while (root != null && !java.nio.file.Files.isRegularFile(root.resolve("AGENTS.md")))
+        Path root = Path.of("").toAbsolutePath();
+        while (root != null && !Files.isRegularFile(root.resolve("AGENTS.md")))
             root = root.getParent();
         assertNotNull(root);
         String source =
-                java.nio.file.Files.readString(
+                Files.readString(
                         root.resolve(
                                 "ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/service/WmCertifiedReceiptPostingService.java"));
         assertTrue(
@@ -157,10 +158,7 @@ class WmCertifiedReceiptPostingMapperTest {
         var method =
                 WmCertifiedReceiptPostingMapper.class.getMethod(
                         "readDraftCreatedAt", String.class, Long.class);
-        String sql =
-                String.join(
-                        " ",
-                        method.getAnnotation(org.apache.ibatis.annotations.Select.class).value());
+        String sql = String.join(" ", method.getAnnotation(Select.class).value());
         assertTrue(sql.contains("MIN(UNIX_TIMESTAMP(create_time)*1000)"));
         assertTrue(
                 sql.contains("wm_certified_receive_command")
@@ -168,10 +166,9 @@ class WmCertifiedReceiptPostingMapperTest {
                         && sql.contains("receive_id=#{id}"));
         assertFalse(sql.contains("FOR UPDATE"), "头锁后读取不可变命令，不得新增原键重放的反向锁序");
         assertFalse(sql.contains("receive_date") || sql.contains("NOW()"), "不使用业务日期或当前时钟替代原创建事实");
-        var options = method.getAnnotation(org.apache.ibatis.annotations.Options.class);
+        var options = method.getAnnotation(Options.class);
         assertFalse(options.useCache());
-        assertEquals(
-                org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE, options.flushCache());
+        assertEquals(Options.FlushCachePolicy.TRUE, options.flushCache());
     }
 
     @Test
@@ -181,7 +178,7 @@ class WmCertifiedReceiptPostingMapperTest {
                         " ",
                         WmCertifiedReceiptPostingMapper.class
                                 .getMethod("lockReceiptTransactions", String.class, Long.class)
-                                .getAnnotation(org.apache.ibatis.annotations.Select.class)
+                                .getAnnotation(Select.class)
                                 .value());
         assertTrue(sql.contains("material_stock_id"));
         assertFalse(sql.contains("CAST("));

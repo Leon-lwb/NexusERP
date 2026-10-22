@@ -6,7 +6,10 @@ import com.nexus.common.core.domain.R;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.domain.ReportRecords.*;
 import com.nexus.report.engine.RenderPlan;
+import com.nexus.report.mapper.JdbcReportStore;
+import com.nexus.report.pivot.AggregationExecutor;
 import com.nexus.report.runtime.ReportRuntimeService;
+import com.nexus.report.service.ReportDefinitionService;
 import com.nexus.report.storage.ReportArtifactStore;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
 
 /** 运行、分页、布局、持久导出及认证下载入口，响应不暴露私有路径。 */
 @RestController
@@ -186,7 +190,7 @@ public class ReportRuntimeController {
                 job.totalRows(),
                 job.retryRound(),
                 job.heartbeat(),
-                com.nexus.report.mapper.JdbcReportStore.manualRetryable(job));
+                JdbcReportStore.manualRetryable(job));
     }
 
     /**
@@ -197,8 +201,8 @@ public class ReportRuntimeController {
      */
     @SaCheckPermission("report:runtime:preview")
     @GetMapping("/templates")
-    public R<java.util.List<com.nexus.report.service.ReportDefinitionService.BusinessTemplate>>
-            templates(@RequestParam String datasetCode) {
+    public R<List<ReportDefinitionService.BusinessTemplate>> templates(
+            @RequestParam String datasetCode) {
         return R.ok(runtime.businessTemplates(actors.current(), datasetCode));
     }
 
@@ -265,7 +269,7 @@ public class ReportRuntimeController {
      */
     @SaCheckPermission("report:runtime:preview")
     @GetMapping("/runs/{id}/pivot")
-    public R<com.nexus.report.pivot.AggregationExecutor.Result> pivot(@PathVariable String id) {
+    public R<AggregationExecutor.Result> pivot(@PathVariable String id) {
         return R.ok(runtime.pivot(actors.current(), id));
     }
 
@@ -280,7 +284,7 @@ public class ReportRuntimeController {
      */
     @SaCheckPermission("report:runtime:preview")
     @GetMapping("/runs/{id}/drill")
-    public R<com.nexus.report.pivot.AggregationExecutor.Drill> drill(
+    public R<AggregationExecutor.Drill> drill(
             @PathVariable String id,
             @RequestParam String coordinate,
             @RequestParam(defaultValue = "0") int offset,

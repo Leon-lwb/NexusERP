@@ -1,5 +1,9 @@
 package com.nexus.mes.qc.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -10,11 +14,12 @@ import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.qc.domain.QcInspectDetail;
 import com.nexus.mes.qc.domain.QcIqc;
-import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
+import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
 import com.nexus.mes.qc.mapper.QcIqcMapper;
 import com.nexus.mes.qc.service.IQcInspectDetailService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -32,12 +37,9 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class QcIqcServiceImplTest {
@@ -307,7 +309,7 @@ class QcIqcServiceImplTest {
     @Test
     void generateNoIsUniqueAcrossRepeatedInserts() {
         when(baseMapper.selectVoById(any())).thenReturn(new QcIqcVo());
-        Set<String> nos = new java.util.HashSet<>();
+        Set<String> nos = new HashSet<>();
         for (int i = 0; i < 10; i++) {
             QcIqcBo bo = new QcIqcBo();
             bo.setMaterialId(200L);

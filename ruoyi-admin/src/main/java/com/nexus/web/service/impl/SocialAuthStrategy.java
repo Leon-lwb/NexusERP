@@ -5,10 +5,8 @@ import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import me.zhyd.oauth.model.AuthResponse;
-import me.zhyd.oauth.model.AuthUser;
+import cn.hutool.crypto.digest.BCrypt;
+
 import com.nexus.common.core.constant.SystemConstants;
 import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.core.domain.model.SocialLoginBody;
@@ -32,6 +30,13 @@ import com.nexus.system.service.ISysUserService;
 import com.nexus.web.domain.vo.LoginVo;
 import com.nexus.web.service.IAuthStrategy;
 import com.nexus.web.service.SysLoginService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import me.zhyd.oauth.model.AuthResponse;
+import me.zhyd.oauth.model.AuthUser;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -150,7 +155,7 @@ public class SocialAuthStrategy implements IAuthStrategy {
         SysUserBo userBo = new SysUserBo();
         userBo.setUserName("wx_" + uuid.substring(0, Math.min(8, uuid.length())));
         userBo.setNickName(StrUtil.isNotBlank(authUserData.getNickname()) ? authUserData.getNickname() : "微信用户");
-        userBo.setPassword(cn.hutool.crypto.digest.BCrypt.hashpw("Nexus@2026"));
+        userBo.setPassword(BCrypt.hashpw("Nexus@2026"));
         userBo.setDeptId(2062813928180600833L);
 
         boolean registered = userService.registerUser(userBo, tenantId);

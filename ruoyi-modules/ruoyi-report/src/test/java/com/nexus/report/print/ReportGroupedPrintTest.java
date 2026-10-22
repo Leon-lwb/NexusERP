@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** 分组、页脚、纸张方向及三格式固定坐标回归。 */
 class ReportGroupedPrintTest {
@@ -248,7 +249,7 @@ class ReportGroupedPrintTest {
                 cells.stream()
                         .filter(cell -> cell.band().equals("GROUP_SUBTOTAL"))
                         .map(cell -> String.join("", cell.lines()))
-                        .collect(java.util.stream.Collectors.joining(" "));
+                        .collect(Collectors.joining(" "));
         assertTrue(subtotal.contains("数量分区"));
         assertTrue(subtotal.contains("：3"));
     }

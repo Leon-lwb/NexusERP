@@ -2,14 +2,18 @@ package com.nexus.common.trace.jdbc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.io.IOException;
 import java.sql.Clob;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * 两个业务库复用的事件日志SQL内核；表名固定，事务与数据源由各模块真实代理负责。
@@ -268,7 +272,7 @@ public final class JdbcTraceJournal {
                                 : ack.path("resultPayload").asText());
                 acknowledgementEffect.run();
                 result = "{}";
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
                 throw new IllegalArgumentException("回执载荷无效", e);
             }
         } else {
@@ -332,7 +336,7 @@ public final class JdbcTraceJournal {
                 CompletionCancellationResult previous;
                 try {
                     previous = json.readValue(stored, CompletionCancellationResult.class);
-                } catch (java.io.IOException | IllegalArgumentException e) {
+                } catch (IOException | IllegalArgumentException e) {
                     throw new IllegalStateException("已应用完工不能被取消终态覆盖", e);
                 }
                 if (!matchesCancellation(previous, proof, false)
@@ -345,7 +349,7 @@ public final class JdbcTraceJournal {
             String tombstone;
             try {
                 tombstone = json.writeValueAsString(result.originalAcknowledgement());
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
                 throw new IllegalStateException("取消终态无法冻结", e);
             }
             if (!accept(original, () -> tombstone).applied()) {
@@ -447,7 +451,7 @@ public final class JdbcTraceJournal {
                             + " WHERE event_id=? AND tenant_id=? AND status='APPLIED'",
                     id,
                     source.tenantId());
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("应用回执无法冻结", e);
         }
     }
@@ -516,7 +520,7 @@ public final class JdbcTraceJournal {
         if (value instanceof Clob clob) {
             try {
                 return clob.getSubString(1, Math.toIntExact(clob.length()));
-            } catch (java.sql.SQLException e) {
+            } catch (SQLException e) {
                 throw new IllegalStateException("日志内容不可读", e);
             }
         }

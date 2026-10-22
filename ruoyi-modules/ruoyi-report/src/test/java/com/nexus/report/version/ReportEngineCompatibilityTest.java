@@ -2,17 +2,22 @@ package com.nexus.report.version;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.report.*;
+import com.nexus.report.config.ReportProperties;
 import com.nexus.report.config.ReportProviderRegistry;
 import com.nexus.report.domain.*;
 import com.nexus.report.engine.*;
+import com.nexus.report.export.ReportExportRenderer;
 import com.nexus.report.runtime.*;
 import com.nexus.report.service.ReportDefinitionService;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -118,7 +123,7 @@ class ReportEngineCompatibilityTest {
     /** 验证 {@code duplicateUnknownAndDisabledExecutorsAreExplicitlyRejected} 场景下的结果与边界条件。 */
     @Test
     void duplicateUnknownAndDisabledExecutorsAreExplicitlyRejected() {
-        var compiler = new ReportCompiler(new com.fasterxml.jackson.databind.ObjectMapper());
+        var compiler = new ReportCompiler(new ObjectMapper());
         var executor = new V1ReportEngineExecutor(compiler);
         assertThrows(
                 IllegalStateException.class,
@@ -320,7 +325,7 @@ class ReportEngineCompatibilityTest {
                             auth,
                             f.compiler,
                             registry);
-            var properties = new com.nexus.report.config.ReportProperties();
+            var properties = new ReportProperties();
             var runtime =
                     new ReportRuntimeService(
                             f.store,
@@ -336,11 +341,9 @@ class ReportEngineCompatibilityTest {
             runtime.layout(f.owner, snapshot.id(), "report:runtime:preview", "VIEW");
             var job = runtime.enqueue(f.owner, snapshot.id(), "PDF", "fixed-executor");
             var acquired =
-                    f.store
-                            .claimJob(job, "test", java.time.Instant.now().plusSeconds(60))
-                            .orElseThrow();
-            var output = new java.io.ByteArrayOutputStream();
-            new com.nexus.report.export.ReportExportRenderer(runtime, properties)
+                    f.store.claimJob(job, "test", Instant.now().plusSeconds(60)).orElseThrow();
+            var output = new ByteArrayOutputStream();
+            new ReportExportRenderer(runtime, properties)
                     .write(acquired, runtime.execution(acquired), output, new ReportCancellation());
             assertTrue(output.size() > 1000);
             assertTrue(oldCalls.get() >= 3);

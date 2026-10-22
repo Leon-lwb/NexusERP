@@ -9,10 +9,12 @@ import com.nexus.ai.engineering.domain.*;
 import com.nexus.ai.engineering.security.*;
 import com.nexus.common.ai.domain.entity.*;
 import com.nexus.common.ai.engineering.*;
+import com.nexus.common.tenant.helper.TenantHelper;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -393,7 +395,7 @@ public class EngineeringArtifactUploadService {
      * 有界回收未确认对象；以清理代数和五分钟租约 CAS 抢占，崩溃后可恢复过期 CLEANING。
      *
      * @return 本轮成功删除的未确认工程记录数，删除前后崩溃均可幂等重试
-     * @throws org.springframework.dao.DataAccessException 元数据无法可靠更新时保留清理记录等待后续扫描
+     * @throws DataAccessException 元数据无法可靠更新时保留清理记录等待后续扫描
      */
     public int cleanupUnconfirmed() {
         var rows =
@@ -407,9 +409,7 @@ public class EngineeringArtifactUploadService {
                         now().minusMinutes(30));
         int count = 0;
         for (var row : rows)
-            count +=
-                    com.nexus.common.tenant.helper.TenantHelper.dynamic(
-                            row.getTenantId(), () -> cleanupOne(row));
+            count += TenantHelper.dynamic(row.getTenantId(), () -> cleanupOne(row));
         return count;
     }
 

@@ -11,6 +11,7 @@ import com.nexus.system.service.ISysPermissionService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,7 @@ public class SysEngineeringIdentityAdapter implements EngineeringIdentityPort {
      * @param tenantId 保留前导零的服务端租户标识
      * @param userId 已认证用户编号，不从设备请求正文读取
      * @return 当前启用状态、租户到期状态、内部认证摘要及实时权限；不输出密码散列
-     * @throws org.springframework.dao.DataAccessException 身份数据无法可靠读取时中止，不回退旧授权
+     * @throws DataAccessException 身份数据无法可靠读取时中止，不回退旧授权
      */
     @Override
     public EngineeringOwnerStatus resolve(String tenantId, Long userId) {

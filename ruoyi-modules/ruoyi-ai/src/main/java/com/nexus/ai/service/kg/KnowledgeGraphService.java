@@ -1,27 +1,32 @@
 package com.nexus.ai.service.kg;
 
+import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.ai.agent.GraphExtractionAgent;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.kg.dto.GraphExtractionResult;
-import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.domain.entity.AiKgEntity;
 import com.nexus.common.ai.domain.entity.AiKgRelation;
+import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.domain.entity.AiKnowledgeGraph;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
 import com.nexus.common.ai.mapper.AiKnowledgeGraphMapper;
 import com.nexus.common.ai.service.IAiModelService;
+import com.nexus.common.tenant.helper.TenantHelper;
+
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.service.AiServices;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,29 +76,35 @@ public class KnowledgeGraphService {
      * 异步触发图谱构建
      *
      * @param knowledgeId 知识库ID
-     * @param modelId     抽取用模型ID（null 用配置/默认模型）
-     * @param userId      触发用户ID
-     * @param tenantId    租户ID（字符串，保留前导零如 "000000"）
-     * @param userName    用户名称
+     * @param modelId 抽取用模型ID（null 用配置/默认模型）
+     * @param userId 触发用户ID
+     * @param tenantId 租户ID（字符串，保留前导零如 "000000"）
+     * @param userName 用户名称
      */
-    @com.baomidou.lock.annotation.Lock4j(keys = {"#knowledgeId"})
-    public void buildGraph(Long knowledgeId, Long modelId, Long userId, String tenantId, String userName) {
+    @Lock4j(keys = {"#knowledgeId"})
+    public void buildGraph(
+            Long knowledgeId, Long modelId, Long userId, String tenantId, String userName) {
         // 调用线程预检查防重（缩小与异步内防重的竞态窗口，避免双击重复提交任务）
         AiKnowledgeGraph existing = graphStoreStrategy.findGraphByKnowledge(knowledgeId);
         if (existing != null && "1".equals(existing.getGraphStatus())) {
             log.info("[KG] 图谱构建中，跳过重复触发 knowledgeId={}", knowledgeId);
             return;
         }
-        aiExecutor.execute(() -> {
-            try {
-                // 异步线程恢复租户上下文（Sa-Token ThreadLocal 不跨线程，多租户拦截器需 TenantHelper.dynamic 恢复，否则 insert 时 tenant_id 不被填充）
-                com.nexus.common.tenant.helper.TenantHelper.dynamic(tenantId, () -> {
-                    buildGraphInternal(knowledgeId, modelId, userId, tenantId, userName);
+        aiExecutor.execute(
+                () -> {
+                    try {
+                        // 异步线程恢复租户上下文（Sa-Token ThreadLocal 不跨线程，多租户拦截器需 TenantHelper.dynamic 恢复，否则
+                        // insert 时 tenant_id 不被填充）
+                        TenantHelper.dynamic(
+                                tenantId,
+                                () -> {
+                                    buildGraphInternal(
+                                            knowledgeId, modelId, userId, tenantId, userName);
+                                });
+                    } catch (Exception e) {
+                        log.error("[KG] 图谱构建异常 knowledgeId={}", knowledgeId, e);
+                    }
                 });
-            } catch (Exception e) {
-                log.error("[KG] 图谱构建异常 knowledgeId={}", knowledgeId, e);
-            }
-        });
     }
 
     /**
@@ -120,9 +131,8 @@ public class KnowledgeGraphService {
 
             // 阶段一：实体关系抽取
             ChatModel chatModel = chatModelFactory.getChatModel(finalModelId);
-            GraphExtractionAgent agent = dev.langchain4j.service.AiServices.builder(GraphExtractionAgent.class)
-                .chatModel(chatModel)
-                .build();
+            GraphExtractionAgent agent =
+                    AiServices.builder(GraphExtractionAgent.class).chatModel(chatModel).build();
 
             List<AiKnowledgeChunk> pendingChunks = chunkMapper.selectList(Wrappers.<AiKnowledgeChunk>lambdaQuery()
                 .eq(AiKnowledgeChunk::getKnowledgeId, knowledgeId)
@@ -418,35 +428,45 @@ public class KnowledgeGraphService {
 
     /**
      * 全量重建：清实体/关系/社区 + 重置 chunk 状态 + 重新构建（异步）
-     * <p>语义为强制全量重抽，不受 buildGraphInternal 的构建中防重拦截（先置 status=0）。
-     * 全量重抽耗时较长，必须异步执行避免阻塞 HTTP 线程。</p>
+     *
+     * <p>语义为强制全量重抽，不受 buildGraphInternal 的构建中防重拦截（先置 status=0）。 全量重抽耗时较长，必须异步执行避免阻塞 HTTP 线程。
      */
-    @com.baomidou.lock.annotation.Lock4j(keys = {"#knowledgeId"})
-    public void rebuild(Long knowledgeId, Long modelId, Long userId, String tenantIdStr, String userName) {
-        aiExecutor.execute(() -> {
-            try {
-                com.nexus.common.tenant.helper.TenantHelper.dynamic(tenantIdStr, () -> {
-                    AiKnowledgeGraph graph = graphStoreStrategy.findGraphByKnowledge(knowledgeId);
-                    if (graph != null) {
-                        graphStoreStrategy.deleteGraphData(graph.getId());
-                        // 强制重置为未构建，避免 buildGraphInternal 防重跳过
-                        graph.setGraphStatus("0");
-                        graphStoreStrategy.updateGraph(graph);
+    @Lock4j(keys = {"#knowledgeId"})
+    public void rebuild(
+            Long knowledgeId, Long modelId, Long userId, String tenantIdStr, String userName) {
+        aiExecutor.execute(
+                () -> {
+                    try {
+                        TenantHelper.dynamic(
+                                tenantIdStr,
+                                () -> {
+                                    AiKnowledgeGraph graph =
+                                            graphStoreStrategy.findGraphByKnowledge(knowledgeId);
+                                    if (graph != null) {
+                                        graphStoreStrategy.deleteGraphData(graph.getId());
+                                        // 强制重置为未构建，避免 buildGraphInternal 防重跳过
+                                        graph.setGraphStatus("0");
+                                        graphStoreStrategy.updateGraph(graph);
+                                    }
+                                    // 重置该知识库全部 chunk 的抽取状态
+                                    chunkMapper.update(
+                                            null,
+                                            Wrappers.<AiKnowledgeChunk>lambdaUpdate()
+                                                    .set(AiKnowledgeChunk::getExtractionStatus, "0")
+                                                    .set(AiKnowledgeChunk::getEntityCount, 0)
+                                                    .set(AiKnowledgeChunk::getRelationCount, 0)
+                                                    .set(AiKnowledgeChunk::getTokenUsed, 0)
+                                                    .set(AiKnowledgeChunk::getKgErrorMessage, null)
+                                                    .eq(
+                                                            AiKnowledgeChunk::getKnowledgeId,
+                                                            knowledgeId));
+                                    buildGraphInternal(
+                                            knowledgeId, modelId, userId, tenantIdStr, userName);
+                                });
+                    } catch (Exception e) {
+                        log.error("[KG] 图谱重建异常 knowledgeId={}", knowledgeId, e);
                     }
-                    // 重置该知识库全部 chunk 的抽取状态
-                    chunkMapper.update(null, Wrappers.<AiKnowledgeChunk>lambdaUpdate()
-                        .set(AiKnowledgeChunk::getExtractionStatus, "0")
-                        .set(AiKnowledgeChunk::getEntityCount, 0)
-                        .set(AiKnowledgeChunk::getRelationCount, 0)
-                        .set(AiKnowledgeChunk::getTokenUsed, 0)
-                        .set(AiKnowledgeChunk::getKgErrorMessage, null)
-                        .eq(AiKnowledgeChunk::getKnowledgeId, knowledgeId));
-                    buildGraphInternal(knowledgeId, modelId, userId, tenantIdStr, userName);
                 });
-            } catch (Exception e) {
-                log.error("[KG] 图谱重建异常 knowledgeId={}", knowledgeId, e);
-            }
-        });
     }
 
     /**

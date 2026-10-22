@@ -2,10 +2,13 @@ package com.nexus.mes.qc.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
 import com.nexus.mes.qc.domain.bo.QcOqcBo;
+import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
 import com.nexus.mes.qc.domain.vo.QcOqcVo;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * MES出货检验 Service 业务层接口
@@ -77,16 +80,15 @@ public interface IQcOqcService {
                  BigDecimal sampleQty, String remark);
 
     /**
-     * 按检验明细执行检验(自动判定): 录入各项目实测值, 系统比对标准自动判定
-     * 合格(QUALIFIED)/不合格(UNQUALIFIED), 判定结果走原有 NCR/MQ 回写链路。
+     * 按检验明细执行检验(自动判定): 录入各项目实测值, 系统比对标准自动判定 合格(QUALIFIED)/不合格(UNQUALIFIED), 判定结果走原有 NCR/MQ 回写链路。
      *
-     * @param oqcId      OQC 检验单 ID
-     * @param entries    明细实测值列表({detailId, measuredValue, sampleQty, remark})
+     * @param oqcId OQC 检验单 ID
+     * @param entries 明细实测值列表({detailId, measuredValue, sampleQty, remark})
      * @param defectInfo 不良品信息(JSON, 可为空)
-     * @param remark     备注(可为空)
+     * @param remark 备注(可为空)
      */
-    void inspectWithDetails(Long oqcId, java.util.List<com.nexus.mes.qc.domain.bo.QcInspectEntryBo> entries,
-                            String defectInfo, String remark);
+    void inspectWithDetails(
+            Long oqcId, List<QcInspectEntryBo> entries, String defectInfo, String remark);
 
     /**
      * 查询 OQC 检验单明细(按检验模板快照生成)
@@ -94,5 +96,5 @@ public interface IQcOqcService {
      * @param oqcId OQC 检验单 ID
      * @return 明细列表(按序号升序)
      */
-    java.util.List<com.nexus.mes.qc.domain.vo.QcInspectDetailVo> selectDetails(Long oqcId);
+    List<QcInspectDetailVo> selectDetails(Long oqcId);
 }

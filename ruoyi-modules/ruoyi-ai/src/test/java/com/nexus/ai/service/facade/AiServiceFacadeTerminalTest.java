@@ -1,8 +1,15 @@
 package com.nexus.ai.service.facade;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+
+import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.context.AiRequestContext;
@@ -12,8 +19,9 @@ import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.chat.PersistentChatMemoryStore;
 import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
-import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.domain.entity.AiMessage;
+import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiSessionMapper;
@@ -21,28 +29,33 @@ import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.agent.AgentBuilder;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorAgentService;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.ai.domain.entity.AiMessage 和
+// dev.langchain4j.data.message.AiMessage，后者保留全限定名以区分。
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 class AiServiceFacadeTerminalTest {
@@ -71,7 +84,8 @@ class AiServiceFacadeTerminalTest {
         doAnswer(call -> { callback.set(call.getArgument(1)); return null; })
             .when(streaming).chat(any(ChatRequest.class), any(StreamingChatResponseHandler.class));
         when(dep(ChatModelFactory.class).getStreamingChatModel(anyLong(), any(AiChatRequest.class))).thenReturn(streaming);
-        when(dep(PersistentChatMemoryStore.class).getMessages(any())).thenReturn(List.of(dev.langchain4j.data.message.UserMessage.from("问题")));
+        when(dep(PersistentChatMemoryStore.class).getMessages(any()))
+                .thenReturn(List.of(UserMessage.from("问题")));
         when(dep(RetrieverService.class).augmentPrompt(anyString())).thenReturn("增强问题");
         model.setId(9L);
         model.setModelName("离线模型");
@@ -145,7 +159,8 @@ class AiServiceFacadeTerminalTest {
 
     @Test
     void invalidSessionSendHasExplicitNotFoundMeaning() {
-        try (var login = mockStatic(LoginHelper.class); var permissions = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
+        try (var login = mockStatic(LoginHelper.class);
+                var permissions = mockStatic(StpUtil.class)) {
             login.when(LoginHelper::getUserId).thenReturn(7L);
             when(dep(IAiModelService.class).selectDefaultModel()).thenReturn(model);
             request.setSessionId(9007199254740993L);
@@ -158,19 +173,20 @@ class AiServiceFacadeTerminalTest {
 
     @Test
     void sameUserIdFromAnotherTenantCannotAppendToForeignSession() {
-        try (var login = mockStatic(LoginHelper.class); var permissions = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
+        try (var login = mockStatic(LoginHelper.class);
+                var permissions = mockStatic(StpUtil.class)) {
             login.when(LoginHelper::getUserId).thenReturn(7L);
             login.when(LoginHelper::getTenantId).thenReturn("000007");
             when(dep(IAiModelService.class).selectDefaultModel()).thenReturn(model);
             request.setSessionId(9007199254740993L);
-            var foreign = new com.nexus.common.ai.domain.entity.AiSession();
+            var foreign = new AiSession();
             foreign.setUserId(7L);
             foreign.setTenantId("000008");
             when(dep(AiSessionMapper.class).selectById(9007199254740993L)).thenReturn(foreign);
             ServiceException error = assertThrows(ServiceException.class, () -> facade.chat(request));
             assertEquals(404, error.getCode());
             verifyNoInteractions(dep(AiMessageMapper.class));
-            verify(dep(AiSessionMapper.class), never()).insert(any(com.nexus.common.ai.domain.entity.AiSession.class));
+            verify(dep(AiSessionMapper.class), never()).insert(any(AiSession.class));
             verifyNoInteractions(dep(ChatModelFactory.class));
             assertTrue(errors.isEmpty());
         }
@@ -181,9 +197,13 @@ class AiServiceFacadeTerminalTest {
         Map<?, ?> registry = (Map<?, ?>) ReflectionTestUtils.getField(OutputChannel.class, "REGISTRY");
         Set<?> before = new HashSet<>(registry.keySet());
         request.setContent("统计库存报表");
-        ReflectionTestUtils.setField(facade, "aiExecutor", (Executor) task -> {
-            throw new java.util.concurrent.RejectedExecutionException("线程池已满");
-        });
+        ReflectionTestUtils.setField(
+                facade,
+                "aiExecutor",
+                (Executor)
+                        task -> {
+                            throw new RejectedExecutionException("线程池已满");
+                        });
         AgentBuilder query = mock(AgentBuilder.class, RETURNS_SELF);
         AgentBuilder report = mock(AgentBuilder.class, RETURNS_SELF);
         when(query.build()).thenReturn(mock(ErpQueryAgent.class));

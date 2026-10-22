@@ -1,10 +1,16 @@
 package com.nexus.mes.release.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.flash.domain.Firmware;
 import com.nexus.mes.flash.mapper.FirmwareMapper;
 import com.nexus.mes.release.domain.ReleasePackage;
@@ -20,20 +26,19 @@ import com.nexus.mes.testsupport.SpringStaticBootstrap;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 /**
  * ReleasePackageServiceImpl 单元测试: 匹配规则 / 版本唯一 / 子表校验 / 默认包
@@ -267,8 +272,8 @@ class ReleasePackageServiceImplTest {
 
     // ==================== approve -> doPublish 影响行数校验(MES-REL-01) ====================
 
-    @org.junit.jupiter.api.Tag("local")
-    @org.junit.jupiter.api.Tag("dev")
+    @Tag("local")
+    @Tag("dev")
     @Test
     void approveThrowsWhenPublishCasAffectsZeroRows() {
         ReleasePackage pkg = releasedPackage(1L, "RP-001", null);
@@ -277,17 +282,16 @@ class ReleasePackageServiceImplTest {
         // CAS 影响 0 行(状态已被并发变更: 双审批 / 与归档竞态)
         when(baseMapper.update(any(), any())).thenReturn(0);
 
-        try (org.mockito.MockedStatic<com.nexus.common.satoken.utils.LoginHelper> login =
-                 org.mockito.Mockito.mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
-            login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(9L);
+        try (MockedStatic<LoginHelper> login = Mockito.mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(9L);
 
             ServiceException ex = assertThrows(ServiceException.class, () -> service.approve(1L, "同意"));
             assertTrue(ex.getMessage().contains("状态已变更"), ex.getMessage());
         }
     }
 
-    @org.junit.jupiter.api.Tag("local")
-    @org.junit.jupiter.api.Tag("dev")
+    @Tag("local")
+    @Tag("dev")
     @Test
     void approvePublishesWhenPublishCasAffectsOneRow() {
         ReleasePackage pkg = releasedPackage(1L, "RP-001", null);
@@ -295,9 +299,8 @@ class ReleasePackageServiceImplTest {
         when(baseMapper.selectById(1L)).thenReturn(pkg);
         when(baseMapper.update(any(), any())).thenReturn(1);
 
-        try (org.mockito.MockedStatic<com.nexus.common.satoken.utils.LoginHelper> login =
-                 org.mockito.Mockito.mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
-            login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(9L);
+        try (MockedStatic<LoginHelper> login = Mockito.mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(9L);
 
             assertTrue(service.approve(1L, "同意"));
             verify(baseMapper, times(1)).update(any(), any());

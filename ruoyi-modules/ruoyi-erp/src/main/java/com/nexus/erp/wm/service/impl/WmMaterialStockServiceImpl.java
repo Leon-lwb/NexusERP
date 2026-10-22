@@ -1,14 +1,16 @@
 package com.nexus.erp.wm.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.bo.WmMaterialStockBo;
@@ -16,13 +18,12 @@ import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.service.IWmMaterialStockService;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.erp.bd.domain.BdMaterial;
-import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -111,7 +112,7 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialStockBo bo) {
-        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
+        throw new ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**
@@ -123,7 +124,7 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialStockBo bo) {
-        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
+        throw new ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**
@@ -135,7 +136,7 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        throw new com.nexus.common.core.exception.ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
+        throw new ServiceException("库存和已过账事实只允许由来源单据产生；修正请使用来源单据");
     }
 
     /**

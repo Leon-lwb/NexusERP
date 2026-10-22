@@ -1,5 +1,6 @@
 package com.nexus.erp.pu.service;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
@@ -148,10 +149,10 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
     Long convertToPurchaseOrder(Long requisitionId);
 
     /**
-     * 低库存自动申请入口；在逐需求来源占用和同租户物料 guard 未接入前暂停新增，
-     * 避免将 LOW_STOCK 的 materialId/sourceId 误认为 MRP detailId 或绕过并发防重。
+     * 低库存自动申请入口；在逐需求来源占用和同租户物料 guard 未接入前暂停新增， 避免将 LOW_STOCK 的 materialId/sourceId 误认为 MRP detailId
+     * 或绕过并发防重。
      *
-     * @throws com.nexus.common.core.exception.ServiceException 来源防重尚未完成时拒绝执行
+     * @throws ServiceException 来源防重尚未完成时拒绝执行
      */
     List<Long> generateFromLowStock();
 }

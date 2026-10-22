@@ -1,12 +1,16 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleSourceGate;
 import com.nexus.erp.support.ErpDdlTestSupport;
 
 import org.junit.jupiter.api.Test;
+
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.Pattern;
-import static org.junit.jupiter.api.Assertions.*;
 
 class PuCertifiedPurchaseOrderWorkflowPresenceTest {
     @Test void realOrderPricingApprovalAndClosureHaveADedicatedWriterNotAnotherReader() {
@@ -14,12 +18,17 @@ class PuCertifiedPurchaseOrderWorkflowPresenceTest {
             assertDoesNotThrow(()->Class.forName("com.nexus.erp.pu."+name),"Expected RED: actual order writer entry missing: "+name);
     }
     @Test void orderApprovalHasAPermanentLifecycleOperation() {
-        assertTrue(Arrays.stream(com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.Operation.values())
-            .anyMatch(v->v.name().equals("APPROVE_ORDER")),"Expected RED: order approval sequence event missing");
+        assertTrue(
+                Arrays.stream(PuCertifiedPurchaseLifecycleService.Operation.values())
+                        .anyMatch(v -> v.name().equals("APPROVE_ORDER")),
+                "Expected RED: order approval sequence event missing");
     }
     @Test void orderTermsRequireActualDefinitionGateAndInstallationSchema() throws Exception {
-        assertDoesNotThrow(()->com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleSourceGate.class.getMethod("requireOrderDefinitions"),
-            "Expected RED: approved quote actual definition gate missing");
+        assertDoesNotThrow(
+                () ->
+                        PuCertifiedPurchaseLifecycleSourceGate.class.getMethod(
+                                "requireOrderDefinitions"),
+                "Expected RED: approved quote actual definition gate missing");
         Path root=Path.of("").toAbsolutePath();
         while(root!=null && !Files.isRegularFile(root.resolve("AGENTS.md")))root=root.getParent();
         assertNotNull(root);

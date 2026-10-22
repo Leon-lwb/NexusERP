@@ -2,15 +2,20 @@ package com.nexus.common.mq.producer;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.domain.BaseMessage;
 import com.nexus.common.mq.domain.MessageRecord;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 可靠消息生产者，支持消息确认和延迟投递
@@ -58,16 +63,20 @@ public class ReliableMessageProducer {
      * 旧 send 行为保留，避免未经回归改变所有业务消息协议。
      */
     public void sendDurable(String exchange, String routingKey, BaseMessage message) {
-        if (message == null || exchange == null || exchange.isBlank() || routingKey == null || routingKey.isBlank()
-            || org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
-            || org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()
-            || !org.springframework.transaction.support.TransactionSynchronizationManager.getResourceMap().isEmpty()) {
-            throw new com.nexus.common.core.exception.ServiceException("可靠通知必须在业务事务提交后发送");
+        if (message == null
+                || exchange == null
+                || exchange.isBlank()
+                || routingKey == null
+                || routingKey.isBlank()
+                || TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()
+                || !TransactionSynchronizationManager.getResourceMap().isEmpty()) {
+            throw new ServiceException("可靠通知必须在业务事务提交后发送");
         }
         try {
             var factory=rabbitTemplate.getConnectionFactory();
             if(factory==null || !factory.isPublisherConfirms() || factory.isSimplePublisherConfirms() || !factory.isPublisherReturns()) {
-                throw new com.nexus.common.core.exception.ServiceException("可靠通知确认/退回配置尚未验证");
+                throw new ServiceException("可靠通知确认/退回配置尚未验证");
             }
             fillMessageDefaults(message);
             if (message.getMessageId() == null) message.setMessageId(UUID.randomUUID().toString().replace("-", ""));
@@ -77,26 +86,32 @@ public class ReliableMessageProducer {
             record.setStatus("SENDING"); record.setRetryCount(0); record.setMaxRetry(message.getMaxRetry()); record.setCreateTime(new Date());
             messageRecordService.saveSendingStrict(record);
             CorrelationData correlation = new CorrelationData(message.getMessageId());
-            rabbitTemplate.convertAndSend(exchange, routingKey, message, raw -> {
-                if (!Boolean.TRUE.equals(rabbitTemplate.isMandatoryFor(raw))) {
-                    throw new com.nexus.common.core.exception.ServiceException("可靠通知必须启用退回路由验证");
-                }
-                raw.getMessageProperties().setMessageId(message.getMessageId());
-                raw.getMessageProperties().setHeader("x-tenant-id", message.getTenantId());
-                raw.getMessageProperties().setHeader("x-source-module", message.getSourceModule());
-                raw.getMessageProperties().setHeader("x-trace-id", message.getTraceId());
-                return raw;
-            }, correlation);
-            CorrelationData.Confirm confirmation = correlation.getFuture().get(5, java.util.concurrent.TimeUnit.SECONDS);
+            rabbitTemplate.convertAndSend(
+                    exchange,
+                    routingKey,
+                    message,
+                    raw -> {
+                        if (!Boolean.TRUE.equals(rabbitTemplate.isMandatoryFor(raw))) {
+                            throw new ServiceException("可靠通知必须启用退回路由验证");
+                        }
+                        raw.getMessageProperties().setMessageId(message.getMessageId());
+                        raw.getMessageProperties().setHeader("x-tenant-id", message.getTenantId());
+                        raw.getMessageProperties()
+                                .setHeader("x-source-module", message.getSourceModule());
+                        raw.getMessageProperties().setHeader("x-trace-id", message.getTraceId());
+                        return raw;
+                    },
+                    correlation);
+            CorrelationData.Confirm confirmation = correlation.getFuture().get(5, TimeUnit.SECONDS);
             if (confirmation == null || !confirmation.isAck() || correlation.getReturned() != null) {
-                throw new com.nexus.common.core.exception.ServiceException("可靠通知未获得路由确认");
+                throw new ServiceException("可靠通知未获得路由确认");
             }
             messageRecordService.updateStatusStrict(message.getMessageId(), "SENT");
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new com.nexus.common.core.exception.ServiceException("可靠通知等待已中断，可恢复重试");
+            throw new ServiceException("可靠通知等待已中断，可恢复重试");
         } catch (Exception failure) {
-            throw new com.nexus.common.core.exception.ServiceException("可靠通知尚未确认，可恢复重试");
+            throw new ServiceException("可靠通知尚未确认，可恢复重试");
         }
     }
 

@@ -3,6 +3,7 @@ package com.nexus.report.batch;
 import com.nexus.report.storage.ReportArtifactStore;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -67,7 +68,8 @@ final class ReportBatchArtifacts implements ReportArtifactStore {
             return new Materialized(source.path(), () -> { source.close(); released++; });
         }
         Path copy = temporary(tenant, "pdf");
-        try (source; var input = java.nio.file.Files.newInputStream(source.path());
+        try (source;
+                var input = Files.newInputStream(source.path());
                 var output = output(tenant, copy)) {
             input.transferTo(output);
         } catch (IOException | RuntimeException failure) {

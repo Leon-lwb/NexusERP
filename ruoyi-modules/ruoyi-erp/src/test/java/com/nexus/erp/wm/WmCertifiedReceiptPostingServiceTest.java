@@ -1,26 +1,32 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.ai.adapter.ErpPurchaseStockLineageVerifier;
 import com.nexus.erp.ai.adapter.ErpPurchaseInventorySourceVerifier;
+import com.nexus.erp.ai.adapter.ErpPurchaseStockLineageVerifier;
 import com.nexus.erp.pu.service.*;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper;
 import com.nexus.erp.wm.mapper.WmCertifiedReceiptPostingMapper.*;
 import com.nexus.erp.wm.service.*;
+import com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService;
 import com.nexus.erp.wm.service.impl.WmMqSendService;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.mockito.MockedStatic;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 class WmCertifiedReceiptPostingServiceTest {
     static final String TENANT="000000";static final Long ID=101L,MATERIAL=201L;
@@ -39,9 +45,13 @@ class WmCertifiedReceiptPostingServiceTest {
         draftCreatedAt=NOW.subtract(new BigDecimal("10000"));
         locks=mock(PuRequirementMaterialLockService.class);
         // 红阶段旧Mapper没有此读取方法；以名称匹配默认答复，仍执行未修复的实际服务入口。
-        mapper=mock(WmCertifiedReceiptPostingMapper.class, invocation ->
-            "readDraftCreatedAt".equals(invocation.getMethod().getName()) ? draftCreatedAt
-                : org.mockito.Answers.RETURNS_DEFAULTS.answer(invocation));
+        mapper =
+                mock(
+                        WmCertifiedReceiptPostingMapper.class,
+                        invocation ->
+                                "readDraftCreatedAt".equals(invocation.getMethod().getName())
+                                        ? draftCreatedAt
+                                        : Answers.RETURNS_DEFAULTS.answer(invocation));
         lineage=mock(ErpPurchaseStockLineageVerifier.class);
         iqc=mock(WmReceiptIqcEvidenceService.class);notifications=mock(WmMqSendService.class);
         orderWorkflow=mock(PuCertifiedPurchaseOrderWorkflowService.class);
@@ -321,9 +331,9 @@ class WmCertifiedReceiptPostingServiceTest {
         when(mapper.clock()).thenReturn(new Clock("2026-10-03 10:00:00",NOW,"SYSTEM"));assertThrows(ServiceException.class,()->service.post(ID));noWrites();
     }
 
-    com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService attachArrival(){
-        var a=mock(com.nexus.erp.wm.service.WmCertifiedArrivalNoticeService.class);
-        org.springframework.test.util.ReflectionTestUtils.setField(service,"arrivals",a);
+    WmCertifiedArrivalNoticeService attachArrival() {
+        var a = mock(WmCertifiedArrivalNoticeService.class);
+        ReflectionTestUtils.setField(service, "arrivals", a);
         head=new Head(head.tenantId(),head.receiveId(),head.receiveCode(),head.orderId(),head.vendorId(),head.status(),head.warehouseId(),head.areaId(),head.locationId(),head.receiveAt(),head.shelfAt(),head.delFlag(),81L,"AN001");
         lines=List.of(new Line(TENANT,701L,ID,MATERIAL,"4",Q,801L,"0",82L));
         when(a.receiptFingerprintLocked(eq(TENANT),any(),any(),anyBoolean())).thenReturn("notice-proof-v1\n");return a;

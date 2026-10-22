@@ -1,16 +1,36 @@
 package com.nexus.im.listener;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.core.event.UserNotificationEvent;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.im.domain.SysUserNotification;
 import com.nexus.im.mapper.SysUserNotificationMapper;
 import com.nexus.im.push.ImMetrics;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.im.service.impl.SysUserNotificationServiceImpl;
 import com.nexus.im.service.impl.support.ImConversationCache;
+
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,23 +50,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /** 真正发布 Spring 事件并经过事务代理，持久化和网络端只使用内存替身。 */
 class UserNotificationEventListenerTest {
@@ -129,7 +132,7 @@ class UserNotificationEventListenerTest {
     void realTransactionalNotificationService_failureAbortsPublishingTransaction() {
         var mapper = mock(SysUserNotificationMapper.class);
         var failure = new DataAccessResourceFailureException("测试持久化异常");
-        when(mapper.insert(any(com.nexus.im.domain.SysUserNotification.class))).thenThrow(failure);
+        when(mapper.insert(any(SysUserNotification.class))).thenThrow(failure);
         var push = mock(ImRealtimePush.class);
         var realService = new SysUserNotificationServiceImpl(mapper, push, mock(ImConversationCache.class));
         // 通知服务同样经过 REQUIRED 事务代理，验证加入发布方事务后的失败传播。
@@ -239,7 +242,8 @@ class UserNotificationEventListenerTest {
 
         private void recordBusinessWrite() {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override public void afterCommit() { committedBusinessWrites++; }
+                @Override
+                public void afterCommit() { committedBusinessWrites++; }
             });
         }
     }
@@ -251,28 +255,37 @@ class UserNotificationEventListenerTest {
         int commits;
         int rollbacks;
 
-        @Override protected Object doGetTransaction() {
+        @Override
+        protected Object doGetTransaction() {
             var existing = current.get();
             return existing == null ? new MemoryTransaction() : existing;
         }
-        @Override protected boolean isExistingTransaction(Object tx) { return ((MemoryTransaction) tx).active; }
-        @Override protected void doBegin(Object tx, TransactionDefinition definition) {
+        @Override
+        protected boolean isExistingTransaction(Object tx) { return ((MemoryTransaction) tx).active; }
+        @Override
+        protected void doBegin(Object tx, TransactionDefinition definition) {
             ((MemoryTransaction) tx).active = true;
             current.set((MemoryTransaction) tx);
             begins++;
         }
-        @Override protected void doCommit(DefaultTransactionStatus status) { commits++; }
-        @Override protected void doRollback(DefaultTransactionStatus status) { rollbacks++; }
-        @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) {
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) { commits++; }
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) { rollbacks++; }
+        @Override
+        protected void doSetRollbackOnly(DefaultTransactionStatus status) {
             ((MemoryTransaction) status.getTransaction()).rollbackOnly = true;
         }
-        @Override protected void doCleanupAfterCompletion(Object tx) { current.remove(); }
+        @Override
+        protected void doCleanupAfterCompletion(Object tx) { current.remove(); }
     }
 
     static class MemoryTransaction implements SmartTransactionObject {
         boolean active;
         boolean rollbackOnly;
-        @Override public boolean isRollbackOnly() { return rollbackOnly; }
-        @Override public void flush() { }
+        @Override
+        public boolean isRollbackOnly() { return rollbackOnly; }
+        @Override
+        public void flush() { }
     }
 }

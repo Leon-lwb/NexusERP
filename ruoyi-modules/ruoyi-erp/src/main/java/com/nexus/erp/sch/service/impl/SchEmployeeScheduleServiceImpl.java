@@ -1,9 +1,10 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -13,11 +14,13 @@ import com.nexus.erp.sch.domain.bo.SchEmployeeScheduleBo;
 import com.nexus.erp.sch.domain.vo.SchEmployeeScheduleVo;
 import com.nexus.erp.sch.mapper.*;
 import com.nexus.erp.sch.service.ISchEmployeeScheduleService;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -130,7 +133,7 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         if (planId != null) {
             SchPlan plan = schPlanMapper.selectById(planId);
             if (plan == null) {
-                throw new com.nexus.common.core.exception.ServiceException("排班计划不存在: " + planId);
+                throw new ServiceException("排班计划不存在: " + planId);
             }
             plans = List.of(plan);
         } else {

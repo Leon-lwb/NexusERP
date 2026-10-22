@@ -2,10 +2,13 @@ package com.nexus.im.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import com.nexus.common.tenant.core.TenantEntity;
+
 import java.io.Serial;
+import java.util.Date;
 
 /**
  * 会话配置实体
@@ -30,8 +33,10 @@ public class ImConversationSetting extends TenantEntity {
     private Long targetId;
     /** 是否置顶：1 置顶，0 不置顶。 */
     private Integer isPinned;
+
     /** 置顶操作时间，取消置顶时为 null。 */
-    private java.util.Date pinnedAt;
+    private Date pinnedAt;
+
     /** 是否免打扰：1 免打扰，0 不静音。 */
     private Integer isMuted;
 }

@@ -2,10 +2,12 @@ package com.nexus.common.ai.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nexus.common.tenant.core.TenantEntity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -58,7 +60,7 @@ public class AiEngineeringTask extends TenantEntity {
     private Long revision;
 
     /** 租约凭证摘要。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude private String leaseHash;
+    @JsonIgnore @ToString.Exclude private String leaseHash;
 
     /** 租约到期时间。 */
     private LocalDateTime leaseExpiresAt;

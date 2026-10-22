@@ -1,5 +1,12 @@
 package com.nexus.mes.label.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
@@ -9,12 +16,9 @@ import com.nexus.mes.label.service.LabelPrintService;
 import com.nexus.mes.label.service.LabelRenderService;
 import com.nexus.mes.label.service.impl.MesLabelTemplateServiceImpl;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * 原URL兼容并返回持久化任务ID，所有人工补打都必须经过原任务与原因校验。
@@ -80,6 +84,6 @@ class MesLabelReprintAdapterTest {
         var method = MesLabelTemplateController.class.getMethod("printTask", Long.class);
         assertArrayEquals(
                 new String[] {"mes:label:template:print"},
-                method.getAnnotation(cn.dev33.satoken.annotation.SaCheckPermission.class).value());
+                method.getAnnotation(SaCheckPermission.class).value());
     }
 }

@@ -1,5 +1,7 @@
 package com.nexus.ai.tool;
 
+import com.nexus.ai.engineering.domain.EngineeringTaskVo;
+import com.nexus.ai.engineering.security.EngineeringSecrets;
 import com.nexus.ai.engineering.service.*;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
 import com.nexus.common.ai.engineering.*;
@@ -113,9 +115,7 @@ public class EasyedaEngineeringTool {
                 hash = template.templateSha256();
             }
             String key =
-                    "chat:"
-                            + com.nexus.ai.engineering.security.EngineeringSecrets.hash(
-                                    context.requestId() + ":" + action.name());
+                    "chat:" + EngineeringSecrets.hash(context.requestId() + ":" + action.name());
             var command =
                     new EngineeringTaskCommand(
                             EngineeringDeviceService.PROTOCOL,
@@ -146,11 +146,7 @@ public class EasyedaEngineeringTool {
         }
     }
 
-    private String response(
-            String status,
-            String error,
-            String message,
-            com.nexus.ai.engineering.domain.EngineeringTaskVo task) {
+    private String response(String status, String error, String message, EngineeringTaskVo task) {
         var result = new LinkedHashMap<String, Object>();
         result.put("status", status);
         result.put("errorCode", error);

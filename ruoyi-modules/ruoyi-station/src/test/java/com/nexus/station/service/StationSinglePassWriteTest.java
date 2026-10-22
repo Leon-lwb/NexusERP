@@ -1,5 +1,9 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -12,26 +16,27 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.pro.domain.*;
 import com.nexus.mes.pro.mapper.*;
 import com.nexus.mes.pro.service.IProFlowCardService;
-import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesSerialReferenceService;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.mapper.*;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.BeanUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.Map;
 
 /**
  * 单件写入口反例；数据库替身仅用于业务矩阵，事务/SQL/并发由独立内存集成测试验证。
@@ -50,8 +55,9 @@ class StationSinglePassWriteTest {
     @Mock NcrOrderMapper ncrOrderMapper;
     @Mock StationPassGuardMapper guard;
     @Mock ProWorkOrderStepProgressService progressService;
-    @Mock com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    @Mock MesSerialReferenceService serialReferences;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
     @InjectMocks StationPassService service;
     MockedStatic<TenantHelper> tenant;
     ProSn sn;
@@ -66,9 +72,7 @@ class StationSinglePassWriteTest {
     void setup() {
         lenient()
                 .when(serialReferences.submissionStatus(any()))
-                .thenReturn(
-                        java.util.Map.of(
-                                "submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
+                .thenReturn(Map.of("submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
         lenient().when(progressService.lockForSn(anyString())).thenAnswer(i -> sn.getMesWoId());
         lenient()
                 .when(progressService.lockForCard(anyLong()))
@@ -124,7 +128,7 @@ class StationSinglePassWriteTest {
                 .when(serialReferences.resolve("SN-1"))
                 .thenAnswer(
                         i ->
-                                new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                                new MesSerialReferenceService.Resolved(
                                         "000000",
                                         10001L,
                                         1L,
@@ -165,14 +169,13 @@ class StationSinglePassWriteTest {
                             var existing = reportMapper.selectByClientKey("key");
                             if (existing != null) {
                                 var stored = new StationPassGuardMapper.StoredReport();
-                                org.springframework.beans.BeanUtils.copyProperties(
-                                        existing, stored);
+                                BeanUtils.copyProperties(existing, stored);
                                 stored.setDelFlag("0");
                                 return List.of(stored);
                             }
                             if (reportMapper.selectCount(null) > 0) {
                                 var r = new StationPassGuardMapper.StoredReport();
-                                org.springframework.beans.BeanUtils.copyProperties(replay(), r);
+                                BeanUtils.copyProperties(replay(), r);
                                 r.setDelFlag("0");
                                 r.setClientKey("earlier-key");
                                 r.setResult("PASS");
@@ -392,7 +395,7 @@ class StationSinglePassWriteTest {
     @Test
     void conflictingDeviceBindingsCannotAuthorizeWrite() {
         var other = new MesStationDevice();
-        org.springframework.beans.BeanUtils.copyProperties(device, other);
+        BeanUtils.copyProperties(device, other);
         other.setProcessCode("WELD");
         when(guard.lockDevices(anyString(), anyString())).thenReturn(List.of(device, other));
         rejectWithoutWrites();

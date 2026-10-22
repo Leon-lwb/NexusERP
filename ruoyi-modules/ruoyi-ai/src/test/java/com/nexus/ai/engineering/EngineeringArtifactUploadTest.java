@@ -12,7 +12,9 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.*;
 import java.nio.file.*;
+import java.security.MessageDigest;
 import java.util.*;
+import java.util.HexFormat;
 import java.util.concurrent.*;
 
 class EngineeringArtifactUploadTest {
@@ -89,8 +91,7 @@ class EngineeringArtifactUploadTest {
 
     static String sha(byte[] bytes) {
         try {
-            return java.util.HexFormat.of()
-                    .formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes));
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
         } catch (Exception e) {
             throw new AssertionError(e);
         }

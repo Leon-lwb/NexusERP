@@ -1,5 +1,9 @@
 package com.nexus.mes.qc.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -15,14 +19,22 @@ import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.mes.qc.service.IQcInspectDetailService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -30,10 +42,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * IPQC 原通知离线回归：真实服务与真实事务同步回调，所有外部端口均为替身。
@@ -49,14 +57,21 @@ class QcIpqcNotificationTest {
     private static final String IPQC_NO = "IPQC-回归原检验";
     private static final String WO_NO = "原MES工单";
 
-    @Mock private QcIpqcMapper baseMapper;
-    @Mock private ProWorkOrderMapper proWorkOrderMapper;
+    @Mock
+    private QcIpqcMapper baseMapper;
+    @Mock
+    private ProWorkOrderMapper proWorkOrderMapper;
     // 保留旧依赖替身，RED 可准确暴露旧富工单/桥接读取；GREEN 必须零调用。
-    @Mock private IProWorkOrderService proWorkOrderService;
-    @Mock private MesMqSendService mesMqSendService;
-    @Mock private INcrOrderService ncrOrderService;
-    @Mock private IQcInspectDetailService inspectDetailService;
-    @InjectMocks private QcIpqcServiceImpl service;
+    @Mock
+    private IProWorkOrderService proWorkOrderService;
+    @Mock
+    private MesMqSendService mesMqSendService;
+    @Mock
+    private INcrOrderService ncrOrderService;
+    @Mock
+    private IQcInspectDetailService inspectDetailService;
+    @InjectMocks
+    private QcIpqcServiceImpl service;
 
     private MockedStatic<LoginHelper> login;
     private MockedStatic<TenantHelper> tenant;
@@ -431,7 +446,7 @@ class QcIpqcNotificationTest {
     }
 
     @ParameterizedTest
-    @org.junit.jupiter.params.provider.NullSource
+    @NullSource
     @ValueSource(longs = {0L, -1L})
     void recoveryRejectsInvalidOriginalId(Long id) {
         assertRejectedRecovery(id);
@@ -472,32 +487,38 @@ class QcIpqcNotificationTest {
     private QcIpqcServiceImpl recoveryTransactionProxy() {
         TransactionSynchronizationManager.clearSynchronization();
         TransactionSynchronizationManager.unbindResource("IPQC离线MES资源");
-        var manager = new org.springframework.transaction.support.AbstractPlatformTransactionManager() {
-            @Override
-            protected Object doGetTransaction() { return new Object(); }
-            @Override
-            protected void doBegin(Object tx, org.springframework.transaction.TransactionDefinition definition) {
-                assertTrue(definition.isReadOnly(), "恢复只读MES事实，不改检验");
-                TransactionSynchronizationManager.bindResource("IPQC离线MES资源", tx);
-            }
-            @Override
-            protected void doCommit(org.springframework.transaction.support.DefaultTransactionStatus status) {
-                committed = true;
-            }
-            @Override
-            protected void doRollback(org.springframework.transaction.support.DefaultTransactionStatus status) {
-                fail("提交后通知失败不应触发检验回滚");
-            }
-            @Override
-            protected void doCleanupAfterCompletion(Object tx) {
-                TransactionSynchronizationManager.unbindResourceIfPossible("IPQC离线MES资源");
-            }
-        };
-        var interceptor = new org.springframework.transaction.interceptor.TransactionInterceptor();
+        var manager =
+                new AbstractPlatformTransactionManager() {
+                    @Override
+                    protected Object doGetTransaction() {
+                        return new Object();
+                    }
+
+                    @Override
+                    protected void doBegin(Object tx, TransactionDefinition definition) {
+                        assertTrue(definition.isReadOnly(), "恢复只读MES事实，不改检验");
+                        TransactionSynchronizationManager.bindResource("IPQC离线MES资源", tx);
+                    }
+
+                    @Override
+                    protected void doCommit(DefaultTransactionStatus status) {
+                        committed = true;
+                    }
+
+                    @Override
+                    protected void doRollback(DefaultTransactionStatus status) {
+                        fail("提交后通知失败不应触发检验回滚");
+                    }
+
+                    @Override
+                    protected void doCleanupAfterCompletion(Object tx) {
+                        TransactionSynchronizationManager.unbindResourceIfPossible("IPQC离线MES资源");
+                    }
+                };
+        var interceptor = new TransactionInterceptor();
         interceptor.setTransactionManager(manager);
-        interceptor.setTransactionAttributeSource(
-            new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource());
-        var factory = new org.springframework.aop.framework.ProxyFactory(service);
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        var factory = new ProxyFactory(service);
         factory.setProxyTargetClass(true);
         factory.addAdvice(interceptor);
         return (QcIpqcServiceImpl) factory.getProxy();

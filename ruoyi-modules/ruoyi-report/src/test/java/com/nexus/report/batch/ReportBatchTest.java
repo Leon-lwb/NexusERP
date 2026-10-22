@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.nexus.common.report.*;
 import com.nexus.report.domain.*;
+import com.nexus.report.domain.ReportRecords;
 import com.nexus.report.extension.*;
 import com.nexus.report.runtime.*;
 
@@ -89,7 +90,7 @@ class ReportBatchTest {
                     fixture.owner,
                     "BATCH",
                     batch.id(),
-                    List.of(new com.nexus.report.domain.ReportRecords.Grant("USER", "8", "VIEW")));
+                    List.of(new ReportRecords.Grant("USER", "8", "VIEW")));
             assertNull(service.list(fixture.actors.get(8L)).get(0).json());
             fixture.actors.put(
                     7L,

@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 
 import com.nexus.common.core.domain.R;
 import com.nexus.report.asset.ReportAssetService;
+import com.nexus.report.domain.ReportFault;
 import com.nexus.report.extension.ReportResourceStore;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -61,7 +62,7 @@ public final class ReportAssetController {
             @RequestParam String name,
             @RequestPart("file") MultipartFile file)
             throws IOException {
-        if (file.getSize() > 5 * 1024 * 1024) throw com.nexus.report.domain.ReportFault.capacity();
+        if (file.getSize() > 5 * 1024 * 1024) throw ReportFault.capacity();
         return R.ok(service.upload(actors.current(), code, name, file.getBytes()));
     }
 

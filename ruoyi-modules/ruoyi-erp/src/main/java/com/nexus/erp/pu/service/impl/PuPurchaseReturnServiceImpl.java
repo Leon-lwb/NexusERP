@@ -4,17 +4,16 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
-import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.pu.domain.PuPurchaseReturn;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
+import com.nexus.erp.pu.domain.PuPurchaseReturn;
 import com.nexus.erp.pu.domain.PuPurchaseReturnLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseReturnBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseReturnVo;
@@ -22,17 +21,23 @@ import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
-import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.pu.service.IPuPurchaseReturnService;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,8 +45,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 采购退货服务实现类
@@ -60,8 +67,8 @@ import java.util.Map;
 @DS("erp")
 @Service("puPurchaseReturnService")
 public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     private final PuCertifiedPurchaseDocumentGuard certifiedDocumentGuard;
     private final PuPurchaseReturnMapper baseMapper;
@@ -176,7 +183,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (ids == null || ids.length == 0) {
             throw new ServiceException("采购退货单ID不能为空");
         }
-        java.util.Set<Long> unique = new java.util.HashSet<>();
+        Set<Long> unique = new HashSet<>();
         for (Long id : ids) {
             if (id == null || id <= 0 || !unique.add(id)) {
                 throw new ServiceException("采购退货单ID无效或重复");
@@ -432,7 +439,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
             PuPurchaseReturn purchaseReturn, PuPurchaseReturnLine line, Date now) {
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.out(
+                        WmSerialPostingRequest.out(
                                 "PU_PURCHASE_RETURN",
                                 purchaseReturn.getReturnId(),
                                 line.getLineId(),

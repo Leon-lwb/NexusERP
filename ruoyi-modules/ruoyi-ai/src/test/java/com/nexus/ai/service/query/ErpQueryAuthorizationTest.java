@@ -1,14 +1,20 @@
 package com.nexus.ai.service.query;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
+import com.nexus.ai.tool.ErpShortageRiskTool;
 import com.nexus.common.report.*;
 import com.nexus.common.report.catalog.ReportEntityCatalog;
 import com.nexus.common.report.catalog.ReportEntityCatalogProvider;
 import com.nexus.common.satoken.utils.LoginHelper;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -18,9 +24,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /** 通过真实 H2 查询验证 JDBC 边界；仅替换服务端授权端口。 */
 class ErpQueryAuthorizationTest {
@@ -467,8 +470,8 @@ class ErpQueryAuthorizationTest {
         AiRequestContext.set("000000", 1L);
         var capture = mock(ErpQueryService.class);
         when(capture.executeParameterizedQuery(anyString(), any(Object[].class), anyInt(), anyInt())).thenReturn(List.of());
-        new com.nexus.ai.tool.ErpShortageRiskTool(capture).queryShortageRisk(14);
-        var sql = org.mockito.ArgumentCaptor.forClass(String.class);
+        new ErpShortageRiskTool(capture).queryShortageRisk(14);
+        var sql = ArgumentCaptor.forClass(String.class);
         verify(capture).executeParameterizedQuery(sql.capture(), any(Object[].class), anyInt(), anyInt());
         var guard = new ErpQueryAuthorizationGuard(authorization, List.of(ErpQueryAuthorizationTest::catalog), properties);
         assertDoesNotThrow(() -> guard.authorize(sql.getValue()));

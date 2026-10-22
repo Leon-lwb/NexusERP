@@ -1,18 +1,20 @@
 package com.nexus.mes.eq.task;
 
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.collection.CollUtil;
+
 import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
 import com.aizuda.snailjob.client.job.core.dto.JobArgs;
 import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
-import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.collection.CollUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.redis.utils.SchedulerFallbackUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
@@ -23,8 +25,12 @@ import com.nexus.mes.eq.domain.EqMaintenancePlan;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqMaintenancePlanMapper;
 import com.nexus.mes.pro.service.IProAndonService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -64,22 +70,23 @@ import java.util.Set;
 public class MaintenanceDueTask {
 
     /**
-     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
-     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位， 避免同一任务被 SnailJob 与
+     * {@code @Scheduled} 双重调度。
      */
-    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    @Value("${snail-job.enabled:false}")
     private boolean snailJobEnabled;
 
     /**
      * 本地 {@code @Scheduled} 兜底入口（MES-EQ-01）。
-     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
-     * {@link #jobExecute}，保养到期提醒静默不执行。cron 与 {@code sj_job} 种子一致（每天 08:00）。
-     * 任务体已按“每计划 24h 限频”幂等，另由 Lock4j 按任务名加分布式锁，多实例下仅一个节点执行。</p>
+     *
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调 {@link
+     * #jobExecute}，保养到期提醒静默不执行。cron 与 {@code sj_job} 种子一致（每天 08:00）。 任务体已按“每计划 24h 限频”幂等，另由 Lock4j
+     * 按任务名加分布式锁，多实例下仅一个节点执行。
      */
-    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 8 * * ?")
+    @Scheduled(cron = "0 0 8 * * ?")
     public void scheduledExecute() {
-        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
-            snailJobEnabled, "maintenanceDueTask", 900000L, () -> jobExecute(null));
+        SchedulerFallbackUtils.runIfFallbackEnabled(
+                snailJobEnabled, "maintenanceDueTask", 900000L, () -> jobExecute(null));
     }
 
     private static final String PLAN_STATUS_ACTIVE = "ACTIVE";

@@ -1,5 +1,11 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -7,6 +13,7 @@ import com.nexus.erp.wm.domain.WmTransfer;
 import com.nexus.erp.wm.domain.WmTransferLine;
 import com.nexus.erp.wm.mapper.WmTransferLineMapper;
 import com.nexus.erp.wm.mapper.WmTransferMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -16,11 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.List;
 
 /**
  * 调拨单「单据与作业」状态机 单元测试（审计 ERP-WM-07 / ERP-WM-08 / ERP-WM-14 回归）
@@ -129,7 +132,7 @@ class WmTransferServiceImplTest {
         line.setMaterialName("M-001");
         line.setFromLocationId(11L);
         line.setToLocationId(null);
-        when(lineMapper.selectList(any())).thenReturn(java.util.List.of(line));
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.execute(5L));
 

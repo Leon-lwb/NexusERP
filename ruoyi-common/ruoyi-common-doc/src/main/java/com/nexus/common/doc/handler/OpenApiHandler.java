@@ -1,18 +1,23 @@
 package com.nexus.common.doc.handler;
 
 import cn.hutool.core.io.IoUtil;
+
+import com.nexus.common.core.utils.StreamUtils;
+import com.nexus.common.doc.core.resolver.JavadocResolver;
+
 import io.swagger.v3.core.jackson.TypeNameResolver;
 import io.swagger.v3.core.util.AnnotationsUtils;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tags;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.tags.Tag;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
-import com.nexus.common.core.utils.StreamUtils;
-import com.nexus.common.doc.core.resolver.JavadocResolver;
 import org.springdoc.core.customizers.OpenApiBuilderCustomizer;
 import org.springdoc.core.customizers.ServerBaseUrlCustomizer;
 import org.springdoc.core.properties.SpringDocConfigProperties;
@@ -31,10 +36,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * 自定义 openapi 处理器
- * 对源码功能进行修改 增强使用
- */
+// 同名类型说明：本文件同时使用 io.swagger.v3.oas.models.tags.Tag 和
+// io.swagger.v3.oas.annotations.tags.Tag，后者保留全限定名以区分。
+
+/** 自定义 openapi 处理器 对源码功能进行修改 增强使用 */
 @Slf4j
 @SuppressWarnings("all")
 public class OpenApiHandler extends OpenAPIService {
@@ -167,7 +172,7 @@ public class OpenApiHandler extends OpenAPIService {
                 .collect(Collectors.toSet());
 
         if (springdocTags.containsKey(handlerMethod)) {
-            io.swagger.v3.oas.models.tags.Tag tag = springdocTags.get(handlerMethod);
+            Tag tag = springdocTags.get(handlerMethod);
             tagsStr.add(tag.getName());
             if (openAPI.getTags() == null || !openAPI.getTags().contains(tag)) {
                 openAPI.addTagsItem(tag);
@@ -191,7 +196,7 @@ public class OpenApiHandler extends OpenAPIService {
             if (javadocProvider.isPresent()) {
                 String description = javadocProvider.get().getClassJavadoc(handlerMethod.getBeanType());
                 if (StringUtils.isNotBlank(description)) {
-                    io.swagger.v3.oas.models.tags.Tag tag = new io.swagger.v3.oas.models.tags.Tag();
+                    Tag tag = new Tag();
 
                     // 自定义部分 修改使用java注释当tag名
                     List<String> list = IoUtil.readLines(new StringReader(description), new ArrayList<>());
@@ -212,15 +217,15 @@ public class OpenApiHandler extends OpenAPIService {
 
         if (!CollectionUtils.isEmpty(tags)) {
             // Existing tags
-            List<io.swagger.v3.oas.models.tags.Tag> openApiTags = openAPI.getTags();
+            List<Tag> openApiTags = openAPI.getTags();
             if (!CollectionUtils.isEmpty(openApiTags))
                 tags.addAll(openApiTags);
             openAPI.setTags(new ArrayList<>(tags));
         }
 
         // Handle SecurityRequirement at operation level
-        io.swagger.v3.oas.annotations.security.SecurityRequirement[] securityRequirements = securityParser
-            .getSecurityRequirements(handlerMethod);
+        SecurityRequirement[] securityRequirements =
+                securityParser.getSecurityRequirements(handlerMethod);
         if (securityRequirements != null) {
             if (securityRequirements.length == 0)
                 operation.setSecurity(Collections.emptyList());
@@ -247,7 +252,8 @@ public class OpenApiHandler extends OpenAPIService {
         return operation;
     }
 
-    private void buildTagsFromMethod(Method method, Set<io.swagger.v3.oas.models.tags.Tag> tags, Set<String> tagsStr, Locale locale) {
+    private void buildTagsFromMethod(
+            Method method, Set<Tag> tags, Set<String> tagsStr, Locale locale) {
         // method tags
         Set<Tags> tagsSet = AnnotatedElementUtils
             .findAllMergedAnnotations(method, Tags.class);
@@ -261,9 +267,11 @@ public class OpenApiHandler extends OpenAPIService {
         }
     }
 
-    private void addTags(List<io.swagger.v3.oas.annotations.tags.Tag> sourceTags, Set<io.swagger.v3.oas.models.tags.Tag> tags, Locale locale) {
-        Optional<Set<io.swagger.v3.oas.models.tags.Tag>> optionalTagSet = AnnotationsUtils
-            .getTags(sourceTags.toArray(new io.swagger.v3.oas.annotations.tags.Tag[0]), true);
+    private void addTags(
+            List<io.swagger.v3.oas.annotations.tags.Tag> sourceTags, Set<Tag> tags, Locale locale) {
+        Optional<Set<Tag>> optionalTagSet =
+                AnnotationsUtils.getTags(
+                        sourceTags.toArray(new io.swagger.v3.oas.annotations.tags.Tag[0]), true);
         optionalTagSet.ifPresent(tagsSet -> {
             tagsSet.forEach(tag -> {
                 tag.name(propertyResolverUtils.resolve(tag.getName(), locale));

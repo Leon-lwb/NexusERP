@@ -11,6 +11,7 @@ import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
@@ -21,8 +22,12 @@ import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmStorageAreaMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +45,8 @@ import java.util.Date;
 @Slf4j
 @Component
 public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 事务类型：委外收货
@@ -161,7 +166,7 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
         Date now = (Date) args[16];
         if (serialInventory != null
                 && serialInventory.post(
-                        com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                        WmSerialPostingRequest.in(
                                 "WM_SUBCONTRACT_RECEIVE",
                                 receiveId,
                                 null,

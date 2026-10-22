@@ -1,18 +1,35 @@
 package com.nexus.erp.prd.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
-import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
+import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.domain.vo.PrdSchedulePlanVo;
@@ -24,7 +41,6 @@ import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.PrdScheduleNumberAllocator;
-import com.nexus.erp.prd.service.IPrdCapacityCalendarService;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
 import com.nexus.erp.prd.schedule.ScheduleModel.StepInfo;
 import com.nexus.erp.prd.schedule.ScheduleModel.Strategy;
@@ -33,8 +49,11 @@ import com.nexus.erp.prd.service.impl.PrdScheduleServiceImpl;
 import com.nexus.erp.sch.domain.SchShift;
 import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,33 +68,21 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** 排产方案幂等持久化、发布 CAS 与条件补偿测试。 */
 @ExtendWith(MockitoExtension.class)
@@ -129,29 +136,34 @@ class PrdScheduleServiceImplTest {
         TableInfoHelper.initTableInfo(assistant, SchShift.class);
     }
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void acceptUnrelatedLegacyGeneratedDayRows() {
         Mockito.lenient().when(numberAllocator.nextNumber(any(String.class), any(LocalDate.class)))
             .thenReturn("APS202609240001");
-        org.mockito.Mockito.lenient().when(taskDayLoadMapper.insert(any(PrdScheduleTaskDayLoad.class))).thenReturn(1);
+        Mockito.lenient()
+                .when(taskDayLoadMapper.insert(any(PrdScheduleTaskDayLoad.class)))
+                .thenReturn(1);
         Mockito.lenient().when(bookingMapper.insert(any(PrdScheduleCapacityBooking.class))).thenReturn(1);
         Mockito.lenient().when(workOrderMapper.selectOne(any(Wrapper.class))).thenAnswer(invocation ->
             workOrderMapper.selectById(11L));
-        Mockito.lenient().when(shiftMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
-            Map<String, Object> params = parameters(invocation.getArgument(0));
-            List<SchShift> candidates = new java.util.ArrayList<>();
-            for (long id = 1; id <= 2; id++) {
-                if (!params.containsValue(id)) continue;
-                SchShift shift = new SchShift();
-                shift.setShiftId(id);
-                shift.setTenantId("000000");
-                shift.setStartTime(java.sql.Time.valueOf(id == 1 ? "08:00:00" : "16:00:00"));
-                shift.setEndTime(java.sql.Time.valueOf(id == 1 ? "16:00:00" : "23:00:00"));
-                shift.setIsCrossDay(0);
-                candidates.add(shift);
-            }
-            return candidates;
-        });
+        Mockito.lenient()
+                .when(shiftMapper.selectList(any(Wrapper.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Map<String, Object> params = parameters(invocation.getArgument(0));
+                            List<SchShift> candidates = new ArrayList<>();
+                            for (long id = 1; id <= 2; id++) {
+                                if (!params.containsValue(id)) continue;
+                                SchShift shift = new SchShift();
+                                shift.setShiftId(id);
+                                shift.setTenantId("000000");
+                                shift.setStartTime(Time.valueOf(id == 1 ? "08:00:00" : "16:00:00"));
+                                shift.setEndTime(Time.valueOf(id == 1 ? "16:00:00" : "23:00:00"));
+                                shift.setIsCrossDay(0);
+                                candidates.add(shift);
+                            }
+                            return candidates;
+                        });
     }
 
     @Test
@@ -178,11 +190,14 @@ class PrdScheduleServiceImplTest {
             assertEquals(0, vo.getVersion());
             ArgumentCaptor<PrdSchedulePlan> savedPlan = ArgumentCaptor.forClass(PrdSchedulePlan.class);
             verify(planMapper).insert(savedPlan.capture());
-            var arithmeticVersion = java.util.Arrays.stream(PrdSchedulePlan.class.getMethods())
-                .filter(method -> method.getName().equals("getCapacityCalcVersion"))
-                .findFirst().orElse(null);
-            org.junit.jupiter.api.Assertions.assertNotNull(arithmeticVersion,
-                "new schedules need an explicit arithmetic version independent from optimistic-lock version");
+            var arithmeticVersion =
+                    Arrays.stream(PrdSchedulePlan.class.getMethods())
+                            .filter(method -> method.getName().equals("getCapacityCalcVersion"))
+                            .findFirst()
+                            .orElse(null);
+            Assertions.assertNotNull(
+                    arithmeticVersion,
+                    "new schedules need an explicit arithmetic version independent from optimistic-lock version");
             assertEquals(2, arithmeticVersion.invoke(savedPlan.getValue()));
             ArgumentCaptor<PrdScheduleTask> task = ArgumentCaptor.forClass(PrdScheduleTask.class);
             verify(taskMapper).insert(task.capture());
@@ -302,7 +317,7 @@ class PrdScheduleServiceImplTest {
     void allWorkOrdersSkippedDoesNotPersistPublishableEmptyV2Plan() {
         PrdSchedulePlanBo bo = scheduleBo();
         ScheduleInput input = scheduleInput();
-        input.setRoutingProvider(materialId -> java.util.List.of());
+        input.setRoutingProvider(materialId -> List.of());
         when(scheduleInputAssembler.assemble(bo)).thenReturn(input);
 
         ServiceException error = assertThrows(ServiceException.class, () -> scheduleService.runSchedule(bo));
@@ -902,20 +917,49 @@ class PrdScheduleServiceImplTest {
     private void stubSuccessfulOccupancy(List<PrdCapacityCalendar> rows) {
         Map<Long, PrdCapacityCalendar> byId = new HashMap<>();
         rows.forEach(row -> byId.put(row.getCalendarId(), row));
-        when(capacityCalendarMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
-            Map<String, Object> params = parameters(invocation.getArgument(0));
-            LocalDate date = params.values().stream().filter(Date.class::isInstance).map(Date.class::cast)
-                .map(value -> value instanceof java.sql.Date sqlDate ? sqlDate.toLocalDate()
-                    : value.toInstant().atZone(java.time.ZoneId.of("Asia/Shanghai")).toLocalDate())
-                .findFirst().orElseThrow();
-            return rows.stream().filter(row -> params.containsValue(row.getObjectId())
-                && date.equals(((java.sql.Date) row.getCalendarDate()).toLocalDate())).toList();
-        });
-        lenient().when(capacityCalendarMapper.selectOne(any(Wrapper.class))).thenAnswer(invocation -> {
-            Wrapper<?> query = invocation.getArgument(0);
-            return parameters(query).values().stream().filter(Long.class::isInstance)
-                .map(Long.class::cast).map(byId::get).filter(java.util.Objects::nonNull).findFirst().orElse(null);
-        });
+        when(capacityCalendarMapper.selectList(any(Wrapper.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Map<String, Object> params = parameters(invocation.getArgument(0));
+                            LocalDate date =
+                                    params.values().stream()
+                                            .filter(Date.class::isInstance)
+                                            .map(Date.class::cast)
+                                            .map(
+                                                    value ->
+                                                            value instanceof java.sql.Date sqlDate
+                                                                    ? sqlDate.toLocalDate()
+                                                                    : value.toInstant()
+                                                                            .atZone(
+                                                                                    ZoneId.of(
+                                                                                            "Asia/Shanghai"))
+                                                                            .toLocalDate())
+                                            .findFirst()
+                                            .orElseThrow();
+                            return rows.stream()
+                                    .filter(
+                                            row ->
+                                                    params.containsValue(row.getObjectId())
+                                                            && date.equals(
+                                                                    ((java.sql.Date)
+                                                                                    row
+                                                                                            .getCalendarDate())
+                                                                            .toLocalDate()))
+                                    .toList();
+                        });
+        lenient()
+                .when(capacityCalendarMapper.selectOne(any(Wrapper.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Wrapper<?> query = invocation.getArgument(0);
+                            return parameters(query).values().stream()
+                                    .filter(Long.class::isInstance)
+                                    .map(Long.class::cast)
+                                    .map(byId::get)
+                                    .filter(Objects::nonNull)
+                                    .findFirst()
+                                    .orElse(null);
+                        });
         when(capacityCalendarMapper.selectById(any())).thenAnswer(invocation -> byId.get(invocation.getArgument(0)));
         doAnswer(invocation -> {
             PrdCapacityCalendar row = byId.get(invocation.getArgument(0));
@@ -948,7 +992,7 @@ class PrdScheduleServiceImplTest {
     }
 
     private void stubDayLoads(PrdScheduleTask task, String... dayAndHours) {
-        List<PrdScheduleTaskDayLoad> loads = new java.util.ArrayList<>();
+        List<PrdScheduleTaskDayLoad> loads = new ArrayList<>();
         for (int index = 0; index < dayAndHours.length; index += 2) {
             PrdScheduleTaskDayLoad load = new PrdScheduleTaskDayLoad();
             load.setLoadId(40_000L + task.getTaskId() * 10 + index);

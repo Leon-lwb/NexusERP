@@ -1,37 +1,5 @@
 package com.nexus.ai.service.rag;
 
-import com.nexus.common.ai.domain.bo.AiKnowledgeBo;
-import com.nexus.common.ai.domain.entity.AiKnowledge;
-import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
-import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
-import com.nexus.common.ai.mapper.AiKnowledgeMapper;
-import com.nexus.common.ai.mapper.AiModelMapper;
-import com.nexus.common.ai.service.IAiKnowledgeService;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.utils.SpringUtils;
-import com.nexus.common.tenant.helper.TenantHelper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,6 +17,42 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+
+import com.nexus.common.ai.domain.bo.AiKnowledgeBo;
+import com.nexus.common.ai.domain.entity.AiKnowledge;
+import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
+import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
+import com.nexus.common.ai.mapper.AiKnowledgeMapper;
+import com.nexus.common.ai.mapper.AiModelMapper;
+import com.nexus.common.ai.service.IAiKnowledgeService;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+
+import javax.sql.DataSource;
 
 /**
  * 知识库向量索引重建生命周期单元测试（轻量真实事务代理 + Mockito，无 Milvus 无数据库）
@@ -98,11 +102,13 @@ class KnowledgeIndexRebuildServiceTest {
         // 保留原17例的业务断言，入口使用真实事务代理，不能以裸构造绕过提交边界。
         DataSource dataSource = mock(DataSource.class);
         try {
-            org.mockito.Mockito.when(dataSource.getConnection()).thenAnswer(invocation -> {
-                Connection connection = mock(Connection.class);
-                org.mockito.Mockito.when(connection.getAutoCommit()).thenReturn(true);
-                return connection;
-            });
+            Mockito.when(dataSource.getConnection())
+                    .thenAnswer(
+                            invocation -> {
+                                Connection connection = mock(Connection.class);
+                                Mockito.when(connection.getAutoCommit()).thenReturn(true);
+                                return connection;
+                            });
         } catch (SQLException e) {
             throw new AssertionError("事务连接替身初始化失败", e);
         }
@@ -141,11 +147,15 @@ class KnowledgeIndexRebuildServiceTest {
 
         // 顺序敏感：REBUILDING 条件抢占必须先落库，再提交异步任务（保证任务执行前状态可见）
         InOrder inOrder = inOrder(knowledgeMapper, aiIndexRebuildExecutor);
-        inOrder.verify(knowledgeMapper).update(
-            org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-                KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(k.getVectorIndexStatus())
-                    && Integer.valueOf(0).equals(k.getVectorIndexProgress())),
-            any());
+        inOrder.verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(
+                                                        k.getVectorIndexStatus())
+                                                && Integer.valueOf(0)
+                                                        .equals(k.getVectorIndexProgress())),
+                        any());
         inOrder.verify(aiIndexRebuildExecutor).execute(any(Runnable.class));
     }
 
@@ -161,12 +171,17 @@ class KnowledgeIndexRebuildServiceTest {
         newService().rebuild(100L);
 
         // 失败写入为条件 UPDATE（WHERE REBUILDING），实体不含 id/完成时间
-        verify(knowledgeMapper).update(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            KnowledgeIndexRebuildService.STATUS_FAILED.equals(k.getVectorIndexStatus())
-                && k.getVectorIndexError() != null
-                && !k.getVectorIndexError().contains("secret-value")
-                // FAILED 行不写完成时间（列语义为最近完成时间）
-                && k.getVectorIndexUpdatedTime() == null), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_FAILED.equals(
+                                                        k.getVectorIndexStatus())
+                                                && k.getVectorIndexError() != null
+                                                && !k.getVectorIndexError().contains("secret-value")
+                                                // FAILED 行不写完成时间（列语义为最近完成时间）
+                                                && k.getVectorIndexUpdatedTime() == null),
+                        any());
     }
 
     // ------------------------------------------------------------------
@@ -195,11 +210,15 @@ class KnowledgeIndexRebuildServiceTest {
         newService().requestRebuild(KNOWLEDGE_ID);
 
         InOrder inOrder = inOrder(knowledgeMapper, aiIndexRebuildExecutor);
-        inOrder.verify(knowledgeMapper).update(
-            org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-                KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(k.getVectorIndexStatus())
-                    && Integer.valueOf(0).equals(k.getVectorIndexProgress())),
-            any());
+        inOrder.verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(
+                                                        k.getVectorIndexStatus())
+                                                && Integer.valueOf(0)
+                                                        .equals(k.getVectorIndexProgress())),
+                        any());
         inOrder.verify(aiIndexRebuildExecutor).execute(any(Runnable.class));
     }
 
@@ -213,16 +232,21 @@ class KnowledgeIndexRebuildServiceTest {
 
         newService().requestRebuild(KNOWLEDGE_ID);
 
-        verify(knowledgeMapper).updateById(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(k.getVectorIndexStatus())
-                && Integer.valueOf(0).equals(k.getVectorIndexProgress())));
+        verify(knowledgeMapper)
+                .updateById(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(
+                                                        k.getVectorIndexStatus())
+                                                && Integer.valueOf(0)
+                                                        .equals(k.getVectorIndexProgress())));
         verify(aiIndexRebuildExecutor).execute(any(Runnable.class));
     }
 
     @Test
     void secondEndpointCallWhileTaskIsLiveIsRejected() {
         // 模拟活跃任务：捕获提交的 runnable 不执行 → 集合登记仍在（任务 finally 未跑）
-        List<Runnable> submitted = new java.util.ArrayList<>();
+        List<Runnable> submitted = new ArrayList<>();
         doAnswer(invocation -> {
             submitted.add((Runnable) invocation.getArgument(0));
             return null;
@@ -256,10 +280,15 @@ class KnowledgeIndexRebuildServiceTest {
 
         newService().requestRebuild(KNOWLEDGE_ID);
 
-        verify(knowledgeMapper).update(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            KnowledgeIndexRebuildService.STATUS_FAILED.equals(k.getVectorIndexStatus())
-                && k.getVectorIndexError() != null
-                && k.getVectorIndexError().contains("提交失败")), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_FAILED.equals(
+                                                        k.getVectorIndexStatus())
+                                                && k.getVectorIndexError() != null
+                                                && k.getVectorIndexError().contains("提交失败")),
+                        any());
     }
 
     // ------------------------------------------------------------------
@@ -312,10 +341,15 @@ class KnowledgeIndexRebuildServiceTest {
         newService().updateConfiguration(bo);
 
         verify(aiKnowledgeService).updateByBo(any(AiKnowledgeBo.class));
-        verify(knowledgeMapper).update(
-            org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-                KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(k.getVectorIndexStatus())
-                    && Integer.valueOf(0).equals(k.getVectorIndexProgress())), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_REBUILDING.equals(
+                                                        k.getVectorIndexStatus())
+                                                && Integer.valueOf(0)
+                                                        .equals(k.getVectorIndexProgress())),
+                        any());
         verify(aiIndexRebuildExecutor).execute(any(Runnable.class));
     }
 
@@ -367,10 +401,16 @@ class KnowledgeIndexRebuildServiceTest {
         verify(vectorStoreService).rebuildKnowledge(eq(100L), eq("text-embedding-old"), anyInt(),
             argThat(chunks -> chunks != null && chunks.size() == 2));
         // 完成写入为条件 UPDATE（WHERE REBUILDING）
-        verify(knowledgeMapper).update(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            KnowledgeIndexRebuildService.STATUS_READY.equals(k.getVectorIndexStatus())
-                && Integer.valueOf(100).equals(k.getVectorIndexProgress())
-                && k.getVectorIndexUpdatedTime() != null), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_READY.equals(
+                                                        k.getVectorIndexStatus())
+                                                && Integer.valueOf(100)
+                                                        .equals(k.getVectorIndexProgress())
+                                                && k.getVectorIndexUpdatedTime() != null),
+                        any());
     }
 
     @Test
@@ -385,8 +425,13 @@ class KnowledgeIndexRebuildServiceTest {
 
         newService().rebuild(100L);
 
-        verify(knowledgeMapper).update(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            KnowledgeIndexRebuildService.STATUS_READY.equals(k.getVectorIndexStatus())), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_READY.equals(
+                                                k.getVectorIndexStatus())),
+                        any());
         verify(knowledgeMapper, never()).updateById(any(AiKnowledge.class));
     }
 
@@ -402,10 +447,15 @@ class KnowledgeIndexRebuildServiceTest {
 
         newService().rebuild(100L);
 
-        verify(knowledgeMapper).update(org.mockito.ArgumentMatchers.<AiKnowledge>argThat(k ->
-            KnowledgeIndexRebuildService.STATUS_FAILED.equals(k.getVectorIndexStatus())
-                && k.getVectorIndexError() != null
-                && k.getVectorIndexError().contains("重嵌入不完整")), any());
+        verify(knowledgeMapper)
+                .update(
+                        ArgumentMatchers.<AiKnowledge>argThat(
+                                k ->
+                                        KnowledgeIndexRebuildService.STATUS_FAILED.equals(
+                                                        k.getVectorIndexStatus())
+                                                && k.getVectorIndexError() != null
+                                                && k.getVectorIndexError().contains("重嵌入不完整")),
+                        any());
     }
 
     @Test

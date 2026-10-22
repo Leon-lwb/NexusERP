@@ -1,5 +1,20 @@
 package com.nexus.mes.eq.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -7,8 +22,8 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.mes.eq.domain.EqSpareErpSync;
 import com.nexus.mes.eq.domain.EqSparePart;
 import com.nexus.mes.eq.domain.EqSpareStockLog;
-import com.nexus.mes.eq.domain.bo.EqSpareStockBo;
 import com.nexus.mes.eq.domain.bo.EqSparePartBo;
+import com.nexus.mes.eq.domain.bo.EqSpareStockBo;
 import com.nexus.mes.eq.domain.vo.EqSparePartVo;
 import com.nexus.mes.eq.mapper.EqSpareErpSyncMapper;
 import com.nexus.mes.eq.mapper.EqSparePartMapper;
@@ -16,6 +31,7 @@ import com.nexus.mes.eq.mapper.EqSpareStockLogMapper;
 import com.nexus.mes.eq.mapper.ErpSpareStockQueryMapper;
 import com.nexus.mes.eq.mq.EqSpareErpMqPublisher;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
@@ -26,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,22 +52,6 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * 备件出入库单测。
@@ -276,7 +277,7 @@ class EqSparePartServiceImplTest {
             entity.setLogId(1000L);
             return 1;
         });
-        org.mockito.Mockito.doThrow(new RuntimeException("broker down")).when(erpMqPublisher).publish(any());
+        Mockito.doThrow(new RuntimeException("broker down")).when(erpMqPublisher).publish(any());
 
         service.stockTransaction(request("OUT", "3"));
 

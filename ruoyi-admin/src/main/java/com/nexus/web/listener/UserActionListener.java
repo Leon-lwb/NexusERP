@@ -1,13 +1,13 @@
 package com.nexus.web.listener;
 
+import cn.dev33.satoken.jwt.exception.SaJwtException;
 import cn.dev33.satoken.listener.SaTokenListener;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import com.nexus.common.core.constant.CacheConstants;
 import com.nexus.common.core.constant.Constants;
 import com.nexus.common.core.domain.dto.UserOnlineDTO;
@@ -21,6 +21,10 @@ import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.web.service.SysLoginService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -86,7 +90,7 @@ public class UserActionListener implements SaTokenListener {
     private String resolveTenantId(String tokenValue) {
         try {
             return Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
-        } catch (cn.dev33.satoken.jwt.exception.SaJwtException e) {
+        } catch (SaJwtException e) {
             log.warn("解析旧 token 租户信息失败（可能是秘钥轮换前的 token），降级处理: token:***{}",
                 StringUtils.right(tokenValue, 8));
             return null;

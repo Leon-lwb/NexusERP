@@ -1,10 +1,20 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.flash.domain.TestRecord;
 import com.nexus.mes.flash.mapper.TestRecordMapper;
+import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
@@ -13,16 +23,18 @@ import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProFlowCardService;
-import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesSerialReferenceService;
+import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.mapper.StationDeviceMapper;
 import com.nexus.station.mapper.StationPassGuardMapper;
-import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.nexus.station.mapper.StationReportMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,17 +44,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import java.util.function.Supplier;
 
 /**
  * StationPassService 单元测试 — 覆盖联调缺陷 F-5/F-7 回归 + 四重校验 + 幂等。
@@ -52,21 +61,35 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 @ExtendWith(MockitoExtension.class)
 class StationPassServiceTest {
 
-    @Mock private StationReportMapper reportMapper;
-    @Mock private StationSchWorkerMapper schWorkerMapper;
-    @Mock private StationDeviceMapper deviceMapper;
-    @Mock private ProSnMapper proSnMapper;
-    @Mock private ProFlowCardMapper flowCardMapper;
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private TestRecordMapper testRecordMapper;
-    @Mock private IProFlowCardService flowCardService;
-    @Mock private IProSnService proSnService;
-    @Mock private NcrOrderMapper ncrOrderMapper;
-    @Mock private StationPassGuardMapper guard;
+    @Mock
+    private StationReportMapper reportMapper;
+    @Mock
+    private StationSchWorkerMapper schWorkerMapper;
+    @Mock
+    private StationDeviceMapper deviceMapper;
+    @Mock
+    private ProSnMapper proSnMapper;
+    @Mock
+    private ProFlowCardMapper flowCardMapper;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private TestRecordMapper testRecordMapper;
+    @Mock
+    private IProFlowCardService flowCardService;
+    @Mock
+    private IProSnService proSnService;
+    @Mock
+    private NcrOrderMapper ncrOrderMapper;
+    @Mock
+    private StationPassGuardMapper guard;
     @Mock ProWorkOrderStepProgressService progressService;
-    @Mock private com.nexus.mes.trace.MesSerialReferenceService serialReferences;
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks private StationPassService service;
+    @Mock
+    private MesSerialReferenceService serialReferences;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
+    @InjectMocks
+    private StationPassService service;
 
     private MockedStatic<TenantHelper> tenantHelperMock;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
@@ -75,9 +98,7 @@ class StationPassServiceTest {
     void setUp() {
         lenient()
                 .when(serialReferences.submissionStatus(any()))
-                .thenReturn(
-                        java.util.Map.of(
-                                "submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
+                .thenReturn(Map.of("submissionState", "SERVER_COMMITTED", "handoffStatus", "NONE"));
         lenient()
                 .when(serialReferences.resolve(anyString()))
                 .thenAnswer(
@@ -85,8 +106,7 @@ class StationPassServiceTest {
                             String code = call.getArgument(0);
                             ProSn row =
                                     proSnMapper.selectOne(
-                                            com.baomidou.mybatisplus.core.toolkit.Wrappers
-                                                    .<ProSn>lambdaQuery()
+                                            Wrappers.<ProSn>lambdaQuery()
                                                     .eq(ProSn::getSnCode, code));
                             if (row == null) {
                                 var rows = guard.lockSn("000000", code);
@@ -98,7 +118,7 @@ class StationPassServiceTest {
                             if (row.getIdentityId() == null) {
                                 row.setIdentityId(10000L + row.getSnId());
                             }
-                            return new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                            return new MesSerialReferenceService.Resolved(
                                     "000000",
                                     row.getIdentityId(),
                                     row.getSnId(),
@@ -117,16 +137,11 @@ class StationPassServiceTest {
         DynamicDataSourceContextHolder.push("mes");
         TransactionSynchronizationManager.setActualTransactionActive(true);
         TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(
-                java.sql.Connection.TRANSACTION_REPEATABLE_READ);
+                Connection.TRANSACTION_REPEATABLE_READ);
         // TenantHelper.dynamic 直接执行调用体(不依赖真实租户上下文)
         tenantHelperMock
-                .when(
-                        () ->
-                                TenantHelper.dynamic(
-                                        anyString(), any(java.util.function.Supplier.class)))
-                .thenAnswer(
-                        invocation ->
-                                invocation.getArgument(1, java.util.function.Supplier.class).get());
+                .when(() -> TenantHelper.dynamic(anyString(), any(Supplier.class)))
+                .thenAnswer(invocation -> invocation.getArgument(1, Supplier.class).get());
         // CALLS_REAL_METHODS: extract() 走真实方法(反序列化 lambda 拿属性名), 仅 getColumnMap 打桩
         lambdaUtilsMock = mockStatic(LambdaUtils.class, CALLS_REAL_METHODS);
         Map<String, ColumnCache> snColumns = new HashMap<>();
@@ -172,10 +187,7 @@ class StationPassServiceTest {
                 .when(() -> LambdaUtils.getColumnMap(MesStationReport.class))
                 .thenReturn(reportColumns);
         lambdaUtilsMock
-                .when(
-                        () ->
-                                LambdaUtils.getColumnMap(
-                                        com.nexus.station.domain.MesStationDevice.class))
+                .when(() -> LambdaUtils.getColumnMap(MesStationDevice.class))
                 .thenReturn(deviceColumns);
         Map<String, ColumnCache> testRecordColumns = new HashMap<>();
         testRecordColumns.put("SNID", new ColumnCache("sn_id", "sn_id"));
@@ -188,11 +200,9 @@ class StationPassServiceTest {
         ncrColumns.put("CARDID", new ColumnCache("card_id", "card_id"));
         ncrColumns.put("STATUS", new ColumnCache("status", "status"));
         lambdaUtilsMock
-                .when(() -> LambdaUtils.getColumnMap(com.nexus.mes.flash.domain.TestRecord.class))
+                .when(() -> LambdaUtils.getColumnMap(TestRecord.class))
                 .thenReturn(testRecordColumns);
-        lambdaUtilsMock
-                .when(() -> LambdaUtils.getColumnMap(com.nexus.mes.ncr.domain.NcrOrder.class))
-                .thenReturn(ncrColumns);
+        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(NcrOrder.class)).thenReturn(ncrColumns);
     }
 
     @Test
@@ -228,7 +238,7 @@ class StationPassServiceTest {
         row.setIdentityId(10001L);
         row.setWoNo("WO-20");
         doReturn(
-                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                        new MesSerialReferenceService.Resolved(
                                 "000000",
                                 10001L,
                                 1L,
@@ -254,7 +264,7 @@ class StationPassServiceTest {
         row.setSnCode("LOCAL-OLD");
         row.setIdentityId(10001L);
         doReturn(
-                        new com.nexus.mes.trace.MesSerialReferenceService.Resolved(
+                        new MesSerialReferenceService.Resolved(
                                 "000000",
                                 10001L,
                                 1L,
@@ -281,8 +291,8 @@ class StationPassServiceTest {
         stored.setClientTs(1L);
         stored.setClientKey("SINGLE|ERP-FORMAL|STN|JZ|L1|ASM|GENERAL|1");
         stored.setResult("PASS");
-        stored.setGoodQty(java.math.BigDecimal.ONE);
-        stored.setDefectQty(java.math.BigDecimal.ZERO);
+        stored.setGoodQty(BigDecimal.ONE);
+        stored.setDefectQty(BigDecimal.ZERO);
         stored.setRequestFingerprint(
                 StationSinglePassFingerprint.of(
                         "000000",
@@ -430,7 +440,7 @@ class StationPassServiceTest {
         lenient().when(ncrOrderMapper.selectCount(any())).thenReturn(0L);
         when(deviceMapper.selectOne(any())).thenReturn(null);
         // 最新一条测试记录 PASS(此前有历史 FAIL, 但取的是最新一条)
-        com.nexus.mes.flash.domain.TestRecord latest = new com.nexus.mes.flash.domain.TestRecord();
+        TestRecord latest = new TestRecord();
         latest.setResult("PASS");
         when(testRecordMapper.selectOne(any())).thenReturn(latest);
 
@@ -449,7 +459,7 @@ class StationPassServiceTest {
         when(reportMapper.selectCount(any())).thenReturn(0L);
         lenient().when(ncrOrderMapper.selectCount(any())).thenReturn(0L);
         when(deviceMapper.selectOne(any())).thenReturn(null);
-        com.nexus.mes.flash.domain.TestRecord latest = new com.nexus.mes.flash.domain.TestRecord();
+        TestRecord latest = new TestRecord();
         latest.setResult("FAIL");
         when(testRecordMapper.selectOne(any())).thenReturn(latest);
 
@@ -485,8 +495,8 @@ class StationPassServiceTest {
                         null,
                         null,
                         null));
-        stored.setGoodQty(java.math.BigDecimal.ONE);
-        stored.setDefectQty(java.math.BigDecimal.ZERO);
+        stored.setGoodQty(BigDecimal.ONE);
+        stored.setDefectQty(BigDecimal.ZERO);
         when(guard.lockSn(anyString(), anyString())).thenReturn(List.of(inProductionSn()));
         when(guard.lockReports(anyString(), anyString())).thenReturn(List.of(stored));
 
@@ -521,7 +531,7 @@ class StationPassServiceTest {
         card.setCardStatus("IN_PROGRESS");
         when(guard.lockCard(anyString(), anyLong())).thenReturn(card);
         when(guard.lockReports(anyString(), anyString())).thenReturn(List.of());
-        var device = new com.nexus.station.domain.MesStationDevice();
+        var device = new MesStationDevice();
         device.setTenantId("000000");
         device.setDelFlag("0");
         device.setStationCode("STN|JZ|L1|ASM|GENERAL");
@@ -534,8 +544,8 @@ class StationPassServiceTest {
         when(proSnMapper.update(any(), any())).thenReturn(1);
         // 收口当前读：计划100、良品51，尚未足量，不触发卡完工。
         ProFlowCardStep fresh = step(3L, 30, "ASM", "IN_PROGRESS");
-        fresh.setPlannedQty(java.math.BigDecimal.valueOf(100));
-        fresh.setGoodQty(java.math.BigDecimal.valueOf(51));
+        fresh.setPlannedQty(BigDecimal.valueOf(100));
+        fresh.setGoodQty(BigDecimal.valueOf(51));
         when(stepMapper.selectOne(any())).thenReturn(fresh);
 
         StationPassReportDto dto = new StationPassReportDto();
@@ -582,8 +592,7 @@ class StationPassServiceTest {
 
     @Test
     void resolveProcessCode_heartbeatBindingTakesPriority() {
-        com.nexus.station.domain.MesStationDevice device =
-                new com.nexus.station.domain.MesStationDevice();
+        MesStationDevice device = new MesStationDevice();
         device.setProcessCode("OP-99");
         when(deviceMapper.selectOne(any())).thenReturn(device);
         assertEquals("OP-99", service.resolveProcessCode("STN|JZ|L1|ASM|GENERAL"));
@@ -676,10 +685,10 @@ class StationPassServiceTest {
         s.setProcessCode(processCode);
         s.setProcessName(processCode);
         s.setStepStatus(status);
-        s.setPlannedQty(java.math.BigDecimal.valueOf(100));
-        s.setGoodQty(java.math.BigDecimal.ZERO);
-        s.setDefectQty(java.math.BigDecimal.ZERO);
-        s.setScrapQty(java.math.BigDecimal.ZERO);
+        s.setPlannedQty(BigDecimal.valueOf(100));
+        s.setGoodQty(BigDecimal.ZERO);
+        s.setDefectQty(BigDecimal.ZERO);
+        s.setScrapQty(BigDecimal.ZERO);
         return s;
     }
 }

@@ -1,9 +1,11 @@
 package com.nexus.report.storage;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.report.domain.ReportFault;
 
 import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -148,7 +150,7 @@ public final class S3ReportArtifactStore implements ReportArtifactStore {
             try {
                 var policy = client.getBucketPolicy(r -> r.bucket(bucket));
                 var statements = new ObjectMapper().readTree(policy.policy()).path("Statement");
-                var entries = new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+                var entries = new ArrayList<JsonNode>();
                 if (statements.isArray()) statements.forEach(entries::add);
                 else if (statements.isObject()) entries.add(statements);
                 else throw new ReportFault("ARTIFACT_BUCKET_POLICY_INVALID", "bucket策略结构无法验证", 409);
@@ -361,7 +363,7 @@ public final class S3ReportArtifactStore implements ReportArtifactStore {
             if (failure.statusCode() == 404)
                 throw new ReportFault("SNAPSHOT_EXPIRED", "私有产物不存在或已过期", 410);
             throw fault();
-        } catch (software.amazon.awssdk.core.exception.SdkClientException failure) {
+        } catch (SdkClientException failure) {
             throw fault();
         }
     }

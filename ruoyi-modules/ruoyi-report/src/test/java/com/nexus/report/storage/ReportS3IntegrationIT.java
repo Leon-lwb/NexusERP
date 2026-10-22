@@ -2,17 +2,29 @@ package com.nexus.report.storage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.nexus.report.domain.ReportFault;
+import com.nexus.report.extension.ReportExtensionSchema;
+import com.nexus.report.runtime.RuntimeReviewFixture;
+
+import org.h2.jdbcx.JdbcDataSource;
+import org.h2.tools.Server;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.attribute.FileTime;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /** 显式运行的本机MinIO集成，不依赖生产OSS或真实数据。 */
 class ReportS3IntegrationIT {
@@ -78,9 +90,7 @@ class ReportS3IntegrationIT {
                                     "private/v1",
                                     directory.resolve("b"),
                                     1024 * 1024)) {
-                byte[] bytes =
-                        "9007199254740993.005 / 中文快照"
-                                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                byte[] bytes = "9007199254740993.005 / 中文快照".getBytes(StandardCharsets.UTF_8);
                 Path staging = a.temporary("A", "rows");
                 try (var output = a.output("A", staging)) {
                     output.write(bytes);
@@ -105,9 +115,7 @@ class ReportS3IntegrationIT {
                 try (var output = a.output("A", late)) {
                     output.write(bytes);
                 }
-                assertThrows(
-                        com.nexus.report.domain.ReportFault.class,
-                        () -> a.commitAt("A", late, "rows", reference));
+                assertThrows(ReportFault.class, () -> a.commitAt("A", late, "rows", reference));
                 a.discard("A", late);
                 assertTrue(b.inventory().isEmpty());
             } finally {
@@ -123,15 +131,15 @@ class ReportS3IntegrationIT {
     void separateJvmsSurviveWriterKillAndRecoverOnlyTheirOwnStaging() throws Exception {
         String bucket = "codex-report-e27-" + UUID.randomUUID().toString().substring(0, 8);
         var env = environment();
-        try (var f = new com.nexus.report.runtime.RuntimeReviewFixture(directory.resolve("db"));
+        try (var f = new RuntimeReviewFixture(directory.resolve("db"));
                 var admin = client(env)) {
-            com.nexus.report.extension.ReportExtensionSchema.apply(f.jdbc);
+            ReportExtensionSchema.apply(f.jdbc);
             admin.createBucket(r -> r.bucket(bucket));
-            var tcp = org.h2.tools.Server.createTcpServer("-tcpPort", "0").start();
+            var tcp = Server.createTcpServer("-tcpPort", "0").start();
             Process writer = null;
             try {
                 String name =
-                        ((org.h2.jdbcx.JdbcDataSource) f.jdbc.getDataSource())
+                        ((JdbcDataSource) f.jdbc.getDataSource())
                                 .getURL()
                                 .split("mem:")[1]
                                 .split(";")[0];
@@ -145,7 +153,7 @@ class ReportS3IntegrationIT {
                         reader = directory.resolve("reader.properties"),
                         restart = directory.resolve("restart.properties");
                 writer = probe(url, bucket, "a", source, "write", "node-a", source);
-                long limit = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(20);
+                long limit = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
                 while (!Files.exists(source) && writer.isAlive() && System.nanoTime() < limit)
                     Thread.sleep(50);
                 assertTrue(Files.exists(source), "首JVM未完成合成提交，见隔离探针日志");
@@ -154,23 +162,20 @@ class ReportS3IntegrationIT {
                     meta.load(input);
                 }
                 writer.destroyForcibly();
-                assertTrue(writer.waitFor(5, java.util.concurrent.TimeUnit.SECONDS));
+                assertTrue(writer.waitFor(5, TimeUnit.SECONDS));
                 f.jdbc.update(
                         "UPDATE rpt_artifact_manifest SET lease_until=?,update_time=? WHERE"
                                 + " state='STAGED'",
-                        java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)),
-                        java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)));
+                        Timestamp.from(Instant.now().minusSeconds(3600)),
+                        Timestamp.from(Instant.now().minusSeconds(7200)));
                 Path stage = Path.of(meta.getProperty("stage"));
-                Files.setLastModifiedTime(
-                        stage,
-                        java.nio.file.attribute.FileTime.from(
-                                java.time.Instant.now().minusSeconds(7200)));
+                Files.setLastModifiedTime(stage, FileTime.from(Instant.now().minusSeconds(7200)));
                 var b = probe(url, bucket, "b", reader, "read", "node-b", source);
-                assertTrue(b.waitFor(30, java.util.concurrent.TimeUnit.SECONDS));
+                assertTrue(b.waitFor(30, TimeUnit.SECONDS));
                 assertEquals(0, b.exitValue(), "第二JVM读取失败，见隔离探针日志");
                 assertTrue(Files.exists(stage), "第二节点不得删除原节点暂存");
                 var a = probe(url, bucket, "a", restart, "restart", "node-a", source);
-                assertTrue(a.waitFor(30, java.util.concurrent.TimeUnit.SECONDS));
+                assertTrue(a.waitFor(30, TimeUnit.SECONDS));
                 assertEquals(0, a.exitValue(), "原节点重启失败，见隔离探针日志");
                 assertFalse(Files.exists(stage));
                 assertEquals(
@@ -201,7 +206,7 @@ class ReportS3IntegrationIT {
             } finally {
                 if (writer != null && writer.isAlive()) {
                     writer.destroyForcibly();
-                    writer.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+                    writer.waitFor(5, TimeUnit.SECONDS);
                 }
                 tcp.stop();
                 for (var object : admin.listObjectsV2(r -> r.bucket(bucket)).contents())
@@ -287,12 +292,10 @@ class ReportS3IntegrationIT {
                                                         "true",
                                                         "store-id",
                                                         "shared-e27")),
-                        software.amazon.awssdk.core.sync.RequestBody.fromBytes(
-                                new byte[] {1, 2, 3}));
+                        RequestBody.fromBytes(new byte[] {1, 2, 3}));
                 assertEquals(
                         "ARTIFACT_INVALID",
-                        assertThrows(com.nexus.report.domain.ReportFault.class, store::inventory)
-                                .code());
+                        assertThrows(ReportFault.class, store::inventory).code());
             } finally {
                 for (var object : admin.listObjectsV2(r -> r.bucket(bucket)).contents())
                     admin.deleteObject(r -> r.bucket(bucket).key(object.key()));

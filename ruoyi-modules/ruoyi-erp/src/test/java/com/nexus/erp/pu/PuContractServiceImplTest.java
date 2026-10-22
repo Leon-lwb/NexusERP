@@ -1,7 +1,22 @@
 package com.nexus.erp.pu;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.domain.R;
@@ -20,7 +35,9 @@ import com.nexus.erp.pu.service.impl.PuContractSignStatusFiller;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import io.github.linpeilie.Converter;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,25 +48,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 采购合同 Service 单元测试。
@@ -130,13 +134,16 @@ class PuContractServiceImplTest {
     @Test
     void approvedContractCannotBypassSourceCertificationByDirectlyInsertingAnOrder() {
         PuContract contract = new PuContract(); contract.setContractId(10L); contract.setStatus("APPROVED");
-        PuContractLine line = new PuContractLine(); line.setMaterialId(101L); line.setQuantity(new java.math.BigDecimal("5"));
+        PuContractLine line = new PuContractLine();
+        line.setMaterialId(101L);
+        line.setQuantity(new BigDecimal("5"));
         lenient().when(baseMapper.selectById(10L)).thenReturn(contract);
-        lenient().when(lineMapper.selectList(any())).thenReturn(java.util.List.of(line));
+        lenient().when(lineMapper.selectList(any())).thenReturn(List.of(line));
         lenient().when(baseMapper.update(any(),any())).thenReturn(1);
         ServiceException error=assertThrows(ServiceException.class,()->contractService.createPurchaseOrderFromContract(10L));
         assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"),error.getMessage());
-        org.mockito.Mockito.verifyNoInteractions(baseMapper,lineMapper,purchaseOrderMapper,purchaseOrderLineMapper,autoCodeUtil);
+        Mockito.verifyNoInteractions(
+                baseMapper, lineMapper, purchaseOrderMapper, purchaseOrderLineMapper, autoCodeUtil);
     }
 
     @Test

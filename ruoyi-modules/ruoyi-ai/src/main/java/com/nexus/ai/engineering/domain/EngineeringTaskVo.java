@@ -1,6 +1,7 @@
 package com.nexus.ai.engineering.domain;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 可恢复的工程任务安全视图，编号始终为十进制字符串，不含凭证和对象键。
@@ -53,7 +54,7 @@ public record EngineeringTaskVo(
         String templateId,
         String templateVersion,
         String templateSha256,
-        java.util.Map<String, Object> parameters,
+        Map<String, Object> parameters,
         String leaseExpiresAt,
         String deadlineAt,
         EngineeringConnectionDiagnostic connectionDiagnostic) {}

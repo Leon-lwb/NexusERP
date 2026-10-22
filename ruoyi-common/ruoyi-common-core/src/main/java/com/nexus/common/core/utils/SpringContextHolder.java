@@ -7,6 +7,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 /**
  * Spring上下文工具类
  *
@@ -94,11 +96,11 @@ public final class SpringContextHolder implements ApplicationContextAware, BeanF
     /**
      * 获取指定类型的所有Bean实现
      *
-     * @param <T>  Bean类型
+     * @param <T> Bean类型
      * @param clazz 类型
      * @return Map<String, T> 返回包含所有匹配对象的Map
      */
-    public static <T> java.util.Map<String, T> getBeansOfType(Class<T> clazz) {
+    public static <T> Map<String, T> getBeansOfType(Class<T> clazz) {
         return applicationContext.getBeansOfType(clazz);
     }
 

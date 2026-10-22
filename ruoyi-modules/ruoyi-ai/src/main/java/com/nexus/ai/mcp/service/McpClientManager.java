@@ -1,13 +1,15 @@
 package com.nexus.ai.mcp.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.mcp.AiToolStatusContract;
-import com.nexus.ai.mcp.McpEndpointPolicy;
 import com.nexus.ai.mcp.McpConfigSanitizer;
+import com.nexus.ai.mcp.McpEndpointPolicy;
 import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
+
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
@@ -15,21 +17,27 @@ import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.service.tool.ToolProvider;
+
 import jakarta.annotation.PreDestroy;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.HexFormat;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * MCP 客户端管理器
@@ -79,11 +87,11 @@ public class McpClientManager {
      * @return MCP ToolProvider，无可用客户端时返回 null
      */
     public ToolProvider getAllEnabledToolProviders() {
-        List<AiTool> enabledTools = aiToolMapper.selectList(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
-                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
-                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
-        );
+        List<AiTool> enabledTools =
+                aiToolMapper.selectList(
+                        new LambdaQueryWrapper<AiTool>()
+                                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
+                                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN));
 
         if (enabledTools.isEmpty()) {
             return null;
@@ -122,12 +130,12 @@ public class McpClientManager {
             return null;
         }
 
-        List<AiTool> tools = aiToolMapper.selectList(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
-                .in(AiTool::getToolName, toolNames)
-                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
-                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
-        );
+        List<AiTool> tools =
+                aiToolMapper.selectList(
+                        new LambdaQueryWrapper<AiTool>()
+                                .in(AiTool::getToolName, toolNames)
+                                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
+                                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN));
 
         return buildToolProvider(tools);
     }
@@ -145,12 +153,12 @@ public class McpClientManager {
             return null;
         }
 
-        List<AiTool> tools = aiToolMapper.selectList(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
-                .in(AiTool::getId, toolIds)
-                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
-                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
-        );
+        List<AiTool> tools =
+                aiToolMapper.selectList(
+                        new LambdaQueryWrapper<AiTool>()
+                                .in(AiTool::getId, toolIds)
+                                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
+                                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN));
 
         return buildToolProvider(tools);
     }
@@ -332,10 +340,10 @@ public class McpClientManager {
             for (Object field : new Object[]{tool.getId(), tool.getTenantId(), tool.getToolType(), tool.getStatus(), tool.getConfigJson()}) {
                 // 空值用独立标记，不能与长度为0的已配置文本共享同一个版本。
                 if (field == null) {
-                    digest.update(java.nio.ByteBuffer.allocate(4).putInt(-1).array());
+                    digest.update(ByteBuffer.allocate(4).putInt(-1).array());
                 } else {
                     byte[] bytes = field.toString().getBytes(StandardCharsets.UTF_8);
-                    digest.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.length).array());
+                    digest.update(ByteBuffer.allocate(4).putInt(bytes.length).array());
                     digest.update(bytes);
                 }
             }
@@ -466,7 +474,7 @@ public class McpClientManager {
             ProcessBuilder pb = new ProcessBuilder(command, "--version");
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            boolean finished = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
                 return false;
@@ -509,7 +517,7 @@ public class McpClientManager {
         if (failures >= MAX_FAILURE_COUNT) {
             long disableUntil = System.currentTimeMillis() + DISABLE_DURATION_MS;
             toolDisabledUntil.put(toolId, disableUntil);
-            log.warn("[MCP] 工具 {} 连续失败 {} 次，禁用至 {}", toolId, failures, new java.util.Date(disableUntil));
+            log.warn("[MCP] 工具 {} 连续失败 {} 次，禁用至 {}", toolId, failures, new Date(disableUntil));
         } else {
             log.warn("[MCP] 工具 {} 失败 {} 次（上限 {}）", toolId, failures, MAX_FAILURE_COUNT);
         }

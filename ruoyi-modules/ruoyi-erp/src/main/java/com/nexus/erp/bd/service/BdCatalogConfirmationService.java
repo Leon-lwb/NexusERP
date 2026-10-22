@@ -1,5 +1,8 @@
 package com.nexus.erp.bd.service;
 
+import static com.nexus.erp.bd.service.BdCatalogConfirmationSupport.*;
+
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdMaterialVendor;
@@ -13,9 +16,11 @@ import com.nexus.erp.bd.mapper.BdCatalogConfirmationMapper;
 import com.nexus.erp.bd.service.BdCatalogConfirmationSupport.ActorContext;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper.DatabaseClock;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -28,8 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-
-import static com.nexus.erp.bd.service.BdCatalogConfirmationSupport.*;
 
 /**
  * 两类实际资料的本地确认入口：只在独立 ERP 可写 RR 事务内核验、锁定与 CAS。
@@ -217,7 +220,7 @@ public class BdCatalogConfirmationService {
             require(decimal(rate, 6), "相对物料基本单位的换算比例超限");
             return rate;
         } catch (ArithmeticException invalid) {
-            throw new com.nexus.common.core.exception.ServiceException("相对物料基本单位的换算比例不能精确相除");
+            throw new ServiceException("相对物料基本单位的换算比例不能精确相除");
         }
     }
 
@@ -226,9 +229,9 @@ public class BdCatalogConfirmationService {
         require(clock != null && "+08:00".equals(clock.databaseTimeZone()) && clock.epochSeconds() != null
             && clock.epochSeconds().signum() > 0 && clock.epochSeconds().stripTrailingZeros().scale() <= 0,
             "ERP 数据库会话必须明确为 +08:00 且提供有效业务时钟");
-        try { return Instant.ofEpochSecond(clock.epochSeconds().longValueExact()); }
-        catch (ArithmeticException | java.time.DateTimeException invalid) {
-            throw new com.nexus.common.core.exception.ServiceException("ERP 数据库业务时钟无效");
+        try { return Instant.ofEpochSecond(clock.epochSeconds().longValueExact());
+        } catch (ArithmeticException | DateTimeException invalid) {
+            throw new ServiceException("ERP 数据库业务时钟无效");
         }
     }
 

@@ -1,14 +1,16 @@
 package com.nexus.common.flow.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flow.domain.entity.Flow;
 import com.nexus.common.flow.domain.entity.FlowVersion;
 import com.nexus.common.flow.domain.vo.FlowVersionVo;
 import com.nexus.common.flow.mapper.FlowMapper;
 import com.nexus.common.flow.mapper.FlowVersionMapper;
 import com.nexus.common.flow.service.IFlowVersionService;
-import com.nexus.common.core.exception.ServiceException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,8 +18,8 @@ import java.util.List;
 
 /**
  * AI 流程版本快照 Service 业务层处理
- * <p>发布落快照由 {@link com.nexus.common.flow.service.impl.FlowServiceImpl#publish} 调用；
- * 恢复版本 = 快照 config_json 写回流程定义 + 状态置 DRAFT（需重新发布生效）</p>
+ *
+ * <p>发布落快照由 {@link FlowServiceImpl#publish} 调用； 恢复版本 = 快照 config_json 写回流程定义 + 状态置 DRAFT（需重新发布生效）
  *
  * @author NexusERP
  */

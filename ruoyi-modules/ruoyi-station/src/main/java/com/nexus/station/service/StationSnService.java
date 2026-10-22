@@ -6,18 +6,20 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+import com.nexus.mes.trace.MesSerialReferenceService;
 import com.nexus.station.domain.MesSnBindLog;
 import com.nexus.station.domain.dto.StationSnDtos;
 import com.nexus.station.mapper.StationSnBindLogMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,7 +46,7 @@ public class StationSnService {
 
     private final ProSnMapper proSnMapper;
     private final StationSnBindLogMapper bindLogMapper;
-    private final com.nexus.mes.trace.MesSerialReferenceService serialReferences;
+    private final MesSerialReferenceService serialReferences;
 
     /**
      * 关键件批量绑定(C5): 组件挂到父SN下(parent_sn_id/parent_sn_code)。
@@ -211,7 +213,7 @@ public class StationSnService {
      */
     private void checkCycle(ProSn parent, ProSn component, String currentCode) {
         ProSn cursor = parent;
-        Set<Long> visited = new java.util.HashSet<>();
+        Set<Long> visited = new HashSet<>();
         for (int depth = 0; cursor != null && depth < MAX_PARENT_DEPTH; depth++) {
             if (cursor.getSnId() == null
                     || !visited.add(cursor.getSnId())

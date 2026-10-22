@@ -14,8 +14,10 @@ import com.nexus.common.oss.entity.UploadResult;
 import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
@@ -55,7 +58,7 @@ public class KnowledgeProcessService {
 
     /** AI 专用线程池，用于异步提交文档处理任务。 */
     @Qualifier("aiExecutor")
-    private final java.util.concurrent.Executor aiExecutor;
+    private final Executor aiExecutor;
 
     /**
      * 上传并处理文档

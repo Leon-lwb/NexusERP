@@ -1,5 +1,9 @@
 package com.nexus.workflow.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nexus.common.core.exception.ServiceException;
@@ -20,7 +24,9 @@ import com.nexus.workflow.mapper.FlowTaskMapper;
 import com.nexus.workflow.mapper.WfDeployFormMapper;
 import com.nexus.workflow.service.IWfCopyService;
 import com.nexus.workflow.service.WfCallBackServiceI;
+
 import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.ManagementService;
@@ -48,7 +54,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.MockedStatic;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -65,10 +73,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 直接调用真实任务完成入口，验证父绑定校验早于变量剥离和全部写入。
@@ -165,7 +169,7 @@ class WfTaskCompletionBindingTest {
         when(forms.selectOne(any(Wrapper.class))).thenReturn(form);
         when(onlineForm.addOrUpdateOnlineDataByName(anyString(), anyMap())).thenReturn(1);
         BpmnModel model = new BpmnModel();
-        org.flowable.bpmn.model.Process process = new org.flowable.bpmn.model.Process();
+        Process process = new Process();
         process.setId("approval");
         UserTask node = new UserTask();
         node.setId("approve");
@@ -593,7 +597,7 @@ class WfTaskCompletionBindingTest {
         }
         assertTrue(((QueryWrapper<?>) query.getAllValues().get(1)).getParamNameValuePairs().containsValue(DATA_ID),
             "反向查询必须使用原实例业务键，不凭请求数据编号补证");
-        org.mockito.InOrder order = inOrder(runtime, tasks, businesses, onlineForm);
+        InOrder order = inOrder(runtime, tasks, businesses, onlineForm);
         order.verify(runtime).createNativeProcessInstanceQuery();
         order.verify(tasks).createNativeTaskQuery();
         order.verify(businesses, times(2)).list(any(Wrapper.class));
@@ -701,7 +705,7 @@ class WfTaskCompletionBindingTest {
     @DisplayName("回调服务不存在时转换为具体业务拒绝，且没有副作用")
     void missingCallbackBeanIsRejectedBeforeAllWrites() {
         beans.when(() -> SpringContextHolder.getBean("wfCallback"))
-            .thenThrow(new org.springframework.beans.factory.NoSuchBeanDefinitionException("wfCallback"));
+                .thenThrow(new NoSuchBeanDefinitionException("wfCallback"));
         assertRejected("流程业务回调配置不可用");
     }
 

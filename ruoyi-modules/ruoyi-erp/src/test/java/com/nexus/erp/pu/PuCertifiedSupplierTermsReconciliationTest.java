@@ -1,34 +1,55 @@
 package com.nexus.erp.pu;
 
-import cn.dev33.satoken.stp.StpUtil;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.satoken.utils.LoginHelper;
+import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.hash;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.stp.StpUtil;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.log.annotation.Log;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
+import com.nexus.erp.pu.PuCertifiedPurchaseOrderWorkflowServiceTest.Fixture;
 import com.nexus.erp.pu.controller.PuCertifiedPurchaseOrderWorkflowController;
+import com.nexus.erp.pu.mapper.PuCertifiedPurchaseOrderWorkflowMapper.Quote;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseOrderWorkflowService;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseOrderWorkflowService.SupplierTermsRequest;
-import com.nexus.erp.pu.mapper.PuCertifiedPurchaseOrderWorkflowMapper.Quote;
-import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
-import java.time.LocalDate;
-import com.nexus.erp.pu.PuCertifiedPurchaseOrderWorkflowServiceTest.Fixture;
+
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PostMapping;
+
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
-import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.hash;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 /** 原报价未知结果的显式处置回归；模拟持久事实不等于现场验收。 */
 class PuCertifiedSupplierTermsReconciliationTest {
     private static Fixture recoveryFixture() {
         Fixture f=new Fixture();
-        when(f.certification.previewLocked(any(),any(),any(),any(),any())).thenAnswer(a->{
-            assertTrue(f.callback);
-            return new CertifiedPurchaseScope(f.t,201L,1501L,LocalDate.of(2026,10,3),f.end,f.currentCatalog,null,
-                java.util.List.of(),java.util.Map.of(),"e".repeat(64));
-        });
+        when(f.certification.previewLocked(any(), any(), any(), any(), any()))
+                .thenAnswer(
+                        a -> {
+                            assertTrue(f.callback);
+                            return new CertifiedPurchaseScope(
+                                    f.t,
+                                    201L,
+                                    1501L,
+                                    LocalDate.of(2026, 10, 3),
+                                    f.end,
+                                    f.currentCatalog,
+                                    null,
+                                    List.of(),
+                                    Map.of(),
+                                    "e".repeat(64));
+                        });
         return f;
     }
     private static String requestHash(Fixture f, SupplierTermsRequest r) {
@@ -60,7 +81,8 @@ class PuCertifiedSupplierTermsReconciliationTest {
         try(var f=recoveryFixture()) {
             var r=resolve(f,"CHECK_ONLY");assertEquals("ABSENT_REVALIDATED",field(r,"status").toString());assertNull(field(r,"result"));
             verify(f.mapper,never()).insertQuote(any());f.noOrderWrites();assertEquals(1,f.executions);
-            verify(f.locks).lockExisting(f.t,java.util.List.of(201L));verify(f.locks,never()).lock(any(),any());
+            verify(f.locks).lockExisting(f.t, List.of(201L));
+            verify(f.locks, never()).lock(any(), any());
             verify(f.certification).previewLocked(eq(f.t),eq(201L),eq(1501L),eq(f.end),any());
         }
     }
@@ -70,7 +92,8 @@ class PuCertifiedSupplierTermsReconciliationTest {
             assertEquals("9".repeat(64),field(r,"originalIntentSha256"));assertEquals(f.actor,field(r,"actorId"));
             var q=(Quote)field(field(r,"result"),"quote");assertEquals("original-unknown-key",q.requestKey());assertEquals(requestHash(f,f.request(q.requestKey())),q.requestHash());
             assertEquals(1,q.quoteVersion());assertEquals(1,f.quotes.size());assertEquals("DRAFT",f.state);assertEquals(0,f.version);f.noOrderWrites();
-            verify(f.mapper,times(1)).insertQuote(any());verify(f.locks).lockExisting(f.t,java.util.List.of(201L));
+            verify(f.mapper, times(1)).insertQuote(any());
+            verify(f.locks).lockExisting(f.t, List.of(201L));
         }
     }
     @Test void existingOriginalCommitOnlyReturnsVerifiedResultAndNeverRecreatesOrRecertifies() {
@@ -115,7 +138,12 @@ class PuCertifiedSupplierTermsReconciliationTest {
         try(var f=recoveryFixture()) {doReturn(0).when(f.mapper).insertQuote(any());assertThrows(ServiceException.class,()->resolve(f,"SETTLE_IF_ABSENT"));}
     }
     @Test void missingGuardIsNotCreatedByRecovery() {
-        try(var f=recoveryFixture()) {when(f.locks.lockExisting(any(),any())).thenReturn(java.util.Map.of());assertThrows(ServiceException.class,()->resolve(f,"SETTLE_IF_ABSENT"));verify(f.locks,never()).lock(any(),any());verify(f.mapper,never()).insertQuote(any());}
+        try (var f = recoveryFixture()) {
+            when(f.locks.lockExisting(any(), any())).thenReturn(Map.of());
+            assertThrows(ServiceException.class, () -> resolve(f, "SETTLE_IF_ABSENT"));
+            verify(f.locks, never()).lock(any(), any());
+            verify(f.mapper, never()).insertQuote(any());
+        }
     }
     @Test void permissionIsRecheckedInsideTheExclusiveErpTransaction() {
         try(var f=recoveryFixture()) {f.auth.when(()->StpUtil.checkPermission("pu:order:terms:add")).thenAnswer(a->{if(f.callback)throw new ServiceException("失权");return null;});assertThrows(ServiceException.class,()->resolve(f,"SETTLE_IF_ABSENT"));verify(f.mapper,never()).insertQuote(any());}
@@ -170,14 +198,14 @@ class PuCertifiedSupplierTermsReconciliationTest {
         var method=PuCertifiedPurchaseOrderWorkflowController.class.getMethod("reconcileTerms",Long.class,request);
         assertArrayEquals(new String[]{"pu:order:terms:add","pu:order:query"},method.getAnnotation(SaCheckPermission.class).value());
         assertNotNull(method.getAnnotation(Log.class));
-        assertEquals("/{id}/terms/reconcile",method.getAnnotation(org.springframework.web.bind.annotation.PostMapping.class).value()[0]);
-        assertNull(method.getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+        assertEquals("/{id}/terms/reconcile", method.getAnnotation(PostMapping.class).value()[0]);
+        assertNull(method.getAnnotation(Transactional.class));
         var service=PuCertifiedPurchaseOrderWorkflowService.class.getMethod("reconcileTerms",Long.class,request);
-        assertNull(service.getAnnotation(org.springframework.transaction.annotation.Transactional.class));
-        assertNull(service.getAnnotation(com.baomidou.dynamic.datasource.annotation.DS.class));
+        assertNull(service.getAnnotation(Transactional.class));
+        assertNull(service.getAnnotation(DS.class));
     }
     @Test void bothRecoveryModesPropagateExistingGuardOnlyToLifecycleAndCertification() {
-        for (String mode:java.util.List.of("CHECK_ONLY","SETTLE_IF_ABSENT")) {
+        for (String mode : List.of("CHECK_ONLY", "SETTLE_IF_ABSENT")) {
             try (var f=recoveryFixture()) {
                 resolve(f,mode);
                 verify(f.certification).previewLocked(eq(f.t),eq(201L),eq(1501L),eq(f.end),any());

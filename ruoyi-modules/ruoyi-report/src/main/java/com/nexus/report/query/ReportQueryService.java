@@ -10,7 +10,9 @@ import com.nexus.report.service.ReportDefinitionService;
 
 import org.springframework.dao.DuplicateKeyException;
 
+import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** 受控查询的目录、草稿、固定发布及数据集登记，全部使用当前用户权限。 */
 public final class ReportQueryService {
@@ -80,7 +82,7 @@ public final class ReportQueryService {
     public record TypedPreview(
             List<Map<String, TypedValue>> rows,
             long total,
-            java.time.Instant dataTime,
+            Instant dataTime,
             List<DatasetField> fields) {}
 
     /**
@@ -208,10 +210,7 @@ public final class ReportQueryService {
                                                                                             .aggregatable()))
                                                             .toList()))
                             .toList();
-            var visible =
-                    entities.stream()
-                            .map(EntityView::id)
-                            .collect(java.util.stream.Collectors.toSet());
+            var visible = entities.stream().map(EntityView::id).collect(Collectors.toSet());
             result.add(
                     new CatalogView(
                             number,
@@ -392,7 +391,7 @@ public final class ReportQueryService {
         var fields =
                 plan.descriptor().fields().stream()
                         .map(DatasetField::name)
-                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
         var context =
                 new ReportExecutionContext(
                         user, List.of(user.scopeFor(plan.descriptor().permission())));

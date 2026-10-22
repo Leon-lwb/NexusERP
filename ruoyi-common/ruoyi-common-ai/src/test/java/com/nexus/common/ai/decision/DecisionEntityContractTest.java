@@ -1,5 +1,12 @@
 package com.nexus.common.ai.decision;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -28,10 +35,13 @@ import com.nexus.common.ai.mapper.AiDecisionRunMapper;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
+
 import io.github.linpeilie.Converter;
 import io.github.linpeilie.mapstruct.SpringConverterFactory;
+
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -40,7 +50,9 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -50,17 +62,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("local")
 @Tag("dev")
@@ -128,26 +134,40 @@ class DecisionEntityContractTest {
                 expected.add(columns.group(1));
             }
             List<String> actual = new ArrayList<>();
-            Stream.concat(Arrays.stream(entity.getDeclaredFields()), Arrays.stream(BaseEntity.class.getDeclaredFields()))
-                .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
-                .filter(field -> field.getAnnotation(TableField.class) == null || field.getAnnotation(TableField.class).exist())
-                .forEach(field -> actual.add(field.getName().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT)));
+            Stream.concat(
+                            Arrays.stream(entity.getDeclaredFields()),
+                            Arrays.stream(BaseEntity.class.getDeclaredFields()))
+                    .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                    .filter(
+                            field ->
+                                    field.getAnnotation(TableField.class) == null
+                                            || field.getAnnotation(TableField.class).exist())
+                    .forEach(
+                            field ->
+                                    actual.add(
+                                            field.getName()
+                                                    .replaceAll("([a-z])([A-Z])", "$1_$2")
+                                                    .toLowerCase(Locale.ROOT)));
             assertSameColumns(expected, actual, table);
         }
     }
 
     @Test
     void columnContractMustExposeRepeatedNamesOnEitherSide() {
-        org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
-            () -> assertSameColumns(List.of("id", "id"), List.of("id"), "duplicated DDL"));
-        org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
-            () -> assertSameColumns(List.of("id"), List.of("id", "id"), "duplicated entity"));
+        Assertions.assertThrows(
+                AssertionError.class,
+                () -> assertSameColumns(List.of("id", "id"), List.of("id"), "duplicated DDL"));
+        Assertions.assertThrows(
+                AssertionError.class,
+                () -> assertSameColumns(List.of("id"), List.of("id", "id"), "duplicated entity"));
     }
     @Test
     void fieldTypesMatchQueryAndDisplayContracts() throws NoSuchFieldException {
         assertEquals(LocalDateTime.class, AiDecisionRun.class.getDeclaredField("snapshotTime").getType());
-        assertEquals(java.math.BigDecimal.class, AiDecisionRun.class.getDeclaredField("riskScore").getType());
-        assertEquals(java.math.BigDecimal.class, AiDecisionEvidence.class.getDeclaredField("confidence").getType());
+        assertEquals(BigDecimal.class, AiDecisionRun.class.getDeclaredField("riskScore").getType());
+        assertEquals(
+                BigDecimal.class,
+                AiDecisionEvidence.class.getDeclaredField("confidence").getType());
         assertEquals(String.class, AiDecisionEvidence.class.getDeclaredField("derivedFromJson").getType());
         assertEquals(String.class, AiDecisionAction.class.getDeclaredField("dependencyIdsJson").getType());
         assertEquals(LocalDateTime.class, AiDecisionAction.class.getDeclaredField("approvedAt").getType());
@@ -326,13 +346,17 @@ class DecisionEntityContractTest {
             action.setExecutionStatus("STALE");
             int staleActionUpdate = actions.updateById(action);
 
-            org.junit.jupiter.api.Assertions.assertAll("new entities must retain their optimistic lock versions",
-                () -> assertEquals(0, insertedRunVersion, "run.version after insert"),
-                () -> assertEquals(0, staleRunUpdate, "stale run update count"),
-                () -> assertEquals("WINNER", runs.selectById(run.getId()).getStatus()),
-                () -> assertEquals(0, insertedActionVersion, "action.version after insert"),
-                () -> assertEquals(0, staleActionUpdate, "stale action update count"),
-                () -> assertEquals("WINNER", actions.selectById(action.getId()).getExecutionStatus()));
+            Assertions.assertAll(
+                    "new entities must retain their optimistic lock versions",
+                    () -> assertEquals(0, insertedRunVersion, "run.version after insert"),
+                    () -> assertEquals(0, staleRunUpdate, "stale run update count"),
+                    () -> assertEquals("WINNER", runs.selectById(run.getId()).getStatus()),
+                    () -> assertEquals(0, insertedActionVersion, "action.version after insert"),
+                    () -> assertEquals(0, staleActionUpdate, "stale action update count"),
+                    () ->
+                            assertEquals(
+                                    "WINNER",
+                                    actions.selectById(action.getId()).getExecutionStatus()));
         }
     }
 
@@ -382,7 +406,7 @@ class DecisionEntityContractTest {
                 run.setBizType("ORDER");
                 run.setTriggerType("MANUAL");
                 run.setStatus("RUNNING");
-                run.setRiskScore(new java.math.BigDecimal("12.34"));
+                run.setRiskScore(new BigDecimal("12.34"));
                 run.setRecommendedScenarioCode("scenario-1");
                 run.setInputSnapshotJson("{\"x\":1}");
                 run.setScenarioResultJson("{\"scenario\":true}");

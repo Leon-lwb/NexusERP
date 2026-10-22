@@ -1,21 +1,26 @@
 package com.nexus.test;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
 
+import java.util.Arrays;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Tag("dev")
 class DecisionDemoProfileTest {
@@ -40,10 +45,11 @@ class DecisionDemoProfileTest {
             assertEquals("false", environment.getProperty("snail-job.enabled"));
             assertEquals("false", environment.getProperty("spring.boot.admin.client.enabled"));
             // 本地验证码可由用户明确关闭；验证实际日常配置被加载，不强迫改写其工作区。
-            var daily = new org.springframework.beans.factory.config.YamlPropertiesFactoryBean();
-            daily.setResources(new org.springframework.core.io.ClassPathResource("application-dev.yml"));
-            assertEquals(java.util.Objects.requireNonNull(daily.getObject()).getProperty("captcha.enable"),
-                environment.getProperty("captcha.enable"));
+            var daily = new YamlPropertiesFactoryBean();
+            daily.setResources(new ClassPathResource("application-dev.yml"));
+            assertEquals(
+                    Objects.requireNonNull(daily.getObject()).getProperty("captcha.enable"),
+                    environment.getProperty("captcha.enable"));
         }
     }
 
@@ -103,7 +109,7 @@ class DecisionDemoProfileTest {
         assertRejected("decision-demo", demoOverrides());
         assertRejected("prod,dev,decision-demo", demoOverrides());
         String[] valid = demoOverrides();
-        String[] mixed = java.util.Arrays.copyOf(valid, valid.length + 1);
+        String[] mixed = Arrays.copyOf(valid, valid.length + 1);
         mixed[valid.length] = "--spring.datasource.dynamic.datasource.erp.url=jdbc:mysql://localhost:3306/ry-erp";
         assertRejected("dev,decision-demo", mixed);
     }
@@ -139,7 +145,7 @@ class DecisionDemoProfileTest {
     })
     void sharedResourcesAndBackgroundClientsCannotBypassGuard(String override) {
         String[] valid = demoOverrides();
-        String[] mixed = java.util.Arrays.copyOf(valid, valid.length + 1);
+        String[] mixed = Arrays.copyOf(valid, valid.length + 1);
         mixed[valid.length] = override;
         assertRejected("dev,decision-demo", mixed);
     }
@@ -148,7 +154,7 @@ class DecisionDemoProfileTest {
      * 强制采用统一安全错误，不回显连接值或凭据。
      */
     private static void assertRejected(String profiles, String... overrides) {
-        var initialized = new java.util.concurrent.atomic.AtomicBoolean();
+        var initialized = new AtomicBoolean();
         IllegalStateException error = assertThrows(IllegalStateException.class, () -> start(profiles, initialized, overrides));
         assertFalse(initialized.get(), "拒绝必须发生在上下文初始化前");
         assertEquals("隔离演示资源配置不完整或不可信，应用未启动", error.getMessage());
@@ -167,11 +173,11 @@ class DecisionDemoProfileTest {
     }
 
     private static ConfigurableApplicationContext start(String profiles, String... overrides) {
-        return start(profiles, new java.util.concurrent.atomic.AtomicBoolean(), overrides);
+        return start(profiles, new AtomicBoolean(), overrides);
     }
 
-    private static ConfigurableApplicationContext start(String profiles,
-        java.util.concurrent.atomic.AtomicBoolean initialized, String... overrides) {
+    private static ConfigurableApplicationContext start(
+            String profiles, AtomicBoolean initialized, String... overrides) {
         var application = new SpringApplication(EmptyConfiguration.class);
         application.setWebApplicationType(WebApplicationType.NONE);
         application.setLogStartupInfo(false);

@@ -6,14 +6,58 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+
+import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.google.common.collect.Lists;
+import com.nexus.common.core.constant.Constants;
+import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.service.UserService;
+import com.nexus.common.core.utils.SpringContextHolder;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.flowable.common.constant.ProcessConstants;
+import com.nexus.common.flowable.common.constant.TaskConstants;
+import com.nexus.common.flowable.common.enums.FlowComment;
+import com.nexus.common.flowable.common.enums.ProcessStatus;
+import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.core.domain.ExtensionElementInfo;
+import com.nexus.common.flowable.factory.FlowServiceFactory;
+import com.nexus.common.flowable.flow.CustomProcessDiagramGenerator;
+import com.nexus.common.flowable.flow.FindNextNodeUtil;
+import com.nexus.common.flowable.flow.FlowableUtils;
+import com.nexus.common.flowable.utils.ModelUtils;
+import com.nexus.common.flowable.utils.TaskUtils;
+import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.service.ESignatureService;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.online.service.IFormService;
+import com.nexus.system.domain.vo.SysUserVo;
+import com.nexus.system.service.CommonService;
+import com.nexus.system.service.ISysUserService;
+import com.nexus.workflow.domain.WfDeployForm;
+import com.nexus.workflow.domain.WfMyBusiness;
+import com.nexus.workflow.domain.bo.WfTaskBo;
+import com.nexus.workflow.domain.dto.FlowNextDto;
+import com.nexus.workflow.domain.dto.FlowViewerDto;
+import com.nexus.workflow.domain.vo.WfUserTaskVo;
+import com.nexus.workflow.mapper.FlowTaskMapper;
+import com.nexus.workflow.mapper.WfDeployFormMapper;
+import com.nexus.workflow.service.IWfCopyService;
+import com.nexus.workflow.service.IWfTaskService;
+import com.nexus.workflow.service.WfCallBackServiceI;
+import com.nexus.workflow.util.flowExp;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import com.nexus.online.service.IFormService;
 import org.flowable.bpmn.constants.BpmnXMLConstants;
-import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.*;
+import org.flowable.bpmn.model.Process;
 import org.flowable.common.engine.api.FlowableException;
 import org.flowable.common.engine.api.FlowableObjectNotFoundException;
 import org.flowable.common.engine.impl.identity.Authentication;
@@ -28,9 +72,9 @@ import org.flowable.engine.impl.bpmn.behavior.ParallelMultiInstanceBehavior;
 import org.flowable.engine.impl.bpmn.behavior.SequentialMultiInstanceBehavior;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.ProcessDefinition;
-import org.flowable.engine.runtime.ActivityInstance;
 import org.flowable.engine.runtime.Execution;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.identitylink.api.IdentityLink;
 import org.flowable.identitylink.api.IdentityLinkType;
 import org.flowable.image.ProcessDiagramGenerator;
 import org.flowable.task.api.DelegationState;
@@ -43,57 +87,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import com.alibaba.fastjson2.JSON;
-import com.google.common.collect.Lists;
-import com.nexus.common.core.constant.Constants;
-import com.nexus.common.core.domain.R;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.service.UserService;
-import com.nexus.common.core.utils.SpringContextHolder;
-import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.flowable.common.constant.ProcessConstants;
-import com.nexus.common.flowable.common.constant.TaskConstants;
-import com.nexus.common.flowable.common.enums.FlowComment;
-import com.nexus.common.flowable.common.enums.ProcessStatus;
-import com.nexus.common.flowable.core.domain.ActStatus;
-import com.nexus.common.flowable.core.domain.ExtensionElementInfo;
-
-import com.nexus.common.flowable.factory.FlowServiceFactory;
-import com.nexus.common.flowable.flow.CustomProcessDiagramGenerator;
-import com.nexus.common.flowable.flow.FindNextNodeUtil;
-import com.nexus.common.flowable.flow.FlowableUtils;
-import com.nexus.common.flowable.utils.ModelUtils;
-import com.nexus.common.flowable.utils.TaskUtils;
-import com.nexus.common.redis.utils.RedisUtils;
-import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.common.sign.domain.dto.SignCommand;
-import com.nexus.common.sign.service.ESignatureService;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.system.domain.vo.SysUserVo;
-import com.nexus.system.service.CommonService;
-import com.nexus.system.service.ISysUserService;
-import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.workflow.domain.bo.WfTaskBo;
-import com.nexus.workflow.domain.dto.FlowNextDto;
-import com.nexus.workflow.domain.dto.FlowViewerDto;
-import com.nexus.workflow.domain.vo.WfUserTaskVo;
-import com.nexus.workflow.mapper.FlowTaskMapper;
-import com.nexus.workflow.mapper.WfDeployFormMapper;
-import com.nexus.workflow.service.IWfCopyService;
-import com.nexus.workflow.service.IWfTaskService;
-import com.nexus.workflow.util.flowExp;
-
-import com.nexus.workflow.service.WfCallBackServiceI;
-
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.List;
-import com.nexus.workflow.domain.WfDeployForm;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * @author wanghuan
@@ -139,9 +138,10 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (username != null && username.equals(task.getAssignee())) {
             return;
         }
-        // 候选人/候选组身份链接（与 selectPageTodoProcessList 的 taskCandidateOrAssigned + candidateGroupIn 口径一致）
-        List<org.flowable.identitylink.api.IdentityLink> links = taskService.getIdentityLinksForTask(task.getId());
-        for (org.flowable.identitylink.api.IdentityLink link : links) {
+        // 候选人/候选组身份链接（与 selectPageTodoProcessList 的 taskCandidateOrAssigned + candidateGroupIn
+        // 口径一致）
+        List<IdentityLink> links = taskService.getIdentityLinksForTask(task.getId());
+        for (IdentityLink link : links) {
             if (IdentityLinkType.CANDIDATE.equals(link.getType())) {
                 if (username != null && username.equals(link.getUserId())) {
                     return;

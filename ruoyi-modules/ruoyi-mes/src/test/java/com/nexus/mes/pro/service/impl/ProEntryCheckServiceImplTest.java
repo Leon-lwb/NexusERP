@@ -1,10 +1,13 @@
 package com.nexus.mes.pro.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.lt.service.ILtLotService;
-import com.nexus.mes.pro.domain.ProAndon;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProStepCheckRule;
 import com.nexus.mes.pro.domain.bo.ProEntryBo;
@@ -21,10 +24,12 @@ import com.nexus.mes.sop.domain.vo.SopDocumentVo;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
 import com.nexus.mes.sop.service.ISopViewLogService;
 import com.nexus.mes.tg.service.ITgToolingService;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -32,12 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * MES 工序进站/出站校验规则引擎 单元测试(P0-7, 测试 P0-3 新增逻辑)
@@ -256,8 +255,7 @@ class ProEntryCheckServiceImplTest {
         ProCheckResultVo result = proEntryCheckService.runEntryChecks(1L, bo);
 
         assertFalse(result.getPassed());
-        verify(sopViewLogService, org.mockito.Mockito.never())
-            .hasAcknowledged(any(), any(), any());
+        verify(sopViewLogService, Mockito.never()).hasAcknowledged(any(), any(), any());
     }
 
     // ==================== ENTRY: EQUIPMENT_STATUS ====================
@@ -411,10 +409,10 @@ class ProEntryCheckServiceImplTest {
     }
 
     private void verifyNoToolingCall() {
-        org.mockito.Mockito.verifyNoInteractions(tgToolingService);
+        Mockito.verifyNoInteractions(tgToolingService);
     }
 
     private void verifyNoIpqcCall() {
-        org.mockito.Mockito.verify(qcIpqcMapper, org.mockito.Mockito.never()).selectOne(any(Wrapper.class));
+        Mockito.verify(qcIpqcMapper, Mockito.never()).selectOne(any(Wrapper.class));
     }
 }

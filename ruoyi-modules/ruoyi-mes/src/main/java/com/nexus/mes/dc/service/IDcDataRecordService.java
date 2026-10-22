@@ -5,6 +5,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.dc.domain.bo.DcDataRecordBo;
 import com.nexus.mes.dc.domain.vo.DcDataRecordVo;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -52,22 +53,21 @@ public interface IDcDataRecordService {
      *
      * @param pointId 采集点ID
      * @return 结果列表
-     * @deprecated 全量拉取无上限, 大数据量下会拖垮 SPC 分析; 请改用
-     *     {@link #listByPointId(Long, java.util.Date, java.util.Date, Integer)}
+     * @deprecated 全量拉取无上限, 大数据量下会拖垮 SPC 分析; 请改用 {@link #listByPointId(Long, Date, Date, Integer)}
      */
     @Deprecated
     List<DcDataRecordVo> listByPointId(Long pointId);
 
     /**
      * 按采集点 + 时间窗 + 条数上限查询记录(始终按 collect_time 升序返回)
-     * <p>指定 limit 时先按 collect_time DESC LIMIT n 取最近 n 条, 再在内存反转为升序,
-     * 避免"取最早 n 条"而不是"最近 n 条"。</p>
      *
-     * @param pointId   采集点ID
+     * <p>指定 limit 时先按 collect_time DESC LIMIT n 取最近 n 条, 再在内存反转为升序, 避免"取最早 n 条"而不是"最近 n 条"。
+     *
+     * @param pointId 采集点ID
      * @param startTime 起始时间(含), null 表示不限
-     * @param endTime   结束时间(含), null 表示不限
-     * @param limit     最大条数, null 或 <=0 表示不限
+     * @param endTime 结束时间(含), null 表示不限
+     * @param limit 最大条数, null 或 <=0 表示不限
      * @return 结果列表(collect_time 升序)
      */
-    List<DcDataRecordVo> listByPointId(Long pointId, java.util.Date startTime, java.util.Date endTime, Integer limit);
+    List<DcDataRecordVo> listByPointId(Long pointId, Date startTime, Date endTime, Integer limit);
 }

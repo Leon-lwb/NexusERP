@@ -6,8 +6,10 @@ import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.SysUserNotification;
 import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.im.mapper.SysUserNotificationMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,24 +18,19 @@ import java.util.Date;
 
 /**
  * IM 消息清理任务
- * <p>
- * 定期清理超过保留期的消息和通知，
- * 防止 im_message / sys_user_notification 无限增长拖慢历史查询。
- * <p>
- * 清理策略:
- *   - im_message: 保留最近 180 天
- *   - sys_user_notification: 普通通知已读保留 30 天，未读保留 90 天；群消息通知保留 180 天
- * <p>
- * 清理是物理删除，不可恢复；清理跨所有租户，通过 TenantHelper.ignore 绕过多租户拦截器。
- * 单批上限 BATCH_SIZE 避免长事务锁表。
- * <p>
- * P4-10 B7: 调度频率由"每天凌晨 4 点"改为"每小时整点"，将单次大事务拆为 N 次小事务，
- * 降低锁持有时间，避免凌晨 4 点集中清理导致的 IO 峰值与从库延迟。
+ *
+ * <p>定期清理超过保留期的消息和通知， 防止 im_message / sys_user_notification 无限增长拖慢历史查询。
+ *
+ * <p>清理策略: - im_message: 保留最近 180 天 - sys_user_notification: 普通通知已读保留 30 天，未读保留 90 天；群消息通知保留 180 天
+ *
+ * <p>清理是物理删除，不可恢复；清理跨所有租户，通过 TenantHelper.ignore 绕过多租户拦截器。 单批上限 BATCH_SIZE 避免长事务锁表。
+ *
+ * <p>P4-10 B7: 调度频率由"每天凌晨 4 点"改为"每小时整点"，将单次大事务拆为 N 次小事务， 降低锁持有时间，避免凌晨 4 点集中清理导致的 IO 峰值与从库延迟。
  * 保留期不变（180/30/90 天），每小时仅清理"刚过期"的少量数据（稳态下约 1 小时增量）。
  *
  * @author nexus
- * @see com.nexus.im.mapper.ImMessageMapper
- * @see com.nexus.im.mapper.SysUserNotificationMapper
+ * @see ImMessageMapper
+ * @see SysUserNotificationMapper
  */
 @Slf4j
 @Component

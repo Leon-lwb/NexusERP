@@ -3,29 +3,30 @@ package com.nexus.ai.service.query;
 import com.baomidou.mybatisplus.extension.plugins.inner.BaseMultiTableInnerInterceptor;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import net.sf.jsqlparser.expression.CaseExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
-import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.MultiPartName;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.select.FromItem;
-import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.ParenthesedFromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.WithItem;
 import net.sf.jsqlparser.util.TablesNamesFinder;
+
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Locale;
@@ -228,8 +229,7 @@ public class SqlSafetyValidator {
         }
 
         @Override
-        protected void processSelect(net.sf.jsqlparser.statement.select.Select select,
-                                     int index, String sql, Object obj) {
+        protected void processSelect(Select select, int index, String sql, Object obj) {
             // 先检查完整查询树的未支持结构，确保在租户改写及后续 EXPLAIN 前 fail-closed。
             try {
                 new UnsupportedStructureGuard(tableValidator).getTables((Statement) select);

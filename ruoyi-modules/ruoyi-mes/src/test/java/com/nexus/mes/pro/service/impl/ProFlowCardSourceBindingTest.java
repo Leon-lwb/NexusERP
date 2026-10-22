@@ -1,5 +1,9 @@
 package com.nexus.mes.pro.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -9,31 +13,35 @@ import com.nexus.mes.pro.domain.bo.ProSkipBo;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 /**
  * 同租户错配工序不得越过入口父卡，刷写门禁和跳站的锁定读使用同一来源约束。
  */
 @ExtendWith(MockitoExtension.class)
 class ProFlowCardSourceBindingTest {
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private ProWorkOrderStepMapper workOrderStepMapper;
-    @Mock private ProWorkOrderStepProgressService progressService;
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks private ProFlowCardServiceImpl service;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private ProWorkOrderStepMapper workOrderStepMapper;
+    @Mock
+    private ProWorkOrderStepProgressService progressService;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
+    @InjectMocks
+    private ProFlowCardServiceImpl service;
     private MockedStatic<TenantHelper> tenant;
 
     @BeforeEach
@@ -76,7 +84,7 @@ class ProFlowCardSourceBindingTest {
     void flashGateCannotInspectAnotherCardsStepUnderRequestedParentLock() {
         ReflectionTestUtils.invokeMethod(service, "checkFlashStepGate", 1L, 100L);
         verifyNoInteractions(workOrderStepMapper);
-        var query = org.mockito.ArgumentCaptor.forClass(Wrapper.class);
+        var query = ArgumentCaptor.forClass(Wrapper.class);
         verify(stepMapper).selectOne(query.capture());
         assertTrue(query.getValue().getSqlSegment().contains("card_id"));
         assertTrue(query.getValue().getSqlSegment().contains("tenant_id"));

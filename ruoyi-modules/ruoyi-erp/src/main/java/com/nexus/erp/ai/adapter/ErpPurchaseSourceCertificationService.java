@@ -3,24 +3,31 @@ package com.nexus.erp.ai.adapter;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
+import com.nexus.erp.ai.adapter.ErpPurchaseDemandAllocator.AllocationResult;
 import com.nexus.erp.ai.adapter.ErpPurchaseDemandAllocator.Stock;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.Demand;
 import com.nexus.erp.ai.adapter.ErpPurchaseQuantityPolicy.Input;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import com.nexus.erp.ai.adapter.ErpPurchaseCatalogSourceReader.CatalogSnapshot;
-import com.nexus.erp.ai.adapter.ErpPurchaseDemandAllocator.AllocationResult;
+import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper;
+import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper;
 import com.nexus.erp.pu.service.PuRequirementCompetitionPoolReader;
 import com.nexus.erp.pu.service.PuRequirementCompetitionPoolReader.RawLockedFacts;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
+import java.util.HexFormat;
 
 /** 同ERP物理事务的全来源认证、全局分配及精确采购数量链，不接受外部核验旗号。 */
 @Service
@@ -42,11 +49,16 @@ public class ErpPurchaseSourceCertificationService {
         this(qualification,poolReader,catalogReader,inventoryVerifier,lineageReader,schemaVerifier,null,null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public ErpPurchaseSourceCertificationService(PuRequirementErpTransactionQualification qualification,
-            PuRequirementCompetitionPoolReader poolReader,ErpPurchaseCatalogSourceReader catalogReader,
-            ErpPurchaseStockLineageVerifier inventoryVerifier,ErpPurchaseAllocationLineageReader lineageReader,
-            ErpPurchaseSourceSchemaVerifier schemaVerifier,ErpPurchaseCompetitionSourceReader previewPools,ErpCertifiedSourceBirthReader birthReader){
+    @Autowired
+    public ErpPurchaseSourceCertificationService(
+            PuRequirementErpTransactionQualification qualification,
+            PuRequirementCompetitionPoolReader poolReader,
+            ErpPurchaseCatalogSourceReader catalogReader,
+            ErpPurchaseStockLineageVerifier inventoryVerifier,
+            ErpPurchaseAllocationLineageReader lineageReader,
+            ErpPurchaseSourceSchemaVerifier schemaVerifier,
+            ErpPurchaseCompetitionSourceReader previewPools,
+            ErpCertifiedSourceBirthReader birthReader) {
         this.birthReader=birthReader;this.previewPools=previewPools;
         this.qualification = Objects.requireNonNull(qualification); this.poolReader = Objects.requireNonNull(poolReader);
         this.catalogReader = Objects.requireNonNull(catalogReader); this.inventoryVerifier = Objects.requireNonNull(inventoryVerifier);
@@ -119,7 +131,7 @@ public class ErpPurchaseSourceCertificationService {
                 "完整出生复读后库存范围、业务日或时钟改变");
             stockLineage=refreshed;inventory=latest;
         } else require(inventory.sourceBirth()==null,"已有库存不能使用空出生绕过原始来源链");
-        Map<Long,com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper.RawStock> rawStocks=new HashMap<>();
+        Map<Long, PuRequirementCompetitionPoolMapper.RawStock> rawStocks = new HashMap<>();
         raw.stocks().forEach(row->rawStocks.put(row.getStockId(),row));
         Set<Long> provenStocks=new HashSet<>();BigDecimal originalReserved=BigDecimal.ZERO;
         for(var proof:stockLineage.stocks()) {
@@ -234,9 +246,10 @@ public class ErpPurchaseSourceCertificationService {
             for (Object fact : facts) {
                 byte[] bytes = canonical(fact).getBytes(StandardCharsets.UTF_8);
                 // 长度前缀避免两个字符串分段不同却使用相同字节连接。
-                hash.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.length).array()); hash.update(bytes);
+                hash.update(ByteBuffer.allocate(4).putInt(bytes.length).array());
+                hash.update(bytes);
             }
-            return java.util.HexFormat.of().formatHex(hash.digest());
+            return HexFormat.of().formatHex(hash.digest());
         } catch (NoSuchAlgorithmException unavailable) { throw new ServiceException("采购来源摘要算法不可用"); }
     }
 
@@ -286,10 +299,18 @@ public class ErpPurchaseSourceCertificationService {
                                 BigDecimal orderQuantity, Long baseUomId, Long orderUomId) { }
 
     /** 版本和来源摘要供同事务写入冻结；本对象不是controller接受的请求类型。 */
-    public record CertifiedPurchaseScope(String tenantId, Long materialId, Long vendorId,
-            LocalDate snapshotDate, LocalDate windowEnd, CatalogSnapshot catalog, AllocationResult allocation,
-            List<CertifiedLine> lines, Map<String,String> sourceVersions, String sourceFingerprint,
-            com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.StoredBirth sourceBirth) {
+    public record CertifiedPurchaseScope(
+            String tenantId,
+            Long materialId,
+            Long vendorId,
+            LocalDate snapshotDate,
+            LocalDate windowEnd,
+            CatalogSnapshot catalog,
+            AllocationResult allocation,
+            List<CertifiedLine> lines,
+            Map<String, String> sourceVersions,
+            String sourceFingerprint,
+            ErpCertifiedSourceBirthMapper.StoredBirth sourceBirth) {
         public CertifiedPurchaseScope(String tenantId,Long materialId,Long vendorId,LocalDate snapshotDate,LocalDate windowEnd,
                 CatalogSnapshot catalog,AllocationResult allocation,List<CertifiedLine> lines,Map<String,String> sourceVersions,String sourceFingerprint){
             this(tenantId,materialId,vendorId,snapshotDate,windowEnd,catalog,allocation,lines,sourceVersions,sourceFingerprint,null);

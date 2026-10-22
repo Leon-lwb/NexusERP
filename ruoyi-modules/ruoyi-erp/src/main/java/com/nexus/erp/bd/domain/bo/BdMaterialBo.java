@@ -1,12 +1,16 @@
 package com.nexus.erp.bd.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.erp.bd.domain.BdMaterial;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import jakarta.validation.constraints.NotBlank;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.mybatis.core.domain.BaseEntity;
-import com.nexus.erp.bd.domain.BdMaterial;
 
 import java.math.BigDecimal;
 
@@ -110,11 +114,8 @@ public class BdMaterialBo extends BaseEntity {
      */
     private Integer allowMixedLot;
 
-    /**
-     * 服务端管理的追踪策略版本，编辑策略时作为预期版本。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 服务端管理的追踪策略版本，编辑策略时作为预期版本。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long trackingVersion;
 
     /**

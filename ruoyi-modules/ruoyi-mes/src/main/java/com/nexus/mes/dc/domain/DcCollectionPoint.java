@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.Date;
 
 /**
  * MES数据采集点对象 dc_collection_point
@@ -60,7 +63,7 @@ public class DcCollectionPoint extends TenantEntity {
     private String remark;
 
     /** 最后成功归档时间（数据补偿游标，IotDataArchiveTask 维护，不对前端暴露） */
-    private java.util.Date lastArchiveTime;
+    private Date lastArchiveTime;
 
     /** 删除标志 */
     @TableLogic

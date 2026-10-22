@@ -10,6 +10,8 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.lt.domain.LtLot;
+import com.nexus.mes.lt.domain.LtSnBinding;
+import com.nexus.mes.lt.domain.LtWoConsumption;
 import com.nexus.mes.lt.domain.bo.LtLotBo;
 import com.nexus.mes.lt.domain.vo.LtLotVo;
 import com.nexus.mes.lt.domain.vo.LtSnBindingVo;
@@ -19,8 +21,10 @@ import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +32,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -239,19 +244,18 @@ public class LtLotServiceImpl implements ILtLotService {
                 throw new RuntimeException("批次" + lot.getLotCode() + "状态非在库/报废,不可删除");
             }
         }
-        List<Long> idList = java.util.Arrays.asList(ids);
+        List<Long> idList = Arrays.asList(ids);
         // 孤儿守卫: 存在消耗/绑定记录则禁止删除(无 FK/级联,删除会断裂追溯链)
         Long consumptionCount =
                 consumptionMapper.selectCount(
-                        Wrappers.<com.nexus.mes.lt.domain.LtWoConsumption>lambdaQuery()
-                                .in(com.nexus.mes.lt.domain.LtWoConsumption::getLotId, idList));
+                        Wrappers.<LtWoConsumption>lambdaQuery()
+                                .in(LtWoConsumption::getLotId, idList));
         if (consumptionCount != null && consumptionCount > 0) {
             throw new RuntimeException("存在工单批次消耗记录,不可删除(追溯完整性)");
         }
         Long bindingCount =
                 bindingMapper.selectCount(
-                        Wrappers.<com.nexus.mes.lt.domain.LtSnBinding>lambdaQuery()
-                                .in(com.nexus.mes.lt.domain.LtSnBinding::getLotId, idList));
+                        Wrappers.<LtSnBinding>lambdaQuery().in(LtSnBinding::getLotId, idList));
         if (bindingCount != null && bindingCount > 0) {
             throw new RuntimeException("存在SN批次绑定记录,不可删除(追溯完整性)");
         }
@@ -697,18 +701,17 @@ public class LtLotServiceImpl implements ILtLotService {
         // 工单消耗列表
         List<LtWoConsumptionVo> consumptions =
                 consumptionMapper.selectVoList(
-                        Wrappers.<com.nexus.mes.lt.domain.LtWoConsumption>lambdaQuery()
-                                .eq(com.nexus.mes.lt.domain.LtWoConsumption::getLotId, lotId)
-                                .orderByDesc(
-                                        com.nexus.mes.lt.domain.LtWoConsumption::getConsumedTime));
+                        Wrappers.<LtWoConsumption>lambdaQuery()
+                                .eq(LtWoConsumption::getLotId, lotId)
+                                .orderByDesc(LtWoConsumption::getConsumedTime));
         result.put("consumptions", consumptions);
 
         // SN绑定列表
         List<LtSnBindingVo> bindings =
                 bindingMapper.selectVoList(
-                        Wrappers.<com.nexus.mes.lt.domain.LtSnBinding>lambdaQuery()
-                                .eq(com.nexus.mes.lt.domain.LtSnBinding::getLotId, lotId)
-                                .orderByDesc(com.nexus.mes.lt.domain.LtSnBinding::getBoundTime));
+                        Wrappers.<LtSnBinding>lambdaQuery()
+                                .eq(LtSnBinding::getLotId, lotId)
+                                .orderByDesc(LtSnBinding::getBoundTime));
         result.put("bindings", bindings);
 
         // 关联工单ID去重列表

@@ -1,11 +1,14 @@
 package com.nexus.common.sign.service.impl;
 
-import org.junit.jupiter.api.Tag;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
+import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.EsSignature;
@@ -18,7 +21,9 @@ import com.nexus.common.sign.mapper.EsSignatureMapper;
 import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.common.sign.support.SignAuthVerifier;
 import com.nexus.common.sign.support.SignatureChainCalculator;
+
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -34,10 +39,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 签名时间戳精度回归测试 —— 锁死「落库毫秒截断导致验签必然失败」的线上缺陷。
@@ -68,18 +69,26 @@ class SignatureTimestampPrecisionTest {
      */
     private static final int SAMPLES = 8;
 
-    @Mock private EsSignatureMapper signatureMapper;
-    @Mock private EsSealMapper sealMapper;
-    @Mock private EsSealGrantMapper grantMapper;
-    @Mock private SignAuthVerifier authVerifier;
-    @Mock private LockTemplate lockTemplate;
-    @Mock private EsSignDocumentMapper documentMapper;
-    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
-    @Captor private ArgumentCaptor<EsSignature> sigCaptor;
+    @Mock
+    private EsSignatureMapper signatureMapper;
+    @Mock
+    private EsSealMapper sealMapper;
+    @Mock
+    private EsSealGrantMapper grantMapper;
+    @Mock
+    private SignAuthVerifier authVerifier;
+    @Mock
+    private LockTemplate lockTemplate;
+    @Mock
+    private EsSignDocumentMapper documentMapper;
+    @Mock
+    private ObjectProvider<OssContentAccessor> ossAccessorProvider;
+    @Captor
+    private ArgumentCaptor<EsSignature> sigCaptor;
 
     private ESignatureServiceImpl service;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
-    private MockedStatic<com.nexus.common.satoken.utils.LoginHelper> loginHelperMock;
+    private MockedStatic<LoginHelper> loginHelperMock;
 
     /** 逐条收集真正传给 {@code insert} 的实体（模拟数据库写入的入口）。 */
     private final List<EsSignature> inserted = new ArrayList<>();
@@ -102,10 +111,10 @@ class SignatureTimestampPrecisionTest {
         }
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(EsSignature.class)).thenReturn(cols);
 
-        loginHelperMock = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(ME);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getTenantId).thenReturn("000000");
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getDeptId).thenReturn(100L);
+        loginHelperMock = mockStatic(LoginHelper.class);
+        loginHelperMock.when(LoginHelper::getUserId).thenReturn(ME);
+        loginHelperMock.when(LoginHelper::getTenantId).thenReturn("000000");
+        loginHelperMock.when(LoginHelper::getDeptId).thenReturn(100L);
 
         when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(newLock());
         when(signatureMapper.selectOne(any())).thenReturn(null);

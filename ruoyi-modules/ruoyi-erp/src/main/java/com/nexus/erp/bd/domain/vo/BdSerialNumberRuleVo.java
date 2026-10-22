@@ -2,9 +2,13 @@ package com.nexus.erp.bd.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.nexus.erp.bd.domain.BdSerialNumberRule;
+
+import io.github.linpeilie.annotations.AutoMapper;
+
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -20,7 +24,8 @@ import java.io.Serializable;
 @AutoMapper(target = BdSerialNumberRule.class)
 public class BdSerialNumberRuleVo implements Serializable {
 
-    @Serial private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 规则ID
@@ -28,11 +33,8 @@ public class BdSerialNumberRuleVo implements Serializable {
     @ExcelProperty(value = "规则ID")
     private Long ruleId;
 
-    /**
-     * 冻结编号规则的并发版本，已预留号码仍按原快照重放。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 冻结编号规则的并发版本，已预留号码仍按原快照重放。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long ruleVersion;
 
     /**

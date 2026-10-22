@@ -1,18 +1,22 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.support.ErpDdlTestSupport;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseOrderWorkflowMapper;
 import com.nexus.erp.pu.service.*;
+import com.nexus.erp.support.ErpDdlTestSupport;
+
 import org.apache.ibatis.annotations.*;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class PuCertifiedPurchaseOrderWorkflowMapperTest {
     static final List<String> TABLES=List.of("pu_purchase_order","pu_purchase_order_line","pu_certified_purchase_order_terms","pu_certified_purchase_order_terms_confirmation","pu_certified_purchase_order_operation");
@@ -118,9 +122,12 @@ class PuCertifiedPurchaseOrderWorkflowMapperTest {
                 }
             }
             return result;
-        }catch(java.io.IOException e){throw new AssertionError(e);}
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
     }
-    private static String tableDefinition(String table) throws java.io.IOException {
+
+    private static String tableDefinition(String table) throws IOException {
         String sql=Files.readString(repoFile("script/sql/ry-erp.sql"));
         var ddl=Pattern.compile("(?is)CREATE\\s+TABLE\\s+`?"+Pattern.quote(table)+"`?\\s*\\(.*?\\)\\s*ENGINE[^;]*;").matcher(sql);
         assertTrue(ddl.find(),"Missing installation DDL: "+table);

@@ -1,7 +1,11 @@
 package com.nexus.web.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
-import com.nexus.common.satoken.utils.LoginHelper;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
@@ -11,23 +15,25 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.erp.wm.trace.ErpSerialIdentityService;
 import com.nexus.erp.wm.trace.ErpTraceContext;
-import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.label.domain.MesLabelPrintTask;
-import com.nexus.mes.label.service.LabelPrintTaskStore;
-import com.nexus.mes.label.service.LabelPrintDispatcher;
-import com.nexus.mes.label.service.LabelPrintService;
-import com.nexus.mes.label.service.LabelPrinterTransport;
-import com.nexus.mes.label.service.LabelRenderService;
+import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.label.listener.SnLabelPrintEventListener;
 import com.nexus.mes.label.mapper.MesLabelTemplateMapper;
+import com.nexus.mes.label.service.LabelPrintDispatcher;
+import com.nexus.mes.label.service.LabelPrintService;
+import com.nexus.mes.label.service.LabelPrintTaskStore;
+import com.nexus.mes.label.service.LabelPrinterTransport;
+import com.nexus.mes.label.service.LabelRenderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.event.SnCreatedEvent;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.h2.jdbcx.JdbcDataSource;
@@ -45,17 +51,16 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.sql.SQLException;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 /**
  * 使用真实ERP身份实现、动态数据源与事务代理验证校准读取不会占用或替换MES业务连接。
@@ -212,7 +217,7 @@ class LabelCanonicalIdentityContextTest {
         String schema = Files.readString(installSchema());
         for (String name : new String[] {"mes_label_print_log", "mes_label_print_task"}) {
             var matcher =
-                    java.util.regex.Pattern.compile(
+                    Pattern.compile(
                                     "CREATE TABLE(?: IF NOT EXISTS)? `"
                                             + name
                                             + "` \\([\\s\\S]*?\\n\\)[^;]*;")
@@ -236,7 +241,7 @@ class LabelCanonicalIdentityContextTest {
                         });
     }
 
-    private static Path installSchema() throws java.io.IOException {
+    private static Path installSchema() throws IOException {
         Path start = Path.of("").toAbsolutePath().normalize();
         for (Path directory = start; directory != null; directory = directory.getParent()) {
             Path schema = directory.resolve("script/sql/ry-mes.sql");
@@ -244,7 +249,7 @@ class LabelCanonicalIdentityContextTest {
                 return schema;
             }
         }
-        throw new java.nio.file.NoSuchFileException("无法从admin测试目录定位同工作树MES安装DDL: " + start);
+        throw new NoSuchFileException("无法从admin测试目录定位同工作树MES安装DDL: " + start);
     }
 
     private int count(String name) {

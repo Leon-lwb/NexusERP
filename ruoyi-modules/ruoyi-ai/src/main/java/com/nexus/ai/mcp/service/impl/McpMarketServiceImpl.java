@@ -1,5 +1,6 @@
 package com.nexus.ai.mcp.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -7,9 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.ai.mcp.McpEndpointPolicy;
 import com.nexus.ai.mcp.McpPinnedHttpClientBuilder;
-import dev.langchain4j.http.client.HttpMethod;
-import dev.langchain4j.http.client.HttpRequest;
-import com.nexus.common.core.exception.ServiceException;
 import com.nexus.ai.mcp.service.IMcpMarketService;
 import com.nexus.common.ai.domain.entity.AiMcpMarket;
 import com.nexus.common.ai.domain.entity.AiMcpMarketTool;
@@ -17,14 +15,21 @@ import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiMcpMarketMapper;
 import com.nexus.common.ai.mapper.AiMcpMarketToolMapper;
 import com.nexus.common.ai.mapper.AiToolMapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.common.core.exception.ServiceException;
+
+import dev.langchain4j.http.client.HttpMethod;
+import dev.langchain4j.http.client.HttpRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MCP 市场服务实现
@@ -64,9 +69,11 @@ public class McpMarketServiceImpl implements IMcpMarketService {
             // Hutool/URLConnection没有请求级DNS绑定入口；市场GET改用同一受控HTTP SPI。
             String url = McpEndpointPolicy.validate(market.getUrl(), allowedLocalEndpoints);
             JsonNode root;
-            try (var client = new McpPinnedHttpClientBuilder(url, allowedLocalEndpoints)
-                .connectTimeout(java.time.Duration.ofSeconds(30))
-                .readTimeout(java.time.Duration.ofSeconds(30)).build()) {
+            try (var client =
+                    new McpPinnedHttpClientBuilder(url, allowedLocalEndpoints)
+                            .connectTimeout(Duration.ofSeconds(30))
+                            .readTimeout(Duration.ofSeconds(30))
+                            .build()) {
                 var response = client.execute(HttpRequest.builder().method(HttpMethod.GET).url(url).build());
                 root = objectMapper.readTree(response.body());
             }
@@ -158,8 +165,8 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                 // 连接时的二次校验仍保留，避免并发或手工修改绕过最终守卫。
                 String validatedBaseUrl = McpEndpointPolicy.validateRemoteTransport(baseUrl, allowedLocalEndpoints);
                 tool.setToolType("REMOTE");
-                tool.setConfigJson(objectMapper.writeValueAsString(
-                    java.util.Map.of("baseUrl", validatedBaseUrl)));
+                tool.setConfigJson(
+                        objectMapper.writeValueAsString(Map.of("baseUrl", validatedBaseUrl)));
             } else {
                 tool.setToolType("LOCAL");
                 // 市场元数据通常只含 package（npm 包名），而 McpClientManager.createStdioClient 只认 command/args，

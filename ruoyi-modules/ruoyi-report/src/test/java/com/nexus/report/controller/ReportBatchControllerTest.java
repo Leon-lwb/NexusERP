@@ -5,17 +5,20 @@ import static org.mockito.Mockito.*;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
+
 import com.nexus.common.report.ReportActor;
 import com.nexus.report.batch.ReportBatchPdfService;
 import com.nexus.report.batch.ReportBatchService;
 import com.nexus.report.domain.ReportFault;
 
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.*;
 import java.util.*;
 
@@ -50,8 +53,13 @@ class ReportBatchControllerTest {
         when(actors.current()).thenReturn(actor);
         when(pdfs.merge(actor, "123")).thenReturn(prepared);
         when(prepared.bytes()).thenReturn(3L);
-        doAnswer(call -> { ((java.io.OutputStream) call.getArgument(0)).write(new byte[] {1, 2, 3}); return null; })
-                .when(prepared).write(any());
+        doAnswer(
+                        call -> {
+                            ((OutputStream) call.getArgument(0)).write(new byte[] {1, 2, 3});
+                            return null;
+                        })
+                .when(prepared)
+                .write(any());
         var response = new MockHttpServletResponse();
         invoke(controller(), response);
         assertEquals("application/pdf", response.getContentType());

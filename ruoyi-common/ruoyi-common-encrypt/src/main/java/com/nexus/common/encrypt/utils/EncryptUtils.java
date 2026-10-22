@@ -20,6 +20,8 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.Map;
 
+// 同名类型说明：本文件同时使用 cn.hutool.core.codec.Base64 和 java.util.Base64，后者保留全限定名以区分。
+
 /**
  * 安全相关工具类
  *

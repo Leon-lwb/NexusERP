@@ -1,8 +1,13 @@
 package com.nexus.ai.mcp.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+
 import com.nexus.ai.controller.McpToolController;
 import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.ai.tool.BuiltinToolProvider;
@@ -10,11 +15,14 @@ import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -28,10 +36,6 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * 内置工具同步失败边界：查询、更新、新增或提供者属性异常均不能被接口误报成功。
@@ -173,7 +177,7 @@ class McpToolSyncFailureTest {
         verify(transactions, never()).rollback(any());
         verify(mapper).updateById(existing);
         assertEquals(AiToolStatusContract.ACTIVE, existing.getStatus(), "已有启停状态不能被同步覆盖");
-        var inserted = org.mockito.ArgumentCaptor.forClass(AiTool.class);
+        var inserted = ArgumentCaptor.forClass(AiTool.class);
         verify(mapper).insert(inserted.capture());
         assertEquals("production_query", inserted.getValue().getToolName());
         assertEquals(BuiltinToolRegistry.TYPE_BUILTIN, inserted.getValue().getToolType());
@@ -192,7 +196,7 @@ class McpToolSyncFailureTest {
         return (McpToolServiceImpl) factory.getProxy();
     }
 
-    private void assertSafeFailure(org.junit.jupiter.api.function.Executable invocation) {
+    private void assertSafeFailure(Executable invocation) {
         ServiceException failure = assertThrowsExactly(ServiceException.class, invocation);
         assertEquals(SAFE_MESSAGE, failure.getMessage());
         assertNull(failure.getCause(), "不能将原SQL/凭据异常接入cause链");

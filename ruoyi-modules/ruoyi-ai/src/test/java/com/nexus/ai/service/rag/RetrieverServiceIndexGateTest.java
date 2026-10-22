@@ -1,21 +1,25 @@
 package com.nexus.ai.service.rag;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.service.kg.GraphStoreStrategy;
 import com.nexus.common.ai.domain.vo.AiKnowledgeVo;
+import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
+import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * 检索入口索引状态门单元测试：向量索引非 READY 的知识库必须拒绝检索
@@ -34,11 +38,16 @@ class RetrieverServiceIndexGateTest {
     private final IAiKnowledgeService aiKnowledgeService = mock(IAiKnowledgeService.class);
 
     private RetrieverService newService() {
-        return new RetrieverService(vectorStoreService, aiKnowledgeService,
-            mock(com.nexus.common.ai.mapper.AiKnowledgeChunkMapper.class),
-            mock(JdbcTemplate.class), mock(RerankService.class), mock(IAiModelService.class),
-            mock(com.nexus.ai.service.kg.GraphStoreStrategy.class), new AiProperties(),
-            mock(com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper.class));
+        return new RetrieverService(
+                vectorStoreService,
+                aiKnowledgeService,
+                mock(AiKnowledgeChunkMapper.class),
+                mock(JdbcTemplate.class),
+                mock(RerankService.class),
+                mock(IAiModelService.class),
+                mock(GraphStoreStrategy.class),
+                new AiProperties(),
+                mock(AiKnowledgeDocumentMapper.class));
     }
 
     @Test

@@ -3,11 +3,15 @@ package com.nexus.common.report;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.*;
+import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /**
  * 精确传输值，标识符和十进制数保存为字符串并保留明确类型。
@@ -125,13 +129,13 @@ public record TypedValue(
                         if (raw instanceof LocalDate date) yield date.toString();
                         if (raw instanceof LocalDateTime time) yield time.toLocalDate().toString();
                         yield raw instanceof java.sql.Date date
-                                    ? date.toLocalDate().toString()
-                                    : raw instanceof java.util.Date date
-                                            ? date.toInstant()
-                                                    .atZone(ZoneId.of("Asia/Shanghai"))
-                                                    .toLocalDate()
-                                                    .toString()
-                                            : LocalDate.parse(raw.toString()).toString();
+                                ? date.toLocalDate().toString()
+                                : raw instanceof Date date
+                                        ? date.toInstant()
+                                                .atZone(ZoneId.of("Asia/Shanghai"))
+                                                .toLocalDate()
+                                                .toString()
+                                        : LocalDate.parse(raw.toString()).toString();
                     }
                     case DATETIME -> {
                         if (raw instanceof LocalDate date)
@@ -142,14 +146,14 @@ public record TypedValue(
                             yield time.atZone(ZoneId.of("Asia/Shanghai"))
                                     .toOffsetDateTime()
                                     .toString();
-                        yield raw instanceof java.sql.Timestamp time
-                                    ? time.toLocalDateTime()
-                                            .atZone(ZoneId.of("Asia/Shanghai"))
-                                            .toOffsetDateTime()
-                                            .toString()
-                                    : raw instanceof java.util.Date date
-                                            ? date.toInstant().toString()
-                                            : raw.toString();
+                        yield raw instanceof Timestamp time
+                                ? time.toLocalDateTime()
+                                        .atZone(ZoneId.of("Asia/Shanghai"))
+                                        .toOffsetDateTime()
+                                        .toString()
+                                : raw instanceof Date date
+                                        ? date.toInstant().toString()
+                                        : raw.toString();
                     }
                     default -> raw.toString();
                 };

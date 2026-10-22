@@ -3,21 +3,26 @@ package com.nexus.erp.wm.strategy.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
+import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.domain.WmSalesIssueLine;
-import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
-import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
-import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
-import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
+import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
+import com.nexus.erp.wm.service.IInventoryValuationService;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,8 +41,8 @@ import java.util.List;
 @Slf4j
 @Component
 public class SalesOutStrategy extends BaseStockOperationStrategy {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
     /**
      * 来源单据类型：销售出库单
@@ -79,21 +84,19 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
      */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
-    /**
-     * 库存计价服务(F3-a:出库按移动平均结转成本)
-     */
-    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+    /** 库存计价服务(F3-a:出库按移动平均结转成本) */
+    private final IInventoryValuationService valuationService;
 
     /**
      * 构造销售出库策略实例
      *
-     * @param stockTxMapper              库存事务Mapper
-     * @param salesIssueMapper           销售出库单Mapper
-     * @param salesIssueLineMapper       销售出库单行Mapper
-     * @param stockMapper                库存Mapper
-     * @param salesOrderLineMapper       销售订单行Mapper
+     * @param stockTxMapper 库存事务Mapper
+     * @param salesIssueMapper 销售出库单Mapper
+     * @param salesIssueLineMapper 销售出库单行Mapper
+     * @param stockMapper 库存Mapper
+     * @param salesOrderLineMapper 销售订单行Mapper
      * @param fulfillmentWritebackService 销售订单履行回写Service
-     * @param valuationService           库存计价服务
+     * @param valuationService 库存计价服务
      */
     public SalesOutStrategy(
             WmMaterialStockTxMapper stockTxMapper,
@@ -102,7 +105,7 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
             WmMaterialStockMapper stockMapper,
             SoSalesOrderLineMapper salesOrderLineMapper,
             ISoFulfillmentWritebackService fulfillmentWritebackService,
-            com.nexus.erp.wm.service.IInventoryValuationService valuationService) {
+            IInventoryValuationService valuationService) {
         super(stockTxMapper);
         this.salesIssueMapper = salesIssueMapper;
         this.salesIssueLineMapper = salesIssueLineMapper;

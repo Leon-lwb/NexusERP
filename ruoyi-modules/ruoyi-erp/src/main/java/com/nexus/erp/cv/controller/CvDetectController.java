@@ -1,6 +1,7 @@
 package com.nexus.erp.cv.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.domain.DefectScenario;
@@ -10,13 +11,16 @@ import com.nexus.common.cv.domain.DetectDtos.ProductDetectResult;
 import com.nexus.common.cv.exception.VisionException;
 import com.nexus.erp.cv.service.CvLabelParseService;
 import com.nexus.erp.cv.service.CvOpsService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +56,7 @@ public class CvDetectController {
                                                 @RequestParam(value = "enableLabelParse", defaultValue = "false") boolean enableLabelParse) {
         try {
             ProductDetectResult result = visionClient.detectProduct(file.getBytes(), enableOcr);
-            Map<String, Object> data = new java.util.HashMap<>();
+            Map<String, Object> data = new HashMap<>();
             data.put("success", result.isSuccess());
             data.put("count", result.getCount());
             data.put("detections", result.getDetections());

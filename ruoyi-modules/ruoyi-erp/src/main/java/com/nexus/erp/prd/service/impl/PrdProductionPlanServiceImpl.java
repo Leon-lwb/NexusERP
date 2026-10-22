@@ -1,27 +1,22 @@
 package com.nexus.erp.prd.service.impl;
 
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.prd.util.BomExplosionCalculator;
-
 import cn.hutool.core.bean.BeanUtil;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.bd.domain.BdBom;
-import com.nexus.erp.bd.domain.BdMaterial;
-import com.nexus.erp.bd.domain.BdUnitOfMeasure;
-import com.nexus.erp.bd.domain.BdMaterialCategory;
 import com.nexus.erp.bd.domain.BdBomDetail;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdMaterialCategory;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
 import com.nexus.erp.bd.mapper.BdBomDetailMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
@@ -40,6 +35,7 @@ import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdMaterialRequirementService;
 import com.nexus.erp.prd.service.IPrdProductionPlanService;
 import com.nexus.erp.prd.service.IPrdWorkOrderService;
+import com.nexus.erp.prd.util.BomExplosionCalculator;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
@@ -47,16 +43,22 @@ import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoSalesOrderLineService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /**
  * 生产计划服务业务层处理

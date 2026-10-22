@@ -2,6 +2,7 @@ package com.nexus.report.runtime;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -46,8 +47,7 @@ public final class ReportRuntimeMetrics {
      * @return 当前处理返回的固定结果
      */
     public static ReportRuntimeMetrics local() {
-        return new ReportRuntimeMetrics(
-                new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        return new ReportRuntimeMetrics(new SimpleMeterRegistry());
     }
 
     /**

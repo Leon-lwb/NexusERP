@@ -1,57 +1,5 @@
 package com.nexus.erp.pu;
 
-import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
-
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nexus.common.core.domain.R;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.flowable.core.domain.ActStatus;
-import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.bd.domain.BdMaterial;
-import com.nexus.erp.bd.mapper.BdMaterialMapper;
-import com.nexus.erp.pu.domain.PuPurchaseOrder;
-import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
-import com.nexus.erp.pu.domain.PuPurchaseRequisition;
-import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
-import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
-import com.nexus.erp.pu.service.impl.PuPurchaseRequisitionServiceImpl;
-import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
-import com.nexus.system.strategy.AutoCodeUtil;
-import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,6 +19,58 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.pu.domain.PuPurchaseOrder;
+import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
+import com.nexus.erp.pu.domain.PuPurchaseRequisition;
+import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
+import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
+import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+import com.nexus.erp.pu.service.impl.PuPurchaseRequisitionServiceImpl;
+import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.domain.WfMyBusiness;
+import com.nexus.workflow.service.IWfProcessService;
+import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** 采购申请幂等创建、乐观并发和条件补偿测试。 */
 @ExtendWith(MockitoExtension.class)
@@ -123,14 +123,25 @@ class PuPurchaseRequisitionServiceImplTest {
         PuPurchaseRequisition legacy = manualExistingRequisition(); legacy.setStatus("APPROVED");
         PuPurchaseRequisitionLine line = purchaseBo().getPuPurchaseRequisitionLineList().get(0);
         line.setUnit(""); line.setApplyQuantity(new BigDecimal("510"));
-        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(legacy);
-        org.mockito.Mockito.lenient().when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(line));
-        org.mockito.Mockito.lenient().when(autoCodeUtil.genSerialCode("PU_ORDER_CODE",null)).thenReturn("PO-RAW");
-        org.mockito.Mockito.lenient().doAnswer(invocation -> {
-            invocation.<PuPurchaseOrder>getArgument(0).setOrderId(9001L); return 1;
-        }).when(purchaseOrderMapper).insert(any(PuPurchaseOrder.class));
-        org.mockito.Mockito.lenient().when(purchaseOrderLineMapper.insert(any(PuPurchaseOrderLine.class))).thenReturn(1);
-        org.mockito.Mockito.lenient().when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+        Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(legacy);
+        Mockito.lenient().when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(line));
+        Mockito.lenient()
+                .when(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null))
+                .thenReturn("PO-RAW");
+        Mockito.lenient()
+                .doAnswer(
+                        invocation -> {
+                            invocation.<PuPurchaseOrder>getArgument(0).setOrderId(9001L);
+                            return 1;
+                        })
+                .when(purchaseOrderMapper)
+                .insert(any(PuPurchaseOrder.class));
+        Mockito.lenient()
+                .when(purchaseOrderLineMapper.insert(any(PuPurchaseOrderLine.class)))
+                .thenReturn(1);
+        Mockito.lenient()
+                .when(baseMapper.updateById(any(PuPurchaseRequisition.class)))
+                .thenReturn(1);
         ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.convertToPurchaseOrder(7001L));
         assertTrue(error.getMessage().contains("/erp/pu/requisition/certified"),error.getMessage());
         verifyNoInteractions(autoCodeUtil,purchaseOrderLineMapper);
@@ -153,10 +164,17 @@ class PuPurchaseRequisitionServiceImplTest {
 
     @Test
     void protectedRequisitionMutationsMustNeverReachLegacyMappers() {
-        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(manualExistingRequisition());
-        org.mockito.Mockito.lenient().when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+        Mockito.lenient()
+                .when(baseMapper.selectById(7001L))
+                .thenReturn(manualExistingRequisition());
+        Mockito.lenient()
+                .when(baseMapper.updateById(any(PuPurchaseRequisition.class)))
+                .thenReturn(1);
         ServiceException protectedError = new ServiceException("protected-document");
-        org.mockito.Mockito.lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyRequisitionMutation(7001L);
+        Mockito.lenient()
+                .doThrow(protectedError)
+                .when(certifiedDocumentGuard)
+                .requireLegacyRequisitionMutation(7001L);
         List<Runnable> mutations = List.of(
             () -> requisitionService.close(7001L),
             () -> requisitionService.cancel(7001L),
@@ -176,9 +194,13 @@ class PuPurchaseRequisitionServiceImplTest {
     void protectedRequisitionEditChecksPersistedAndProposedLineIdentityBeforeLegacyReads() {
         PuPurchaseRequisitionBo bo = purchaseBo(); bo.setRequisitionId(7001L);
         ServiceException protectedError = new ServiceException("protected-document");
-        org.mockito.Mockito.lenient().doThrow(protectedError).when(certifiedDocumentGuard)
-            .requireLegacyRequisitionEdit(7001L, bo.getPuPurchaseRequisitionLineList());
-        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(manualExistingRequisition());
+        Mockito.lenient()
+                .doThrow(protectedError)
+                .when(certifiedDocumentGuard)
+                .requireLegacyRequisitionEdit(7001L, bo.getPuPurchaseRequisitionLineList());
+        Mockito.lenient()
+                .when(baseMapper.selectById(7001L))
+                .thenReturn(manualExistingRequisition());
         assertSame(protectedError, assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo)));
         verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
     }
@@ -186,9 +208,14 @@ class PuPurchaseRequisitionServiceImplTest {
     @Test
     void mixedLegacyAndProtectedRequisitionDeleteIsPreflightedBeforeFirstWrite() {
         ServiceException protectedError = new ServiceException("protected-document");
-        org.mockito.Mockito.lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyRequisitionMutation(7002L);
-        org.mockito.Mockito.lenient().when(baseMapper.selectById(7001L)).thenReturn(manualExistingRequisition());
-        org.mockito.Mockito.lenient().when(baseMapper.delete(any(Wrapper.class))).thenReturn(1);
+        Mockito.lenient()
+                .doThrow(protectedError)
+                .when(certifiedDocumentGuard)
+                .requireLegacyRequisitionMutation(7002L);
+        Mockito.lenient()
+                .when(baseMapper.selectById(7001L))
+                .thenReturn(manualExistingRequisition());
+        Mockito.lenient().when(baseMapper.delete(any(Wrapper.class))).thenReturn(1);
         assertSame(protectedError, assertThrows(ServiceException.class, () -> requisitionService.deleteByIds(new Long[]{7001L,7002L})));
         verifyNoInteractions(baseMapper, lineMapper);
     }
@@ -197,12 +224,18 @@ class PuPurchaseRequisitionServiceImplTest {
     void rawManualInsertWithoutCertifiedSourceMustRejectBeforeAnyPersistence() {
         PuPurchaseRequisitionBo bo = purchaseBo();
         bo.setRequisitionNo("PR-RAW");
-        org.mockito.Mockito.lenient().doAnswer(invocation -> {
-            PuPurchaseRequisition row = invocation.getArgument(0);
-            row.setRequisitionId(7010L);
-            return 1;
-        }).when(baseMapper).insert(any(PuPurchaseRequisition.class));
-        org.mockito.Mockito.lenient().when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
+        Mockito.lenient()
+                .doAnswer(
+                        invocation -> {
+                            PuPurchaseRequisition row = invocation.getArgument(0);
+                            row.setRequisitionId(7010L);
+                            return 1;
+                        })
+                .when(baseMapper)
+                .insert(any(PuPurchaseRequisition.class));
+        Mockito.lenient()
+                .when(lineMapper.insert(any(PuPurchaseRequisitionLine.class)))
+                .thenReturn(1);
 
         ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
 
@@ -214,12 +247,18 @@ class PuPurchaseRequisitionServiceImplTest {
     void rawCreateDraftCannotBecomeTrustedByMockingTheOldReadinessGuard() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
         bo.setRequisitionNo("PR-RAW-AI");
-        org.mockito.Mockito.lenient().doAnswer(invocation -> {
-            PuPurchaseRequisition row = invocation.getArgument(0);
-            row.setRequisitionId(7010L);
-            return 1;
-        }).when(baseMapper).insert(any(PuPurchaseRequisition.class));
-        org.mockito.Mockito.lenient().when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
+        Mockito.lenient()
+                .doAnswer(
+                        invocation -> {
+                            PuPurchaseRequisition row = invocation.getArgument(0);
+                            row.setRequisitionId(7010L);
+                            return 1;
+                        })
+                .when(baseMapper)
+                .insert(any(PuPurchaseRequisition.class));
+        Mockito.lenient()
+                .when(lineMapper.insert(any(PuPurchaseRequisitionLine.class)))
+                .thenReturn(1);
 
         ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
 
@@ -349,7 +388,7 @@ class PuPurchaseRequisitionServiceImplTest {
     @Test
     void rawReplayCannotTrustDuplicateLinesOrderingOrDecimalScale() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
-        var lines = new java.util.ArrayList<>(bo.getPuPurchaseRequisitionLineList());
+        var lines = new ArrayList<>(bo.getPuPurchaseRequisitionLineList());
         lines.get(0).setApplyQuantity(new BigDecimal("5.00")); lines.add(matchingLines(null).get(0));
         bo.setPuPurchaseRequisitionLineList(lines);
         assertRawDraftRejected(bo);
@@ -400,8 +439,10 @@ class PuPurchaseRequisitionServiceImplTest {
 
     @Test
     void decisionPostCreateCurrentReadIsExposedOnPurchaseService() {
-        assertDoesNotThrow(() -> com.nexus.erp.pu.service.IPuPurchaseRequisitionService.class
-            .getMethod("selectByIdForDecision", Long.class));
+        assertDoesNotThrow(
+                () ->
+                        IPuPurchaseRequisitionService.class.getMethod(
+                                "selectByIdForDecision", Long.class));
     }
 
     @Test

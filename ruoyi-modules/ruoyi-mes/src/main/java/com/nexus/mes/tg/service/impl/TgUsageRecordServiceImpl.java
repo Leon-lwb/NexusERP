@@ -15,11 +15,14 @@ import com.nexus.mes.tg.domain.vo.TgUsageRecordVo;
 import com.nexus.mes.tg.mapper.TgUsageRecordMapper;
 import com.nexus.mes.tg.service.ITgToolingService;
 import com.nexus.mes.tg.service.ITgUsageRecordService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -134,7 +137,7 @@ public class TgUsageRecordServiceImpl implements ITgUsageRecordService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        List<Long> idList = java.util.Arrays.asList(ids);
+        List<Long> idList = Arrays.asList(ids);
         Long exist = baseMapper.selectCount(Wrappers.<TgUsageRecord>lambdaQuery()
             .in(TgUsageRecord::getUsageId, idList));
         if (exist == null || exist == 0) {

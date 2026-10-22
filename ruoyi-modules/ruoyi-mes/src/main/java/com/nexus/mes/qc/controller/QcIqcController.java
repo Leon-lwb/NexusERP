@@ -1,20 +1,24 @@
 package com.nexus.mes.qc.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import lombok.RequiredArgsConstructor;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.web.core.BaseController;
-import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
-import com.nexus.mes.qc.domain.vo.QcIqcVo;
+import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
+import com.nexus.mes.qc.domain.vo.QcIqcVo;
 import com.nexus.mes.qc.service.IQcIqcService;
 import com.nexus.mes.qc.service.QcReceiptIqcBirthService;
-import com.nexus.common.tenant.helper.TenantHelper;
+
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -126,10 +130,8 @@ public class QcIqcController extends BaseController {
         return R.ok();
     }
 
-    /**
-     * 明细检验请求体
-     */
-    @lombok.Data
+    /** 明细检验请求体 */
+    @Data
     public static class InspectDetailsRequest {
         /** 明细实测值列表 */
         private List<QcInspectEntryBo> details;

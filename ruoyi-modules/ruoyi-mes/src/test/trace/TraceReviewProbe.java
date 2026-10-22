@@ -1,22 +1,40 @@
 package com.nexus.erp.wm.service;
 
+import static org.mockito.Mockito.*;
+
 import cn.dev33.satoken.stp.StpUtil;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.jdbc.JdbcTraceJournal;
+import com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier;
 import com.nexus.common.trace.port.*;
-import com.nexus.erp.wm.trace.*;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.service.impl.PrdWorkOrderServiceImpl;
+import com.nexus.erp.wm.trace.*;
+import com.nexus.mes.integration.trace.MesIdentityTraceReader;
+import com.nexus.mes.pro.domain.ProSn;
+import com.nexus.mes.pro.mapper.ProSnMapper;
+import com.nexus.mes.trace.MesTraceContext;
+import com.nexus.mes.trace.MesTrackingUsageService;
+import com.nexus.station.service.StationPassService;
 import com.nexus.web.service.MaterialIdentityTraceService;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
-import java.util.*;
+
 import java.math.BigDecimal;
-import static org.mockito.Mockito.*;
+import java.util.*;
 
 /**
  * 独立于常规测试发现的诊断复现用例，断言直接描述审查确认的问题。
@@ -260,7 +278,7 @@ public class TraceReviewProbe {
         try {
             tx.executeWithoutResult(s -> completion.postScrapOutputs(manifest, lines));
             throw new AssertionError("expected source rejection after legitimate scrap event");
-        } catch (com.nexus.common.core.exception.ServiceException error) {
+        } catch (ServiceException error) {
             check(
                     error.getMessage().contains("报废正式身份"),
                     "unexpected failure: " + error.getMessage());
@@ -326,8 +344,7 @@ public class TraceReviewProbe {
                     }
 
                     public void verify(MaterialTraceEvent message) {
-                        com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier.verify(
-                                j, "ERP", message);
+                        JdbcTraceSourceVerifier.verify(j, "ERP", message);
                     }
                 };
         var coordinator =
@@ -395,28 +412,23 @@ public class TraceReviewProbe {
                         + " varchar(16),numeric_value decimal,text_value varchar(64),test_time"
                         + " timestamp,content_version varchar(32),tenant_id varchar(20),sn_id"
                         + " bigint,del_flag char(1))");
-        var context = mock(com.nexus.mes.trace.MesTraceContext.class);
+        var context = mock(MesTraceContext.class);
         when(context.tenant()).thenReturn("000001");
         var authoritative = new SerialIdentity(900L, "ERP-NEW", 100L, null, null);
-        var reader = new com.nexus.mes.integration.trace.MesIdentityTraceReader(j, context);
+        var reader = new MesIdentityTraceReader(j, context);
         var part = reader.identity("000001", 900L, "TEST", null, 500);
         check(
                 part.localSnId() == 7
                         && "LOCAL-OLD".equals(part.canonicalSnCode())
                         && !authoritative.snCode().equals(part.canonicalSnCode()),
                 "reader should incorrectly call local original code canonical");
-        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
-                new org.apache.ibatis.builder.MapperBuilderAssistant(
-                        new com.baomidou.mybatisplus.core.MybatisConfiguration(), "review"),
-                com.nexus.mes.pro.domain.ProSn.class);
-        var mapper = mock(com.nexus.mes.pro.mapper.ProSnMapper.class);
-        when(mapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), "review"), ProSn.class);
+        var mapper = mock(ProSnMapper.class);
+        when(mapper.selectOne(any(Wrapper.class)))
                 .thenAnswer(
                         invocation -> {
-                            var wrapper =
-                                    (com.baomidou.mybatisplus.core.conditions.AbstractWrapper<
-                                                    ?, ?, ?>)
-                                            invocation.getArgument(0);
+                            var wrapper = (AbstractWrapper<?, ?, ?>) invocation.getArgument(0);
                             wrapper.getSqlSegment();
                             String scanned =
                                     wrapper.getParamNameValuePairs().values().stream()
@@ -427,7 +439,7 @@ public class TraceReviewProbe {
                             check(
                                     j.queryForObject(
                                                     "SELECT COUNT(*) FROM pro_sn WHERE"
-                                                        + " tenant_id='000001' AND identity_id=900",
+                                                            + " tenant_id='000001' AND identity_id=900",
                                                     Integer.class)
                                             == 1,
                                     "real local identity mapping is present");
@@ -441,8 +453,8 @@ public class TraceReviewProbe {
                                     "canonical code should not equal local original");
                             return null;
                         });
-        var station = mock(com.nexus.station.service.StationPassService.class, CALLS_REAL_METHODS);
-        org.springframework.test.util.ReflectionTestUtils.setField(station, "proSnMapper", mapper);
+        var station = mock(StationPassService.class, CALLS_REAL_METHODS);
+        ReflectionTestUtils.setField(station, "proSnMapper", mapper);
         var pass = station.validate(authoritative.snCode(), "STATION");
         check(
                 Boolean.FALSE.equals(pass.get("pass"))
@@ -463,7 +475,7 @@ public class TraceReviewProbe {
         j.execute(
                 "CREATE TABLE lt_sn_consumption(tenant_id varchar(20),local_sn_id"
                         + " bigint,component_material_id bigint,component_lot_id bigint)");
-        var usage = new com.nexus.mes.trace.MesTrackingUsageService(j, context);
+        var usage = new MesTrackingUsageService(j, context);
         usage.assertReadyForStrict("000001", 100L);
         System.out.println(
                 "REPRO_E: mapped identity 900/local 7 still misses canonical scan; MES trace calls"
@@ -472,7 +484,7 @@ public class TraceReviewProbe {
         try {
             usage.assertReadyForStrict("000001", 100L);
             throw new AssertionError("expected historical terminal identity to block strict");
-        } catch (com.nexus.common.core.exception.ServiceException error) {
+        } catch (ServiceException error) {
             check(error.getMessage().contains("历史MES身份"), "unexpected terminal check failure");
         }
         System.out.println(

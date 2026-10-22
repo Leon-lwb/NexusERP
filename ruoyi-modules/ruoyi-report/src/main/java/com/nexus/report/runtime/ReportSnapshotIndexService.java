@@ -6,6 +6,7 @@ import com.nexus.common.report.*;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.storage.ReportArtifactStore;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.*;
@@ -170,7 +171,7 @@ public final class ReportSnapshotIndexService {
                         indexChecksum);
                 registered = true;
                 return index;
-            } catch (org.springframework.dao.DuplicateKeyException concurrent) {
+            } catch (DuplicateKeyException concurrent) {
                 return read(tenant, link(tenant, reference).orElseThrow(), checksum);
             }
         } catch (IOException failure) {

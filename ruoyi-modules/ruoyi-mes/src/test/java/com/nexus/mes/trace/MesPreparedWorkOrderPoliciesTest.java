@@ -1,5 +1,7 @@
 package com.nexus.mes.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.*;
 import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
@@ -7,15 +9,20 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.WorkOrderTrackingPolicyPort;
 import com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader;
+
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.*;
+
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 通过真实代理与独立制造库验证事务挂起，确保写入前先读取冻结策略。
@@ -89,7 +96,7 @@ class MesPreparedWorkOrderPoliciesTest {
                 () -> {
                     prepared.prepareCard(11L);
                     assertSame(frozen, prepared.productPolicy(10L, 20L, 100L));
-                    b.events.command("business", "TEST_COMMAND", java.util.Map.of("value", 1));
+                    b.events.command("business", "TEST_COMMAND", Map.of("value", 1));
                     prepared.prepareCard(11L);
                     prepared.prepareWorkOrder(10L);
                     assertSame(frozen, prepared.productPolicy(10L, 20L, 100L));
@@ -107,8 +114,7 @@ class MesPreparedWorkOrderPoliciesTest {
                         b.inTx(
                                 () -> {
                                     prepared.prepareCard(11L);
-                                    b.events.command(
-                                            "must-not-exist", "TEST_COMMAND", java.util.Map.of());
+                                    b.events.command("must-not-exist", "TEST_COMMAND", Map.of());
                                     return null;
                                 }));
         assertEquals(
@@ -178,9 +184,7 @@ class MesPreparedWorkOrderPoliciesTest {
                 () -> {
                     prepared.prepareCard(11L);
                     var inner = new TransactionTemplate(b.tx.getTransactionManager());
-                    inner.setPropagationBehavior(
-                            org.springframework.transaction.TransactionDefinition
-                                    .PROPAGATION_REQUIRES_NEW);
+                    inner.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     inner.execute(
                             status -> {
                                 prepared.prepareCard(11L);
@@ -238,9 +242,8 @@ class MesPreparedWorkOrderPoliciesTest {
     void durableAppliedComponentCommandDoesNotRequeryMissingLegacyPolicy() {
         b.inTx(
                 () -> {
-                    var command =
-                            b.events.command("committed", "SN_CONSUMPTION", java.util.List.of(1));
-                    b.events.finish(command, java.util.Map.of("entryId", 1));
+                    var command = b.events.command("committed", "SN_CONSUMPTION", List.of(1));
+                    b.events.finish(command, Map.of("entryId", 1));
                     return null;
                 });
         unknown.set(true);
@@ -254,9 +257,9 @@ class MesPreparedWorkOrderPoliciesTest {
         b.productMapping();
         b.sn(1, "COMPLETED");
         var wo = b.wo(1, 0);
-        org.mockito.Mockito.when(b.policies.policy("000001", 100L))
+        Mockito.when(b.policies.policy("000001", 100L))
                 .thenReturn(new TrackingPolicy(false, false, true, 99L, TrackingStage.STRICT));
-        org.mockito.Mockito.clearInvocations(b.policies);
+        Mockito.clearInvocations(b.policies);
         ReflectionTestUtils.setField(b.manifests, "preparedPolicies", prepared);
         var manifest = b.inTx(() -> b.manifests.freeze(wo));
         assertEquals(
@@ -267,7 +270,7 @@ class MesPreparedWorkOrderPoliciesTest {
                         .get(0)
                         .batchId());
         assertEquals(1, reads.get());
-        org.mockito.Mockito.verifyNoInteractions(b.policies);
+        Mockito.verifyNoInteractions(b.policies);
     }
 
     @Test

@@ -2,9 +2,13 @@ package com.nexus.ai.engineering.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 
+import com.nexus.ai.engineering.domain.EngineeringCompletionRequest;
+import com.nexus.ai.engineering.domain.EngineeringTaskVo;
 import com.nexus.ai.engineering.domain.EngineeringUploadRequest;
 import com.nexus.ai.engineering.security.EngineeringConnectorFilter;
+import com.nexus.ai.engineering.service.EngineeringArtifactService;
 import com.nexus.ai.engineering.service.EngineeringArtifactUploadService;
+import com.nexus.common.ai.engineering.EngineeringArtifactManifest;
 import com.nexus.common.core.domain.R;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,21 +27,21 @@ import org.springframework.web.multipart.MultipartFile;
 @ConditionalOnProperty(prefix = "nexus.ai.engineering", name = "enabled", havingValue = "true")
 public class EngineeringConnectorArtifactController {
     private final EngineeringArtifactUploadService uploads;
-    private final com.nexus.ai.engineering.service.EngineeringArtifactService artifacts;
+    private final EngineeringArtifactService artifacts;
 
     /** 当前设备可读取部分清单，确认上传丢响应时不会重复归档。 */
     @GetMapping("/manifest")
-    public R<com.nexus.common.ai.engineering.EngineeringArtifactManifest> manifest(
+    public R<EngineeringArtifactManifest> manifest(
             HttpServletRequest http, @PathVariable Long taskId) {
         return R.ok(artifacts.deviceManifest(EngineeringConnectorFilter.principal(http), taskId));
     }
 
     /** 由服务器已确认文件与真实DRC报告计算终态，不接受客户端state字段。 */
     @PostMapping("/complete")
-    public R<com.nexus.ai.engineering.domain.EngineeringTaskVo> complete(
+    public R<EngineeringTaskVo> complete(
             HttpServletRequest http,
             @PathVariable Long taskId,
-            @RequestBody com.nexus.ai.engineering.domain.EngineeringCompletionRequest request) {
+            @RequestBody EngineeringCompletionRequest request) {
         return R.ok(artifacts.complete(
                 EngineeringConnectorFilter.principal(http), taskId, request.lease(), request.diagnostic()));
     }

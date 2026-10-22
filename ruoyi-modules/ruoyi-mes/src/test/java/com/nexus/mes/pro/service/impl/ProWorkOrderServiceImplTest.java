@@ -1,9 +1,17 @@
 package com.nexus.mes.pro.service.impl;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
@@ -15,8 +23,11 @@ import com.nexus.mes.flash.domain.Firmware;
 import com.nexus.mes.flash.mapper.FirmwareMapper;
 import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.ncr.mapper.NcrReworkOrderMapper;
+import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
+import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.domain.vo.MesMbomVo;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
@@ -24,7 +35,6 @@ import com.nexus.mes.pro.mapper.ProWorkOrderBomLineMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IMesMbomService;
-import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.mes.qc.service.IQcIpqcService;
@@ -32,36 +42,38 @@ import com.nexus.mes.release.domain.vo.ReleasePackageVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgBomItemVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgFirmwareVo;
 import com.nexus.mes.release.service.IReleasePackageService;
-import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.mes.testsupport.SpringStaticBootstrap;
+import com.nexus.mes.trace.MesCompletionManifestService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesProductionDetailFactsService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * ProWorkOrderServiceImpl 发布包集成单元测试:
@@ -75,8 +87,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProWorkOrderServiceImplTest {
 
-    @Mock private com.nexus.mes.trace.MesProductionDetailFactsService detailFacts;
-    @Mock private com.nexus.mes.trace.MesCompletionManifestService completionManifests;
+    @Mock
+    private MesProductionDetailFactsService detailFacts;
+    @Mock
+    private MesCompletionManifestService completionManifests;
 
     @BeforeAll
     static void initStatics() {
@@ -87,9 +101,8 @@ class ProWorkOrderServiceImplTest {
                 new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, ProWorkOrder.class);
         TableInfoHelper.initTableInfo(assistant, ProWorkOrderStep.class);
-        TableInfoHelper.initTableInfo(
-                assistant, com.nexus.mes.pro.domain.ProWorkOrderBomLine.class);
-        TableInfoHelper.initTableInfo(assistant, com.nexus.mes.pro.domain.ProFlowCard.class);
+        TableInfoHelper.initTableInfo(assistant, ProWorkOrderBomLine.class);
+        TableInfoHelper.initTableInfo(assistant, ProFlowCard.class);
     }
 
     private MockedStatic<SpringUtils> aopProxyMock;
@@ -109,25 +122,44 @@ class ProWorkOrderServiceImplTest {
         }
     }
 
-    @Mock private ProWorkOrderMapper baseMapper;
-    @Mock private ProWorkOrderStepMapper stepMapper;
-    @Mock private ProWorkOrderBomLineMapper woBomLineMapper;
-    @Mock private IMesErpBridgeService mesErpBridgeService;
-    @Mock private IMesMbomService mesMbomService;
-    @Mock private IWfProcessService processService;
-    @Mock private WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    @Mock private FlowableProcInsIdHelper procInsIdHelper;
-    @Mock private MesMqSendService mesMqSendService;
-    @Mock private EqEquipmentMapper equipmentMapper;
-    @Mock private QcIpqcMapper qcIpqcMapper;
-    @Mock private NcrReworkOrderMapper ncrReworkOrderMapper;
-    @Mock private NcrOrderMapper ncrOrderMapper;
-    @Mock private ProFlowCardMapper flowCardMapper;
-    @Spy private FwProperties fwProperties = new FwProperties();
-    @Mock private FirmwareMapper firmwareMapper;
-    @Mock private IReleasePackageService releasePackageService;
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks private ProWorkOrderServiceImpl service;
+    @Mock
+    private ProWorkOrderMapper baseMapper;
+    @Mock
+    private ProWorkOrderStepMapper stepMapper;
+    @Mock
+    private ProWorkOrderBomLineMapper woBomLineMapper;
+    @Mock
+    private IMesErpBridgeService mesErpBridgeService;
+    @Mock
+    private IMesMbomService mesMbomService;
+    @Mock
+    private IWfProcessService processService;
+    @Mock
+    private WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    @Mock
+    private FlowableProcInsIdHelper procInsIdHelper;
+    @Mock
+    private MesMqSendService mesMqSendService;
+    @Mock
+    private EqEquipmentMapper equipmentMapper;
+    @Mock
+    private QcIpqcMapper qcIpqcMapper;
+    @Mock
+    private NcrReworkOrderMapper ncrReworkOrderMapper;
+    @Mock
+    private NcrOrderMapper ncrOrderMapper;
+    @Mock
+    private ProFlowCardMapper flowCardMapper;
+    @Spy
+    private FwProperties fwProperties = new FwProperties();
+    @Mock
+    private FirmwareMapper firmwareMapper;
+    @Mock
+    private IReleasePackageService releasePackageService;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
+    @InjectMocks
+    private ProWorkOrderServiceImpl service;
 
     private WorkOrderReleaseMessage buildMessage() {
         WorkOrderReleaseMessage msg = new WorkOrderReleaseMessage();
@@ -336,7 +368,7 @@ class ProWorkOrderServiceImplTest {
         screw.setChildMaterialName("螺丝");
         screw.setQuantityPerParent(BigDecimal.valueOf(4));
         screw.setSortOrder(2);
-        mbom.setLines(new java.util.ArrayList<>(List.of(ssd256, screw)));
+        mbom.setLines(new ArrayList<>(List.of(ssd256, screw)));
         when(mesMbomService.selectByBomId(20L)).thenReturn(mbom);
 
         ReleasePackageVo pkg = new ReleasePackageVo();
@@ -367,10 +399,10 @@ class ProWorkOrderServiceImplTest {
         service.createFromErpMessage(msg);
 
         // 快照: SSD-512(替换) + 散热片(新增) = 2行; 螺丝被移除; MBOM主数据不受影响
-        ArgumentCaptor<com.nexus.mes.pro.domain.ProWorkOrderBomLine> bomCaptor =
-                ArgumentCaptor.forClass(com.nexus.mes.pro.domain.ProWorkOrderBomLine.class);
+        ArgumentCaptor<ProWorkOrderBomLine> bomCaptor =
+                ArgumentCaptor.forClass(ProWorkOrderBomLine.class);
         verify(woBomLineMapper, times(2)).insert(bomCaptor.capture());
-        List<com.nexus.mes.pro.domain.ProWorkOrderBomLine> snapshots = bomCaptor.getAllValues();
+        List<ProWorkOrderBomLine> snapshots = bomCaptor.getAllValues();
         assertEquals(301L, snapshots.get(0).getChildMaterialId());
         assertEquals("SSD-512", snapshots.get(0).getChildMaterialCode());
         assertNotNull(snapshots.get(0).getRemark());
@@ -486,16 +518,12 @@ class ProWorkOrderServiceImplTest {
         service.updateStepFirmware(1L, bo);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<ProWorkOrderStep>>
-                wrapperCaptor =
-                        ArgumentCaptor.forClass(
-                                com.baomidou.mybatisplus.core.conditions.Wrapper.class);
+        ArgumentCaptor<Wrapper<ProWorkOrderStep>> wrapperCaptor =
+                ArgumentCaptor.forClass(Wrapper.class);
         verify(stepMapper).update(isNull(), wrapperCaptor.capture());
-        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProWorkOrderStep> lw =
-                (com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<
-                                ProWorkOrderStep>)
-                        wrapperCaptor.getValue();
-        java.util.Collection<Object> params = lw.getParamNameValuePairs().values();
+        LambdaUpdateWrapper<ProWorkOrderStep> lw =
+                (LambdaUpdateWrapper<ProWorkOrderStep>) wrapperCaptor.getValue();
+        Collection<Object> params = lw.getParamNameValuePairs().values();
         // 单类型绑定改为 777 + 来源 MANUAL
         assertTrue(params.contains(777L));
         assertTrue(params.contains("MANUAL"));
@@ -548,7 +576,7 @@ class ProWorkOrderServiceImplTest {
         line.setChildMaterialName("SSD 256G");
         line.setQuantityPerParent(BigDecimal.ONE);
         line.setSortOrder(1);
-        mbom.setLines(new java.util.ArrayList<>(List.of(line)));
+        mbom.setLines(new ArrayList<>(List.of(line)));
         when(mesMbomService.selectByBomId(20L)).thenReturn(mbom);
 
         when(stepMapper.selectCount(any())).thenReturn(0L);
@@ -564,7 +592,7 @@ class ProWorkOrderServiceImplTest {
         assertEquals(1L, stepCaptor.getValue().getMesWoId());
         assertEquals("OP20_ASM", stepCaptor.getValue().getProcessCode());
         // MBOM 快照已落库
-        verify(woBomLineMapper).insert(any(com.nexus.mes.pro.domain.ProWorkOrderBomLine.class));
+        verify(woBomLineMapper).insert(any(ProWorkOrderBomLine.class));
         // CAS 置 RELEASED
         verify(baseMapper).update(any(), any());
     }
@@ -668,9 +696,7 @@ class ProWorkOrderServiceImplTest {
                     .sendWorkOrderCompleted(any(), any(), any(), any(), any(), any());
             var callbacks = TransactionSynchronizationManager.getSynchronizations();
             assertEquals(1, callbacks.size());
-            callbacks.forEach(
-                    org.springframework.transaction.support.TransactionSynchronization
-                            ::afterCommit);
+            callbacks.forEach(TransactionSynchronization::afterCommit);
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }

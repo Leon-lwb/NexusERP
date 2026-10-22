@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
@@ -16,6 +20,7 @@ import com.nexus.erp.wm.mapper.PdaIssueSourceMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
 import com.nexus.system.service.ISysConfigService;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -29,17 +34,16 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
+
+// 同名类型说明：本文件同时使用 java.util.Date 和 java.sql.Date，后者保留全限定名以区分。
 
 /** 真实 PDA 服务及来源门禁的回归；仅模拟持久化边界，不访问数据库或认证平台。 */
 @Tag("dev")

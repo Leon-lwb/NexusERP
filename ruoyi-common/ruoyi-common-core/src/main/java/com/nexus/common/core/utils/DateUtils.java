@@ -2,9 +2,11 @@ package com.nexus.common.core.utils;
 
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
-import org.apache.commons.lang3.time.DateFormatUtils;
+
 import com.nexus.common.core.enums.FormatsType;
 import com.nexus.common.core.exception.ServiceException;
+
+import org.apache.commons.lang3.time.DateFormatUtils;
 
 import java.lang.management.ManagementFactory;
 import java.text.ParseException;
@@ -12,6 +14,9 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.core.utils.DateUtils 和
+// org.apache.commons.lang3.time.DateUtils，后者保留全限定名以区分。
 
 /**
  * 时间工具类

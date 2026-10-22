@@ -1,5 +1,9 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
@@ -22,8 +26,11 @@ import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -33,34 +40,32 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
+import org.mybatis.spring.SqlSessionHolder;
+import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 对真实认证器、真实事务资格与真实服务切面的离线回归，不用假 verified 或算法替身。
@@ -167,122 +172,185 @@ class ErpPurchaseInventorySourceVerifierTest {
 
     private static Stream<Arguments> invalidSources() {
         return Stream.of(
-            bad("数据库时钟缺失", f -> f.clock = null),
-            bad("数据库时区未知", f -> f.clock = new DatabaseClock(epoch(NOW), null)),
-            bad("数据库时区UTC", f -> f.clock = new DatabaseClock(epoch(NOW), "+00:00")),
-            bad("数据库时区SYSTEM", f -> f.clock = new DatabaseClock(epoch(NOW), "SYSTEM")),
-            bad("数据库时区命名非明确偏移", f -> f.clock = new DatabaseClock(epoch(NOW), "Asia/Shanghai")),
-            bad("数据库秒NULL", f -> f.clock = new DatabaseClock(null, "+08:00")),
-            bad("数据库秒负值", f -> f.clock = new DatabaseClock(BigDecimal.ONE.negate(), "+08:00")),
-            bad("数据库秒不精确", f -> f.clock = new DatabaseClock(new BigDecimal("1790906584.1234567891"), "+08:00")),
-            bad("真实列元数据NULL", f -> f.columns = null),
-            bad("真实列元数据缺列", f -> f.columns = f.columns.subList(0, 2)),
-            bad("真实列元数据重复", f -> f.columns = List.of(f.columns.get(0), f.columns.get(0), f.columns.get(2))),
-            bad("库存DOUBLE禁止CAST升级", f -> f.columns = List.of(f.columns.get(0),
-                new QuantityColumn("wm_material_stock", "stock_quantity", "double", 12, 2), f.columns.get(2))),
-            bad("DECIMAL精度不符", f -> f.columns = List.of(f.columns.get(0),
-                new QuantityColumn("wm_material_stock", "stock_quantity", "decimal", 20, 4), f.columns.get(2))),
-            bad("物料缺失", f -> f.material = null),
-            bad("物料混租户", f -> f.material.setTenantId("other")),
-            bad("物料身份错", f -> f.material.setMaterialId(8L)),
-            bad("物料停用", f -> f.material.setStatus(0L)),
-            bad("物料状态未知", f -> f.material.setStatus(null)),
-            bad("物料删除未知", f -> f.material.setDelFlag(null)),
-            bad("物料明确删除", f -> f.material.setDelFlag("1")),
-            bad("基本单位ID缺失", f -> f.material.setBaseUomId(null)),
-            bad("安全库存NULL", f -> f.material.setSafetyStock(null)),
-            bad("安全库存负值", f -> f.material.setSafetyStock(new BigDecimal("-1"))),
-            bad("安全库存过精", f -> f.material.setSafetyStock(new BigDecimal("0.00001"))),
-            bad("安全库存溢出", f -> f.material.setSafetyStock(new BigDecimal("100000000000000"))),
-            bad("单位缺失", f -> f.unit = null),
-            bad("单位混租户", f -> f.unit.setTenantId("other")),
-            bad("单位身份错", f -> f.unit.setUomId(999L)),
-            bad("单位停用", f -> f.unit.setStatus(0L)),
-            bad("单位删除未知", f -> f.unit.setDelFlag("2")),
-            bad("单位根类别未知", f -> f.unit.setCategory(null)),
-            bad("单位精度NULL", f -> f.unit.setQuantityScale(null)),
-            bad("单位精度负值", f -> f.unit.setQuantityScale(-1)),
-            bad("单位精度超4", f -> f.unit.setQuantityScale(5)),
-            bad("单位精度不符数量", f -> f.unit.setQuantityScale(0)),
-            bad("单位精度不符预留", f -> { f.unit.setQuantityScale(0); f.stock.setStockQuantity(new BigDecimal("20"));
-                f.stock.setReservedQuantity(new BigDecimal("1.5")); }),
-            bad("单位精度不符安全", f -> { f.unit.setQuantityScale(0); f.stock.setStockQuantity(new BigDecimal("20"));
-                f.material.setSafetyStock(new BigDecimal("1.5")); }),
-            bad("单位版本NULL", f -> f.unit.setConversionVersion(null)),
-            bad("单位版本空白", f -> f.unit.setConversionVersion(" ")),
-            bad("单位核验日期NULL", f -> f.unit.setConversionVerifiedAt(null)),
-            bad("单位核验日期未来", f -> f.unit.setConversionVerifiedAt(Date.from(NOW.plusSeconds(1)))),
-            bad("单位核验日期零", f -> f.unit.setConversionVerifiedAt(new Date(0))),
-            bad("根转换率NULL", f -> f.unit.setConversionRate(null)),
-            bad("根转换率不是1", f -> f.unit.setConversionRate(new BigDecimal("2"))),
-            bad("派生基本单位不猜测未独立核验的根", f -> { f.unit.setIsBase(0L); f.unit.setPrimaryId(7L); }),
-            bad("未知基本单位旗号", f -> f.unit.setIsBase(null)),
-            bad("基本单位错误祖先", f -> f.unit.setPrimaryId(7L)),
-            bad("库存列表NULL", f -> f.stocks = null),
-            bad("库存列表空", f -> f.stocks = List.of()),
-            bad("库存含NULL行", f -> f.stocks = java.util.Arrays.asList(f.stock, null)),
-            bad("库存重复行", f -> f.stocks = List.of(f.stock, f.stock)),
-            bad("库存混租户", f -> f.stock.setTenantId("other")),
-            bad("库存身份缺失", f -> f.stock.setStockId(null)),
-            bad("库存身份非正", f -> f.stock.setStockId(0L)),
-            bad("库存错物料", f -> f.stock.setMaterialId(8L)),
-            bad("库存删除未知", f -> f.stock.setDelFlag(null)),
-            bad("库存删除未知2", f -> f.stock.setDelFlag("2")),
-            bad("库存版本NULL", f -> f.stock.setVersion(null)),
-            bad("库存版本负值", f -> f.stock.setVersion(-1)),
-            bad("库存单位NULL", f -> f.stock.setBaseUomId(null)),
-            bad("库存异单位", f -> f.stock.setBaseUomId("28")),
-            bad("库存单位前导零", f -> f.stock.setBaseUomId("027")),
-            bad("库存单位空白", f -> f.stock.setBaseUomId("27 ")),
-            bad("库存数量NULL", f -> f.stock.setStockQuantity(null)),
-            bad("库存数量负值", f -> f.stock.setStockQuantity(new BigDecimal("-1"))),
-            bad("库存数量过精", f -> f.stock.setStockQuantity(new BigDecimal("0.00001"))),
-            bad("库存数量溢出", f -> f.stock.setStockQuantity(new BigDecimal("100000000000000"))),
-            bad("库存预留NULL", f -> f.stock.setReservedQuantity(null)),
-            bad("库存预留负值", f -> f.stock.setReservedQuantity(new BigDecimal("-1"))),
-            bad("库存预留过精", f -> f.stock.setReservedQuantity(new BigDecimal("0.00001"))),
-            bad("库存预留超在库", f -> f.stock.setReservedQuantity(new BigDecimal("13"))),
-            bad("库存冻结NULL", f -> f.stock.setFrozenFlag(null)),
-            bad("库存冻结未知2", f -> f.stock.setFrozenFlag(2L)),
-            bad("库存入库时间缺失", f -> f.stock.setRecptDate(null)),
-            bad("库存入库未来", f -> f.stock.setRecptDate(Date.from(NOW.plusSeconds(1)))),
-            bad("库存有效期未知", f -> f.stock.setExpireDate(null)),
-            bad("库存已过期", f -> f.stock.setExpireDate(Date.from(NOW.minusSeconds(1)))),
-            bad("库存有效期零日期", f -> f.stock.setExpireDate(new Date(0))),
-            bad("库存生产晚于入库", f -> f.stock.setProductionDate(Date.from(NOW))),
-            bad("库存仓库缺失", f -> f.stock.setWarehouseId(null)),
-            bad("库存库区缺失", f -> f.stock.setAreaId(null)),
-            bad("库存库位ID0不能代表无库位", f -> f.stock.setLocationId(0L)),
-            bad("仓库查询NULL", f -> f.warehouses = null),
-            bad("仓库查询缺失", f -> f.warehouses = List.of()),
-            bad("仓库查询重复", f -> f.warehouses = List.of(f.warehouse, f.warehouse)),
-            bad("仓库查询多余ID", f -> f.warehouse.setWarehouseId(999L)),
-            bad("仓库混租户", f -> f.warehouse.setTenantId("other")),
-            bad("仓库停用", f -> f.warehouse.setStatus(0L)),
-            bad("仓库状态未知", f -> f.warehouse.setStatus(null)),
-            bad("仓库删除未知", f -> f.warehouse.setDelFlag(null)),
-            bad("库区查询缺失", f -> f.areas = List.of()),
-            bad("库区混租户", f -> f.area.setTenantId("other")),
-            bad("库区父仓库不符", f -> f.area.setWarehouseId(9L)),
-            bad("库区停用", f -> f.area.setEnableFlag(0L)),
-            bad("库区启用未知", f -> f.area.setEnableFlag(null)),
-            bad("库区冻结未知", f -> f.area.setFrozenFlag(2L)),
-            bad("库区储位旗号未知", f -> f.area.setLocationFlag(null)),
-            bad("库区储位旗号未知2", f -> f.area.setLocationFlag(2L)),
-            bad("启用储位必须有储位", f -> f.stock.setLocationId(null)),
-            bad("库区删除未知", f -> f.area.setDelFlag(null)),
-            bad("储位查询缺失", f -> f.locations = List.of()),
-            bad("储位查询NULL", f -> f.locations = null),
-            bad("储位混租户", f -> f.location.setTenantId("other")),
-            bad("储位父库区不符", f -> f.location.setAreaId(19L)),
-            bad("储位父仓库不符", f -> f.location.setWarehouseId(9L)),
-            bad("储位停用", f -> f.location.setEnableFlag(0L)),
-            bad("储位冻结未知", f -> f.location.setFrozenFlag(null)),
-            bad("储位删除未知", f -> f.location.setDelFlag("2")),
-            bad("未启用储位但已有储位仍核验", f -> { f.area.setLocationFlag(0L); f.location.setEnableFlag(0L); }),
-            bad("冻结库存不能掩盖NULL数量", f -> { f.stock.setFrozenFlag(1L); f.stock.setStockQuantity(null); }),
-            bad("冻结父不能掩盖停用储位", f -> { f.area.setFrozenFlag(1L); f.location.setEnableFlag(0L); })
-        );
+                bad("数据库时钟缺失", f -> f.clock = null),
+                bad("数据库时区未知", f -> f.clock = new DatabaseClock(epoch(NOW), null)),
+                bad("数据库时区UTC", f -> f.clock = new DatabaseClock(epoch(NOW), "+00:00")),
+                bad("数据库时区SYSTEM", f -> f.clock = new DatabaseClock(epoch(NOW), "SYSTEM")),
+                bad("数据库时区命名非明确偏移", f -> f.clock = new DatabaseClock(epoch(NOW), "Asia/Shanghai")),
+                bad("数据库秒NULL", f -> f.clock = new DatabaseClock(null, "+08:00")),
+                bad("数据库秒负值", f -> f.clock = new DatabaseClock(BigDecimal.ONE.negate(), "+08:00")),
+                bad(
+                        "数据库秒不精确",
+                        f ->
+                                f.clock =
+                                        new DatabaseClock(
+                                                new BigDecimal("1790906584.1234567891"), "+08:00")),
+                bad("真实列元数据NULL", f -> f.columns = null),
+                bad("真实列元数据缺列", f -> f.columns = f.columns.subList(0, 2)),
+                bad(
+                        "真实列元数据重复",
+                        f ->
+                                f.columns =
+                                        List.of(
+                                                f.columns.get(0),
+                                                f.columns.get(0),
+                                                f.columns.get(2))),
+                bad(
+                        "库存DOUBLE禁止CAST升级",
+                        f ->
+                                f.columns =
+                                        List.of(
+                                                f.columns.get(0),
+                                                new QuantityColumn(
+                                                        "wm_material_stock",
+                                                        "stock_quantity",
+                                                        "double",
+                                                        12,
+                                                        2),
+                                                f.columns.get(2))),
+                bad(
+                        "DECIMAL精度不符",
+                        f ->
+                                f.columns =
+                                        List.of(
+                                                f.columns.get(0),
+                                                new QuantityColumn(
+                                                        "wm_material_stock",
+                                                        "stock_quantity",
+                                                        "decimal",
+                                                        20,
+                                                        4),
+                                                f.columns.get(2))),
+                bad("物料缺失", f -> f.material = null),
+                bad("物料混租户", f -> f.material.setTenantId("other")),
+                bad("物料身份错", f -> f.material.setMaterialId(8L)),
+                bad("物料停用", f -> f.material.setStatus(0L)),
+                bad("物料状态未知", f -> f.material.setStatus(null)),
+                bad("物料删除未知", f -> f.material.setDelFlag(null)),
+                bad("物料明确删除", f -> f.material.setDelFlag("1")),
+                bad("基本单位ID缺失", f -> f.material.setBaseUomId(null)),
+                bad("安全库存NULL", f -> f.material.setSafetyStock(null)),
+                bad("安全库存负值", f -> f.material.setSafetyStock(new BigDecimal("-1"))),
+                bad("安全库存过精", f -> f.material.setSafetyStock(new BigDecimal("0.00001"))),
+                bad("安全库存溢出", f -> f.material.setSafetyStock(new BigDecimal("100000000000000"))),
+                bad("单位缺失", f -> f.unit = null),
+                bad("单位混租户", f -> f.unit.setTenantId("other")),
+                bad("单位身份错", f -> f.unit.setUomId(999L)),
+                bad("单位停用", f -> f.unit.setStatus(0L)),
+                bad("单位删除未知", f -> f.unit.setDelFlag("2")),
+                bad("单位根类别未知", f -> f.unit.setCategory(null)),
+                bad("单位精度NULL", f -> f.unit.setQuantityScale(null)),
+                bad("单位精度负值", f -> f.unit.setQuantityScale(-1)),
+                bad("单位精度超4", f -> f.unit.setQuantityScale(5)),
+                bad("单位精度不符数量", f -> f.unit.setQuantityScale(0)),
+                bad(
+                        "单位精度不符预留",
+                        f -> {
+                            f.unit.setQuantityScale(0);
+                            f.stock.setStockQuantity(new BigDecimal("20"));
+                            f.stock.setReservedQuantity(new BigDecimal("1.5"));
+                        }),
+                bad(
+                        "单位精度不符安全",
+                        f -> {
+                            f.unit.setQuantityScale(0);
+                            f.stock.setStockQuantity(new BigDecimal("20"));
+                            f.material.setSafetyStock(new BigDecimal("1.5"));
+                        }),
+                bad("单位版本NULL", f -> f.unit.setConversionVersion(null)),
+                bad("单位版本空白", f -> f.unit.setConversionVersion(" ")),
+                bad("单位核验日期NULL", f -> f.unit.setConversionVerifiedAt(null)),
+                bad("单位核验日期未来", f -> f.unit.setConversionVerifiedAt(Date.from(NOW.plusSeconds(1)))),
+                bad("单位核验日期零", f -> f.unit.setConversionVerifiedAt(new Date(0))),
+                bad("根转换率NULL", f -> f.unit.setConversionRate(null)),
+                bad("根转换率不是1", f -> f.unit.setConversionRate(new BigDecimal("2"))),
+                bad(
+                        "派生基本单位不猜测未独立核验的根",
+                        f -> {
+                            f.unit.setIsBase(0L);
+                            f.unit.setPrimaryId(7L);
+                        }),
+                bad("未知基本单位旗号", f -> f.unit.setIsBase(null)),
+                bad("基本单位错误祖先", f -> f.unit.setPrimaryId(7L)),
+                bad("库存列表NULL", f -> f.stocks = null),
+                bad("库存列表空", f -> f.stocks = List.of()),
+                bad("库存含NULL行", f -> f.stocks = Arrays.asList(f.stock, null)),
+                bad("库存重复行", f -> f.stocks = List.of(f.stock, f.stock)),
+                bad("库存混租户", f -> f.stock.setTenantId("other")),
+                bad("库存身份缺失", f -> f.stock.setStockId(null)),
+                bad("库存身份非正", f -> f.stock.setStockId(0L)),
+                bad("库存错物料", f -> f.stock.setMaterialId(8L)),
+                bad("库存删除未知", f -> f.stock.setDelFlag(null)),
+                bad("库存删除未知2", f -> f.stock.setDelFlag("2")),
+                bad("库存版本NULL", f -> f.stock.setVersion(null)),
+                bad("库存版本负值", f -> f.stock.setVersion(-1)),
+                bad("库存单位NULL", f -> f.stock.setBaseUomId(null)),
+                bad("库存异单位", f -> f.stock.setBaseUomId("28")),
+                bad("库存单位前导零", f -> f.stock.setBaseUomId("027")),
+                bad("库存单位空白", f -> f.stock.setBaseUomId("27 ")),
+                bad("库存数量NULL", f -> f.stock.setStockQuantity(null)),
+                bad("库存数量负值", f -> f.stock.setStockQuantity(new BigDecimal("-1"))),
+                bad("库存数量过精", f -> f.stock.setStockQuantity(new BigDecimal("0.00001"))),
+                bad("库存数量溢出", f -> f.stock.setStockQuantity(new BigDecimal("100000000000000"))),
+                bad("库存预留NULL", f -> f.stock.setReservedQuantity(null)),
+                bad("库存预留负值", f -> f.stock.setReservedQuantity(new BigDecimal("-1"))),
+                bad("库存预留过精", f -> f.stock.setReservedQuantity(new BigDecimal("0.00001"))),
+                bad("库存预留超在库", f -> f.stock.setReservedQuantity(new BigDecimal("13"))),
+                bad("库存冻结NULL", f -> f.stock.setFrozenFlag(null)),
+                bad("库存冻结未知2", f -> f.stock.setFrozenFlag(2L)),
+                bad("库存入库时间缺失", f -> f.stock.setRecptDate(null)),
+                bad("库存入库未来", f -> f.stock.setRecptDate(Date.from(NOW.plusSeconds(1)))),
+                bad("库存有效期未知", f -> f.stock.setExpireDate(null)),
+                bad("库存已过期", f -> f.stock.setExpireDate(Date.from(NOW.minusSeconds(1)))),
+                bad("库存有效期零日期", f -> f.stock.setExpireDate(new Date(0))),
+                bad("库存生产晚于入库", f -> f.stock.setProductionDate(Date.from(NOW))),
+                bad("库存仓库缺失", f -> f.stock.setWarehouseId(null)),
+                bad("库存库区缺失", f -> f.stock.setAreaId(null)),
+                bad("库存库位ID0不能代表无库位", f -> f.stock.setLocationId(0L)),
+                bad("仓库查询NULL", f -> f.warehouses = null),
+                bad("仓库查询缺失", f -> f.warehouses = List.of()),
+                bad("仓库查询重复", f -> f.warehouses = List.of(f.warehouse, f.warehouse)),
+                bad("仓库查询多余ID", f -> f.warehouse.setWarehouseId(999L)),
+                bad("仓库混租户", f -> f.warehouse.setTenantId("other")),
+                bad("仓库停用", f -> f.warehouse.setStatus(0L)),
+                bad("仓库状态未知", f -> f.warehouse.setStatus(null)),
+                bad("仓库删除未知", f -> f.warehouse.setDelFlag(null)),
+                bad("库区查询缺失", f -> f.areas = List.of()),
+                bad("库区混租户", f -> f.area.setTenantId("other")),
+                bad("库区父仓库不符", f -> f.area.setWarehouseId(9L)),
+                bad("库区停用", f -> f.area.setEnableFlag(0L)),
+                bad("库区启用未知", f -> f.area.setEnableFlag(null)),
+                bad("库区冻结未知", f -> f.area.setFrozenFlag(2L)),
+                bad("库区储位旗号未知", f -> f.area.setLocationFlag(null)),
+                bad("库区储位旗号未知2", f -> f.area.setLocationFlag(2L)),
+                bad("启用储位必须有储位", f -> f.stock.setLocationId(null)),
+                bad("库区删除未知", f -> f.area.setDelFlag(null)),
+                bad("储位查询缺失", f -> f.locations = List.of()),
+                bad("储位查询NULL", f -> f.locations = null),
+                bad("储位混租户", f -> f.location.setTenantId("other")),
+                bad("储位父库区不符", f -> f.location.setAreaId(19L)),
+                bad("储位父仓库不符", f -> f.location.setWarehouseId(9L)),
+                bad("储位停用", f -> f.location.setEnableFlag(0L)),
+                bad("储位冻结未知", f -> f.location.setFrozenFlag(null)),
+                bad("储位删除未知", f -> f.location.setDelFlag("2")),
+                bad(
+                        "未启用储位但已有储位仍核验",
+                        f -> {
+                            f.area.setLocationFlag(0L);
+                            f.location.setEnableFlag(0L);
+                        }),
+                bad(
+                        "冻结库存不能掩盖NULL数量",
+                        f -> {
+                            f.stock.setFrozenFlag(1L);
+                            f.stock.setStockQuantity(null);
+                        }),
+                bad(
+                        "冻结父不能掩盖停用储位",
+                        f -> {
+                            f.area.setFrozenFlag(1L);
+                            f.location.setEnableFlag(0L);
+                        }));
     }
 
     @ParameterizedTest
@@ -407,9 +475,9 @@ class ErpPurchaseInventorySourceVerifierTest {
     @Test
     void preboundExternallyForgedSqlSessionWithSameConnectionIsStillRejectedBeforeMapper() throws SQLException {
         Fixture f = new Fixture();
-        org.apache.ibatis.session.SqlSession session = mock(org.apache.ibatis.session.SqlSession.class);
+        SqlSession session = mock(SqlSession.class);
         when(session.getConnection()).thenReturn(f.erpConnection);
-        var holder = new org.mybatis.spring.SqlSessionHolder(session, org.apache.ibatis.session.ExecutorType.SIMPLE, null);
+        var holder = new SqlSessionHolder(session, ExecutorType.SIMPLE, null);
         holder.setSynchronizedWithTransaction(true);
         try (MockedStatic<TenantHelper> ignored = tenant(true, TENANT)) {
             f.bound(false, () -> {
@@ -486,8 +554,8 @@ class ErpPurchaseInventorySourceVerifierTest {
         var method = ErpPurchaseInventorySourceVerifier.class.getMethod("verifyLocked", String.class, Long.class);
         assertEquals(InventorySnapshot.class, method.getReturnType());
         assertEquals("erp", method.getAnnotation(DS.class).value());
-        assertEquals(org.springframework.transaction.annotation.Propagation.MANDATORY,
-            method.getAnnotation(org.springframework.transaction.annotation.Transactional.class).propagation());
+        assertEquals(
+                Propagation.MANDATORY, method.getAnnotation(Transactional.class).propagation());
     }
 
     private static Arguments bad(String name, Consumer<Fixture> change) {

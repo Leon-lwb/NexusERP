@@ -1,8 +1,11 @@
 package com.nexus.erp.bd.domain;
 
 import cn.idev.excel.annotation.ExcelProperty;
+
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -18,7 +21,7 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @TableName("bd_routing_step")
-public class BdRoutingStep extends com.nexus.common.tenant.core.TenantEntity {
+public class BdRoutingStep extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 

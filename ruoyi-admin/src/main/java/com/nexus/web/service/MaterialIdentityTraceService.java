@@ -1,13 +1,18 @@
 package com.nexus.web.service;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.IdentityTraceReadPort;
-import com.nexus.common.tenant.helper.TenantHelper;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
+
 import java.util.*;
+import java.util.function.LongFunction;
 
 /**
  * 编排各业务模块的只读追溯接口；跨库读取各自提交，不建立覆盖全部模块的事务。
@@ -494,7 +499,7 @@ public class MaterialIdentityTraceService {
      */
     private record IdRead(List<Long> rows, boolean truncated) {}
 
-    private IdRead readIds(java.util.function.LongFunction<TracePage<Long>> read) {
+    private IdRead readIds(LongFunction<TracePage<Long>> read) {
         var result = new ArrayList<Long>();
         long position = 0;
         boolean more;

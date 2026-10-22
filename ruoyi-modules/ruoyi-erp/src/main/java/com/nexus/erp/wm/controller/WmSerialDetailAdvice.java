@@ -2,13 +2,17 @@ package com.nexus.erp.wm.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.erp.wm.controller.serial.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.core.MethodParameter;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.server.*;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+
 import java.util.*;
 
 /**
@@ -29,8 +33,7 @@ public class WmSerialDetailAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(
             MethodParameter method, Class<? extends HttpMessageConverter<?>> converter) {
-        return org.springframework.http.converter.json.MappingJackson2HttpMessageConverter.class
-                        .isAssignableFrom(converter)
+        return MappingJackson2HttpMessageConverter.class.isAssignableFrom(converter)
                 && !WmSerialSelectionController.class.equals(method.getDeclaringClass());
     }
 

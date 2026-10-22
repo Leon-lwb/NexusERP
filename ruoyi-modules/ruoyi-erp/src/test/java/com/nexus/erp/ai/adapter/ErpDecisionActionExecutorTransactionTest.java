@@ -1,5 +1,10 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
@@ -10,6 +15,7 @@ import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.service.IPrdScheduleService;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
 import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -26,16 +32,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import javax.sql.DataSource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import javax.sql.DataSource;
 
 /** 仅证明 execute 外层 Spring 本地事务可回滚同一 DataSource 写入；不把 H2 当 MySQL DDL 验证。 */
 @ExtendWith(SpringExtension.class)
@@ -65,7 +67,7 @@ class ErpDecisionActionExecutorTransactionTest {
         });
 
         assertThrows(RuntimeException.class, () -> executor.execute(purchaseAction(), actor()));
-        org.mockito.Mockito.verify(purchaseService).selectByIdForDecision(7001L);
+        Mockito.verify(purchaseService).selectByIdForDecision(7001L);
 
         assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM decision_tx_probe", Integer.class));
     }

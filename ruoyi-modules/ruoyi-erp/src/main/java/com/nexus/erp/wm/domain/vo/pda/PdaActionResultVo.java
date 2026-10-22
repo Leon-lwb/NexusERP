@@ -1,7 +1,10 @@
 package com.nexus.erp.wm.domain.vo.pda;
 
 import com.nexus.common.satoken.pda.PdaActionResult;
+
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * PDA 作业动作统一返回
@@ -35,8 +38,8 @@ public class PdaActionResultVo implements PdaActionResult {
     private String submissionState;
 
     private String commandId;
-    private java.util.List<String> postingGroupIds;
-    private java.util.List<String> submissionWarnings;
+    private List<String> postingGroupIds;
+    private List<String> submissionWarnings;
 
     public static PdaActionResultVo ok() {
         return new PdaActionResultVo();

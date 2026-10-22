@@ -1,13 +1,13 @@
 package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.ai.service.kg.GlobalSearchService;
 import com.nexus.ai.service.kg.GraphStoreStrategy;
 import com.nexus.ai.service.kg.KnowledgeGraphService;
 import com.nexus.common.ai.domain.bo.AiKgCommunityBo;
 import com.nexus.common.ai.domain.bo.AiKgEntityBo;
 import com.nexus.common.ai.domain.bo.AiKgRelationBo;
-import com.nexus.common.ai.domain.bo.AiKnowledgeGraphBo;
 import com.nexus.common.ai.domain.entity.AiKgEntity;
 import com.nexus.common.ai.domain.entity.AiKgRelation;
 import com.nexus.common.ai.domain.vo.AiKgCommunityVo;
@@ -25,11 +25,14 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.web.core.BaseController;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,7 +151,7 @@ public class AiKnowledgeGraphController extends BaseController {
             }
         }
 
-        Set<Long> relatedIds = new java.util.HashSet<>(seed);
+        Set<Long> relatedIds = new HashSet<>(seed);
         relatedIds.addAll(neighborIds);
         List<AiKgRelation> relations = graphStoreStrategy.listRelationsByEntities(entity.getGraphId(), relatedIds);
         List<Map<String, Object>> relationList = new ArrayList<>();

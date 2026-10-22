@@ -1,5 +1,9 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.dto.DecisionActor;
@@ -7,21 +11,23 @@ import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
-import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.bo.PuCertifiedPurchaseCommand;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult.Line;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService;
-import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService.FrozenLine;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService.FrozenContract;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseWriteService.FrozenLine;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -31,6 +37,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -39,10 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Tag("dev")
@@ -56,7 +59,8 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
     private static final DecisionBusinessRef TARGET =
         new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11");
     private static final String KEY=DecisionPurchaseContractCodec.idempotencyKey(TENANT,10L,TARGET,DecisionPurchaseContractCodec.parse(payload(),10L));
-    @Mock private PuCertifiedPurchaseWriteService writer;
+    @Mock
+    private PuCertifiedPurchaseWriteService writer;
     private ErpCertifiedPurchaseDecisionAdapter adapter;
     private MockedStatic<TenantHelper> tenant;
 
@@ -100,7 +104,7 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
         var result=recoverExisting(action(payload()));
         assertTrue(result.success(),"草稿恢复应返回真实成功结果信封");
         assertEquals(receipt(true).requisitionId(),result.resultBizId(),"只能认领原实际单据");
-        var captured=org.mockito.ArgumentCaptor.forClass(FrozenContract.class);
+        var captured = ArgumentCaptor.forClass(FrozenContract.class);
         verify(writer).recoverForDecision(any(),eq(ACTOR),eq(10L),eq(101L),anyList(),captured.capture());
         assertEquals(11L,captured.getValue().rootWorkOrderId(),"恢复仍须绑定持久化动作的根身份");
         verify(writer,never()).createForDecision(any(),any(),any(),any(),any(),any());
@@ -126,7 +130,7 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
         assertNotNull(ErpCertifiedPurchaseDecisionAdapter.class.getAnnotation(Component.class));
         assertNull(ErpCertifiedPurchaseDecisionAdapter.class.getAnnotation(Transactional.class));
         for (var method : ErpCertifiedPurchaseDecisionAdapter.class.getDeclaredMethods()) {
-            if (java.lang.reflect.Modifier.isPublic(method.getModifiers())) {
+            if (Modifier.isPublic(method.getModifiers())) {
                 assertNull(method.getAnnotation(Transactional.class), method.getName());
             }
         }
@@ -335,25 +339,25 @@ class ErpCertifiedPurchaseDecisionAdapterTest {
         verifyNoInteractions(writer);
     }
 
-    static Stream<org.junit.jupiter.params.provider.Arguments> invalidEnvelopeFields() {
+    static Stream<Arguments> invalidEnvelopeFields() {
         return Stream.of(
-            org.junit.jupiter.params.provider.Arguments.of("runId", "11"),
-            org.junit.jupiter.params.provider.Arguments.of("actionId", "102"),
-            org.junit.jupiter.params.provider.Arguments.of("tenantId", "000002"),
-            org.junit.jupiter.params.provider.Arguments.of("materialId", "101"),
-            org.junit.jupiter.params.provider.Arguments.of("vendorId", "201"),
-            org.junit.jupiter.params.provider.Arguments.of("requestKey", KEY + "-other"),
-            org.junit.jupiter.params.provider.Arguments.of("purchase_payload_version", "2"),
-            org.junit.jupiter.params.provider.Arguments.of("versionMarker", "v1"),
-            org.junit.jupiter.params.provider.Arguments.of("beforeState", "COMMITTED"),
-            org.junit.jupiter.params.provider.Arguments.of("afterState", "ORDERED"),
-            org.junit.jupiter.params.provider.Arguments.of("status", "ORDERED"),
-            org.junit.jupiter.params.provider.Arguments.of("sourceType", "MANUAL"),
-            org.junit.jupiter.params.provider.Arguments.of("sourceFingerprint", "b".repeat(64)),
-            org.junit.jupiter.params.provider.Arguments.of("payloadFingerprint", "b".repeat(64)),
-            org.junit.jupiter.params.provider.Arguments.of("replayed", "false"),
-            org.junit.jupiter.params.provider.Arguments.of("lines", List.of()),
-            org.junit.jupiter.params.provider.Arguments.of("unknown", true));
+                Arguments.of("runId", "11"),
+                Arguments.of("actionId", "102"),
+                Arguments.of("tenantId", "000002"),
+                Arguments.of("materialId", "101"),
+                Arguments.of("vendorId", "201"),
+                Arguments.of("requestKey", KEY + "-other"),
+                Arguments.of("purchase_payload_version", "2"),
+                Arguments.of("versionMarker", "v1"),
+                Arguments.of("beforeState", "COMMITTED"),
+                Arguments.of("afterState", "ORDERED"),
+                Arguments.of("status", "ORDERED"),
+                Arguments.of("sourceType", "MANUAL"),
+                Arguments.of("sourceFingerprint", "b".repeat(64)),
+                Arguments.of("payloadFingerprint", "b".repeat(64)),
+                Arguments.of("replayed", "false"),
+                Arguments.of("lines", List.of()),
+                Arguments.of("unknown", true));
     }
 
     @Test

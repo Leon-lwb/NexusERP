@@ -1,16 +1,22 @@
 package com.nexus.common.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.jdbc.JdbcTraceJournal;
+import com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier;
+import com.nexus.common.trace.port.TraceSourceVerificationPort;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import static org.junit.jupiter.api.Assertions.*;
 
 class JdbcTraceJournalTest {
     JdbcTemplate erp, mes;
@@ -246,14 +252,9 @@ class JdbcTraceJournalTest {
         var event = event("forged", 1, "{}");
         assertThrows(
                 IllegalStateException.class,
-                () ->
-                        com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier.verify(
-                                erp, "ERP", event));
+                () -> JdbcTraceSourceVerifier.verify(erp, "ERP", event));
         et.executeWithoutResult(s -> source.append(event));
-        assertDoesNotThrow(
-                () ->
-                        com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier.verify(
-                                erp, "ERP", event));
+        assertDoesNotThrow(() -> JdbcTraceSourceVerifier.verify(erp, "ERP", event));
         var changed =
                 new MaterialTraceEvent(
                         "forged",
@@ -268,9 +269,7 @@ class JdbcTraceJournalTest {
                         TraceHashes.sha256("{}"));
         assertThrows(
                 IllegalStateException.class,
-                () ->
-                        com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier.verify(
-                                erp, "ERP", changed));
+                () -> JdbcTraceSourceVerifier.verify(erp, "ERP", changed));
     }
 
     /**
@@ -278,7 +277,7 @@ class JdbcTraceJournalTest {
      */
     CompletionCancellationProof cancellationProof() throws Exception {
         var json = new ObjectMapper();
-        var originalPayload = new java.util.LinkedHashMap<String, Object>();
+        var originalPayload = new LinkedHashMap<String, Object>();
         originalPayload.put("manifestId", "10");
         originalPayload.put("revision", 1);
         originalPayload.put("manifestHash", "a".repeat(64));
@@ -319,14 +318,13 @@ class JdbcTraceJournalTest {
                     target.append(cancel);
                 });
         var verifier =
-                new com.nexus.common.trace.port.TraceSourceVerificationPort() {
+                new TraceSourceVerificationPort() {
                     public String sourceModule() {
                         return "MES";
                     }
 
                     public void verify(MaterialTraceEvent event) {
-                        com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier.verify(
-                                mes, "MES", event);
+                        JdbcTraceSourceVerifier.verify(mes, "MES", event);
                     }
                 };
         return CompletionCancellationProof.verify(cancel, json, verifier);
@@ -569,9 +567,7 @@ class JdbcTraceJournalTest {
                 () -> et.execute(tx -> source.claim("SYNTH_OWNER", 1, 10)));
         assertThrows(
                 IllegalStateException.class,
-                () ->
-                        com.nexus.common.trace.jdbc.JdbcTraceSourceVerifier.verify(
-                                erp, "ERP", original));
+                () -> JdbcTraceSourceVerifier.verify(erp, "ERP", original));
         assertEquals("NEW", erp.queryForObject("SELECT status FROM wm_trace_outbox", String.class));
         assertNull(erp.queryForObject("SELECT lease_owner FROM wm_trace_outbox", String.class));
     }

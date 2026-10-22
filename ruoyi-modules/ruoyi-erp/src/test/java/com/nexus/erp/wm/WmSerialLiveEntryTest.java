@@ -1,22 +1,27 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.erp.pu.domain.*;
+import com.nexus.erp.pu.service.impl.PuPurchaseReturnServiceImpl;
+import com.nexus.erp.so.domain.*;
+import com.nexus.erp.so.service.impl.SoReturnServiceImpl;
 import com.nexus.erp.wm.domain.*;
+import com.nexus.erp.wm.domain.bo.WmMaterialStockBo;
+import com.nexus.erp.wm.domain.bo.WmMaterialStockTxBo;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.*;
 import com.nexus.erp.wm.service.impl.*;
-import com.nexus.erp.so.domain.*;
-import com.nexus.erp.so.service.impl.SoReturnServiceImpl;
-import com.nexus.erp.pu.domain.*;
-import com.nexus.erp.pu.service.impl.PuPurchaseReturnServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class WmSerialLiveEntryTest {
     @BeforeAll
@@ -121,19 +126,11 @@ class WmSerialLiveEntryTest {
     void genericInventoryCrudCannotCreateOrRewritePostedFacts() {
         var stock = new WmMaterialStockServiceImpl(null, null);
         var tx = new WmMaterialStockTxServiceImpl();
-        assertThrows(
-                RuntimeException.class,
-                () -> stock.insertByBo(new com.nexus.erp.wm.domain.bo.WmMaterialStockBo()));
-        assertThrows(
-                RuntimeException.class,
-                () -> stock.updateByBo(new com.nexus.erp.wm.domain.bo.WmMaterialStockBo()));
+        assertThrows(RuntimeException.class, () -> stock.insertByBo(new WmMaterialStockBo()));
+        assertThrows(RuntimeException.class, () -> stock.updateByBo(new WmMaterialStockBo()));
         assertThrows(RuntimeException.class, () -> stock.deleteByIds(new Long[] {1L}));
-        assertThrows(
-                RuntimeException.class,
-                () -> tx.insertByBo(new com.nexus.erp.wm.domain.bo.WmMaterialStockTxBo()));
-        assertThrows(
-                RuntimeException.class,
-                () -> tx.updateByBo(new com.nexus.erp.wm.domain.bo.WmMaterialStockTxBo()));
+        assertThrows(RuntimeException.class, () -> tx.insertByBo(new WmMaterialStockTxBo()));
+        assertThrows(RuntimeException.class, () -> tx.updateByBo(new WmMaterialStockTxBo()));
         assertThrows(RuntimeException.class, () -> tx.deleteByIds(new Long[] {1L}));
     }
 }

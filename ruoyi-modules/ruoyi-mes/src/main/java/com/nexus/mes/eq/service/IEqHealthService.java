@@ -1,8 +1,9 @@
 package com.nexus.mes.eq.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.eq.domain.EqEquipment;
+import com.nexus.mes.eq.domain.EqHealthRecord;
 import com.nexus.mes.eq.domain.vo.EqHealthRecordVo;
 
 import java.util.List;
@@ -41,11 +42,10 @@ public interface IEqHealthService {
     int evaluateAll();
 
     /**
-     * 评估单台设备健康：IoT 24h 数据 EWMA 异常点 + 维修历史 → 评分落库；
-     * LOW 级且评分下滑时触发 EQUIPMENT 安灯。
+     * 评估单台设备健康：IoT 24h 数据 EWMA 异常点 + 维修历史 → 评分落库； LOW 级且评分下滑时触发 EQUIPMENT 安灯。
      *
      * @param equipment 设备(需已关联 iotDeviceId)
      * @return 评分记录(未落库前构造的实体)
      */
-    com.nexus.mes.eq.domain.EqHealthRecord evaluateOne(com.nexus.mes.eq.domain.EqEquipment equipment);
+    EqHealthRecord evaluateOne(EqEquipment equipment);
 }

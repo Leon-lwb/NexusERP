@@ -1,12 +1,16 @@
 package com.nexus.mes.spc.domain.bo;
 
+import com.nexus.common.mybatis.core.domain.BaseEntity;
+import com.nexus.mes.spc.domain.SpcControlChart;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import jakarta.validation.constraints.NotBlank;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import com.nexus.common.mybatis.core.domain.BaseEntity;
-import com.nexus.mes.spc.domain.SpcControlChart;
+import java.math.BigDecimal;
 
 /**
  * MES SPC控制图业务对象 spc_control_chart
@@ -39,34 +43,34 @@ public class SpcControlChartBo extends BaseEntity {
     private Long processId;
 
     /** 上控制限 */
-    private java.math.BigDecimal ucl;
+    private BigDecimal ucl;
 
     /** 中心线 */
-    private java.math.BigDecimal cl;
+    private BigDecimal cl;
 
     /** 下控制限 */
-    private java.math.BigDecimal lcl;
+    private BigDecimal lcl;
 
     /** 次级图(R/S/MR)上控制限 */
-    private java.math.BigDecimal rUcl;
+    private BigDecimal rUcl;
 
     /** 次级图中心线 */
-    private java.math.BigDecimal rCl;
+    private BigDecimal rCl;
 
     /** 次级图下控制限 */
-    private java.math.BigDecimal rLcl;
+    private BigDecimal rLcl;
 
     /** 过程性能指数Pp */
-    private java.math.BigDecimal pp;
+    private BigDecimal pp;
 
     /** 过程性能指数Ppk */
-    private java.math.BigDecimal ppk;
+    private BigDecimal ppk;
 
     /** 规格上限(计量型图适用, 用户维护) */
-    private java.math.BigDecimal usl;
+    private BigDecimal usl;
 
     /** 规格下限 */
-    private java.math.BigDecimal lsl;
+    private BigDecimal lsl;
 
     /** 样本大小 */
     private Integer sampleSize;

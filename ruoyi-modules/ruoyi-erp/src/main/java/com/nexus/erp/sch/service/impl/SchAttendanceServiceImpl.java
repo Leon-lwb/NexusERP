@@ -1,48 +1,52 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.DateUtils;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.mybatis.core.page.PageQuery;
-import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.sch.domain.SchAttendance;
-import com.nexus.erp.sch.domain.SchEmployeeSchedule;
-import com.nexus.erp.sch.domain.vo.SchPunchRuleVo;
-import com.nexus.erp.sch.domain.SchShift;
-import com.nexus.erp.sch.domain.bo.SchAttendanceBo;
-import com.nexus.erp.sch.domain.vo.SchAttendanceVo;
-import com.nexus.erp.sch.mapper.SchAttendanceMapper;
-import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
-import com.nexus.erp.sch.mapper.SchShiftMapper;
-import com.nexus.erp.sch.service.ISchAttendanceService;
-import com.nexus.erp.sch.service.ISchPunchRuleService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.config.CvProperties;
 import com.nexus.common.cv.domain.FaceDtos.VerifyResult;
 import com.nexus.common.cv.exception.VisionException;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.cv.service.CvSubjectHelper;
-import com.nexus.erp.sch.mapper.SchWorkerMapper;
+import com.nexus.erp.sch.domain.SchAttendance;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
+import com.nexus.erp.sch.domain.SchShift;
 import com.nexus.erp.sch.domain.SchWorker;
-import com.nexus.system.service.ISysOssService;
+import com.nexus.erp.sch.domain.bo.SchAttendanceBo;
+import com.nexus.erp.sch.domain.bo.SchPunchRuleBo;
+import com.nexus.erp.sch.domain.vo.SchAttendanceVo;
+import com.nexus.erp.sch.domain.vo.SchPunchRuleVo;
+import com.nexus.erp.sch.mapper.SchAttendanceMapper;
+import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
+import com.nexus.erp.sch.mapper.SchShiftMapper;
+import com.nexus.erp.sch.mapper.SchWorkerMapper;
+import com.nexus.erp.sch.service.ISchAttendanceService;
+import com.nexus.erp.sch.service.ISchPunchRuleService;
 import com.nexus.system.domain.vo.SysOssVo;
+import com.nexus.system.service.ISysOssService;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.File;
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -307,7 +311,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
             existing.setAttendanceStatus(attendanceStatus);
             if (overtimeHours != null) {
-                existing.setOvertimeHours(java.math.BigDecimal.valueOf(overtimeHours));
+                existing.setOvertimeHours(BigDecimal.valueOf(overtimeHours));
             }
             baseMapper.updateById(existing);
 
@@ -337,7 +341,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             newAttendance.setLeaveEarlyMinutes(leaveEarlyMinutes);
             newAttendance.setAttendanceStatus(clockOutAttendanceStatus);
             if (overtimeHours != null) {
-                newAttendance.setOvertimeHours(java.math.BigDecimal.valueOf(overtimeHours));
+                newAttendance.setOvertimeHours(BigDecimal.valueOf(overtimeHours));
             }
 
             baseMapper.insert(newAttendance);
@@ -416,7 +420,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      * 取当前生效的打卡规则(enabled 且 ruleId 最小的一条);无规则返回 null
      */
     private SchPunchRuleVo pickEnabledPunchRule() {
-        com.nexus.erp.sch.domain.bo.SchPunchRuleBo ruleQuery = new com.nexus.erp.sch.domain.bo.SchPunchRuleBo();
+        SchPunchRuleBo ruleQuery = new SchPunchRuleBo();
         ruleQuery.setIsEnabled(1);
         List<SchPunchRuleVo> enabledRules = schPunchRuleService.selectList(ruleQuery);
         if (enabledRules == null || enabledRules.isEmpty()) {
@@ -569,7 +573,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     public Map<String, Object> validatePunchLocation(double latitude, double longitude) {
         try {
             // 取已启用的打卡规则(原硬编码 ruleId=1: 规则被删/停用后位置校验全体报错)
-            com.nexus.erp.sch.domain.bo.SchPunchRuleBo ruleQuery = new com.nexus.erp.sch.domain.bo.SchPunchRuleBo();
+            SchPunchRuleBo ruleQuery = new SchPunchRuleBo();
             ruleQuery.setIsEnabled(1);
             List<SchPunchRuleVo> enabledRules = schPunchRuleService.selectList(ruleQuery);
             if (enabledRules == null || enabledRules.isEmpty()) {
@@ -581,8 +585,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
                 throw new ServiceException("打卡规则已禁用");
             }
 
-            java.math.BigDecimal ruleLat = punchRule.getLocationLat();
-            java.math.BigDecimal ruleLng = punchRule.getLocationLng();
+            BigDecimal ruleLat = punchRule.getLocationLat();
+            BigDecimal ruleLng = punchRule.getLocationLng();
             Long ruleRadius = punchRule.getLocationRadius();
 
             if (ruleLat == null || ruleLng == null || ruleRadius == null) {
@@ -798,35 +802,41 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     private void doFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes,
                               boolean storeImage, boolean backfill) {
         try {
-            TenantHelper.dynamic(tenantId, () -> {
-                Long ossId = null;
-                if (storeImage && imageBytes != null && imageBytes.length > 0) {
-                    // 1. 照片存 MinIO 存证(仅打卡时;补跑复用已有 ossId,避免重复存证)
-                    //    sys_oss 表在 master 库(ry-vue),异步线程无 @DS 上下文,显式切主数据源
-                    DynamicDataSourceContextHolder.push("master");
-                    try {
-                        java.io.File temp = java.io.File.createTempFile("face-", ".jpg");
-                        try {
-                            java.nio.file.Files.write(temp.toPath(), imageBytes);
-                            SysOssVo ossVo = sysOssService.upload(temp);
-                            ossId = ossVo.getOssId();
-                        } finally {
-                            temp.delete();
+            TenantHelper.dynamic(
+                    tenantId,
+                    () -> {
+                        Long ossId = null;
+                        if (storeImage && imageBytes != null && imageBytes.length > 0) {
+                            // 1. 照片存 MinIO 存证(仅打卡时;补跑复用已有 ossId,避免重复存证)
+                            //    sys_oss 表在 master 库(ry-vue),异步线程无 @DS 上下文,显式切主数据源
+                            DynamicDataSourceContextHolder.push("master");
+                            try {
+                                File temp = File.createTempFile("face-", ".jpg");
+                                try {
+                                    Files.write(temp.toPath(), imageBytes);
+                                    SysOssVo ossVo = sysOssService.upload(temp);
+                                    ossId = ossVo.getOssId();
+                                } finally {
+                                    temp.delete();
+                                }
+                            } catch (Exception e) {
+                                log.error(
+                                        "[cv] 打卡人脸照片存 MinIO 失败, attendanceId={}, 跳过存证继续校验",
+                                        attendanceId,
+                                        e);
+                            } finally {
+                                DynamicDataSourceContextHolder.poll();
+                            }
                         }
-                    } catch (Exception e) {
-                        log.error("[cv] 打卡人脸照片存 MinIO 失败, attendanceId={}, 跳过存证继续校验", attendanceId, e);
-                    } finally {
-                        DynamicDataSourceContextHolder.poll();
-                    }
-                }
-                // 2. 校验 + 回写 sch_attendance(erp 库),异步线程需显式切回 erp 数据源
-                DynamicDataSourceContextHolder.push("erp");
-                try {
-                    verifyAndWriteBack(attendanceId, workerId, tenantId, imageBytes, ossId, backfill);
-                } finally {
-                    DynamicDataSourceContextHolder.poll();
-                }
-            });
+                        // 2. 校验 + 回写 sch_attendance(erp 库),异步线程需显式切回 erp 数据源
+                        DynamicDataSourceContextHolder.push("erp");
+                        try {
+                            verifyAndWriteBack(
+                                    attendanceId, workerId, tenantId, imageBytes, ossId, backfill);
+                        } finally {
+                            DynamicDataSourceContextHolder.poll();
+                        }
+                    });
         } catch (Exception e) {
             // 异步校验失败不影响打卡主流程,告警即可
             log.error("[cv] 打卡人脸验证异常, attendanceId={}, workerId={}", attendanceId, workerId, e);

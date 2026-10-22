@@ -11,7 +11,15 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.*;
 import java.nio.file.*;
+import java.nio.file.attribute.FileTime;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 
 /** 清单产物容量、尝试围栏及删除失败的实际文件回归。 */
 class ReportManifestStoreTest {
@@ -111,14 +119,11 @@ class ReportManifestStoreTest {
             }
             f.jdbc.update(
                     "UPDATE rpt_artifact_manifest SET update_time=?,lease_until=?",
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)),
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)));
+                    Timestamp.from(Instant.now().minusSeconds(7200)),
+                    Timestamp.from(Instant.now().minusSeconds(3600)));
             var b = new QuotaReportArtifactStore(local, quota, 1024 * 1024, "node-b");
-            Files.setLastModifiedTime(
-                    path,
-                    java.nio.file.attribute.FileTime.from(
-                            java.time.Instant.now().minusSeconds(7200)));
-            b.reap(java.time.Instant.now().minusSeconds(3600), (tenant, reference) -> false);
+            Files.setLastModifiedTime(path, FileTime.from(Instant.now().minusSeconds(7200)));
+            b.reap(Instant.now().minusSeconds(3600), (tenant, reference) -> false);
             assertTrue(Files.exists(path));
             assertEquals(7, quota.usage(null).bytes());
             a.discard("A", path);
@@ -165,9 +170,9 @@ class ReportManifestStoreTest {
             fault.failDiscard = false;
             f.jdbc.update(
                     "UPDATE rpt_artifact_manifest SET lease_until=?,update_time=?",
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)),
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)));
-            wrapped.reap(java.time.Instant.now().minusSeconds(300), (tenant, ref) -> false);
+                    Timestamp.from(Instant.now().minusSeconds(3600)),
+                    Timestamp.from(Instant.now().minusSeconds(7200)));
+            wrapped.reap(Instant.now().minusSeconds(300), (tenant, ref) -> false);
             assertEquals(0, quota.usage(null).objects());
         }
     }
@@ -188,10 +193,10 @@ class ReportManifestStoreTest {
             assertNotNull(quota.candidates(local.storeId(), 10).get(0).path());
             f.jdbc.update(
                     "UPDATE rpt_artifact_manifest SET lease_until=?,update_time=?",
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)),
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)));
+                    Timestamp.from(Instant.now().minusSeconds(3600)),
+                    Timestamp.from(Instant.now().minusSeconds(7200)));
             var restarted = new QuotaReportArtifactStore(local, quota, 1024 * 1024, "node-a");
-            restarted.reap(java.time.Instant.now().minusSeconds(300), (tenant, ref) -> false);
+            restarted.reap(Instant.now().minusSeconds(300), (tenant, ref) -> false);
             assertEquals(0, quota.usage(null).objects());
             var path = restarted.temporary("A", "rows");
             restarted.discard("A", path);
@@ -313,10 +318,10 @@ class ReportManifestStoreTest {
             quota.reserve("A", local.storeId(), reference, 7, "COMMITTING", "node-a", null);
             f.jdbc.update(
                     "UPDATE rpt_artifact_manifest SET update_time=?",
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)));
-            var entered = new java.util.concurrent.CountDownLatch(1);
-            var resume = new java.util.concurrent.CountDownLatch(1);
-            var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+                    Timestamp.from(Instant.now().minusSeconds(7200)));
+            var entered = new CountDownLatch(1);
+            var resume = new CountDownLatch(1);
+            var executor = Executors.newFixedThreadPool(2);
             try {
                 var commit =
                         executor.submit(
@@ -329,10 +334,7 @@ class ReportManifestStoreTest {
                                                 () -> {
                                                     entered.countDown();
                                                     try {
-                                                        if (!resume.await(
-                                                                5,
-                                                                java.util.concurrent.TimeUnit
-                                                                        .SECONDS))
+                                                        if (!resume.await(5, TimeUnit.SECONDS))
                                                             throw new IllegalStateException(
                                                                     "测试暂停超时");
                                                     } catch (InterruptedException failure) {
@@ -350,7 +352,7 @@ class ReportManifestStoreTest {
                                                             local.checksum("A", reference));
                                                     return reference;
                                                 }));
-                assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+                assertTrue(entered.await(5, TimeUnit.SECONDS));
                 var peer =
                         executor.submit(
                                 () ->
@@ -362,23 +364,22 @@ class ReportManifestStoreTest {
                                                 "STAGING",
                                                 "node-b",
                                                 null));
-                peer.get(1, java.util.concurrent.TimeUnit.SECONDS);
+                peer.get(1, TimeUnit.SECONDS);
                 f.jdbc.update(
                         "UPDATE rpt_artifact_manifest SET lease_until=? WHERE tenant_id='A'",
-                        java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)));
+                        Timestamp.from(Instant.now().minusSeconds(3600)));
                 quota.interruptedGuard(
                         "A",
                         local.storeId(),
                         reference,
-                        java.time.Instant.now().minusSeconds(300),
+                        Instant.now().minusSeconds(300),
                         () -> local.delete("A", reference));
                 assertTrue(quota.manifest("A", local.storeId(), reference).isEmpty());
                 assertEquals(1, quota.usage(null).bytes());
                 resume.countDown();
                 var failure =
                         assertThrows(
-                                java.util.concurrent.ExecutionException.class,
-                                () -> commit.get(5, java.util.concurrent.TimeUnit.SECONDS));
+                                ExecutionException.class, () -> commit.get(5, TimeUnit.SECONDS));
                 assertInstanceOf(ReportFault.class, failure.getCause());
                 assertFalse(local.exists("A", reference));
                 local.discard("A", temporary);
@@ -400,16 +401,16 @@ class ReportManifestStoreTest {
             quota.stored("A", "store", reference, "node-a", 1, "a".repeat(64));
             f.jdbc.update(
                     "UPDATE rpt_artifact_manifest SET update_time=?,lease_until=?",
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)),
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)));
-            var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                    Timestamp.from(Instant.now().minusSeconds(7200)),
+                    Timestamp.from(Instant.now().minusSeconds(3600)));
+            var executor = Executors.newSingleThreadExecutor();
             try {
                 assertTrue(
                         quota.reapGuard(
                                 "A",
                                 "store",
                                 reference,
-                                java.time.Instant.now().minusSeconds(300),
+                                Instant.now().minusSeconds(300),
                                 () -> false,
                                 () -> {
                                     try {
@@ -430,7 +431,7 @@ class ReportManifestStoreTest {
                                                                                     reference,
                                                                                     3600));
                                                         })
-                                                .get(1, java.util.concurrent.TimeUnit.SECONDS);
+                                                .get(1, TimeUnit.SECONDS);
                                     } catch (Exception failure) {
                                         throw new IllegalStateException(failure);
                                     }
@@ -456,8 +457,8 @@ class ReportManifestStoreTest {
             quota.stored("A", local.storeId(), reference, "node-a", 1, "a".repeat(64));
             f.jdbc.update(
                     "UPDATE rpt_artifact_manifest SET update_time=?,lease_until=?",
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)),
-                    java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(3600)));
+                    Timestamp.from(Instant.now().minusSeconds(7200)),
+                    Timestamp.from(Instant.now().minusSeconds(3600)));
             assertEquals(1, quota.candidates(local.storeId(), 200).size());
             quota.pin("A", local.storeId(), reference, 3600);
             assertFalse(
@@ -465,7 +466,7 @@ class ReportManifestStoreTest {
                             "A",
                             local.storeId(),
                             reference,
-                            java.time.Instant.now().minusSeconds(300),
+                            Instant.now().minusSeconds(300),
                             () -> false,
                             () -> fail("读取租约内不得删除字体")));
             assertEquals(1, quota.usage(null).bytes());
@@ -528,12 +529,10 @@ class ReportManifestStoreTest {
             }
             String reference = local.commit("A", path, "rows");
             Files.setLastModifiedTime(
-                    local.read("A", reference),
-                    java.nio.file.attribute.FileTime.from(
-                            java.time.Instant.now().minusSeconds(7200)));
+                    local.read("A", reference), FileTime.from(Instant.now().minusSeconds(7200)));
             fault.beforeUntrackedDelete =
                     () -> new QuotaReportArtifactStore(local, quota, 1024 * 1024, "node-b");
-            a.reap(java.time.Instant.now().minusSeconds(3600), (tenant, ref) -> false);
+            a.reap(Instant.now().minusSeconds(3600), (tenant, ref) -> false);
             assertEquals(0, quota.usage(null).objects());
             assertFalse(local.exists("A", reference));
         }
@@ -556,22 +555,17 @@ class ReportManifestStoreTest {
             }
             String reference = local.commit("A", path, "rows");
             Files.setLastModifiedTime(
-                    local.read("A", reference),
-                    java.nio.file.attribute.FileTime.from(
-                            java.time.Instant.now().minusSeconds(7200)));
+                    local.read("A", reference), FileTime.from(Instant.now().minusSeconds(7200)));
             fault.beforeUntrackedDelete =
                     () -> {
                         throw new ReportFault("ARTIFACT_STORE_UNAVAILABLE", "合成封存失败", 503);
                     };
             assertThrows(
                     ReportFault.class,
-                    () ->
-                            a.reap(
-                                    java.time.Instant.now().minusSeconds(3600),
-                                    (tenant, ref) -> false));
+                    () -> a.reap(Instant.now().minusSeconds(3600), (tenant, ref) -> false));
             assertEquals(3, quota.usage(null).bytes());
             fault.beforeUntrackedDelete = () -> {};
-            a.reap(java.time.Instant.now().minusSeconds(3600), (tenant, ref) -> false);
+            a.reap(Instant.now().minusSeconds(3600), (tenant, ref) -> false);
             assertEquals(0, quota.usage(null).objects());
             assertFalse(local.exists("A", reference));
         }
@@ -710,9 +704,7 @@ class ReportManifestStoreTest {
          * @param olderThan 当前契约的olderThan配置或状态
          * @param referenced 当前契约的referenced配置或状态
          */
-        public void reapUntracked(
-                java.time.Instant olderThan,
-                java.util.function.BiPredicate<String, String> referenced) {
+        public void reapUntracked(Instant olderThan, BiPredicate<String, String> referenced) {
             delegate.reapUntracked(
                     olderThan,
                     (tenant, ref) -> {

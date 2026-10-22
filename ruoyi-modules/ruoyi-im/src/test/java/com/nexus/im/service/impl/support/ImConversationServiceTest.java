@@ -1,9 +1,15 @@
 package com.nexus.im.service.impl.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.im.domain.ImConversationSetting;
 import com.nexus.im.domain.ImGroup;
@@ -17,11 +23,11 @@ import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -31,15 +37,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * P3-5: P2-1 listConversations 批量化回归测试。
@@ -59,12 +56,18 @@ import static org.mockito.Mockito.when;
  */
 class ImConversationServiceTest extends ImUnitTestBase {
 
-    @Mock private ImMessageMapper imMessageMapper;
-    @Mock private ImGroupMapper imGroupMapper;
-    @Mock private ImGroupMemberMapper imGroupMemberMapper;
-    @Mock private ImChatSupport support;
-    @Mock private ImConversationCache conversationCache;
-    @Mock private ImConversationSettingMapper conversationSettingMapper;
+    @Mock
+    private ImMessageMapper imMessageMapper;
+    @Mock
+    private ImGroupMapper imGroupMapper;
+    @Mock
+    private ImGroupMemberMapper imGroupMemberMapper;
+    @Mock
+    private ImChatSupport support;
+    @Mock
+    private ImConversationCache conversationCache;
+    @Mock
+    private ImConversationSettingMapper conversationSettingMapper;
 
     @InjectMocks
     private ImConversationService imConversationService;
@@ -97,9 +100,11 @@ class ImConversationServiceTest extends ImUnitTestBase {
     @BeforeEach
     void setUpConversation() {
         // 公共桩：support.batchLoadUsers 返回空 Map（不抛异常）
-        lenient().when(support.batchLoadUsers(anyCollection())).thenReturn(new java.util.LinkedHashMap<>());
+        lenient().when(support.batchLoadUsers(anyCollection())).thenReturn(new LinkedHashMap<>());
         // 公共桩：support.batchResolveAvatarUrls 返回空 Map
-        lenient().when(support.batchResolveAvatarUrls(anyCollection())).thenReturn(new java.util.LinkedHashMap<>());
+        lenient()
+                .when(support.batchResolveAvatarUrls(anyCollection()))
+                .thenReturn(new LinkedHashMap<>());
         // P4-2: 公共桩 — 会话缓存未命中（返回 null 让测试走 DB 查询路径）
         lenient().when(conversationCache.get()).thenReturn(null);
         // P6-B1: 公共桩 — 会话配置（置顶/免打扰）默认返回空列表，避免 applyConversationSettings NPE

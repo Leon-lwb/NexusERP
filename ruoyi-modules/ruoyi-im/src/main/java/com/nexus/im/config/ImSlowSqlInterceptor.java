@@ -1,10 +1,13 @@
 package com.nexus.im.config;
 
 import com.nexus.im.push.ImMetrics;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
@@ -17,25 +20,33 @@ import java.util.Properties;
 
 /**
  * P5-2: 慢 SQL 拦截器（MyBatis 原生 {@link Interceptor}）。
+ *
  * <p>拦截 {@link Executor#query} 与 {@link Executor#update}，对每次 SQL 执行计时：
+ *
  * <ul>
- *   <li>所有查询：记录 {@code im.db.query.latency} timer（用于 P95/P99 分布分析）</li>
- *   <li>超过阈值：记录 {@code im.db.slow{sql=sqlId}} counter +1，并输出 WARN 日志</li>
+ *   <li>所有查询：记录 {@code im.db.query.latency} timer（用于 P95/P99 分布分析）
+ *   <li>超过阈值：记录 {@code im.db.slow{sql=sqlId}} counter +1，并输出 WARN 日志
  * </ul>
- * <p>注册方式：作为 Spring {@code @Component}，由 {@code MybatisPlusAutoConfiguration}
- * 通过 {@code ObjectProvider<Interceptor[]>} 自动收集并注入到 {@code SqlSessionFactory}。
- * 与 {@code MybatisPlusInterceptor}（InnerInterceptor 机制）独立共存，互不干扰。
+ *
+ * <p>注册方式：作为 Spring {@code @Component}，由 {@code MybatisPlusAutoConfiguration} 通过 {@code
+ * ObjectProvider<Interceptor[]>} 自动收集并注入到 {@code SqlSessionFactory}。 与 {@code
+ * MybatisPlusInterceptor}（InnerInterceptor 机制）独立共存，互不干扰。
+ *
  * <p>阈值通过 {@code im.slow-sql.threshold-ms} 配置，默认 200ms。
  *
  * @author nexus
  */
 @Slf4j
 @Component
-@org.apache.ibatis.plugin.Intercepts({
-    @Signature(type = Executor.class, method = "query",
-        args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-    @Signature(type = Executor.class, method = "update",
-        args = {MappedStatement.class, Object.class})
+@Intercepts({
+    @Signature(
+            type = Executor.class,
+            method = "query",
+            args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+    @Signature(
+            type = Executor.class,
+            method = "update",
+            args = {MappedStatement.class, Object.class})
 })
 public class ImSlowSqlInterceptor implements Interceptor {
 

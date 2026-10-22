@@ -1,7 +1,7 @@
 package com.nexus.mes.spc.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import lombok.RequiredArgsConstructor;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -9,8 +9,13 @@ import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.spc.domain.bo.SpcDataPointBo;
 import com.nexus.mes.spc.domain.vo.SpcDataPointVo;
 import com.nexus.mes.spc.service.ISpcDataPointService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * MES 统计过程控制（SPC）数据点 Controller
@@ -60,7 +65,7 @@ public class SpcDataPointController extends BaseController {
      */
     @SaCheckPermission("mes:spc:point:query")
     @GetMapping("/by-chart/{chartId}")
-    public R<java.util.List<SpcDataPointVo>> listByChart(@PathVariable Long chartId) {
+    public R<List<SpcDataPointVo>> listByChart(@PathVariable Long chartId) {
         return R.ok(spcDataPointService.listByChartId(chartId));
     }
 }

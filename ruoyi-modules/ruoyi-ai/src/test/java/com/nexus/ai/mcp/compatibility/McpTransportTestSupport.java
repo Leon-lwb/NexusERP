@@ -1,18 +1,21 @@
 package com.nexus.ai.mcp.compatibility;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpCallContext;
 import dev.langchain4j.mcp.client.McpClientListener;
-import dev.langchain4j.service.tool.ToolExecutionResult;
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
+import dev.langchain4j.service.tool.ToolExecutionResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +26,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -33,8 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 离线测试拥有全部临时端口、执行器与子进程；不依赖 Spring、数据库或外部 MCP 服务。 */
 final class McpTransportTestSupport {
@@ -221,7 +223,10 @@ final class McpTransportTestSupport {
                         throw new IllegalStateException(failure);
                     }
                 }).distinct().collect(Collectors.joining(File.pathSeparator));
-            String executable = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("win") ? "java.exe" : "java";
+            String executable =
+                    System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
+                            ? "java.exe"
+                            : "java";
             String java = Path.of(System.getProperty("java.home"), "bin", executable).toString();
             transport = StdioMcpTransport.builder().executorService(executor).command(List.of(java, "-cp", classpath,
                 JavaStdioMcpFixture.class.getName(), journal.toString())).build();

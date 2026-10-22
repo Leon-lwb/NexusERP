@@ -1,9 +1,16 @@
 package com.nexus.mes.sop.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.mes.sop.domain.SopVersion;
 import com.nexus.mes.sop.mapper.SopVersionMapper;
+import com.nexus.mes.sop.service.ISopDocumentService;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,11 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
 
 /**
  * SOP 版本 Service 单元测试 — MES-SOP-04（值域外状态不再绕过删除守卫）。
@@ -32,8 +34,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SopVersionServiceImplTest {
 
-    @Mock private SopVersionMapper baseMapper;
-    @InjectMocks private SopVersionServiceImpl service;
+    @Mock
+    private SopVersionMapper baseMapper;
+    @InjectMocks
+    private SopVersionServiceImpl service;
 
     @Test
     void deleteRejectsNonPendingVersionsRegardlessOfValueDrift() {
@@ -65,14 +69,14 @@ class SopVersionServiceImplTest {
 
     @Test
     void versionStatusConstantsMatchLegalDomain() {
-        assertEquals("PENDING", com.nexus.mes.sop.service.ISopDocumentService.VERSION_PENDING);
-        assertEquals("CURRENT", com.nexus.mes.sop.service.ISopDocumentService.VERSION_CURRENT);
-        assertEquals("HISTORICAL", com.nexus.mes.sop.service.ISopDocumentService.VERSION_HISTORICAL);
+        assertEquals("PENDING", ISopDocumentService.VERSION_PENDING);
+        assertEquals("CURRENT", ISopDocumentService.VERSION_CURRENT);
+        assertEquals("HISTORICAL", ISopDocumentService.VERSION_HISTORICAL);
         // 'PUBLISHED' 是 sop_document 的状态值，不是 sop_version 的合法状态（MES-SOP-04 数据订正目标）
-        assertNotEquals("PUBLISHED", com.nexus.mes.sop.service.ISopDocumentService.VERSION_CURRENT);
+        assertNotEquals("PUBLISHED", ISopDocumentService.VERSION_CURRENT);
         SopVersion v = new SopVersion();
         v.setStatus("PUBLISHED");
-        assertNotEquals(com.nexus.mes.sop.service.ISopDocumentService.VERSION_PENDING, v.getStatus());
+        assertNotEquals(ISopDocumentService.VERSION_PENDING, v.getStatus());
     }
 
     @Test

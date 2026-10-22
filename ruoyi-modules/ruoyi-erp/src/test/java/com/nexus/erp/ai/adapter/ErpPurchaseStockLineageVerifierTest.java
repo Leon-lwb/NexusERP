@@ -1,12 +1,18 @@
 package com.nexus.erp.ai.adapter;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.ai.adapter.ErpPurchaseInventorySourceVerifier.InventorySnapshot;
 import com.nexus.erp.ai.adapter.ErpPurchaseStockLineageVerifier.StockLineageSnapshot;
+import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseStockLineageMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseStockLineageMapper.*;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -23,11 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 使用Mapper替身隔离持久层，测试不访问外部数据库或服务。 */
 class ErpPurchaseStockLineageVerifierTest {
@@ -43,7 +46,7 @@ class ErpPurchaseStockLineageVerifierTest {
     @Test
     void nonEmptyPathCannotHideAnotherTenantDeletedStockFromGlobalMaterialCoverage() {
         Fixture f=new Fixture();
-        var all=mock(com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class);
+        var all = mock(ErpCertifiedSourceBirthMapper.class);
         when(all.lockAllStocks(MATERIAL)).thenReturn(List.of(91L,55L));
         when(all.lockAllTransactions(MATERIAL)).thenReturn(List.of(100L,101L,102L));
         f.coverage=new ErpCertifiedSourceBirthReader(all,f.qualification);
@@ -54,7 +57,7 @@ class ErpPurchaseStockLineageVerifierTest {
     @Test
     void nonEmptyPathCannotHideAnotherTenantOrphanTransactionFromGlobalMaterialCoverage() {
         Fixture f=new Fixture();
-        var all=mock(com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class);
+        var all = mock(ErpCertifiedSourceBirthMapper.class);
         when(all.lockAllStocks(MATERIAL)).thenReturn(List.of(91L));
         when(all.lockAllTransactions(MATERIAL)).thenReturn(List.of(100L,101L,102L,999L));
         f.coverage=new ErpCertifiedSourceBirthReader(all,f.qualification);
@@ -65,7 +68,7 @@ class ErpPurchaseStockLineageVerifierTest {
     @Test
     void globallyCompleteNonEmptyOriginalSourcesDoNotRequireOldStockToHaveBirth() {
         Fixture f=new Fixture();
-        var all=mock(com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.class);
+        var all = mock(ErpCertifiedSourceBirthMapper.class);
         when(all.lockAllStocks(MATERIAL)).thenReturn(List.of(91L));
         when(all.lockAllTransactions(MATERIAL)).thenReturn(List.of(100L,101L,102L));
         f.coverage=new ErpCertifiedSourceBirthReader(all,f.qualification);
@@ -247,7 +250,11 @@ class ErpPurchaseStockLineageVerifierTest {
         assertNotEquals(initial.sourceVersions().get("prd_material_requirement_detail:702"), changed.sourceVersions().get("prd_material_requirement_detail:702"));
         assertEquals(q("0"), changed.inventory().quantity());
         assertEquals(Set.of(100L, 103L), changed.transactionIds());
-        assertEquals(Set.of(100L, 103L), changed.stocks().get(0).transactions().stream().map(TransactionRow::txId).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(
+                Set.of(100L, 103L),
+                changed.stocks().get(0).transactions().stream()
+                        .map(TransactionRow::txId)
+                        .collect(Collectors.toSet()));
     }
 
     @Test

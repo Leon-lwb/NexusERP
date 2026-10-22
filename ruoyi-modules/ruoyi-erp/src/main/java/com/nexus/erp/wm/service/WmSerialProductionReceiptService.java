@@ -1,37 +1,40 @@
 package com.nexus.erp.wm.service;
 
+import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.trace.*;
+import com.nexus.common.trace.port.ProductionManifestPostingPort;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.ProductionCompletionPostingMapper;
 import com.nexus.erp.prd.service.impl.*;
 import com.nexus.erp.wm.domain.*;
 import com.nexus.erp.wm.domain.bo.WmProductionRecptBo;
-import com.nexus.erp.wm.mapper.WmProductionRecptMapper;
 import com.nexus.erp.wm.domain.vo.PutawayLocation;
+import com.nexus.erp.wm.mapper.WmProductionRecptMapper;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
-import static com.nexus.erp.wm.service.WmSerialInventoryService.need;
 
-/**
- * 调用方必须在ERP事务外完成MES分页读取；本入口不连接MES，不发布旧完工异步路径。
- */
+/** 调用方必须在ERP事务外完成MES分页读取；本入口不连接MES，不发布旧完工异步路径。 */
 @Service
 @DS("erp")
 @RequiredArgsConstructor
-public class WmSerialProductionReceiptService
-        implements com.nexus.common.trace.port.ProductionManifestPostingPort {
-    @org.springframework.beans.factory.annotation.Autowired
+public class WmSerialProductionReceiptService implements ProductionManifestPostingPort {
+    @Autowired
     private WmTraceMaterialConsumptionService actualConsumption;
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmTraceNoGoodOutputService noGoodOutput;
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private WmBatchProductionReceiptProofService batchProof;
 
     private final WmSerialInventoryRepository store;
@@ -380,13 +383,11 @@ public class WmSerialProductionReceiptService
         return receipt.getRecptId();
     }
 
-    /**
-     * 按原持久来源证明选择重放路径，保持原业务当时的追踪策略。
-     */
+    /** 按原持久来源证明选择重放路径，保持原业务当时的追踪策略。 */
     private Long replayFinalReceipt(
             CompletionManifest manifest,
             List<CompletionManifestLine> lines,
-            com.nexus.erp.prd.domain.PrdWorkOrder wo,
+            PrdWorkOrder wo,
             WmProductionRecpt receipt) {
         source.verifyExecuted(wo, manifest.goodQty(), receipt);
         if (batchProof != null && batchProof.exists(wo.getWoId())) {

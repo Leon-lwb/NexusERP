@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -16,12 +15,17 @@ import com.nexus.erp.bd.domain.bo.BdSerialNumberRuleBo;
 import com.nexus.erp.bd.domain.vo.BdSerialNumberRuleVo;
 import com.nexus.erp.bd.mapper.BdSerialNumberRuleMapper;
 import com.nexus.erp.bd.service.IBdSerialNumberRuleService;
+import com.nexus.erp.wm.trace.ErpSerialIdentityService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 产品序列号/条码规则 Service 实现
@@ -230,13 +234,13 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
     }
 
     private void validateRule(BdSerialNumberRule rule) {
-        if (!java.util.Set.of("PRODUCT_SN", "BARCODE", "BATCH_NO").contains(rule.getRuleType())) {
+        if (!Set.of("PRODUCT_SN", "BARCODE", "BATCH_NO").contains(rule.getRuleType())) {
             throw new ServiceException("编号规则类型无效");
         }
         if (rule.getSeqLength() == null || rule.getSeqLength() < 1 || rule.getSeqLength() > 18) {
             throw new ServiceException("流水号长度须为1至18");
         }
-        new com.nexus.erp.wm.trace.ErpSerialIdentityService.Rule(
+        new ErpSerialIdentityService.Rule(
                 rule.getPrefix(),
                 rule.getDateFormat(),
                 rule.getSeqLength(),

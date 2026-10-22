@@ -7,10 +7,12 @@ import com.nexus.ai.engineering.domain.*;
 import com.nexus.ai.engineering.service.*;
 import com.nexus.common.ai.engineering.*;
 import com.nexus.common.ai.mapper.AiSessionMapper;
+import com.nexus.common.tenant.helper.TenantHelper;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 class EngineeringTaskLifecycleTest {
     static class Tasks extends EngineeringFixture {
@@ -206,12 +208,9 @@ class EngineeringTaskLifecycleTest {
                                 Long.valueOf(task.taskId()),
                                 new EngineeringLease(
                                         claim.attempt(), claim.leaseToken(), claim.revision())));
-        try (var scope = mockStatic(com.nexus.common.tenant.helper.TenantHelper.class)) {
-            scope.when(
-                            () ->
-                                    com.nexus.common.tenant.helper.TenantHelper.dynamic(
-                                            anyString(), any(java.util.function.Supplier.class)))
-                    .thenAnswer(i -> i.getArgument(1, java.util.function.Supplier.class).get());
+        try (var scope = mockStatic(TenantHelper.class)) {
+            scope.when(() -> TenantHelper.dynamic(anyString(), any(Supplier.class)))
+                    .thenAnswer(i -> i.getArgument(1, Supplier.class).get());
             assertEquals(1, f.tasks.maintain());
         }
         var failed = f.tasks.detail(f.actor, Long.valueOf(task.taskId()));

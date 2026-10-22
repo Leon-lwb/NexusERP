@@ -1,8 +1,10 @@
 package com.nexus.mes.pda.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.lt.domain.LtLot;
@@ -16,13 +18,18 @@ import com.nexus.mes.pda.domain.vo.PdaSnBindingVo;
 import com.nexus.mes.pda.service.IPdaSnService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+import com.nexus.mes.trace.MesSerialReferenceService;
+import com.nexus.mes.trace.MesSnCreationWriter;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * PDA SN 绑定/解绑作业实现
@@ -44,8 +51,8 @@ public class PdaSnServiceImpl implements IPdaSnService {
     private final LtSnBindingMapper snBindingMapper;
     private final LtLotMapper lotMapper;
     private final ProSnMapper proSnMapper;
-    private final com.nexus.mes.trace.MesSnCreationWriter productLots;
-    private final com.nexus.mes.trace.MesSerialReferenceService serialReferences;
+    private final MesSnCreationWriter productLots;
+    private final MesSerialReferenceService serialReferences;
 
     @Override
     public PdaSnBindingVo query(String snCode) {
@@ -73,7 +80,7 @@ public class PdaSnServiceImpl implements IPdaSnService {
             return MesActionResultVo.fail("批次不存在: " + lotCode);
         }
 
-        if (!java.util.Objects.equals(sn.getMaterialId(), lot.getMaterialId())) {
+        if (!Objects.equals(sn.getMaterialId(), lot.getMaterialId())) {
             return MesActionResultVo.fail("组件批次必须通过实际数量、工序和来源消耗账分配，不能作为成品批次绑定");
         }
 
@@ -105,7 +112,7 @@ public class PdaSnServiceImpl implements IPdaSnService {
             if (concurrent != null && sameBinding(concurrent, lot)) {
                 return MesActionResultVo.ok("SN 已绑定该成品批次");
             }
-            throw new com.nexus.common.core.exception.ServiceException("批次绑定并发冲突，修改已回滚，请重试");
+            throw new ServiceException("批次绑定并发冲突，修改已回滚，请重试");
         }
         return MesActionResultVo.ok("绑定成功");
     }

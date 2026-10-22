@@ -1,13 +1,21 @@
 package com.nexus.ai.service.decision;
 
-import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
-import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.nexus.common.ai.decision.dto.DecisionBusinessRef;
 import com.nexus.common.ai.decision.dto.DecisionKpiSet;
 import com.nexus.common.ai.decision.dto.DecisionResult;
 import com.nexus.common.ai.decision.dto.DecisionShortageBasis;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
+
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -15,13 +23,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 即使日期和物料相同，各 MRP 明细行仍须保留独立的数值来源。 */
 class DecisionSourceFactVerifierTest {
@@ -77,19 +78,55 @@ class DecisionSourceFactVerifierTest {
         var day = LocalDate.of(2026, 10, 9);
         var stored = snapshot(List.of(new RequirementFact(101L, 140L, "MAT140", "钢材", day,
             BigDecimal.TEN, 11L, "SCGD202609280001")));
-        var basis = new com.nexus.common.ai.decision.dto.DecisionShortageBasis("900",
-            "snapshot:" + stored.snapshotHash(), stored.snapshotAt().toLocalDate(), day,
-            List.of(new com.nexus.common.ai.decision.dto.DecisionShortageBasis.Requirement(
-                101L, 140L, day, BigDecimal.TEN, 1L)),
-            List.of(new com.nexus.common.ai.decision.dto.DecisionShortageBasis.Gap(
-                140L, 1L, BigDecimal.ZERO, null, "DERIVED:SHORTAGE:APS_CR_140:max_gap")),
-            "DERIVED:SHORTAGE:APS_CR:complete");
-        var kpi = new com.nexus.common.ai.decision.dto.DecisionKpiSet(0, 0, 0, 0, null, 0,
-            BigDecimal.ZERO, null, BigDecimal.ZERO, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, basis);
+        var basis =
+                new DecisionShortageBasis(
+                        "900",
+                        "snapshot:" + stored.snapshotHash(),
+                        stored.snapshotAt().toLocalDate(),
+                        day,
+                        List.of(
+                                new DecisionShortageBasis.Requirement(
+                                        101L, 140L, day, BigDecimal.TEN, 1L)),
+                        List.of(
+                                new DecisionShortageBasis.Gap(
+                                        140L,
+                                        1L,
+                                        BigDecimal.ZERO,
+                                        null,
+                                        "DERIVED:SHORTAGE:APS_CR_140:max_gap")),
+                        "DERIVED:SHORTAGE:APS_CR:complete");
+        var kpi =
+                new DecisionKpiSet(
+                        0,
+                        0,
+                        0,
+                        0,
+                        null,
+                        0,
+                        BigDecimal.ZERO,
+                        null,
+                        BigDecimal.ZERO,
+                        0,
+                        0,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        basis);
         var verifier = new DecisionSourceFactVerifier();
-        var result = new com.nexus.common.ai.decision.dto.DecisionResult(900L, stored.rootBusinessRef(),
-            0, null, "HIGH", List.of(), kpi, List.of(), null, Map.of(),
-            verifier.numericFacts(900L, stored), List.of(), List.of());
+        var result =
+                new DecisionResult(
+                        900L,
+                        stored.rootBusinessRef(),
+                        0,
+                        null,
+                        "HIGH",
+                        List.of(),
+                        kpi,
+                        List.of(),
+                        null,
+                        Map.of(),
+                        verifier.numericFacts(900L, stored),
+                        List.of(),
+                        List.of());
         var denied = assertThrows(ServiceException.class, () -> verifier.assertProvenance(result, stored, 10));
         assertTrue(denied.getMessage().contains("单位"));
     }
@@ -100,13 +137,47 @@ class DecisionSourceFactVerifierTest {
         var start = LocalDate.of(2026, 9, 30);
         var stored = snapshot(List.of(new RequirementFact(101L, 140L, "MAT140", "钢材", start.plusDays(10),
             BigDecimal.TEN, 11L, "SCGD202609280001", 1L)));
-        var basis = new com.nexus.common.ai.decision.dto.DecisionShortageBasis("900", "snapshot:" + stored.snapshotHash(),
-            start, start, List.of(), List.of(), "DERIVED:SHORTAGE:APS_CR:complete");
-        var k = new com.nexus.common.ai.decision.dto.DecisionKpiSet(0, 0, 0, 0, null, 0, BigDecimal.ZERO,
-            null, BigDecimal.ZERO, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, basis);
+        var basis =
+                new DecisionShortageBasis(
+                        "900",
+                        "snapshot:" + stored.snapshotHash(),
+                        start,
+                        start,
+                        List.of(),
+                        List.of(),
+                        "DERIVED:SHORTAGE:APS_CR:complete");
+        var k =
+                new DecisionKpiSet(
+                        0,
+                        0,
+                        0,
+                        0,
+                        null,
+                        0,
+                        BigDecimal.ZERO,
+                        null,
+                        BigDecimal.ZERO,
+                        0,
+                        0,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        basis);
         var verifier = new DecisionSourceFactVerifier();
-        var result = new com.nexus.common.ai.decision.dto.DecisionResult(900L, stored.rootBusinessRef(),
-            0, null, "HIGH", List.of(), k, List.of(), null, Map.of(), verifier.numericFacts(900L, stored), List.of(), List.of());
+        var result =
+                new DecisionResult(
+                        900L,
+                        stored.rootBusinessRef(),
+                        0,
+                        null,
+                        "HIGH",
+                        List.of(),
+                        k,
+                        List.of(),
+                        null,
+                        Map.of(),
+                        verifier.numericFacts(900L, stored),
+                        List.of(),
+                        List.of());
         assertThrows(ServiceException.class, () -> verifier.assertProvenance(result, stored),
             "缺少服务端冻结窗口时，不能信任被验证对象自行裁剪出的空来源集合");
     }

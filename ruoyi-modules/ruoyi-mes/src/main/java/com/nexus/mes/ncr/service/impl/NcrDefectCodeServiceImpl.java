@@ -4,18 +4,22 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.mes.ncr.domain.NcrDefect;
 import com.nexus.mes.ncr.domain.NcrDefectCode;
 import com.nexus.mes.ncr.domain.bo.NcrDefectCodeBo;
 import com.nexus.mes.ncr.domain.vo.NcrDefectCodeVo;
 import com.nexus.mes.ncr.mapper.NcrDefectCodeMapper;
 import com.nexus.mes.ncr.mapper.NcrDefectMapper;
 import com.nexus.mes.ncr.service.INcrDefectCodeService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -142,7 +146,7 @@ public class NcrDefectCodeServiceImpl implements INcrDefectCodeService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        List<Long> idList = java.util.Arrays.asList(ids);
+        List<Long> idList = Arrays.asList(ids);
         // 孤儿守卫: 有子代码
         Long childCount = baseMapper.selectCount(
             Wrappers.<NcrDefectCode>lambdaQuery()
@@ -151,10 +155,11 @@ public class NcrDefectCodeServiceImpl implements INcrDefectCodeService {
             throw new RuntimeException("存在子级缺陷代码,不可删除");
         }
         // 孤儿守卫: 被 ncr_defect 引用
-        com.nexus.mes.ncr.domain.NcrDefect defectRef = defectMapper.selectOne(
-            Wrappers.<com.nexus.mes.ncr.domain.NcrDefect>lambdaQuery()
-                .in(com.nexus.mes.ncr.domain.NcrDefect::getDefectCodeId, idList)
-                .last("LIMIT 1"));
+        NcrDefect defectRef =
+                defectMapper.selectOne(
+                        Wrappers.<NcrDefect>lambdaQuery()
+                                .in(NcrDefect::getDefectCodeId, idList)
+                                .last("LIMIT 1"));
         if (defectRef != null) {
             throw new RuntimeException("缺陷代码已被NCR缺陷明细引用,不可删除");
         }

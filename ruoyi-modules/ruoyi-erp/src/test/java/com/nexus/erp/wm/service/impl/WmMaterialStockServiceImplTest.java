@@ -1,5 +1,12 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -9,6 +16,7 @@ import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -21,14 +29,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 库存冻结/解冻 单元测试（审计 MES-X-01）
@@ -67,7 +69,7 @@ class WmMaterialStockServiceImplTest {
         // 这里按类型沿类层次查找并反射赋值
         Class<?> type = service.getClass();
         while (type != null && type != Object.class) {
-            for (java.lang.reflect.Field field : type.getDeclaredFields()) {
+            for (Field field : type.getDeclaredFields()) {
                 if (field.getType().isAssignableFrom(WmMaterialStockMapper.class)) {
                     field.setAccessible(true);
                     field.set(service, baseMapper);

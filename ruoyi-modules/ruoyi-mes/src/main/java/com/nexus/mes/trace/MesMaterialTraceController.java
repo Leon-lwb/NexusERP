@@ -1,12 +1,17 @@
 package com.nexus.mes.trace;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.trace.port.MaterialPolicyPort;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
+
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 沿用制造业务权限，仅开放有来源凭据的用料分配与不可变更正入口。
@@ -19,7 +24,7 @@ public class MesMaterialTraceController {
     private final MesProductLotOutputWriter productOutputs;
     private final MaterialPolicyPort policies;
     private final MesTraceContext context;
-    private final com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    private final MesPreparedWorkOrderPolicies preparedPolicies;
 
     /**
      * 将来源额度分配到实际制造子批次的请求。
@@ -73,14 +78,12 @@ public class MesMaterialTraceController {
             String commandId,
             Long cardId,
             Long stepRecordId,
-            java.util.List<MesProductLotOutputWriter.OutputLine> lines) {}
+            List<MesProductLotOutputWriter.OutputLine> lines) {}
 
-    /**
-     * 允许在既有末道报工或派工完成前登记实际产品批次产出。
-     */
+    /** 允许在既有末道报工或派工完成前登记实际产品批次产出。 */
     @PostMapping("/product-output")
     @SaCheckPermission("mes:pro:flowcard:complete")
-    public R<java.util.List<Long>> productOutput(@RequestBody ProductOutput body) {
+    public R<List<Long>> productOutput(@RequestBody ProductOutput body) {
         return R.ok(
                 productOutputs.record(
                         body.commandId(),
@@ -144,8 +147,8 @@ public class MesMaterialTraceController {
             Long snId,
             Long componentMaterialId,
             long expectedVersion,
-            java.util.List<MesMaterialTraceWriter.ReverseLine> reversals,
-            java.util.List<MesMaterialTraceWriter.CorrectedAllocation> allocations,
+            List<MesMaterialTraceWriter.ReverseLine> reversals,
+            List<MesMaterialTraceWriter.CorrectedAllocation> allocations,
             String reason) {}
 
     @PostMapping("/sn-consumption/correct")

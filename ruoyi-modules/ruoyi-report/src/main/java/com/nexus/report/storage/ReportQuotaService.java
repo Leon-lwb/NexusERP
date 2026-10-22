@@ -10,6 +10,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /** 产物清单和全局/租户硬配额在主库同一事务中锁定，不依赖节点内存计数。 */
@@ -70,7 +72,7 @@ public final class ReportQuotaService {
     private record Cursor(String tenant, String reference) {}
 
     /** 保存当前cursors状态或配置。 */
-    private final Map<String, Cursor> cursors = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Cursor> cursors = new ConcurrentHashMap<>();
 
     /**
      * 固定节点容量配置，首次使用后节点之间必须一致。
@@ -340,7 +342,7 @@ public final class ReportQuotaService {
             String store,
             String reference,
             Instant olderThan,
-            java.util.function.BooleanSupplier referenced,
+            BooleanSupplier referenced,
             Runnable remove) {
         boolean selected =
                 atomic(
@@ -425,7 +427,7 @@ public final class ReportQuotaService {
             long length,
             String checksum,
             String node,
-            java.util.function.BooleanSupplier referenced) {
+            BooleanSupplier referenced) {
         validate(tenant, store, reference);
         if (length < 0 || checksum == null || !checksum.matches("[a-f0-9]{64}"))
             throw ReportFault.invalid("未登记对象元数据无效");

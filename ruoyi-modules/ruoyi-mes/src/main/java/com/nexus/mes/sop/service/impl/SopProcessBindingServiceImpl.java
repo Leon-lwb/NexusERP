@@ -5,8 +5,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.sse.dto.SseMessageDto;
+import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.pro.domain.vo.ProFlowCardStepVo;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
@@ -18,12 +21,16 @@ import com.nexus.mes.sop.mapper.SopDocumentMapper;
 import com.nexus.mes.sop.mapper.SopProcessBindingMapper;
 import com.nexus.mes.sop.service.ISopDocumentService;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +63,7 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
      */
     @Override
     public TableDataInfo<SopProcessBindingVo> selectPageList(SopProcessBindingBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<com.nexus.mes.sop.domain.SopProcessBinding> lqw = buildQueryWrapper(bo);
+        LambdaQueryWrapper<SopProcessBinding> lqw = buildQueryWrapper(bo);
         Page<SopProcessBindingVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         page.getRecords().forEach(this::fillSopInfo);
         return TableDataInfo.build(page);
@@ -98,7 +105,7 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
             throw new RuntimeException("仅已发布(PUBLISHED)的SOP可绑定工序,当前状态: " + sop.getStatus()
                 + "(草稿/审批中/已归档的SOP绑定后工位侧取不到作业指导书)");
         }
-        com.nexus.mes.sop.domain.SopProcessBinding b = new com.nexus.mes.sop.domain.SopProcessBinding();
+        SopProcessBinding b = new SopProcessBinding();
         b.setProcessId(bo.getProcessId());
         b.setProcessCode(bo.getProcessCode());
         b.setProcessName(bo.getProcessName());
@@ -110,10 +117,12 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
         b.setRemark(bo.getRemark());
         // is_default=1 时同工序其他绑定排他置0 (CAS)
         if ("1".equals(b.getIsDefault())) {
-            baseMapper.update(null, Wrappers.<com.nexus.mes.sop.domain.SopProcessBinding>lambdaUpdate()
-                .set(com.nexus.mes.sop.domain.SopProcessBinding::getIsDefault, "0")
-                .eq(com.nexus.mes.sop.domain.SopProcessBinding::getProcessId, bo.getProcessId())
-                .eq(com.nexus.mes.sop.domain.SopProcessBinding::getIsDefault, "1"));
+            baseMapper.update(
+                    null,
+                    Wrappers.<SopProcessBinding>lambdaUpdate()
+                            .set(SopProcessBinding::getIsDefault, "0")
+                            .eq(SopProcessBinding::getProcessId, bo.getProcessId())
+                            .eq(SopProcessBinding::getIsDefault, "1"));
         }
         int rows = baseMapper.insert(b);
         log.info("新增工序SOP绑定: processId={}, sopId={}, isDefault={}",
@@ -147,11 +156,12 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
      */
     @Override
     public List<SopProcessBindingVo> selectByProcess(Long processId) {
-        List<SopProcessBindingVo> list = baseMapper.selectVoList(
-            Wrappers.<com.nexus.mes.sop.domain.SopProcessBinding>lambdaQuery()
-                .eq(com.nexus.mes.sop.domain.SopProcessBinding::getProcessId, processId)
-                .orderByDesc(com.nexus.mes.sop.domain.SopProcessBinding::getIsDefault)
-                .orderByAsc(com.nexus.mes.sop.domain.SopProcessBinding::getSortOrder));
+        List<SopProcessBindingVo> list =
+                baseMapper.selectVoList(
+                        Wrappers.<SopProcessBinding>lambdaQuery()
+                                .eq(SopProcessBinding::getProcessId, processId)
+                                .orderByDesc(SopProcessBinding::getIsDefault)
+                                .orderByAsc(SopProcessBinding::getSortOrder));
         list.forEach(this::fillSopInfo);
         return list;
     }
@@ -197,16 +207,16 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
         if (sop == null) {
             return null;
         }
-        if (com.nexus.common.sse.utils.SseMessageUtils.isEnable()) {
+        if (SseMessageUtils.isEnable()) {
             try {
-                java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                Map<String, Object> payload = new HashMap<>();
                 payload.put("type", "SOP");
                 payload.put("action", "PUSH");
                 payload.put("data", sop);
-                com.nexus.common.sse.dto.SseMessageDto dto = new com.nexus.common.sse.dto.SseMessageDto();
-                dto.setUserIds(java.util.Collections.singletonList(userId));
-                dto.setMessage(com.nexus.common.json.utils.JsonUtils.toJsonString(payload));
-                com.nexus.common.sse.utils.SseMessageUtils.publishMessage(dto);
+                SseMessageDto dto = new SseMessageDto();
+                dto.setUserIds(Collections.singletonList(userId));
+                dto.setMessage(JsonUtils.toJsonString(payload));
+                SseMessageUtils.publishMessage(dto);
             } catch (Exception e) {
                 log.warn("SOP SSE推送失败(不阻断,可主动拉取): stepRecordId={}, userId={}", stepRecordId, userId, e);
             }
@@ -289,16 +299,20 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
         }
     }
 
-    /**
-     * 构建查询条件: processId/sopId 精确, processName 模糊, isDefault 精确; 按 is_default 倒序 + sort_order 升序
-     */
-    private LambdaQueryWrapper<com.nexus.mes.sop.domain.SopProcessBinding> buildQueryWrapper(SopProcessBindingBo bo) {
-        return Wrappers.<com.nexus.mes.sop.domain.SopProcessBinding>lambdaQuery()
-            .eq(bo.getProcessId() != null, com.nexus.mes.sop.domain.SopProcessBinding::getProcessId, bo.getProcessId())
-            .eq(bo.getSopId() != null, com.nexus.mes.sop.domain.SopProcessBinding::getSopId, bo.getSopId())
-            .like(StringUtils.isNotBlank(bo.getProcessName()), com.nexus.mes.sop.domain.SopProcessBinding::getProcessName, bo.getProcessName())
-            .eq(StringUtils.isNotBlank(bo.getIsDefault()), com.nexus.mes.sop.domain.SopProcessBinding::getIsDefault, bo.getIsDefault())
-            .orderByDesc(com.nexus.mes.sop.domain.SopProcessBinding::getIsDefault)
-            .orderByAsc(com.nexus.mes.sop.domain.SopProcessBinding::getSortOrder);
+    /** 构建查询条件: processId/sopId 精确, processName 模糊, isDefault 精确; 按 is_default 倒序 + sort_order 升序 */
+    private LambdaQueryWrapper<SopProcessBinding> buildQueryWrapper(SopProcessBindingBo bo) {
+        return Wrappers.<SopProcessBinding>lambdaQuery()
+                .eq(bo.getProcessId() != null, SopProcessBinding::getProcessId, bo.getProcessId())
+                .eq(bo.getSopId() != null, SopProcessBinding::getSopId, bo.getSopId())
+                .like(
+                        StringUtils.isNotBlank(bo.getProcessName()),
+                        SopProcessBinding::getProcessName,
+                        bo.getProcessName())
+                .eq(
+                        StringUtils.isNotBlank(bo.getIsDefault()),
+                        SopProcessBinding::getIsDefault,
+                        bo.getIsDefault())
+                .orderByDesc(SopProcessBinding::getIsDefault)
+                .orderByAsc(SopProcessBinding::getSortOrder);
     }
 }

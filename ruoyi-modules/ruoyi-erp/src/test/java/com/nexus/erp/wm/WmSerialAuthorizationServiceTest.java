@@ -1,20 +1,25 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.trace.*;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
+import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.bo.WmTraceAuthorizationBo;
 import com.nexus.erp.wm.domain.vo.WmBatchVo;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.*;
 import com.nexus.erp.wm.trace.ErpTraceContext;
+
 import org.junit.jupiter.api.*;
+import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class WmSerialAuthorizationServiceTest {
     @Test
@@ -55,7 +60,7 @@ class WmSerialAuthorizationServiceTest {
         sequence.verify(store).policy(20L);
         sequence.verify(guard).validateDraft(eq(wo), any());
         sequence.verify(batches).createBatchByMaterial(20L, "PRD_WORK_ORDER", 1L, "W1", 30L, null);
-        var payload = org.mockito.ArgumentCaptor.forClass(String.class);
+        var payload = ArgumentCaptor.forClass(String.class);
         verify(store)
                 .appendEvent(
                         eq("ERP-LOT-50"),
@@ -350,7 +355,7 @@ class WmSerialAuthorizationServiceTest {
             when(jdbc.queryForObject(anyString(), eq(BigDecimal.class), any(Object[].class)))
                     .thenReturn(BigDecimal.ZERO);
             when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
-            var stock = new com.nexus.erp.wm.domain.WmMaterialStock();
+            var stock = new WmMaterialStock();
             stock.setStockId(101L);
             stock.setMaterialId(20L);
             stock.setBatchId(50L);

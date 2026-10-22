@@ -1,6 +1,7 @@
 package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+
 import com.nexus.ai.service.prompt.PromptTemplateService;
 import com.nexus.common.ai.domain.bo.AiPromptTemplateBo;
 import com.nexus.common.ai.domain.vo.AiPromptTemplateVo;
@@ -9,12 +10,14 @@ import com.nexus.common.core.domain.R;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI Prompt 模板管理 Controller
@@ -119,7 +122,7 @@ public class AiPromptTemplateController extends BaseController {
             case "erp_query_agent" -> rendered = promptTemplateRenderingService.renderQueryAgentContext();
             case "erp_report_agent" -> rendered = promptTemplateRenderingService.renderReportAgentContext();
             case "supervisor" -> rendered = promptTemplateRenderingService.renderSupervisorContext();
-            default -> rendered = promptTemplateRenderingService.render(templateKey, java.util.Map.of());
+            default -> rendered = promptTemplateRenderingService.render(templateKey, Map.of());
         }
         // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把渲染结果误塞进 msg
         return R.ok("查询成功", rendered);

@@ -1,19 +1,23 @@
 package com.nexus.erp.wm;
-import com.nexus.common.mq.producer.ReliableMessageProducer;
-import com.nexus.common.mq.domain.BaseMessage;
-import org.junit.jupiter.api.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.mq.producer.MessageRecordService;
-import com.nexus.common.mq.domain.MessageRecordMapper;
-import com.nexus.erp.mq.message.PurchaseReceiveWritebackMessage;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.core.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mq.domain.BaseMessage;
+import com.nexus.common.mq.domain.MessageRecord;
+import com.nexus.common.mq.domain.MessageRecordMapper;
+import com.nexus.common.mq.producer.MessageRecordService;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.erp.mq.message.PurchaseReceiveWritebackMessage;
+
+import org.junit.jupiter.api.*;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+
 class WmCertifiedReceiptNotificationTest {
     RabbitTemplate rabbit;MessageRecordService records;ReliableMessageProducer producer;ConnectionFactory connection;
     @BeforeEach void setup(){rabbit=mock(RabbitTemplate.class);records=mock(MessageRecordService.class);connection=mock(ConnectionFactory.class);
@@ -34,7 +38,15 @@ class WmCertifiedReceiptNotificationTest {
         assertThrows(ServiceException.class,()->producer.sendDurable("exchange","route",message()));verify(records,never()).updateStatusStrict(anyString(),anyString());}
     @Test void missingPublisherReturnsCannotPretendToProveRouting(){when(connection.isPublisherReturns()).thenReturn(false);assertThrows(ServiceException.class,()->producer.sendDurable("exchange","route",message()));verifyNoInteractions(records);}
     @Test void mandatoryExpressionCannotDisableActualMessageRouteProof(){when(rabbit.isMandatoryFor(any())).thenReturn(false);assertThrows(ServiceException.class,()->producer.sendDurable("exchange","route",message()));verify(records,never()).updateStatusStrict(anyString(),anyString());}
-    @Test void zeroAffectedRecordCannotBecomeAcceptance(){MessageRecordMapper mapper=mock(MessageRecordMapper.class);MessageRecordService service=new MessageRecordService(mapper);when(mapper.insert(any(com.nexus.common.mq.domain.MessageRecord.class))).thenReturn(0);assertThrows(ServiceException.class,()->service.saveSendingStrict(new com.nexus.common.mq.domain.MessageRecord()));}
+
+    @Test
+    void zeroAffectedRecordCannotBecomeAcceptance() {
+        MessageRecordMapper mapper = mock(MessageRecordMapper.class);
+        MessageRecordService service = new MessageRecordService(mapper);
+        when(mapper.insert(any(MessageRecord.class))).thenReturn(0);
+        assertThrows(ServiceException.class, () -> service.saveSendingStrict(new MessageRecord()));
+    }
+
     @Test void certifiedNotificationMustUseFailurePropagatingDurableAcceptanceNotLegacySwallowingSend() throws Exception {
         assertDoesNotThrow(()->ReliableMessageProducer.class.getMethod("sendDurable",String.class,String.class,BaseMessage.class));
     }

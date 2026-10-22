@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
+import java.sql.SQLException;
 import java.util.*;
 
 /** 使用真实H2只读账户验证右表预过滤、精确值和写账户拒绝。 */
@@ -142,8 +143,7 @@ class ReportCatalogExecutionTest {
                                 .getConnection();
                 var statement = read.createStatement()) {
             assertThrows(
-                    java.sql.SQLException.class,
-                    () -> statement.executeUpdate("DELETE FROM sample_parent"));
+                    SQLException.class, () -> statement.executeUpdate("DELETE FROM sample_parent"));
         }
     }
 

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 /** 私有产物存储测试，负责当前模块对应的契约或处理职责。 */
@@ -21,7 +22,7 @@ class PrivateArtifactStoreTest {
         var store = new LocalReportArtifactStore(directory, 1024);
         var file = store.temporary("A", "rows");
         try (var output = store.output("A", file)) {
-            output.write("synthetic".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            output.write("synthetic".getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }

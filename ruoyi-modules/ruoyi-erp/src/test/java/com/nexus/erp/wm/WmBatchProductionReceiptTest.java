@@ -1,10 +1,15 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.*;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.ProductionCompletionPostingMapper;
 import com.nexus.erp.prd.service.impl.*;
@@ -15,6 +20,7 @@ import com.nexus.erp.wm.service.impl.WmProductionRecptServiceImpl;
 import com.nexus.erp.wm.strategy.impl.ProductionCompletionStrategy;
 import com.nexus.erp.wm.trace.ErpTraceContext;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,10 +29,10 @@ import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.datasource.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 沿实际清单适配、原入库执行、原库存策略与版本化来源证明验证整条调用链。
@@ -366,7 +372,7 @@ class WmBatchProductionReceiptTest {
             stock.setStockQuantity(BigDecimal.ZERO);
             stock.setUnitCost(new BigDecimal("0.333333"));
             stock.setTotalCost(BigDecimal.ZERO);
-            when(guardMapper.databaseDate()).thenReturn(java.time.LocalDate.now().toString());
+            when(guardMapper.databaseDate()).thenReturn(LocalDate.now().toString());
             when(guardMapper.findWorkOrder("t1", 5L)).thenReturn(1L);
             when(guardMapper.lockWorkOrder("t1", 1L)).thenReturn(wo);
             when(guardMapper.lockReceipts("t1", 1L)).thenAnswer(a -> List.of(receipt));
@@ -499,11 +505,11 @@ class WmBatchProductionReceiptTest {
                     new ProductionCompletionStrategy(
                             txMapper,
                             stockMapper,
-                            mock(com.nexus.erp.bd.mapper.BdMaterialMapper.class),
+                            mock(BdMaterialMapper.class),
                             mock(WmWarehouseMapper.class),
                             mock(WmStorageLocationMapper.class),
                             mock(WmStorageAreaMapper.class),
-                            mock(com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper.class),
+                            mock(BdUnitOfMeasureMapper.class),
                             batchMapper);
             ReflectionTestUtils.setField(
                     strategy, "serialInventory", new WmSerialInventoryService(store));

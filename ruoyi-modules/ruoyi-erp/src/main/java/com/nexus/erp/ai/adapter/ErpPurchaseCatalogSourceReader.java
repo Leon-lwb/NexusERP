@@ -14,6 +14,7 @@ import com.nexus.erp.bd.domain.BdVendor;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper.DatabaseClock;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
@@ -23,9 +24,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -360,11 +366,16 @@ public class ErpPurchaseCatalogSourceReader {
     /** 采购来源内容摘要，不是完整ERP主数据修订号；仅冻结实际认证过的身份/单位/有效状态。 */
     private static String contentVersion(String... fields) {
         try {
-            var digest=java.security.MessageDigest.getInstance("SHA-256");
-            for(String field:fields) { byte[] value=field.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-                digest.update(java.nio.ByteBuffer.allocate(4).putInt(value.length).array());digest.update(value); }
-            return java.util.HexFormat.of().formatHex(digest.digest());
-        } catch(java.security.NoSuchAlgorithmException unavailable) { throw rejected("采购来源内容版本不可生成"); }
+            var digest = MessageDigest.getInstance("SHA-256");
+            for (String field : fields) {
+                byte[] value = field.getBytes(StandardCharsets.UTF_8);
+                digest.update(ByteBuffer.allocate(4).putInt(value.length).array());
+                digest.update(value);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException unavailable) {
+            throw rejected("采购来源内容版本不可生成");
+        }
     }
 
     private record MaterialSource(String tenantId, Long id, Long baseUomId, Long status, String delFlag) { }

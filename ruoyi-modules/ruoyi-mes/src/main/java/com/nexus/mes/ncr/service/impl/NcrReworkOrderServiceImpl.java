@@ -16,16 +16,18 @@ import com.nexus.mes.ncr.mapper.NcrReworkOrderMapper;
 import com.nexus.mes.ncr.service.INcrReworkOrderService;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
-import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -86,7 +88,7 @@ public class NcrReworkOrderServiceImpl implements INcrReworkOrderService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        List<Long> idList = java.util.Arrays.asList(ids);
+        List<Long> idList = Arrays.asList(ids);
         int rows = baseMapper.deleteByIds(idList);
         log.info("批量删除返工单: count={}", ids.length);
         return rows > 0;

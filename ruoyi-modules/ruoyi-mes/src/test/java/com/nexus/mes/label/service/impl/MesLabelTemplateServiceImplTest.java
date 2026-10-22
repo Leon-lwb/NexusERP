@@ -1,5 +1,16 @@
 package com.nexus.mes.label.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -8,15 +19,16 @@ import com.nexus.common.trace.SerialIdentity;
 import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelPrintTask;
-import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
 import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.label.domain.bo.MesLabelTemplateBo;
+import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
 import com.nexus.mes.label.mapper.MesLabelTemplateMapper;
 import com.nexus.mes.label.service.LabelPrintService;
 import com.nexus.mes.label.service.LabelRenderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.testsupport.SpringStaticBootstrap;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -25,23 +37,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.Charset;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.Map;
 
 /**
  * MesLabelTemplateServiceImpl 单元测试 — MES-LABEL-03 保存即校验 + MES-LABEL-02 补打入口
@@ -58,11 +60,15 @@ class MesLabelTemplateServiceImplTest {
     private static final String VALID_CONTENT =
             "{\"items\":[{\"type\":\"qrcode\",\"field\":\"snCode\",\"x\":8,\"y\":8,\"size\":5}]}";
 
-    @Mock private MesLabelTemplateMapper baseMapper;
-    @Mock private LabelPrintService printService;
-    @Mock private ProSnMapper proSnMapper;
+    @Mock
+    private MesLabelTemplateMapper baseMapper;
+    @Mock
+    private LabelPrintService printService;
+    @Mock
+    private ProSnMapper proSnMapper;
 
-    @Mock private SerialIdentityPort identities;
+    @Mock
+    private SerialIdentityPort identities;
     private MockedStatic<TenantHelper> tenant;
 
     /**
@@ -368,7 +374,7 @@ class MesLabelTemplateServiceImplTest {
     void preview_returnsRenderedPayload() {
         when(baseMapper.selectById(5L)).thenReturn(template(VALID_CONTENT));
 
-        java.util.Map<String, Object> data = service.preview(5L);
+        Map<String, Object> data = service.preview(5L);
 
         assertEquals("GBK", data.get("charset"));
         assertTrue(data.get("payload").toString().contains("SN-FC-TEST-0001"), data.toString());

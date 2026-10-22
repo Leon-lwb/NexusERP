@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.mq.domain.MessageRecordMapper;
 import com.nexus.common.mq.producer.MessageRecordService;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -46,7 +49,7 @@ public class RabbitMqAutoConfiguration {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
-        factory.setAcknowledgeMode(org.springframework.amqp.core.AcknowledgeMode.MANUAL);
+        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
         factory.setPrefetchCount(10);
         return factory;
     }

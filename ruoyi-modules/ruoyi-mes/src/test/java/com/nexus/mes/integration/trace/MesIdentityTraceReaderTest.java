@@ -1,12 +1,17 @@
 package com.nexus.mes.integration.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import com.nexus.common.trace.port.SerialIdentityPort;
 import com.nexus.mes.trace.MesTraceContext;
+
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class MesIdentityTraceReaderTest {
     JdbcTemplate jdbc;
@@ -24,9 +29,7 @@ class MesIdentityTraceReaderTest {
                                 ""));
         reader =
                 new MesIdentityTraceReader(
-                        jdbc,
-                        mock(MesTraceContext.class),
-                        mock(com.nexus.common.trace.port.SerialIdentityPort.class));
+                        jdbc, mock(MesTraceContext.class), mock(SerialIdentityPort.class));
         jdbc.execute(
                 "CREATE TABLE lt_wo_consumption(consumption_id BIGINT,tenant_id VARCHAR(20),wo_id"
                         + " BIGINT,material_id BIGINT,lot_id BIGINT,source_allocation_id"
@@ -73,7 +76,7 @@ class MesIdentityTraceReaderTest {
         var impact = page.rows().get(0);
         assertEquals(1L, impact.consumptionId());
         assertEquals(7L, impact.mesWoId());
-        assertEquals(0, new java.math.BigDecimal("3").compareTo(impact.unallocatedQuantity()));
+        assertEquals(0, new BigDecimal("3").compareTo(impact.unallocatedQuantity()));
         assertFalse(page.hasMore());
     }
 

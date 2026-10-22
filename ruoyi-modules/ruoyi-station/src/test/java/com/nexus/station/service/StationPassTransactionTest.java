@@ -1,5 +1,9 @@
 package com.nexus.station.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationInterceptor;
@@ -7,57 +11,70 @@ import com.baomidou.dynamic.datasource.processor.DsSpelExpressionProcessor;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.trace.CodeCandidate;
 import com.nexus.common.trace.CodeObjectType;
 import com.nexus.common.trace.CodeResolution;
+import com.nexus.common.trace.TraceHashes;
 import com.nexus.common.trace.TrackingPolicy;
 import com.nexus.common.trace.TrackingStage;
-import com.nexus.mes.trace.MesSerialReferenceService;
-import com.nexus.mes.trace.MesTraceContext;
-import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+import com.nexus.common.trace.WorkOrderTrackingPolicySnapshot;
+import com.nexus.common.trace.port.WorkOrderTrackingPolicyPort;
 import com.nexus.mes.flash.domain.TestRecord;
 import com.nexus.mes.flash.mapper.TestRecordMapper;
+import com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.pro.domain.*;
 import com.nexus.mes.pro.mapper.*;
 import com.nexus.mes.pro.service.IProFlowCardService;
-import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
 import com.nexus.mes.pro.service.IProSnService;
+import com.nexus.mes.pro.service.MesProgressTransactionGuard;
+import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+import com.nexus.mes.trace.MesSerialReferenceService;
+import com.nexus.mes.trace.MesTraceContext;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.domain.MesStationReport;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.mapper.*;
+
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.LocalCacheScope;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.mybatis.spring.SqlSessionTemplate;
-import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * 真实 Spring 事务/动态数据源代理和生产 Mapper SQL 的私有 H2 回归。
@@ -76,12 +93,12 @@ class StationPassTransactionTest {
     StationPassGuardMapper guard;
     MockedStatic<TenantHelper> tenant;
     AtomicBoolean failAfterIncrement;
-    com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
+    MesPreparedWorkOrderPolicies preparedPolicies;
     AtomicBoolean unknownRelease;
-    java.util.concurrent.atomic.AtomicInteger policyReads;
+    AtomicInteger policyReads;
     StationSchWorkerMapper workers;
     IProFlowCardService flow;
-    java.util.concurrent.atomic.AtomicReference<Map<String, Object>> worker;
+    AtomicReference<Map<String, Object>> worker;
 
     @BeforeEach
     void setup() throws Exception {
@@ -172,15 +189,14 @@ class StationPassTransactionTest {
         // 内存数据库不支持对计数结果加行锁；先读取并锁定同一批实际行，再统计数量。
         doAnswer(
                         i -> {
-                            com.baomidou.mybatisplus.core.conditions.Wrapper<?> query =
-                                    i.getArgument(0);
+                            Wrapper<?> query = i.getArgument(0);
                             assertTrue(query.getSqlSegment().contains("FOR UPDATE"));
                             return (long)
                                     routedDb.queryForList(
                                                     "SELECT step_record_id FROM pro_flow_card_step"
-                                                        + " WHERE tenant_id=? AND card_id=10 AND"
-                                                        + " del_flag='0' AND step_status NOT IN"
-                                                        + " ('COMPLETED','SKIPPED') FOR UPDATE",
+                                                            + " WHERE tenant_id=? AND card_id=10 AND"
+                                                            + " del_flag='0' AND step_status NOT IN"
+                                                            + " ('COMPLETED','SKIPPED') FOR UPDATE",
                                                     TenantHelper.getTenantId())
                                             .size();
                         })
@@ -212,9 +228,7 @@ class StationPassTransactionTest {
                 .completeSn(any());
         guard = sessions.getMapper(StationPassGuardMapper.class);
         workers = mock(StationSchWorkerMapper.class);
-        worker =
-                new java.util.concurrent.atomic.AtomicReference<>(
-                        Map.of("user_id", 105L, "user_name", "操作员"));
+        worker = new AtomicReference<>(Map.of("user_id", 105L, "user_name", "操作员"));
         when(workers.selectByEmployeeId("EMP-1")).thenAnswer(i -> worker.get());
         canonicalCodes = new ConcurrentHashMap<>();
         registerCanonical("SN-1", 10001L, 1L);
@@ -225,8 +239,7 @@ class StationPassTransactionTest {
                                     assertEquals(TenantHelper.getTenantId(), tenantId);
                                     assertEquals(Set.of(CodeObjectType.SN), allowed);
                                     assertFalse(
-                                            org.springframework.transaction.support
-                                                    .TransactionSynchronizationManager
+                                            TransactionSynchronizationManager
                                                     .isActualTransactionActive(),
                                             "ERP canonical resolution must run outside the held MES"
                                                     + " transaction");
@@ -239,12 +252,11 @@ class StationPassTransactionTest {
                                 new MesTraceContext(
                                         new MesProgressTransactionGuard(sessionFactory))));
         unknownRelease = new AtomicBoolean();
-        policyReads = new java.util.concurrent.atomic.AtomicInteger();
-        com.nexus.common.trace.port.WorkOrderTrackingPolicyPort bank =
+        policyReads = new AtomicInteger();
+        WorkOrderTrackingPolicyPort bank =
                 (policyTenant, erpWo, material) -> {
                     assertFalse(
-                            org.springframework.transaction.support
-                                    .TransactionSynchronizationManager.isActualTransactionActive(),
+                            TransactionSynchronizationManager.isActualTransactionActive(),
                             "ERP release policy must be read through the NOT_SUPPORTED proxy before"
                                     + " MES row locks");
                     assertEquals("000000", policyTenant);
@@ -260,16 +272,15 @@ class StationPassTransactionTest {
                             "New station policy must be prepared before quantity aggregation");
                     policyReads.incrementAndGet();
                     if (unknownRelease.get()) {
-                        return com.nexus.common.trace.WorkOrderTrackingPolicySnapshot.unknown(
+                        return WorkOrderTrackingPolicySnapshot.unknown(
                                 policyTenant, erpWo, material, "release evidence unavailable");
                     }
-                    var time = java.time.Instant.parse("2026-10-18T00:00:00Z");
-                    return new com.nexus.common.trace.WorkOrderTrackingPolicySnapshot(
+                    var time = Instant.parse("2026-10-18T00:00:00Z");
+                    return new WorkOrderTrackingPolicySnapshot(
                             policyTenant,
                             erpWo,
                             material,
-                            com.nexus.common.trace.WorkOrderTrackingPolicySnapshot.Provenance
-                                    .ERP_RELEASE,
+                            WorkOrderTrackingPolicySnapshot.Provenance.ERP_RELEASE,
                             new TrackingPolicy(false, true, true, 7L, TrackingStage.STRICT),
                             1,
                             "a".repeat(64),
@@ -283,13 +294,13 @@ class StationPassTransactionTest {
                 };
         var policyReader =
                 mesProxy(
-                        new com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader(
+                        new MesWorkOrderTrackingPolicyReader(
                                 routedDb,
                                 new MesTraceContext(
                                         new MesProgressTransactionGuard(sessionFactory)),
                                 bank));
         preparedPolicies =
-                new com.nexus.mes.trace.MesPreparedWorkOrderPolicies(
+                new MesPreparedWorkOrderPolicies(
                         routedDb,
                         new MesTraceContext(new MesProgressTransactionGuard(sessionFactory)),
                         policyReader);
@@ -374,13 +385,13 @@ class StationPassTransactionTest {
     private void testEvidence(long id, Long localSnId, String code, String result, String time) {
         db.update(
                 "INSERT INTO"
-                    + " mes_test_record(test_record_id,tenant_id,sn_id,sn_code,del_flag,result,test_time)"
-                    + " VALUES(?,'000000',?,?,'0',?,?)",
+                        + " mes_test_record(test_record_id,tenant_id,sn_id,sn_code,del_flag,result,test_time)"
+                        + " VALUES(?,'000000',?,?,'0',?,?)",
                 id,
                 localSnId,
                 code,
                 result,
-                java.sql.Timestamp.valueOf(time));
+                Timestamp.valueOf(time));
     }
 
     /**
@@ -415,7 +426,7 @@ class StationPassTransactionTest {
                                     ? "INTEGER"
                                     : t == BigDecimal.class
                                             ? "DECIMAL(18,4)"
-                                            : java.util.Date.class.isAssignableFrom(t)
+                                            : Date.class.isAssignableFrom(t)
                                                     ? "TIMESTAMP"
                                                     : "VARCHAR(2048)";
             columns.add(f.getColumn() + " " + type);
@@ -430,10 +441,9 @@ class StationPassTransactionTest {
         scope.when(
                         () ->
                                 TenantHelper.dynamic(
-                                        org.mockito.ArgumentMatchers.anyString(),
-                                        org.mockito.ArgumentMatchers.any(
-                                                java.util.function.Supplier.class)))
-                .thenAnswer(i -> i.getArgument(1, java.util.function.Supplier.class).get());
+                                        ArgumentMatchers.anyString(),
+                                        ArgumentMatchers.any(Supplier.class)))
+                .thenAnswer(i -> i.getArgument(1, Supplier.class).get());
         return scope;
     }
 
@@ -487,8 +497,7 @@ class StationPassTransactionTest {
 
     @Test
     void traceEnabledStationReadsFrozenReleaseBeforeItsSourceWrites() {
-        org.springframework.test.util.ReflectionTestUtils.setField(
-                preparedPolicies, "traceRelayEnabled", true);
+        ReflectionTestUtils.setField(preparedPolicies, "traceRelayEnabled", true);
         assertEquals(
                 "SERVER_COMMITTED", service.reportSingle(request(1000), OP).get("submissionState"));
         assertEquals(1, policyReads.get());
@@ -498,8 +507,7 @@ class StationPassTransactionTest {
 
     @Test
     void unknownReleaseBlocksStationBeforeReportCounterAndSnWrites() {
-        org.springframework.test.util.ReflectionTestUtils.setField(
-                preparedPolicies, "traceRelayEnabled", true);
+        ReflectionTestUtils.setField(preparedPolicies, "traceRelayEnabled", true);
         unknownRelease.set(true);
         assertThrows(ServiceException.class, () -> service.reportSingle(request(1000), OP));
         assertEquals(1, policyReads.get());
@@ -508,8 +516,7 @@ class StationPassTransactionTest {
 
     @Test
     void committedStationReplayKeepsOriginalEffectWhenReleaseLaterBecomesUnknown() {
-        org.springframework.test.util.ReflectionTestUtils.setField(
-                preparedPolicies, "traceRelayEnabled", true);
+        ReflectionTestUtils.setField(preparedPolicies, "traceRelayEnabled", true);
         service.reportSingle(request(1000), OP);
         unknownRelease.set(true);
         assertEquals(
@@ -678,9 +685,9 @@ class StationPassTransactionTest {
         testEvidence(1, 1L, "SN-1", "FAIL", "2026-10-18 08:00:00");
         db.update(
                 "INSERT INTO"
-                    + " mes_test_record(test_record_id,tenant_id,sn_code,del_flag,result,test_time)"
-                    + " VALUES(2,'000001','SN-1','0','PASS',?)",
-                java.sql.Timestamp.valueOf("2026-10-18 09:00:00"));
+                        + " mes_test_record(test_record_id,tenant_id,sn_code,del_flag,result,test_time)"
+                        + " VALUES(2,'000001','SN-1','0','PASS',?)",
+                Timestamp.valueOf("2026-10-18 09:00:00"));
         assertFalse((Boolean) service.validate("SN-1", STATION).get("pass"));
         assertThrows(ServiceException.class, () -> service.reportSingle(request(1000), OP));
         unchanged();
@@ -736,12 +743,12 @@ class StationPassTransactionTest {
                 revision);
         target.update(
                 "INSERT INTO mes_trace_outbox"
-                    + " VALUES(?,'000000','MES','COMPLETION_MANIFEST',?,1,'COMPLETION_MANIFEST_FROZEN',?,?,?,?)",
+                        + " VALUES(?,'000000','MES','COMPLETION_MANIFEST',?,1,'COMPLETION_MANIFEST_FROZEN',?,?,?,?)",
                 "manifest-" + id,
                 id,
                 eventStatus,
                 payload,
-                com.nexus.common.trace.TraceHashes.sha256(payload),
+                TraceHashes.sha256(payload),
                 "APPLIED".equals(eventStatus)
                         ? "{\"sourceEventId\":\"manifest-"
                                 + id
@@ -1095,9 +1102,7 @@ class StationPassTransactionTest {
                                                 throw e;
                                             }
                                             return false;
-                                        } catch (
-                                                org.springframework.dao.TransientDataAccessException
-                                                        serializationAbort) {
+                                        } catch (TransientDataAccessException serializationAbort) {
                                             return false;
                                         } finally {
                                             DynamicDataSourceContextHolder.clear();

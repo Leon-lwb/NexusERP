@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -9,6 +13,7 @@ import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.erp.wm.service.impl.WmMaterialReceiveCrudServiceImpl;
 import com.nexus.workflow.service.IWfProcessService;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
@@ -21,16 +26,13 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.ReflectionUtils;
 
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /** 真实 Spring 事务代理与两连接内存锁回归，不访问现有业务数据库或模拟生产签发。 */
 class WmMaterialReceiveSubmitTransactionTest {
@@ -78,7 +80,7 @@ class WmMaterialReceiveSubmitTransactionTest {
         ReflectionTestUtils.setField(target,"certifiedReceiptGuard",guard);
         ReflectionTestUtils.setField(target,"processService",process);
         // 红阶段字段还不存在，仍可运行旧实际入口以证明旧事务边界错误。
-        if (org.springframework.util.ReflectionUtils.findField(target.getClass(),"receiptSubmissionTransactions") != null) {
+        if (ReflectionUtils.findField(target.getClass(), "receiptSubmissionTransactions") != null) {
             ReflectionTestUtils.setField(target,"receiptSubmissionTransactions",executor);
         }
         ProxyFactory factory = new ProxyFactory(target);

@@ -1,15 +1,20 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.trace.*;
 import com.nexus.mes.integration.trace.MesWorkOrderTrackingPolicyReader;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.*;
+
 import java.util.*;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
 
 /**
  * 冻结策略属于单次来源事务，必须在首次写入或业务行锁之前准备。
@@ -22,7 +27,7 @@ public class MesPreparedWorkOrderPolicies {
     private final MesTraceContext context;
     private final MesWorkOrderTrackingPolicyReader reader;
 
-    @org.springframework.beans.factory.annotation.Value("${nexus.trace.relay.enabled:false}")
+    @Value("${nexus.trace.relay.enabled:false}")
     private boolean traceRelayEnabled;
 
     /**

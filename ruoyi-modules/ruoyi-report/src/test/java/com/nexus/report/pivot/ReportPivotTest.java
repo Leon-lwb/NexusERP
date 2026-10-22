@@ -3,11 +3,20 @@ package com.nexus.report.pivot;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.nexus.common.report.*;
+import com.nexus.common.report.ReportCancellation;
+import com.nexus.report.domain.ReportDsl;
 import com.nexus.report.domain.ReportFault;
+import com.nexus.report.export.ReportSpreadsheetExporter;
+import com.nexus.report.service.ReportDefinitionService;
 
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
+import java.util.AbstractMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** 交叉表用固定精确行验证总计、空维度、钻取和容量。 */
 class ReportPivotTest {
@@ -99,8 +108,9 @@ class ReportPivotTest {
     /** 部署前发出的原值坐标不因新增字典名称元数据而失效。 */
     @Test
     void historicalDrillCoordinatesRemainValidWithAndWithoutDictionaryNames() {
-        String historical = com.nexus.report.service.ReportDefinitionService.hash(
-                "[TypedValue[type=STRING, value=001]]|[TypedValue[type=STRING, value=2026]]|false|false|[0]");
+        String historical =
+                ReportDefinitionService.hash(
+                        "[TypedValue[type=STRING, value=001]]|[TypedValue[type=STRING, value=2026]]|false|false|[0]");
         var original = row("001", "2026", "1");
         var labelled = new LinkedHashMap<>(original);
         labelled.put("category", new TypedValue(ValueType.STRING, "001", "类别名称"));
@@ -234,11 +244,11 @@ class ReportPivotTest {
                         row("A", "二", "2.005"));
         var result = new AggregationExecutor().aggregate(definition, descriptor(), rows);
         var dsl =
-                new com.nexus.report.domain.ReportDsl(
+                new ReportDsl(
                         2,
                         "PIVOT",
                         "交叉",
-                        com.nexus.report.domain.ReportDsl.Kind.PIVOT,
+                        ReportDsl.Kind.PIVOT,
                         "SAMPLE",
                         "1",
                         List.of(),
@@ -256,16 +266,14 @@ class ReportPivotTest {
         assertEquals("1.505", total.get("cell_1_0").value());
         assertEquals("3002399751580332.005", total.get("total_0").value());
         assertTrue(projection.data().summaries().isEmpty(), "不应另外重复输出摘要总计");
-        var output = new java.io.ByteArrayOutputStream();
-        new com.nexus.report.export.ReportSpreadsheetExporter()
+        var output = new ByteArrayOutputStream();
+        new ReportSpreadsheetExporter()
                 .data(
                         projection.dsl(),
                         consumer -> projection.data().rows().forEach(consumer),
                         output,
-                        new com.nexus.common.report.ReportCancellation());
-        try (var book =
-                new org.apache.poi.xssf.usermodel.XSSFWorkbook(
-                        new java.io.ByteArrayInputStream(output.toByteArray()))) {
+                        new ReportCancellation());
+        try (var book = new XSSFWorkbook(new ByteArrayInputStream(output.toByteArray()))) {
             assertEquals(
                     "9007199254740993.005",
                     book.getSheetAt(0).getRow(2).getCell(1).getStringCellValue());
@@ -278,12 +286,12 @@ class ReportPivotTest {
     /** 交叉单元格容量在生成每行之前检查，不先构造超限矩阵再报错。 */
     @Test
     void matrixCapacityStopsAggregationBeforeExpandingAllOutputRows() {
-        var reads = new java.util.concurrent.atomic.AtomicInteger();
+        var reads = new AtomicInteger();
         var rows = new ArrayList<Map<String, TypedValue>>();
         for (int i = 0; i < 1000; i++) {
             var data = row("R" + i, "P" + (i % 100), "1");
             rows.add(
-                    new java.util.AbstractMap<String, TypedValue>() {
+                    new AbstractMap<String, TypedValue>() {
                         /**
                          * 返回不可变源行条目。
                          *

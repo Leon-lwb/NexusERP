@@ -1,5 +1,9 @@
 package com.nexus.mes.lt.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -11,7 +15,9 @@ import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,6 +29,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,21 +37,24 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class LtLotServiceImplTest {
 
-    @Mock private LtLotMapper baseMapper;
-    @Mock private LtWoConsumptionMapper consumptionMapper;
-    @Mock private LtSnBindingMapper bindingMapper;
-    @Mock private AutoCodeUtil autoCodeUtil;
-    @InjectMocks private LtLotServiceImpl service;
+    @Mock
+    private LtLotMapper baseMapper;
+    @Mock
+    private LtWoConsumptionMapper consumptionMapper;
+    @Mock
+    private LtSnBindingMapper bindingMapper;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
+    @InjectMocks
+    private LtLotServiceImpl service;
 
-    @Captor private ArgumentCaptor<LtLot> insertCaptor;
+    @Captor
+    private ArgumentCaptor<LtLot> insertCaptor;
 
     @BeforeAll
     static void initTableInfo() {
@@ -102,9 +112,9 @@ class LtLotServiceImplTest {
 
     @Test
     void quantityEditCannotBorrowAnotherCaseFoldedTenantAllocation() {
-        var ds = new org.h2.jdbcx.JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:" + java.util.UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
-        var jdbc = new org.springframework.jdbc.core.JdbcTemplate(ds);
+        var ds = new JdbcDataSource();
+        ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var jdbc = new JdbcTemplate(ds);
         jdbc.execute(
                 "CREATE TABLE lt_lot(lot_id bigint,tenant_id VARCHAR_IGNORECASE(20),quantity"
                         + " decimal(18,4),consumed_qty decimal(18,4),status varchar(24))");

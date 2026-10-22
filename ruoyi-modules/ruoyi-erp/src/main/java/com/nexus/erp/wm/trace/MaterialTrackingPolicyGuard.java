@@ -3,12 +3,16 @@ package com.nexus.erp.wm.trace;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.port.MaterialTrackingUsagePort;
 import com.nexus.erp.bd.domain.BdMaterial;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 主数据追踪策略只能在无遗留使用或完成身份转换后变更。
@@ -41,7 +45,7 @@ public class MaterialTrackingPolicyGuard {
         flag(next.getIsBatchManage());
         flag(next.getIsSerialManage());
         if (next.getAllowMixedLot() != 0 && next.getAllowMixedLot() != 1
-                || !java.util.Set.of("AUDIT", "STRICT").contains(next.getTrackingStage())) {
+                || !Set.of("AUDIT", "STRICT").contains(next.getTrackingStage())) {
             throw new ServiceException("追踪阶段或混批配置无效");
         }
         boolean dimensions =

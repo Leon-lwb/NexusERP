@@ -12,21 +12,24 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.label.domain.bo.MesLabelTemplateBo;
-import com.nexus.mes.label.domain.vo.MesLabelTemplateVo;
 import com.nexus.mes.label.domain.vo.LabelPrintTaskVo;
+import com.nexus.mes.label.domain.vo.MesLabelTemplateVo;
 import com.nexus.mes.label.mapper.MesLabelTemplateMapper;
 import com.nexus.mes.label.service.IMesLabelTemplateService;
 import com.nexus.mes.label.service.LabelPrintService;
 import com.nexus.mes.label.service.LabelRenderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -317,7 +320,7 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
         fields.put("materialName", "测试物料");
         fields.put("woNo", "MO-TEST-001");
         fields.put("cardNo", "FC-TEST-001");
-        fields.put("productionDate", String.format("%tF", new java.util.Date()));
+        fields.put("productionDate", String.format("%tF", new Date()));
         return fields;
     }
 

@@ -16,6 +16,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.time.Instant;
 import java.util.*;
 
 /** 独立JVM探针只访问测试传入的隔离H2/MinIO，输出合成快照和测量值。 */
@@ -115,7 +116,7 @@ public final class ReportS3NodeProbe {
                     if (Files.size(materialized) == 0) throw new IllegalStateException("物化为空");
                 }
                 if (Files.exists(materialized)) throw new IllegalStateException("物化未释放");
-                store.reap(java.time.Instant.now().minusSeconds(3600), (tenant, reference) -> true);
+                store.reap(Instant.now().minusSeconds(3600), (tenant, reference) -> true);
                 values.setProperty("rangeOffset", Long.toString(index.lastSeekOffset()));
                 values.setProperty(
                         "readMillis", Long.toString((System.nanoTime() - started) / 1000000));

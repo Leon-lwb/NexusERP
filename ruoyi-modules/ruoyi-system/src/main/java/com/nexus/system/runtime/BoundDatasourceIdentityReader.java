@@ -4,18 +4,21 @@ import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.ds.ItemDataSource;
 import com.p6spy.engine.spy.P6DataSource;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.sql.DataSource;
 
 /** 查询已绑定的现有连接池；绝不根据配置的 URL 新建连接。 */
 public final class BoundDatasourceIdentityReader {
@@ -24,7 +27,7 @@ public final class BoundDatasourceIdentityReader {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("master", "ry-vue"); values.put("erp", "ry-erp");
         values.put("mes", "ry-mes"); values.put("iot", "ry-iot");
-        SCHEMAS = java.util.Collections.unmodifiableMap(values);
+        SCHEMAS = Collections.unmodifiableMap(values);
     }
     private final DataSource source;
 

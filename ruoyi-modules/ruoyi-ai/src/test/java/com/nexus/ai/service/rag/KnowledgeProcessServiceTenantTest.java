@@ -1,5 +1,9 @@
 package com.nexus.ai.service.rag;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -21,6 +25,7 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.handle.PlusTenantLineHandler;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.tenant.properties.TenantProperties;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
@@ -40,14 +46,12 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 文档处理的租户与来源回归：运行真实异步任务、分段和租户 SQL 插件，不连接 OSS、数据库或模型。
@@ -105,11 +109,16 @@ class KnowledgeProcessServiceTenantTest {
         });
         when(documents.updateById(any(AiKnowledgeDocument.class)))
             .thenAnswer(invocation -> applyDocumentPatch(invocation.getArgument(0)));
-        when(documents.update(org.mockito.ArgumentMatchers.<AiKnowledgeDocument>any(),
-            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any()))
-            .thenAnswer(invocation -> invocation.getArgument(0) == null
-                ? applyAtomicClaim(invocation.getArgument(1))
-                : applyRejectedSubmission(invocation.getArgument(0), invocation.getArgument(1)));
+        when(documents.update(
+                        ArgumentMatchers.<AiKnowledgeDocument>any(),
+                        ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any()))
+                .thenAnswer(
+                        invocation ->
+                                invocation.getArgument(0) == null
+                                        ? applyAtomicClaim(invocation.getArgument(1))
+                                        : applyRejectedSubmission(
+                                                invocation.getArgument(0),
+                                                invocation.getArgument(1)));
         when(chunks.insert(any(AiKnowledgeChunk.class))).thenAnswer(invocation -> {
             invocation.<AiKnowledgeChunk>getArgument(0).setId(301L);
             return 1;
@@ -264,10 +273,18 @@ class KnowledgeProcessServiceTenantTest {
     @Test
     @DisplayName("重试提交被拒绝时不清理SQL旧片段或外部向量")
     void rejectedRetryNeverCleansChunksOrVectors() {
-        service = new KnowledgeProcessService(parser, new ChunkingService(), vectors, documents, chunks,
-            knowledgeService, indexGate, task -> {
-                throw new java.util.concurrent.RejectedExecutionException("private-executor-credentials");
-            });
+        service =
+                new KnowledgeProcessService(
+                        parser,
+                        new ChunkingService(),
+                        vectors,
+                        documents,
+                        chunks,
+                        knowledgeService,
+                        indexGate,
+                        task -> {
+                            throw new RejectedExecutionException("private-executor-credentials");
+                        });
 
         ServiceException rejected = assertThrows(ServiceException.class, () -> service.retryProcess(DOCUMENT_ID));
 
@@ -275,9 +292,14 @@ class KnowledgeProcessServiceTenantTest {
         assertNull(rejected.getCause());
         verifyNoInteractions(chunks, vectors, oss);
         assertTrue(submitted.isEmpty());
-        verify(documents).update(argThat((AiKnowledgeDocument row) -> "3".equals(row.getStatus())
-            && "文档处理任务未提交，请稍后重试。".equals(row.getErrorMessage())),
-            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
+        verify(documents)
+                .update(
+                        argThat(
+                                (AiKnowledgeDocument row) ->
+                                        "3".equals(row.getStatus())
+                                                && "文档处理任务未提交，请稍后重试。"
+                                                        .equals(row.getErrorMessage())),
+                        ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
         assertEquals(List.of("000000"), statusTenants);
     }
 
@@ -286,11 +308,18 @@ class KnowledgeProcessServiceTenantTest {
     @DisplayName("正常重试在worker核对归属和IndexReady后按原租户清理旧片段及向量")
     void retryCleanupRunsOnlyInValidatedWorkerTenant() throws Exception {
         List<String> cleanupContexts = new ArrayList<>();
-        doAnswer(invocation -> {
-            cleanupContexts.add(Thread.currentThread().getName() + "|" + TenantHelper.getTenantId()
-                + "|" + AiRequestContext.getTenantId());
-            return 1;
-        }).when(chunks).delete(org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
+        doAnswer(
+                        invocation -> {
+                            cleanupContexts.add(
+                                    Thread.currentThread().getName()
+                                            + "|"
+                                            + TenantHelper.getTenantId()
+                                            + "|"
+                                            + AiRequestContext.getTenantId());
+                            return 1;
+                        })
+                .when(chunks)
+                .delete(ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
         doAnswer(invocation -> {
             cleanupContexts.add(Thread.currentThread().getName() + "|" + TenantHelper.getTenantId()
                 + "|" + AiRequestContext.getTenantId());
@@ -313,7 +342,7 @@ class KnowledgeProcessServiceTenantTest {
         var cleanup = inOrder(indexGate, vectors, chunks, oss, parser);
         cleanup.verify(indexGate).assertIndexReadyForDocumentOps(KNOWLEDGE_ID);
         cleanup.verify(vectors).deleteByDocumentId(DOCUMENT_ID, KNOWLEDGE_ID);
-        cleanup.verify(chunks).delete(org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
+        cleanup.verify(chunks).delete(ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
         cleanup.verify(oss).getObjectContent(document.getFilePath());
         cleanup.verify(parser).parse(any(), eq(document.getFileName()));
         verify(chunks).insert(any(AiKnowledgeChunk.class));
@@ -368,8 +397,10 @@ class KnowledgeProcessServiceTenantTest {
         service.retryProcess(DOCUMENT_ID);
         assertEquals(2, submitted.size());
         assertEquals("3", document.getStatus(), "请求排队不能提前认领或修改文档状态");
-        verify(documents, never()).update(org.mockito.ArgumentMatchers.<AiKnowledgeDocument>any(),
-            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
+        verify(documents, never())
+                .update(
+                        ArgumentMatchers.<AiKnowledgeDocument>any(),
+                        ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
         runWorker(submitted.get(0));
         assertEquals("2", document.getStatus());
         assertEquals(1, document.getChunkCount());
@@ -403,8 +434,10 @@ class KnowledgeProcessServiceTenantTest {
 
         runWorker();
 
-        verify(documents).update(org.mockito.ArgumentMatchers.<AiKnowledgeDocument>any(),
-            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
+        verify(documents)
+                .update(
+                        ArgumentMatchers.<AiKnowledgeDocument>any(),
+                        ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
         verify(documents, never()).updateById(any(AiKnowledgeDocument.class));
         verifyNoInteractions(chunks, vectors, oss, parser);
         assertEquals(List.of(0), claimRows);
@@ -453,7 +486,7 @@ class KnowledgeProcessServiceTenantTest {
         assertEquals(List.of("0"), statusesForClaim(claimAttempts.get(0)));
         assertEquals("2", document.getStatus());
         verify(vectors, never()).deleteByDocumentId(anyLong(), anyLong());
-        verify(chunks, never()).delete(org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
+        verify(chunks, never()).delete(ArgumentMatchers.<Wrapper<AiKnowledgeChunk>>any());
     }
 
     /** 重试先执行并失败后，迟到的首次上传任务不能不清理旧片段就再次插入。 */
@@ -488,11 +521,19 @@ class KnowledgeProcessServiceTenantTest {
     @ValueSource(strings = {"1", "2"})
     @DisplayName("提交拒绝不会覆盖另一任务的处理中或成功状态")
     void rejectedRetryDoesNotOverwriteAnotherTaskState(String otherState) {
-        service = new KnowledgeProcessService(parser, new ChunkingService(), vectors, documents, chunks,
-            knowledgeService, indexGate, task -> {
-                document.setStatus(otherState);
-                throw new java.util.concurrent.RejectedExecutionException("私有执行器诊断");
-            });
+        service =
+                new KnowledgeProcessService(
+                        parser,
+                        new ChunkingService(),
+                        vectors,
+                        documents,
+                        chunks,
+                        knowledgeService,
+                        indexGate,
+                        task -> {
+                            document.setStatus(otherState);
+                            throw new RejectedExecutionException("私有执行器诊断");
+                        });
 
         assertThrows(ServiceException.class, () -> service.retryProcess(DOCUMENT_ID));
 
@@ -520,19 +561,32 @@ class KnowledgeProcessServiceTenantTest {
     @Test
     @DisplayName("任务提交拒绝时回写固定失败并向上传方明确报错")
     void rejectedSubmissionMarksOwnedDocumentFailedWithoutLeakingExecutorDetails() {
-        service = new KnowledgeProcessService(parser, new ChunkingService(), vectors, documents, chunks,
-            knowledgeService, indexGate, task -> {
-                throw new java.util.concurrent.RejectedExecutionException("private-executor-credentials");
-            });
+        service =
+                new KnowledgeProcessService(
+                        parser,
+                        new ChunkingService(),
+                        vectors,
+                        documents,
+                        chunks,
+                        knowledgeService,
+                        indexGate,
+                        task -> {
+                            throw new RejectedExecutionException("private-executor-credentials");
+                        });
         try (MockedStatic<OssFactory> factory = mockStatic(OssFactory.class)) {
             factory.when(OssFactory::instance).thenReturn(oss);
             var rejected = assertThrows(ServiceException.class, this::upload);
             assertEquals("文档处理任务未提交，请稍后重试。", rejected.getMessage());
             assertNull(rejected.getCause());
         }
-        verify(documents).update(argThat((AiKnowledgeDocument row) -> "3".equals(row.getStatus())
-            && "文档处理任务未提交，请稍后重试。".equals(row.getErrorMessage())),
-            org.mockito.ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
+        verify(documents)
+                .update(
+                        argThat(
+                                (AiKnowledgeDocument row) ->
+                                        "3".equals(row.getStatus())
+                                                && "文档处理任务未提交，请稍后重试。"
+                                                        .equals(row.getErrorMessage())),
+                        ArgumentMatchers.<Wrapper<AiKnowledgeDocument>>any());
         assertEquals(List.of("000000"), statusTenants);
         verifyNoInteractions(chunks, vectors);
     }
@@ -657,7 +711,7 @@ class KnowledgeProcessServiceTenantTest {
         String where = claim.getSqlSegment();
         String set = claim.getSqlSet();
         Map<String, Object> parameters = claim.getParamNameValuePairs();
-        assertFalse(where.toUpperCase(java.util.Locale.ROOT).contains(" OR "), "认领条件不能使用OR放宽归属");
+        assertFalse(where.toUpperCase(Locale.ROOT).contains(" OR "), "认领条件不能使用OR放宽归属");
         Object id = parameterForColumn(where, "id", parameters);
         Object tenant = parameterForColumn(where, "tenant_id", parameters);
         Object knowledgeId = parameterForColumn(where, "knowledge_id", parameters);

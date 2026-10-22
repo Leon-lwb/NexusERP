@@ -10,8 +10,10 @@ import com.nexus.report.domain.ReportRecords.Grant;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.springframework.dao.DataAccessException;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 
@@ -1108,7 +1110,7 @@ class ReportStoreTest {
      * @param status 当前操作的 {@code status} 输入
      * @param action 资源操作
      */
-    private static void assertFault(int status, org.junit.jupiter.api.function.Executable action) {
+    private static void assertFault(int status, Executable action) {
         assertEquals(status, assertThrows(ReportFault.class, action).status());
     }
 
@@ -1151,7 +1153,7 @@ class ReportStoreTest {
                         Instant.now().plusSeconds(3600));
         f.jdbc.update(
                 "UPDATE rpt_run SET data_time=? WHERE run_id=?",
-                java.sql.Timestamp.from(Instant.parse("2000-01-01T00:00:00Z")),
+                Timestamp.from(Instant.parse("2000-01-01T00:00:00Z")),
                 Long.valueOf(run.id()));
         assertTrue(store.beginSnapshot("A", run.id(), "build/preview/time", null));
         var started = store.run("A", run.id()).orElseThrow();

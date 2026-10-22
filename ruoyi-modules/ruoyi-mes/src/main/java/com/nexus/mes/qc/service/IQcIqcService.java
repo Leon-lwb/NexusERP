@@ -2,11 +2,12 @@ package com.nexus.mes.qc.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
-import com.nexus.mes.qc.domain.vo.QcIqcVo;
+import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
+import com.nexus.mes.qc.domain.vo.QcIqcVo;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -73,14 +74,18 @@ public interface IQcIqcService {
     /**
      * 执行检验(PENDING/INSPECTING -> COMPLETED), 完成后MQ回传ERP
      *
-     * @param iqcId        IQC ID
+     * @param iqcId IQC ID
      * @param inspectResult 检验结果(QUALIFIED/UNQUALIFIED)
-     * @param defectInfo   不良品信息(JSON String)
-     * @param sampleQty    抽样数量
-     * @param remark       备注
+     * @param defectInfo 不良品信息(JSON String)
+     * @param sampleQty 抽样数量
+     * @param remark 备注
      */
-    void inspect(Long iqcId, String inspectResult, String defectInfo,
-                 java.math.BigDecimal sampleQty, String remark);
+    void inspect(
+            Long iqcId,
+            String inspectResult,
+            String defectInfo,
+            BigDecimal sampleQty,
+            String remark);
 
     /**
      * 按检验明细执行检验(自动判定): 录入实测值 -> 判定引擎逐项判 PASS/FAIL ->

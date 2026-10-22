@@ -16,6 +16,7 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
 /** 私有产物读取接口，每次请求重新核对当前 owner 及权限，不使用永久 URL。 */
@@ -65,10 +66,10 @@ public class EngineeringArtifactController {
                                     .header("X-Content-Type-Options", "nosniff")
                                     .body(new InputStreamResource(content.input()));
                         } catch (IOException e) {
-                            throw new java.io.UncheckedIOException(e);
+                            throw new UncheckedIOException(e);
                         }
                     });
-        } catch (java.io.UncheckedIOException e) {
+        } catch (UncheckedIOException e) {
             throw e.getCause();
         }
     }

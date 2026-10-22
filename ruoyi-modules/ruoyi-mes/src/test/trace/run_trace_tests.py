@@ -30,7 +30,8 @@ cp = list(dict.fromkeys(cp))
 )
 java = OUT / "TraceTestRunner.java"
 java.write_text(
-    """import org.junit.platform.launcher.core.*;
+    """import java.io.PrintWriter;
+import org.junit.platform.launcher.core.*;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.*;
 public class TraceTestRunner {
@@ -39,7 +40,7 @@ public class TraceTestRunner {
   for(String name:args) builder.selectors(selectClass(name));
   var listener=new SummaryGeneratingListener();
   var launcher=LauncherFactory.create(); launcher.registerTestExecutionListeners(listener); launcher.execute(builder.build());
-  var summary=listener.getSummary(); summary.printTo(new java.io.PrintWriter(System.out)); summary.printFailuresTo(new java.io.PrintWriter(System.out));
+  var summary=listener.getSummary(); summary.printTo(new PrintWriter(System.out)); summary.printFailuresTo(new PrintWriter(System.out));
   if(summary.getTestsFoundCount()==0 || summary.getTestsFailedCount()>0) System.exit(1);
  }
 }""",

@@ -1,12 +1,16 @@
 package com.nexus.erp.pu.service;
 
+import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseOrderWorkflowMapper;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.OriginalOrderObservation;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.function.Supplier;
-import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
 
 /** 复用原生批准重放门禁；未定价终态只核永久空报价回执，不引入第二套定价规则。 */
 final class PuCertifiedPurchaseOriginalOrderReceiptSupport {
@@ -62,8 +66,12 @@ final class PuCertifiedPurchaseOriginalOrderReceiptSupport {
         require(!events.isEmpty()&&hash("ORDER_RESULT",tenant,head.orderId().toString(),head.orderNo(),terminal.requestKey(),head.status(),"1",
             "-","-","-","-","-","-",hash(events.toArray(String[]::new))).equals(terminal.resultFingerprint()),"未定价终态原生结果与全来源释放摘要不一致");
     }
+
     /** 原生终态记录在头 CAS/全部追加事件之后，且不得越过原创建/批准因果下界。 */
-    private static void requireTerminalTime(OriginalOrderObservation observation,PuCertifiedPurchaseOrderWorkflowMapper.OperationRecord terminal,java.util.Date previous) {
+    private static void requireTerminalTime(
+            OriginalOrderObservation observation,
+            PuCertifiedPurchaseOrderWorkflowMapper.OperationRecord terminal,
+            Date previous) {
         for(var parameter:observation.releaseParameterTimes())require(terminal!=null&&PuCertifiedPurchaseOriginalReceiptHistory.Time.parameterBetweenSubmissionBounds(parameter,previous,terminal.occurredAt()),
             "参数释放Date不能越过原生前序提交与终态命令的精确窗口");
         require(terminal!=null&&terminal.actorId().equals(observation.casActor())
@@ -75,6 +83,10 @@ final class PuCertifiedPurchaseOriginalOrderReceiptSupport {
             &&PuCertifiedPurchaseOriginalReceiptHistory.Time.notBefore(observation.terminalAt(),observation.casAt()),"原生终态命令/头 CAS/对应事件与前序提交因果不一致");
     }
     private static <T>T io(Supplier<T> read){try{return read.get();}catch(RuntimeException failure){throw new ServiceException("可信采购原生历史读取失败，结果不可确认");}}
-    private static boolean absentOrZero(java.math.BigDecimal value){return value==null||value.signum()==0;}
+
+    private static boolean absentOrZero(BigDecimal value) {
+        return value == null || value.signum() == 0;
+    }
+
     private static void require(boolean condition,String message){if(!condition)throw new ServiceException("可信采购原生历史拒绝："+message);}
 }

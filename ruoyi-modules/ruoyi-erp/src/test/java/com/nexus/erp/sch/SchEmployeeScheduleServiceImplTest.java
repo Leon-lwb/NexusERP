@@ -1,5 +1,11 @@
 package com.nexus.erp.sch;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
+
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchPlan;
 import com.nexus.erp.sch.domain.SchShift;
@@ -12,6 +18,7 @@ import com.nexus.erp.sch.mapper.SchTeamMapper;
 import com.nexus.erp.sch.mapper.SchTeamMemberMapper;
 import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.service.impl.SchEmployeeScheduleServiceImpl;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,11 +29,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
 
 /**
  * SchEmployeeScheduleServiceImpl.generate 单元测试
@@ -176,6 +178,6 @@ class SchEmployeeScheduleServiceImplTest {
     @Test
     void generateThrowsWhenPlanNotExist() {
         when(schPlanMapper.selectById(999L)).thenReturn(null);
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.generate(999L));
+        assertThrows(ServiceException.class, () -> service.generate(999L));
     }
 }

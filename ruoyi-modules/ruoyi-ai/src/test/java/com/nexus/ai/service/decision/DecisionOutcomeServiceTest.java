@@ -1,25 +1,34 @@
 package com.nexus.ai.service.decision;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.common.ai.decision.dto.*;
-import com.nexus.common.ai.decision.enums.*;
-import com.nexus.common.ai.domain.entity.*;
-import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
-import org.junit.jupiter.api.Test;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.common.ai.decision.dto.*;
+import com.nexus.common.ai.decision.enums.*;
+import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+import com.nexus.common.ai.domain.entity.*;
+import com.nexus.common.json.config.JacksonConfig;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
+
+// 同名类型说明：本文件同时使用 com.nexus.common.json.config.JacksonConfig 和
+// com.nexus.common.web.config.JacksonConfig，后者保留全限定名以区分。
+
 class DecisionOutcomeServiceTest {
     private final DecisionPersistenceService persistence = mock(DecisionPersistenceService.class);
     private final IndustrialDecisionDataPort port = mock(IndustrialDecisionDataPort.class);
-    private final ObjectMapper mapper = new ObjectMapper()
-        .registerModule(new com.nexus.common.json.config.JacksonConfig().registerJavaTimeModule())
-        .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
+    private final ObjectMapper mapper =
+            new ObjectMapper()
+                    .registerModule(new JacksonConfig().registerJavaTimeModule())
+                    .registerModule(
+                            new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
     private final DecisionOutcomeService service = new DecisionOutcomeService(persistence, port, mapper);
 
     @Test void rolledBackRunCanPersistHonestOutcomeWithoutClaimingActualBenefit() throws Exception {

@@ -1,11 +1,14 @@
 package com.nexus.runtime.attestation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Arrays;
+import java.util.Map;
 
 /** 不安装根、不修改系统目录，只确认测试输入无法变成生产信任。 */
 class TrustAndToolIsolationTest {
@@ -24,9 +27,18 @@ class TrustAndToolIsolationTest {
         } finally { if (previous == null) System.clearProperty(key); else System.setProperty(key, previous); }
     }
     @Test void snapshotCopyCannotAcquireAProofDomainOrASetterByClaimingVerified() {
-        var claimed = new WitnessSnapshot("VERIFIED", "fixture", "a".repeat(40), "b".repeat(64), "c".repeat(64), java.util.Map.of());
+        var claimed =
+                new WitnessSnapshot(
+                        "VERIFIED",
+                        "fixture",
+                        "a".repeat(40),
+                        "b".repeat(64),
+                        "c".repeat(64),
+                        Map.of());
         assertEquals("NONE", claimed.supportedProofDomain()); assertEquals("UNPROVEN", claimed.proofStatus()); assertFalse(claimed.finalBytesProven());
         assertThrows(UnsupportedOperationException.class, () -> claimed.classes().put("fixture.Main", null));
-        assertTrue(java.util.Arrays.stream(RuntimeAttestationAgent.class.getMethods()).noneMatch(method -> method.getName().equals("agentmain")));
+        assertTrue(
+                Arrays.stream(RuntimeAttestationAgent.class.getMethods())
+                        .noneMatch(method -> method.getName().equals("agentmain")));
     }
 }

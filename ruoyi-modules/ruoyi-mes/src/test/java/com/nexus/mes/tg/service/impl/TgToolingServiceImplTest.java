@@ -1,5 +1,10 @@
 package com.nexus.mes.tg.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -8,6 +13,7 @@ import com.nexus.mes.tg.domain.TgMaintenanceRecord;
 import com.nexus.mes.tg.domain.TgTooling;
 import com.nexus.mes.tg.domain.TgUsageRecord;
 import com.nexus.mes.tg.domain.bo.TgCalibrationBo;
+import com.nexus.mes.tg.domain.bo.TgCheckoutBo;
 import com.nexus.mes.tg.domain.vo.TgMaintenancePlanVo;
 import com.nexus.mes.tg.domain.vo.TgToolingVo;
 import com.nexus.mes.tg.mapper.TgMaintenancePlanMapper;
@@ -17,6 +23,7 @@ import com.nexus.mes.tg.mapper.TgUsageRecordMapper;
 import com.nexus.mes.tg.service.ITgMaintenancePlanService;
 import com.nexus.mes.tg.service.ITgToolingService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -32,11 +39,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.*;
 
 /**
  * MES 工装台账 Service 单元测试 — MES-TG-01（校准维度 + 超期拦截）/ MES-TG-02（保养到期拦截）。
@@ -56,13 +58,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TgToolingServiceImplTest {
 
-    @Mock private TgToolingMapper baseMapper;
-    @Mock private TgUsageRecordMapper usageRecordMapper;
-    @Mock private TgMaintenanceRecordMapper maintenanceRecordMapper;
-    @Mock private TgMaintenancePlanMapper maintenancePlanMapper;
-    @Mock private AutoCodeUtil autoCodeUtil;
+    @Mock
+    private TgToolingMapper baseMapper;
+    @Mock
+    private TgUsageRecordMapper usageRecordMapper;
+    @Mock
+    private TgMaintenanceRecordMapper maintenanceRecordMapper;
+    @Mock
+    private TgMaintenancePlanMapper maintenancePlanMapper;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
 
-    @InjectMocks private TgToolingServiceImpl service;
+    @InjectMocks
+    private TgToolingServiceImpl service;
 
     /** 真实列缓存: LambdaWrapper 需要实体 TableInfo（纯 Mock 单测下缺失会抛 lambda cache 异常）。 */
     @BeforeAll
@@ -184,8 +192,9 @@ class TgToolingServiceImplTest {
         vo.setNextCalibrationDate(new Date(System.currentTimeMillis() - 86400000L));
         when(baseMapper.selectVoById(6L)).thenReturn(vo);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> service.checkout(6L, new com.nexus.mes.tg.domain.bo.TgCheckoutBo()));
+        RuntimeException ex =
+                assertThrows(
+                        RuntimeException.class, () -> service.checkout(6L, new TgCheckoutBo()));
 
         assertTrue(ex.getMessage().contains("校准已超期"), "领用须被前置拦截: " + ex.getMessage());
         verify(baseMapper, never()).update(any(), any());

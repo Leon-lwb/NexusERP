@@ -1,6 +1,7 @@
 package com.nexus.erp.fin.fa.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -23,12 +24,15 @@ import com.nexus.erp.fin.gl.constant.GlConstants;
 import com.nexus.erp.fin.gl.domain.GlAccount;
 import com.nexus.erp.fin.gl.domain.GlPeriod;
 import com.nexus.erp.fin.gl.domain.GlVoucherLine;
+import com.nexus.erp.fin.gl.domain.vo.GlVoucherVo;
 import com.nexus.erp.fin.gl.mapper.GlAccountMapper;
 import com.nexus.erp.fin.gl.mapper.GlPeriodMapper;
 import com.nexus.erp.fin.gl.service.IGlVoucherService;
 import com.nexus.erp.fin.gl.service.VoucherBuildRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +41,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +151,7 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         req.setSourceNo(FaConstants.SOURCE_NO_DEPRECIATION + period.getPeriodName() + "-" + batchId);
         req.setSummary("固定资产折旧-" + period.getPeriodName());
         req.setLines(lines);
-        com.nexus.erp.fin.gl.domain.vo.GlVoucherVo voucher = voucherService.createAndPost(req);
+        GlVoucherVo voucher = voucherService.createAndPost(req);
         // 回填折旧记录并累加资产累计折旧;过账后批量重读资产取最新 version 做乐观锁校验
         Map<Long, FaAsset> freshAssetMap = preloadAssets(plans);
         for (FaDepreciation plan : plans) {
@@ -340,11 +345,11 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         return l;
     }
 
-    private LocalDate toLocalDate(java.util.Date date) {
+    private LocalDate toLocalDate(Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private java.util.Date toDate(java.util.Date date) {
+    private Date toDate(Date date) {
         return date;
     }
 

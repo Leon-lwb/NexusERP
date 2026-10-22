@@ -20,6 +20,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** 报表运行接口测试，负责当前模块对应的契约或处理职责。 */
 class ReportRuntimeControllerTest {
@@ -171,11 +172,9 @@ class ReportRuntimeControllerTest {
         Files.write(file, new byte[] {1, 2, 3});
         var job = job("SUCCEEDED", Instant.now().plusSeconds(60));
         when(runtime.job(actor, "untrusted-request-id")).thenReturn(job);
-        var released = new java.util.concurrent.atomic.AtomicBoolean();
+        var released = new AtomicBoolean();
         when(artifacts.materialize("T", "private-file-reference"))
-                .thenReturn(
-                        new com.nexus.report.storage.ReportArtifactStore.Materialized(
-                                file, () -> released.set(true)));
+                .thenReturn(new ReportArtifactStore.Materialized(file, () -> released.set(true)));
         var response = new MockHttpServletResponse();
         controller.file("untrusted-request-id", response);
         assertArrayEquals(new byte[] {1, 2, 3}, response.getContentAsByteArray());
@@ -198,14 +197,12 @@ class ReportRuntimeControllerTest {
     void revocationDuringMaterializationReleasesFileWithoutSendingBytes() throws Exception {
         var file = directory.resolve("revoked.pdf");
         Files.write(file, new byte[] {1, 2, 3});
-        var released = new java.util.concurrent.atomic.AtomicBoolean();
+        var released = new AtomicBoolean();
         when(runtime.job(actor, "5"))
                 .thenReturn(job("SUCCEEDED", Instant.now().plusSeconds(60)))
                 .thenThrow(ReportFault.denied());
         when(artifacts.materialize("T", "private-file-reference"))
-                .thenReturn(
-                        new com.nexus.report.storage.ReportArtifactStore.Materialized(
-                                file, () -> released.set(true)));
+                .thenReturn(new ReportArtifactStore.Materialized(file, () -> released.set(true)));
         var response = new MockHttpServletResponse();
         assertThrows(ReportFault.class, () -> controller.file("5", response));
         assertEquals(0, response.getContentAsByteArray().length);

@@ -10,6 +10,7 @@ import com.nexus.report.engine.*;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.*;
 
 /** 验证空筛选、必填业务对象和报表默认值的服务端规则。 */
@@ -120,9 +121,7 @@ class ReportParameterValidationTest {
                         new DatasetParameter("date", "截止日期", ValueType.DATE, true, "TODAY"),
                         true,
                         null);
-        assertEquals(
-                java.time.LocalDate.now().toString(),
-                service.parameters(date, Map.of()).get("date"));
+        assertEquals(LocalDate.now().toString(), service.parameters(date, Map.of()).get("date"));
         var id = binding(new DatasetParameter("orderId", "采购订单", ValueType.ID, true), true, null);
         assertEquals(
                 Long.MAX_VALUE,

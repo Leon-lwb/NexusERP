@@ -1,22 +1,26 @@
 package com.nexus.erp.wm;
 
-import com.nexus.erp.support.ErpDdlTestSupport;
+import static org.assertj.core.api.Assertions.*;
 
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.nexus.common.mq.iqc.ReceiptIqcSource;
+import com.nexus.erp.support.ErpDdlTestSupport;
 import com.nexus.erp.wm.mapper.WmReceiptIqcEvidenceMapper;
 import com.nexus.erp.wm.service.WmReceiptIqcEvidenceService;
+
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.session.Configuration;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.*;
 
 class WmReceiptIqcEvidenceMapperTest {
     @Test void everyErpReadIsTenantScopedNativeLockingReadAndThereIsOnlyOneInsert() throws Exception {
@@ -39,7 +43,7 @@ class WmReceiptIqcEvidenceMapperTest {
     }
     @Test void serviceExposesNoExternalVerifiedOrEvidenceDtoPersistenceEntrance() {
         for (var method : WmReceiptIqcEvidenceService.class.getDeclaredMethods()) {
-            if (!java.lang.reflect.Modifier.isPublic(method.getModifiers())) continue;
+            if (!Modifier.isPublic(method.getModifiers())) continue;
             assertThat(Arrays.asList(method.getParameterTypes())).doesNotContain(ReceiptIqcSource.Inspection.class,
                 WmReceiptIqcEvidenceMapper.EvidenceRow.class, WmReceiptIqcEvidenceService.EvidenceIdentity.class);
         }
@@ -71,7 +75,10 @@ class WmReceiptIqcEvidenceMapperTest {
             String sql = config.getMappedStatement(WmReceiptIqcEvidenceMapper.class.getName() + "." + name).getBoundSql(null).getSql();
             assertThat(sql).contains("information_schema.", "DATABASE()", "TABLE_NAME IN").doesNotContain("tenant_id =");
             assertThat(CCJSqlParserUtil.parse(sql)).isNotNull();
-            var ignore = WmReceiptIqcEvidenceMapper.class.getMethod(name).getAnnotation(com.baomidou.mybatisplus.annotation.InterceptorIgnore.class);
+            var ignore =
+                    WmReceiptIqcEvidenceMapper.class
+                            .getMethod(name)
+                            .getAnnotation(InterceptorIgnore.class);
             assertThat(ignore).isNotNull(); assertThat(ignore.tenantLine()).isEqualTo("true");
         }
     }
@@ -92,7 +99,9 @@ class WmReceiptIqcEvidenceMapperTest {
 
     @Test void preciseIsolationReadsRealOriginalTransactionStockIdsAndWritesOnlySafetyFlags() throws Exception {
         Configuration config = new Configuration(); config.addMapper(WmReceiptIqcEvidenceMapper.class);
-        var params = new java.util.HashMap<String,Object>(); params.put("tenantId", "000007"); params.put("receiveId", 101L);
+        var params = new HashMap<String, Object>();
+        params.put("tenantId", "000007");
+        params.put("receiveId", 101L);
         params.put("stockId", 501L); params.put("batchId", 401L); params.put("txId", 601L);
         params.put("warehouseId", 701L); params.put("areaId", 801L); params.put("locationId", 901L);
         params.put("s", WmReceiptIqcEvidencePreciseIsolationTest.stock(501L, 401L, 601L));

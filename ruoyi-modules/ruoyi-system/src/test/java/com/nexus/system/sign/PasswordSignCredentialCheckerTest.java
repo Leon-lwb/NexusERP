@@ -1,11 +1,23 @@
 package com.nexus.system.sign;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.system.domain.SysUser;
 import com.nexus.system.mapper.SysUserMapper;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,15 +30,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * 密码签署凭证校验器测试 —— 失败限速（在线爆破防护）。
@@ -87,7 +90,7 @@ class PasswordSignCredentialCheckerTest {
         redisMock.when(() -> RedisUtils.hasKey(LOCK_KEY)).thenReturn(false);
         SysUser user = new SysUser();
         user.setUserId(UID);
-        user.setPassword(cn.hutool.crypto.digest.BCrypt.hashpw(rawPassword));
+        user.setPassword(BCrypt.hashpw(rawPassword));
         when(userMapper.selectById(UID)).thenReturn(user);
     }
 

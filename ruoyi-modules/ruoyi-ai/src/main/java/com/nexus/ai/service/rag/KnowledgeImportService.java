@@ -2,10 +2,12 @@ package com.nexus.ai.service.rag;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -312,7 +314,7 @@ public class KnowledgeImportService {
         }
 
         @Override
-        public void transferTo(java.io.File dest) throws IOException, IllegalStateException {
+        public void transferTo(File dest) throws IOException, IllegalStateException {
             Files.write(dest.toPath(), content);
         }
     }

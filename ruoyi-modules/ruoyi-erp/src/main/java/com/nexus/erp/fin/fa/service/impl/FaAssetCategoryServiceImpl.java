@@ -1,6 +1,5 @@
 package com.nexus.erp.fin.fa.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -12,6 +11,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mybatis.utils.IdGeneratorUtil;
 import com.nexus.erp.fin.fa.constant.FaConstants;
+import com.nexus.erp.fin.fa.domain.FaAsset;
 import com.nexus.erp.fin.fa.domain.FaAssetCategory;
 import com.nexus.erp.fin.fa.domain.bo.FaAssetCategoryBo;
 import com.nexus.erp.fin.fa.domain.vo.FaAssetCategoryVo;
@@ -20,8 +20,10 @@ import com.nexus.erp.fin.fa.mapper.FaAssetMapper;
 import com.nexus.erp.fin.fa.service.IFaAssetCategoryService;
 import com.nexus.erp.fin.gl.domain.GlAccount;
 import com.nexus.erp.fin.gl.mapper.GlAccountMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -122,8 +124,10 @@ public class FaAssetCategoryServiceImpl implements IFaAssetCategoryService {
             return true;
         }
         for (Long categoryId : categoryIds) {
-            Long used = assetMapper.selectCount(new LambdaQueryWrapper<com.nexus.erp.fin.fa.domain.FaAsset>()
-                .eq(com.nexus.erp.fin.fa.domain.FaAsset::getCategoryId, categoryId));
+            Long used =
+                    assetMapper.selectCount(
+                            new LambdaQueryWrapper<FaAsset>()
+                                    .eq(FaAsset::getCategoryId, categoryId));
             if (used != null && used > 0) {
                 throw new ServiceException("类别已被资产卡片引用,不能删除");
             }

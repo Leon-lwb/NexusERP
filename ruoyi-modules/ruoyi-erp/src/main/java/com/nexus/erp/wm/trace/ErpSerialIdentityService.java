@@ -1,30 +1,37 @@
 package com.nexus.erp.wm.trace;
 
+import cn.dev33.satoken.stp.StpUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
-import cn.dev33.satoken.stp.StpUtil;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.SerialIdentityPort;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.BadSqlGrammarException;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.sql.Clob;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 正式SN集中登记；独立ERP事务预留号码，MES失败或重试不回收号码。
@@ -66,10 +73,7 @@ public class ErpSerialIdentityService implements SerialIdentityPort {
                     throw new ServiceException("发号锁冲突重试已耗尽，请沿用原commandId稍后重试");
                 }
                 try {
-                    Thread.sleep(
-                            10L * index
-                                    + java.util.concurrent.ThreadLocalRandom.current()
-                                            .nextLong(10));
+                    Thread.sleep(10L * index + ThreadLocalRandom.current().nextLong(10));
                 } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
                     throw new ServiceException("发号重试被中断，请沿用原commandId稍后重试");
@@ -343,7 +347,7 @@ public class ErpSerialIdentityService implements SerialIdentityPort {
         try {
             Object body = row.get("result_json");
             String value =
-                    body instanceof java.sql.Clob clob
+                    body instanceof Clob clob
                             ? clob.getSubString(1, Math.toIntExact(clob.length()))
                             : text(body);
             var result = json.readValue(value, ManualRetirement.class);
@@ -404,7 +408,7 @@ public class ErpSerialIdentityService implements SerialIdentityPort {
         }
         Throwable cause = failure;
         for (int depth = 0; cause != null && depth < 10; depth++, cause = cause.getCause()) {
-            if (cause instanceof java.sql.SQLException sql
+            if (cause instanceof SQLException sql
                     && (sql.getErrorCode() == 1213
                             || sql.getErrorCode() == 1205
                             || "40001".equals(sql.getSQLState()))) {

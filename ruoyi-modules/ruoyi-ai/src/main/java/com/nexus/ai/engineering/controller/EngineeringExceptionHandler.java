@@ -8,7 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.*;
 
@@ -33,18 +37,10 @@ public class EngineeringExceptionHandler {
     public ResponseEntity<R<Map<String, String>>> unexpected(
             Exception error, HttpServletRequest request) {
         boolean input =
-                error instanceof org.springframework.http.converter.HttpMessageNotReadableException
-                        || error
-                                instanceof
-                                org.springframework.web.bind.MissingRequestHeaderException
-                        || error
-                                instanceof
-                                org.springframework.web.multipart.support
-                                        .MissingServletRequestPartException
-                        || error
-                                instanceof
-                                org.springframework.web.method.annotation
-                                        .MethodArgumentTypeMismatchException;
+                error instanceof HttpMessageNotReadableException
+                        || error instanceof MissingRequestHeaderException
+                        || error instanceof MissingServletRequestPartException
+                        || error instanceof MethodArgumentTypeMismatchException;
         return handle(
                 new EngineeringException(
                         input ? 422 : 503,

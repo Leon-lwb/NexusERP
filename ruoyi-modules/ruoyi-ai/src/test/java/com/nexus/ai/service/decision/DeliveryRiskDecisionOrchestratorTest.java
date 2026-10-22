@@ -1,32 +1,41 @@
 package com.nexus.ai.service.decision;
 
+import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.extra.spring.SpringUtil;
+
 import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.service.sse.AiDecisionSseMessageHelper;
 import com.nexus.common.ai.decision.dto.*;
 import com.nexus.common.ai.decision.enums.*;
 import com.nexus.common.ai.decision.port.*;
+import com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
-import static com.nexus.ai.service.decision.DecisionTestFixtures.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class DeliveryRiskDecisionOrchestratorTest {
@@ -40,30 +49,43 @@ class DeliveryRiskDecisionOrchestratorTest {
         new DeliveryRiskDecisionOrchestrator(config, data, workflow, store, redisson);
 
     @Test void acceptedNewRunPublishesStartedStatusBeforeFlowExecution() {
-        withTenant(() -> {
-            var sse = mock(com.nexus.ai.service.sse.AiDecisionSseMessageHelper.class);
-            var withEvents = new DeliveryRiskDecisionOrchestrator(config, data, workflow, store, redisson, sse);
-            ready();
-            when(store.createRun(any(), eq(actor()))).thenReturn(run(99L, DecisionRunStatus.CREATED));
-            when(store.requireRun(99L, "000000")).thenReturn(run(99L, DecisionRunStatus.RUNNING));
-            when(workflow.startAnalysis(any())).thenReturn(199L);
-            withEvents.start(request(false), actor());
-            InOrder ordered = inOrder(store, sse, workflow);
-            ordered.verify(store).transition(99L, DecisionRunStatus.CREATED, DecisionRunStatus.RUNNING);
-            ordered.verify(sse).sendStarted(1L, 99L);
-            ordered.verify(workflow).startAnalysis(any());
-            return null;
-        });
+        withTenant(
+                () -> {
+                    var sse = mock(AiDecisionSseMessageHelper.class);
+                    var withEvents =
+                            new DeliveryRiskDecisionOrchestrator(
+                                    config, data, workflow, store, redisson, sse);
+                    ready();
+                    when(store.createRun(any(), eq(actor())))
+                            .thenReturn(run(99L, DecisionRunStatus.CREATED));
+                    when(store.requireRun(99L, "000000"))
+                            .thenReturn(run(99L, DecisionRunStatus.RUNNING));
+                    when(workflow.startAnalysis(any())).thenReturn(199L);
+                    withEvents.start(request(false), actor());
+                    InOrder ordered = inOrder(store, sse, workflow);
+                    ordered.verify(store)
+                            .transition(99L, DecisionRunStatus.CREATED, DecisionRunStatus.RUNNING);
+                    ordered.verify(sse).sendStarted(1L, 99L);
+                    ordered.verify(workflow).startAnalysis(any());
+                    return null;
+                });
     }
 
     @Test void executionOnlyActorCannotStartANewAnalysisThroughTheService() {
-        withTenant(() -> {
-            var executor = new DecisionActor("000000", 1L, "approver",
-                java.util.Set.of("ai:decision:execute", "prd:work:query"));
-            assertThrows(ServiceException.class, () -> orchestrator.start(request(false), executor));
-            verifyNoInteractions(data, store, workflow, redisson);
-            return null;
-        });
+        withTenant(
+                () -> {
+                    var executor =
+                            new DecisionActor(
+                                    "000000",
+                                    1L,
+                                    "approver",
+                                    Set.of("ai:decision:execute", "prd:work:query"));
+                    assertThrows(
+                            ServiceException.class,
+                            () -> orchestrator.start(request(false), executor));
+                    verifyNoInteractions(data, store, workflow, redisson);
+                    return null;
+                });
     }
 
     @Test void activeRunIsReusedWithoutStartingFlowOrClaimingAnotherLock() {
@@ -298,15 +320,21 @@ class DeliveryRiskDecisionOrchestratorTest {
     }
 
     @Test void changedFrozenPurchaseSourcePreventsCompletionWithoutMarkerBackfill() {
-        withTenant(() -> {
-            var result = configurePurchaseCompletion();
-            doThrow(new com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.SourceChangedException())
-                .when(data).requireFreshPurchaseContract(any(), any(), eq(30), eq(actor()));
-            assertThrows(ServiceException.class, () -> orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor()),
-                "定稿前采购来源变化不能继续进入审批");
-            verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
-            return null;
-        });
+        withTenant(
+                () -> {
+                    var result = configurePurchaseCompletion();
+                    doThrow(new DecisionPurchaseContractCodec.SourceChangedException())
+                            .when(data)
+                            .requireFreshPurchaseContract(any(), any(), eq(30), eq(actor()));
+                    assertThrows(
+                            ServiceException.class,
+                            () ->
+                                    orchestrator.completeAnalysis(
+                                            99L, result, "TEMPLATE_FALLBACK", actor()),
+                            "定稿前采购来源变化不能继续进入审批");
+                    verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
+                    return null;
+                });
     }
 
     @Test void legacyPurchaseRunCannotBeCompletedByNewPayload() {
@@ -337,12 +365,21 @@ class DeliveryRiskDecisionOrchestratorTest {
             .thenReturn(new DecisionFreshnessResult(true, snapshot.snapshotHash(), List.of()));
         when(data.loadDeliveryContext(ref, 30, actor())).thenReturn(snapshot);
         var contract = DecisionPurchaseProposalServiceTest.contract(100L, 200L);
-        var action = new DecisionActionProposal(501L, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
-            "采购草稿", "真实逐来源合同", ref,
-            com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.toPayload(99L, contract),
-            DecisionRiskLevel.LOW, true, "pu:requisition:add",
-            com.nexus.common.ai.decision.util.DecisionPurchaseContractCodec.idempotencyKey("000000", 99L, ref, contract),
-            "purchaseRequisitionDraft", 1, List.of());
+        var action =
+                new DecisionActionProposal(
+                        501L,
+                        DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+                        "采购草稿",
+                        "真实逐来源合同",
+                        ref,
+                        DecisionPurchaseContractCodec.toPayload(99L, contract),
+                        DecisionRiskLevel.LOW,
+                        true,
+                        "pu:requisition:add",
+                        DecisionPurchaseContractCodec.idempotencyKey("000000", 99L, ref, contract),
+                        "purchaseRequisitionDraft",
+                        1,
+                        List.of());
         return new DecisionResult(99L, ref, 0, DecisionRiskLevel.LOW, "HIGH", List.of(), null, List.of(), null,
             Map.of(), new DecisionSourceFactVerifier().numericFacts(99L, snapshot), List.of(action), List.of());
     }
@@ -441,28 +478,48 @@ class DeliveryRiskDecisionOrchestratorTest {
     }
 
     @Test void rereadWithSameHashButChangedNumericFactIsRejected() {
-        withTenant(() -> {
-            DeliveryContextSnapshot stored = stockSnapshot("hash-1");
-            DeliveryContextSnapshot reread = new DeliveryContextSnapshot(stored.rootBusinessRef(),
-                stored.salesOrders(), stored.workOrders(), stored.routingByMaterial(), stored.requirements(),
-                List.of(new DeliveryContextSnapshot.StockFact(101L, java.math.BigDecimal.valueOf(99),
-                    java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO)), stored.arrivals(),
-                stored.capacityByDate(), stored.holidays(), stored.currentSchedule(),
-                stored.supplierMetrics(), "hash-1", stored.snapshotAt().plusSeconds(1), stored.warnings());
-            AiDecisionRun running = run(99L, DecisionRunStatus.RUNNING);
-            running.setInputSnapshotHash("hash-1");
-            when(store.requireRun(99L, "000000")).thenReturn(running);
-            when(store.requireSnapshot(99L, "000000")).thenReturn(stored);
-            when(store.requireHorizonDays(running)).thenReturn(30);
-            when(data.canAccess(any(), any())).thenReturn(true);
-            when(data.checkFreshness(any(), eq("hash-1"), eq(actor())))
-                .thenReturn(new DecisionFreshnessResult(true, "hash-1", List.of()));
-            when(data.loadDeliveryContext(any(), eq(30), eq(actor()))).thenReturn(reread);
-            var result = resultWithStockEvidence(stockEvidence("10", "hash-1"));
-            assertThrows(ServiceException.class, () -> orchestrator.completeAnalysis(99L, result, "TEMPLATE_FALLBACK", actor()));
-            verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
-            return null;
-        });
+        withTenant(
+                () -> {
+                    DeliveryContextSnapshot stored = stockSnapshot("hash-1");
+                    DeliveryContextSnapshot reread =
+                            new DeliveryContextSnapshot(
+                                    stored.rootBusinessRef(),
+                                    stored.salesOrders(),
+                                    stored.workOrders(),
+                                    stored.routingByMaterial(),
+                                    stored.requirements(),
+                                    List.of(
+                                            new DeliveryContextSnapshot.StockFact(
+                                                    101L,
+                                                    BigDecimal.valueOf(99),
+                                                    BigDecimal.ZERO,
+                                                    BigDecimal.ZERO)),
+                                    stored.arrivals(),
+                                    stored.capacityByDate(),
+                                    stored.holidays(),
+                                    stored.currentSchedule(),
+                                    stored.supplierMetrics(),
+                                    "hash-1",
+                                    stored.snapshotAt().plusSeconds(1),
+                                    stored.warnings());
+                    AiDecisionRun running = run(99L, DecisionRunStatus.RUNNING);
+                    running.setInputSnapshotHash("hash-1");
+                    when(store.requireRun(99L, "000000")).thenReturn(running);
+                    when(store.requireSnapshot(99L, "000000")).thenReturn(stored);
+                    when(store.requireHorizonDays(running)).thenReturn(30);
+                    when(data.canAccess(any(), any())).thenReturn(true);
+                    when(data.checkFreshness(any(), eq("hash-1"), eq(actor())))
+                            .thenReturn(new DecisionFreshnessResult(true, "hash-1", List.of()));
+                    when(data.loadDeliveryContext(any(), eq(30), eq(actor()))).thenReturn(reread);
+                    var result = resultWithStockEvidence(stockEvidence("10", "hash-1"));
+                    assertThrows(
+                            ServiceException.class,
+                            () ->
+                                    orchestrator.completeAnalysis(
+                                            99L, result, "TEMPLATE_FALLBACK", actor()));
+                    verify(store, never()).completeAnalysis(anyLong(), any(), anyString());
+                    return null;
+                });
     }
 
     @Test void completionRejectsPortFactChangesEvenIfOldSnapshotClaimsVerifiable() {
@@ -486,23 +543,49 @@ class DeliveryRiskDecisionOrchestratorTest {
     }
 
     @Test void supplierEvidencePreservesActualObservationTimeRatherThanSnapshotTime() {
-        var at = java.time.LocalDateTime.of(2026, 9, 25, 11, 0);
-        var snapshot = new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
-            List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
-            List.of(), Map.of(), List.of(new DeliveryContextSnapshot.SupplierMetricFact(5L,
-                java.math.BigDecimal.valueOf(90), 10, at)), "hash-1",
-            java.time.LocalDateTime.of(2026, 9, 26, 10, 0), List.of());
+        var at = LocalDateTime.of(2026, 9, 25, 11, 0);
+        var snapshot =
+                new DeliveryContextSnapshot(
+                        new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(
+                                new DeliveryContextSnapshot.SupplierMetricFact(
+                                        5L, BigDecimal.valueOf(90), 10, at)),
+                        "hash-1",
+                        LocalDateTime.of(2026, 9, 26, 10, 0),
+                        List.of());
         var supplier = new DecisionSourceFactVerifier().numericFacts(99L, snapshot).stream()
             .filter(e -> "on_time_rate".equals(e.metricCode())).findFirst().orElseThrow();
         assertEquals(at, supplier.observedAt());
     }
 
     @Test void supplierWithoutObservationTimestampIsExcludedInsteadOfBreakingSnapshotFacts() {
-        var snapshot = new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
-            List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
-            List.of(), Map.of(), List.of(new DeliveryContextSnapshot.SupplierMetricFact(5L,
-                java.math.BigDecimal.valueOf(90), 10, null)), "hash-1",
-            java.time.LocalDateTime.of(2026, 9, 26, 10, 0), List.of());
+        var snapshot =
+                new DeliveryContextSnapshot(
+                        new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(),
+                        Map.of(),
+                        List.of(
+                                new DeliveryContextSnapshot.SupplierMetricFact(
+                                        5L, BigDecimal.valueOf(90), 10, null)),
+                        "hash-1",
+                        LocalDateTime.of(2026, 9, 26, 10, 0),
+                        List.of());
         assertTrue(new DecisionSourceFactVerifier().numericFacts(99L, snapshot).isEmpty());
     }
 
@@ -554,10 +637,32 @@ class DeliveryRiskDecisionOrchestratorTest {
     private DeliveryContextSnapshot configureRatioCompletion() {
         var stock = stockSnapshot("hash-1");
         var date = stock.snapshotAt().toLocalDate().plusDays(10);
-        var snapshot = new DeliveryContextSnapshot(stock.rootBusinessRef(), stock.salesOrders(), stock.workOrders(),
-            stock.routingByMaterial(), List.of(new DeliveryContextSnapshot.RequirementFact(301L, 101L, "MAT101", "物料",
-                date, java.math.BigDecimal.TEN, 11L, "WO-11", 1L)), stock.stocks(), stock.arrivals(), stock.capacityByDate(),
-            stock.holidays(), stock.currentSchedule(), stock.supplierMetrics(), stock.snapshotHash(), stock.snapshotAt(), stock.warnings());
+        var snapshot =
+                new DeliveryContextSnapshot(
+                        stock.rootBusinessRef(),
+                        stock.salesOrders(),
+                        stock.workOrders(),
+                        stock.routingByMaterial(),
+                        List.of(
+                                new DeliveryContextSnapshot.RequirementFact(
+                                        301L,
+                                        101L,
+                                        "MAT101",
+                                        "物料",
+                                        date,
+                                        BigDecimal.TEN,
+                                        11L,
+                                        "WO-11",
+                                        1L)),
+                        stock.stocks(),
+                        stock.arrivals(),
+                        stock.capacityByDate(),
+                        stock.holidays(),
+                        stock.currentSchedule(),
+                        stock.supplierMetrics(),
+                        stock.snapshotHash(),
+                        stock.snapshotAt(),
+                        stock.warnings());
         var running = run(99L, DecisionRunStatus.RUNNING);
         running.setInputSnapshotHash("hash-1");
         running.setScoreConfigJson("{\"horizonDays\":30}");
@@ -574,31 +679,92 @@ class DeliveryRiskDecisionOrchestratorTest {
     private static DecisionResult resultWithRatio(DeliveryContextSnapshot snapshot, int basisDays, boolean omitDemand) {
         var row = snapshot.requirements().get(0);
         var start = snapshot.snapshotAt().toLocalDate();
-        var basis = new DecisionShortageBasis("99", "snapshot:" + snapshot.snapshotHash(), start,
-            start.plusDays(basisDays - 1L), omitDemand ? List.of() : List.of(new DecisionShortageBasis.Requirement(
-                row.detailId(), row.materialId(), row.requiredDate(), row.requiredQty(), row.baseUomId())),
-            omitDemand ? List.of() : List.of(new DecisionShortageBasis.Gap(row.materialId(), row.baseUomId(),
-                java.math.BigDecimal.ZERO, null, "DERIVED:SHORTAGE:BASELINE_CURRENT_101:max_gap")),
-            "DERIVED:SHORTAGE:BASELINE_CURRENT:complete");
-        var k = new DecisionKpiSet(0, 0, 0, 0, null, 0, null, null, java.math.BigDecimal.ZERO, 0, 0,
-            java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, basis);
+        var basis =
+                new DecisionShortageBasis(
+                        "99",
+                        "snapshot:" + snapshot.snapshotHash(),
+                        start,
+                        start.plusDays(basisDays - 1L),
+                        omitDemand
+                                ? List.of()
+                                : List.of(
+                                        new DecisionShortageBasis.Requirement(
+                                                row.detailId(),
+                                                row.materialId(),
+                                                row.requiredDate(),
+                                                row.requiredQty(),
+                                                row.baseUomId())),
+                        omitDemand
+                                ? List.of()
+                                : List.of(
+                                        new DecisionShortageBasis.Gap(
+                                                row.materialId(),
+                                                row.baseUomId(),
+                                                BigDecimal.ZERO,
+                                                null,
+                                                "DERIVED:SHORTAGE:BASELINE_CURRENT_101:max_gap")),
+                        "DERIVED:SHORTAGE:BASELINE_CURRENT:complete");
+        var k =
+                new DecisionKpiSet(
+                        0,
+                        0,
+                        0,
+                        0,
+                        null,
+                        0,
+                        null,
+                        null,
+                        BigDecimal.ZERO,
+                        0,
+                        0,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        basis);
         return new DecisionResult(99L, snapshot.rootBusinessRef(), 0, DecisionRiskLevel.LOW, "HIGH", List.of(), k,
             List.of(), null, Map.of(), new DecisionSourceFactVerifier().numericFacts(99L, snapshot), List.of(), List.of());
     }
 
     private static DeliveryContextSnapshot stockSnapshot(String hash) {
-        return new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
-            List.of(), List.of(), Map.of(), List.of(),
-            List.of(new DeliveryContextSnapshot.StockFact(101L, java.math.BigDecimal.TEN,
-                java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO)),
-            List.of(), Map.of(), List.of(), Map.of(), List.of(), hash,
-            java.time.LocalDateTime.of(2026, 9, 26, 10, 0), List.of());
+        return new DeliveryContextSnapshot(
+                new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null),
+                List.of(),
+                List.of(),
+                Map.of(),
+                List.of(),
+                List.of(
+                        new DeliveryContextSnapshot.StockFact(
+                                101L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
+                List.of(),
+                Map.of(),
+                List.of(),
+                Map.of(),
+                List.of(),
+                hash,
+                LocalDateTime.of(2026, 9, 26, 10, 0),
+                List.of());
     }
 
     private static EvidenceItem stockEvidence(String amount, String hash) {
-        return new EvidenceItem(99L, "ERP:STOCK:101:stock_qty", "ERP", "STOCK", 101L,
-            "101", null, "stock_qty", null, "NUMBER", amount, null,
-            java.time.LocalDateTime.of(2026, 9, 26, 10, 0), hash, null, true, false, List.of(), null);
+        return new EvidenceItem(
+                99L,
+                "ERP:STOCK:101:stock_qty",
+                "ERP",
+                "STOCK",
+                101L,
+                "101",
+                null,
+                "stock_qty",
+                null,
+                "NUMBER",
+                amount,
+                null,
+                LocalDateTime.of(2026, 9, 26, 10, 0),
+                hash,
+                null,
+                true,
+                false,
+                List.of(),
+                null);
     }
 
     private static DecisionResult resultWithStockEvidence(EvidenceItem stock) {

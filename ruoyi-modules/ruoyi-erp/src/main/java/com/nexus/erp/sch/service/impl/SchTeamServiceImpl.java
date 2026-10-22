@@ -1,9 +1,9 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -27,14 +27,18 @@ import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.mapper.SchWorkerMapper;
 import com.nexus.erp.sch.service.ISchTeamService;
 import com.nexus.system.strategy.AutoCodeUtil;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 班组设置Service业务层处理
@@ -219,8 +223,8 @@ public class SchTeamServiceImpl implements ISchTeamService {
             return;
         }
         // 同组去重(同一工人重复提交会产生重复排班行, 且无 (team_id,worker_id) 唯一键兜底)
-        List<SchTeamMemberBo> deduped = new java.util.ArrayList<>();
-        java.util.Set<Long> seen = new java.util.HashSet<>();
+        List<SchTeamMemberBo> deduped = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
         for (SchTeamMemberBo m : memberList) {
             if (m.getWorkerId() != null && seen.add(m.getWorkerId())) {
                 deduped.add(m);
@@ -236,7 +240,7 @@ public class SchTeamServiceImpl implements ISchTeamService {
         for (SchWorker w : workers) {
             workerMap.put(w.getWorkerId(), w);
         }
-        List<SchTeamMember> rows = new java.util.ArrayList<>(deduped.size());
+        List<SchTeamMember> rows = new ArrayList<>(deduped.size());
         for (SchTeamMemberBo memberBo : deduped) {
             SchWorker worker = workerMap.get(memberBo.getWorkerId());
             if (worker == null) {

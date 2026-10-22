@@ -1,12 +1,15 @@
 package com.nexus.erp.wm.domain;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nexus.common.tenant.core.TenantEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import com.nexus.common.tenant.core.TenantEntity;
 
 import java.math.BigDecimal;
 
@@ -22,14 +25,13 @@ import java.math.BigDecimal;
 public class WmMiscIssueLine extends TenantEntity {
 
     /** 仅供受控库存入口传递真实来源，不接受客户端输入。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    @JsonIgnore
+    @TableField(exist = false)
     private String postingSourceType;
 
     /** 由原业务单头传入的来源仓库约束。 */
-    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    @TableField(exist = false)
     private Long warehouseId;
-
 
     /**
      * 行ID

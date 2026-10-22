@@ -1,7 +1,16 @@
 package com.nexus.common.ai.decision;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nexus.common.ai.decision.dto.ApsScenarioCompareResult;
 import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
@@ -30,8 +39,11 @@ import com.nexus.common.ai.decision.enums.DecisionRunStatus;
 import com.nexus.common.ai.decision.enums.DecisionTriggerType;
 import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+import com.nexus.common.json.config.JacksonConfig;
+
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -51,12 +63,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+// 同名类型说明：本文件同时使用 com.nexus.common.json.config.JacksonConfig 和
+// com.nexus.common.web.config.JacksonConfig，后者保留全限定名以区分。
 
 @Tag("local")
 @Tag("dev")
@@ -378,8 +386,9 @@ class DecisionContractTest {
         assertThrows(UnsupportedOperationException.class, () -> ((List<?>) roundTrip.payload().get("lines")).clear());
         String invalidIdJson = json.replace("\"workOrderId\":\"" + id + "\"",
             "\"workOrderId\":" + id);
-        assertThrows(com.fasterxml.jackson.databind.JsonMappingException.class,
-            () -> mapper.readValue(invalidIdJson, DecisionActionProposal.class));
+        assertThrows(
+                JsonMappingException.class,
+                () -> mapper.readValue(invalidIdJson, DecisionActionProposal.class));
     }
 
     @Test
@@ -780,7 +789,7 @@ class DecisionContractTest {
             .path("salesOrderId").isTextual());
         DeliveryContextSnapshot restored = mapper.readValue(json, DeliveryContextSnapshot.class);
         assertEquals(snapshot.workOrderSalesLinks(), restored.workOrderSalesLinks());
-        var legacyJson = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(json);
+        var legacyJson = (ObjectNode) mapper.readTree(json);
         legacyJson.remove("workOrderSalesLinks");
         DeliveryContextSnapshot fromLegacy = mapper.readValue(mapper.writeValueAsString(legacyJson),
             DeliveryContextSnapshot.class);
@@ -790,8 +799,8 @@ class DecisionContractTest {
     }
     private static ObjectMapper productionMapper() {
         return new ObjectMapper()
-            .registerModule(new com.nexus.common.json.config.JacksonConfig().registerJavaTimeModule())
-            .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
+                .registerModule(new JacksonConfig().registerJavaTimeModule())
+                .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
     }
 
     private static DeliveryContextSnapshot snapshotWithSchedule(Map<String, Object> schedule) {

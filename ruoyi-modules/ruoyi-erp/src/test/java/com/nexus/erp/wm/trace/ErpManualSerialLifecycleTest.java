@@ -1,6 +1,11 @@
 package com.nexus.erp.wm.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -11,19 +16,20 @@ import com.nexus.erp.wm.controller.WmSnController;
 import com.nexus.erp.wm.domain.bo.WmSnBo;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.impl.WmSnServiceImpl;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * 手工身份退休必须受来源、权限、状态锁和事务审计约束；不连接环境数据库。
@@ -398,8 +404,7 @@ class ErpManualSerialLifecycleTest {
                         call -> {
                             if (((String) call.getArgument(0))
                                     .startsWith("INSERT INTO wm_serial_lifecycle_command")) {
-                                throw new org.springframework.dao
-                                        .DataAccessResourceFailureException(
+                                throw new DataAccessResourceFailureException(
                                         "synthetic audit failure");
                             }
                             return call.callRealMethod();
@@ -453,15 +458,10 @@ class ErpManualSerialLifecycleTest {
                         "retire", Long.class, SerialIdentityController.RetireManualCommand.class);
         assertEquals(
                 List.of("wm:sn:add", "wm:sn:remove"),
-                List.of(
-                        method.getAnnotation(cn.dev33.satoken.annotation.SaCheckPermission.class)
-                                .value()));
+                List.of(method.getAnnotation(SaCheckPermission.class).value()));
         assertEquals(
                 List.of("/{identityId}/retire"),
-                List.of(
-                        method.getAnnotation(
-                                        org.springframework.web.bind.annotation.PostMapping.class)
-                                .value()));
+                List.of(method.getAnnotation(PostMapping.class).value()));
     }
 
     /**

@@ -1,14 +1,22 @@
 package com.nexus.mes.pro.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.bo.ProSkipBo;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.ProWorkOrderStepProgressService;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,20 +28,23 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.math.BigDecimal;
 
 /**
  * 刷写和跳站以非锁定真实父引用拒绝错配，不能只靠当前读条件避免外父行锁。
  */
 @ExtendWith(MockitoExtension.class)
 class ProFlowCardReferenceBeforeLockTest {
-    @Mock private ProFlowCardStepMapper stepMapper;
-    @Mock private ProWorkOrderStepMapper workOrderStepMapper;
-    @Mock private ProWorkOrderStepProgressService progressService;
-    @Mock private com.nexus.mes.trace.MesPreparedWorkOrderPolicies preparedPolicies;
-    @InjectMocks private ProFlowCardServiceImpl service;
+    @Mock
+    private ProFlowCardStepMapper stepMapper;
+    @Mock
+    private ProWorkOrderStepMapper workOrderStepMapper;
+    @Mock
+    private ProWorkOrderStepProgressService progressService;
+    @Mock
+    private MesPreparedWorkOrderPolicies preparedPolicies;
+    @InjectMocks
+    private ProFlowCardServiceImpl service;
     private MockedStatic<TenantHelper> tenant;
 
     @BeforeEach
@@ -51,11 +62,11 @@ class ProFlowCardReferenceBeforeLockTest {
         foreign.setWoStepId(2001L);
         foreign.setSequenceNum(20);
         lenient().when(stepMapper.selectById(1L)).thenReturn(foreign);
-        var card = new com.nexus.mes.pro.domain.ProFlowCard();
+        var card = new ProFlowCard();
         card.setCardId(100L);
         card.setMesWoId(1100L);
         card.setTenantId("000000");
-        card.setPlannedQty(java.math.BigDecimal.ONE);
+        card.setPlannedQty(BigDecimal.ONE);
         lenient().when(progressService.lockForCard(100L)).thenReturn(card);
     }
 
@@ -67,7 +78,7 @@ class ProFlowCardReferenceBeforeLockTest {
     @Test
     void flashGateRejectsReferenceBeforeAnyChildLock() {
         assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
+                ServiceException.class,
                 () -> ReflectionTestUtils.invokeMethod(service, "checkFlashStepGate", 1L, 100L));
         verify(stepMapper).selectById(1L);
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
@@ -80,8 +91,7 @@ class ProFlowCardReferenceBeforeLockTest {
         bo.setCardId(100L);
         bo.setStepRecordId(1L);
         bo.setReason("验证真实父引用");
-        assertThrows(
-                com.nexus.common.core.exception.ServiceException.class, () -> service.doSkip(bo));
+        assertThrows(ServiceException.class, () -> service.doSkip(bo));
         verify(stepMapper).selectById(1L);
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verify(stepMapper, never()).update(any(), any());
@@ -89,32 +99,24 @@ class ProFlowCardReferenceBeforeLockTest {
 
     @Test
     void startRejectsReferenceBeforeConditionalStateUpdate() {
-        assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> service.startStep(100L, 1L, 7L));
+        assertThrows(ServiceException.class, () -> service.startStep(100L, 1L, 7L));
         verify(stepMapper, never()).update(any(), any());
     }
 
     @Test
     void completionRejectsReferenceEvenWithValidQuantity() {
         assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
+                ServiceException.class,
                 () ->
                         service.doCompleteStep(
-                                100L,
-                                1L,
-                                java.math.BigDecimal.ONE,
-                                java.math.BigDecimal.ZERO,
-                                java.math.BigDecimal.ZERO));
+                                100L, 1L, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO));
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verify(stepMapper, never()).update(any(), any());
     }
 
     @Test
     void aggregateCompletionRejectsReferenceBeforeConditionalStateUpdate() {
-        assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> service.checkAndCompleteStepUnderLock(100L, 1L));
+        assertThrows(ServiceException.class, () -> service.checkAndCompleteStepUnderLock(100L, 1L));
         verify(stepMapper, never()).selectOne(any(Wrapper.class));
         verify(stepMapper, never()).update(any(), any());
     }

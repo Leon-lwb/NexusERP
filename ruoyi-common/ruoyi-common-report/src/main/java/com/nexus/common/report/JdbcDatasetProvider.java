@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 
 import java.sql.*;
+import java.sql.Date;
 import java.time.*;
 import java.util.*;
 import java.util.function.Consumer;
@@ -107,16 +108,12 @@ public abstract class JdbcDatasetProvider implements ReportDatasetProvider {
         List<Filter> filters = new ArrayList<>();
         Object from = query.parameters().get("fromDate"), to = query.parameters().get("toDate");
         if (from != null)
-            filters.add(
-                    new Filter(
-                            expression + " >= ?", List.of(java.sql.Date.valueOf(from.toString()))));
+            filters.add(new Filter(expression + " >= ?", List.of(Date.valueOf(from.toString()))));
         if (to != null)
             filters.add(
                     new Filter(
                             expression + " < ?",
-                            List.of(
-                                    java.sql.Date.valueOf(
-                                            LocalDate.parse(to.toString()).plusDays(1)))));
+                            List.of(Date.valueOf(LocalDate.parse(to.toString()).plusDays(1)))));
         return filters;
     }
 

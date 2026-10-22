@@ -1,5 +1,9 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -13,6 +17,7 @@ import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.impl.WmTraceServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -21,13 +26,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 class WmTraceServiceImplTest {
     private final WmMaterialStockTxMapper txMapper = mock(WmMaterialStockTxMapper.class);
@@ -187,7 +189,7 @@ class WmTraceServiceImplTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void reportsDepthTruncationWithoutChangingOriginalTransactions(boolean forward) {
-        var responses = new java.util.ArrayDeque<List<WmMaterialStockTx>>();
+        var responses = new ArrayDeque<List<WmMaterialStockTx>>();
         for (int depth = 0; depth < 10; depth++) {
             WmMaterialStockTx current = tx(2L * depth + 1, 100L + depth, forward ? -1 : 1);
             current.setSourceDocId(1000L + depth);

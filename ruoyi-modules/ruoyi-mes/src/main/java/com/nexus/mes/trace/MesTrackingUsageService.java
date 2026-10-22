@@ -1,14 +1,18 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.port.MaterialTrackingUsagePort;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import static com.nexus.mes.trace.MesTraceContext.need;
 
 /**
  * 结构或证据不足时拒绝就绪，缺少迁移不能被解释为物料从未使用。
@@ -81,7 +85,7 @@ public class MesTrackingUsageService implements MaterialTrackingUsagePort {
                                     tenant,
                                     materialId)
                             > 0;
-        } catch (org.springframework.dao.DataAccessException e) {
+        } catch (DataAccessException e) {
             throw new ServiceException("MES追溯结构未就绪，无法确认物料在制情况");
         }
     }
@@ -151,7 +155,7 @@ public class MesTrackingUsageService implements MaterialTrackingUsagePort {
                                     materialId)
                             == 0,
                     "历史组件绑定尚未审计为实际数量消耗账");
-        } catch (org.springframework.dao.DataAccessException e) {
+        } catch (DataAccessException e) {
             throw new ServiceException("MES追溯结构未就绪，禁止切换严格策略");
         }
     }

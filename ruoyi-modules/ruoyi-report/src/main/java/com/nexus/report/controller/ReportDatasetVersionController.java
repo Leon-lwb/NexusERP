@@ -4,8 +4,11 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 
 import com.nexus.common.core.domain.R;
 import com.nexus.report.service.*;
+import com.nexus.report.version.ReportEngineRegistry;
 
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /** 读取授权历史契约和升级差异，不自动替换草稿或已发布版本。 */
 @RestController
@@ -69,7 +72,7 @@ public class ReportDatasetVersionController {
      */
     @SaCheckPermission("report:definition:list")
     @GetMapping("/engines")
-    public R<java.util.List<com.nexus.report.version.ReportEngineRegistry.Capability>> engines() {
+    public R<List<ReportEngineRegistry.Capability>> engines() {
         return R.ok(definitions.capabilities(actors.current()));
     }
 }

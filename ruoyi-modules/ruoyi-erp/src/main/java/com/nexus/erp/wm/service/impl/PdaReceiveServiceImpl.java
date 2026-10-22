@@ -1,6 +1,7 @@
 package com.nexus.erp.wm.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -9,6 +10,7 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
@@ -20,18 +22,21 @@ import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaReceiveDetailVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaTodoItemVo;
+import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
-import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.service.IPdaReceiveService;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
+import com.nexus.erp.wm.service.PdaReceiveShelfAllocationService;
 import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
-import com.nexus.erp.wm.service.PdaReceiveShelfAllocationService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -56,8 +61,10 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
     private final WmCertifiedReceiptPostingService certifiedPosting;
     private final PdaReceiveShelfAllocationService shelfAllocation;
     private final WmMaterialReceiveLineMapper lineMapper;
+
     /** 到货通知行 Mapper（ERP-WM-03: 超收上限取自到货通知行应到量 quantity_arrival） */
-    private final com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
+    private final WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
+
     private final WmMaterialReceiveDetailMapper detailMapper;
     private final WmStorageLocationMapper locationMapper;
     private final IPutawayStrategyService putawayStrategyService;
@@ -293,12 +300,13 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
         if (noticeId == null || materialId == null) {
             return null;
         }
-        List<com.nexus.erp.wm.domain.WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
-            Wrappers.<com.nexus.erp.wm.domain.WmArrivalNoticeLine>lambdaQuery()
-                .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getNoticeId, noticeId)
-                .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getMaterialId, materialId));
+        List<WmArrivalNoticeLine> noticeLines =
+                arrivalNoticeLineMapper.selectList(
+                        Wrappers.<WmArrivalNoticeLine>lambdaQuery()
+                                .eq(WmArrivalNoticeLine::getNoticeId, noticeId)
+                                .eq(WmArrivalNoticeLine::getMaterialId, materialId));
         BigDecimal limit = null;
-        for (com.nexus.erp.wm.domain.WmArrivalNoticeLine nl : noticeLines) {
+        for (WmArrivalNoticeLine nl : noticeLines) {
             if (nl.getQuantityArrival() != null) {
                 limit = (limit == null ? BigDecimal.ZERO : limit).add(nl.getQuantityArrival());
             }

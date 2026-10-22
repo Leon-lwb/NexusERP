@@ -1,5 +1,32 @@
 package com.nexus.erp.ai.adapter;
 
+import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_CLOSED;
+import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_DRAFT;
+import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_ORDERED;
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.aop.DynamicDataSourceAnnotationAdvisor;
@@ -14,9 +41,10 @@ import com.nexus.erp.pu.mapper.ErpPurchaseAllocationLineageMapper;
 import com.nexus.erp.pu.mapper.ErpPurchaseCatalogSourceMapper;
 import com.nexus.erp.pu.mapper.PuRequirementCompetitionPoolMapper;
 import com.nexus.erp.pu.mapper.PuRequirementMaterialGuardMapper;
-import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
+import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -34,6 +62,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
+import org.mockito.stubbing.Answer;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.aop.framework.ProxyFactory;
@@ -52,7 +81,6 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
@@ -79,31 +107,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_CLOSED;
-import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_DRAFT;
-import static com.nexus.erp.pu.service.IPuPurchaseRequisitionService.STATUS_ORDERED;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import javax.sql.DataSource;
 
 /**
  * 计划 B 的专属离线当前读合同；保留原有 203/445 回归用例，仅扩展获批结构断言。
@@ -847,7 +851,7 @@ class ErpPurchaseSourcesLockedReaderTest {
                 .when(statement).setLong(anyInt(), anyLong());
             doAnswer(invocation -> { parameters.put(invocation.getArgument(0), invocation.getArgument(1)); return null; })
                 .when(statement).setInt(anyInt(), anyInt());
-            java.util.concurrent.atomic.AtomicReference<ResultSet> result = new java.util.concurrent.atomic.AtomicReference<>();
+            AtomicReference<ResultSet> result = new AtomicReference<>();
             when(statement.getConnection()).thenReturn(erpConnection);
             when(statement.getUpdateCount()).thenReturn(-1);
             when(statement.execute()).thenAnswer(invocation -> {
@@ -937,25 +941,37 @@ class ErpPurchaseSourcesLockedReaderTest {
             Object value = rows.get(0).get(columns.get((int) invocation.getArgument(0) - 1));
             return value == null ? String.class.getName() : value.getClass().getName();
         });
-        org.mockito.stubbing.Answer<Object> raw = invocation -> {
-            Object argument = invocation.getArgument(0);
-            String column = argument instanceof Integer index ? columns.get(index - 1) : argument.toString();
-            Object value = rows.get(cursor.get()).get(column);
-            wasNull.set(value == null);
-            return value;
-        };
-        org.mockito.stubbing.Answer<Object> string = invocation -> {
-            Object value = raw.answer(invocation); return value == null ? null : value.toString();
-        };
-        org.mockito.stubbing.Answer<Object> decimal = invocation -> {
-            Object value = raw.answer(invocation); return value == null ? null : new BigDecimal(value.toString());
-        };
-        org.mockito.stubbing.Answer<Object> longValue = invocation -> {
-            Object value = raw.answer(invocation); return value == null ? 0L : ((Number) value).longValue();
-        };
-        org.mockito.stubbing.Answer<Object> integer = invocation -> {
-            Object value = raw.answer(invocation); return value == null ? 0 : ((Number) value).intValue();
-        };
+        Answer<Object> raw =
+                invocation -> {
+                    Object argument = invocation.getArgument(0);
+                    String column =
+                            argument instanceof Integer index
+                                    ? columns.get(index - 1)
+                                    : argument.toString();
+                    Object value = rows.get(cursor.get()).get(column);
+                    wasNull.set(value == null);
+                    return value;
+                };
+        Answer<Object> string =
+                invocation -> {
+                    Object value = raw.answer(invocation);
+                    return value == null ? null : value.toString();
+                };
+        Answer<Object> decimal =
+                invocation -> {
+                    Object value = raw.answer(invocation);
+                    return value == null ? null : new BigDecimal(value.toString());
+                };
+        Answer<Object> longValue =
+                invocation -> {
+                    Object value = raw.answer(invocation);
+                    return value == null ? 0L : ((Number) value).longValue();
+                };
+        Answer<Object> integer =
+                invocation -> {
+                    Object value = raw.answer(invocation);
+                    return value == null ? 0 : ((Number) value).intValue();
+                };
         when(result.getObject(anyString())).thenAnswer(raw);
         when(result.getObject(anyInt())).thenAnswer(raw);
         when(result.getString(anyString())).thenAnswer(string);

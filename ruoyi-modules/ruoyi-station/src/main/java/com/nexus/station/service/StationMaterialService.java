@@ -15,16 +15,21 @@ import com.nexus.station.domain.MesMaterialLoad;
 import com.nexus.station.domain.dto.StationMaterialLoadDto;
 import com.nexus.station.mapper.MesMaterialLoadMapper;
 import com.nexus.station.mapper.StationErpBatchMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -118,8 +123,12 @@ public class StationMaterialService {
         }
 
         // 4. 替代料扩展允许集合(按快照行 bom_detail_id 跨库查 bd_bom_alternative)
-        List<Long> detailIds = lines.stream().map(ProWorkOrderBomLine::getBomDetailId)
-            .filter(java.util.Objects::nonNull).distinct().toList();
+        List<Long> detailIds =
+                lines.stream()
+                        .map(ProWorkOrderBomLine::getBomDetailId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
         Map<Long, Map<String, Object>> altByMaterialId = new HashMap<>();
         if (!detailIds.isEmpty()) {
             for (Map<String, Object> alt : queryErp(() -> erpBatchMapper.selectAlternativesByDetailIds(detailIds))) {
@@ -314,7 +323,7 @@ public class StationMaterialService {
     /** 允许上料清单(去重主料行) */
     private List<Map<String, Object>> allowedRows(List<ProWorkOrderBomLine> lines) {
         List<Map<String, Object>> rows = new ArrayList<>();
-        java.util.Set<Long> seen = new java.util.HashSet<>();
+        Set<Long> seen = new HashSet<>();
         for (ProWorkOrderBomLine line : lines) {
             if (line.getChildMaterialId() == null || !seen.add(line.getChildMaterialId())) {
                 continue;

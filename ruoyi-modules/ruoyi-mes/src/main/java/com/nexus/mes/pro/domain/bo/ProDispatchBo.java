@@ -1,14 +1,18 @@
 package com.nexus.mes.pro.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.mes.pro.domain.ProDispatch;
 
+import io.github.linpeilie.annotations.AutoMapper;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * MES派工单业务对象 pro_dispatch
@@ -59,10 +63,10 @@ public class ProDispatchBo extends BaseEntity {
     private String dispatchStatus;
 
     /** 计划开始时间 */
-    private java.util.Date planStartTime;
+    private Date planStartTime;
 
     /** 计划结束时间 */
-    private java.util.Date planEndTime;
+    private Date planEndTime;
 
     /** 备注 */
     private String remark;

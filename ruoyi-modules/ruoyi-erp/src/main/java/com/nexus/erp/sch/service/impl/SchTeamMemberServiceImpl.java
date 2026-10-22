@@ -1,9 +1,9 @@
 package com.nexus.erp.sch.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -14,11 +14,14 @@ import com.nexus.erp.sch.domain.vo.SchTeamMemberVo;
 import com.nexus.erp.sch.mapper.SchTeamMapper;
 import com.nexus.erp.sch.mapper.SchTeamMemberMapper;
 import com.nexus.erp.sch.service.ISchTeamMemberService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 班组成员Service业务层处理
@@ -116,8 +119,11 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
         // 先取所属班组(删除后无法回查), 删除后同步各班组 memberCount
         List<SchTeamMember> members = baseMapper.selectByIds(List.of(ids));
         int rows = baseMapper.deleteBatchIds(List.of(ids));
-        members.stream().map(SchTeamMember::getTeamId).filter(java.util.Objects::nonNull)
-            .distinct().forEach(this::syncMemberCount);
+        members.stream()
+                .map(SchTeamMember::getTeamId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(this::syncMemberCount);
         return rows;
     }
 

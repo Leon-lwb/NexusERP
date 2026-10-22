@@ -3,20 +3,26 @@ package com.nexus.report.export;
 import com.nexus.common.report.*;
 import com.nexus.report.domain.*;
 import com.nexus.report.engine.RenderPlan;
+import com.nexus.report.storage.LocalReportArtifactStore;
+import com.nexus.report.storage.ReportArtifactStore;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 
+import java.awt.Color;
 import java.io.*;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.Base64;
 import java.util.function.Consumer;
 
 /** 显式字符串单元格阻止公式注入，超出 Excel 精度的值保留为精确文本。 */
 public final class ReportSpreadsheetExporter {
     /** 保存当前 {@code artifacts} 值。 */
-    private final com.nexus.report.storage.ReportArtifactStore artifacts;
+    private final ReportArtifactStore artifacts;
 
     /** 当前租户标识。 */
     private final String tenant;
@@ -37,9 +43,7 @@ public final class ReportSpreadsheetExporter {
      * @param temporaryBudget 当前操作的 {@code temporaryBudget} 输入
      */
     public ReportSpreadsheetExporter(
-            com.nexus.report.storage.ReportArtifactStore artifacts,
-            String tenant,
-            long temporaryBudget) {
+            ReportArtifactStore artifacts, String tenant, long temporaryBudget) {
         this.artifacts = artifacts;
         this.tenant = tenant;
         this.temporaryBudget = temporaryBudget;
@@ -70,8 +74,8 @@ public final class ReportSpreadsheetExporter {
         var staging =
                 artifacts != null
                         ? artifacts
-                        : new com.nexus.report.storage.LocalReportArtifactStore(
-                                java.nio.file.Path.of(
+                        : new LocalReportArtifactStore(
+                                Path.of(
                                         System.getProperty("java.io.tmpdir"),
                                         "nexus-report-private"),
                                 temporaryBudget);
@@ -211,10 +215,10 @@ public final class ReportSpreadsheetExporter {
                         if (raster == null) throw new ReportFault("PLAN_INVALID", "媒体资源缺失", 409);
                         int picture =
                                 workbook.addPicture(
-                                        java.util.Base64.getDecoder().decode(raster.png()),
+                                        Base64.getDecoder().decode(raster.png()),
                                         Workbook.PICTURE_TYPE_PNG);
                         var anchor =
-                                new org.apache.poi.xssf.usermodel.XSSFClientAnchor(
+                                new XSSFClientAnchor(
                                         0,
                                         0,
                                         0,
@@ -345,7 +349,7 @@ public final class ReportSpreadsheetExporter {
      * @return 当前处理返回的固定结果
      */
     private static XSSFColor color(String hex) {
-        return new XSSFColor(java.awt.Color.decode(hex), new DefaultIndexedColorMap());
+        return new XSSFColor(Color.decode(hex), new DefaultIndexedColorMap());
     }
 
     /**

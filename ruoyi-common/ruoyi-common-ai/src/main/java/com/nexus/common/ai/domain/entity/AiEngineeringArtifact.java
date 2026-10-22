@@ -2,10 +2,12 @@ package com.nexus.common.ai.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nexus.common.tenant.core.TenantEntity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -37,13 +39,13 @@ public class AiEngineeringArtifact extends TenantEntity {
     private String relativePath;
 
     /** 显式私有存储配置键。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude private String service;
+    @JsonIgnore @ToString.Exclude private String service;
 
     /** 内部私有对象编号。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude private Long ossId;
+    @JsonIgnore @ToString.Exclude private Long ossId;
 
     /** 服务端对象键，不对外输出。 */
-    @com.fasterxml.jackson.annotation.JsonIgnore @lombok.ToString.Exclude private String objectKey;
+    @JsonIgnore @ToString.Exclude private String objectKey;
 
     /** 服务端复核内容摘要。 */
     private String sha256;
@@ -70,5 +72,5 @@ public class AiEngineeringArtifact extends TenantEntity {
     private Long cleanupGeneration;
 
     /** 清理租约或失败后的下次重试时间；过期 CLEANING 可以重新抢占。 */
-    private java.time.LocalDateTime cleanupExpiresAt;
+    private LocalDateTime cleanupExpiresAt;
 }

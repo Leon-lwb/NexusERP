@@ -1,16 +1,19 @@
 package com.nexus.common.sign.service.impl;
 
-import org.junit.jupiter.api.Tag;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
+import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.sign.constants.SignAuthMethod;
-import com.nexus.common.sign.constants.SignBizType;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sign.constants.SealStatus;
 import com.nexus.common.sign.constants.SealType;
+import com.nexus.common.sign.constants.SignAuthMethod;
+import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.EsSeal;
 import com.nexus.common.sign.domain.EsSignature;
 import com.nexus.common.sign.domain.dto.SignCommand;
@@ -21,7 +24,9 @@ import com.nexus.common.sign.mapper.EsSignatureMapper;
 import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.common.sign.support.SignAuthVerifier;
 import com.nexus.common.sign.support.SignatureChainCalculator;
+
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -35,10 +40,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 /**
  * 签名核心服务测试。
  *
@@ -50,18 +51,26 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class ESignatureServiceImplTest {
 
-    @Mock private EsSignatureMapper signatureMapper;
-    @Mock private EsSealMapper sealMapper;
-    @Mock private EsSealGrantMapper grantMapper;
-    @Mock private SignAuthVerifier authVerifier;
-    @Mock private LockTemplate lockTemplate;
-    @Mock private EsSignDocumentMapper documentMapper;
-    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
-    @Captor private ArgumentCaptor<EsSignature> sigCaptor;
+    @Mock
+    private EsSignatureMapper signatureMapper;
+    @Mock
+    private EsSealMapper sealMapper;
+    @Mock
+    private EsSealGrantMapper grantMapper;
+    @Mock
+    private SignAuthVerifier authVerifier;
+    @Mock
+    private LockTemplate lockTemplate;
+    @Mock
+    private EsSignDocumentMapper documentMapper;
+    @Mock
+    private ObjectProvider<OssContentAccessor> ossAccessorProvider;
+    @Captor
+    private ArgumentCaptor<EsSignature> sigCaptor;
 
     private ESignatureServiceImpl service;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
-    private MockedStatic<com.nexus.common.satoken.utils.LoginHelper> loginHelperMock;
+    private MockedStatic<LoginHelper> loginHelperMock;
 
     private static final Long ME = 7L;
     private static final String BIZ = SignBizType.APPROVAL;
@@ -81,10 +90,10 @@ class ESignatureServiceImplTest {
         }
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(EsSignature.class)).thenReturn(cols);
 
-        loginHelperMock = mockStatic(com.nexus.common.satoken.utils.LoginHelper.class);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(ME);
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getTenantId).thenReturn("000000");
-        loginHelperMock.when(com.nexus.common.satoken.utils.LoginHelper::getDeptId).thenReturn(100L);
+        loginHelperMock = mockStatic(LoginHelper.class);
+        loginHelperMock.when(LoginHelper::getUserId).thenReturn(ME);
+        loginHelperMock.when(LoginHelper::getTenantId).thenReturn("000000");
+        loginHelperMock.when(LoginHelper::getDeptId).thenReturn(100L);
 
         when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(newLock());
         when(signatureMapper.selectOne(any())).thenReturn(null);

@@ -1,14 +1,18 @@
 package com.nexus.flow.node.notify;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
-import com.nexus.flow.node.integration.HttpNodeProvider;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.flow.node.integration.HttpNodeProvider;
 import com.nexus.flow.state.FlowTemplateRenderer;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -111,11 +115,12 @@ public class ImWebhookNodeProvider implements FlowNodeProvider {
         }
 
         // POST 发送
-        cn.hutool.http.HttpResponse response = cn.hutool.http.HttpRequest.post(safeUrl)
-            .header("Content-Type", "application/json")
-            .timeout(timeoutSeconds * 1000)
-            .body(payload.toString(), "application/json")
-            .execute();
+        HttpResponse response =
+                HttpRequest.post(safeUrl)
+                        .header("Content-Type", "application/json")
+                        .timeout(timeoutSeconds * 1000)
+                        .body(payload.toString(), "application/json")
+                        .execute();
         String responseBody = response.body();
         int status = response.getStatus();
         response.close();

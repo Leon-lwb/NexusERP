@@ -5,11 +5,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.trace.TraceHashes;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Clob;
 import java.util.*;
 
 /**
@@ -183,10 +189,9 @@ public class TraceRepairAuditService {
                 (key, value) ->
                         converted.put(
                                 key,
-                                value instanceof java.math.BigDecimal decimal
+                                value instanceof BigDecimal decimal
                                         ? decimal.toPlainString()
-                                        : value instanceof Long
-                                                        || value instanceof java.math.BigInteger
+                                        : value instanceof Long || value instanceof BigInteger
                                                 ? value.toString()
                                                 : value));
         return converted;
@@ -281,7 +286,7 @@ public class TraceRepairAuditService {
     }
 
     private static String text(Object value) {
-        if (value instanceof java.sql.Clob c) {
+        if (value instanceof Clob c) {
             try {
                 return c.getSubString(1, Math.toIntExact(c.length()));
             } catch (Exception e) {

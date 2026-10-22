@@ -1,5 +1,6 @@
 package com.nexus.report.engine;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nexus.common.report.TypedValue;
 import com.nexus.report.domain.ReportDsl;
 
@@ -23,9 +24,7 @@ public record RenderPlan(
         List<Page> pages,
         List<ReportDsl.Column> columns,
         List<ReportCalculator.SummaryValue> summaries,
-        @com.fasterxml.jackson.annotation.JsonInclude(
-                        com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
-                Map<String, Raster> rasters) {
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, Raster> rasters) {
     /**
      * 保留第一版固定计划构造方式。
      *
@@ -78,9 +77,7 @@ public record RenderPlan(
             double width,
             double height,
             List<Cell> cells,
-            @com.fasterxml.jackson.annotation.JsonInclude(
-                            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
-                    List<Media> media) {
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Media> media) {
         /**
          * 初始化Page并保存所需依赖或不可变值。
          *

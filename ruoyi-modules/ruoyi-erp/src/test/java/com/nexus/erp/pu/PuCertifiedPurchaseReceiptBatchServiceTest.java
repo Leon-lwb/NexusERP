@@ -1,5 +1,11 @@
 package com.nexus.erp.pu;
 
+import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.domain.*;
@@ -7,17 +13,16 @@ import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseLifecycleMapper.*;
 import com.nexus.erp.pu.service.*;
 import com.nexus.erp.pu.service.PuCertifiedPurchaseLifecycleService.*;
+import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
+
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Supplier;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
-import static com.nexus.erp.pu.service.support.PuCertifiedPurchaseLifecycleSupport.*;
 
 /** 边界测试替身不代表已部署数据库，也不代表真实元数据验收。 */
 class PuCertifiedPurchaseReceiptBatchServiceTest {
@@ -170,7 +175,8 @@ class PuCertifiedPurchaseReceiptBatchServiceTest {
         final PuCertifiedPurchaseReceiptBatchMapper mapper=mock(PuCertifiedPurchaseReceiptBatchMapper.class);
         final PuCertifiedPurchaseLifecycleMapper physical=mock(PuCertifiedPurchaseLifecycleMapper.class);
         final PuCertifiedPurchaseLifecycleService lifecycle=mock(PuCertifiedPurchaseLifecycleService.class);
-        final com.nexus.erp.wm.service.WmCertifiedReceiptPostingService posting=mock(com.nexus.erp.wm.service.WmCertifiedReceiptPostingService.class);
+        final WmCertifiedReceiptPostingService posting =
+                mock(WmCertifiedReceiptPostingService.class);
         final MockedStatic<TenantHelper> tenant=mockStatic(TenantHelper.class);
         final PuCertifiedPurchaseReceiptBatchService service=new PuCertifiedPurchaseReceiptBatchService(executor,qualification,locks,mapper,physical,lifecycle,posting);
         ReceiveHead receiveHead=new ReceiveHead(T,901L,801L,"FINISHED","0");OrderHead order=new OrderHead(T,801L,601L,"APPROVED","0");

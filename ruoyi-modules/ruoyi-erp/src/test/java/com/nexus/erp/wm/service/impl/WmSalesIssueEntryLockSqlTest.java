@@ -1,10 +1,13 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.mapper.SalesIssueSourceGuardMapper;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.service.SalesIssueSourceGuard;
+
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.session.Configuration;
@@ -14,9 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /** 只解析固定映射 SQL 和事务注解，不获取连接、不执行 SQL，不代表物理 MySQL 验证。 */
 class WmSalesIssueEntryLockSqlTest {
@@ -69,6 +71,6 @@ class WmSalesIssueEntryLockSqlTest {
     }
 
     private static String normalized(String sql) {
-        return sql.replaceAll("\\s+", " ").trim().toLowerCase(java.util.Locale.ROOT);
+        return sql.replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
     }
 }

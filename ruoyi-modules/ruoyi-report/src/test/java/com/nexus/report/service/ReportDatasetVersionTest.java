@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** 报表数据集版本测试，负责当前模块对应的契约或处理职责。 */
 class ReportDatasetVersionTest {
@@ -102,7 +103,7 @@ class ReportDatasetVersionTest {
             assertFalse(
                     service.read(f.viewer, old.id()).descriptor().fields().stream()
                             .anyMatch(x -> x.name().equals("secret")));
-            var calls = new java.util.concurrent.atomic.AtomicInteger();
+            var calls = new AtomicInteger();
             f.resolveOverride =
                     (tenant, user) -> {
                         if (calls.incrementAndGet() == 5)

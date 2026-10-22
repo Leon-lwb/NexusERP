@@ -1,7 +1,11 @@
 package com.nexus.erp.wm.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+
 import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -20,8 +24,10 @@ public interface WmCertifiedReceiptPostingMapper {
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
     @Select("SELECT MIN(UNIX_TIMESTAMP(create_time)*1000) FROM wm_certified_receive_command WHERE tenant_id=#{tenant} AND receive_id=#{id}")
     BigDecimal readDraftCreatedAt(@Param("tenant") String tenant,@Param("id") Long id);
-    @org.apache.ibatis.annotations.Select("SELECT birth_id FROM wm_receipt_iqc_birth WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY birth_id FOR UPDATE")
-    java.util.List<Long> lockBirthIdentities(@org.apache.ibatis.annotations.Param("tenant") String tenant, @org.apache.ibatis.annotations.Param("id") Long id);
+
+    @Select(
+            "SELECT birth_id FROM wm_receipt_iqc_birth WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY birth_id FOR UPDATE")
+    List<Long> lockBirthIdentities(@Param("tenant") String tenant, @Param("id") Long id);
 
     @Options(flushCache=Options.FlushCachePolicy.TRUE,useCache=false)
     @Select("SELECT DISTINCT material_id FROM wm_material_receive_line WHERE tenant_id=#{tenant} AND receive_id=#{id} ORDER BY material_id")
@@ -154,14 +160,17 @@ public interface WmCertifiedReceiptPostingMapper {
 
     record SourceIdentity(String tenantId,Long receiveId,Long lineId) { }
     record Head(String tenantId,Long receiveId,String receiveCode,Long orderId,Long vendorId,String status,Long warehouseId,Long areaId,Long locationId,BigDecimal receiveAt,BigDecimal shelfAt,String delFlag,Long noticeId,String noticeCode) {
-        @AutomapConstructor public Head { }
+        @AutomapConstructor
+        public Head { }
         public Head(String tenantId,Long receiveId,String receiveCode,Long orderId,Long vendorId,String status,Long warehouseId,Long areaId,Long locationId,BigDecimal receiveAt,BigDecimal shelfAt,String delFlag){this(tenantId,receiveId,receiveCode,orderId,vendorId,status,warehouseId,areaId,locationId,receiveAt,shelfAt,delFlag,null,null);}
     }
     record Line(String tenantId,Long lineId,Long receiveId,Long materialId,String baseUomId,BigDecimal quantity,Long purchaseLineId,String delFlag,Long noticeLineId) {
-        @AutomapConstructor public Line { }
+        @AutomapConstructor
+        public Line { }
         public Line(String tenantId,Long lineId,Long receiveId,Long materialId,String baseUomId,BigDecimal quantity,Long purchaseLineId,String delFlag){this(tenantId,lineId,receiveId,materialId,baseUomId,quantity,purchaseLineId,delFlag,null);}
         /** 追加字段不改变旧无通知记录文本，否则会破坏原过账指纹重放。 */
-        @Override public String toString(){return "Line[tenantId="+tenantId+", lineId="+lineId+", receiveId="+receiveId+", materialId="+materialId+", baseUomId="+baseUomId+", quantity="+quantity+", purchaseLineId="+purchaseLineId+", delFlag="+delFlag+(noticeLineId==null?"":", noticeLineId="+noticeLineId)+"]";}
+        @Override
+        public String toString(){return "Line[tenantId="+tenantId+", lineId="+lineId+", receiveId="+receiveId+", materialId="+materialId+", baseUomId="+baseUomId+", quantity="+quantity+", purchaseLineId="+purchaseLineId+", delFlag="+delFlag+(noticeLineId==null?"":", noticeLineId="+noticeLineId)+"]";}
     }
     record Detail(String tenantId,Long detailId,Long receiveId,Long lineId,Long materialId,String baseUomId,BigDecimal quantity,Long warehouseId,Long areaId,Long locationId,Long batchId,Long snId,String delFlag) { }
     record Material(String tenantId,Long materialId,Long baseUomId,Long batchManaged,Long status,String delFlag,String unitTenant,Integer quantityScale,String conversionVersion,BigDecimal verifiedAt,Long isBase,Long primaryId,BigDecimal conversionRate,Long unitStatus,String unitDelFlag) { }

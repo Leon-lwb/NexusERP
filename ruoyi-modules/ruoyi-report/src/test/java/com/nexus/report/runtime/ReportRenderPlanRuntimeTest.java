@@ -2,19 +2,25 @@ package com.nexus.report.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.common.report.DatasetAccessException;
 import com.nexus.common.report.ReportCancellation;
 import com.nexus.report.config.ReportProperties;
 import com.nexus.report.domain.ReportFault;
 import com.nexus.report.domain.ReportRecords.ExportJob;
 import com.nexus.report.engine.FontSupport;
 import com.nexus.report.export.ReportExportRenderer;
+import com.nexus.report.export.ReportExportWorker;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -39,7 +45,7 @@ class ReportRenderPlanRuntimeTest {
     @Test
     void firstPreviewPersistsOnePlanAndSubsequentPreviewsReuseIt() {
         try (var f = new RuntimeReviewFixture(directory)) {
-            var run = f.runtime.create(f.owner, f.definition.id(), "SNAPSHOT", java.util.Map.of());
+            var run = f.runtime.create(f.owner, f.definition.id(), "SNAPSHOT", Map.of());
             var plan = f.runtime.layout(f.owner, run.id(), "report:runtime:preview", "VIEW");
             var stored = f.store.run("A", run.id()).orElseThrow();
             assertNotNull(
@@ -57,7 +63,7 @@ class ReportRenderPlanRuntimeTest {
             var properties = new ReportProperties();
             properties.setFontPath(FontSupport.find(null).toString());
             var first = runtime(f, properties);
-            var run = first.create(f.owner, f.definition.id(), "SNAPSHOT", java.util.Map.of());
+            var run = first.create(f.owner, f.definition.id(), "SNAPSHOT", Map.of());
             var plan = first.layout(f.owner, run.id(), "report:runtime:preview", "VIEW");
             properties.setFontPath(directory.resolve("removed-font.ttf").toString());
             var restarted = runtime(f, properties);
@@ -87,9 +93,7 @@ class ReportRenderPlanRuntimeTest {
                             output,
                             new ReportCancellation());
             assertTrue(output.size() > 1000);
-            assertEquals(
-                    "%PDF-",
-                    output.toString(java.nio.charset.StandardCharsets.ISO_8859_1).substring(0, 5));
+            assertEquals("%PDF-", output.toString(StandardCharsets.ISO_8859_1).substring(0, 5));
             try (var files = Files.walk(directory)) {
                 assertEquals(
                         0,
@@ -103,7 +107,7 @@ class ReportRenderPlanRuntimeTest {
     @Test
     void tamperingWithThePersistedPlanIsRejectedBeforeDelivery() throws Exception {
         try (var f = new RuntimeReviewFixture(directory)) {
-            var run = f.runtime.create(f.owner, f.definition.id(), "SNAPSHOT", java.util.Map.of());
+            var run = f.runtime.create(f.owner, f.definition.id(), "SNAPSHOT", Map.of());
             f.runtime.layout(f.owner, run.id(), "report:runtime:preview", "VIEW");
             var stored = f.store.run("A", run.id()).orElseThrow();
             assertNotNull(stored.plan());
@@ -193,7 +197,7 @@ class ReportRenderPlanRuntimeTest {
             var cancellation = new ReportCancellation();
             f.artifacts.afterCommit = () -> cancellation.cancel("CANCELLED");
             assertThrows(
-                    com.nexus.common.report.DatasetAccessException.class,
+                    DatasetAccessException.class,
                     () ->
                             f.runtime.layout(
                                     f.runtime.access(
@@ -231,7 +235,7 @@ class ReportRenderPlanRuntimeTest {
                             + " run_id=?",
                     Long.valueOf(run.id()));
             try (var worker =
-                    new com.nexus.report.export.ReportExportWorker(
+                    new ReportExportWorker(
                             f.store,
                             f.runtime,
                             f.artifacts,
@@ -289,7 +293,7 @@ class ReportRenderPlanRuntimeTest {
         try (var f = new RuntimeReviewFixture(directory)) {
             var run = f.runtime.create(f.owner, f.definition.id(), "SNAPSHOT", Map.of());
             var payload = f.json.readTree(run.parameters());
-            ((com.fasterxml.jackson.databind.node.ObjectNode) payload).remove("planChecksum");
+            ((ObjectNode) payload).remove("planChecksum");
             f.jdbc.update(
                     "UPDATE rpt_run SET parameters_json=? WHERE run_id=?",
                     payload.toString(),
@@ -300,7 +304,7 @@ class ReportRenderPlanRuntimeTest {
                             .layout(f.owner, run.id(), "report:runtime:preview", "VIEW")
                             .rowCount());
             assertNotNull(f.store.run("A", run.id()).orElseThrow().plan());
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalStateException(error);
         }
     }
@@ -312,9 +316,7 @@ class ReportRenderPlanRuntimeTest {
             var run = f.runtime.create(f.owner, f.definition.id(), "SNAPSHOT", Map.of());
             var job = f.runtime.enqueue(f.owner, run.id(), "PDF", "cancel-before-plan");
             var claimed =
-                    f.store
-                            .claimJob(job, "worker", java.time.Instant.now().plusSeconds(60))
-                            .orElseThrow();
+                    f.store.claimJob(job, "worker", Instant.now().plusSeconds(60)).orElseThrow();
             var access = f.runtime.execution(claimed);
             f.artifacts.afterCommit = () -> f.store.cancel(f.owner, claimed.id());
             assertEquals(

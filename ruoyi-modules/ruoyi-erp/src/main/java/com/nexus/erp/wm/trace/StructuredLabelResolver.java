@@ -2,8 +2,12 @@ package com.nexus.erp.wm.trace;
 
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.trace.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
+
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiFunction;
 
@@ -227,8 +231,7 @@ public class StructuredLabelResolver {
                     && (!value.isIntegralNumber()
                             || value.bigIntegerValue()
                                             .abs()
-                                            .compareTo(
-                                                    java.math.BigInteger.valueOf(9007199254740991L))
+                                            .compareTo(BigInteger.valueOf(9007199254740991L))
                                     > 0)) {
                 return null;
             }

@@ -1,20 +1,23 @@
 package com.nexus.erp.wm.service;
 
 import com.baomidou.dynamic.datasource.tx.TransactionContext;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.iqc.IqcNativeSchema;
-import com.nexus.common.mq.iqc.ReceiptIqcSource;
-import com.nexus.common.mq.iqc.ReceiptIqcBirthSupport;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
+import com.nexus.common.mq.iqc.ReceiptIqcBirthSupport;
+import com.nexus.common.mq.iqc.ReceiptIqcSource;
 import com.nexus.common.mq.iqc.ReceiptIqcSource.BornInspection;
-import com.nexus.erp.wm.mapper.WmReceiptIqcBirthMapper;
 import com.nexus.common.mq.iqc.ReceiptIqcSource.Inspection;
 import com.nexus.common.mq.message.IqcCompletedMessage;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionExecutor;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
+import com.nexus.erp.wm.mapper.WmReceiptIqcBirthMapper;
 import com.nexus.erp.wm.mapper.WmReceiptIqcEvidenceMapper;
 import com.nexus.erp.wm.mapper.WmReceiptIqcEvidenceMapper.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -28,10 +31,11 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Objects;
+import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -57,10 +61,13 @@ public class WmReceiptIqcEvidenceService {
         this(mapper, source, transactions, qualification, null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public WmReceiptIqcEvidenceService(WmReceiptIqcEvidenceMapper mapper, ReceiptIqcSource source,
-        PuRequirementErpTransactionExecutor transactions, PuRequirementErpTransactionQualification qualification,
-        WmReceiptIqcBirthMapper births) {
+    @Autowired
+    public WmReceiptIqcEvidenceService(
+            WmReceiptIqcEvidenceMapper mapper,
+            ReceiptIqcSource source,
+            PuRequirementErpTransactionExecutor transactions,
+            PuRequirementErpTransactionQualification qualification,
+            WmReceiptIqcBirthMapper births) {
         this.births = births;
         this.mapper = Objects.requireNonNull(mapper);
         this.source = Objects.requireNonNull(source);
@@ -297,7 +304,7 @@ public class WmReceiptIqcEvidenceService {
             || blank(message.getMessageId()) || message.getMessageId().length() > 128) {
             throw fail("IQC_MESSAGE_IDENTITY_INVALID");
         }
-        String tenantId = String.format(java.util.Locale.ROOT, "%06d", message.getTenantId());
+        String tenantId = String.format(Locale.ROOT, "%06d", message.getTenantId());
         requireTenant(tenantId);
         positiveId(message.getIqcId());
         requireOutsideTransaction();
@@ -446,7 +453,8 @@ public class WmReceiptIqcEvidenceService {
     /** 只从MES原生出生绑定及ERP重读的同一登记生成V2，不从当前单位升级历史裸检验。 */
     private EvidenceRow evidence(IqcCompletedMessage message, Inspection actual, Scope scope, BornInspection born) {
         EvidenceRow row = new EvidenceRow();
-        row.setEvidenceId(com.baomidou.mybatisplus.core.toolkit.IdWorker.getId()); row.setTenantId(actual.tenantId());
+        row.setEvidenceId(IdWorker.getId());
+        row.setTenantId(actual.tenantId());
         row.setInspectionId(actual.inspectionId()); row.setInspectionCode(actual.inspectionCode());
         row.setReceiveId(actual.receiveId()); row.setMaterialId(actual.materialId());
         row.setBaseUomId(born.birth().baseUomId()); row.setQuantityScale(born.birth().quantityScale());

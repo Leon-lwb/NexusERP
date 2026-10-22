@@ -1,8 +1,7 @@
 package com.nexus.mes.pro.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
@@ -17,10 +16,16 @@ import com.nexus.mes.pro.domain.bo.ProSkipBo;
 import com.nexus.mes.pro.domain.vo.ProCheckResultVo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardVo;
 import com.nexus.mes.pro.service.IProFlowCardService;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -58,7 +63,7 @@ public class ProFlowCardController extends BaseController {
             list = proFlowCardService.selectByWoId(bo.getMesWoId());
         } else {
             // 未指定工单时导出空列表
-            list = java.util.Collections.emptyList();
+            list = Collections.emptyList();
         }
         ExcelUtil.exportExcel(list, "MES流转卡数据", ProFlowCardVo.class, response);
     }

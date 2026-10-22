@@ -1,43 +1,4 @@
 package com.nexus.erp.pu;
-import java.util.List;
-
-import com.nexus.workflow.domain.WfMyBusiness;
-
-import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
-
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.extra.spring.SpringUtil;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.pu.domain.PuPurchaseReturn;
-import com.nexus.erp.pu.domain.PuPurchaseReturnLine;
-import com.nexus.erp.pu.domain.bo.PuPurchaseReturnBo;
-import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
-import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
-import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
-import com.nexus.erp.pu.service.impl.PuPurchaseReturnServiceImpl;
-import com.nexus.erp.wm.domain.WmMaterialStock;
-import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
-import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
-import com.nexus.system.strategy.AutoCodeUtil;
-import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
-import io.github.linpeilie.Converter;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +8,50 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.extra.spring.SpringUtil;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.erp.pu.domain.PuPurchaseReturn;
+import com.nexus.erp.pu.domain.PuPurchaseReturnLine;
+import com.nexus.erp.pu.domain.bo.PuPurchaseReturnBo;
+import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
+import com.nexus.erp.pu.service.PuCertifiedPurchaseDocumentGuard;
+import com.nexus.erp.pu.service.impl.PuPurchaseReturnServiceImpl;
+import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.domain.WfMyBusiness;
+import com.nexus.workflow.service.IWfProcessService;
+import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+
+import io.github.linpeilie.Converter;
+
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 采购退货状态机单元测试（ERP-PU-03 未确认不可执行 / ERP-PU-04 不采信客户端 status）。
@@ -117,8 +122,17 @@ class PuPurchaseReturnServiceImplTest {
         ServiceException protectedError = new ServiceException("protected-document");
         lenient().doThrow(protectedError).when(certifiedDocumentGuard).requireLegacyReturnInput(100L,bo.getPuPurchaseReturnLineList());
         lenient().when(baseMapper.insert(any(PuPurchaseReturn.class))).thenReturn(1);
-        org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class, () -> returnService.insertByBo(bo)));
-        org.mockito.Mockito.verifyNoInteractions(baseMapper,lineMapper,orderLineMapper,stockMapper,stockTxMapper,autoCodeUtil,puInvoiceService);
+        Assertions.assertSame(
+                protectedError,
+                assertThrows(ServiceException.class, () -> returnService.insertByBo(bo)));
+        Mockito.verifyNoInteractions(
+                baseMapper,
+                lineMapper,
+                orderLineMapper,
+                stockMapper,
+                stockTxMapper,
+                autoCodeUtil,
+                puInvoiceService);
     }
 
     @Test
@@ -131,9 +145,18 @@ class PuPurchaseReturnServiceImplTest {
             () -> { WfMyBusiness flow = new WfMyBusiness(); flow.setDataId("1"); flow.setActStatus("pass"); returnService.afterFlowHandle(flow); }
         );
         for (Runnable mutation : mutations) {
-            org.junit.jupiter.api.Assertions.assertSame(protectedError, assertThrows(ServiceException.class,mutation::run));
+            Assertions.assertSame(
+                    protectedError, assertThrows(ServiceException.class, mutation::run));
         }
-        org.mockito.Mockito.verifyNoInteractions(baseMapper,lineMapper,orderLineMapper,stockMapper,stockTxMapper,autoCodeUtil,puInvoiceService,processService);
+        Mockito.verifyNoInteractions(
+                baseMapper,
+                lineMapper,
+                orderLineMapper,
+                stockMapper,
+                stockTxMapper,
+                autoCodeUtil,
+                puInvoiceService,
+                processService);
     }
 
     @Test
@@ -162,14 +185,14 @@ class PuPurchaseReturnServiceImplTest {
         line.setLineId(9L);
         line.setReturnId(1L);
         line.setMaterialId(500L);
-        line.setReturnQuantity(new java.math.BigDecimal("3"));
-        when(lineMapper.selectList(any())).thenReturn(java.util.List.of(line));
+        line.setReturnQuantity(new BigDecimal("3"));
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
         when(baseMapper.update(any(), any())).thenReturn(1);
 
         WmMaterialStock stock = new WmMaterialStock();
         stock.setStockId(7L);
         stock.setMaterialId(500L);
-        stock.setStockQuantity(new java.math.BigDecimal("100"));
+        stock.setStockQuantity(new BigDecimal("100"));
         stock.setVersion(0);
         when(stockMapper.selectOne(any())).thenReturn(stock);
         when(stockMapper.deductStock(any(), any(), any())).thenReturn(1);
@@ -177,7 +200,7 @@ class PuPurchaseReturnServiceImplTest {
         returnService.execute(1L);
 
         verify(baseMapper).update(any(), any());
-        verify(stockTxMapper).insert(any(com.nexus.erp.wm.domain.WmMaterialStockTx.class));
+        verify(stockTxMapper).insert(any(WmMaterialStockTx.class));
     }
 
     /** ERP-PU-03：CAS 影响 0 行（并发已执行）→ 抛异常 */
@@ -190,8 +213,8 @@ class PuPurchaseReturnServiceImplTest {
 
         PuPurchaseReturnLine line = new PuPurchaseReturnLine();
         line.setLineId(9L);
-        line.setReturnQuantity(new java.math.BigDecimal("3"));
-        when(lineMapper.selectList(any())).thenReturn(java.util.List.of(line));
+        line.setReturnQuantity(new BigDecimal("3"));
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
         when(baseMapper.update(any(), any())).thenReturn(0);
 
         ServiceException ex = assertThrows(ServiceException.class, () -> returnService.execute(1L));

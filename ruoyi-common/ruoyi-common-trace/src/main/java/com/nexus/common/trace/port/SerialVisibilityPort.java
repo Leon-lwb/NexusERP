@@ -1,5 +1,6 @@
 package com.nexus.common.trace.port;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -22,7 +23,7 @@ public interface SerialVisibilityPort {
      * @param identityIds 待核验的跨模块稳定身份集合。
      * @return 已授权稳定身份对应的模块本地单件主键集合。
      */
-    default java.util.Map<Long, Long> localSnIds(String tenantId, Set<Long> identityIds) {
-        return java.util.Map.of();
+    default Map<Long, Long> localSnIds(String tenantId, Set<Long> identityIds) {
+        return Map.of();
     }
 }

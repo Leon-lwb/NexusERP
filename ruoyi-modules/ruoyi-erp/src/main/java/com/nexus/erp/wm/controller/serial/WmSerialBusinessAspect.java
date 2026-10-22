@@ -3,14 +3,19 @@ package com.nexus.erp.wm.controller.serial;
 import com.fasterxml.jackson.databind.*;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmSerialPostingRequest;
+
 import jakarta.servlet.http.HttpServletRequest;
+
 import lombok.RequiredArgsConstructor;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.*;
+
+import java.util.Set;
 
 /**
  * 仅接入固定业务目录；不改变原controller签名、权限注解和业务URL。
@@ -54,7 +59,7 @@ public class WmSerialBusinessAspect {
         }
         String action = join.getSignature().getName();
         if ("submit".equals(action)
-                && java.util.Set.of("WM_TRANSFER", "WM_STOCK_TAKING").contains(route.type())) {
+                && Set.of("WM_TRANSFER", "WM_STOCK_TAKING").contains(route.type())) {
             adapter.prepareSubmission(route, uri, body);
             return join.proceed();
         }

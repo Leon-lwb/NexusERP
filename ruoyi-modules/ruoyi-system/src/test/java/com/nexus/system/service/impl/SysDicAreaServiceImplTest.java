@@ -1,6 +1,22 @@
 package com.nexus.system.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.hutool.extra.spring.SpringUtil;
+import cn.idev.excel.annotation.ExcelIgnore;
+import cn.idev.excel.annotation.ExcelProperty;
+
 import com.nexus.common.core.constant.CacheNames;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.redis.utils.RedisUtils;
@@ -8,7 +24,9 @@ import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.bo.SysDicAreaBo;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 import com.nexus.system.mapper.SysDicAreaMapper;
+
 import io.github.linpeilie.Converter;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,26 +40,15 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RedissonClient;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * {@link SysDicAreaServiceImpl} 单元测试。
@@ -746,9 +753,8 @@ class SysDicAreaServiceImplTest {
     @Test
     void areaVoExcludesChildrenFromExcel() {
         try {
-            java.lang.reflect.Field children = SysDicAreaVo.class.getDeclaredField("children");
-            assertNotNull(children.getAnnotation(cn.idev.excel.annotation.ExcelIgnore.class),
-                "children 必须标注 @ExcelIgnore");
+            Field children = SysDicAreaVo.class.getDeclaredField("children");
+            assertNotNull(children.getAnnotation(ExcelIgnore.class), "children 必须标注 @ExcelIgnore");
         } catch (NoSuchFieldException e) {
             fail("SysDicAreaVo 缺少 children 字段");
         }
@@ -760,9 +766,8 @@ class SysDicAreaServiceImplTest {
         String[] expected = {"areaId", "parentAreaId", "areaName", "layered", "sort", "address", "lat", "lng", "createTime", "updateTime"};
         for (String name : expected) {
             try {
-                java.lang.reflect.Field f = SysDicAreaVo.class.getDeclaredField(name);
-                cn.idev.excel.annotation.ExcelProperty p =
-                    f.getAnnotation(cn.idev.excel.annotation.ExcelProperty.class);
+                Field f = SysDicAreaVo.class.getDeclaredField(name);
+                ExcelProperty p = f.getAnnotation(ExcelProperty.class);
                 assertNotNull(p, name + " 必须标注 @ExcelProperty");
                 assertFalse(p.value()[0].isBlank(), name + " 的表头不能为空");
             } catch (NoSuchFieldException e) {
@@ -775,8 +780,8 @@ class SysDicAreaServiceImplTest {
     @Test
     void areaVoExposesCreateTime() {
         try {
-            java.lang.reflect.Field f = SysDicAreaVo.class.getDeclaredField("createTime");
-            assertEquals(java.util.Date.class, f.getType());
+            Field f = SysDicAreaVo.class.getDeclaredField("createTime");
+            assertEquals(Date.class, f.getType());
         } catch (NoSuchFieldException e) {
             fail("SysDicAreaVo 缺少 createTime，前端创建时间列将恒为空");
         }

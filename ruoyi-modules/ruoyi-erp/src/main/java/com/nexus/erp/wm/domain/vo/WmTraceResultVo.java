@@ -1,5 +1,7 @@
 package com.nexus.erp.wm.domain.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Data;
 
 import java.io.Serial;
@@ -15,7 +17,8 @@ import java.util.List;
 @Data
 public class WmTraceResultVo implements Serializable {
 
-    @Serial private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 追溯方向：FORWARD / BACKWARD
@@ -37,11 +40,8 @@ public class WmTraceResultVo implements Serializable {
      */
     private WmTraceNodeVo tree;
 
-    /**
-     * 查询已收敛到一个正式单件时使用的稳定实物主体。
-     */
-    @com.fasterxml.jackson.annotation.JsonFormat(
-            shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    /** 查询已收敛到一个正式单件时使用的稳定实物主体。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long identityId;
 
     private String traceScope;

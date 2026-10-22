@@ -1,24 +1,27 @@
 package com.nexus.flow.node.ai;
-import com.nexus.flow.node.FlowNodeProvider;
-import com.nexus.flow.node.FlowExecutionContext;
-import com.nexus.flow.node.NodeParamSchema;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.ai.tool.BuiltinToolProvider;
 import com.nexus.ai.tool.BuiltinToolRegistry;
+import com.nexus.flow.node.FlowExecutionContext;
+import com.nexus.flow.node.FlowNodeProvider;
+import com.nexus.flow.node.NodeParamSchema;
+import com.nexus.flow.state.FlowTemplateRenderer;
+
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +77,7 @@ public class ErpToolNodeProvider implements FlowNodeProvider {
      * 类型映射：String→string、int/long→number、boolean→boolean</p>
      */
     private Map<String, Object> collectToolArgs() {
-        Map<String, Object> toolArgs = new java.util.LinkedHashMap<>();
+        Map<String, Object> toolArgs = new LinkedHashMap<>();
         for (BuiltinToolProvider provider : builtinToolRegistry.getAllProviders()) {
             List<Map<String, Object>> argList = new ArrayList<>();
             Class<?> toolClass = provider.getToolClass();
@@ -84,7 +87,7 @@ public class ErpToolNodeProvider implements FlowNodeProvider {
                     continue;
                 }
                 for (Parameter p : m.getParameters()) {
-                    Map<String, Object> arg = new java.util.LinkedHashMap<>();
+                    Map<String, Object> arg = new LinkedHashMap<>();
                     String paramName = p.getName();
                     if (p.isAnnotationPresent(P.class)) {
                         paramName = p.getAnnotation(P.class).value();

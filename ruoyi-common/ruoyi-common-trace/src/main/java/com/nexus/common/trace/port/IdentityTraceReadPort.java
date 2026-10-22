@@ -2,6 +2,10 @@ package com.nexus.common.trace.port;
 
 import com.nexus.common.trace.*;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * 模块所属事实的只读追溯契约；单件、批次和工单范围分别提供证据与独立分页。
  */
@@ -52,8 +56,7 @@ public interface IdentityTraceReadPort {
      */
     default BatchTracePart batch(
             String tenantId, Long batchId, String section, String cursor, int limit) {
-        return new BatchTracePart(
-                sourceModule(), batchId, "BATCH", java.util.Map.of(), java.util.List.of());
+        return new BatchTracePart(sourceModule(), batchId, "BATCH", Map.of(), List.of());
     }
 
     /**
@@ -63,9 +66,8 @@ public interface IdentityTraceReadPort {
      * @param identityIds 待核验的跨模块稳定身份集合。
      * @return 这些实物身份有来源证据关联的产品批次集合。
      */
-    default java.util.Set<Long> batchesForIdentities(
-            String tenantId, java.util.List<Long> identityIds) {
-        return java.util.Set.of();
+    default Set<Long> batchesForIdentities(String tenantId, List<Long> identityIds) {
+        return Set.of();
     }
 
     /**
@@ -79,7 +81,7 @@ public interface IdentityTraceReadPort {
      */
     default TracePage<Long> affectedByIdentity(
             String tenantId, Long identityId, long afterIdentity, int limit) {
-        return new TracePage<>(java.util.List.of(), null, false);
+        return new TracePage<>(List.of(), null, false);
     }
 
     /**
@@ -93,7 +95,7 @@ public interface IdentityTraceReadPort {
      */
     default TracePage<WorkOrderTraceImpact> unallocatedByBatch(
             String tenantId, Long batchId, long afterConsumption, int limit) {
-        return new TracePage<>(java.util.List.of(), null, false);
+        return new TracePage<>(List.of(), null, false);
     }
 
     /**
@@ -107,7 +109,7 @@ public interface IdentityTraceReadPort {
      */
     default TracePage<WorkOrderTraceImpact> unallocatedByIdentity(
             String tenantId, Long identityId, long afterConsumption, int limit) {
-        return new TracePage<>(java.util.List.of(), null, false);
+        return new TracePage<>(List.of(), null, false);
     }
 
     /**
@@ -121,7 +123,7 @@ public interface IdentityTraceReadPort {
      */
     default TracePage<Long> productIdentitiesByWorkOrder(
             String tenantId, Long mesWoId, long afterIdentity, int limit) {
-        return new TracePage<>(java.util.List.of(), null, false);
+        return new TracePage<>(List.of(), null, false);
     }
 
     /**
@@ -135,7 +137,7 @@ public interface IdentityTraceReadPort {
      */
     default TracePage<Long> productBatchesByWorkOrder(
             String tenantId, Long mesWoId, long afterBatch, int limit) {
-        return new TracePage<>(java.util.List.of(), null, false);
+        return new TracePage<>(List.of(), null, false);
     }
 
     /**

@@ -3,9 +3,13 @@ package com.nexus.common.sign.domain.bo;
 import com.nexus.common.core.validate.AddGroup;
 import com.nexus.common.core.validate.EditGroup;
 import com.nexus.common.sign.domain.EsSeal;
+import com.nexus.common.sign.domain.vo.SealVo;
+
 import io.github.linpeilie.annotations.AutoMapper;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
 import lombok.Data;
 
 import java.util.Date;
@@ -13,12 +17,10 @@ import java.util.Date;
 /**
  * 印章新增/修改入参。
  *
- * <p><b>校验分组</b>：印章图片相关字段（{@code sealOssId}/{@code imgWidth}/{@code imgHeight}）
- * 仅在<b>新增</b>（{@code AddGroup}）时必填 —— 修改时前端不回传图片表示「沿用原章面」
- * （{@link com.nexus.common.sign.domain.vo.SealVo} 不携带 {@code sealOssId}）。
- * {@code sealType}/{@code sealName} 则声明为 {@code AddGroup + EditGroup} 双分组必填，
- * 不可留空 —— 无分组注解的约束只属于 {@code Default} 组，
- * 分组校验时不会被执行（服务层 {@code validateSealBo} 依赖这两个字段）。</p>
+ * <p><b>校验分组</b>：印章图片相关字段（{@code sealOssId}/{@code imgWidth}/{@code imgHeight}） 仅在<b>新增</b>（{@code
+ * AddGroup}）时必填 —— 修改时前端不回传图片表示「沿用原章面」 （{@link SealVo} 不携带 {@code sealOssId}）。 {@code
+ * sealType}/{@code sealName} 则声明为 {@code AddGroup + EditGroup} 双分组必填， 不可留空 —— 无分组注解的约束只属于 {@code
+ * Default} 组， 分组校验时不会被执行（服务层 {@code validateSealBo} 依赖这两个字段）。
  *
  * @author nexus
  */

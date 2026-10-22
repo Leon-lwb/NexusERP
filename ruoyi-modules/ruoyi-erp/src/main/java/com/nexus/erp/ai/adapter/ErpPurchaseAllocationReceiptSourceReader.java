@@ -1,5 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
+import static com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -7,16 +9,19 @@ import com.nexus.erp.ai.adapter.mapper.ErpPurchaseAllocationReceiptSourceMapper;
 import com.nexus.erp.ai.adapter.mapper.ErpPurchaseAllocationReceiptSourceMapper.*;
 import com.nexus.erp.pu.service.PuRequirementErpTransactionQualification;
 import com.nexus.erp.wm.service.WmCertifiedReceiptPostingService;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -25,7 +30,6 @@ import java.time.format.ResolverStyle;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import static com.nexus.erp.ai.adapter.ErpPurchaseAllocationLineageReader.*;
 
 /** 同ERP独占来源事务中证明原收货履约；不写库存、计数、事件或通知，也不回调采购来源认证。 */
 @Service
@@ -267,7 +271,9 @@ public class ErpPurchaseAllocationReceiptSourceReader {
             long seconds = at.divideToIntegralValue(perSecond).longValueExact();
             int nanos = at.subtract(BigDecimal.valueOf(seconds).multiply(perSecond)).movePointRight(6).intValueExact();
             return Instant.ofEpochSecond(seconds, nanos);
-        } catch (ArithmeticException | java.time.DateTimeException failure) { throw reject("数据库原毫秒整数或分数精度不支持"); }
+        } catch (ArithmeticException | DateTimeException failure) {
+            throw reject("数据库原毫秒整数或分数精度不支持");
+        }
     }
     private static Instant secondsInstant(BigDecimal at) {
         need(at != null && at.signum() > 0 && at.scale() <= 6, "数据库时钟超出固定正值与六位精度合同");
@@ -275,7 +281,9 @@ public class ErpPurchaseAllocationReceiptSourceReader {
             long seconds = at.divideToIntegralValue(BigDecimal.ONE).longValueExact();
             int nanos = at.subtract(BigDecimal.valueOf(seconds)).movePointRight(9).intValueExact();
             return Instant.ofEpochSecond(seconds, nanos);
-        } catch (ArithmeticException | java.time.DateTimeException failure) { throw reject("数据库时钟整数或分数精度不支持"); }
+        } catch (ArithmeticException | DateTimeException failure) {
+            throw reject("数据库时钟整数或分数精度不支持");
+        }
     }
     private static String normalized(BigDecimal q) {return q.stripTrailingZeros().toPlainString();}
     private static boolean positive(Long id) {return id!=null && id>0;}

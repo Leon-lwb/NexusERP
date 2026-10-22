@@ -3,14 +3,17 @@ package com.nexus.ai.engineering;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.engineering.service.*;
 import com.nexus.common.ai.engineering.*;
 import com.nexus.common.tenant.helper.TenantHelper;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -25,9 +28,8 @@ class EngineeringArtifactUploadFailureTest {
                             if (i.getArgument(0, String.class)
                                     .startsWith(
                                             "update ai_engineering_artifact set"
-                                                + " status='CONFIRMED'"))
-                                throw new org.springframework.dao
-                                        .DataAccessResourceFailureException("模拟确认失败");
+                                                    + " status='CONFIRMED'"))
+                                throw new DataAccessResourceFailureException("模拟确认失败");
                             return i.callRealMethod();
                         })
                 .when(repository)
@@ -97,10 +99,8 @@ class EngineeringArtifactUploadFailureTest {
         byte[] obj = "v 0 0 0\n".getBytes();
         var ticket = f.ticket("model/board.obj", obj);
         var data = EngineeringJson.tree(f.ephemeral.consume("upload", ticket.uploadTicket()));
-        ((com.fasterxml.jackson.databind.node.ObjectNode) data)
-                .put("expiresAt", "2020-01-01T00:00:00Z");
-        f.ephemeral.put(
-                "upload", ticket.uploadTicket(), data.toString(), java.time.Duration.ofMinutes(5));
+        ((ObjectNode) data).put("expiresAt", "2020-01-01T00:00:00Z");
+        f.ephemeral.put("upload", ticket.uploadTicket(), data.toString(), Duration.ofMinutes(5));
         assertThrows(
                 EngineeringException.class,
                 () ->

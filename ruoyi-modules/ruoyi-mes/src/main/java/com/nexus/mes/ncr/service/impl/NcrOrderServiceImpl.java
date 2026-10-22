@@ -3,6 +3,7 @@ package com.nexus.mes.ncr.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,6 +19,9 @@ import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.service.ESignatureService;
+import com.nexus.mes.lt.domain.LtLot;
+import com.nexus.mes.lt.mapper.LtLotMapper;
+import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.ncr.domain.NcrDefect;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.bo.NcrOrderBo;
@@ -27,21 +31,24 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.ncr.service.INcrDefectService;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.ncr.service.INcrReworkOrderService;
-import com.nexus.mes.lt.domain.LtLot;
-import com.nexus.mes.lt.mapper.LtLotMapper;
-import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.pro.service.IProAndonService;
+import com.nexus.mes.qc.domain.QcIpqc;
+import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MES NCR不合格品单 Service 业务层实现
@@ -68,16 +75,18 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     private final ILtLotService ltLotService;
     /** 批次主档 Mapper: 解析 NCR 关联的真实批次(MES-NCR-01) */
     private final LtLotMapper ltLotMapper;
+
     /** IPQC 检验单 Mapper: 工序过程检验来源无物料入参, 经检验单取物料以定位批次 */
-    private final com.nexus.mes.qc.mapper.QcIpqcMapper qcIpqcMapper;
+    private final QcIpqcMapper qcIpqcMapper;
+
     private final IProAndonService proAndonService;
     private final INcrReworkOrderService ncrReworkOrderService;
     private final INcrDefectService defectService;
     private final ESignatureService eSignatureService;
 
     /** MES-NCR-06: 处置方式白名单(不可逆处置必须走电子签名入口 {@link #disposeWithSignature}) */
-    private static final java.util.Set<String> SUPPORTED_DISPOSITIONS =
-        java.util.Set.of(DISPOSITION_REWORK, DISPOSITION_SCRAP, DISPOSITION_ACCEPT, DISPOSITION_RETURN);
+    private static final Set<String> SUPPORTED_DISPOSITIONS =
+            Set.of(DISPOSITION_REWORK, DISPOSITION_SCRAP, DISPOSITION_ACCEPT, DISPOSITION_RETURN);
 
     /**
      * 分页查询NCR单列表
@@ -162,23 +171,38 @@ public class NcrOrderServiceImpl implements INcrOrderService {
             throw new RuntimeException("当前状态不可编辑: " + order.getStatus());
         }
         // 白名单业务字段 + 状态 CAS: rows==0 说明状态已被并发变更(如已处置/已关闭)
-        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<NcrOrder> update =
-            Wrappers.<NcrOrder>lambdaUpdate()
-            .set(bo.getWoId() != null, NcrOrder::getWoId, bo.getWoId())
-            .set(bo.getWoNo() != null, NcrOrder::getWoNo, bo.getWoNo())
-            .set(bo.getCardId() != null, NcrOrder::getCardId, bo.getCardId())
-            .set(bo.getStepRecordId() != null, NcrOrder::getStepRecordId, bo.getStepRecordId())
-            .set(bo.getProcessId() != null, NcrOrder::getProcessId, bo.getProcessId())
-            .set(bo.getProcessName() != null, NcrOrder::getProcessName, bo.getProcessName())
-            .set(bo.getMaterialId() != null, NcrOrder::getMaterialId, bo.getMaterialId())
-            .set(bo.getMaterialCode() != null, NcrOrder::getMaterialCode, bo.getMaterialCode())
-            .set(bo.getMaterialName() != null, NcrOrder::getMaterialName, bo.getMaterialName())
-            .set(bo.getLotId() != null, NcrOrder::getLotId, bo.getLotId())
-            .set(bo.getLotCode() != null, NcrOrder::getLotCode, bo.getLotCode())
-            .set(bo.getDefectQty() != null, NcrOrder::getDefectQty, bo.getDefectQty())
-            .set(bo.getRemark() != null, NcrOrder::getRemark, bo.getRemark())
-            .eq(NcrOrder::getNcrId, bo.getNcrId())
-            .in(NcrOrder::getStatus, STATUS_OPEN, STATUS_REVIEW);
+        LambdaUpdateWrapper<NcrOrder> update =
+                Wrappers.<NcrOrder>lambdaUpdate()
+                        .set(bo.getWoId() != null, NcrOrder::getWoId, bo.getWoId())
+                        .set(bo.getWoNo() != null, NcrOrder::getWoNo, bo.getWoNo())
+                        .set(bo.getCardId() != null, NcrOrder::getCardId, bo.getCardId())
+                        .set(
+                                bo.getStepRecordId() != null,
+                                NcrOrder::getStepRecordId,
+                                bo.getStepRecordId())
+                        .set(bo.getProcessId() != null, NcrOrder::getProcessId, bo.getProcessId())
+                        .set(
+                                bo.getProcessName() != null,
+                                NcrOrder::getProcessName,
+                                bo.getProcessName())
+                        .set(
+                                bo.getMaterialId() != null,
+                                NcrOrder::getMaterialId,
+                                bo.getMaterialId())
+                        .set(
+                                bo.getMaterialCode() != null,
+                                NcrOrder::getMaterialCode,
+                                bo.getMaterialCode())
+                        .set(
+                                bo.getMaterialName() != null,
+                                NcrOrder::getMaterialName,
+                                bo.getMaterialName())
+                        .set(bo.getLotId() != null, NcrOrder::getLotId, bo.getLotId())
+                        .set(bo.getLotCode() != null, NcrOrder::getLotCode, bo.getLotCode())
+                        .set(bo.getDefectQty() != null, NcrOrder::getDefectQty, bo.getDefectQty())
+                        .set(bo.getRemark() != null, NcrOrder::getRemark, bo.getRemark())
+                        .eq(NcrOrder::getNcrId, bo.getNcrId())
+                        .in(NcrOrder::getStatus, STATUS_OPEN, STATUS_REVIEW);
         if (update.getSqlSet() == null || update.getSqlSet().isBlank()) {
             // 无任何白名单字段可写: 视为无变更(空 SET 会生成非法 SQL)
             log.info("NCR单无字段变更, 跳过更新: ncrId={}", bo.getNcrId());
@@ -213,7 +237,7 @@ public class NcrOrderServiceImpl implements INcrOrderService {
                 throw new RuntimeException("NCR单" + order.getNcrCode() + "未关闭,不可删除");
             }
         }
-        List<Long> idList = java.util.Arrays.asList(ids);
+        List<Long> idList = Arrays.asList(ids);
         // 同时删除关联缺陷明细
         defectMapper.delete(Wrappers.<NcrDefect>lambdaQuery().in(NcrDefect::getNcrId, idList));
         int rows = baseMapper.deleteByIds(idList);
@@ -772,7 +796,7 @@ public class NcrOrderServiceImpl implements INcrOrderService {
         if (ipqcId == null) {
             return null;
         }
-        com.nexus.mes.qc.domain.QcIpqc ipqc = qcIpqcMapper.selectById(ipqcId);
+        QcIpqc ipqc = qcIpqcMapper.selectById(ipqcId);
         return ipqc == null ? null : ipqc.getMaterialId();
     }
 

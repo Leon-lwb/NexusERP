@@ -10,23 +10,32 @@ import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.service.IBdMaterialService;
 import com.nexus.erp.wm.domain.WmArrivalNotice;
+import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
+import com.nexus.erp.wm.domain.WmSerialPostingRequest;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveDetailVo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveLineVo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
+import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmArrivalNoticeMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmBarcodeService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveExecutorService;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
+import com.nexus.erp.wm.service.WmSerialInventoryService;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -47,10 +56,10 @@ import java.util.Map;
 @DS("erp")
 @Service
 public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveExecutorService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.nexus.erp.wm.service.WmSerialInventoryService serialInventory;
+    @Autowired
+    private WmSerialInventoryService serialInventory;
 
-    private final com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    private final WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
 
     /**
      * 待入库状态（已上架）
@@ -107,10 +116,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      */
     private final WmArrivalNoticeMapper arrivalNoticeMapper;
 
-    /**
-     * 到货通知行数据访问映射器（ERP-WM-12: 按行回写已收数量）
-     */
-    private final com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
+    /** 到货通知行数据访问映射器（ERP-WM-12: 按行回写已收数量） */
+    private final WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
 
     /**
      * 物料领用执行器业务服务，提供物料领用执行器相关能力
@@ -127,10 +134,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      */
     private final WmMqSendService wmMqSendService;
 
-    /**
-     * 库存计价服务(F3-a:采购入库按参考价/标准成本计价)
-     */
-    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+    /** 库存计价服务(F3-a:采购入库按参考价/标准成本计价) */
+    private final IInventoryValuationService valuationService;
 
     /**
      * 执行物料入库
@@ -180,7 +185,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         for (WmMaterialReceiveLineVo line : lines) {
             if (serialInventory != null
                     && serialInventory.post(
-                            com.nexus.erp.wm.domain.WmSerialPostingRequest.in(
+                            WmSerialPostingRequest.in(
                                     "WM_MATERIAL_RECEIVE",
                                     receiveId,
                                     line.getLineId(),
@@ -241,13 +246,10 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         // ERP-WM-12: 按物料回写"已收数量"到到货通知行，并把"任何一次入库都整单 FINISHED"改为
         // "全部行收满才 FINISHED，否则 PARTIAL_RECEIVED"，补齐 到货通知→收货→上架 的数量闭环。
         if (receive.getNoticeId() != null) {
-            List<com.nexus.erp.wm.domain.WmArrivalNoticeLine> noticeLines =
+            List<WmArrivalNoticeLine> noticeLines =
                     arrivalNoticeLineMapper.selectList(
-                            new LambdaQueryWrapper<com.nexus.erp.wm.domain.WmArrivalNoticeLine>()
-                                    .eq(
-                                            com.nexus.erp.wm.domain.WmArrivalNoticeLine
-                                                    ::getNoticeId,
-                                            receive.getNoticeId()));
+                            new LambdaQueryWrapper<WmArrivalNoticeLine>()
+                                    .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId()));
             // 本次入库数量按物料汇总（同一收货单可能有多行同物料）
             Map<Long, BigDecimal> recvByMaterial = new LinkedHashMap<>();
             for (WmMaterialReceiveLineVo line : lines) {
@@ -258,19 +260,17 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
                         line.getMaterialId(), nvl(line.getQuantityReceived()), BigDecimal::add);
             }
             boolean allReceived = true;
-            for (com.nexus.erp.wm.domain.WmArrivalNoticeLine nl : noticeLines) {
+            for (WmArrivalNoticeLine nl : noticeLines) {
                 BigDecimal delta = recvByMaterial.get(nl.getMaterialId());
                 if (delta != null && delta.compareTo(BigDecimal.ZERO) > 0) {
                     // 条件更新原子累加，避免并发入库丢失更新
                     arrivalNoticeLineMapper.update(
                             null,
-                            Wrappers.<com.nexus.erp.wm.domain.WmArrivalNoticeLine>lambdaUpdate()
+                            Wrappers.<WmArrivalNoticeLine>lambdaUpdate()
                                     .setSql(
                                             "received_qty = IFNULL(received_qty, 0) + "
                                                     + delta.toPlainString())
-                                    .eq(
-                                            com.nexus.erp.wm.domain.WmArrivalNoticeLine::getLineId,
-                                            nl.getLineId()));
+                                    .eq(WmArrivalNoticeLine::getLineId, nl.getLineId()));
                     nl.setReceivedQty(nvl(nl.getReceivedQty()).add(delta));
                 }
                 if (nvl(nl.getReceivedQty()).compareTo(nvl(nl.getQuantityArrival())) < 0) {

@@ -3,6 +3,7 @@ package com.nexus.erp.ai.adapter;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.pu.mapper.ErpPurchaseInventorySourceMapper;
@@ -13,6 +14,8 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,9 +74,11 @@ public class ErpPurchaseInventorySourceVerifier {
         this(mapper,transactionQualification,null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public ErpPurchaseInventorySourceVerifier(ErpPurchaseInventorySourceMapper mapper,
-            PuRequirementErpTransactionQualification transactionQualification,ErpCertifiedSourceBirthReader birthReader) {
+    @Autowired
+    public ErpPurchaseInventorySourceVerifier(
+            ErpPurchaseInventorySourceMapper mapper,
+            PuRequirementErpTransactionQualification transactionQualification,
+            ErpCertifiedSourceBirthReader birthReader) {
         this.birthReader=birthReader;
         this.mapper = Objects.requireNonNull(mapper);
         this.transactionQualification = Objects.requireNonNull(transactionQualification);
@@ -347,18 +352,24 @@ public class ErpPurchaseInventorySourceVerifier {
     }
 
     /**
-     * quantity 为非冻结在库总量，reserved 仅为相同非冻结行的预留，均不重复扣减。
-     * frozenQuantity 含库存行、库区或储位冻结导致排除的在库量；该行预留一并排除。
-     * safety 为真实物料安全库存；所有数量统一为基本单位的精确四位小数。
-     * stockIds 覆盖全部被读库存，含冻结行；sourceVersions 含真实库存版本、单位换算版本
-     * 及其他来源内容指纹，不把无版本表的哈希当历史核验、完整性或跨事务有效证书。
-     * 不携带 Mapper 实体、Date 或可变集合，调用方不能通过自造此类型取得采购授权。
+     * quantity 为非冻结在库总量，reserved 仅为相同非冻结行的预留，均不重复扣减。 frozenQuantity 含库存行、库区或储位冻结导致排除的在库量；该行预留一并排除。
+     * safety 为真实物料安全库存；所有数量统一为基本单位的精确四位小数。 stockIds 覆盖全部被读库存，含冻结行；sourceVersions 含真实库存版本、单位换算版本
+     * 及其他来源内容指纹，不把无版本表的哈希当历史核验、完整性或跨事务有效证书。 不携带 Mapper 实体、Date 或可变集合，调用方不能通过自造此类型取得采购授权。
      */
-    public record InventorySnapshot(String tenantId, Long materialId, Long baseUomId, Integer quantityScale,
-                                    Instant snapshotAt, String databaseTimeZone, BigDecimal quantity,
-                                    BigDecimal reserved, BigDecimal safety, BigDecimal frozenQuantity,
-                                    Set<Long> stockIds, Map<String, String> sourceVersions,
-                                    com.nexus.erp.ai.adapter.mapper.ErpCertifiedSourceBirthMapper.StoredBirth sourceBirth) {
+    public record InventorySnapshot(
+            String tenantId,
+            Long materialId,
+            Long baseUomId,
+            Integer quantityScale,
+            Instant snapshotAt,
+            String databaseTimeZone,
+            BigDecimal quantity,
+            BigDecimal reserved,
+            BigDecimal safety,
+            BigDecimal frozenQuantity,
+            Set<Long> stockIds,
+            Map<String, String> sourceVersions,
+            ErpCertifiedSourceBirthMapper.StoredBirth sourceBirth) {
         public InventorySnapshot(String tenantId,Long materialId,Long baseUomId,Integer quantityScale,Instant snapshotAt,
                 String databaseTimeZone,BigDecimal quantity,BigDecimal reserved,BigDecimal safety,BigDecimal frozenQuantity,
                 Set<Long> stockIds,Map<String,String> sourceVersions){

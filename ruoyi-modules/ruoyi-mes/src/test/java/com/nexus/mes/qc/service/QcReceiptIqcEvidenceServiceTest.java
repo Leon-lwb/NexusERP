@@ -1,16 +1,21 @@
 package com.nexus.mes.qc.service;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.iqc.IqcNativeSchema;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthPort.Birth;
 import com.nexus.common.mq.iqc.ReceiptIqcBirthSupport;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcBirthMapper.Binding;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper;
 import com.nexus.mes.qc.mapper.QcReceiptIqcEvidenceMapper.*;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
@@ -20,17 +25,15 @@ import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import javax.sql.DataSource;
 
 class QcReceiptIqcEvidenceServiceTest {
     final String tenantId = "000007";
@@ -47,8 +50,8 @@ class QcReceiptIqcEvidenceServiceTest {
     final InspectionRow row = new InspectionRow();
     QcReceiptIqcEvidenceService service;
 
-    static java.util.List<IqcNativeSchema.Column> nativeColumns() {
-        java.util.List<IqcNativeSchema.Column> rows = new java.util.ArrayList<>();
+    static List<IqcNativeSchema.Column> nativeColumns() {
+        List<IqcNativeSchema.Column> rows = new ArrayList<>();
         for (String[] spec : new String[][] {{"qc_iqc", "iqc_id", "bigint"}, {"qc_iqc", "tenant_id", "varchar"},
             {"qc_iqc", "receive_id", "bigint"}, {"qc_iqc", "material_id", "bigint"},
             {"qc_iqc", "quantity", "decimal"}, {"qc_inspect_detail", "detail_id", "bigint"}}) {
@@ -58,8 +61,9 @@ class QcReceiptIqcEvidenceServiceTest {
         }
         return rows;
     }
-    static java.util.List<IqcNativeSchema.IndexPart> nativeIndexes() {
-        java.util.List<IqcNativeSchema.IndexPart> rows = new java.util.ArrayList<>();
+
+    static List<IqcNativeSchema.IndexPart> nativeIndexes() {
+        List<IqcNativeSchema.IndexPart> rows = new ArrayList<>();
         String[][] specs = {{"qc_iqc", "PRIMARY", "iqc_id"}, {"qc_inspect_detail", "PRIMARY", "detail_id"},
             {"qc_iqc", "uk_actual_scope", "tenant_id", "receive_id", "material_id"}};
         for (String[] spec : specs) for (int i = 2; i < spec.length; i++) {

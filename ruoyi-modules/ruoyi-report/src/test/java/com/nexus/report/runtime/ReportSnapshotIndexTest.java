@@ -8,6 +8,7 @@ import com.nexus.report.extension.ReportExtensionSchema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -36,7 +37,7 @@ class ReportSnapshotIndexTest {
                                                                     ValueType.DECIMAL,
                                                                     "9007199254740993.005")))
                                             + "\n")
-                                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                                    .getBytes(StandardCharsets.UTF_8));
             }
             String reference = f.artifacts.commit("A", path, "rows");
             var indexes = new ReportSnapshotIndexService(f.jdbc, f.artifacts, f.json);
@@ -65,11 +66,22 @@ class ReportSnapshotIndexTest {
             ReportExtensionSchema.apply(fixture.jdbc);
             Path path = fixture.artifacts.temporary("A", "rows");
             try (var output = fixture.artifacts.output("A", path)) {
-                output.write((fixture.json.writeValueAsString(Map.of(
-                        "currency", new TypedValue(ValueType.STRING, "CNY", "人民币"),
-                        "historical", new TypedValue(ValueType.STRING, "OLD"),
-                        "id", new TypedValue(ValueType.ID, "000123"))) + "\n")
-                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                output.write(
+                        (fixture.json.writeValueAsString(
+                                                Map.of(
+                                                        "currency",
+                                                                new TypedValue(
+                                                                        ValueType.STRING,
+                                                                        "CNY",
+                                                                        "人民币"),
+                                                        "historical",
+                                                                new TypedValue(
+                                                                        ValueType.STRING, "OLD"),
+                                                        "id",
+                                                                new TypedValue(
+                                                                        ValueType.ID, "000123")))
+                                        + "\n")
+                                .getBytes(StandardCharsets.UTF_8));
             }
             String reference = fixture.artifacts.commit("A", path, "rows");
             var indexes = new ReportSnapshotIndexService(fixture.jdbc, fixture.artifacts, fixture.json);

@@ -1,12 +1,20 @@
 package com.nexus.flow.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.flow.model.FlowGraph;
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.config.AiPromptTemplateInitializer;
+import com.nexus.ai.config.AiProperties;
+import com.nexus.flow.model.FlowGraph;
+
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 class DecisionFlowDefinitionFactoryTest {
-    private final DecisionFlowDefinitionFactory factory = new DecisionFlowDefinitionFactory(new ObjectMapper(), new com.nexus.ai.config.AiProperties());
+    private final DecisionFlowDefinitionFactory factory =
+            new DecisionFlowDefinitionFactory(new ObjectMapper(), new AiProperties());
 
     @Test void analysisGraphIsExecutableAndContainsTrustedStageOrder() {
         var flow = factory.analysisFlow(10L, 20L);
@@ -27,8 +35,9 @@ class DecisionFlowDefinitionFactoryTest {
 
     @Test void industrialFlowUsesTheSameStrictSummaryContractAsDirectRetry() {
         var config = FlowGraph.parse(factory.analysisFlow(10L, null).getConfigJson()).getNode("llm").getConfig();
-        assertEquals(com.nexus.ai.config.AiPromptTemplateInitializer.DECISION_SUMMARY_SYSTEM_PROMPT,
-            config.path("systemPrompt").asText());
+        assertEquals(
+                AiPromptTemplateInitializer.DECISION_SUMMARY_SYSTEM_PROMPT,
+                config.path("systemPrompt").asText());
         assertEquals("{{nodes.rank.output.summaryPrompt}}", config.path("promptTemplate").asText());
     }
 
@@ -44,15 +53,15 @@ class DecisionFlowDefinitionFactoryTest {
         assertEquals(frozenGraph("released-90-model22.json"), factory.releasedDefaultAnalysisFlow(22L, null).getConfigJson());
     }
 
-    static String frozenGraph(String name) throws java.io.IOException {
+    static String frozenGraph(String name) throws IOException {
         try (var in = DecisionFlowDefinitionFactoryTest.class.getResourceAsStream("/decision-flow/" + name)) {
             assertNotNull(in, "Historical graph fixture must exist");
-            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 
     @Test void configuredTimeoutIsBoundedAndChangesOnlyModelNode() {
-        var props = new com.nexus.ai.config.AiProperties();
+        var props = new AiProperties();
         props.getFlow().setIndustrialDecisionLlmTimeoutSeconds(120);
         var configured = new DecisionFlowDefinitionFactory(new ObjectMapper(), props);
         var current = FlowGraph.parse(configured.analysisFlow(22L, null).getConfigJson());

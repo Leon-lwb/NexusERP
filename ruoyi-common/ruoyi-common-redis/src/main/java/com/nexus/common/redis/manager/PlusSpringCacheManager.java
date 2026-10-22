@@ -16,6 +16,7 @@
 package com.nexus.common.redis.manager;
 
 import com.nexus.common.redis.utils.RedisUtils;
+
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.spring.cache.CacheConfig;
@@ -33,14 +34,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * A {@link org.springframework.cache.CacheManager} implementation
- * backed by Redisson instance.
- * <p>
- * 修改 RedissonSpringCacheManager 源码
- * 重写 cacheName 处理方法 支持多参数
+ * A {@link CacheManager} implementation backed by Redisson instance.
+ *
+ * <p>修改 RedissonSpringCacheManager 源码 重写 cacheName 处理方法 支持多参数
  *
  * @author Nikita Koksharov
- *
  */
 @SuppressWarnings("unchecked")
 public class PlusSpringCacheManager implements CacheManager {

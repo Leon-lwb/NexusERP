@@ -1,5 +1,9 @@
 package com.nexus.erp.wm.service.impl;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -12,6 +16,7 @@ import com.nexus.erp.wm.domain.*;
 import com.nexus.erp.wm.mapper.*;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
 import com.nexus.erp.wm.service.SalesIssueSourceGuard;
+
 import org.mockito.MockedStatic;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.BeanUtils;
@@ -28,9 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.regex.Pattern;
 
 /**
  * 离线入口夹具：真实销售出库与计价源码，加内存映射器和 Spring 事务代理。
@@ -175,12 +178,19 @@ class SalesIssueEntryFixture {
                 .map(row -> copy(row, SoSalesOrderLine.class)).toList();
         });
         when(issuesMapper.selectById(any())).thenAnswer(a -> copy(issues.get(a.getArgument(0)), WmSalesIssue.class));
-        when(issueLinesMapper.selectList(any())).thenAnswer(a -> {
-            var query = (com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<?>) a.getArgument(0);
-            query.getSqlSegment();
-            Long id = (Long) query.getParamNameValuePairs().values().stream().filter(Long.class::isInstance).findFirst().orElseThrow();
-            return details.get(id);
-        });
+        when(issueLinesMapper.selectList(any()))
+                .thenAnswer(
+                        a -> {
+                            var query = (LambdaQueryWrapper<?>) a.getArgument(0);
+                            query.getSqlSegment();
+                            Long id =
+                                    (Long)
+                                            query.getParamNameValuePairs().values().stream()
+                                                    .filter(Long.class::isInstance)
+                                                    .findFirst()
+                                                    .orElseThrow();
+                            return details.get(id);
+                        });
         when(issuesMapper.update(isNull(), any())).thenAnswer(a -> {
             LambdaUpdateWrapper<?> wrapper = a.getArgument(1);
             wrapper.getSqlSegment();
@@ -210,14 +220,21 @@ class SalesIssueEntryFixture {
             }
             return existingTxCount;
         });
-        when(stockMapper.selectList(any())).thenAnswer(a -> {
-            events.add("查询库存");
-            var query = (com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<?>) a.getArgument(0);
-            query.getSqlSegment();
-            Collection<Object> values = query.getParamNameValuePairs().values();
-            return stocks.values().stream().filter(s -> s.getStockQuantity().signum() > 0 && values.contains(s.getWarehouseId()))
-                .map(s -> copy(s, WmMaterialStock.class)).toList();
-        });
+        when(stockMapper.selectList(any()))
+                .thenAnswer(
+                        a -> {
+                            events.add("查询库存");
+                            var query = (LambdaQueryWrapper<?>) a.getArgument(0);
+                            query.getSqlSegment();
+                            Collection<Object> values = query.getParamNameValuePairs().values();
+                            return stocks.values().stream()
+                                    .filter(
+                                            s ->
+                                                    s.getStockQuantity().signum() > 0
+                                                            && values.contains(s.getWarehouseId()))
+                                    .map(s -> copy(s, WmMaterialStock.class))
+                                    .toList();
+                        });
         when(stockMapper.selectById(any())).thenAnswer(a -> copy(stocks.get(a.getArgument(0)), WmMaterialStock.class));
         when(stockMapper.deductStockAvailable(anyLong(), any(), any())).thenAnswer(a -> deduct(a.getArgument(0), a.getArgument(1), BigDecimal.ZERO, a.getArgument(2)));
         when(stockMapper.deductStockWithReserved(anyLong(), any(), any(), any())).thenAnswer(a -> deduct(a.getArgument(0), a.getArgument(1), a.getArgument(2), a.getArgument(3)));
@@ -252,21 +269,30 @@ class SalesIssueEntryFixture {
             return rows;
         });
         when(soLinesMapper.selectById(any())).thenAnswer(a -> copy(sources.get(a.getArgument(0)), SoSalesOrderLine.class));
-        when(soLinesMapper.update(isNull(), any())).thenAnswer(a -> {
-            LambdaUpdateWrapper<?> wrapper = a.getArgument(1);
-            wrapper.getSqlSegment();
-            var matcher = java.util.regex.Pattern.compile("line_id = #\\{ew\\.paramNameValuePairs\\.(MPGENVAL\\d+)\\}")
-                .matcher(wrapper.getSqlSegment());
-            if (!matcher.find()) throw new AssertionError("缺少明确的来源行更新条件");
-            Long id = (Long) wrapper.getParamNameValuePairs().get(matcher.group(1));
-            BigDecimal amount = new BigDecimal(wrapper.getSqlSet().substring(wrapper.getSqlSet().lastIndexOf(" - ") + 3));
-            SoSalesOrderLine source = sources.get(id);
-            if (source.getReservedQty().compareTo(amount) < 0) return 0;
-            BigDecimal old = source.getReservedQty();
-            manager.undo(() -> source.setReservedQty(old));
-            source.setReservedQty(old.subtract(amount));
-            return 1;
-        });
+        when(soLinesMapper.update(isNull(), any()))
+                .thenAnswer(
+                        a -> {
+                            LambdaUpdateWrapper<?> wrapper = a.getArgument(1);
+                            wrapper.getSqlSegment();
+                            var matcher =
+                                    Pattern.compile(
+                                                    "line_id = #\\{ew\\.paramNameValuePairs\\.(MPGENVAL\\d+)\\}")
+                                            .matcher(wrapper.getSqlSegment());
+                            if (!matcher.find()) throw new AssertionError("缺少明确的来源行更新条件");
+                            Long id = (Long) wrapper.getParamNameValuePairs().get(matcher.group(1));
+                            BigDecimal amount =
+                                    new BigDecimal(
+                                            wrapper.getSqlSet()
+                                                    .substring(
+                                                            wrapper.getSqlSet().lastIndexOf(" - ")
+                                                                    + 3));
+                            SoSalesOrderLine source = sources.get(id);
+                            if (source.getReservedQty().compareTo(amount) < 0) return 0;
+                            BigDecimal old = source.getReservedQty();
+                            manager.undo(() -> source.setReservedQty(old));
+                            source.setReservedQty(old.subtract(amount));
+                            return 1;
+                        });
         doAnswer(a -> {
             SoSalesOrderLine source = sources.get(a.getArgument(0));
             if (source == null) return null;
@@ -312,15 +338,21 @@ class SalesIssueEntryFixture {
             final List<Runnable> undo = new ArrayList<>();
             final List<ReentrantLock> locks = new ArrayList<>();
         }
-        @Override protected Object doGetTransaction() { return active.get() == null ? new State() : active.get(); }
-        @Override protected boolean isExistingTransaction(Object tx) { return tx == active.get(); }
-        @Override protected void doBegin(Object tx, TransactionDefinition definition) { active.set((State) tx); }
-        @Override protected void doCommit(DefaultTransactionStatus status) { }
-        @Override protected void doRollback(DefaultTransactionStatus status) {
+        @Override
+        protected Object doGetTransaction() { return active.get() == null ? new State() : active.get(); }
+        @Override
+        protected boolean isExistingTransaction(Object tx) { return tx == active.get(); }
+        @Override
+        protected void doBegin(Object tx, TransactionDefinition definition) { active.set((State) tx); }
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) { }
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
             List<Runnable> undo = ((State) status.getTransaction()).undo;
             for (int i = undo.size() - 1; i >= 0; i--) undo.get(i).run();
         }
-        @Override protected void doCleanupAfterCompletion(Object tx) {
+        @Override
+        protected void doCleanupAfterCompletion(Object tx) {
             List<ReentrantLock> locks = ((State) tx).locks;
             for (int i = locks.size() - 1; i >= 0; i--) locks.get(i).unlock();
             active.remove();

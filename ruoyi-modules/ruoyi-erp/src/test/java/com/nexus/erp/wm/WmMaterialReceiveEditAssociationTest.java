@@ -1,9 +1,18 @@
 package com.nexus.erp.wm;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import cn.hutool.core.bean.BeanUtil;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
@@ -14,8 +23,11 @@ import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
+import com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard;
 import com.nexus.erp.wm.service.impl.WmMaterialReceiveCrudServiceImpl;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.apache.ibatis.mapping.BoundSql;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,19 +39,12 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-import org.apache.ibatis.mapping.BoundSql;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-import com.nexus.common.core.utils.MapstructUtils;
-import com.nexus.common.satoken.utils.LoginHelper;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /** 编辑草稿后收货源行和上架明细的稳定 ID 回归。 */
 @ExtendWith(MockitoExtension.class)
@@ -49,24 +54,29 @@ class WmMaterialReceiveEditAssociationTest {
     @Mock WmMaterialReceiveLineMapper receiveLineMapper;
     @Mock WmMaterialReceiveDetailMapper receiveDetailMapper;
     @Mock WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
-    @Mock com.nexus.erp.wm.service.WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
+    @Mock WmCertifiedReceiptMutationGuard certifiedReceiptGuard;
     @InjectMocks WmMaterialReceiveCrudServiceImpl service;
 
     @Test
     void permanentSourceGuardFailureStopsAllOldHeadAndLineWrites() {
-        doThrow(new com.nexus.common.core.exception.ServiceException("receipt source frozen"))
-            .when(certifiedReceiptGuard).requireUnposted(21L);
-        assertThrows(com.nexus.common.core.exception.ServiceException.class, () -> service.updateByBo(edit(51L)));
+        doThrow(new ServiceException("receipt source frozen"))
+                .when(certifiedReceiptGuard)
+                .requireUnposted(21L);
+        assertThrows(ServiceException.class, () -> service.updateByBo(edit(51L)));
         verifyNoInteractions(baseMapper, receiveLineMapper, receiveDetailMapper);
     }
 
     @Test
     void createCannotClaimApprovalOrShelfAuditFromAnEditableForm() {
-        WmMaterialReceiveBo bo=new WmMaterialReceiveBo();bo.setReceiveCode("RK202610030001");bo.setStatus("SHELVED");bo.setShelfBy(7L);bo.setShelfTime(new java.util.Date());
+        WmMaterialReceiveBo bo = new WmMaterialReceiveBo();
+        bo.setReceiveCode("RK202610030001");
+        bo.setStatus("SHELVED");
+        bo.setShelfBy(7L);
+        bo.setShelfTime(new Date());
         WmMaterialReceive entity=existing("SHELVED");
         try(MockedStatic<MapstructUtils> convert=mockStatic(MapstructUtils.class)) {
             convert.when(()->MapstructUtils.convert(bo,WmMaterialReceive.class)).thenReturn(entity);
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,()->service.insertByBo(bo));
+            assertThrows(ServiceException.class, () -> service.insertByBo(bo));
             verifyNoInteractions(baseMapper,receiveLineMapper,receiveDetailMapper);
         }
     }
@@ -173,8 +183,7 @@ class WmMaterialReceiveEditAssociationTest {
         when(baseMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
         when(baseMapper.selectById(21L)).thenReturn(existing("APPROVED"));
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateWithValidation(edit(51L)));
+            assertThrows(ServiceException.class, () -> service.updateWithValidation(edit(51L)));
         }
         verifyNoInteractions(receiveLineMapper, receiveDetailMapper);
         verify(baseMapper, never()).updateById(any(WmMaterialReceive.class));
@@ -185,8 +194,7 @@ class WmMaterialReceiveEditAssociationTest {
         when(baseMapper.selectById(21L)).thenReturn(existing("DRAFT"));
         when(receiveLineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(originalLine()));
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(edit(52L)));
+            assertThrows(ServiceException.class, () -> service.updateByBo(edit(52L)));
         }
         verify(receiveLineMapper, never()).insertBatch(any());
         verify(baseMapper, never()).updateById(any(WmMaterialReceive.class));
@@ -198,8 +206,7 @@ class WmMaterialReceiveEditAssociationTest {
         WmMaterialReceiveBo changed = edit(51L);
         changed.setPurId(32L);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(changed));
+            assertThrows(ServiceException.class, () -> service.updateByBo(changed));
         }
         verifyNoInteractions(receiveLineMapper, receiveDetailMapper);
     }
@@ -211,8 +218,7 @@ class WmMaterialReceiveEditAssociationTest {
         WmMaterialReceiveBo changed = edit(51L);
         changed.getWmMaterialReceiveLineList().get(0).setMaterialId(62L);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(changed));
+            assertThrows(ServiceException.class, () -> service.updateByBo(changed));
         }
         verify(receiveLineMapper, never()).insertBatch(any());
     }
@@ -222,8 +228,7 @@ class WmMaterialReceiveEditAssociationTest {
         when(baseMapper.selectById(21L)).thenReturn(existing("DRAFT"));
         when(receiveLineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(originalLine()));
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(edit(null)));
+            assertThrows(ServiceException.class, () -> service.updateByBo(edit(null)));
         }
         verify(receiveLineMapper, never()).delete(any(Wrapper.class));
     }
@@ -234,8 +239,7 @@ class WmMaterialReceiveEditAssociationTest {
         when(receiveLineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(originalLine()));
         when(receiveDetailMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(edit(51L)));
+            assertThrows(ServiceException.class, () -> service.updateByBo(edit(51L)));
         }
         verify(receiveDetailMapper, never()).insertBatch(any());
     }
@@ -248,8 +252,7 @@ class WmMaterialReceiveEditAssociationTest {
         changed.setPurCode("CG20260929002");
         changed.getWmMaterialReceiveLineList().get(0).setWmMaterialReceiveLineDetailList(null);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(changed));
+            assertThrows(ServiceException.class, () -> service.updateByBo(changed));
         }
     }
 
@@ -262,8 +265,7 @@ class WmMaterialReceiveEditAssociationTest {
         changed.setVendorId(102L);
         changed.getWmMaterialReceiveLineList().get(0).setWmMaterialReceiveLineDetailList(null);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(changed));
+            assertThrows(ServiceException.class, () -> service.updateByBo(changed));
         }
     }
     @Test
@@ -303,8 +305,7 @@ class WmMaterialReceiveEditAssociationTest {
         WmMaterialReceiveBo request = edit(51L);
         request.getWmMaterialReceiveLineList().get(0).setWmMaterialReceiveLineDetailList(null);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(request));
+            assertThrows(ServiceException.class, () -> service.updateByBo(request));
         }
         verify(receiveLineMapper, never()).updateById(any(WmMaterialReceiveLine.class));
         verify(receiveDetailMapper, never()).updateById(any(WmMaterialReceiveDetail.class));
@@ -347,9 +348,8 @@ class WmMaterialReceiveEditAssociationTest {
         when(baseMapper.selectById(21L)).thenReturn(head);
         WmMaterialReceiveBo request = edit(51L);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            com.nexus.common.core.exception.ServiceException error = assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(request));
+            ServiceException error =
+                    assertThrows(ServiceException.class, () -> service.updateByBo(request));
             assertTrue(error.getMessage().contains("来源"), error.getMessage());
         }
         verifyNoInteractions(receiveLineMapper, receiveDetailMapper);
@@ -403,8 +403,7 @@ class WmMaterialReceiveEditAssociationTest {
         request.setWarehouseId(6L);
         request.setStatus("APPROVED");
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(request));
+            assertThrows(ServiceException.class, () -> service.updateByBo(request));
         }
         verifyNoInteractions(receiveDetailMapper);
         verify(baseMapper, never()).update(any(WmMaterialReceive.class), any(Wrapper.class));
@@ -427,9 +426,8 @@ class WmMaterialReceiveEditAssociationTest {
         request.getWmMaterialReceiveLineList().get(0).setQuantityReceived(new BigDecimal("5"));
         request.getWmMaterialReceiveLineList().get(0).setWmMaterialReceiveLineDetailList(null);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            com.nexus.common.core.exception.ServiceException error = assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(request));
+            ServiceException error =
+                    assertThrows(ServiceException.class, () -> service.updateByBo(request));
             assertTrue(error.getMessage().contains("数量"), error.getMessage());
         }
         verify(baseMapper, never()).update(any(WmMaterialReceive.class), any(Wrapper.class));
@@ -451,9 +449,8 @@ class WmMaterialReceiveEditAssociationTest {
         request.setLocationId(511L);
         request.getWmMaterialReceiveLineList().get(0).setWmMaterialReceiveLineDetailList(null);
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            com.nexus.common.core.exception.ServiceException error = assertThrows(
-                com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(request));
+            ServiceException error =
+                    assertThrows(ServiceException.class, () -> service.updateByBo(request));
             assertTrue(error.getMessage().contains("库"), error.getMessage());
         }
         verifyNoInteractions(receiveLineMapper, receiveDetailMapper);
@@ -517,8 +514,7 @@ class WmMaterialReceiveEditAssociationTest {
         request.setStatus("APPROVED");
         request.getWmMaterialReceiveLineList().get(0).setQuantityReceived(new BigDecimal("5"));
         try (MockedStatic<MapstructUtils> mapping = testMapper()) {
-            assertThrows(com.nexus.common.core.exception.ServiceException.class,
-                () -> service.updateByBo(request));
+            assertThrows(ServiceException.class, () -> service.updateByBo(request));
         }
         verify(baseMapper, never()).update(any(WmMaterialReceive.class), any(Wrapper.class));
         verifyNoInteractions(receiveDetailMapper);

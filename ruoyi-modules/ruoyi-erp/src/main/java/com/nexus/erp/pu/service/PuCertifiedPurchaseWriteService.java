@@ -4,23 +4,27 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.nexus.common.ai.decision.dto.DecisionActor;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
 import com.nexus.erp.ai.adapter.ErpDecisionPurchaseScopeGuard;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService;
 import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedLine;
-import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
+import com.nexus.erp.ai.adapter.ErpPurchaseSourceCertificationService.CertifiedPurchaseScope;
 import com.nexus.erp.pu.domain.PuRequirementAllocationEvent;
+import com.nexus.erp.pu.domain.PuRequirementAllocationLedger;
 import com.nexus.erp.pu.domain.bo.PuCertifiedPurchaseCommand;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult;
 import com.nexus.erp.pu.domain.vo.PuCertifiedPurchaseResult.Line;
 import com.nexus.erp.pu.mapper.*;
 import com.nexus.erp.pu.mapper.PuCertifiedPurchaseWriteMapper.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -279,7 +283,9 @@ public class PuCertifiedPurchaseWriteService {
             try { require(row.requiredAt()!=null&&row.requiredAt().matches("[0-9]{4}-[0-9]{2}-[0-9]{2} 00:00:00"),"已提交来源日期合同未知");
                 date=LocalDate.parse(row.requiredAt().substring(0,10));
                 lines.add(new Line(row.lineId(),row.detailId(),row.materialId(),Long.valueOf(row.baseUnit()),row.applyQuantity(),date));
-            } catch(java.time.DateTimeException|NumberFormatException invalid) { throw failed("已提交来源日期或基本单位未知"); }
+            } catch (DateTimeException | NumberFormatException invalid) {
+                throw failed("已提交来源日期或基本单位未知");
+            }
         }
         require(resultFingerprint(lines).equals(old.resultFingerprint()),"已提交采购行与冻结结果摘要不一致");
         for(Line line:lines) validateRecoveredAllocation(command,actor,doc,line);
@@ -419,7 +425,11 @@ public class PuCertifiedPurchaseWriteService {
             l.applyQuantity().stripTrailingZeros().toPlainString(),l.requiredDate().toString())).toArray(String[]::new));
     }
     private static String hash(String... values){try{MessageDigest d=MessageDigest.getInstance("SHA-256");
-        for(String value:values){byte[] b=value.getBytes(StandardCharsets.UTF_8);d.update(java.nio.ByteBuffer.allocate(4).putInt(b.length).array());d.update(b);}
+            for (String value : values) {
+                byte[] b = value.getBytes(StandardCharsets.UTF_8);
+                d.update(ByteBuffer.allocate(4).putInt(b.length).array());
+                d.update(b);
+            }
         return HexFormat.of().formatHex(d.digest());}catch(NoSuchAlgorithmException impossible){throw failed("采购请求摘要不可用");}}
     private static void require(boolean value,String message){if(!value)throw failed(message);}
     private static ServiceException failed(String message){return new ServiceException("可信采购写入拒绝："+message);}

@@ -1,17 +1,24 @@
 package com.nexus.mes.trace;
 
+import static com.nexus.mes.trace.MesTraceContext.need;
+import static com.nexus.mes.trace.MesTraceSql.*;
+
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.trace.*;
 import com.nexus.common.trace.port.MaterialPolicyPort;
-import java.math.BigDecimal;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
-import static com.nexus.mes.trace.MesTraceContext.need;
-import static com.nexus.mes.trace.MesTraceSql.*;
 
 /**
  * 预留正式身份或开启本地制造写事务前，先读取真实委外凭据。
@@ -22,7 +29,7 @@ import static com.nexus.mes.trace.MesTraceSql.*;
 public class MesErpSourceReader {
     private final JdbcTemplate jdbc;
     private final MesTraceContext context;
-    private final com.fasterxml.jackson.databind.ObjectMapper json;
+    private final ObjectMapper json;
     private final MaterialPolicyPort policies;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
@@ -41,8 +48,7 @@ public class MesErpSourceReader {
                         && Objects.equals(materialId, id(source.get("material_id")))
                         && Objects.equals(sourceNo, text(source.get("subcontract_no")))
                         && Set.of("RELEASED", "IN_PROGRESS").contains(text(source.get("status")))
-                        && qty(source.get("planned_qty"))
-                                        .compareTo(java.math.BigDecimal.valueOf(quantity))
+                        && qty(source.get("planned_qty")).compareTo(BigDecimal.valueOf(quantity))
                                 >= 0,
                 "发号必须有匹配且已下达的真实委外来源");
         var payload = new LinkedHashMap<String, Object>();
@@ -65,7 +71,7 @@ public class MesErpSourceReader {
                     1,
                     body,
                     TraceHashes.sha256(body));
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("委外来源快照无法冻结");
         }
     }
@@ -111,10 +117,10 @@ public class MesErpSourceReader {
                         && Set.of("NEW", "BROKER_SENT", "APPLIED", "CONFLICT")
                                 .contains(text(original.get("status"))),
                 "缺少匹配的ERP原始事务发件凭据，不能人工补造MES授权");
-        com.fasterxml.jackson.databind.JsonNode payload;
+        JsonNode payload;
         try {
             payload = json.readTree(event.payload());
-        } catch (java.io.IOException error) {
+        } catch (IOException error) {
             throw new IllegalArgumentException("ERP来源载荷无效");
         }
         TrackingPolicy policy = null;
@@ -143,10 +149,7 @@ public class MesErpSourceReader {
                 event.eventId(), event.tenantId(), event.contentHash(), policy, version);
     }
 
-    private void validateTracking(
-            com.fasterxml.jackson.databind.JsonNode payload,
-            TrackingPolicy policy,
-            boolean component) {
+    private void validateTracking(JsonNode payload, TrackingPolicy policy, boolean component) {
         Long batch = MesTraceStore.number(payload, "erpBatchId"),
                 identity = MesTraceStore.number(payload, "identityId");
         need(batch == null || positive(batch), "ERP批次身份无效");
@@ -162,8 +165,7 @@ public class MesErpSourceReader {
         }
     }
 
-    private long verifyPosted(
-            MaterialTraceEvent event, com.fasterxml.jackson.databind.JsonNode payload) {
+    private long verifyPosted(MaterialTraceEvent event, JsonNode payload) {
         Long group = MesTraceStore.number(payload, "postingGroupId");
         need(positive(group), "ERP来源缺少过账组");
         var posting =
@@ -236,8 +238,7 @@ public class MesErpSourceReader {
         return id(posting.get("detail_version"));
     }
 
-    private long verifyAuthorization(
-            MaterialTraceEvent event, com.fasterxml.jackson.databind.JsonNode payload) {
+    private long verifyAuthorization(MaterialTraceEvent event, JsonNode payload) {
         Long woId = MesTraceStore.number(payload, "erpWoId");
         need(positive(woId), "授权缺少真实ERP工单");
         var wo =

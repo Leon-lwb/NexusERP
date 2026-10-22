@@ -1,9 +1,13 @@
 package com.nexus.common.trace;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class TraceContractsTest {
     @Test
@@ -83,7 +87,7 @@ class TraceContractsTest {
     @Test
     void identifiersAndDecimalQuantitiesKeepTheirStringWireContractEvenForSmallValues()
             throws Exception {
-        var json = new com.fasterxml.jackson.databind.ObjectMapper();
+        var json = new ObjectMapper();
         var policy = TrackingPolicy.of(1L, 1L, true, 1L, "STRICT");
         var candidate =
                 new CodeCandidate(CodeObjectType.SN, 12L, 13L, "SN", 14L, "M", 15L, "B", policy);

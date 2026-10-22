@@ -4,11 +4,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
 
 /** 工程专用装配；关闭时不初始化维护扫描、设备认证及工程表访问。 */
-@org.springframework.scheduling.annotation.EnableScheduling
+@EnableScheduling
 @Configuration
 @ConditionalOnProperty(prefix = "nexus.ai.engineering", name = "enabled", havingValue = "true")
 public class EngineeringConfiguration {

@@ -8,11 +8,17 @@ import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepProgressMapper;
+import com.nexus.mes.trace.MesPreparedWorkOrderPolicies;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -147,11 +153,11 @@ public class ProWorkOrderStepProgressService {
         transactionGuard.requireMesConnection();
         String tenant = TenantHelper.getTenantId();
         require(tenant != null && tenant.matches("[0-9]{6,20}"), "可信租户上下文缺失");
-        com.nexus.mes.trace.MesPreparedWorkOrderPolicies.markWriteStarted();
+        MesPreparedWorkOrderPolicies.markWriteStarted();
         return tenant;
     }
 
-    private boolean sameDate(java.util.Date a, java.util.Date b) {
+    private boolean sameDate(Date a, Date b) {
         return a == null ? b == null : b != null && a.getTime() == b.getTime();
     }
 
@@ -159,7 +165,7 @@ public class ProWorkOrderStepProgressService {
         return id != null && id > 0;
     }
 
-    private boolean same(java.math.BigDecimal a, java.math.BigDecimal b) {
+    private boolean same(BigDecimal a, BigDecimal b) {
         return a != null && b != null && a.compareTo(b) == 0;
     }
 

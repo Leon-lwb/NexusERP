@@ -1,6 +1,11 @@
 package com.nexus.erp.wm.strategy.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -9,6 +14,7 @@ import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.service.IInventoryValuationService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,11 +22,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.math.BigDecimal;
 import java.util.Date;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
+import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class ProductionIssueWarehouseStrategyTest {
@@ -43,7 +48,7 @@ class ProductionIssueWarehouseStrategyTest {
     }
 
     @Test void fefoUsesExpiringBatchesBeforeUndatedStock() {
-        when(stockMapper.selectList(any(Wrapper.class))).thenReturn(java.util.List.of());
+        when(stockMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
         assertThrows(RuntimeException.class,
             () -> new ProductionIssueStrategy(txMapper, stockMapper, valuationService, batchMapper).execute(line(66L), new Date()));
         @SuppressWarnings("unchecked") ArgumentCaptor<Wrapper<WmMaterialStock>> captor = ArgumentCaptor.forClass(Wrapper.class);
@@ -61,14 +66,18 @@ class ProductionIssueWarehouseStrategyTest {
     }
 
     @Test void strategyQueryIncludesWarehouseEvenWithoutBatchOrLocation() {
-        when(stockMapper.selectList(any(Wrapper.class))).thenReturn(java.util.List.of());
+        when(stockMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
         assertThrows(RuntimeException.class,
             () -> new ProductionIssueStrategy(txMapper, stockMapper, valuationService, batchMapper).execute(line(66L), new Date()));
         @SuppressWarnings("unchecked") ArgumentCaptor<Wrapper<WmMaterialStock>> captor = ArgumentCaptor.forClass(Wrapper.class);
         verify(stockMapper).selectList(captor.capture());
         String sql = captor.getValue().getSqlSegment();
         assertTrue(sql.contains("warehouse_id"), sql);
-        assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) captor.getValue()).getParamNameValuePairs().containsValue(66L), sql);
+        assertTrue(
+                ((AbstractWrapper<?, ?, ?>) captor.getValue())
+                        .getParamNameValuePairs()
+                        .containsValue(66L),
+                sql);
         verifyNoInteractions(txMapper);
     }
 }

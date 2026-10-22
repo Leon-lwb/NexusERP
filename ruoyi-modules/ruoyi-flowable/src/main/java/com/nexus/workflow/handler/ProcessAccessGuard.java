@@ -15,6 +15,8 @@ import org.flowable.engine.HistoryService;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * 流程详情访问权限校验。
  * <p>防止任意登录用户凭 procInsId 越权查看他人流程的表单内容与审批记录。
@@ -73,7 +75,7 @@ public class ProcessAccessGuard {
         }
         // 候选组（ROLE{id}/DEPT{id}）：taskCandidateUser 不解析用户所属组，
         // 本系统任务大量按候选组分配，必须单独按组查询，否则合法办理人会被误拦
-        java.util.List<String> candidateGroups = TaskUtils.getCandidateGroup();
+        List<String> candidateGroups = TaskUtils.getCandidateGroup();
         if (candidateGroups != null && !candidateGroups.isEmpty()) {
             long groupCount = historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(procInsId)

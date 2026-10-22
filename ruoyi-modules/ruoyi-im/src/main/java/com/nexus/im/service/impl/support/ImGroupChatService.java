@@ -1,9 +1,9 @@
 package com.nexus.im.service.impl.support;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HtmlUtil;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
@@ -32,8 +32,10 @@ import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -137,7 +139,7 @@ public class ImGroupChatService {
                 // P6 M4 修复：image/file 等非 text 消息的 content 是原样透传 JSON，可能含 <script> 等 HTML 标签，
                 // 统一调用 HtmlUtil.cleanHtmlTag 净化（与 TextMessageHandler.sanitize 路径一致），防止 XSS。
                 String snippet = truncate(origin.getContent(), 200);
-                snippet = cn.hutool.http.HtmlUtil.cleanHtmlTag(snippet);
+                snippet = HtmlUtil.cleanHtmlTag(snippet);
                 msg.setReplySnippet(snippet);
             }
         }
@@ -538,7 +540,7 @@ public class ImGroupChatService {
      */
     private List<Long> normalizeMentionUserIds(List<Long> mentionUserIds, Long groupId, Long fromUserId) {
         if (mentionUserIds == null || mentionUserIds.isEmpty()) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         if (mentionUserIds.size() > 500) {
             throw new ServiceException("@成员过多，提及信息不能超过500个字符");
@@ -551,7 +553,7 @@ public class ImGroupChatService {
             normalized.add(uid);
         }
         if (normalized.isEmpty()) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         if (normalized.size() > 500 || JsonUtils.toJsonString(normalized).length() > 500) {
             throw new ServiceException("@成员过多，提及信息不能超过500个字符");

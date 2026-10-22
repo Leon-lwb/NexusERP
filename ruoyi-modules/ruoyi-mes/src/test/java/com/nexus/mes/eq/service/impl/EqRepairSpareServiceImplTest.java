@@ -1,5 +1,14 @@
 package com.nexus.mes.eq.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
@@ -10,6 +19,7 @@ import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.mapper.EqRepairSpareMapper;
 import com.nexus.mes.eq.mapper.EqSparePartMapper;
 import com.nexus.mes.eq.service.IEqSparePartService;
+
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,19 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * 维修领用备件明细单测（MES-EQ-08）。
@@ -94,7 +96,7 @@ class EqRepairSpareServiceImplTest {
         EqRepairSpareBo bo = request(1);
         EqRepair repair = new EqRepair();
         repair.setStatus("COMPLETED");
-        org.mockito.Mockito.when(repairMapper.selectById(bo.getRepairId())).thenReturn(repair);
+        Mockito.when(repairMapper.selectById(bo.getRepairId())).thenReturn(repair);
 
         ServiceException exception = assertThrows(ServiceException.class,
             () -> service.batchAdd(List.of(bo)));

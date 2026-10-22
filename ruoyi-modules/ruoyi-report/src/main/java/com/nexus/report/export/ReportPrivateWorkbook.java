@@ -5,6 +5,7 @@ import com.nexus.report.domain.ReportFault;
 import com.nexus.report.storage.ReportArtifactStore;
 
 import org.apache.poi.xssf.streaming.*;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -148,7 +149,7 @@ final class ReportPrivateWorkbook extends SXSSFWorkbook {
             try {
                 artifacts.discard(tenant, file);
             } catch (RuntimeException cleanup) {
-                org.slf4j.LoggerFactory.getLogger(ReportPrivateWorkbook.class)
+                LoggerFactory.getLogger(ReportPrivateWorkbook.class)
                         .warn("Report spreadsheet temporary cleanup deferred");
             }
         }
